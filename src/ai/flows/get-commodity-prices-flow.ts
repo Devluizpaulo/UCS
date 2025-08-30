@@ -9,7 +9,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import type { Commodity, CommodityPriceData } from '@/lib/types';
+import type { CommodityPriceData } from '@/lib/types';
 
 
 const CommodityPricesInputSchema = z.object({
@@ -35,12 +35,12 @@ export async function getCommodityPrices(input: CommodityPricesInput): Promise<C
 
 // Mock data simulating fetching from an API based on previous day's closing.
 const commodityData: { [key: string]: { price: number; change: number } } = {
-    'Créditos de Carbono': { price: 27.50, change: 1.5 }, // Assuming in EUR, will be converted
-    'Boi Gordo': { price: 225.40, change: -0.25 }, // BRL
-    'Milho': { price: 58.70, change: 0.5 }, // BRL
-    'Soja': { price: 125.20, change: -1.1 }, // BRL
-    'Madeira': { price: 550.00, change: 2.3 }, // Assuming in USD, will be converted
-    'Água': { price: 15.00, change: 0.0 } // BRL, Based on economic value (WWF report), hence stable change.
+    'Créditos de Carbono': { price: 27.50, change: 1.5 }, // Price in EUR, will be converted
+    'Boi Gordo': { price: 225.40, change: -0.25 }, // Price in BRL
+    'Milho': { price: 58.70, change: 0.5 }, // Price in BRL
+    'Soja': { price: 125.20, change: -1.1 }, // Price in BRL
+    'Madeira': { price: 550.00, change: 2.3 }, // Price in USD, will be converted
+    'Água': { price: 15.00, change: 0.0 } // Price in BRL, based on economic value (WWF report), hence stable change.
 };
 
 const exchangeRates = {

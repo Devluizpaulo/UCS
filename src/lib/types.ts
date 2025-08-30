@@ -16,11 +16,18 @@ export type CommodityPriceData = {
 
 export type UcsComposition = {
   agropecuaria: {
+    weight: number; // 15%
     boiGordo: number;
     milho: number;
     soja: number;
   };
-  madeira: number;
-  agua: number;
-  carbono: number;
+  madeira: {
+    weight: number; // 68%
+  };
+  agua: {
+    weight: number; // 14%
+  };
+  carbono: {
+    weight: number; // 2%
+  };
 };
