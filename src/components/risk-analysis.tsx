@@ -33,7 +33,7 @@ export function RiskAnalysis() {
               <TableRow key={item.asset}>
                 <TableCell className="font-medium">{item.asset}</TableCell>
                 <TableCell>
-                  <Badge variant={item.volatility === 'Alta' ? 'destructive' : item.volatility === 'Média' ? 'secondary' : 'default'} className="bg-opacity-50 text-white">
+                  <Badge variant={item.volatility === 'Alta' ? 'destructive' : item.volatility === 'Média' ? 'secondary' : 'default'} className="bg-opacity-50 ">
                     {item.volatility}
                   </Badge>
                 </TableCell>

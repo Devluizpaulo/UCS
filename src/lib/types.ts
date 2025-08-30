@@ -5,10 +5,14 @@ export type ChartData = {
 
 export type Commodity = {
   name: string;
-  price: number;
-  change: number;
   icon: React.ElementType;
 };
+
+export type CommodityPriceData = {
+    name: string;
+    price: number;
+    change: number;
+}
 
 export type UcsComposition = {
   agropecuaria: {
