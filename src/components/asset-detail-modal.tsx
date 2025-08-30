@@ -15,6 +15,7 @@ import { useEffect, useState } from 'react';
 import { analyzeAsset } from '@/ai/flows/analyze-asset-flow';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { ScrollArea } from './ui/scroll-area';
+import { generateRealisticHistoricalData } from '@/lib/utils';
 
 interface AssetDetailModalProps {
   asset: CommodityPriceData;
@@ -23,23 +24,8 @@ interface AssetDetailModalProps {
   onClose: () => void;
 }
 
-// Generate mock historical data for the chart
-const generateHistoricalData = (baseValue: number): ChartData[] => {
-  const data: ChartData[] = [];
-  const now = new Date();
-  for (let i = 29; i >= 0; i--) {
-    const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000); // Last 30 days
-    data.push({
-      time: date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
-      value: baseValue * (1 + (Math.random() - 0.5) * 0.1), // Fluctuate up to 10%
-    });
-  }
-  return data;
-};
-
-
 export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDetailModalProps) {
-    const historicalData = generateHistoricalData(asset.price);
+    const historicalData = generateRealisticHistoricalData(asset.price, 30, 0.1, 'day');
     const latestValue = historicalData[historicalData.length-1].value;
     const [analysis, setAnalysis] = useState('');
     const [loadingAnalysis, setLoadingAnalysis] = useState(false);
@@ -65,7 +51,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
             };
             getAnalysis();
         }
-    }, [isOpen, asset.name, asset.price]); // Re-run when modal opens or asset changes
+    }, [isOpen, asset.name]);
 
 
   return (

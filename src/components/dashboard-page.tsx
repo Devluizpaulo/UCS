@@ -10,23 +10,7 @@ import type { ChartData, CommodityPriceData } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { calculateUcsIndex } from '@/ai/flows/calculate-ucs-index-flow';
 import { getCommodityPrices } from '@/ai/flows/get-commodity-prices-flow';
-
-// Helper to generate mock data for chart history
-const generateInitialData = (currentValue: number): ChartData[] => {
-  const data: ChartData[] = [];
-  const now = new Date();
-  for (let i = 29; i >= 0; i--) {
-    const time = new Date(now.getTime() - i * 60000);
-    const mockValue = currentValue * (1 + (Math.random() - 0.5) * 0.05); // Fluctuate within 5% of current value
-    data.push({
-      time: time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      value: mockValue,
-    });
-  }
-  // Ensure the last point is the actual current value
-  data[data.length-1].value = currentValue;
-  return data;
-};
+import { generateRealisticHistoricalData } from '@/lib/utils';
 
 export function DashboardPage() {
   const [chartData, setChartData] = useState<ChartData[]>([]);
@@ -50,8 +34,10 @@ export function DashboardPage() {
         
         setChartData((prevData) => {
           if (prevData.length === 0) {
-            return generateInitialData(indexValue);
+            // Generate realistic historical data for the first load
+            return generateRealisticHistoricalData(indexValue, 30, 0.05, 'minute');
           }
+          // On subsequent fetches, append the new data point
           const newDataPoint = {
             time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             value: indexValue,
