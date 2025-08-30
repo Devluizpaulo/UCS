@@ -16,7 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { ArrowDown, ArrowUp, Leaf, Droplets, Gem, Sprout, Footprints, TreePine } from 'lucide-react';
+import { ArrowDown, ArrowUp, Leaf, Droplets, TreePine } from 'lucide-react';
 import type { Commodity } from '@/lib/types';
 import { cn } from '@/lib/utils';
 

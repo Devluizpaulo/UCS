@@ -11,7 +11,11 @@ export type Commodity = {
 };
 
 export type UcsComposition = {
-  agropecuaria: number;
+  agropecuaria: {
+    boiGordo: number;
+    milho: number;
+    soja: number;
+  };
   madeira: number;
   agua: number;
   carbono: number;
