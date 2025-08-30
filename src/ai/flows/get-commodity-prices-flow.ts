@@ -63,15 +63,14 @@ const getCommodityPricesFlow = ai.defineFlow(
 
         if (data.url && data.selector) {
             try {
-                // NOTE: This is a placeholder for actual web scraping.
-                // The scrapeUrlFlow currently returns a mock value.
-                // In a real scenario, it would fetch and parse the live price.
                 const scrapedPrice = await scrapeUrlFlow({ url: data.url, selector: data.selector });
                 if (scrapedPrice) {
                     price = parseFloat(scrapedPrice);
+                } else {
+                     console.log(`[LOG] Could not scrape price for ${name}. Using mock value.`);
                 }
             } catch (error) {
-                console.error(`Failed to scrape ${name}:`, error);
+                console.error(`[LOG] Error scraping ${name}:`, error);
                 // Fallback to mock price if scraping fails
             }
         }

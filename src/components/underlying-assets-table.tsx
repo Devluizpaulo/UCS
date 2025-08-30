@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Table,
   TableBody,
@@ -12,7 +12,6 @@ import {
 import { ArrowDown, ArrowUp, Leaf, Droplets, TreePine } from 'lucide-react';
 import type { Commodity, CommodityPriceData } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { getCommodityPrices } from '@/ai/flows/get-commodity-prices-flow';
 import { Skeleton } from './ui/skeleton';
 import { AssetDetailModal } from './asset-detail-modal';
 
@@ -25,29 +24,13 @@ const commodityDetails: Commodity[] = [
   { name: 'Água', icon: Droplets },
 ];
 
-export function UnderlyingAssetsTable() {
-  const [commodities, setCommodities] = useState<CommodityPriceData[]>([]);
-  const [loading, setLoading] = useState(true);
+interface UnderlyingAssetsTableProps {
+    data: CommodityPriceData[];
+    loading: boolean;
+}
+
+export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTableProps) {
   const [selectedAsset, setSelectedAsset] = useState<CommodityPriceData | null>(null);
-
-  useEffect(() => {
-    async function fetchPrices() {
-      try {
-        setLoading(true);
-        const prices = await getCommodityPrices({ commodities: commodityDetails.map(c => c.name) });
-        setCommodities(prices);
-      } catch (error) {
-        console.error("Failed to fetch commodity prices:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchPrices();
-    const interval = setInterval(fetchPrices, 30000); 
-
-    return () => clearInterval(interval);
-  }, []);
 
   const getIconForCommodity = (name: string) => {
     const details = commodityDetails.find(c => c.name === name);
@@ -72,13 +55,13 @@ export function UnderlyingAssetsTable() {
           {loading ? (
             Array.from({ length: 6 }).map((_, index) => (
               <TableRow key={index}>
-                <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                <TableCell className="text-right"><Skeleton className="h-5 w-24" /></TableCell>
                 <TableCell className="text-right"><Skeleton className="h-5 w-20" /></TableCell>
-                <TableCell className="text-right"><Skeleton className="h-5 w-16" /></TableCell>
               </TableRow>
             ))
           ) : (
-            commodities.map((item) => {
+            data.map((item) => {
               const Icon = getIconForCommodity(item.name);
               return (
                 <TableRow key={item.name} onClick={() => handleRowClick(item)} className="cursor-pointer">
