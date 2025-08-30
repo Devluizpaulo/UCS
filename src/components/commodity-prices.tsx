@@ -22,11 +22,11 @@ import { cn } from '@/lib/utils';
 
 
 const initialCommodities: Omit<Commodity, 'price' | 'change'>[] = [
-  { name: 'Carbon Credits', icon: Leaf },
-  { name: 'Water Futures', icon: Droplets },
-  { name: 'Rare Earth Metals', icon: Gem },
-  { name: 'Soybeans', icon: () => <span className="text-lg" data-ai-hint="plant">🌱</span> },
-  { name: 'Lithium', icon: () => <span className="text-lg" data-ai-hint="battery">🔋</span> },
+  { name: 'Créditos de Carbono', icon: Leaf },
+  { name: 'Futuros de Água', icon: Droplets },
+  { name: 'Metais de Terras Raras', icon: Gem },
+  { name: 'Soja', icon: () => <span className="text-lg" data-ai-hint="plant">🌱</span> },
+  { name: 'Lítio', icon: () => <span className="text-lg" data-ai-hint="battery">🔋</span> },
 ];
 
 const generateCommodityData = (): Commodity[] => {
@@ -59,16 +59,16 @@ export function CommodityPrices() {
   return (
     <Card className="shadow-sm">
       <CardHeader>
-        <CardTitle>Underlying Assets</CardTitle>
-        <CardDescription>Live prices of commodities in the index.</CardDescription>
+        <CardTitle>Ativos Subjacentes</CardTitle>
+        <CardDescription>Preços em tempo real das commodities no índice.</CardDescription>
       </CardHeader>
       <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Commodity</TableHead>
-              <TableHead className="text-right">Price</TableHead>
-              <TableHead className="text-right">Change (24h)</TableHead>
+              <TableHead className="text-right">Preço</TableHead>
+              <TableHead className="text-right">Variação (24h)</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

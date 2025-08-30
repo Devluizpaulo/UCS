@@ -31,8 +31,8 @@ export function UcsIndexChart({ data }: UcsIndexChartProps) {
   return (
     <>
       <CardHeader>
-        <CardTitle>UCS Index</CardTitle>
-        <CardDescription>Real-time index value based on commodity data.</CardDescription>
+        <CardTitle>Índice UCS</CardTitle>
+        <CardDescription>Valor do índice em tempo real com base em dados de commodities.</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="mb-4">

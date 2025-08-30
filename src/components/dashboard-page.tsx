@@ -55,8 +55,8 @@ export function DashboardPage() {
     const file = event.target.files?.[0];
     if (file) {
       toast({
-        title: "File Uploaded",
-        description: `${file.name} has been successfully uploaded.`,
+        title: "Arquivo Enviado",
+        description: `${file.name} foi enviado com sucesso.`,
       });
       // Here you would process the file
     }
@@ -68,10 +68,10 @@ export function DashboardPage() {
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
-      <PageHeader title="Dashboard">
+      <PageHeader title="Painel">
         <Button onClick={handleFileUploadClick}>
           <UploadCloud className="mr-2 h-4 w-4" />
-          Upload Spreadsheet
+          Carregar Planilha
         </Button>
         <input
           type="file"

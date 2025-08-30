@@ -37,9 +37,9 @@ type NavItem = {
 };
 
 const navItems: NavItem[] = [
-  { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { href: '/settings', icon: Settings, label: 'Settings' },
-  { href: '/alerts', icon: Bell, label: 'Alerts' },
+  { href: '/', icon: LayoutDashboard, label: 'Painel' },
+  { href: '/settings', icon: Settings, label: 'Configurações' },
+  { href: '/alerts', icon: Bell, label: 'Alertas' },
 ];
 
 export function MainLayout({ children }: { children: ReactNode }) {
@@ -53,9 +53,9 @@ export function MainLayout({ children }: { children: ReactNode }) {
             <FileSpreadsheet className="size-8 text-primary" />
             <div className="flex flex-col">
               <h2 className="text-lg font-semibold tracking-tight text-foreground">
-                UCS Index
+                Índice UCS
               </h2>
-              <p className="text-xs text-muted-foreground">Tracker</p>
+              <p className="text-xs text-muted-foreground">Monitor</p>
             </div>
           </div>
         </SidebarHeader>
@@ -83,26 +83,26 @@ export function MainLayout({ children }: { children: ReactNode }) {
                 <Avatar className="h-9 w-9">
                   <AvatarImage
                     src="https://picsum.photos/36"
-                    alt="User"
+                    alt="Usuário"
                     data-ai-hint="profile picture"
                   />
                   <AvatarFallback>U</AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col truncate">
-                  <span className="truncate font-medium">User Name</span>
+                  <span className="truncate font-medium">Nome do Usuário</span>
                   <span className="truncate text-xs text-muted-foreground">
-                    user@email.com
+                    usuario@email.com
                   </span>
                 </div>
               </div>
             </DropdownMenuTrigger>
             <DropdownMenuContent side="right" align="start" className="w-56">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Profile</DropdownMenuItem>
-              <DropdownMenuItem>Settings</DropdownMenuItem>
+              <DropdownMenuItem>Perfil</DropdownMenuItem>
+              <DropdownMenuItem>Configurações</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Log out</DropdownMenuItem>
+              <DropdownMenuItem>Sair</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </SidebarFooter>
