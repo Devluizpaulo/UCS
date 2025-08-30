@@ -10,6 +10,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import type { CommodityPriceData } from '@/lib/types';
+import { scrapeUrlFlow } from './scrape-commodity-price-flow';
 
 
 const CommodityPricesInputSchema = z.object({
@@ -34,13 +35,13 @@ export async function getCommodityPrices(input: CommodityPricesInput): Promise<C
 
 
 // Mock data simulating fetching from an API based on previous day's closing.
-const commodityData: { [key: string]: { price: number; change: number } } = {
-    'Créditos de Carbono': { price: 27.50, change: 1.5 }, // Price in EUR, will be converted
-    'Boi Gordo': { price: 225.40, change: -0.25 }, // Price in BRL
-    'Milho': { price: 58.70, change: 0.5 }, // Price in BRL
-    'Soja': { price: 125.20, change: -1.1 }, // Price in BRL
-    'Madeira': { price: 550.00, change: 2.3 }, // Price in USD, will be converted
-    'Água': { price: 15.00, change: 0.0 } // Price in BRL, based on economic value (WWF report), hence stable change.
+const commodityData: { [key: string]: { price: number; change: number; url?: string; selector?: string; currency?: 'USD' | 'EUR' | 'BRL'} } = {
+    'Créditos de Carbono': { price: 27.50, change: 1.5, currency: 'EUR', url: 'https://br.investing.com/commodities/carbon-emissions', selector: '[data-test="instrument-price-last"]' },
+    'Boi Gordo': { price: 225.40, change: -0.25, currency: 'BRL', url: 'https://br.investing.com/commodities/live-cattle-historical-data?cid=964528', selector: '[data-test="instrument-price-last"]' },
+    'Milho': { price: 58.70, change: 0.5, currency: 'BRL', url: 'https://br.investing.com/commodities/us-corn?cid=964522', selector: '[data-test="instrument-price-last"]' },
+    'Soja': { price: 125.20, change: -1.1, currency: 'BRL', url: 'https://br.investing.com/commodities/us-soybeans?cid=964523', selector: '[data-test="instrument-price-last"]' },
+    'Madeira': { price: 550.00, change: 2.3, currency: 'USD', url: 'https://br.investing.com/commodities/lumber-historical-data', selector: '[data-test="instrument-price-last"]' },
+    'Água': { price: 15.00, change: 0.0, currency: 'BRL' } // Price based on economic value (WWF report), hence stable change.
 };
 
 const exchangeRates = {
@@ -56,15 +57,29 @@ const getCommodityPricesFlow = ai.defineFlow(
     outputSchema: CommodityPricesOutputSchema,
   },
   async (input) => {
-    const prices = input.commodities.map(name => {
-        let data = commodityData[name] || { price: 0, change: 0 };
+    const pricePromises = input.commodities.map(async (name) => {
+        let data = commodityData[name] || { price: 0, change: 0, currency: 'BRL' };
         let price = data.price;
 
-        // Simulate currency conversion for specific commodities
-        if (name === 'Créditos de Carbono') {
-            price = data.price * exchangeRates.EUR_BRL;
-        } else if (name === 'Madeira') {
-            price = data.price * exchangeRates.USD_BRL;
+        if (data.url && data.selector) {
+            try {
+                // NOTE: This is a placeholder for actual web scraping.
+                // The scrapeUrlFlow currently returns a mock value.
+                // In a real scenario, it would fetch and parse the live price.
+                const scrapedPrice = await scrapeUrlFlow({ url: data.url, selector: data.selector });
+                if (scrapedPrice) {
+                    price = parseFloat(scrapedPrice);
+                }
+            } catch (error) {
+                console.error(`Failed to scrape ${name}:`, error);
+                // Fallback to mock price if scraping fails
+            }
+        }
+
+        if (data.currency === 'EUR') {
+            price = price * exchangeRates.EUR_BRL;
+        } else if (data.currency === 'USD') {
+            price = price * exchangeRates.USD_BRL;
         }
 
         return {
@@ -74,6 +89,7 @@ const getCommodityPricesFlow = ai.defineFlow(
         };
     });
 
+    const prices = await Promise.all(pricePromises);
     return { prices };
   }
 );
