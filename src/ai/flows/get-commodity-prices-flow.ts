@@ -36,10 +36,10 @@ export async function getCommodityPrices(input: CommodityPricesInput): Promise<C
 
 // Mock data simulating fetching from an API based on previous day's closing.
 const commodityData: { [key: string]: { price: number; change: number; url?: string; selector?: string; currency?: 'USD' | 'EUR' | 'BRL'} } = {
-    'Créditos de Carbono': { price: 27.50, change: 1.5, currency: 'EUR', url: 'https://br.investing.com/commodities/carbon-emissions', selector: '[data-test="instrument-price-last"]' },
-    'Boi Gordo': { price: 225.40, change: -0.25, currency: 'BRL', url: 'https://br.investing.com/commodities/live-cattle-historical-data?cid=964528', selector: '[data-test="instrument-price-last"]' },
-    'Milho': { price: 58.70, change: 0.5, currency: 'BRL', url: 'https://br.investing.com/commodities/us-corn?cid=964522', selector: '[data-test="instrument-price-last"]' },
-    'Soja': { price: 125.20, change: -1.1, currency: 'BRL', url: 'https://br.investing.com/commodities/us-soybeans?cid=964523', selector: '[data-test="instrument-price-last"]' },
+    'Créditos de Carbono': { price: 27.50, change: 1.5, currency: 'EUR', url: 'https://br.investing.com/commodities/carbon-emissions-historical-data', selector: '[data-test="instrument-price-last"]' },
+    'Boi Gordo': { price: 225.40, change: -0.25, currency: 'BRL', url: 'https://br.investing.com/commodities/live-cattle?cid=964528', selector: '[data-test="instrument-price-last"]' },
+    'Milho': { price: 58.70, change: 0.5, currency: 'BRL', url: 'https://br.investing.com/commodities/us-corn-historical-data?cid=964522', selector: '[data-test="instrument-price-last"]' },
+    'Soja': { price: 125.20, change: -1.1, currency: 'BRL', url: 'https://br.investing.com/commodities/us-soybeans-historical-data?cid=964523', selector: '[data-test="instrument-price-last"]' },
     'Madeira': { price: 550.00, change: 2.3, currency: 'USD', url: 'https://br.investing.com/commodities/lumber-historical-data', selector: '[data-test="instrument-price-last"]' },
     'Água': { price: 15.00, change: 0.0, currency: 'BRL' } // Price based on economic value (WWF report), hence stable change.
 };
