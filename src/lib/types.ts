@@ -9,3 +9,10 @@ export type Commodity = {
   change: number;
   icon: React.ElementType;
 };
+
+export type UcsComposition = {
+  agropecuaria: number;
+  madeira: number;
+  agua: number;
+  carbono: number;
+};

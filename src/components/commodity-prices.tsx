@@ -16,17 +16,18 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { ArrowDown, ArrowUp, Leaf, Droplets, Gem } from 'lucide-react';
+import { ArrowDown, ArrowUp, Leaf, Droplets, Gem, Sprout, Footprints, TreePine } from 'lucide-react';
 import type { Commodity } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 
 const initialCommodities: Omit<Commodity, 'price' | 'change'>[] = [
   { name: 'Créditos de Carbono', icon: Leaf },
-  { name: 'Futuros de Água', icon: Droplets },
-  { name: 'Metais de Terras Raras', icon: Gem },
+  { name: 'Boi Gordo', icon: () => <span className="text-lg" data-ai-hint="cow">🐄</span> },
+  { name: 'Milho', icon: () => <span className="text-lg" data-ai-hint="corn">🌽</span> },
   { name: 'Soja', icon: () => <span className="text-lg" data-ai-hint="plant">🌱</span> },
-  { name: 'Lítio', icon: () => <span className="text-lg" data-ai-hint="battery">🔋</span> },
+  { name: 'Madeira', icon: TreePine },
+  { name: 'Água', icon: Droplets },
 ];
 
 const generateCommodityData = (): Commodity[] => {
@@ -84,7 +85,7 @@ export function CommodityPrices() {
                       <span className="font-medium">{item.name}</span>
                     </div>
                   </TableCell>
-                  <TableCell className="text-right font-mono">${item.price.toFixed(2)}</TableCell>
+                  <TableCell className="text-right font-mono">R$ {item.price.toFixed(2)}</TableCell>
                   <TableCell className="text-right">
                     <div className={cn(
                         "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold font-mono transition-colors",
