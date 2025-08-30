@@ -29,11 +29,6 @@ export const scrapeUrlFlow = ai.defineFlow(
         // It's also subject to the website's terms of service.
         // For production apps, prefer official APIs when available.
         
-        // This is a placeholder implementation. Due to sandbox limitations,
-        // I cannot perform live outbound fetch requests here.
-        // In a real environment, you would uncomment the following lines.
-        
-        /*
         const response = await fetch(url, {
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
@@ -50,12 +45,6 @@ export const scrapeUrlFlow = ai.defineFlow(
         // Clean up the value (e.g., remove currency symbols, convert comma to dot)
         const numericValue = value.replace(/[^\d,.-]/g, '').replace('.', '').replace(',', '.');
         return numericValue || null;
-        */
-
-        // Returning a mock value for demonstration purposes.
-        const mockPrice = (Math.random() * 100 + 50).toFixed(2);
-        console.log(`[MOCK SCRAPE] URL: ${url}, Selector: ${selector} -> Mock Price: ${mockPrice}`);
-        return mockPrice;
 
     } catch (error) {
       console.error(`Error scraping ${url}:`, error);
