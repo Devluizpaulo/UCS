@@ -40,7 +40,7 @@ const commodityData: { [key: string]: { price: number; change: number } } = {
     'Milho': { price: 58.70, change: 0.5 }, // BRL
     'Soja': { price: 125.20, change: -1.1 }, // BRL
     'Madeira': { price: 550.00, change: 2.3 }, // Assuming in USD, will be converted
-    'Água': { price: 15.00, change: 0.1 } // BRL
+    'Água': { price: 15.00, change: 0.0 } // BRL, Based on economic value (WWF report), hence stable change.
 };
 
 const exchangeRates = {
