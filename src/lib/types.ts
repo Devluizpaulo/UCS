@@ -31,3 +31,10 @@ export type UcsComposition = {
     weight: number; // 2%
   };
 };
+
+export type ScenarioResult = {
+  newIndexValue: number;
+  originalIndexValue: number;
+  changePercentage: number;
+  originalAssetPrice: number;
+};

@@ -10,7 +10,9 @@ import {
 import { Area, AreaChart, CartesianGrid, XAxis, Tooltip } from 'recharts';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import type { CommodityPriceData, ChartData } from '@/lib/types';
-import { Lightbulb } from 'lucide-react';
+import { Lightbulb, Loader2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { analyzeAsset } from '@/ai/flows/analyze-asset-flow';
 
 interface AssetDetailModalProps {
   asset: CommodityPriceData;
@@ -37,6 +39,31 @@ const generateHistoricalData = (baseValue: number): ChartData[] => {
 export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDetailModalProps) {
     const historicalData = generateHistoricalData(asset.price);
     const latestValue = historicalData[historicalData.length-1].value;
+    const [analysis, setAnalysis] = useState('');
+    const [loadingAnalysis, setLoadingAnalysis] = useState(false);
+
+
+    useEffect(() => {
+        if (isOpen) {
+            const getAnalysis = async () => {
+                setLoadingAnalysis(true);
+                setAnalysis('');
+                try {
+                    const result = await analyzeAsset({ 
+                        assetName: asset.name, 
+                        historicalData: historicalData.map(d => d.value) 
+                    });
+                    setAnalysis(result.analysis);
+                } catch (error) {
+                    console.error("Failed to get AI analysis:", error);
+                    setAnalysis("Não foi possível carregar a análise de IA no momento.");
+                } finally {
+                    setLoadingAnalysis(false);
+                }
+            };
+            getAnalysis();
+        }
+    }, [isOpen, asset.name, asset.price]); // Re-run when modal opens or asset changes
 
 
   return (
@@ -95,9 +122,16 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                     <Lightbulb className="h-5 w-5 text-primary" />
                     Análise de IA
                 </h3>
-                <p className="text-sm text-muted-foreground">
-                    O modelo de IA está analisando os dados... Em breve, insights sobre volatilidade, correlação com o índice UCS e projeções de sentimento de mercado serão exibidos aqui.
-                </p>
+                {loadingAnalysis ? (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Analisando os dados...</span>
+                    </div>
+                ) : (
+                    <p className="text-sm text-muted-foreground">
+                       {analysis}
+                    </p>
+                )}
              </div>
         </div>
       </DialogContent>
