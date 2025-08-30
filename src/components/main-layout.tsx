@@ -7,6 +7,7 @@ import {
   Bell,
   FileSpreadsheet,
   LayoutDashboard,
+  Library,
   Settings,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -38,6 +39,7 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   { href: '/', icon: LayoutDashboard, label: 'Painel' },
+  { href: '/analysis', icon: Library, label: 'Análise' },
   { href: '/settings', icon: Settings, label: 'Configurações' },
   { href: '/alerts', icon: Bell, label: 'Alertas' },
 ];
