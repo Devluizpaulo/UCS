@@ -9,6 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { AnimatedNumber } from '@/components/ui/animated-number';
 import { ArrowDown, ArrowUp, DollarSign, Euro, Beef, Leaf, TreePine, Recycle } from 'lucide-react';
 import type { Commodity, CommodityPriceData } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -52,8 +53,43 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
   };
 
   const handleRowClick = (asset: CommodityPriceData) => {
+    if (loading) return;
     setSelectedAsset(asset);
   };
+
+  if (loading && (!data || data.length === 0)) {
+    return (
+        <div className="w-full">
+            <Table>
+                <TableHeader>
+                <TableRow>
+                    <TableHead>Ativo</TableHead>
+                    <TableHead className="text-right">Preço (BRL)</TableHead>
+                    <TableHead className="text-right">Variação (24h)</TableHead>
+                </TableRow>
+                </TableHeader>
+                <TableBody>
+                {Array.from({ length: 7 }).map((_, index) => (
+                    <TableRow key={index}>
+                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                    <TableCell className="text-right"><Skeleton className="h-5 w-24 ml-auto" /></TableCell>
+                    <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
+                    </TableRow>
+                ))}
+                </TableBody>
+            </Table>
+        </div>
+    )
+  }
+
+  if (!data || data.length === 0) {
+      return (
+          <div className="text-center py-10 px-6 border rounded-lg bg-card/50">
+              <p className="text-muted-foreground">Nenhuma cotação de ativo disponível no momento.</p>
+              <p className="text-sm text-muted-foreground mt-1">Clique em "Atualizar Cotações" para buscar os dados.</p>
+          </div>
+      )
+  }
 
   return (
     <div className="w-full">
@@ -66,16 +102,7 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
           </TableRow>
         </TableHeader>
         <TableBody>
-          {loading ? (
-            Array.from({ length: 5 }).map((_, index) => (
-              <TableRow key={index}>
-                <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                <TableCell className="text-right"><Skeleton className="h-5 w-24 ml-auto" /></TableCell>
-                <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
-              </TableRow>
-            ))
-          ) : (
-            data?.map((item) => {
+            {data.map((item) => {
               const Icon = getIconForCommodity(item.name);
               return (
                 <TableRow key={item.name} onClick={() => handleRowClick(item)} className="cursor-pointer">
@@ -90,20 +117,22 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell className="text-right font-mono">R$ {item.price.toFixed(4)}</TableCell>
+                  <TableCell className="text-right font-mono">
+                    R$ <AnimatedNumber value={item.price} />
+                  </TableCell>
                   <TableCell className="text-right">
                     <div className={cn(
                         "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold font-mono transition-colors",
                         item.change >= 0 ? "border-primary/50 text-primary" : "border-destructive/50 text-destructive"
                     )}>
                         {item.change >= 0 ? <ArrowUp className="mr-1 h-3 w-3" /> : <ArrowDown className="mr-1 h-3 w-3" />}
-                        {item.change.toFixed(2)}%
+                        <AnimatedNumber value={item.change} formatter={(v) => `${v.toFixed(2)}%`} />
                     </div>
                   </TableCell>
                 </TableRow>
               );
             })
-          )}
+          }
         </TableBody>
       </Table>
       {selectedAsset && (
