@@ -123,14 +123,14 @@ export function ScenarioAnalysis() {
                 ) : result && (
                     <>
                         <div className="mt-4 flex items-baseline gap-4">
-                            <p className="text-4xl font-bold text-primary">{result.newIndexValue.toFixed(2)}</p>
+                            <p className="text-4xl font-bold text-primary">{result.newIndexValue.toFixed(4)}</p>
                             <p className={`text-lg font-semibold ${result.changePercentage >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                                 ({result.changePercentage >= 0 ? '+' : ''}{result.changePercentage.toFixed(2)}%)
                             </p>
                         </div>
                         <p className="text-sm text-muted-foreground mt-2">
                            Simulação baseada em uma alteração no preço de <span className="font-semibold">{selectedAssetLabel}</span>.
-                           O valor original era <span className="font-semibold">R$ {result.originalAssetPrice.toFixed(2)}</span> e o índice era <span className="font-semibold">{result.originalIndexValue.toFixed(2)}</span>.
+                           O valor original era <span className="font-semibold">R$ {result.originalAssetPrice.toFixed(4)}</span> e o índice era <span className="font-semibold">{result.originalIndexValue.toFixed(4)}</span>.
                         </p>
                     </>
                 )}

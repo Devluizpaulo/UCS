@@ -53,7 +53,7 @@ export function DashboardPage({ ucsCoinImageUrl }: DashboardPageProps) {
     fetchDashboardData();
   }, [fetchDashboardData]);
   
-  const latestValue = chartData.length > 0 ? chartData[chartData.length - 1].value.toFixed(2) : '0.00';
+  const latestValue = chartData.length > 0 ? chartData[chartData.length - 1].value.toFixed(4) : '0.0000';
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">

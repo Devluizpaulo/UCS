@@ -41,7 +41,7 @@ export function IndexHistoryTable({ data, loading }: IndexHistoryTableProps) {
                   <TableCell>
                       <div className="font-medium">{item.time}</div>
                   </TableCell>
-                  <TableCell className="text-right font-mono">{item.value.toFixed(2)}</TableCell>
+                  <TableCell className="text-right font-mono">{item.value.toFixed(4)}</TableCell>
                 </TableRow>
             ))
           )}

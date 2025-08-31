@@ -25,8 +25,8 @@ type ActiveAlert = AlertFormData & { id: string };
 
 export default function AlertsPage() {
   const [activeAlerts, setActiveAlerts] = useState<ActiveAlert[]>([
-    { id: '1', email: 'voce@exemplo.com', condition: 'below', threshold: 98.00 },
-    { id: '2', email: 'voce@exemplo.com', condition: 'above', threshold: 110.00 },
+    { id: '1', email: 'voce@exemplo.com', condition: 'below', threshold: 5.4000 },
+    { id: '2', email: 'voce@exemplo.com', condition: 'above', threshold: 5.6000 },
   ]);
   const { toast } = useToast();
 
@@ -45,7 +45,7 @@ export default function AlertsPage() {
     setActiveAlerts((prev) => [...prev, newAlert]);
     toast({
       title: 'Alerta Criado',
-      description: `Você será notificado quando o índice for ${data.condition === 'above' ? 'maior que' : 'menor que'} ${data.threshold}.`,
+      description: `Você será notificado quando o índice for ${data.condition === 'above' ? 'maior que' : 'menor que'} ${data.threshold.toFixed(4)}.`,
     });
     reset({ email: data.email, condition: undefined, threshold: undefined });
   };
@@ -101,7 +101,7 @@ export default function AlertsPage() {
                     </div>
                     <div className="space-y-2 sm:col-span-2">
                       <Label htmlFor="threshold">Valor do Índice</Label>
-                      <Input id="threshold" type="number" step="any" placeholder="ex: 105,50" {...register('threshold')} />
+                      <Input id="threshold" type="number" step="any" placeholder="ex: 5,4304" {...register('threshold')} />
                       {errors.threshold && <p className="text-xs text-destructive">{errors.threshold.message}</p>}
                     </div>
                   </div>
@@ -121,8 +121,8 @@ export default function AlertsPage() {
                                        <p className="font-medium">
                                           Notificar quando o índice {' '}
                                           {alert.condition === 'below' ? 
-                                            <span className="font-bold text-destructive">cair abaixo de {alert.threshold.toFixed(2)}</span> :
-                                            <span className="font-bold text-primary">subir acima de {alert.threshold.toFixed(2)}</span>
+                                            <span className="font-bold text-destructive">cair abaixo de {alert.threshold.toFixed(4)}</span> :
+                                            <span className="font-bold text-primary">subir acima de {alert.threshold.toFixed(4)}</span>
                                           }
                                        </p>
                                        <p className="text-sm text-muted-foreground">Enviando para {alert.email}</p>

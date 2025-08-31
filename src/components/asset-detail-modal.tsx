@@ -81,7 +81,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
             {/* Left Column */}
             <div className="flex flex-col gap-6">
                 <div>
-                    <span className="text-4xl font-bold text-primary">R$ {latestValue.toFixed(2)}</span>
+                    <span className="text-4xl font-bold text-primary">R$ {latestValue.toFixed(4)}</span>
                     <span className="text-sm text-muted-foreground"> (preço atual)</span>
                 </div>
                 
@@ -146,7 +146,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                                 historicalData.slice().reverse().map((dataPoint) => (
                                     <TableRow key={dataPoint.time}>
                                         <TableCell>{dataPoint.time}</TableCell>
-                                        <TableCell className="text-right font-mono">R$ {dataPoint.value.toFixed(2)}</TableCell>
+                                        <TableCell className="text-right font-mono">R$ {dataPoint.value.toFixed(4)}</TableCell>
                                     </TableRow>
                                 ))
                             )}

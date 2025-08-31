@@ -83,10 +83,10 @@ const simulateScenarioFlow = ai.defineFlow(
     const changePercentage = ((newIndexValue - originalIndexValue) / originalIndexValue) * 100;
 
     return {
-        newIndexValue: parseFloat(newIndexValue.toFixed(2)),
-        originalIndexValue: parseFloat(originalIndexValue.toFixed(2)),
+        newIndexValue: parseFloat(newIndexValue.toFixed(4)),
+        originalIndexValue: parseFloat(originalIndexValue.toFixed(4)),
         changePercentage: parseFloat(changePercentage.toFixed(2)),
-        originalAssetPrice: parseFloat(originalAssetPrice.toFixed(2)),
+        originalAssetPrice: parseFloat(originalAssetPrice.toFixed(4)),
     };
   }
 );

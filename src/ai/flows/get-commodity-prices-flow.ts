@@ -37,13 +37,8 @@ export async function getCommodityPrices(
 
 // Maps our commodity names to their Yahoo Finance tickers.
 const commodityTickerMap: { [key: string]: string } = {
-  'Soja Futuros': 'ZS=F',
   'USD/BRL Histórico': 'BRL=X',
   'EUR/BRL Histórico': 'EURBRL=X',
-  'Boi Gordo Futuros': 'LE=F',
-  'Carbono Futuros': 'KRBN', // KraneShares Global Carbon Strategy ETF as a proxy
-  'Madeira Futuros': 'LBS=F',
-  'Milho Futuros': 'ZC=F',
 };
 
 const getCommodityPricesFlow = ai.defineFlow(
@@ -86,7 +81,7 @@ const getCommodityPricesFlow = ai.defineFlow(
         
         return {
           name: commodityName,
-          price: parseFloat(price.toFixed(2)),
+          price: parseFloat(price.toFixed(4)),
           change: parseFloat(change.toFixed(2)),
         };
       });

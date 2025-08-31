@@ -62,6 +62,6 @@ const calculateUcsIndexFlow = ai.defineFlow(
     const normalizationFactor = 1; // Adjusted for currency pair scale
     const indexValue = totalValue / normalizationFactor;
 
-    return { indexValue: parseFloat(indexValue.toFixed(2)) };
+    return { indexValue: parseFloat(indexValue.toFixed(4)) };
   }
 );

@@ -69,7 +69,7 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
                       <span className="font-medium">{item.name}</span>
                     </div>
                   </TableCell>
-                  <TableCell className="text-right font-mono">R$ {item.price.toFixed(2)}</TableCell>
+                  <TableCell className="text-right font-mono">R$ {item.price.toFixed(4)}</TableCell>
                   <TableCell className="text-right">
                     <div className={cn(
                         "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold font-mono transition-colors",
