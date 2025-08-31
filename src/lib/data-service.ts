@@ -1,7 +1,8 @@
 'use server';
 
 import type { ChartData, CommodityPriceData, ScenarioResult, HistoricalQuote, AnalyzeAssetOutput, HistoryInterval } from './types';
-import yahooFinance from 'yahoo-finance2';
+import { getOptimizedHistorical } from './yahoo-finance-optimizer';
+import { COMMODITY_TICKER_MAP } from './yahoo-finance-config';
 
 // Functions for the "Analysis" page that call Genkit flows directly.
 export async function getAssetAnalysis(assetName: string, historicalData: number[]): Promise<AnalyzeAssetOutput> {
@@ -41,18 +42,11 @@ export async function getUcsIndexValue(): Promise<ChartData[]> {
 }
 
 
-const commodityTickerMap: { [key: string]: string } = {
-  'USD/BRL Histórico': 'BRL=X',
-  'EUR/BRL Histórico': 'EURBRL=X',
-  'Boi Gordo Futuros': 'BGI=F',
-  'Soja Futuros': 'ZS=F',
-  'Milho Futuros': 'CCM=F',
-  'Madeira Futuros': 'LBS=F',
-  'Carbono Futuros': 'KE=F',
-};
+// Use centralized commodity ticker mapping
 
 export async function getAssetHistoricalData(assetName: string, interval: HistoryInterval = '1d'): Promise<HistoricalQuote[]> {
-    const ticker = commodityTickerMap[assetName];
+    const commodityInfo = COMMODITY_TICKER_MAP[assetName];
+    const ticker = commodityInfo?.ticker;
     if (!ticker) {
         console.error(`No ticker found for asset: ${assetName}`);
         return [];
@@ -80,7 +74,7 @@ export async function getAssetHistoricalData(assetName: string, interval: Histor
             interval: interval,
         };
         
-        const result = await yahooFinance.historical(ticker, queryOptions);
+        const result = await getOptimizedHistorical(ticker, queryOptions, interval);
 
         if (!result || result.length === 0) {
             return [];
