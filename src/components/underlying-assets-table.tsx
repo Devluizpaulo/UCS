@@ -10,10 +10,9 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { AnimatedNumber } from '@/components/ui/animated-number';
-import { ArrowDown, ArrowUp, DollarSign, Euro, Beef, Leaf, TreePine, Recycle, Droplets } from 'lucide-react';
+import { ArrowDown, ArrowUp, DollarSign, Euro, Beef, Leaf, TreePine, Recycle } from 'lucide-react';
 import type { Commodity, CommodityPriceData } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { Skeleton } from './ui/skeleton';
 import { AssetDetailModal } from './asset-detail-modal';
 
 // Helper component for Corn icon
@@ -37,7 +36,6 @@ const commodityDetails: Commodity[] = [
   { name: 'Milho Futuros', icon: CornIcon },
   { name: 'Madeira Futuros', icon: TreePine },
   { name: 'Carbono Futuros', icon: Recycle },
-  { name: 'Agua Futuros', icon: Droplets },
 ];
 
 interface UnderlyingAssetsTableProps {
@@ -58,30 +56,18 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
     setSelectedAsset(asset);
   };
 
-  if (loading && (!data || data.length === 0)) {
-    return (
-        <div className="w-full">
-            <Table>
-                <TableHeader>
-                <TableRow>
-                    <TableHead>Ativo</TableHead>
-                    <TableHead className="text-right">Preço (BRL)</TableHead>
-                    <TableHead className="text-right">Variação (24h)</TableHead>
-                </TableRow>
-                </TableHeader>
-                <TableBody>
-                    <TableRow>
-                        <TableCell colSpan={3} className="text-center text-muted-foreground py-10">
-                            Carregando cotações...
-                        </TableCell>
-                    </TableRow>
-                </TableBody>
-            </Table>
-        </div>
-    )
-  }
+  const tableData = loading 
+    ? commodityDetails.map(c => ({ 
+        name: c.name, 
+        ticker: '...', 
+        price: 0, 
+        change: 0, 
+        absoluteChange: 0, 
+        lastUpdated: 'Carregando...' 
+    }))
+    : data;
 
-  if (!data || data.length === 0) {
+  if (!tableData || tableData.length === 0) {
       return (
           <div className="text-center py-10 px-6 border rounded-lg bg-card/50">
               <p className="text-muted-foreground">Nenhuma cotação de ativo disponível no momento.</p>
@@ -96,12 +82,12 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
         <TableHeader>
           <TableRow>
             <TableHead>Ativo</TableHead>
-            <TableHead className="text-right">Preço (BRL)</TableHead>
+            <TableHead className="text-right">Preço</TableHead>
             <TableHead className="text-right">Variação (24h)</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-            {data.map((item) => {
+            {tableData.map((item) => {
               const Icon = getIconForCommodity(item.name);
               return (
                 <TableRow key={item.name} onClick={() => handleRowClick(item)} className="cursor-pointer">
@@ -117,7 +103,7 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
                     </div>
                   </TableCell>
                   <TableCell className="text-right font-mono">
-                    R$ <AnimatedNumber value={item.price} />
+                    <AnimatedNumber value={item.price} formatter={(v) => v.toFixed(4)} />
                   </TableCell>
                   <TableCell className="text-right">
                     <div className={cn(

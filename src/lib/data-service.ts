@@ -26,16 +26,15 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
         'Milho Futuros',
         'Madeira Futuros',
         'Carbono Futuros',
-        'Agua Futuros',
     ];
     return getCommodityPrices({ commodities: commodityNames });
 }
 
-export async function getUcsIndexValue(): Promise<ChartData[]> {
-    const { calculateUcsIndex } = await import('@/ai/flows/calculate-ucs-index-flow');
+export async function getIvcfIndexValue(): Promise<ChartData[]> {
+    const { calculateIvcfIndex } = await import('@/ai/flows/calculate-ivcf-flow');
     // For simplicity, we'll get a single index value and create a mock history for the chart.
     // In a real scenario with a database, you'd fetch the true history.
-    const { indexValue } = await calculateUcsIndex();
+    const { indexValue } = await calculateIvcfIndex();
     
     // Generate some mock historical data ending in the real value
     const { generateRealisticHistoricalData } = await import('./utils');

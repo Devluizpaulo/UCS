@@ -55,7 +55,7 @@ export function MainLayout({ children }: { children: ReactNode }) {
             <FileSpreadsheet className="size-8 text-primary" />
             <div className="flex flex-col">
               <h2 className="text-lg font-semibold tracking-tight text-foreground">
-                Índice UCS
+                Índice IVCF
               </h2>
               <p className="text-xs text-muted-foreground">Monitor</p>
             </div>

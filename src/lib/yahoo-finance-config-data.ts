@@ -31,11 +31,10 @@ export const YAHOO_FINANCE_CONFIG = {
     },
     COMMODITY_PRICES: {
       'BGI=F': 250.0, // Boi Gordo fallback price
-      'ZS=F': 1400.0, // Soja fallback price
-      'CCM=F': 600.0, // Milho fallback price
-      'LBS=F': 500.0, // Madeira fallback price
+      'ZS=F': 1400.0, // Soja fallback price (cents/bushel)
+      'ZC=F': 600.0, // Milho fallback price (cents/bushel)
+      'LBS=F': 500.0, // Madeira fallback price (USD/MBF)
       'KE=F': 72.0, // Carbono fallback price in EUR
-      'NQH2O.CBT': 500.0, // Agua fallback price
     },
   },
 };
@@ -45,9 +44,10 @@ export const COMMODITY_TICKER_MAP: {
   [key: string]: { 
     ticker: string; 
     currency: 'BRL' | 'USD' | 'EUR';
-    category: 'exchange' | 'agriculture' | 'forestry' | 'carbon' | 'water';
+    category: 'exchange' | 'agriculture' | 'forestry' | 'carbon';
     description: string;
     fallbackPrice?: number;
+    unit: 'BRL' | '@' | 'cents/bushel' | 'USD/MBF' | 'EUR/tCO₂';
   } 
 } = {
   'USD/BRL Histórico': { 
@@ -55,55 +55,55 @@ export const COMMODITY_TICKER_MAP: {
     currency: 'BRL',
     category: 'exchange',
     description: 'Taxa de câmbio USD para BRL',
-    fallbackPrice: YAHOO_FINANCE_CONFIG.FALLBACK.EXCHANGE_RATES['BRL=X']
+    fallbackPrice: YAHOO_FINANCE_CONFIG.FALLBACK.EXCHANGE_RATES['BRL=X'],
+    unit: 'BRL',
   },
   'EUR/BRL Histórico': { 
     ticker: 'EURBRL=X', 
     currency: 'BRL',
     category: 'exchange',
     description: 'Taxa de câmbio EUR para BRL',
-    fallbackPrice: YAHOO_FINANCE_CONFIG.FALLBACK.EXCHANGE_RATES['EURBRL=X']
+    fallbackPrice: YAHOO_FINANCE_CONFIG.FALLBACK.EXCHANGE_RATES['EURBRL=X'],
+    unit: 'BRL',
   },
   'Boi Gordo Futuros': { 
     ticker: 'BGI=F', 
     currency: 'BRL',
     category: 'agriculture',
     description: 'Contratos futuros de Boi Gordo',
-    fallbackPrice: YAHOO_FINANCE_CONFIG.FALLBACK.COMMODITY_PRICES['BGI=F']
+    fallbackPrice: YAHOO_FINANCE_CONFIG.FALLBACK.COMMODITY_PRICES['BGI=F'],
+    unit: '@',
   },
   'Soja Futuros': { 
     ticker: 'ZS=F', 
     currency: 'USD',
     category: 'agriculture',
     description: 'Contratos futuros de Soja',
-    fallbackPrice: YAHOO_FINANCE_CONFIG.FALLBACK.COMMODITY_PRICES['ZS=F']
+    fallbackPrice: YAHOO_FINANCE_CONFIG.FALLBACK.COMMODITY_PRICES['ZS=F'],
+    unit: 'cents/bushel',
   },
   'Milho Futuros': { 
-    ticker: 'CCM=F', 
-    currency: 'BRL',
+    ticker: 'ZC=F', 
+    currency: 'USD',
     category: 'agriculture',
     description: 'Contratos futuros de Milho',
-    fallbackPrice: YAHOO_FINANCE_CONFIG.FALLBACK.COMMODITY_PRICES['CCM=F']
+    fallbackPrice: YAHOO_FINANCE_CONFIG.FALLBACK.COMMODITY_PRICES['ZC=F'],
+    unit: 'cents/bushel',
   },
   'Madeira Futuros': { 
     ticker: 'LBS=F', 
     currency: 'USD',
     category: 'forestry',
-    description: 'Contratos futuros de Madeira',
-    fallbackPrice: YAHOO_FINANCE_CONFIG.FALLBACK.COMMODITY_PRICES['LBS=F']
+    description: 'Contratos futuros de Madeira (Lumber)',
+    fallbackPrice: YAHOO_FINANCE_CONFIG.FALLBACK.COMMODITY_PRICES['LBS=F'],
+    unit: 'USD/MBF',
   },
   'Carbono Futuros': { 
     ticker: 'KE=F', 
     currency: 'EUR',
     category: 'carbon',
     description: 'Contratos futuros de Carbono (ICE)',
-    fallbackPrice: YAHOO_FINANCE_CONFIG.FALLBACK.COMMODITY_PRICES['KE=F']
+    fallbackPrice: YAHOO_FINANCE_CONFIG.FALLBACK.COMMODITY_PRICES['KE=F'],
+    unit: 'EUR/tCO₂',
   },
-  'Agua Futuros': {
-    ticker: 'NQH2O.CBT',
-    currency: 'USD',
-    category: 'water',
-    description: 'Contratos futuros de Água (Nasdaq Veles California Water Index)',
-    fallbackPrice: YAHOO_FINANCE_CONFIG.FALLBACK.COMMODITY_PRICES['NQH2O.CBT']
-  }
 };

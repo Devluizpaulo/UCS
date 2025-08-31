@@ -158,11 +158,8 @@ export async function getOptimizedCommodityPrices(commodityNames: string[]): Pro
   // Use optimized batch quote fetching
   const quotes = await getOptimizedBatchQuotes(allTickers);
   
-  // Process the results (same logic as before)
+  // Process the results
   const getQuote = (ticker: string) => quotes.find((q: any) => q.symbol === ticker);
-  
-  const usdToBrlRate = getQuote('BRL=X')?.regularMarketPrice ?? 1;
-  const eurToBrlRate = getQuote('EURBRL=X')?.regularMarketPrice ?? 1;
   
   return commodityNames.map((name) => {
     const commodityInfo = COMMODITY_TICKER_MAP[name];
@@ -171,20 +168,10 @@ export async function getOptimizedCommodityPrices(commodityNames: string[]): Pro
     const quote = getQuote(commodityInfo.ticker);
     if (!quote) return null;
     
-    let price = quote.regularMarketPrice ?? 0;
-    let absoluteChange = quote.regularMarketChange ?? 0;
-    
-    // Apply currency conversion
-    if (commodityInfo.currency === 'USD') {
-      price *= usdToBrlRate;
-      absoluteChange *= usdToBrlRate;
-    } else if (commodityInfo.currency === 'EUR') {
-      price *= eurToBrlRate;
-      absoluteChange *= eurToBrlRate;
-    }
-    
-    const originalPrice = quote.regularMarketPrice ?? 0;
-    const change = originalPrice === 0 ? 0 : (absoluteChange / (price - absoluteChange)) * 100;
+    const price = quote.regularMarketPrice ?? 0;
+    const absoluteChange = quote.regularMarketChange ?? 0;
+    const previousClose = price - absoluteChange;
+    const change = previousClose === 0 ? 0 : (absoluteChange / previousClose) * 100;
     
     const lastUpdated = quote.regularMarketTime && typeof quote.regularMarketTime === 'number' ?
       new Date(quote.regularMarketTime * 1000).toLocaleTimeString('pt-BR', {
@@ -204,6 +191,7 @@ export async function getOptimizedCommodityPrices(commodityNames: string[]): Pro
     };
   }).filter((p): p is NonNullable<typeof p> => p !== null);
 }
+
 
 // Performance monitoring
 interface PerformanceMetrics {

@@ -7,7 +7,7 @@ import { PageHeader } from '@/components/page-header';
 import { UcsIndexChart } from '@/components/ucs-index-chart';
 import type { ChartData, CommodityPriceData } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { getCommodityPrices, getUcsIndexValue } from '@/lib/data-service';
+import { getCommodityPrices, getIvcfIndexValue } from '@/lib/data-service';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { UnderlyingAssetsTable } from './underlying-assets-table';
@@ -30,7 +30,7 @@ export function DashboardPage({ ucsCoinImageUrl }: DashboardPageProps) {
       setLoading(true);
       try {
         const [historyResult, pricesResult] = await Promise.all([
-          getUcsIndexValue(),
+          getIvcfIndexValue(),
           getCommodityPrices()
         ]);
         
@@ -53,7 +53,7 @@ export function DashboardPage({ ucsCoinImageUrl }: DashboardPageProps) {
     fetchDashboardData();
   }, [fetchDashboardData]);
   
-  const latestValue = chartData.length > 0 ? chartData[chartData.length - 1].value.toFixed(4) : '0.0000';
+  const latestValue = chartData.length > 0 ? chartData[chartData.length - 1].value.toFixed(2) : '0.00';
 
   return (
     <div className="flex min-h-screen w-full flex-col">
@@ -73,7 +73,7 @@ export function DashboardPage({ ucsCoinImageUrl }: DashboardPageProps) {
                  <div className="flex justify-center md:justify-start">
                    <Image 
                      src={ucsCoinImageUrl} 
-                     alt="Moeda UCS" 
+                     alt="Moeda IVCF" 
                      width={150} 
                      height={150} 
                      className="rounded-full"
@@ -82,7 +82,7 @@ export function DashboardPage({ ucsCoinImageUrl }: DashboardPageProps) {
                     />
                 </div>
                 <div className="md:col-span-2 text-center md:text-left">
-                     <CardTitle className="text-sm text-muted-foreground font-medium tracking-wider uppercase">Índice UCS</CardTitle>
+                     <CardTitle className="text-sm text-muted-foreground font-medium tracking-wider uppercase">Índice IVCF (R$)</CardTitle>
                      {loading && chartData.length === 0 ? (
                         <Skeleton className="h-16 w-64 mt-2 mx-auto md:mx-0" />
                      ) : (
@@ -98,7 +98,7 @@ export function DashboardPage({ ucsCoinImageUrl }: DashboardPageProps) {
         <Card className="shadow-sm">
             <CardHeader>
                 <CardTitle>Histórico do Índice</CardTitle>
-                <CardDescription>Performance do Índice UCS nos últimos 60 minutos.</CardDescription>
+                <CardDescription>Performance do Índice IVCF nos últimos 60 minutos.</CardDescription>
             </CardHeader>
             <CardContent>
                 <UcsIndexChart data={chartData} loading={loading}/>
@@ -114,7 +114,7 @@ export function DashboardPage({ ucsCoinImageUrl }: DashboardPageProps) {
                 <Card>
                     <CardHeader>
                         <CardTitle>Ativos Subjacentes</CardTitle>
-                        <CardDescription>Preços em tempo real das commodities que compõem o índice UCS.</CardDescription>
+                        <CardDescription>Preços em tempo real das commodities que compõem o índice IVCF.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <UnderlyingAssetsTable data={commodities} loading={loading}/>
@@ -125,7 +125,7 @@ export function DashboardPage({ ucsCoinImageUrl }: DashboardPageProps) {
                 <Card>
                     <CardHeader>
                         <CardTitle>Histórico de Cotações do Índice</CardTitle>
-                        <CardDescription>Valores de fechamento diário do Índice UCS.</CardDescription>
+                        <CardDescription>Valores de fechamento diário do Índice IVCF.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <IndexHistoryTable data={chartData} loading={loading} />

@@ -1,6 +1,6 @@
 'use server';
 /**
- * @fileOverview A flow for simulating the impact of price changes on the UCS Index.
+ * @fileOverview A flow for simulating the impact of price changes on the IVCF Index.
  *
  * - simulateScenario - Runs a simulation and returns the projected index value.
  * - SimulateScenarioInput - The input type for the simulateScenario function.
@@ -39,47 +39,51 @@ const commodityNames = [
     'Milho Futuros',
     'Madeira Futuros',
     'Carbono Futuros',
-    'Agua Futuros',
 ];
 
 // Helper function to calculate the index based on the new methodology.
 function calculateIndex(prices: { [key: string]: number }): number {
     // Constants from the formula
-    const Vmad = 0; // Per formula, Vmad = 0
-    const FAmed = 0.048; // Fator de Arrendamento médio
-    const FP_pecuari = 0.35;
-    const FP_milho = 0.3;
-    const FP_soja = 0.35;
-    const Pmed = 1; // Assuming Produção média por hectare = 1 for simplicity
-    const AtCO2n = 2.59; // Unidades de Cc por Hectare
-    const FCH2O = 0.07; // Fator de Conversão da água
-    const CE = 2.59; // Carbono estocado em equivalência à tCo2
+    const VOLUME_MADEIRA_HA = 120; // m³ de madeira comercial por hectare
+    const FATOR_CARBONO = 2.59; // tCO₂ estocadas por m³ de madeira
+    const PROD_BOI = 18; // Produção de arrobas de boi por ha/ano
+    const PROD_MILHO = 7.2; // Produção de toneladas de milho por ha/ano
+    const PROD_SOJA = 3.3; // Produção de toneladas de soja por ha/ano
+    const PESO_PEC = 0.35; // Peso da pecuária no uso do solo
+    const PESO_MILHO = 0.30; // Peso do milho no uso do solo
+    const PESO_SOJA = 0.35; // Peso da soja no uso do solo
+    const FATOR_ARREND = 0.048; // Fator de capitalização da renda
+    const FATOR_AGUA = 0.07; // % do VUS que representa o valor da água
 
-    // Prices
-    const C_pecuari = prices['Boi Gordo Futuros'] || 0;
-    const C_milho = prices['Milho Futuros'] || 0;
-    const C_soja = prices['Soja Futuros'] || 0;
-    const Ccc = prices['Carbono Futuros'] || 0;
-    const Ch2o_price = prices['Agua Futuros'] || 0;
+    // Exchange Rates
+    const taxa_usd_brl = prices['USD/BRL Histórico'] || 1;
+    const taxa_eur_brl = prices['EUR/BRL Histórico'] || 1;
 
-    // Intermediate Calculations
-    const Vus_sum_part = (FP_pecuari * Pmed * C_pecuari) + (FP_milho * Pmed * C_milho) + (FP_soja * Pmed * C_soja);
-    const Vus = Vus_sum_part * FAmed;
+    // Prices (raw from API)
+    const preco_lumber_mbf = prices['Madeira Futuros'] || 0; // Price per 1,000 board feet
+    const preco_boi_arroba = prices['Boi Gordo Futuros'] || 0; // Price in BRL/@
+    const preco_milho_bushel_cents = prices['Milho Futuros'] || 0; // Price in USD cents per bushel
+    const preco_soja_bushel_cents = prices['Soja Futuros'] || 0; // Price in USD cents per bushel
+    const preco_carbono_eur = prices['Carbono Futuros'] || 0; // Price in EUR/tCO₂
+
+    // --- Price Conversions ---
+    const preco_madeira_m3 = (preco_lumber_mbf / 1000) * 424 * taxa_usd_brl;
+    const preco_milho_ton = (preco_milho_bushel_cents / 100) * (1000 / 25.4) * taxa_usd_brl;
+    const preco_soja_ton = (preco_soja_bushel_cents / 100) * (1000 / 27.2) * taxa_usd_brl;
+    const preco_carbono_brl = preco_carbono_eur * taxa_eur_brl;
     
-    const Cc = Ccc * AtCO2n;
-    const CH2O = Ch2o_price * FCH2O;
-    const CRS = Cc + CH2O;
-    
-    // PDM = Potencial Desflorestador Monetizado
-    const PDM = Vmad + Vus + CRS;
+    // --- Formula Calculation ---
+    const VM = preco_madeira_m3 * VOLUME_MADEIRA_HA;
+    const renda_bruta_ha = (PROD_BOI * preco_boi_arroba * PESO_PEC) + 
+                           (PROD_MILHO * preco_milho_ton * PESO_MILHO) + 
+                           (PROD_SOJA * preco_soja_ton * PESO_SOJA);
+    const VUS = renda_bruta_ha / FATOR_ARREND;
+    const valor_carbono = preco_carbono_brl * VOLUME_MADEIRA_HA * FATOR_CARBONO;
+    const valor_agua = VUS * FATOR_AGUA;
+    const CRS = valor_carbono + valor_agua;
+    const ivcfValue = VM + VUS + CRS;
 
-    // IVP = Índice de Viabilidade de Projeto
-    const IVP = (PDM / CE) / 2;
-
-    // UCS (CF) = Unidade de Crédito de Sustentabilidade
-    const ucsValue = 2 * IVP;
-    
-    return isFinite(ucsValue) ? ucsValue : 0;
+    return isFinite(ivcfValue) ? ivcfValue : 0;
 }
 
 
@@ -94,26 +98,21 @@ const simulateScenarioFlow = ai.defineFlow(
     const pricesData = await getCommodityPrices({ commodities: commodityNames });
     
     const originalPrices: { [key: string]: number } = pricesData.reduce((acc, item) => {
-        let priceInBrl = item.price;
-         if (item.name === 'Soja Futuros' || item.name === 'Madeira Futuros' || item.name === 'Agua Futuros') { // USD assets
-            const usdRate = pricesData.find(p => p.name === 'USD/BRL Histórico')?.price || 1;
-            priceInBrl = item.price * usdRate;
-        } else if (item.name === 'Carbono Futuros') { // EUR asset
-            const eurRate = pricesData.find(p => p.name === 'EUR/BRL Histórico')?.price || 1;
-            priceInBrl = item.price * eurRate;
-        }
-        acc[item.name] = priceInBrl;
+        // Here we use the raw prices from the API, conversion happens inside calculateIndex
+        acc[item.name] = item.price; 
         return acc;
     }, {} as { [key: string]: number });
+    
+    // Get the unconverted original price to show the user
+    const originalAssetPrice = originalPrices[asset] || 0;
 
     // 2. Calculate the original index value
     const originalIndexValue = calculateIndex(originalPrices);
-    const originalAssetPrice = originalPrices[asset];
 
     // 3. Create the new set of prices based on the scenario
     const simulatedPrices = { ...originalPrices };
     if (changeType === 'percentage') {
-        simulatedPrices[asset] = originalPrices[asset] * (1 + value / 100);
+        simulatedPrices[asset] = originalAssetPrice * (1 + value / 100);
     } else { // absolute
         simulatedPrices[asset] = value;
     }
