@@ -28,6 +28,7 @@ const calculateUcsIndexFlow = ai.defineFlow(
     const commodityNames = [
         'USD/BRL Histórico',
         'EUR/BRL Histórico',
+        'Boi Gordo Futuros',
     ];
     const pricesData = await getCommodityPrices({ commodities: commodityNames });
     

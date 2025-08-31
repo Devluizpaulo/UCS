@@ -20,6 +20,7 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
     const commodityNames = [
         'USD/BRL Histórico',
         'EUR/BRL Histórico',
+        'Boi Gordo Futuros',
     ];
     return getCommodityPrices({ commodities: commodityNames });
 }
@@ -39,6 +40,7 @@ export async function getUcsIndexValue(): Promise<ChartData[]> {
 const commodityTickerMap: { [key: string]: string } = {
   'USD/BRL Histórico': 'BRL=X',
   'EUR/BRL Histórico': 'EURBRL=X',
+  'Boi Gordo Futuros': 'BGI=F',
 };
 
 export async function getAssetHistoricalData(assetName: string, interval: HistoryInterval = '1d'): Promise<HistoricalQuote[]> {

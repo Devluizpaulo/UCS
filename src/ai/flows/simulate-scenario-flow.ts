@@ -34,6 +34,7 @@ export async function simulateScenario(input: SimulateScenarioInput): Promise<Sc
 const commodityNames = [
     'USD/BRL Histórico',
     'EUR/BRL Histórico',
+    'Boi Gordo Futuros',
 ];
 
 // Helper function to calculate the index.

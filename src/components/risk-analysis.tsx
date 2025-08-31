@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 const riskData = [
   { asset: 'USD/BRL Histórico', volatility: 'Média', correlation: 'Positiva', sentiment: 'Neutro' },
   { asset: 'EUR/BRL Histórico', volatility: 'Média', correlation: 'Positiva', sentiment: 'Neutro' },
+  { asset: 'Boi Gordo Futuros', volatility: 'Alta', correlation: 'Neutra', sentiment: 'Otimista' },
 ];
 
 export function RiskAnalysis() {

@@ -16,6 +16,7 @@ import { Loader2 } from 'lucide-react';
 const commodities = [
     { value: 'USD/BRL Histórico', label: 'USD/BRL Histórico' },
     { value: 'EUR/BRL Histórico', label: 'EUR/BRL Histórico' },
+    { value: 'Boi Gordo Futuros', label: 'Boi Gordo Futuros' },
 ];
 
 const scenarioSchema = z.object({

@@ -42,6 +42,7 @@ export async function getCommodityPrices(
 const commodityTickerMap: { [key: string]: string } = {
   'USD/BRL Histórico': 'BRL=X',
   'EUR/BRL Histórico': 'EURBRL=X',
+  'Boi Gordo Futuros': 'BGI=F',
 };
 
 const getCommodityPricesFlow = ai.defineFlow(

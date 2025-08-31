@@ -9,7 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { ArrowDown, ArrowUp, DollarSign, Euro } from 'lucide-react';
+import { ArrowDown, ArrowUp, DollarSign, Euro, Beef } from 'lucide-react';
 import type { Commodity, CommodityPriceData } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Skeleton } from './ui/skeleton';
@@ -18,6 +18,7 @@ import { AssetDetailModal } from './asset-detail-modal';
 const commodityDetails: Commodity[] = [
   { name: 'USD/BRL Histórico', icon: DollarSign },
   { name: 'EUR/BRL Histórico', icon: Euro },
+  { name: 'Boi Gordo Futuros', icon: Beef },
 ];
 
 interface UnderlyingAssetsTableProps {
@@ -49,7 +50,7 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
         </TableHeader>
         <TableBody>
           {loading ? (
-            Array.from({ length: 2 }).map((_, index) => (
+            Array.from({ length: 3 }).map((_, index) => (
               <TableRow key={index}>
                 <TableCell><Skeleton className="h-5 w-32" /></TableCell>
                 <TableCell className="text-right"><Skeleton className="h-5 w-24 ml-auto" /></TableCell>
