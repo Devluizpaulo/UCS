@@ -94,6 +94,7 @@ export function DashboardPage({ ucsCoinImageUrl }: DashboardPageProps) {
                             <span className="text-4xl text-muted-foreground ml-2">UCS</span>
                         </p>
                      )}
+                      <p className="text-xs text-muted-foreground mt-2">Powered by Yahoo Finance</p>
                 </div>
             </div>
         </Card>
