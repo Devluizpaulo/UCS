@@ -38,3 +38,9 @@ export type ScenarioResult = {
   changePercentage: number;
   originalAssetPrice: number;
 };
+
+export type SimulateScenarioInput = {
+    asset: string;
+    changeType: 'percentage' | 'absolute';
+    value: number;
+};

@@ -8,9 +8,7 @@ import { UcsIndexChart } from '@/components/ucs-index-chart';
 import { CommodityPrices } from '@/components/commodity-prices';
 import type { ChartData, CommodityPriceData } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { calculateUcsIndex } from '@/ai/flows/calculate-ucs-index-flow';
-import { getCommodityPrices } from '@/ai/flows/get-commodity-prices-flow';
-import { generateRealisticHistoricalData } from '@/lib/utils';
+import { getCommodityPricesFromFirestore, getUcsIndexHistory } from '@/lib/data-service';
 
 export function DashboardPage() {
   const [chartData, setChartData] = useState<ChartData[]>([]);
@@ -21,36 +19,22 @@ export function DashboardPage() {
   const fetchDashboardData = useCallback(async () => {
       setLoading(true);
       try {
-        const commodityNames = ['Créditos de Carbono', 'Boi Gordo', 'Milho', 'Soja', 'Madeira', 'Água'];
-        
-        // Fetch index and prices in parallel
-        const [indexResult, pricesResult] = await Promise.all([
-          calculateUcsIndex(),
-          getCommodityPrices({ commodities: commodityNames })
+        // Fetch index history and prices in parallel from Firestore
+        const [historyResult, pricesResult] = await Promise.all([
+          getUcsIndexHistory(),
+          getCommodityPricesFromFirestore()
         ]);
-
-        const { indexValue } = indexResult;
-        setCommodities(pricesResult);
         
-        setChartData((prevData) => {
-          if (prevData.length === 0) {
-            // Generate realistic historical data for the first load
-            return generateRealisticHistoricalData(indexValue, 30, 0.05, 'minute');
-          }
-          // On subsequent fetches, append the new data point
-          const newDataPoint = {
-            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            value: indexValue,
-          };
-          return [...prevData.slice(1), newDataPoint];
-        });
+        setChartData(historyResult);
+        setCommodities(pricesResult);
 
       } catch (error) {
         console.error("Failed to fetch dashboard data:", error);
+        const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
         toast({
           variant: "destructive",
-          title: "Erro ao buscar dados do painel",
-          description: "Não foi possível carregar os dados. Verifique o log para mais detalhes.",
+          title: "Erro ao buscar dados",
+          description: errorMessage,
         });
       } finally {
         setLoading(false);
@@ -59,6 +43,9 @@ export function DashboardPage() {
 
   useEffect(() => {
     fetchDashboardData(); // Initial fetch
+    // You can set up a new interval if you want polling, 
+    // but with Firestore, you'd typically use real-time listeners (onSnapshot)
+    // for a more efficient setup. For simplicity, we'll stick to polling for now.
     const interval = setInterval(fetchDashboardData, 60000); // Update every 60 seconds
 
     return () => clearInterval(interval);

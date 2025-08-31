@@ -9,8 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { simulateScenario, type SimulateScenarioInput } from '@/ai/flows/simulate-scenario-flow';
-import type { ScenarioResult } from '@/lib/types';
+import { runScenarioSimulation } from '@/lib/data-service';
+import type { ScenarioResult, SimulateScenarioInput } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 
 const commodities = [
@@ -41,7 +41,7 @@ export function ScenarioAnalysis() {
         setIsLoading(true);
         setResult(null);
         try {
-            const scenarioResult = await simulateScenario(data);
+            const scenarioResult = await runScenarioSimulation(data.asset, data.changeType, data.value);
             setResult(scenarioResult);
         } catch (error) {
             console.error('Scenario simulation failed:', error);
@@ -144,4 +144,3 @@ export function ScenarioAnalysis() {
     </Card>
   );
 }
-

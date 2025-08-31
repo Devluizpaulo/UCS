@@ -12,10 +12,10 @@ import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import type { CommodityPriceData, ChartData } from '@/lib/types';
 import { Lightbulb, Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { analyzeAsset } from '@/ai/flows/analyze-asset-flow';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { ScrollArea } from './ui/scroll-area';
 import { generateRealisticHistoricalData } from '@/lib/utils';
+import { getAssetAnalysis } from '@/lib/data-service';
 
 interface AssetDetailModalProps {
   asset: CommodityPriceData;
@@ -25,34 +25,41 @@ interface AssetDetailModalProps {
 }
 
 export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDetailModalProps) {
-    const historicalData = generateRealisticHistoricalData(asset.price, 30, 0.1, 'day');
-    const latestValue = historicalData[historicalData.length-1].value;
+    const [historicalData, setHistoricalData] = useState<ChartData[]>([]);
     const [analysis, setAnalysis] = useState('');
-    const [loadingAnalysis, setLoadingAnalysis] = useState(false);
-
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         if (isOpen) {
-            const getAnalysis = async () => {
-                setLoadingAnalysis(true);
+            const getDetails = async () => {
+                setLoading(true);
                 setAnalysis('');
+                setHistoricalData([]);
+
                 try {
-                    const result = await analyzeAsset({ 
-                        assetName: asset.name, 
-                        historicalData: historicalData.map(d => d.value) 
-                    });
+                    // In a real app, you would fetch this from your historical data collection in Firestore.
+                    // For now, we generate it.
+                    const history = generateRealisticHistoricalData(asset.price, 30, 0.1, 'day');
+                    setHistoricalData(history);
+                    
+                    const result = await getAssetAnalysis(
+                        asset.name, 
+                        history.map(d => d.value) 
+                    );
                     setAnalysis(result.analysis);
+
                 } catch (error) {
-                    console.error("Failed to get AI analysis:", error);
-                    setAnalysis("Não foi possível carregar a análise de IA no momento.");
+                    console.error("Failed to get asset details:", error);
+                    setAnalysis("Não foi possível carregar a análise ou o histórico no momento.");
                 } finally {
-                    setLoadingAnalysis(false);
+                    setLoading(false);
                 }
             };
-            getAnalysis();
+            getDetails();
         }
-    }, [isOpen, asset.name]);
+    }, [isOpen, asset.name, asset.price]);
 
+    const latestValue = historicalData.length > 0 ? historicalData[historicalData.length-1].value : asset.price;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -76,12 +83,12 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                     <span className="text-sm text-muted-foreground"> (preço atual)</span>
                 </div>
                 
-                <div className="rounded-lg border bg-card/50 p-4">
+                <div className="rounded-lg border bg-card/50 p-4 min-h-[120px]">
                     <h3 className="mb-2 flex items-center gap-2 text-lg font-semibold">
                         <Lightbulb className="h-5 w-5 text-primary" />
                         Análise de IA
                     </h3>
-                    {loadingAnalysis ? (
+                    {loading ? (
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <Loader2 className="h-4 w-4 animate-spin" />
                             <span>Analisando os dados...</span>
@@ -95,16 +102,22 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
 
                 <div>
                     <h3 className="text-lg font-semibold mb-2">Histórico de Preços (Últimos 30 dias)</h3>
-                    <ChartContainer config={{
-                        value: { label: 'Valor', color: 'hsl(var(--primary))' },
-                    }} className="h-[200px] w-full">
-                        <AreaChart accessibilityLayer data={historicalData} margin={{ left: 0, right: 12, top: 10, bottom: 10 }}>
-                            <CartesianGrid vertical={false} />
-                            <XAxis dataKey="time" tickLine={false} axisLine={false} tickMargin={8} fontSize={12} />
-                            <Tooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
-                            <Area dataKey="value" type="natural" fill="var(--color-value)" fillOpacity={0.4} stroke="var(--color-value)" />
-                        </AreaChart>
-                    </ChartContainer>
+                    {loading ? (
+                         <div className="h-[200px] w-full flex items-center justify-center rounded-md border">
+                            <p className="text-sm text-muted-foreground">Carregando gráfico...</p>
+                         </div>
+                    ) : (
+                        <ChartContainer config={{
+                            value: { label: 'Valor', color: 'hsl(var(--primary))' },
+                        }} className="h-[200px] w-full">
+                            <AreaChart accessibilityLayer data={historicalData} margin={{ left: 0, right: 12, top: 10, bottom: 10 }}>
+                                <CartesianGrid vertical={false} />
+                                <XAxis dataKey="time" tickLine={false} axisLine={false} tickMargin={8} fontSize={12} />
+                                <Tooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
+                                <Area dataKey="value" type="natural" fill="var(--color-value)" fillOpacity={0.4} stroke="var(--color-value)" />
+                            </AreaChart>
+                        </ChartContainer>
+                    )}
                 </div>
             </div>
 
@@ -120,12 +133,21 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {historicalData.slice().reverse().map((dataPoint) => (
-                                <TableRow key={dataPoint.time}>
-                                    <TableCell>{dataPoint.time}</TableCell>
-                                    <TableCell className="text-right font-mono">R$ {dataPoint.value.toFixed(2)}</TableCell>
-                                </TableRow>
-                            ))}
+                            {loading ? (
+                                Array.from({length: 10}).map((_, i) => (
+                                    <TableRow key={i}>
+                                        <TableCell><div className="h-5 w-20 bg-muted rounded-md animate-pulse"/></TableCell>
+                                        <TableCell className="text-right"><div className="h-5 w-24 bg-muted rounded-md animate-pulse ml-auto"/></TableCell>
+                                    </TableRow>
+                                ))
+                            ) : (
+                                historicalData.slice().reverse().map((dataPoint) => (
+                                    <TableRow key={dataPoint.time}>
+                                        <TableCell>{dataPoint.time}</TableCell>
+                                        <TableCell className="text-right font-mono">R$ {dataPoint.value.toFixed(2)}</TableCell>
+                                    </TableRow>
+                                ))
+                            )}
                         </TableBody>
                      </Table>
                  </ScrollArea>
