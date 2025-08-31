@@ -48,7 +48,7 @@ export type IvcfData = {
   vusDetails: {
     pecuaria: number;
     milho: number;
-aoja: number;
+    soja: number;
   };
 };
 

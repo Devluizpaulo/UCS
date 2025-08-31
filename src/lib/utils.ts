@@ -20,7 +20,7 @@ export const generateRealisticHistoricalData = (
     finalValue: number,
     points: number = 30,
     volatility: number = 0.05,
-    timeUnit: 'day' | 'minute' = 'day'
+    timeUnit: 'day' | 'minute' | 'week' | 'month' = 'day'
 ): ChartData[] => {
     const data: ChartData[] = [];
     const now = new Date();
@@ -28,13 +28,26 @@ export const generateRealisticHistoricalData = (
 
     // We generate data backwards from the final value
     for (let i = 0; i < points; i++) {
-        const date = new Date(now.getTime() - i * (timeUnit === 'day' ? 24 * 60 : 1) * 60 * 1000);
+        let date: Date;
         let timeLabel: string;
 
-        if (timeUnit === 'day') {
-            timeLabel = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-        } else {
-            timeLabel = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        switch (timeUnit) {
+            case 'day':
+                date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+                timeLabel = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+                break;
+            case 'week':
+                date = new Date(now.getTime() - i * 7 * 24 * 60 * 60 * 1000);
+                 timeLabel = date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+                break;
+            case 'month':
+                 date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                 timeLabel = date.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
+                break;
+            case 'minute':
+                date = new Date(now.getTime() - i * 60 * 1000);
+                 timeLabel = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                break;
         }
         
         data.push({

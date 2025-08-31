@@ -30,13 +30,27 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
     return getCommodityPrices({ commodities: commodityNames });
 }
 
-export async function getIvcfIndexValue(): Promise<{ history: ChartData[], latest: IvcfData }> {
+export async function getIvcfIndexValue(interval: HistoryInterval = '1d'): Promise<{ history: ChartData[], latest: IvcfData }> {
     const { calculateIvcfIndex } = await import('@/ai/flows/calculate-ivcf-flow');
     const result = await calculateIvcfIndex();
     
     // Generate some mock historical data ending in the real value
     const { generateRealisticHistoricalData } = await import('./utils');
-    const history = generateRealisticHistoricalData(result.indexValue, 30, 0.05, 'day');
+
+    let history: ChartData[] = [];
+    switch (interval) {
+        case '1d':
+            history = generateRealisticHistoricalData(result.indexValue, 30, 0.05, 'day');
+            break;
+        case '1wk':
+             // Generate 52 weeks (1 year) of data
+            history = generateRealisticHistoricalData(result.indexValue, 52, 0.15, 'week');
+            break;
+        case '1mo':
+            // Generate 60 months (5 years) of data
+            history = generateRealisticHistoricalData(result.indexValue, 60, 0.25, 'month');
+            break;
+    }
 
     return {
         history,

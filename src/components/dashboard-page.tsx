@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2, RefreshCw } from 'lucide-react';
 import { PageHeader } from '@/components/page-header';
 import { UcsIndexChart } from '@/components/ucs-index-chart';
-import type { ChartData, CommodityPriceData, IvcfData } from '@/lib/types';
+import type { ChartData, CommodityPriceData, IvcfData, HistoryInterval } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { getCommodityPrices, getIvcfIndexValue } from '@/lib/data-service';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
@@ -23,19 +23,27 @@ export function DashboardPage() {
   const [commodities, setCommodities] = useState<CommodityPriceData[]>([]);
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
+  const [loadingHistory, setLoadingHistory] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [historyInterval, setHistoryInterval] = useState<HistoryInterval>('1d');
+  const [indexHistoryData, setIndexHistoryData] = useState<ChartData[]>([]);
 
-  const fetchDashboardData = useCallback(async () => {
+
+  const fetchDashboardData = useCallback(async (isRefresh = false) => {
       setLoading(true);
       try {
         const [ivcfResult, pricesResult] = await Promise.all([
-          getIvcfIndexValue(),
+          getIvcfIndexValue('1d'), // Main chart always shows daily
           getCommodityPrices()
         ]);
         
         setChartData(ivcfResult.history);
         setIvcfData(ivcfResult.latest);
         setCommodities(pricesResult);
+
+        if (!isRefresh) {
+            setIndexHistoryData(ivcfResult.history);
+        }
 
       } catch (error) {
         console.error("Failed to fetch dashboard data:", error);
@@ -49,16 +57,37 @@ export function DashboardPage() {
       }
   }, [toast]);
 
+  const fetchIndexHistory = useCallback(async (interval: HistoryInterval) => {
+    setLoadingHistory(true);
+    try {
+        const result = await getIvcfIndexValue(interval);
+        setIndexHistoryData(result.history);
+    } catch (error) {
+        console.error(`Failed to fetch index history for interval ${interval}:`, error);
+        toast({
+            variant: "destructive",
+            title: "Erro ao buscar histórico",
+            description: "Não foi possível carregar os dados históricos da tabela.",
+        });
+    } finally {
+        setLoadingHistory(false);
+    }
+  }, [toast]);
+
   useEffect(() => {
     fetchDashboardData();
   }, [fetchDashboardData]);
+
+  useEffect(() => {
+    fetchIndexHistory(historyInterval);
+  }, [historyInterval, fetchIndexHistory]);
   
   const latestValue = ivcfData?.indexValue ?? 0;
 
   return (
     <div className="flex min-h-screen w-full flex-col">
       <PageHeader title="Painel">
-        <Button onClick={() => fetchDashboardData()} disabled={loading} variant="outline" size="sm">
+        <Button onClick={() => fetchDashboardData(true)} disabled={loading} variant="outline" size="sm">
           {loading ? (
              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : (
@@ -121,12 +150,21 @@ export function DashboardPage() {
             </TabsContent>
             <TabsContent value="history">
                 <Card>
-                    <CardHeader>
-                        <CardTitle>Histórico de Cotações do Índice</CardTitle>
-                        <CardDescription>Valores de fechamento diário do Índice IVCF.</CardDescription>
+                    <CardHeader className="flex flex-row items-center justify-between">
+                       <div>
+                            <CardTitle>Histórico de Cotações do Índice</CardTitle>
+                            <CardDescription>Valores de fechamento do Índice IVCF.</CardDescription>
+                       </div>
+                        <Tabs defaultValue="1d" onValueChange={(value) => setHistoryInterval(value as HistoryInterval)} className="w-auto">
+                            <TabsList>
+                                <TabsTrigger value="1d">Diário</TabsTrigger>
+                                <TabsTrigger value="1wk">Semanal</TabsTrigger>
+                                <TabsTrigger value="1mo">Mensal</TabsTrigger>
+                            </TabsList>
+                        </Tabs>
                     </CardHeader>
                     <CardContent>
-                        <IndexHistoryTable data={chartData} loading={loading} />
+                        <IndexHistoryTable data={indexHistoryData} loading={loadingHistory} />
                     </CardContent>
                 </Card>
             </TabsContent>
