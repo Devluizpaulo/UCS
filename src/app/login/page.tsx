@@ -61,22 +61,23 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2 xl:min-h-screen">
-      <div className="hidden bg-muted lg:block relative overflow-hidden">
+    <div className="w-full min-h-screen bg-background lg:grid lg:grid-cols-2">
+      <div className="relative flex h-56 items-end bg-muted lg:h-full">
         <Image
           src="/image/login.jpg"
           alt="Imagem de uma floresta com árvores altas."
           fill
+          priority
           className="h-full w-full object-cover dark:brightness-[0.3] dark:grayscale animate-ken-burns"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent via-transparent/60"></div>
-        <div className="absolute bottom-10 left-10 text-white">
-            <h2 className="text-4xl font-bold">Plataforma de Análise UCS</h2>
-            <p className="mt-2 max-w-md text-lg">Acesso seguro aos seus dados e análises estratégicas em tempo real.</p>
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-transparent lg:via-transparent/60"></div>
+        <div className="relative z-10 p-6 text-white lg:bottom-4 lg:left-4 lg:p-4">
+            <h2 className="text-3xl font-bold lg:text-4xl">Plataforma de Análise UCS</h2>
+            <p className="mt-2 max-w-md text-base lg:text-lg">Acesso seguro aos seus dados e análises estratégicas em tempo real.</p>
         </div>
       </div>
-      <div className="flex items-center justify-center py-12">
-        <div className="mx-auto grid w-[350px] gap-6">
+      <div className="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto grid w-full max-w-sm gap-6">
           <div className="grid gap-2 text-center">
              <div className="flex justify-center items-center gap-2 mb-2">
                 <FileSpreadsheet className="size-8 text-primary" />
