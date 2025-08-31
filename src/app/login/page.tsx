@@ -64,9 +64,9 @@ export default function LoginPage() {
     <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2 xl:min-h-screen">
       <div className="hidden bg-muted lg:block relative">
         <Image
-          src="https://picsum.photos/1200/1800"
-          alt="Imagem de fundo com prédios modernos"
-          data-ai-hint="modern buildings"
+          src="https://s2.glbimg.com/eCXWBFSja29N2MAwKndFwrfTpHM=/e.glbimg.com/og/ed/f/original/2022/03/03/arvores-banho-de-floresta-coluna-unsplash.jpg"
+          alt="Imagem de uma floresta com árvores altas."
+          data-ai-hint="forest trees"
           width={1200}
           height={1800}
           className="h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
