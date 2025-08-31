@@ -95,7 +95,7 @@ const getCommodityPricesFlow = ai.defineFlow(
         const originalPrice = quote.regularMarketPrice ?? 0;
         const change = originalPrice === 0 ? 0 : (absoluteChange / (price - absoluteChange)) * 100;
 
-        const lastUpdated = quote.regularMarketTime ? 
+        const lastUpdated = quote.regularMarketTime && typeof quote.regularMarketTime === 'number' ? 
             new Date(quote.regularMarketTime * 1000).toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit', second: '2-digit' })
             : 'N/A';
         
