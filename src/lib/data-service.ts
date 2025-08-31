@@ -50,14 +50,15 @@ export async function getAssetHistoricalData(assetName: string): Promise<Histori
 
     try {
         const today = new Date();
-        const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-        
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(today.getDate() - 31); // Fetch 31 days to ensure we get 30 data points
+
         const queryOptions = {
-            period1: thirtyDaysAgo.toISOString().split('T')[0], // YYYY-MM-DD
-            period2: today.toISOString().split('T')[0], // YYYY-MM-DD
+            period1: thirtyDaysAgo.toISOString().split('T')[0],
+            period2: today.toISOString().split('T')[0], // Fetch up to today to get the latest completed session
             interval: '1d' as const,
         };
-
+        
         const result = await yahooFinance.historical(ticker, queryOptions);
 
         if (!result || result.length === 0) {
@@ -82,7 +83,7 @@ export async function getAssetHistoricalData(assetName: string): Promise<Histori
             });
         }
 
-        return formattedData;
+        return formattedData.slice(-30); // Return only the last 30 data points
 
     } catch (error) {
         console.error(`[LOG] Error fetching historical data for ${ticker} from Yahoo Finance:`, error);
