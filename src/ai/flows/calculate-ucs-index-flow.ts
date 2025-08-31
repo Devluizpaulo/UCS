@@ -36,10 +36,25 @@ const calculateUcsIndexFlow = ai.defineFlow(
     ];
     const pricesData = await getCommodityPrices({ commodities: commodityNames });
     
+    // If no price data is returned (e.g., API error), return a default value to avoid a crash.
+    if (!pricesData || pricesData.length === 0) {
+      console.error('[LOG] No commodity prices received. Returning default index value.');
+      return { indexValue: 0 };
+    }
+
     const prices: { [key: string]: number } = pricesData.reduce((acc, item) => {
         acc[item.name] = item.price;
         return acc;
     }, {} as { [key: string]: number });
+
+    // Check if all commodities have a price.
+    const hasAllPrices = commodityNames.every(name => prices[name] !== undefined);
+    if (!hasAllPrices) {
+        console.error('[LOG] Missing some commodity prices. Calculation might be inaccurate.');
+        // Return 0 if any price is missing to prevent calculation with NaN.
+        return { indexValue: 0 };
+    }
+
 
     // Assuming equal weights for simplicity.
     const weight = 1 / commodityNames.length;

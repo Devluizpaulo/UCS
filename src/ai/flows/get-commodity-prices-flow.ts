@@ -74,21 +74,16 @@ const getCommodityPricesFlow = ai.defineFlow(
         let price = quote.regularMarketPrice ?? 0;
         let change = quote.regularMarketChangePercent ?? 0;
 
-        if (quote.currency === 'BRL') {
-            // Price is already in BRL, do nothing
+        // This logic is simplified and might need adjustment based on how Yahoo Finance returns currency data
+        if (quote.symbol === 'BRL=X' || quote.symbol === 'EURBRL=X') {
+            // Price is already against BRL.
         } else if (quote.currency === 'USD') {
             const brlQuote = quotes.find(q => q.symbol === 'BRL=X');
             if (brlQuote?.regularMarketPrice) {
                 price = price * brlQuote.regularMarketPrice;
             }
-        } else if (quote.currency === 'EUR') {
-             const eurBrlQuote = quotes.find(q => q.symbol === 'EURBRL=X');
-             if (eurBrlQuote?.regularMarketPrice) {
-                price = price * eurBrlQuote.regularMarketPrice;
-            }
-        }
-
-
+        } 
+        
         return {
           name: commodityName,
           price: parseFloat(price.toFixed(2)),
@@ -99,7 +94,7 @@ const getCommodityPricesFlow = ai.defineFlow(
       return { prices };
     } catch (error) {
       console.error('[LOG] Error fetching from Yahoo Finance API:', error);
-      // Fallback or error handling
+      // Fallback or error handling: return an empty list to prevent crashes.
       return { prices: [] };
     }
   }
