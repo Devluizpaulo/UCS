@@ -7,13 +7,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { app } from '@/lib/firebase-config';
 import { FileSpreadsheet, Loader2 } from 'lucide-react';
 import { setCookie } from 'cookies-next';
+import Image from 'next/image';
+import Link from 'next/link';
 
 const loginSchema = z.object({
   email: z.string().email('Por favor, insira um e-mail válido.'),
@@ -60,35 +61,70 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-            <div className="flex justify-center items-center gap-2 mb-2">
+    <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2 xl:min-h-screen">
+      <div className="hidden bg-muted lg:block relative">
+        <Image
+          src="https://picsum.photos/1200/1800"
+          alt="Imagem de fundo com prédios modernos"
+          data-ai-hint="modern buildings"
+          width={1200}
+          height={1800}
+          className="h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent via-transparent/60"></div>
+        <div className="absolute bottom-10 left-10 text-white">
+            <h2 className="text-4xl font-bold">Plataforma de Análise IVCF</h2>
+            <p className="mt-2 max-w-md text-lg">Acesso seguro aos seus dados e análises estratégicas em tempo real.</p>
+        </div>
+      </div>
+      <div className="flex items-center justify-center py-12">
+        <div className="mx-auto grid w-[350px] gap-6">
+          <div className="grid gap-2 text-center">
+             <div className="flex justify-center items-center gap-2 mb-2">
                 <FileSpreadsheet className="size-8 text-primary" />
-                <h1 className="text-2xl font-bold">Índice IVCF</h1>
+                <h1 className="text-3xl font-bold">Índice IVCF</h1>
             </div>
-          <CardTitle>Acesso ao Painel</CardTitle>
-          <CardDescription>Insira suas credenciais para continuar</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            <div className="space-y-2">
+            <p className="text-balance text-muted-foreground">
+              Insira suas credenciais para acessar o painel.
+            </p>
+          </div>
+          <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4">
+            <div className="grid gap-2">
               <Label htmlFor="email">E-mail</Label>
-              <Input id="email" type="email" placeholder="seu@email.com" {...register('email')} />
-              {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
+              <Input
+                id="email"
+                type="email"
+                placeholder="seu@email.com"
+                {...register('email')}
+              />
+               {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
+            <div className="grid gap-2">
+              <div className="flex items-center">
+                <Label htmlFor="password">Senha</Label>
+                <Link
+                  href="#"
+                  className="ml-auto inline-block text-sm underline"
+                >
+                  Esqueceu a senha?
+                </Link>
+              </div>
               <Input id="password" type="password" placeholder="********" {...register('password')} />
               {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Entrar
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Acessar
             </Button>
           </form>
-        </CardContent>
-      </Card>
+          <div className="mt-4 text-center text-sm">
+            Não tem uma conta?{' '}
+            <Link href="#" className="underline">
+              Contate o administrador
+            </Link>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
