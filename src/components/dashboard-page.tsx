@@ -90,7 +90,7 @@ export function DashboardPage({ ucsCoinImageUrl }: DashboardPageProps) {
                             {latestValue}
                         </p>
                      )}
-                      <p className="text-xs text-muted-foreground mt-1">Powered by Yahoo Finance</p>
+                      <p className="text-xs text-muted-foreground mt-1">Powered by bmv.global</p>
                 </div>
             </div>
         </Card>
