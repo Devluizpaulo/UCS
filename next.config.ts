@@ -24,6 +24,14 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      // Exclude firebase from the server bundle for files that use it on the client
+      // This is a workaround for the 'bcrypt' issue with Firebase v9+ and Next.js.
+      config.externals.push('firebase/app', 'firebase/firestore');
+    }
+    return config;
+  },
 };
 
 export default nextConfig;

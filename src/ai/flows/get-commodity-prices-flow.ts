@@ -11,6 +11,7 @@ import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { getOptimizedCommodityPrices } from '@/lib/yahoo-finance-optimizer';
 import type { CommodityPriceData } from '@/lib/types';
+import { saveCommodityData } from '@/lib/database-service';
 
 const CommodityPricesInputSchema = z.object({
   commodities: z.array(z.string()).describe('A list of commodity names to fetch prices for.'),
@@ -34,11 +35,18 @@ export type CommodityPricesOutput = z.infer<typeof CommodityPricesOutputSchema>;
 export async function getCommodityPrices(
   input: CommodityPricesInput
 ): Promise<CommodityPriceData[]> {
-  // Use optimized function directly for better performance
-  return getOptimizedCommodityPrices(input.commodities);
+    const prices = await getOptimizedCommodityPrices(input.commodities);
+    
+    // Asynchronously save the fetched data to Firestore without blocking the response
+    if (prices && prices.length > 0) {
+        saveCommodityData(prices).catch(error => {
+            console.error('[LOG] Failed to save commodity data to Firestore:', error);
+        });
+    }
+    
+    return prices;
 }
 
-// Use centralized commodity ticker mapping
 
 // Keep the flow for backward compatibility, but use optimized function
 const getCommodityPricesFlow = ai.defineFlow(
@@ -49,7 +57,7 @@ const getCommodityPricesFlow = ai.defineFlow(
   },
   async (input) => {
     try {
-      const prices = await getOptimizedCommodityPrices(input.commodities);
+      const prices = await getCommoditoyPrices(input.commodities);
       return { prices };
     } catch (error) {
       console.error('[LOG] Error fetching from Yahoo Finance API:', error);
