@@ -25,8 +25,8 @@ const commodityDetails: Commodity[] = [
 ];
 
 interface UnderlyingAssetsTableProps {
-    data: CommodityPriceData[];
-    loading: boolean;
+    data?: CommodityPriceData[];
+    loading?: boolean;
 }
 
 export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTableProps) {
@@ -56,12 +56,12 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
             Array.from({ length: 6 }).map((_, index) => (
               <TableRow key={index}>
                 <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                <TableCell className="text-right"><Skeleton className="h-5 w-24" /></TableCell>
-                <TableCell className="text-right"><Skeleton className="h-5 w-20" /></TableCell>
+                <TableCell className="text-right"><Skeleton className="h-5 w-24 ml-auto" /></TableCell>
+                <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
               </TableRow>
             ))
           ) : (
-            data.map((item) => {
+            data?.map((item) => {
               const Icon = getIconForCommodity(item.name);
               return (
                 <TableRow key={item.name} onClick={() => handleRowClick(item)} className="cursor-pointer">

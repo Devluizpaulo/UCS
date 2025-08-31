@@ -8,7 +8,7 @@ import { UcsIndexChart } from '@/components/ucs-index-chart';
 import { CommodityPrices } from '@/components/commodity-prices';
 import type { ChartData, CommodityPriceData } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { getCommodityPricesFromFirestore, getUcsIndexHistory } from '@/lib/data-service';
+import { getCommodityPrices, getUcsIndexValue } from '@/lib/data-service';
 
 export function DashboardPage() {
   const [chartData, setChartData] = useState<ChartData[]>([]);
@@ -19,10 +19,10 @@ export function DashboardPage() {
   const fetchDashboardData = useCallback(async () => {
       setLoading(true);
       try {
-        // Fetch index history and prices in parallel from Firestore
+        // Fetch index history and prices in parallel from our backend flows
         const [historyResult, pricesResult] = await Promise.all([
-          getUcsIndexHistory(),
-          getCommodityPricesFromFirestore()
+          getUcsIndexValue(),
+          getCommodityPrices()
         ]);
         
         setChartData(historyResult);
@@ -34,7 +34,7 @@ export function DashboardPage() {
         toast({
           variant: "destructive",
           title: "Erro ao buscar dados",
-          description: errorMessage,
+          description: "Não foi possível obter os dados em tempo real. Verifique o console para mais detalhes.",
         });
       } finally {
         setLoading(false);
@@ -42,13 +42,7 @@ export function DashboardPage() {
   }, [toast]);
 
   useEffect(() => {
-    fetchDashboardData(); // Initial fetch
-    // You can set up a new interval if you want polling, 
-    // but with Firestore, you'd typically use real-time listeners (onSnapshot)
-    // for a more efficient setup. For simplicity, we'll stick to polling for now.
-    const interval = setInterval(fetchDashboardData, 60000); // Update every 60 seconds
-
-    return () => clearInterval(interval);
+    fetchDashboardData();
   }, [fetchDashboardData]);
 
 
