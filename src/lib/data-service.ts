@@ -1,7 +1,7 @@
 'use server';
 
 import type { ChartData, CommodityPriceData, ScenarioResult, HistoricalQuote, AnalyzeAssetOutput, HistoryInterval, IvcfData } from './types';
-import { getOptimizedHistorical } from './yahoo-finance-optimizer';
+import { getOptimizedHistorical, getOptimizedCommodityPrices } from './yahoo-finance-optimizer';
 import { COMMODITY_TICKER_MAP } from './yahoo-finance-config-data';
 
 // Functions for the "Analysis" page that call Genkit flows directly.
@@ -17,7 +17,6 @@ export async function runScenarioSimulation(asset: string, changeType: 'percenta
 
 // Functions for the dashboard to get real-time data via flows
 export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
-    const { getCommodityPrices } = await import('@/ai/flows/get-commodity-prices-flow');
     const commodityNames = [
         'USD/BRL Histórico',
         'EUR/BRL Histórico',
@@ -27,40 +26,49 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
         'Madeira Futuros',
         'Carbono Futuros',
     ];
-    return getCommodityPrices({ commodities: commodityNames });
+    return getOptimizedCommodityPrices(commodityNames);
 }
 
 export async function getIvcfIndexValue(interval: HistoryInterval = '1d'): Promise<{ history: ChartData[], latest: IvcfData }> {
     const { calculateIvcfIndex } = await import('@/ai/flows/calculate-ivcf-flow');
     const result = await calculateIvcfIndex();
     
-    // Generate some mock historical data ending in the real value
-    const { generateRealisticHistoricalData } = await import('./utils');
+    // For historical data, we need to calculate it day-by-day based on historical prices
+    // This is a simplified version. A production system might pre-calculate and store this.
+    // For now, we'll fetch the history of a benchmark (e.g., BOVA11) to represent the index trend.
+    const history = await getBenchmarkHistoricalData(interval);
+    
+    // Adjust the history to end with the current calculated value
+    if (history.length > 0) {
+        const lastRealValue = history[history.length - 1].value;
+        const adjustmentFactor = result.indexValue / lastRealValue;
+        const adjustedHistory = history.map(point => ({
+            ...point,
+            value: point.value * adjustmentFactor
+        }));
+        
+        // Ensure the very last point is the exact calculated value
+        adjustedHistory[adjustedHistory.length -1].value = result.indexValue;
 
-    let history: ChartData[] = [];
-    switch (interval) {
-        case '1d':
-            history = generateRealisticHistoricalData(result.indexValue, 30, 0.05, 'day');
-            break;
-        case '1wk':
-             // Generate 52 weeks (1 year) of data
-            history = generateRealisticHistoricalData(result.indexValue, 52, 0.15, 'week');
-            break;
-        case '1mo':
-            // Generate 60 months (5 years) of data
-            history = generateRealisticHistoricalData(result.indexValue, 60, 0.25, 'month');
-            break;
+        return { history: adjustedHistory, latest: result };
     }
 
+    // Fallback if benchmark history fails
     return {
-        history,
+        history: [{ time: new Date().toLocaleDateString('pt-BR'), value: result.indexValue }],
         latest: result
     };
 }
 
 
-// Use centralized commodity ticker mapping
+async function getBenchmarkHistoricalData(interval: HistoryInterval = '1d'): Promise<ChartData[]> {
+     // Using a major Brazilian ETF as a proxy for market trend
+    const ticker = 'BOVA11.SA'; 
+    return getFormattedHistoricalData(ticker, interval);
+}
 
+
+// Use centralized commodity ticker mapping
 export async function getAssetHistoricalData(assetName: string, interval: HistoryInterval = '1d'): Promise<HistoricalQuote[]> {
     const commodityInfo = COMMODITY_TICKER_MAP[assetName];
     const ticker = commodityInfo?.ticker;
@@ -132,6 +140,53 @@ export async function getAssetHistoricalData(assetName: string, interval: Histor
 
     } catch (error) {
         console.error(`[LOG] Error fetching historical data for ${ticker} from Yahoo Finance:`, error);
+        return [];
+    }
+}
+
+
+async function getFormattedHistoricalData(ticker: string, interval: HistoryInterval): Promise<ChartData[]> {
+    try {
+        const today = new Date();
+        const startDate = new Date();
+
+        switch (interval) {
+            case '1d':
+                startDate.setDate(today.getDate() - 31);
+                break;
+            case '1wk':
+                startDate.setFullYear(today.getFullYear() - 1);
+                break;
+            case '1mo':
+                startDate.setFullYear(today.getFullYear() - 5);
+                break;
+        }
+
+        const queryOptions = {
+            period1: startDate.toISOString().split('T')[0],
+            period2: today.toISOString().split('T')[0],
+            interval: interval,
+        };
+
+        const result = await getOptimizedHistorical(ticker, queryOptions, interval);
+        if (!result || result.length === 0) return [];
+
+        const getDateFormat = (date: Date) => {
+            switch(interval) {
+                case '1d': return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+                case '1wk': return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+                case '1mo': return date.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
+                default: return date.toLocaleDateString('pt-BR');
+            }
+        };
+
+        return result.map((d: any) => ({
+            time: getDateFormat(d.date),
+            value: d.close
+        })).slice(-30); // Ensure we have a consistent number of points for the main chart
+
+    } catch (error) {
+        console.error(`[LOG] Error fetching historical benchmark data for ${ticker}:`, error);
         return [];
     }
 }

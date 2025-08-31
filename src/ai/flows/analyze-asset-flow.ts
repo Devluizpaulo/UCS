@@ -9,6 +9,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
+import * as cheerio from 'cheerio';
 
 const AnalyzeAssetInputSchema = z.object({
   assetName: z.string().describe('The name of the financial asset.'),
@@ -44,35 +45,48 @@ const getNewsForAssetTool = ai.defineTool(
     }),
   },
   async ({ asset }) => {
-    console.log(`[LOG] Searching news for: ${asset}`);
-    // In a real application, this would call a News API (e.g., Google News, NewsAPI.org).
-    // For this example, we'll return mock data.
-    const mockNews: { [key: string]: any[] } = {
-        'Soja Futuros': [
-            { title: "Seca no Meio-Oeste dos EUA pode impactar safra de soja", source: "AgroNews", url: "https://example.com/news1", publishedAt: new Date().toISOString() },
-            { title: "China aumenta importação de soja brasileira em 20%", source: "Trade Global", url: "https://example.com/news2", publishedAt: new Date(Date.now() - 86400000).toISOString() },
-        ],
-        'USD/BRL Histórico': [
-            { title: "Banco Central sinaliza manutenção da taxa de juros, fortalecendo o Real", source: "Economia BR", url: "https://example.com/news3", publishedAt: new Date().toISOString() },
-            { title: "Dados de inflação nos EUA abaixo do esperado pressionam o Dólar", source: "Global Markets", url: "https://example.com/news4", publishedAt: new Date(Date.now() - 172800000).toISOString() },
-        ],
-        'EUR/BRL Histórico': [
-            { title: "Crise energética na Europa gera preocupações e desvaloriza o Euro", source: "EuroInvest", url: "https://example.com/news5", publishedAt: new Date().toISOString() },
-        ],
-        'Boi Gordo Futuros': [
-            { title: "Exportações de carne bovina atingem recorde no trimestre", source: "Pecuária Forte", url: "https://example.com/news6", publishedAt: new Date().toISOString() },
-        ],
-        'Milho Futuros': [
-            { title: "Previsão de safra recorde de milho pressiona preços para baixo", source: "AgroPortal", url: "https://example.com/news7", publishedAt: new Date().toISOString() },
-        ],
-        'Madeira Futuros': [
-            { title: "Mercado imobiliário aquecido nos EUA impulsiona demanda por madeira", source: "Construction Today", url: "https://example.com/news8", publishedAt: new Date().toISOString() },
-        ],
-        'Carbono Futuros': [
-            { title: "Novas regulamentações europeias para emissões podem aumentar o preço do crédito de carbono", source: "Climate Finance", url: "https://example.com/news9", publishedAt: new Date().toISOString() },
-        ],
-    };
-    return { headlines: mockNews[asset] || [] };
+    try {
+      console.log(`[LOG] Searching news for: ${asset}`);
+      const searchQuery = encodeURIComponent(`${asset} preço`);
+      const searchUrl = `https://www.google.com/search?q=${searchQuery}&tbm=nws`;
+      
+      const response = await fetch(searchUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+      });
+      if (!response.ok) {
+        throw new Error(`Failed to fetch news: ${response.statusText}`);
+      }
+
+      const html = await response.text();
+      const $ = cheerio.load(html);
+      
+      const headlines: any[] = [];
+      
+      $('a[href^="/url?q="]').each((_i, el) => {
+        if (headlines.length >= 5) return; 
+
+        const link = $(el);
+        const url = link.attr('href')?.split('/url?q=')[1].split('&')[0];
+        const title = link.find('div[role="heading"]').text().trim();
+        const source = link.find('span').first().text().trim();
+        
+        if(url && title && source){
+             headlines.push({
+                title,
+                url: decodeURIComponent(url),
+                source,
+                publishedAt: new Date().toISOString(), 
+            });
+        }
+      });
+      
+      return { headlines };
+    } catch (error) {
+      console.error("[LOG] Failed to scrape news:", error);
+      return { headlines: [] };
+    }
   }
 );
 
