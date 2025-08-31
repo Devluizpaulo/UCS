@@ -108,8 +108,16 @@ const analyzeAssetFlow = ai.defineFlow(
       outputSchema: AnalyzeAssetOutputSchema,
     },
     async (input) => {
-      const { output } = await analysisPrompt(input);
-      return output!;
+      try {
+        const { output } = await analysisPrompt(input);
+        return output!;
+      } catch (error) {
+        console.error('[LOG] Genkit analysisPrompt failed:', error);
+        return {
+          analysis: "A análise da IA não pôde ser gerada no momento devido a um erro no serviço. Por favor, tente novamente mais tarde.",
+          sources: [],
+        };
+      }
     }
   );
 
