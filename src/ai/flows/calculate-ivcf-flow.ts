@@ -103,7 +103,7 @@ const calculateIvcfIndexFlow = ai.defineFlow(
     const renda_bruta_ha = renda_pecuaria + renda_milho + renda_soja;
     const VUS = renda_bruta_ha / FATOR_ARREND;
     
-    const valor_carbono = preco_carbono_brl * VOLUME_MADEA_HA * FATOR_CARBONO;
+    const valor_carbono = preco_carbono_brl * VOLUME_MADEIRA_HA * FATOR_CARBONO;
     const valor_agua = VUS * FATOR_AGUA;
     const CRS = valor_carbono + valor_agua;
     
