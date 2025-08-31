@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2, RefreshCw } from 'lucide-react';
 import { PageHeader } from '@/components/page-header';
 import { UcsIndexChart } from '@/components/ucs-index-chart';
-import type { ChartData, CommodityPriceData } from '@/lib/types';
+import type { ChartData, CommodityPriceData, IvcfData } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { getCommodityPrices, getIvcfIndexValue } from '@/lib/data-service';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
@@ -14,23 +14,27 @@ import { UnderlyingAssetsTable } from './underlying-assets-table';
 import { IndexHistoryTable } from './index-history-table';
 import { Skeleton } from './ui/skeleton';
 import { AnimatedNumber } from './ui/animated-number';
+import { IndexCompositionModal } from './index-composition-modal';
 
 
 export function DashboardPage() {
   const [chartData, setChartData] = useState<ChartData[]>([]);
+  const [ivcfData, setIvcfData] = useState<IvcfData | null>(null);
   const [commodities, setCommodities] = useState<CommodityPriceData[]>([]);
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const fetchDashboardData = useCallback(async () => {
       setLoading(true);
       try {
-        const [historyResult, pricesResult] = await Promise.all([
+        const [ivcfResult, pricesResult] = await Promise.all([
           getIvcfIndexValue(),
           getCommodityPrices()
         ]);
         
-        setChartData(historyResult);
+        setChartData(ivcfResult.history);
+        setIvcfData(ivcfResult.latest);
         setCommodities(pricesResult);
 
       } catch (error) {
@@ -49,7 +53,7 @@ export function DashboardPage() {
     fetchDashboardData();
   }, [fetchDashboardData]);
   
-  const latestValue = chartData.length > 0 ? chartData[chartData.length - 1].value : 0;
+  const latestValue = ivcfData?.indexValue ?? 0;
 
   return (
     <div className="flex min-h-screen w-full flex-col">
@@ -64,19 +68,30 @@ export function DashboardPage() {
         </Button>
       </PageHeader>
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
-        <Card className="border-border bg-card/50">
+        <Card 
+            className="border-border bg-card/50 cursor-pointer hover:border-primary/50 transition-colors"
+            onClick={() => setIsModalOpen(true)}
+        >
             <div className="p-6">
                  <CardTitle className="text-sm text-muted-foreground font-medium tracking-wider uppercase">Índice IVCF (R$)</CardTitle>
-                 {loading && chartData.length === 0 ? (
+                 {loading && !ivcfData ? (
                     <Skeleton className="h-16 w-64 mt-2" />
                  ) : (
                     <div className="text-6xl font-bold text-primary">
-                        <AnimatedNumber value={latestValue} formatter={(v) => v.toFixed(2)}/>
+                        <AnimatedNumber value={latestValue} formatter={(v) => v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/>
                     </div>
                  )}
                   <p className="text-xs text-muted-foreground mt-1">Powered by bmv.global</p>
             </div>
         </Card>
+        {isModalOpen && ivcfData && (
+            <IndexCompositionModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                data={ivcfData}
+            />
+        )}
+
 
         <Card>
             <CardHeader>

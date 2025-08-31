@@ -38,22 +38,17 @@ export type AnalyzeAssetOutput = {
   }[];
 };
 
-
-export type UcsComposition = {
-  agropecuaria: {
-    weight: number; // 15%
-    boiGordo: number;
+export type IvcfData = {
+  indexValue: number;
+  components: {
+    vm: number;
+    vus: number;
+    crs: number;
+  };
+  vusDetails: {
+    pecuaria: number;
     milho: number;
-    soja: number;
-  };
-  madeira: {
-    weight: number; // 68%
-  };
-  agua: {
-    weight: number; // 14%
-  };
-  carbono: {
-    weight: number; // 2%
+aoja: number;
   };
 };
 

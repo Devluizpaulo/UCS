@@ -1,6 +1,6 @@
 'use server';
 
-import type { ChartData, CommodityPriceData, ScenarioResult, HistoricalQuote, AnalyzeAssetOutput, HistoryInterval } from './types';
+import type { ChartData, CommodityPriceData, ScenarioResult, HistoricalQuote, AnalyzeAssetOutput, HistoryInterval, IvcfData } from './types';
 import { getOptimizedHistorical } from './yahoo-finance-optimizer';
 import { COMMODITY_TICKER_MAP } from './yahoo-finance-config-data';
 
@@ -30,15 +30,18 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
     return getCommodityPrices({ commodities: commodityNames });
 }
 
-export async function getIvcfIndexValue(): Promise<ChartData[]> {
+export async function getIvcfIndexValue(): Promise<{ history: ChartData[], latest: IvcfData }> {
     const { calculateIvcfIndex } = await import('@/ai/flows/calculate-ivcf-flow');
-    // For simplicity, we'll get a single index value and create a mock history for the chart.
-    // In a real scenario with a database, you'd fetch the true history.
-    const { indexValue } = await calculateIvcfIndex();
+    const result = await calculateIvcfIndex();
     
     // Generate some mock historical data ending in the real value
     const { generateRealisticHistoricalData } = await import('./utils');
-    return generateRealisticHistoricalData(indexValue, 60, 0.02, 'minute');
+    const history = generateRealisticHistoricalData(result.indexValue, 60, 0.02, 'minute');
+
+    return {
+        history,
+        latest: result
+    };
 }
 
 
