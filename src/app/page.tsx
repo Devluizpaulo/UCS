@@ -2,8 +2,8 @@ import { MainLayout } from '@/components/main-layout';
 import { DashboardPage } from '@/components/dashboard-page';
 
 export default function Home() {
-  // A imagem está na pasta `public`, então podemos referenciá-la diretamente no path.
-  const ucsCoinImageUrl = '/image/ucs.png';
+  // Usando uma imagem de placeholder online para garantir a exibição.
+  const ucsCoinImageUrl = 'https://picsum.photos/200/200';
 
   return (
     <MainLayout>
