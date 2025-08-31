@@ -12,8 +12,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { UnderlyingAssetsTable } from './underlying-assets-table';
 import { IndexHistoryTable } from './index-history-table';
+import Image from 'next/image';
+import { Skeleton } from './ui/skeleton';
 
-export function DashboardPage() {
+
+interface DashboardPageProps {
+    ucsCoinImageUrl: string;
+}
+
+export function DashboardPage({ ucsCoinImageUrl }: DashboardPageProps) {
   const [chartData, setChartData] = useState<ChartData[]>([]);
   const [commodities, setCommodities] = useState<CommodityPriceData[]>([]);
   const { toast } = useToast();
@@ -45,6 +52,8 @@ export function DashboardPage() {
   useEffect(() => {
     fetchDashboardData();
   }, [fetchDashboardData]);
+  
+  const latestValue = chartData.length > 0 ? chartData[chartData.length - 1].value.toFixed(2) : '0.00';
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
@@ -60,13 +69,49 @@ export function DashboardPage() {
       </PageHeader>
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
         <Card className="shadow-sm">
-            <UcsIndexChart data={chartData} loading={loading}/>
+            <div className="grid grid-cols-1 md:grid-cols-3 items-center gap-6 p-6">
+                <div className="flex justify-center">
+                   <Image 
+                     src={ucsCoinImageUrl} 
+                     alt="Moeda UCS" 
+                     width={200} 
+                     height={200} 
+                     className="rounded-full"
+                     data-ai-hint="coin logo"
+                     priority
+                    />
+                </div>
+                <div className="md:col-span-2 text-center md:text-left">
+                     <CardTitle className="text-xl text-muted-foreground font-medium">Índice UCS</CardTitle>
+                     <CardDescription className="mb-2">
+                        Valor em tempo real com base em dados de commodities.
+                     </CardDescription>
+                     {loading && chartData.length === 0 ? (
+                        <Skeleton className="h-16 w-64 mx-auto md:mx-0" />
+                     ) : (
+                        <p className="text-6xl font-bold text-primary">
+                            {latestValue}
+                            <span className="text-4xl text-muted-foreground ml-2">UCS</span>
+                        </p>
+                     )}
+                </div>
+            </div>
+        </Card>
+
+        <Card className="shadow-sm">
+            <CardHeader>
+                <CardTitle>Histórico do Índice</CardTitle>
+                <CardDescription>Performance do Índice UCS nos últimos 60 minutos.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <UcsIndexChart data={chartData} loading={loading}/>
+            </CardContent>
         </Card>
 
         <Tabs defaultValue="assets">
             <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="assets">Ativos Subjacentes</TabsTrigger>
-                <TabsTrigger value="history">Histórico do Índice</TabsTrigger>
+                <TabsTrigger value="history">Histórico do Índice (Tabela)</TabsTrigger>
             </TabsList>
             <TabsContent value="assets">
                 <Card>
