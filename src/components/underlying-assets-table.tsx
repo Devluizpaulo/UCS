@@ -42,7 +42,7 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
   };
 
   return (
-    <div className="w-full overflow-auto">
+    <div className="w-full">
       <Table>
         <TableHeader>
           <TableRow>

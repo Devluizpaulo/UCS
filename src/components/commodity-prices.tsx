@@ -8,14 +8,12 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { UnderlyingAssetsTable } from './underlying-assets-table';
-import type { CommodityPriceData } from '@/lib/types';
 
 interface CommodityPricesProps {
-  data: CommodityPriceData[];
   loading: boolean;
 }
 
-export function CommodityPrices({ data, loading }: CommodityPricesProps) {
+export function CommodityPrices({ loading }: CommodityPricesProps) {
   return (
     <Card className="shadow-sm">
       <CardHeader>
@@ -23,7 +21,7 @@ export function CommodityPrices({ data, loading }: CommodityPricesProps) {
         <CardDescription>Preços em tempo real das commodities no índice.</CardDescription>
       </CardHeader>
       <CardContent className="p-0">
-        <UnderlyingAssetsTable data={data} loading={loading}/>
+        <UnderlyingAssetsTable loading={loading}/>
       </CardContent>
     </Card>
   );
