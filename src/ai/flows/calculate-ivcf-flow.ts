@@ -70,7 +70,7 @@ const calculateIvcfIndexFlow = ai.defineFlow(
     const PESO_SOJA = 0.35; // Peso da soja no uso do solo
     const FATOR_ARREND = 0.048; // Fator de capitalização da renda
     const FATOR_AGUA = 0.07; // % do VUS que representa o valor da água
-    const FATOR_CONVERSAO_MADEIRA = 0.3756; // Fator de conversão de madeira serrada para tora (em pé)
+    const FATOR_CONVERSAO_SERRADA_TORA = 0.3756; // Fator de conversão de madeira serrada para tora (em pé)
 
     // Exchange Rates
     const taxa_usd_brl = prices['USD/BRL Histórico'] || 1;
@@ -84,10 +84,13 @@ const calculateIvcfIndexFlow = ai.defineFlow(
     const preco_carbono_eur = prices['Carbono Futuros'] || 0; // Price in EUR/tCO₂
 
     // --- Price Conversions ---
+    // 1 board foot = 0.00235974 m³ -> 1 m³ = 423.776 board feet. Using 424 as per examples.
     const preco_madeira_serrada_m3 = (preco_lumber_mbf / 1000) * 424 * taxa_usd_brl;
-    const preco_madeira_tora_m3 = preco_madeira_serrada_m3 * FATOR_CONVERSAO_MADEIRA;
+    const preco_madeira_tora_m3 = preco_madeira_serrada_m3 * FATOR_CONVERSAO_SERRADA_TORA;
 
+    // 1 bushel of corn = 25.4 kg. 1 ton = 1000 kg.
     const preco_milho_ton = (preco_milho_bushel_cents / 100) * (1000 / 25.4) * taxa_usd_brl;
+    // 1 bushel of soy = 27.2 kg. 1 ton = 1000 kg.
     const preco_soja_ton = (preco_soja_bushel_cents / 100) * (1000 / 27.2) * taxa_usd_brl;
     const preco_carbono_brl = preco_carbono_eur * taxa_eur_brl;
     
@@ -100,7 +103,7 @@ const calculateIvcfIndexFlow = ai.defineFlow(
     const renda_bruta_ha = renda_pecuaria + renda_milho + renda_soja;
     const VUS = renda_bruta_ha / FATOR_ARREND;
     
-    const valor_carbono = preco_carbono_brl * VOLUME_MADEIRA_HA * FATOR_CARBONO;
+    const valor_carbono = preco_carbono_brl * VOLUME_MADEA_HA * FATOR_CARBONO;
     const valor_agua = VUS * FATOR_AGUA;
     const CRS = valor_carbono + valor_agua;
     
