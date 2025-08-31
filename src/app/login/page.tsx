@@ -70,7 +70,7 @@ export default function LoginPage() {
           priority
           className="h-full w-full object-cover dark:brightness-[0.3] dark:grayscale animate-ken-burns"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-transparent lg:via-transparent/60"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-transparent lg:bg-gradient-to-r lg:from-transparent lg:via-transparent/20 lg:to-background"></div>
         <div className="relative z-10 p-6 text-white lg:bottom-4 lg:left-4 lg:p-4">
             <h2 className="text-3xl font-bold lg:text-4xl">Plataforma de Análise UCS</h2>
             <p className="mt-2 max-w-md text-base lg:text-lg">Acesso seguro aos seus dados e análises estratégicas em tempo real.</p>
@@ -116,12 +116,6 @@ export default function LoginPage() {
                 Acessar
             </Button>
           </form>
-          <div className="mt-4 text-center text-sm">
-            Não tem uma conta?{' '}
-            <Link href="#" className="underline">
-              Contate o administrador
-            </Link>
-          </div>
         </div>
       </div>
     </div>
