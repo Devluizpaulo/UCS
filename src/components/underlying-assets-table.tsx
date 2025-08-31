@@ -66,7 +66,10 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
                       <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
                         <Icon className="h-4 w-4 text-muted-foreground" />
                       </div>
-                      <span className="font-medium">{item.name}</span>
+                      <div>
+                        <div className="font-medium">{item.name}</div>
+                        <div className="text-xs text-muted-foreground">Data by Yahoo Finance</div>
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell className="text-right font-mono">R$ {item.price.toFixed(4)}</TableCell>
