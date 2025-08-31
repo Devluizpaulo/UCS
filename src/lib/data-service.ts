@@ -36,7 +36,7 @@ export async function getIvcfIndexValue(): Promise<{ history: ChartData[], lates
     
     // Generate some mock historical data ending in the real value
     const { generateRealisticHistoricalData } = await import('./utils');
-    const history = generateRealisticHistoricalData(result.indexValue, 60, 0.02, 'minute');
+    const history = generateRealisticHistoricalData(result.indexValue, 30, 0.05, 'day');
 
     return {
         history,

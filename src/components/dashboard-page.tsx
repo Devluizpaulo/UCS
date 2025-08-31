@@ -69,7 +69,7 @@ export function DashboardPage() {
       </PageHeader>
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
         <Card 
-            className="border-border bg-card/50 cursor-pointer hover:border-primary/50 transition-colors"
+            className="border-border/60 bg-card/50 cursor-pointer hover:border-primary/50 transition-colors"
             onClick={() => setIsModalOpen(true)}
         >
             <div className="p-6">
@@ -96,7 +96,7 @@ export function DashboardPage() {
         <Card>
             <CardHeader>
                 <CardTitle>Histórico do Índice</CardTitle>
-                <CardDescription>Performance do Índice IVCF nos últimos 60 minutos.</CardDescription>
+                <CardDescription>Performance do Índice IVCF nos últimos 30 dias.</CardDescription>
             </CardHeader>
             <CardContent>
                 <UcsIndexChart data={chartData} loading={loading}/>
