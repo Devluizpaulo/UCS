@@ -1,7 +1,8 @@
 'use server';
 
 import { getCachedQuote, getCachedHistorical } from './yahoo-finance-cache';
-import { COMMODITY_TICKER_MAP, getConversionTickers } from './yahoo-finance-config';
+import { COMMODITY_TICKER_MAP } from './yahoo-finance-config-data';
+import { getConversionTickers } from './yahoo-finance-config';
 import type { HistoryInterval } from './types';
 
 // Request batching and deduplication
@@ -144,7 +145,7 @@ export async function getOptimizedCommodityPrices(commodityNames: string[]): Pro
     .map(name => COMMODITY_TICKER_MAP[name])
     .filter(Boolean);
   
-  const conversionTickers = getConversionTickers();
+  const conversionTickers = await getConversionTickers();
   const allTickers = [...new Set([
     ...requestedCommodities.map(c => c.ticker),
     ...conversionTickers
@@ -221,11 +222,11 @@ const performanceMetrics: PerformanceMetrics = {
   errorRate: 0,
 };
 
-export function getPerformanceMetrics(): PerformanceMetrics {
+export async function getPerformanceMetrics(): Promise<PerformanceMetrics> {
   return { ...performanceMetrics };
 }
 
-export function resetPerformanceMetrics(): void {
+export async function resetPerformanceMetrics(): Promise<void> {
   Object.assign(performanceMetrics, {
     totalRequests: 0,
     batchedRequests: 0,

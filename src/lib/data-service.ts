@@ -2,7 +2,7 @@
 
 import type { ChartData, CommodityPriceData, ScenarioResult, HistoricalQuote, AnalyzeAssetOutput, HistoryInterval } from './types';
 import { getOptimizedHistorical } from './yahoo-finance-optimizer';
-import { COMMODITY_TICKER_MAP } from './yahoo-finance-config';
+import { COMMODITY_TICKER_MAP } from './yahoo-finance-config-data';
 
 // Functions for the "Analysis" page that call Genkit flows directly.
 export async function getAssetAnalysis(assetName: string, historicalData: number[]): Promise<AnalyzeAssetOutput> {
