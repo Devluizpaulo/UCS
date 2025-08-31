@@ -64,7 +64,7 @@ export default function LoginPage() {
     <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2 xl:min-h-screen">
       <div className="hidden bg-muted lg:block relative overflow-hidden">
         <Image
-          src="/image/login.jpg"
+          src="/public/image/login.jpg"
           alt="Imagem de uma floresta com árvores altas."
           fill
           className="h-full w-full object-cover dark:brightness-[0.3] dark:grayscale animate-ken-burns"
