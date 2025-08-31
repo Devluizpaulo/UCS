@@ -14,6 +14,7 @@ import { ArrowDown, ArrowUp, DollarSign, Euro, Beef, Leaf, TreePine, Recycle } f
 import type { Commodity, CommodityPriceData } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { AssetDetailModal } from './asset-detail-modal';
+import { Skeleton } from './ui/skeleton';
 
 // Helper component for Corn icon
 const CornIcon = () => (
@@ -67,7 +68,7 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
     }))
     : data;
 
-  if (!tableData || tableData.length === 0) {
+  if (!tableData || tableData.length === 0 && !loading) {
       return (
           <div className="text-center py-10 px-6 border rounded-lg bg-card/50">
               <p className="text-muted-foreground">Nenhuma cotação de ativo disponível no momento.</p>
@@ -82,7 +83,7 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
         <TableHeader>
           <TableRow>
             <TableHead>Ativo</TableHead>
-            <TableHead className="text-right">Preço</TableHead>
+            <TableHead className="text-right">Preço (Fechamento)</TableHead>
             <TableHead className="text-right">Variação (24h)</TableHead>
           </TableRow>
         </TableHeader>
@@ -94,25 +95,27 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
-                        <Icon className="h-4 w-4 text-muted-foreground" />
+                         {loading ? <Skeleton className="h-4 w-4" /> : <Icon className="h-4 w-4 text-muted-foreground" />}
                       </div>
                       <div>
                         <div className="font-medium">{item.name}</div>
-                        <div className="text-xs text-muted-foreground">Data by Yahoo Finance</div>
+                         <div className="text-xs text-muted-foreground">{item.lastUpdated}</div>
                       </div>
                     </div>
                   </TableCell>
                   <TableCell className="text-right font-mono">
-                    <AnimatedNumber value={item.price} formatter={(v) => v.toFixed(4)} />
+                     {loading ? <Skeleton className="h-5 w-20 ml-auto" /> : <AnimatedNumber value={item.price} formatter={(v) => v.toFixed(4)} />}
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className={cn(
-                        "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold font-mono transition-colors",
-                        item.change >= 0 ? "border-primary/50 text-primary" : "border-destructive/50 text-destructive"
-                    )}>
-                        {item.change >= 0 ? <ArrowUp className="mr-1 h-3 w-3" /> : <ArrowDown className="mr-1 h-3 w-3" />}
-                        <AnimatedNumber value={item.change} formatter={(v) => `${v.toFixed(2)}%`} />
-                    </div>
+                    {loading ? <Skeleton className="h-6 w-24 ml-auto" /> : (
+                      <div className={cn(
+                          "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold font-mono transition-colors",
+                          item.change >= 0 ? "border-primary/50 text-primary" : "border-destructive/50 text-destructive"
+                      )}>
+                          {item.change >= 0 ? <ArrowUp className="mr-1 h-3 w-3" /> : <ArrowDown className="mr-1 h-3 w-3" />}
+                          <AnimatedNumber value={item.change} formatter={(v) => `${v.toFixed(2)}%`} />
+                      </div>
+                    )}
                   </TableCell>
                 </TableRow>
               );

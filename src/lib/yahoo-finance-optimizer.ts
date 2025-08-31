@@ -168,7 +168,8 @@ export async function getOptimizedCommodityPrices(commodityNames: string[]): Pro
     const quote = getQuote(commodityInfo.ticker);
     if (!quote) return null;
     
-    const price = quote.regularMarketPrice ?? 0;
+    // Use previous day's close for calculation consistency
+    const price = quote.regularMarketPreviousClose ?? quote.regularMarketPrice ?? 0;
     const absoluteChange = quote.regularMarketChange ?? 0;
     const previousClose = price - absoluteChange;
     const change = previousClose === 0 ? 0 : (absoluteChange / previousClose) * 100;
@@ -187,7 +188,7 @@ export async function getOptimizedCommodityPrices(commodityNames: string[]): Pro
       price: parseFloat(price.toFixed(4)),
       change: parseFloat(change.toFixed(2)) || 0,
       absoluteChange: parseFloat(absoluteChange.toFixed(4)),
-      lastUpdated: `Às ${lastUpdated} (GMT-3)`,
+      lastUpdated: `Fechamento de ${new Date(quote.regularMarketTime * 1000).toLocaleDateString('pt-BR')}`,
     };
   }).filter((p): p is NonNullable<typeof p> => p !== null);
 }

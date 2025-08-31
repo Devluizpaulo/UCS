@@ -51,13 +51,12 @@ export function MainLayout({ children }: { children: ReactNode }) {
     <SidebarProvider>
       <Sidebar>
         <SidebarHeader>
-          <div className="flex items-center gap-3 p-2 h-16 border-b">
+          <div className="flex items-center gap-3 p-4 h-16 border-b">
             <FileSpreadsheet className="size-8 text-primary" />
             <div className="flex flex-col">
-              <h2 className="text-lg font-semibold tracking-tight text-foreground">
+              <h2 className="text-xl font-semibold tracking-tight text-foreground">
                 Índice IVCF
               </h2>
-              <p className="text-xs text-muted-foreground">Monitor</p>
             </div>
           </div>
         </SidebarHeader>
@@ -82,7 +81,7 @@ export function MainLayout({ children }: { children: ReactNode }) {
         <SidebarFooter>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <div className="flex w-full cursor-pointer items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-none transition-colors hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-sidebar-ring">
+              <div className="flex w-full cursor-pointer items-center gap-2 overflow-hidden p-2 text-left text-sm outline-none transition-colors hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-sidebar-ring">
                 <Avatar className="h-9 w-9">
                   <AvatarImage
                     src="https://picsum.photos/36"
