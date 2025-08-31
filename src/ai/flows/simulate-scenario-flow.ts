@@ -32,13 +32,8 @@ export async function simulateScenario(input: SimulateScenarioInput): Promise<Sc
 }
 
 const commodityNames = [
-    'Soja Futuros',
     'USD/BRL Histórico',
     'EUR/BRL Histórico',
-    'Boi Gordo Futuros',
-    'Milho Futuros',
-    'Madeira Futuros',
-    'Carbono Futuros'
 ];
 
 // Helper function to calculate the index.
@@ -49,7 +44,7 @@ function calculateIndex(prices: { [key: string]: number }): number {
         return sum + (prices[name] * weight);
     }, 0);
 
-    const normalizationFactor = 10;
+    const normalizationFactor = 1; // Adjusted for currency pair scale
     return totalValue / normalizationFactor;
 }
 

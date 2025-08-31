@@ -26,13 +26,8 @@ const calculateUcsIndexFlow = ai.defineFlow(
   },
   async () => {
     const commodityNames = [
-        'Soja Futuros',
         'USD/BRL Histórico',
         'EUR/BRL Histórico',
-        'Boi Gordo Futuros',
-        'Milho Futuros',
-        'Madeira Futuros',
-        'Carbono Futuros'
     ];
     const pricesData = await getCommodityPrices({ commodities: commodityNames });
     
@@ -64,7 +59,7 @@ const calculateUcsIndexFlow = ai.defineFlow(
     }, 0);
 
     // A simple normalization factor, can be adjusted.
-    const normalizationFactor = 10; // Placeholder
+    const normalizationFactor = 1; // Adjusted for currency pair scale
     const indexValue = totalValue / normalizationFactor;
 
     return { indexValue: parseFloat(indexValue.toFixed(2)) };

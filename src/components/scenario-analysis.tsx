@@ -14,11 +14,6 @@ import type { ScenarioResult, SimulateScenarioInput } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 
 const commodities = [
-    { value: 'Soja Futuros', label: 'Soja Futuros' },
-    { value: 'Milho Futuros', label: 'Milho Futuros' },
-    { value: 'Boi Gordo Futuros', label: 'Boi Gordo Futuros' },
-    { value: 'Madeira Futuros', label: 'Madeira Futuros' },
-    { value: 'Carbono Futuros', label: 'Carbono Futuros' },
     { value: 'USD/BRL Histórico', label: 'USD/BRL Histórico' },
     { value: 'EUR/BRL Histórico', label: 'EUR/BRL Histórico' },
 ];

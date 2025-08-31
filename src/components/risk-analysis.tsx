@@ -3,12 +3,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 
 const riskData = [
-  { asset: 'Créditos de Carbono', volatility: 'Baixa', correlation: 'Neutra', sentiment: 'Positivo' },
-  { asset: 'Boi Gordo', volatility: 'Média', correlation: 'Positiva', sentiment: 'Neutro' },
-  { asset: 'Milho', volatility: 'Alta', correlation: 'Positiva', sentiment: 'Negativo' },
-  { asset: 'Soja', volatility: 'Alta', correlation: 'Positiva', sentiment: 'Neutro' },
-  { asset: 'Madeira', volatility: 'Média', correlation: 'Neutra', sentiment: 'Positivo' },
-  { asset: 'Água', volatility: 'Baixa', correlation: 'Negativa', sentiment: 'Positivo' },
+  { asset: 'USD/BRL Histórico', volatility: 'Média', correlation: 'Positiva', sentiment: 'Neutro' },
+  { asset: 'EUR/BRL Histórico', volatility: 'Média', correlation: 'Positiva', sentiment: 'Neutro' },
 ];
 
 export function RiskAnalysis() {
