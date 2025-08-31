@@ -17,6 +17,10 @@ const commodities = [
     { value: 'USD/BRL Histórico', label: 'USD/BRL Histórico' },
     { value: 'EUR/BRL Histórico', label: 'EUR/BRL Histórico' },
     { value: 'Boi Gordo Futuros', label: 'Boi Gordo Futuros' },
+    { value: 'Soja Futuros', label: 'Soja Futuros' },
+    { value: 'Milho Futuros', label: 'Milho Futuros' },
+    { value: 'Madeira Futuros', label: 'Madeira Futuros' },
+    { value: 'Carbono Futuros', label: 'Carbono Futuros' },
 ];
 
 const scenarioSchema = z.object({

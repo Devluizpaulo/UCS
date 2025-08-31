@@ -9,16 +9,33 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { ArrowDown, ArrowUp, DollarSign, Euro, Beef } from 'lucide-react';
+import { ArrowDown, ArrowUp, DollarSign, Euro, Beef, Leaf, TreePine, Recycle } from 'lucide-react';
 import type { Commodity, CommodityPriceData } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Skeleton } from './ui/skeleton';
 import { AssetDetailModal } from './asset-detail-modal';
 
+// Helper component for Corn icon
+const CornIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-corn">
+        <path d="M9 12c-2 0-4-2-4-4V4c0-2 2-4 4-4h2c2 0 4 2 4 4v4c0 2-2 4-4 4Z"/>
+        <path d="M9 12v10"/>
+        <path d="m9 12-2 2"/>
+        <path d="m9 12 2 2"/>
+        <path d="m9 12-2-2"/>
+        <path d="m9 12 2-2"/>
+    </svg>
+);
+
+
 const commodityDetails: Commodity[] = [
   { name: 'USD/BRL Histórico', icon: DollarSign },
   { name: 'EUR/BRL Histórico', icon: Euro },
   { name: 'Boi Gordo Futuros', icon: Beef },
+  { name: 'Soja Futuros', icon: Leaf },
+  { name: 'Milho Futuros', icon: CornIcon },
+  { name: 'Madeira Futuros', icon: TreePine },
+  { name: 'Carbono Futuros', icon: Recycle },
 ];
 
 interface UnderlyingAssetsTableProps {
@@ -50,7 +67,7 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
         </TableHeader>
         <TableBody>
           {loading ? (
-            Array.from({ length: 3 }).map((_, index) => (
+            Array.from({ length: 5 }).map((_, index) => (
               <TableRow key={index}>
                 <TableCell><Skeleton className="h-5 w-32" /></TableCell>
                 <TableCell className="text-right"><Skeleton className="h-5 w-24 ml-auto" /></TableCell>

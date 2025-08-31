@@ -35,14 +35,19 @@ const commodityNames = [
     'USD/BRL Histórico',
     'EUR/BRL Histórico',
     'Boi Gordo Futuros',
+    'Soja Futuros',
+    'Milho Futuros',
+    'Madeira Futuros',
+    'Carbono Futuros',
 ];
+const commoditiesForIndex = commodityNames.filter(name => !name.includes('/BRL'));
 
 // Helper function to calculate the index.
 function calculateIndex(prices: { [key: string]: number }): number {
-    const weight = 1 / commodityNames.length;
+    const weight = 1 / commoditiesForIndex.length;
     
-    const totalValue = commodityNames.reduce((sum, name) => {
-        return sum + (prices[name] * weight);
+    const totalValue = commoditiesForIndex.reduce((sum, name) => {
+        return sum + ((prices[name] || 0) * weight);
     }, 0);
 
     const normalizationFactor = 1; // Adjusted for currency pair scale
@@ -81,7 +86,7 @@ const simulateScenarioFlow = ai.defineFlow(
     const newIndexValue = calculateIndex(simulatedPrices);
 
     // 5. Calculate the percentage change
-    const changePercentage = ((newIndexValue - originalIndexValue) / originalIndexValue) * 100;
+    const changePercentage = originalIndexValue === 0 ? 0 : ((newIndexValue - originalIndexValue) / originalIndexValue) * 100;
 
     return {
         newIndexValue: parseFloat(newIndexValue.toFixed(4)),

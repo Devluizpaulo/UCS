@@ -29,6 +29,10 @@ const calculateUcsIndexFlow = ai.defineFlow(
         'USD/BRL Histórico',
         'EUR/BRL Histórico',
         'Boi Gordo Futuros',
+        'Soja Futuros',
+        'Milho Futuros',
+        'Madeira Futuros',
+        'Carbono Futuros',
     ];
     const pricesData = await getCommodityPrices({ commodities: commodityNames });
     
@@ -42,9 +46,11 @@ const calculateUcsIndexFlow = ai.defineFlow(
         acc[item.name] = item.price;
         return acc;
     }, {} as { [key: string]: number });
+    
+    const commoditiesForIndex = commodityNames.filter(name => !name.includes('/BRL'));
 
     // Check if all commodities have a price.
-    const hasAllPrices = commodityNames.every(name => prices[name] !== undefined);
+    const hasAllPrices = commoditiesForIndex.every(name => prices[name] !== undefined);
     if (!hasAllPrices) {
         console.error('[LOG] Missing some commodity prices. Calculation might be inaccurate.');
         // Return 0 if any price is missing to prevent calculation with NaN.
@@ -53,9 +59,9 @@ const calculateUcsIndexFlow = ai.defineFlow(
 
 
     // Assuming equal weights for simplicity.
-    const weight = 1 / commodityNames.length;
+    const weight = 1 / commoditiesForIndex.length;
     
-    const totalValue = commodityNames.reduce((sum, name) => {
+    const totalValue = commoditiesForIndex.reduce((sum, name) => {
         return sum + (prices[name] * weight);
     }, 0);
 

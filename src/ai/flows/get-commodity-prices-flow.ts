@@ -39,10 +39,14 @@ export async function getCommodityPrices(
 }
 
 // Maps our commodity names to their Yahoo Finance tickers.
-const commodityTickerMap: { [key: string]: string } = {
-  'USD/BRL Histórico': 'BRL=X',
-  'EUR/BRL Histórico': 'EURBRL=X',
-  'Boi Gordo Futuros': 'BGI=F',
+const commodityTickerMap: { [key: string]: { ticker: string, currency: 'BRL' | 'USD' | 'EUR' } } = {
+  'USD/BRL Histórico': { ticker: 'BRL=X', currency: 'BRL' },
+  'EUR/BRL Histórico': { ticker: 'EURBRL=X', currency: 'BRL' },
+  'Boi Gordo Futuros': { ticker: 'BGI=F', currency: 'BRL' },
+  'Soja Futuros': { ticker: 'ZS=F', currency: 'USD' },
+  'Milho Futuros': { ticker: 'CCM=F', currency: 'BRL' },
+  'Madeira Futuros': { ticker: 'LBS=F', currency: 'USD' },
+  'Carbono Futuros': { ticker: 'KE=F', currency: 'EUR' }, // Using Potassium Sulfate as proxy, converting from EUR
 };
 
 const getCommodityPricesFlow = ai.defineFlow(
@@ -52,41 +56,58 @@ const getCommodityPricesFlow = ai.defineFlow(
     outputSchema: CommodityPricesOutputSchema,
   },
   async (input) => {
-    const tickers = input.commodities
-      .map((name) => commodityTickerMap[name])
-      .filter(Boolean);
+    const requestedCommodities = input.commodities.map(name => commodityTickerMap[name]).filter(Boolean);
 
-    if (tickers.length === 0) {
+    // Always fetch conversion rates
+    const conversionTickers = ['BRL=X', 'EURBRL=X'];
+    const allTickers = [...new Set([...requestedCommodities.map(c => c.ticker), ...conversionTickers])];
+
+    if (allTickers.length === 0) {
       return { prices: [] };
     }
 
     try {
-      const quotes = await yahooFinance.quote(tickers);
+      const quotes = await yahooFinance.quote(allTickers);
 
-      const prices = quotes.map((quote) => {
-        const commodityName =
-          Object.keys(commodityTickerMap).find(
-            (key) => commodityTickerMap[key] === quote.symbol
-          ) || quote.symbol;
+      const getQuote = (ticker: string) => quotes.find(q => q.symbol === ticker);
 
-        // Use BRL for currencies, otherwise use the quote currency
+      const usdToBrlRate = getQuote('BRL=X')?.regularMarketPrice ?? 1;
+      const eurToBrlRate = getQuote('EURBRL=X')?.regularMarketPrice ?? 1;
+
+      const prices = input.commodities.map((name) => {
+        const commodityInfo = commodityTickerMap[name];
+        if (!commodityInfo) return null;
+
+        const quote = getQuote(commodityInfo.ticker);
+        if (!quote) return null;
+        
         let price = quote.regularMarketPrice ?? 0;
-        let change = quote.regularMarketChangePercent ?? 0;
         let absoluteChange = quote.regularMarketChange ?? 0;
+
+        if (commodityInfo.currency === 'USD') {
+            price *= usdToBrlRate;
+            absoluteChange *= usdToBrlRate;
+        } else if (commodityInfo.currency === 'EUR') {
+            price *= eurToBrlRate;
+            absoluteChange *= eurToBrlRate;
+        }
+
+        const originalPrice = quote.regularMarketPrice ?? 0;
+        const change = originalPrice === 0 ? 0 : (absoluteChange / (price - absoluteChange)) * 100;
 
         const lastUpdated = quote.regularMarketTime ? 
             new Date(quote.regularMarketTime * 1000).toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit', second: '2-digit' })
             : 'N/A';
         
         return {
-          name: commodityName,
+          name: name,
           ticker: quote.symbol,
           price: parseFloat(price.toFixed(4)),
-          change: parseFloat(change.toFixed(2)),
+          change: parseFloat(change.toFixed(2)) || 0,
           absoluteChange: parseFloat(absoluteChange.toFixed(4)),
           lastUpdated: `Às ${lastUpdated} (GMT-3)`,
         };
-      });
+      }).filter((p): p is CommodityPriceData => p !== null);
 
       return { prices };
     } catch (error) {

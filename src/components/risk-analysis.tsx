@@ -6,6 +6,10 @@ const riskData = [
   { asset: 'USD/BRL Histórico', volatility: 'Média', correlation: 'Positiva', sentiment: 'Neutro' },
   { asset: 'EUR/BRL Histórico', volatility: 'Média', correlation: 'Positiva', sentiment: 'Neutro' },
   { asset: 'Boi Gordo Futuros', volatility: 'Alta', correlation: 'Neutra', sentiment: 'Otimista' },
+  { asset: 'Soja Futuros', volatility: 'Média', correlation: 'Positiva', sentiment: 'Neutro' },
+  { asset: 'Milho Futuros', volatility: 'Baixa', correlation: 'Positiva', sentiment: 'Neutro' },
+  { asset: 'Madeira Futuros', volatility: 'Alta', correlation: 'Negativa', sentiment: 'Pessimista' },
+  { asset: 'Carbono Futuros', volatility: 'Média', correlation: 'Neutra', sentiment: 'Otimista' },
 ];
 
 export function RiskAnalysis() {

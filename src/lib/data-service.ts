@@ -21,6 +21,10 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
         'USD/BRL Histórico',
         'EUR/BRL Histórico',
         'Boi Gordo Futuros',
+        'Soja Futuros',
+        'Milho Futuros',
+        'Madeira Futuros',
+        'Carbono Futuros',
     ];
     return getCommodityPrices({ commodities: commodityNames });
 }
@@ -41,6 +45,10 @@ const commodityTickerMap: { [key: string]: string } = {
   'USD/BRL Histórico': 'BRL=X',
   'EUR/BRL Histórico': 'EURBRL=X',
   'Boi Gordo Futuros': 'BGI=F',
+  'Soja Futuros': 'ZS=F',
+  'Milho Futuros': 'CCM=F',
+  'Madeira Futuros': 'LBS=F',
+  'Carbono Futuros': 'KE=F',
 };
 
 export async function getAssetHistoricalData(assetName: string, interval: HistoryInterval = '1d'): Promise<HistoricalQuote[]> {
