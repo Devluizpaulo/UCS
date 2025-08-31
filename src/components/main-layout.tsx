@@ -9,6 +9,8 @@ import {
   LayoutDashboard,
   Library,
   Settings,
+  Moon,
+  Sun,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -46,6 +48,10 @@ const navItems: NavItem[] = [
 
 export function MainLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+
+  const toggleTheme = () => {
+    document.documentElement.classList.toggle('dark');
+  };
 
   return (
     <SidebarProvider>
@@ -103,6 +109,11 @@ export function MainLayout({ children }: { children: ReactNode }) {
               <DropdownMenuSeparator />
               <DropdownMenuItem>Perfil</DropdownMenuItem>
               <DropdownMenuItem>Configurações</DropdownMenuItem>
+              <DropdownMenuItem onClick={toggleTheme}>
+                 <Sun className="h-4 w-4 mr-2 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                 <Moon className="absolute h-4 w-4 mr-2 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                <span>Alternar Tema</span>
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem>Sair</DropdownMenuItem>
             </DropdownMenuContent>

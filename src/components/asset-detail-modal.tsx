@@ -39,7 +39,6 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
 
     const getDetails = useCallback(async (currentAsset: CommodityPriceData, currentInterval: HistoryInterval) => {
         setLoading(true);
-        // Reset chart/table data, but not analysis
         setHistoricalData([]);
         setChartData([]);
 
@@ -50,7 +49,6 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
             const chartPoints = history.map(d => ({ time: d.date, value: d.close }));
             setChartData(chartPoints);
 
-            // Fetch analysis only once when the modal opens for the first time with daily data.
             if (currentInterval === '1d' && !analysisResult) {
                 setLoadingAnalysis(true);
                 if (history.length > 0) {
@@ -73,21 +71,20 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
         } finally {
             setLoading(false);
         }
-    }, [analysisResult]); // Depend on analysisResult to avoid re-fetching it
+    }, [analysisResult]);
 
     useEffect(() => {
         if (isOpen) {
-            // Reset analysis when asset changes
             setAnalysisResult(null); 
             getDetails(asset, interval);
         }
-    }, [isOpen, asset.name, interval, getDetails]);
+    }, [isOpen, asset, interval, getDetails]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-4xl">
+      <DialogContent className="sm:max-w-4xl max-h-[90vh]">
         <DialogHeader>
-          <div className="flex justify-between items-start">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="flex-1">
                 <DialogTitle className="flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
@@ -99,7 +96,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                     Análise detalhada do histórico de preços e tendências para {asset.name}.
                 </DialogDescription>
             </div>
-            <Tabs defaultValue="1d" onValueChange={(value) => setInterval(value as HistoryInterval)} className="w-auto">
+            <Tabs defaultValue="1d" onValueChange={(value) => setInterval(value as HistoryInterval)} className="w-auto shrink-0">
                 <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="1d">Diário</TabsTrigger>
                     <TabsTrigger value="1wk">Semanal</TabsTrigger>
@@ -108,8 +105,8 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
             </Tabs>
           </div>
         </DialogHeader>
-        <div className="flex flex-col gap-8 py-4">
-             {/* Price and Chart Section */}
+        <ScrollArea className="pr-4 -mr-4">
+        <div className="flex flex-col gap-8 py-4 ">
             <div className="space-y-4">
                 <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
                     <span className="text-4xl font-bold text-primary">R$ {asset.price.toFixed(4)}</span>
@@ -145,7 +142,6 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                     </ChartContainer>
                 )}
             </div>
-            {/* AI Analysis Section */}
             <Card className="border-border/60 bg-card/50">
                 <CardContent className="p-6">
                     <h3 className="mb-3 flex items-center gap-2 text-lg font-semibold">
@@ -182,10 +178,8 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                 </CardContent>
             </Card>
             
-            {/* Quotes Table Section */}
             <div>
                  <h3 className="text-lg font-semibold mb-4">Cotações Históricas ({interval === '1d' ? 'Diário' : interval === '1wk' ? 'Semanal' : 'Mensal'})</h3>
-                 <ScrollArea className="h-[300px] border rounded-md">
                      <Table>
                         <TableHeader className="sticky top-0 bg-muted/95 backdrop-blur-sm z-10">
                             <TableRow>
@@ -231,9 +225,9 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                             )}
                         </TableBody>
                      </Table>
-                 </ScrollArea>
             </div>
         </div>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );
