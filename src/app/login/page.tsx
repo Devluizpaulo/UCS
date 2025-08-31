@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -61,22 +62,16 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="w-full min-h-screen bg-background lg:grid lg:grid-cols-2">
-      <div className="relative flex h-56 items-end bg-muted lg:h-full">
-        <Image
+     <div className="relative flex min-h-screen w-full items-center justify-center bg-background">
+      <Image
           src="/image/login.jpg"
           alt="Imagem de uma floresta com árvores altas."
           fill
           priority
-          className="h-full w-full object-cover dark:brightness-[0.3] dark:grayscale animate-ken-burns"
+          className="h-full w-full object-cover dark:brightness-[0.2] dark:grayscale animate-ken-burns"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-transparent lg:bg-gradient-to-r lg:from-transparent lg:via-transparent/20 lg:to-background"></div>
-        <div className="relative z-10 p-6 text-white lg:bottom-4 lg:left-4 lg:p-4">
-            <h2 className="text-3xl font-bold lg:text-4xl">Plataforma de Análise UCS</h2>
-            <p className="mt-2 max-w-md text-base lg:text-lg">Acesso seguro aos seus dados e análises estratégicas em tempo real.</p>
-        </div>
-      </div>
-      <div className="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+       <div className="absolute inset-0 bg-black/50"></div>
+       <div className="relative z-10 mx-auto w-full max-w-md rounded-2xl border border-border/20 bg-background/50 p-8 shadow-2xl backdrop-blur-sm">
         <div className="mx-auto grid w-full max-w-sm gap-6">
           <div className="grid gap-2 text-center">
              <div className="flex justify-center items-center gap-2 mb-2">
@@ -95,6 +90,7 @@ export default function LoginPage() {
                 type="email"
                 placeholder="seu@email.com"
                 {...register('email')}
+                className="bg-background/80"
               />
                {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
             </div>
@@ -108,7 +104,7 @@ export default function LoginPage() {
                   Esqueceu a senha?
                 </Link>
               </div>
-              <Input id="password" type="password" placeholder="********" {...register('password')} />
+              <Input id="password" type="password" placeholder="********" {...register('password')} className="bg-background/80"/>
               {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
