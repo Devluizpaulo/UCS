@@ -36,8 +36,8 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                 setHistoricalData([]);
 
                 try {
-                    // Fetch real historical data from Firestore
-                    const history = await getAssetHistoricalData(asset.name);
+                    // Fetch real historical data from data service
+                    const history = await getAssetHistoricalData(asset.name, asset.price);
                     setHistoricalData(history);
                     
                     if (history.length > 0) {
@@ -59,7 +59,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
             };
             getDetails();
         }
-    }, [isOpen, asset.name]);
+    }, [isOpen, asset.name, asset.price]);
 
     const latestValue = historicalData.length > 0 ? historicalData[historicalData.length-1].value : asset.price;
 
