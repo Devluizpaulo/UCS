@@ -7,7 +7,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { Area, AreaChart, CartesianGrid, XAxis, Tooltip } from 'recharts';
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import type { CommodityPriceData, ChartData, HistoricalQuote, AnalyzeAssetOutput, HistoryInterval } from '@/lib/types';
 import { Lightbulb, Loader2, Link as LinkIcon, ArrowDown, ArrowUp } from 'lucide-react';
@@ -18,6 +18,7 @@ import { getAssetAnalysis, getAssetHistoricalData } from '@/lib/data-service';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
+import { Card, CardContent } from './ui/card';
 
 
 interface AssetDetailModalProps {
@@ -109,15 +110,44 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
             </Tabs>
           </div>
         </DialogHeader>
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-8 py-4">
-            {/* Left Column */}
-            <div className="md:col-span-3 flex flex-col gap-6">
+        <div className="flex flex-col gap-8 py-4">
+
+            {/* Price and Chart Section */}
+            <div className="space-y-4">
                 <div>
                     <span className="text-4xl font-bold text-primary">R$ {latestPrice.toFixed(4)}</span>
                     <span className="text-sm text-muted-foreground"> (preço atual)</span>
                 </div>
-                
-                <div className="rounded-lg border bg-card/50 p-4">
+                 {loading ? (
+                     <div className="h-[250px] w-full flex items-center justify-center rounded-md border">
+                        <p className="text-sm text-muted-foreground">Carregando gráfico...</p>
+                     </div>
+                ) : (
+                    <ChartContainer config={{
+                        value: { label: 'Valor', color: 'hsl(var(--primary))' },
+                    }} className="h-[250px] w-full">
+                        <AreaChart accessibilityLayer data={chartData} margin={{ left: -10, right: 12, top: 10, bottom: 10 }}>
+                            <CartesianGrid vertical={false} />
+                            <XAxis dataKey="time" tickLine={false} axisLine={false} tickMargin={8} fontSize={12} />
+                            <YAxis 
+                                domain={['dataMin - 0.05', 'dataMax + 0.05']}
+                                tickLine={false} 
+                                axisLine={false} 
+                                tickMargin={8} 
+                                fontSize={12} 
+                                width={70} 
+                                tickFormatter={(value) => `R$ ${Number(value).toFixed(2)}`}
+                            />
+                            <Tooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
+                            <Area dataKey="value" type="natural" fill="var(--color-value)" fillOpacity={0.4} stroke="var(--color-value)" />
+                        </AreaChart>
+                    </ChartContainer>
+                )}
+            </div>
+
+            {/* AI Analysis Section */}
+            <Card className="border-border/60 bg-card/50">
+                <CardContent className="p-6">
                     <h3 className="mb-3 flex items-center gap-2 text-lg font-semibold">
                         <Lightbulb className="h-5 w-5 text-primary" />
                         Análise de IA
@@ -149,33 +179,13 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                             )}
                         </>
                     )}
-                </div>
-
-                <div>
-                    <h3 className="text-lg font-semibold mb-2">Histórico de Preços ({interval === '1d' ? 'Diário' : interval === '1wk' ? 'Semanal' : 'Mensal'})</h3>
-                    {loading ? (
-                         <div className="h-[200px] w-full flex items-center justify-center rounded-md border">
-                            <p className="text-sm text-muted-foreground">Carregando gráfico...</p>
-                         </div>
-                    ) : (
-                        <ChartContainer config={{
-                            value: { label: 'Valor', color: 'hsl(var(--primary))' },
-                        }} className="h-[200px] w-full">
-                            <AreaChart accessibilityLayer data={chartData} margin={{ left: 0, right: 12, top: 10, bottom: 10 }}>
-                                <CartesianGrid vertical={false} />
-                                <XAxis dataKey="time" tickLine={false} axisLine={false} tickMargin={8} fontSize={12} />
-                                <Tooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
-                                <Area dataKey="value" type="natural" fill="var(--color-value)" fillOpacity={0.4} stroke="var(--color-value)" />
-                            </AreaChart>
-                        </ChartContainer>
-                    )}
-                </div>
-            </div>
-
-            {/* Right Column */}
-            <div className="md:col-span-2">
-                 <h3 className="text-lg font-semibold mb-4">Cotações</h3>
-                 <ScrollArea className="h-[450px] border rounded-md">
+                </CardContent>
+            </Card>
+            
+            {/* Quotes Table Section */}
+            <div>
+                 <h3 className="text-lg font-semibold mb-4">Cotações Históricas ({interval === '1d' ? 'Diário' : interval === '1wk' ? 'Semanal' : 'Mensal'})</h3>
+                 <ScrollArea className="h-[300px] border rounded-md">
                      <Table>
                         <TableHeader className="sticky top-0 bg-muted/95 backdrop-blur-sm z-10">
                             <TableRow>
@@ -189,7 +199,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                         </TableHeader>
                         <TableBody>
                             {loading ? (
-                                Array.from({length: 10}).map((_, i) => (
+                                Array.from({length: 7}).map((_, i) => (
                                     <TableRow key={i}>
                                         <TableCell><div className="h-5 w-16 bg-muted rounded-md animate-pulse"/></TableCell>
                                         <TableCell><div className="h-5 w-20 bg-muted rounded-md animate-pulse ml-auto"/></TableCell>
