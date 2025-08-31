@@ -62,14 +62,12 @@ export default function LoginPage() {
 
   return (
     <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2 xl:min-h-screen">
-      <div className="hidden bg-muted lg:block relative">
+      <div className="hidden bg-muted lg:block relative overflow-hidden">
         <Image
-          src="https://s2.glbimg.com/eCXWBFSja29N2MAwKndFwrfTpHM=/e.glbimg.com/og/ed/f/original/2022/03/03/arvores-banho-de-floresta-coluna-unsplash.jpg"
+          src="/image/login.jpg"
           alt="Imagem de uma floresta com árvores altas."
-          data-ai-hint="forest trees"
-          width={1200}
-          height={1800}
-          className="h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
+          fill
+          className="h-full w-full object-cover dark:brightness-[0.3] dark:grayscale animate-ken-burns"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent via-transparent/60"></div>
         <div className="absolute bottom-10 left-10 text-white">

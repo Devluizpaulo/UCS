@@ -22,12 +22,6 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
-      {
-        protocol: 'https',
-        hostname: 's2.glbimg.com',
-        port: '',
-        pathname: '/**',
-      }
     ],
   },
   webpack: (config, { isServer }) => {
