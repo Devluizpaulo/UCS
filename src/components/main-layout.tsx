@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import {
   Bell,
   FileSpreadsheet,
@@ -11,6 +11,7 @@ import {
   Settings,
   Moon,
   Sun,
+  LogOut,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -32,6 +33,10 @@ import {
   SidebarFooter,
   SidebarInset,
 } from '@/components/ui/sidebar';
+import { getAuth, signOut } from 'firebase/auth';
+import { app } from '@/lib/firebase-config';
+import { useToast } from '@/hooks/use-toast';
+import { deleteCookie } from 'cookies-next';
 
 type NavItem = {
   href: string;
@@ -48,6 +53,8 @@ const navItems: NavItem[] = [
 
 export function MainLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { toast } = useToast();
 
   const toggleTheme = () => {
     const html = document.documentElement;
@@ -57,6 +64,27 @@ export function MainLayout({ children }: { children: ReactNode }) {
     } else {
       html.classList.remove('light');
       html.classList.add('dark');
+    }
+  };
+
+  const handleLogout = async () => {
+    const auth = getAuth(app);
+    try {
+      await signOut(auth);
+      // Remove the session cookie
+      deleteCookie('firebaseIdToken', { path: '/' });
+      toast({
+        title: 'Logout realizado',
+        description: 'Você foi desconectado com sucesso.',
+      });
+      router.push('/login');
+    } catch (error) {
+      console.error('Logout failed:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Erro no Logout',
+        description: 'Não foi possível desconectar. Tente novamente.',
+      });
     }
   };
 
@@ -114,15 +142,20 @@ export function MainLayout({ children }: { children: ReactNode }) {
             <DropdownMenuContent side="right" align="start" className="w-56">
               <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Perfil</DropdownMenuItem>
-              <DropdownMenuItem>Configurações</DropdownMenuItem>
+              <DropdownMenuItem>
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Perfil</span>
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={toggleTheme}>
                  <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
                  <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
                  <span className="ml-2">Alternar Tema</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Sair</DropdownMenuItem>
+              <DropdownMenuItem onClick={handleLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Sair</span>
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </SidebarFooter>
