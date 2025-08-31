@@ -10,8 +10,11 @@ export type Commodity = {
 
 export type CommodityPriceData = {
     name: string;
+    ticker: string;
     price: number;
-    change: number;
+    change: number; // Percentage change
+    absoluteChange: number;
+    lastUpdated: string;
 }
 
 export type HistoryInterval = '1d' | '1wk' | '1mo';

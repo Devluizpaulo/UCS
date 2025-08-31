@@ -21,8 +21,11 @@ const CommodityPricesOutputSchema = z.object({
   prices: z.array(
     z.object({
       name: z.string(),
+      ticker: z.string(),
       price: z.number(),
       change: z.number(),
+      absoluteChange: z.number(),
+      lastUpdated: z.string(),
     })
   ).describe('A list of commodities with their prices and 24h change percentage.'),
 });
@@ -68,21 +71,19 @@ const getCommodityPricesFlow = ai.defineFlow(
         // Use BRL for currencies, otherwise use the quote currency
         let price = quote.regularMarketPrice ?? 0;
         let change = quote.regularMarketChangePercent ?? 0;
+        let absoluteChange = quote.regularMarketChange ?? 0;
 
-        // This logic is simplified and might need adjustment based on how Yahoo Finance returns currency data
-        if (quote.symbol === 'BRL=X' || quote.symbol === 'EURBRL=X') {
-            // Price is already against BRL.
-        } else if (quote.currency === 'USD') {
-            const brlQuote = quotes.find(q => q.symbol === 'BRL=X');
-            if (brlQuote?.regularMarketPrice) {
-                price = price * brlQuote.regularMarketPrice;
-            }
-        } 
+        const lastUpdated = quote.regularMarketTime ? 
+            new Date(quote.regularMarketTime * 1000).toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit', second: '2-digit' })
+            : 'N/A';
         
         return {
           name: commodityName,
+          ticker: quote.symbol,
           price: parseFloat(price.toFixed(4)),
           change: parseFloat(change.toFixed(2)),
+          absoluteChange: parseFloat(absoluteChange.toFixed(4)),
+          lastUpdated: `Às ${lastUpdated} (GMT-3)`,
         };
       });
 

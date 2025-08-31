@@ -83,8 +83,6 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
         }
     }, [isOpen, asset.name, interval, getDetails]);
 
-    const latestPrice = historicalData.length > 0 ? historicalData[historicalData.length-1].close : asset.price;
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-4xl">
@@ -95,7 +93,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
                     <Icon className="h-6 w-6 text-muted-foreground" />
                     </div>
-                    <span>{asset.name}</span>
+                    <span>{asset.name} ({asset.ticker})</span>
                 </DialogTitle>
                 <DialogDescription className="mt-2">
                     Análise detalhada do histórico de preços e tendências para {asset.name}.
@@ -111,12 +109,15 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
           </div>
         </DialogHeader>
         <div className="flex flex-col gap-8 py-4">
-
-            {/* Price and Chart Section */}
+             {/* Price and Chart Section */}
             <div className="space-y-4">
-                <div>
-                    <span className="text-4xl font-bold text-primary">R$ {latestPrice.toFixed(4)}</span>
-                    <span className="text-sm text-muted-foreground"> (preço atual)</span>
+                <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+                    <span className="text-4xl font-bold text-primary">R$ {asset.price.toFixed(4)}</span>
+                    <div className={cn("flex items-baseline gap-2 text-lg font-semibold", asset.absoluteChange >= 0 ? "text-primary" : "text-destructive")}>
+                        <span>{asset.absoluteChange >= 0 ? '+' : ''}{asset.absoluteChange.toFixed(4)}</span>
+                        <span>({asset.change >= 0 ? '+' : ''}{asset.change.toFixed(2)}%)</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground">{asset.lastUpdated}</span>
                 </div>
                  {loading ? (
                      <div className="h-[250px] w-full flex items-center justify-center rounded-md border">
@@ -144,7 +145,6 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                     </ChartContainer>
                 )}
             </div>
-
             {/* AI Analysis Section */}
             <Card className="border-border/60 bg-card/50">
                 <CardContent className="p-6">
