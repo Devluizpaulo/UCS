@@ -168,19 +168,26 @@ export async function getOptimizedCommodityPrices(commodityNames: string[]): Pro
     const quote = getQuote(commodityInfo.ticker);
     if (!quote) return null;
     
-    // Use previous day's close for calculation consistency
-    const price = quote.regularMarketPreviousClose ?? quote.regularMarketPrice ?? 0;
+    let price: number;
+    let lastUpdated: string;
+    
+    // Use real-time price for exchange rates, and previous close for other commodities.
+    if (commodityInfo.category === 'exchange') {
+        price = quote.regularMarketPrice ?? quote.regularMarketPreviousClose ?? 0;
+        lastUpdated = quote.regularMarketTime && typeof quote.regularMarketTime === 'number' ?
+          new Date(quote.regularMarketTime * 1000).toLocaleTimeString('pt-BR', {
+            timeZone: 'America/Sao_Paulo',
+            hour: '2-digit',
+            minute: '2-digit',
+          }) : 'N/A';
+    } else {
+        price = quote.regularMarketPreviousClose ?? quote.regularMarketPrice ?? 0;
+        lastUpdated = `Fech. ${new Date(quote.regularMarketTime * 1000).toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit'})}`;
+    }
+
     const absoluteChange = quote.regularMarketChange ?? 0;
     const previousClose = price - absoluteChange;
     const change = previousClose === 0 ? 0 : (absoluteChange / previousClose) * 100;
-    
-    const lastUpdated = quote.regularMarketTime && typeof quote.regularMarketTime === 'number' ?
-      new Date(quote.regularMarketTime * 1000).toLocaleTimeString('pt-BR', {
-        timeZone: 'America/Sao_Paulo',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-      }) : 'N/A';
     
     return {
       name: name,
@@ -188,7 +195,7 @@ export async function getOptimizedCommodityPrices(commodityNames: string[]): Pro
       price: parseFloat(price.toFixed(4)),
       change: parseFloat(change.toFixed(2)) || 0,
       absoluteChange: parseFloat(absoluteChange.toFixed(4)),
-      lastUpdated: `Fechamento de ${new Date(quote.regularMarketTime * 1000).toLocaleDateString('pt-BR')}`,
+      lastUpdated: lastUpdated,
     };
   }).filter((p): p is NonNullable<typeof p> => p !== null);
 }

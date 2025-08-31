@@ -53,14 +53,14 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
   };
 
   const handleRowClick = (asset: CommodityPriceData) => {
-    if (loading) return;
+    if (loading || !asset.ticker) return;
     setSelectedAsset(asset);
   };
 
   const tableData = loading 
     ? commodityDetails.map(c => ({ 
         name: c.name, 
-        ticker: '...', 
+        ticker: '', 
         price: 0, 
         change: 0, 
         absoluteChange: 0, 
@@ -83,7 +83,7 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
         <TableHeader>
           <TableRow>
             <TableHead>Ativo</TableHead>
-            <TableHead className="text-right">Preço (Fechamento)</TableHead>
+            <TableHead className="text-right">Preço</TableHead>
             <TableHead className="text-right">Variação (24h)</TableHead>
           </TableRow>
         </TableHeader>
