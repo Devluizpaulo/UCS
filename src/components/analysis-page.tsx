@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 
 export function AnalysisPage() {
   return (
-    <div className="flex min-h-screen w-full flex-col bg-muted/40">
+    <div className="flex min-h-screen w-full flex-col">
       <PageHeader title="Análise Estratégica" />
       <main className="flex-1 p-4 md:p-6">
         <Tabs defaultValue="trends">

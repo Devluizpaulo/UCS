@@ -56,7 +56,7 @@ export function DashboardPage({ ucsCoinImageUrl }: DashboardPageProps) {
   const latestValue = chartData.length > 0 ? chartData[chartData.length - 1].value.toFixed(4) : '0.0000';
 
   return (
-    <div className="flex min-h-screen w-full flex-col bg-muted/40">
+    <div className="flex min-h-screen w-full flex-col">
       <PageHeader title="Painel">
         <Button onClick={() => fetchDashboardData()} disabled={loading} variant="outline" size="sm">
           {loading ? (
@@ -68,33 +68,29 @@ export function DashboardPage({ ucsCoinImageUrl }: DashboardPageProps) {
         </Button>
       </PageHeader>
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
-        <Card className="shadow-sm">
+        <Card className="border-border bg-card shadow-lg">
             <div className="grid grid-cols-1 md:grid-cols-3 items-center gap-6 p-6">
-                <div className="flex justify-center">
+                 <div className="flex justify-center md:justify-start">
                    <Image 
                      src={ucsCoinImageUrl} 
                      alt="Moeda UCS" 
-                     width={200} 
-                     height={200} 
+                     width={150} 
+                     height={150} 
                      className="rounded-full"
                      data-ai-hint="coin logo"
                      priority
                     />
                 </div>
                 <div className="md:col-span-2 text-center md:text-left">
-                     <CardTitle className="text-xl text-muted-foreground font-medium">Índice UCS</CardTitle>
-                     <CardDescription className="mb-2">
-                        Valor em tempo real com base em dados de commodities.
-                     </CardDescription>
+                     <CardTitle className="text-sm text-muted-foreground font-medium tracking-wider uppercase">Índice UCS</CardTitle>
                      {loading && chartData.length === 0 ? (
-                        <Skeleton className="h-16 w-64 mx-auto md:mx-0" />
+                        <Skeleton className="h-16 w-64 mt-2 mx-auto md:mx-0" />
                      ) : (
                         <p className="text-6xl font-bold text-primary">
                             {latestValue}
-                            <span className="text-4xl text-muted-foreground ml-2">UCS</span>
                         </p>
                      )}
-                      <p className="text-xs text-muted-foreground mt-2">Powered by Yahoo Finance</p>
+                      <p className="text-xs text-muted-foreground mt-1">Powered by Yahoo Finance</p>
                 </div>
             </div>
         </Card>

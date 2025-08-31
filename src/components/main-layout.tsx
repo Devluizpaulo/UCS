@@ -51,7 +51,7 @@ export function MainLayout({ children }: { children: ReactNode }) {
     <SidebarProvider>
       <Sidebar>
         <SidebarHeader>
-          <div className="flex items-center gap-3 p-2">
+          <div className="flex items-center gap-3 p-2 h-16 border-b">
             <FileSpreadsheet className="size-8 text-primary" />
             <div className="flex flex-col">
               <h2 className="text-lg font-semibold tracking-tight text-foreground">
