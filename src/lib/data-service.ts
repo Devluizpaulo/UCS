@@ -17,8 +17,8 @@ export async function runScenarioSimulation(asset: string, changeType: 'percenta
 export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
     const { getCommodityPrices } = await import('@/ai/flows/get-commodity-prices-flow');
     const commodityNames = [
-        'Soja Futuros', 
-        'USD/BRL Histórico', 
+        'Soja Futuros',
+        'USD/BRL Histórico',
         'EUR/BRL Histórico',
         'Boi Gordo Futuros',
         'Milho Futuros',
@@ -42,5 +42,7 @@ export async function getUcsIndexValue(): Promise<ChartData[]> {
 export async function getAssetHistoricalData(assetName: string, currentPrice: number): Promise<ChartData[]> {
     // Generate some mock historical data ending in the real value
     const { generateRealisticHistoricalData } = await import('./utils');
+    // In a real app using Yahoo Finance, we could fetch real historical data here.
+    // For now, we'll keep the mock data generation for consistency in the UI.
     return generateRealisticHistoricalData(currentPrice, 30, 0.05, 'day');
 }

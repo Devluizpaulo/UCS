@@ -1,50 +1,50 @@
 'use server';
 /**
- * @fileOverview A flow for fetching commodity prices.
+ * @fileOverview A flow for fetching commodity prices from the Yahoo Finance API.
  *
- * - getCommodityPrices - A function that returns simulated commodity prices.
+ * - getCommodityPrices - A function that returns real-time commodity prices.
  * - CommodityPricesInput - The input type for the getCommodityPrices function.
  * - CommodityPricesOutput - The return type for the getCommodityPrices function.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { ai } from '@/ai/genkit';
+import { z } from 'genkit';
+import yahooFinance from 'yahoo-finance2';
 import type { CommodityPriceData } from '@/lib/types';
-import { scrapeUrlFlow } from './scrape-commodity-price-flow';
-
 
 const CommodityPricesInputSchema = z.object({
-    commodities: z.array(z.string()).describe("A list of commodity names to fetch prices for.")
+  commodities: z.array(z.string()).describe('A list of commodity names to fetch prices for.'),
 });
 export type CommodityPricesInput = z.infer<typeof CommodityPricesInputSchema>;
 
 const CommodityPricesOutputSchema = z.object({
-    prices: z.array(z.object({
-        name: z.string(),
-        price: z.number(),
-        change: z.number(),
-    })).describe("A list of commodities with their prices and 24h change.")
+  prices: z.array(
+    z.object({
+      name: z.string(),
+      price: z.number(),
+      change: z.number(),
+    })
+  ).describe('A list of commodities with their prices and 24h change percentage.'),
 });
 export type CommodityPricesOutput = z.infer<typeof CommodityPricesOutputSchema>;
 
-
-export async function getCommodityPrices(input: CommodityPricesInput): Promise<CommodityPriceData[]> {
-    const flowResult = await getCommodityPricesFlow(input);
-    return flowResult.prices;
+export async function getCommodityPrices(
+  input: CommodityPricesInput
+): Promise<CommodityPriceData[]> {
+  const flowResult = await getCommodityPricesFlow(input);
+  return flowResult.prices;
 }
 
-
-// Mock data simulating fetching from an API based on previous day's closing.
-const commodityData: { [key: string]: { price: number; change: number; url?: string; selector?: string; currency?: 'USD' | 'EUR' | 'BRL'} } = {
-    'Soja Futuros': { price: 125.20, change: -1.1, currency: 'BRL', url: 'https://br.investing.com/commodities/us-soybeans-historical-data?cid=964523', selector: '[data-test="instrument-price-last"]' },
-    'USD/BRL Histórico': { price: 5.45, change: 0.1, currency: 'BRL', url: 'https://br.investing.com/currencies/usd-brl-historical-data', selector: '[data-test="instrument-price-last"]' },
-    'EUR/BRL Histórico': { price: 5.85, change: -0.2, currency: 'BRL', url: 'https://br.investing.com/currencies/eur-brl-historical-data', selector: '[data-test="instrument-price-last"]' },
-    'Boi Gordo Futuros': { price: 225.40, change: 0.5, currency: 'BRL', url: 'https://br.investing.com/commodities/live-cattle-historical-data', selector: '[data-test="instrument-price-last"]' },
-    'Carbono Futuros': { price: 7.80, change: 2.1, currency: 'EUR', url: 'https://br.investing.com/commodities/carbon-emissions-historical-data', selector: '[data-test="instrument-price-last"]' },
-    'Madeira Futuros': { price: 450.00, change: -3.2, currency: 'USD', url: 'https://br.investing.com/commodities/lumber-historical-data', selector: '[data-test="instrument-price-last"]' },
-    'Milho Futuros': { price: 45.30, change: 1.5, currency: 'BRL', url: 'https://br.investing.com/commodities/us-corn-historical-data?cid=964522', selector: '[data-test="instrument-price-last"]' },
+// Maps our commodity names to their Yahoo Finance tickers.
+const commodityTickerMap: { [key: string]: string } = {
+  'Soja Futuros': 'ZS=F',
+  'USD/BRL Histórico': 'BRL=X',
+  'EUR/BRL Histórico': 'EURBRL=X',
+  'Boi Gordo Futuros': 'LE=F',
+  'Carbono Futuros': 'KRBN', // KraneShares Global Carbon Strategy ETF as a proxy
+  'Madeira Futuros': 'LBS=F',
+  'Milho Futuros': 'ZC=F',
 };
-
 
 const getCommodityPricesFlow = ai.defineFlow(
   {
@@ -53,32 +53,54 @@ const getCommodityPricesFlow = ai.defineFlow(
     outputSchema: CommodityPricesOutputSchema,
   },
   async (input) => {
-    const pricePromises = input.commodities.map(async (name) => {
-        let data = commodityData[name] || { price: 0, change: 0, currency: 'BRL' };
-        let price = data.price;
+    const tickers = input.commodities
+      .map((name) => commodityTickerMap[name])
+      .filter(Boolean);
 
-        if (data.url && data.selector) {
-            try {
-                const scrapedPrice = await scrapeUrlFlow({ url: data.url, selector: data.selector });
-                if (scrapedPrice) {
-                    price = parseFloat(scrapedPrice);
-                } else {
-                     console.log(`[LOG] Could not scrape price for ${name}. Using mock value.`);
-                }
-            } catch (error) {
-                console.error(`[LOG] Error scraping ${name}:`, error);
-                // Fallback to mock price if scraping fails
+    if (tickers.length === 0) {
+      return { prices: [] };
+    }
+
+    try {
+      const quotes = await yahooFinance.quote(tickers);
+
+      const prices = quotes.map((quote) => {
+        const commodityName =
+          Object.keys(commodityTickerMap).find(
+            (key) => commodityTickerMap[key] === quote.symbol
+          ) || quote.symbol;
+
+        // Use BRL for currencies, otherwise use the quote currency
+        let price = quote.regularMarketPrice ?? 0;
+        let change = quote.regularMarketChangePercent ?? 0;
+
+        if (quote.currency === 'BRL') {
+            // Price is already in BRL, do nothing
+        } else if (quote.currency === 'USD') {
+            const brlQuote = quotes.find(q => q.symbol === 'BRL=X');
+            if (brlQuote?.regularMarketPrice) {
+                price = price * brlQuote.regularMarketPrice;
+            }
+        } else if (quote.currency === 'EUR') {
+             const eurBrlQuote = quotes.find(q => q.symbol === 'EURBRL=X');
+             if (eurBrlQuote?.regularMarketPrice) {
+                price = price * eurBrlQuote.regularMarketPrice;
             }
         }
 
-        return {
-            name,
-            price: parseFloat(price.toFixed(2)),
-            change: data.change,
-        };
-    });
 
-    const prices = await Promise.all(pricePromises);
-    return { prices };
+        return {
+          name: commodityName,
+          price: parseFloat(price.toFixed(2)),
+          change: parseFloat(change.toFixed(2)),
+        };
+      });
+
+      return { prices };
+    } catch (error) {
+      console.error('[LOG] Error fetching from Yahoo Finance API:', error);
+      // Fallback or error handling
+      return { prices: [] };
+    }
   }
 );
