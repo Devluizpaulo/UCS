@@ -38,7 +38,7 @@ export type AnalyzeAssetOutput = {
   }[];
 };
 
-export type IvcfData = {
+export type UcsData = {
   indexValue: number;
   components: {
     vm: number;

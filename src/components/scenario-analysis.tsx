@@ -61,7 +61,7 @@ export function ScenarioAnalysis() {
     <Card>
       <CardHeader>
         <CardTitle>Análise de Cenários</CardTitle>
-        <CardDescription>Simule o impacto de diferentes cenários econômicos e de mercado no Índice IVCF.</CardDescription>
+        <CardDescription>Simule o impacto de diferentes cenários econômicos e de mercado no Índice UCS.</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-6">
         <form onSubmit={handleSubmit(onSubmit)} className="grid gap-6">

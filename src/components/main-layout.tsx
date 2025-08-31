@@ -58,11 +58,8 @@ export function MainLayout({ children }: { children: ReactNode }) {
 
   const toggleTheme = () => {
     const html = document.documentElement;
-    if (html.classList.contains('dark')) {
-      html.classList.remove('dark');
-    } else {
-      html.classList.add('dark');
-    }
+    html.classList.toggle('dark');
+    html.classList.toggle('light');
   };
 
   const handleLogout = async () => {
@@ -94,7 +91,7 @@ export function MainLayout({ children }: { children: ReactNode }) {
             <FileSpreadsheet className="size-8 text-primary" />
             <div className="flex flex-col">
               <h2 className="text-xl font-semibold tracking-tight text-foreground">
-                Índice IVCF
+                Índice UCS
               </h2>
             </div>
           </div>

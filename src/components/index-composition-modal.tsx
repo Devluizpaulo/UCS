@@ -9,11 +9,11 @@ import {
 } from '@/components/ui/dialog';
 import { PieChart, Pie, Cell, Tooltip } from 'recharts';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
-import type { IvcfData } from '@/lib/types';
+import type { UcsData } from '@/lib/types';
 import { Separator } from './ui/separator';
 
 interface IndexCompositionModalProps {
-  data: IvcfData;
+  data: UcsData;
   isOpen: boolean;
   onClose: () => void;
 }
@@ -51,7 +51,7 @@ const CustomTooltip = ({ active, payload }: any) => {
 export function IndexCompositionModal({ data, isOpen, onClose }: IndexCompositionModalProps) {
     const { indexValue, components, vusDetails } = data;
 
-    const ivcfCompositionData = [
+    const ucsCompositionData = [
         { name: 'Valor da Madeira (VM)', value: components.vm, percent: formatPercentage(components.vm, indexValue), fill: COLORS.VM },
         { name: 'Valor de Uso do Solo (VUS)', value: components.vus, percent: formatPercentage(components.vus, indexValue), fill: COLORS.VUS },
         { name: 'Custo Socioambiental (CRS)', value: components.crs, percent: formatPercentage(components.crs, indexValue), fill: COLORS.CRS },
@@ -68,7 +68,7 @@ export function IndexCompositionModal({ data, isOpen, onClose }: IndexCompositio
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-4xl">
         <DialogHeader>
-            <DialogTitle className="text-2xl">Composição do Índice IVCF</DialogTitle>
+            <DialogTitle className="text-2xl">Composição do Índice UCS</DialogTitle>
             <DialogDescription>
                 Análise detalhada dos componentes que formam o valor do índice.
             </DialogDescription>
@@ -83,7 +83,7 @@ export function IndexCompositionModal({ data, isOpen, onClose }: IndexCompositio
                 <Separator />
                 <div className="space-y-4">
                     <h4 className="font-semibold">Componentes Principais</h4>
-                    {ivcfCompositionData.map(item => (
+                    {ucsCompositionData.map(item => (
                         <div key={item.name} className="flex justify-between items-center text-sm">
                             <div className="flex items-center gap-2">
                                 <div className="h-3 w-3 rounded-full" style={{ backgroundColor: item.fill }} />
@@ -117,12 +117,12 @@ export function IndexCompositionModal({ data, isOpen, onClose }: IndexCompositio
             {/* Right Side: Charts */}
             <div className="flex flex-col space-y-2">
                 <div className="w-full h-[250px]">
-                    <h4 className="text-center font-semibold text-muted-foreground mb-2">Composição IVCF</h4>
+                    <h4 className="text-center font-semibold text-muted-foreground mb-2">Composição UCS</h4>
                     <ChartContainer config={{}} className="h-full w-full">
                         <PieChart>
                              <Tooltip content={<CustomTooltip />} />
                             <Pie
-                                data={ivcfCompositionData}
+                                data={ucsCompositionData}
                                 dataKey="value"
                                 nameKey="name"
                                 cx="50%"
@@ -133,7 +133,7 @@ export function IndexCompositionModal({ data, isOpen, onClose }: IndexCompositio
                                 stroke="hsl(var(--background))"
                                 strokeWidth={2}
                             >
-                                {ivcfCompositionData.map((entry) => (
+                                {ucsCompositionData.map((entry) => (
                                     <Cell key={`cell-${entry.name}`} fill={entry.fill} />
                                 ))}
                             </Pie>

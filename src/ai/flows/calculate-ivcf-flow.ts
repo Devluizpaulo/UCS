@@ -1,17 +1,17 @@
 'use server';
 /**
- * @fileOverview A flow for calculating the IVCF Index based on a detailed pricing methodology.
+ * @fileOverview A flow for calculating the UCS Index based on a detailed pricing methodology.
  *
- * - calculateIvcfIndex - Calculates the final IVCF index value based on the provided formula.
- * - CalculateIvcfIndexOutput - The return type for the calculateIvcfIndex function.
+ * - calculateUcsIndex - Calculates the final UCS index value based on the provided formula.
+ * - CalculateUcsIndexOutput - The return type for the calculateUcsIndex function.
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { getCommodityPrices } from './get-commodity-prices-flow';
 
-const CalculateIvcfIndexOutputSchema = z.object({
-  indexValue: z.number().describe('The calculated value of the IVCF Index.'),
+const CalculateUcsIndexOutputSchema = z.object({
+  indexValue: z.number().describe('The calculated value of the UCS Index.'),
   components: z.object({
     vm: z.number().describe('Valor da Madeira (VM)'),
     vus: z.number().describe('Valor de Uso do Solo (VUS)'),
@@ -23,16 +23,16 @@ const CalculateIvcfIndexOutputSchema = z.object({
       soja: z.number(),
   }),
 });
-export type CalculateIvcfIndexOutput = z.infer<typeof CalculateIvcfIndexOutputSchema>;
+export type CalculateUcsIndexOutput = z.infer<typeof CalculateUcsIndexOutputSchema>;
 
-export async function calculateIvcfIndex(): Promise<CalculateIvcfIndexOutput> {
-  return await calculateIvcfIndexFlow();
+export async function calculateUcsIndex(): Promise<CalculateUcsIndexOutput> {
+  return await calculateUcsIndexFlow();
 }
 
-const calculateIvcfIndexFlow = ai.defineFlow(
+const calculateUcsIndexFlow = ai.defineFlow(
   {
-    name: 'calculateIvcfIndexFlow',
-    outputSchema: CalculateIvcfIndexOutputSchema,
+    name: 'calculateUcsIndexFlow',
+    outputSchema: CalculateUcsIndexOutputSchema,
   },
   async () => {
     const commodityNames = [
@@ -50,7 +50,7 @@ const calculateIvcfIndexFlow = ai.defineFlow(
     const defaultResult = { indexValue: 0, components: { vm: 0, vus: 0, crs: 0 }, vusDetails: { pecuaria: 0, milho: 0, soja: 0 }};
 
     if (!pricesData || pricesData.length === 0) {
-      console.error('[LOG] No commodity prices received for IVCF calculation. Returning default index value.');
+      console.error('[LOG] No commodity prices received for UCS calculation. Returning default index value.');
       return defaultResult;
     }
 
@@ -107,15 +107,15 @@ const calculateIvcfIndexFlow = ai.defineFlow(
     const valor_agua = VUS * FATOR_AGUA;
     const CRS = valor_carbono + valor_agua;
     
-    const ivcfValue = VM + VUS + CRS;
+    const ucsValue = VM + VUS + CRS;
 
-    if (!isFinite(ivcfValue)) {
-        console.error('[LOG] IVCF calculation resulted in a non-finite number. VM:', VM, 'VUS:', VUS, 'CRS:', CRS, 'Prices:', prices);
+    if (!isFinite(ucsValue)) {
+        console.error('[LOG] UCS calculation resulted in a non-finite number. VM:', VM, 'VUS:', VUS, 'CRS:', CRS, 'Prices:', prices);
         return defaultResult;
     }
 
     return { 
-        indexValue: parseFloat(ivcfValue.toFixed(2)),
+        indexValue: parseFloat(ucsValue.toFixed(2)),
         components: {
             vm: parseFloat(VM.toFixed(2)),
             vus: parseFloat(VUS.toFixed(2)),

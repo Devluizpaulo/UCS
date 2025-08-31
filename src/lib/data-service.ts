@@ -1,6 +1,6 @@
 'use server';
 
-import type { ChartData, CommodityPriceData, ScenarioResult, HistoricalQuote, AnalyzeAssetOutput, HistoryInterval, IvcfData } from './types';
+import type { ChartData, CommodityPriceData, ScenarioResult, HistoricalQuote, AnalyzeAssetOutput, HistoryInterval, UcsData } from './types';
 import { getOptimizedHistorical, getOptimizedCommodityPrices } from './yahoo-finance-optimizer';
 import { COMMODITY_TICKER_MAP } from './yahoo-finance-config-data';
 
@@ -29,9 +29,9 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
     return getOptimizedCommodityPrices(commodityNames);
 }
 
-export async function getIvcfIndexValue(interval: HistoryInterval = '1d'): Promise<{ history: ChartData[], latest: IvcfData }> {
-    const { calculateIvcfIndex } = await import('@/ai/flows/calculate-ivcf-flow');
-    const result = await calculateIvcfIndex();
+export async function getUcsIndexValue(interval: HistoryInterval = '1d'): Promise<{ history: ChartData[], latest: UcsData }> {
+    const { calculateUcsIndex } = await import('@/ai/flows/calculate-ucs-index-flow');
+    const result = await calculateUcsIndex();
     
     // For historical data, we need to calculate it day-by-day based on historical prices
     // This is a simplified version. A production system might pre-calculate and store this.

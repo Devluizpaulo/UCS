@@ -5,9 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Loader2, RefreshCw } from 'lucide-react';
 import { PageHeader } from '@/components/page-header';
 import { UcsIndexChart } from '@/components/ucs-index-chart';
-import type { ChartData, CommodityPriceData, IvcfData, HistoryInterval } from '@/lib/types';
+import type { ChartData, CommodityPriceData, UcsData, HistoryInterval } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { getCommodityPrices, getIvcfIndexValue } from '@/lib/data-service';
+import { getCommodityPrices, getUcsIndexValue } from '@/lib/data-service';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { UnderlyingAssetsTable } from './underlying-assets-table';
@@ -19,7 +19,7 @@ import { IndexCompositionModal } from './index-composition-modal';
 
 export function DashboardPage() {
   const [chartData, setChartData] = useState<ChartData[]>([]);
-  const [ivcfData, setIvcfData] = useState<IvcfData | null>(null);
+  const [ucsData, setUcsData] = useState<UcsData | null>(null);
   const [commodities, setCommodities] = useState<CommodityPriceData[]>([]);
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
@@ -32,17 +32,17 @@ export function DashboardPage() {
   const fetchDashboardData = useCallback(async (isRefresh = false) => {
       setLoading(true);
       try {
-        const [ivcfResult, pricesResult] = await Promise.all([
-          getIvcfIndexValue('1d'), // Main chart always shows daily
+        const [ucsResult, pricesResult] = await Promise.all([
+          getUcsIndexValue('1d'), // Main chart always shows daily
           getCommodityPrices()
         ]);
         
-        setChartData(ivcfResult.history);
-        setIvcfData(ivcfResult.latest);
+        setChartData(ucsResult.history);
+        setUcsData(ucsResult.latest);
         setCommodities(pricesResult);
 
         if (!isRefresh) {
-            setIndexHistoryData(ivcfResult.history);
+            setIndexHistoryData(ucsResult.history);
         }
 
       } catch (error) {
@@ -60,7 +60,7 @@ export function DashboardPage() {
   const fetchIndexHistory = useCallback(async (interval: HistoryInterval) => {
     setLoadingHistory(true);
     try {
-        const result = await getIvcfIndexValue(interval);
+        const result = await getUcsIndexValue(interval);
         setIndexHistoryData(result.history);
     } catch (error) {
         console.error(`Failed to fetch index history for interval ${interval}:`, error);
@@ -82,7 +82,7 @@ export function DashboardPage() {
     fetchIndexHistory(historyInterval);
   }, [historyInterval, fetchIndexHistory]);
   
-  const latestValue = ivcfData?.indexValue ?? 0;
+  const latestValue = ucsData?.indexValue ?? 0;
 
   return (
     <div className="flex min-h-screen w-full flex-col">
@@ -102,8 +102,8 @@ export function DashboardPage() {
             onClick={() => setIsModalOpen(true)}
         >
             <div className="p-6">
-                 <CardTitle className="text-sm text-muted-foreground font-medium tracking-wider uppercase">Índice IVCF (R$)</CardTitle>
-                 {loading && !ivcfData ? (
+                 <CardTitle className="text-sm text-muted-foreground font-medium tracking-wider uppercase">Índice UCS (R$)</CardTitle>
+                 {loading && !ucsData ? (
                     <Skeleton className="h-16 w-64 mt-2" />
                  ) : (
                     <div className="text-6xl font-bold text-primary">
@@ -113,11 +113,11 @@ export function DashboardPage() {
                   <p className="text-xs text-muted-foreground mt-1">Powered by bmv.global</p>
             </div>
         </Card>
-        {isModalOpen && ivcfData && (
+        {isModalOpen && ucsData && (
             <IndexCompositionModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
-                data={ivcfData}
+                data={ucsData}
             />
         )}
 
@@ -125,7 +125,7 @@ export function DashboardPage() {
         <Card>
             <CardHeader>
                 <CardTitle>Histórico do Índice</CardTitle>
-                <CardDescription>Performance do Índice IVCF nos últimos 30 dias.</CardDescription>
+                <CardDescription>Performance do Índice UCS nos últimos 30 dias.</CardDescription>
             </CardHeader>
             <CardContent>
                 <UcsIndexChart data={chartData} loading={loading}/>
@@ -141,7 +141,7 @@ export function DashboardPage() {
                 <Card>
                     <CardHeader>
                         <CardTitle>Ativos Subjacentes</CardTitle>
-                        <CardDescription>Preços de fechamento das commodities que compõem o índice IVCF.</CardDescription>
+                        <CardDescription>Preços de fechamento das commodities que compõem o índice UCS.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <UnderlyingAssetsTable data={commodities} loading={loading}/>
@@ -153,7 +153,7 @@ export function DashboardPage() {
                     <CardHeader className="flex flex-row items-center justify-between">
                        <div>
                             <CardTitle>Histórico de Cotações do Índice</CardTitle>
-                            <CardDescription>Valores de fechamento do Índice IVCF.</CardDescription>
+                            <CardDescription>Valores de fechamento do Índice UCS.</CardDescription>
                        </div>
                         <Tabs defaultValue="1d" onValueChange={(value) => setHistoryInterval(value as HistoryInterval)} className="w-auto">
                             <TabsList>

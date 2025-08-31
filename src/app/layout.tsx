@@ -3,8 +3,8 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
-  title: 'Monitor do Índice IVCF',
-  description: 'Acompanhamento em tempo real do Índice de Valor de Conservação Florestal.',
+  title: 'Monitor do Índice UCS',
+  description: 'Acompanhamento em tempo real do Índice de Unidade de Conservação Sustentável.',
 };
 
 export default function RootLayout({

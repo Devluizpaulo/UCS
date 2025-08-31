@@ -64,14 +64,14 @@ export default function LoginPage() {
     <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2 xl:min-h-screen">
       <div className="hidden bg-muted lg:block relative overflow-hidden">
         <Image
-          src="/public/image/login.jpg"
+          src="/image/login.jpg"
           alt="Imagem de uma floresta com árvores altas."
           fill
           className="h-full w-full object-cover dark:brightness-[0.3] dark:grayscale animate-ken-burns"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent via-transparent/60"></div>
         <div className="absolute bottom-10 left-10 text-white">
-            <h2 className="text-4xl font-bold">Plataforma de Análise IVCF</h2>
+            <h2 className="text-4xl font-bold">Plataforma de Análise UCS</h2>
             <p className="mt-2 max-w-md text-lg">Acesso seguro aos seus dados e análises estratégicas em tempo real.</p>
         </div>
       </div>
@@ -80,7 +80,7 @@ export default function LoginPage() {
           <div className="grid gap-2 text-center">
              <div className="flex justify-center items-center gap-2 mb-2">
                 <FileSpreadsheet className="size-8 text-primary" />
-                <h1 className="text-3xl font-bold">Índice IVCF</h1>
+                <h1 className="text-3xl font-bold">Índice UCS</h1>
             </div>
             <p className="text-balance text-muted-foreground">
               Insira suas credenciais para acessar o painel.

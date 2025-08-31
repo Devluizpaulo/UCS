@@ -1,6 +1,6 @@
 'use server';
 /**
- * @fileOverview A flow for simulating the impact of price changes on the IVCF Index.
+ * @fileOverview A flow for simulating the impact of price changes on the UCS Index.
  *
  * - simulateScenario - Runs a simulation and returns the projected index value.
  * - SimulateScenarioInput - The input type for the simulateScenario function.
@@ -83,9 +83,9 @@ function calculateIndex(prices: { [key: string]: number }): number {
     const valor_carbono = preco_carbono_brl * VOLUME_MADEIRA_HA * FATOR_CARBONO;
     const valor_agua = VUS * FATOR_AGUA;
     const CRS = valor_carbono + valor_agua;
-    const ivcfValue = VM + VUS + CRS;
+    const ucsValue = VM + VUS + CRS;
 
-    return isFinite(ivcfValue) ? ivcfValue : 0;
+    return isFinite(ucsValue) ? ucsValue : 0;
 }
 
 
