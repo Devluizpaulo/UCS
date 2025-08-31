@@ -14,8 +14,7 @@ import { Lightbulb, Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { ScrollArea } from './ui/scroll-area';
-import { generateRealisticHistoricalData } from '@/lib/utils';
-import { getAssetAnalysis } from '@/lib/data-service';
+import { getAssetAnalysis, getAssetHistoricalData } from '@/lib/data-service';
 
 interface AssetDetailModalProps {
   asset: CommodityPriceData;
@@ -37,16 +36,19 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                 setHistoricalData([]);
 
                 try {
-                    // In a real app, you would fetch this from your historical data collection in Firestore.
-                    // For now, we generate it.
-                    const history = generateRealisticHistoricalData(asset.price, 30, 0.1, 'day');
+                    // Fetch real historical data from Firestore
+                    const history = await getAssetHistoricalData(asset.name);
                     setHistoricalData(history);
                     
-                    const result = await getAssetAnalysis(
-                        asset.name, 
-                        history.map(d => d.value) 
-                    );
-                    setAnalysis(result.analysis);
+                    if (history.length > 0) {
+                        const result = await getAssetAnalysis(
+                            asset.name, 
+                            history.map(d => d.value) 
+                        );
+                        setAnalysis(result.analysis);
+                    } else {
+                        setAnalysis("Não há dados históricos suficientes para gerar uma análise.");
+                    }
 
                 } catch (error) {
                     console.error("Failed to get asset details:", error);
@@ -57,7 +59,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
             };
             getDetails();
         }
-    }, [isOpen, asset.name, asset.price]);
+    }, [isOpen, asset.name]);
 
     const latestValue = historicalData.length > 0 ? historicalData[historicalData.length-1].value : asset.price;
 

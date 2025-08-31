@@ -1,37 +1,84 @@
 'use server';
 
-import { generateRealisticHistoricalData } from './utils';
-import type { ChartData, CommodityPriceData } from './types';
+import type { ChartData, CommodityPriceData, ScenarioResult } from './types';
+import { db } from './firebase';
+import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
+
+// Helper function to get the most recent data document from Firestore
+async function getLatestDataDocument() {
+    const dataRef = collection(db, 'dados_historicos');
+    const q = query(dataRef, orderBy('timestamp', 'desc'), limit(1));
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+        console.error("Nenhum documento encontrado na coleção 'dados_historicos'.");
+        return null;
+    }
+    return querySnapshot.docs[0].data();
+}
+
+// Helper function to get the full historical data
+async function getFullHistoricalData() {
+    const dataRef = collection(db, 'dados_historicos');
+    const q = query(dataRef, orderBy('timestamp', 'asc')); // Get all data in chronological order
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+        console.error("Nenhum documento encontrado na coleção 'dados_historicos'.");
+        return [];
+    }
+    return querySnapshot.docs.map(doc => doc.data());
+}
+
 
 export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
-    const { getCommodityPrices } = await import('@/ai/flows/get-commodity-prices-flow');
-    const commodityNames = ['Créditos de Carbono', 'Boi Gordo', 'Milho', 'Soja', 'Madeira', 'Água'];
-    return getCommodityPrices({ commodities: commodityNames });
+    const latestData = await getLatestDataDocument();
+    if (!latestData || !latestData.commodities) {
+        return [];
+    }
+
+    // Assuming latestData.commodities is an object like { 'Boi Gordo': { price: X, change: Y }, ... }
+    return Object.entries(latestData.commodities).map(([name, data]) => ({
+        name,
+        price: (data as any).price || 0,
+        change: (data as any).change || 0,
+    }));
 }
 
 export async function getUcsIndexValue(): Promise<ChartData[]> {
-    const { calculateUcsIndex } = await import('@/ai/flows/calculate-ucs-index-flow');
-    // This flow calculates a single value. We will wrap it in an array with a timestamp
-    // to match the ChartData structure, but in a real scenario, you'd fetch a series.
-    const result = await calculateUcsIndex();
-    const now = new Date();
-    const timeLabel = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+     const historicalData = await getFullHistoricalData();
+     if (!historicalData.length) {
+         return [];
+     }
+     
+     return historicalData.map(data => ({
+         // Assuming timestamp is a Firestore Timestamp object
+         time: data.timestamp.toDate().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+         value: data.ucs_index || 0,
+     }));
+}
 
-    // For the chart, we need a history. We'll generate some realistic-looking
-    // data for the past, ending with the most recent calculated value.
-    const historicalData = generateRealisticHistoricalData(result.indexValue, 30, 0.05, 'minute');
-    
-    return historicalData;
+export async function getAssetHistoricalData(assetName: string): Promise<ChartData[]> {
+    const historicalData = await getFullHistoricalData();
+    if (!historicalData.length) {
+        return [];
+    }
+    return historicalData.map(data => ({
+        time: data.timestamp.toDate().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+        value: data.commodities?.[assetName]?.price || 0,
+    })).filter(d => d.value > 0);
 }
 
 
 // Functions for the "Analysis" page that call Genkit flows directly.
+// These can remain as they are, since they perform real-time AI analysis and simulation.
 export async function getAssetAnalysis(assetName: string, historicalData: number[]) {
     const { analyzeAsset } = await import('@/ai/flows/analyze-asset-flow');
     return analyzeAsset({ assetName, historicalData });
 }
 
-export async function runScenarioSimulation(asset: string, changeType: 'percentage' | 'absolute', value: number) {
+export async function runScenarioSimulation(asset: string, changeType: 'percentage' | 'absolute', value: number): Promise<ScenarioResult> {
     const { simulateScenario } = await import('@/ai/flows/simulate-scenario-flow');
+    // This flow needs real-time prices to work, so it will still call the scraping flow internally.
     return simulateScenario({ asset, changeType, value });
 }
