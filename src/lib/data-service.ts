@@ -1,6 +1,7 @@
 'use server';
 
-import type { ChartData, CommodityPriceData, ScenarioResult } from './types';
+import type { ChartData, CommodityPriceData, ScenarioResult, HistoricalQuote } from './types';
+import yahooFinance from 'yahoo-finance2';
 
 // Functions for the "Analysis" page that call Genkit flows directly.
 export async function getAssetAnalysis(assetName: string, historicalData: number[]) {
@@ -34,10 +35,57 @@ export async function getUcsIndexValue(): Promise<ChartData[]> {
     return generateRealisticHistoricalData(indexValue, 60, 0.02, 'minute');
 }
 
-export async function getAssetHistoricalData(assetName: string, currentPrice: number): Promise<ChartData[]> {
-    // Generate some mock historical data ending in the real value
-    const { generateRealisticHistoricalData } = await import('./utils');
-    // In a real app using Yahoo Finance, we could fetch real historical data here.
-    // For now, we'll keep the mock data generation for consistency in the UI.
-    return generateRealisticHistoricalData(currentPrice, 30, 0.05, 'day');
+
+const commodityTickerMap: { [key: string]: string } = {
+  'USD/BRL Histórico': 'BRL=X',
+  'EUR/BRL Histórico': 'EURBRL=X',
+};
+
+export async function getAssetHistoricalData(assetName: string): Promise<HistoricalQuote[]> {
+    const ticker = commodityTickerMap[assetName];
+    if (!ticker) {
+        console.error(`No ticker found for asset: ${assetName}`);
+        return [];
+    }
+
+    try {
+        const today = new Date();
+        const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+        
+        const queryOptions = {
+            period1: thirtyDaysAgo.toISOString().split('T')[0], // YYYY-MM-DD
+            period2: today.toISOString().split('T')[0], // YYYY-MM-DD
+            interval: '1d' as const,
+        };
+
+        const result = await yahooFinance.historical(ticker, queryOptions);
+
+        if (!result || result.length === 0) {
+            return [];
+        }
+
+        const formattedData: HistoricalQuote[] = [];
+        for (let i = 0; i < result.length; i++) {
+            const current = result[i];
+            const previousClose = i > 0 ? result[i - 1].close : current.open; // Use open for the first day's change
+            
+            const change = previousClose === 0 ? 0 : ((current.close - previousClose) / previousClose) * 100;
+
+            formattedData.push({
+                date: current.date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+                open: current.open,
+                high: current.high,
+                low: current.low,
+                close: current.close,
+                volume: current.volume?.toLocaleString('pt-BR') ?? 'N/A',
+                change: change,
+            });
+        }
+
+        return formattedData;
+
+    } catch (error) {
+        console.error(`[LOG] Error fetching historical data for ${ticker} from Yahoo Finance:`, error);
+        return [];
+    }
 }

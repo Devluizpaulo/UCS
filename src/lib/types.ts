@@ -14,6 +14,17 @@ export type CommodityPriceData = {
     change: number;
 }
 
+export type HistoricalQuote = {
+  date: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: string;
+  change: number;
+};
+
+
 export type UcsComposition = {
   agropecuaria: {
     weight: number; // 15%

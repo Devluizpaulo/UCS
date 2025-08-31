@@ -9,12 +9,14 @@ import {
 } from '@/components/ui/dialog';
 import { Area, AreaChart, CartesianGrid, XAxis, Tooltip } from 'recharts';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
-import type { CommodityPriceData, ChartData } from '@/lib/types';
+import type { CommodityPriceData, ChartData, HistoricalQuote } from '@/lib/types';
 import { Lightbulb, Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { ScrollArea } from './ui/scroll-area';
 import { getAssetAnalysis, getAssetHistoricalData } from '@/lib/data-service';
+import { cn } from '@/lib/utils';
+import { ArrowDown, ArrowUp } from 'lucide-react';
 
 interface AssetDetailModalProps {
   asset: CommodityPriceData;
@@ -24,7 +26,8 @@ interface AssetDetailModalProps {
 }
 
 export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDetailModalProps) {
-    const [historicalData, setHistoricalData] = useState<ChartData[]>([]);
+    const [historicalData, setHistoricalData] = useState<HistoricalQuote[]>([]);
+    const [chartData, setChartData] = useState<ChartData[]>([]);
     const [analysis, setAnalysis] = useState('');
     const [loading, setLoading] = useState(true);
 
@@ -34,16 +37,19 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                 setLoading(true);
                 setAnalysis('');
                 setHistoricalData([]);
+                setChartData([]);
 
                 try {
-                    // Fetch real historical data from data service
-                    const history = await getAssetHistoricalData(asset.name, asset.price);
+                    const history = await getAssetHistoricalData(asset.name);
                     setHistoricalData(history);
+                    
+                    const chartPoints = history.map(d => ({ time: d.date, value: d.close }));
+                    setChartData(chartPoints);
                     
                     if (history.length > 0) {
                         const result = await getAssetAnalysis(
                             asset.name, 
-                            history.map(d => d.value) 
+                            history.map(d => d.close) 
                         );
                         setAnalysis(result.analysis);
                     } else {
@@ -59,9 +65,9 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
             };
             getDetails();
         }
-    }, [isOpen, asset.name, asset.price]);
+    }, [isOpen, asset.name]);
 
-    const latestValue = historicalData.length > 0 ? historicalData[historicalData.length-1].value : asset.price;
+    const latestPrice = historicalData.length > 0 ? historicalData[historicalData.length-1].close : asset.price;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -81,7 +87,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
             {/* Left Column */}
             <div className="flex flex-col gap-6">
                 <div>
-                    <span className="text-4xl font-bold text-primary">R$ {latestValue.toFixed(4)}</span>
+                    <span className="text-4xl font-bold text-primary">R$ {latestPrice.toFixed(4)}</span>
                     <span className="text-sm text-muted-foreground"> (preço atual)</span>
                 </div>
                 
@@ -112,7 +118,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                         <ChartContainer config={{
                             value: { label: 'Valor', color: 'hsl(var(--primary))' },
                         }} className="h-[200px] w-full">
-                            <AreaChart accessibilityLayer data={historicalData} margin={{ left: 0, right: 12, top: 10, bottom: 10 }}>
+                            <AreaChart accessibilityLayer data={chartData} margin={{ left: 0, right: 12, top: 10, bottom: 10 }}>
                                 <CartesianGrid vertical={false} />
                                 <XAxis dataKey="time" tickLine={false} axisLine={false} tickMargin={8} fontSize={12} />
                                 <Tooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
@@ -128,25 +134,45 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                  <h3 className="text-lg font-semibold mb-4">Cotações Diárias</h3>
                  <ScrollArea className="h-[400px] border rounded-md">
                      <Table>
-                        <TableHeader className="sticky top-0 bg-muted/95 backdrop-blur-sm">
+                        <TableHeader className="sticky top-0 bg-muted/95 backdrop-blur-sm z-10">
                             <TableRow>
-                                <TableHead>Data</TableHead>
-                                <TableHead className="text-right">Valor (BRL)</TableHead>
+                                <TableHead className="w-[80px]">Data</TableHead>
+                                <TableHead className="text-right">Fechamento</TableHead>
+                                <TableHead className="text-right">Abertura</TableHead>
+                                <TableHead className="text-right">Máxima</TableHead>
+                                <TableHead className="text-right">Mínima</TableHead>
+                                <TableHead className="text-right w-[90px]">Variação</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {loading ? (
                                 Array.from({length: 10}).map((_, i) => (
                                     <TableRow key={i}>
-                                        <TableCell><div className="h-5 w-20 bg-muted rounded-md animate-pulse"/></TableCell>
-                                        <TableCell className="text-right"><div className="h-5 w-24 bg-muted rounded-md animate-pulse ml-auto"/></TableCell>
+                                        <TableCell><div className="h-5 w-16 bg-muted rounded-md animate-pulse"/></TableCell>
+                                        <TableCell><div className="h-5 w-20 bg-muted rounded-md animate-pulse ml-auto"/></TableCell>
+                                        <TableCell><div className="h-5 w-20 bg-muted rounded-md animate-pulse ml-auto"/></TableCell>
+                                        <TableCell><div className="h-5 w-20 bg-muted rounded-md animate-pulse ml-auto"/></TableCell>
+                                        <TableCell><div className="h-5 w-20 bg-muted rounded-md animate-pulse ml-auto"/></TableCell>
+                                        <TableCell><div className="h-5 w-16 bg-muted rounded-md animate-pulse ml-auto"/></TableCell>
                                     </TableRow>
                                 ))
                             ) : (
                                 historicalData.slice().reverse().map((dataPoint) => (
-                                    <TableRow key={dataPoint.time}>
-                                        <TableCell>{dataPoint.time}</TableCell>
-                                        <TableCell className="text-right font-mono">R$ {dataPoint.value.toFixed(4)}</TableCell>
+                                    <TableRow key={dataPoint.date}>
+                                        <TableCell className="font-medium">{dataPoint.date}</TableCell>
+                                        <TableCell className="text-right font-mono">R$ {dataPoint.close.toFixed(4)}</TableCell>
+                                        <TableCell className="text-right font-mono">{dataPoint.open.toFixed(4)}</TableCell>
+                                        <TableCell className="text-right font-mono">{dataPoint.high.toFixed(4)}</TableCell>
+                                        <TableCell className="text-right font-mono">{dataPoint.low.toFixed(4)}</TableCell>
+                                        <TableCell className="text-right">
+                                            <div className={cn(
+                                                "inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold font-mono transition-colors",
+                                                dataPoint.change >= 0 ? "border-primary/50 text-primary" : "border-destructive/50 text-destructive"
+                                            )}>
+                                                {dataPoint.change >= 0 ? <ArrowUp className="mr-1 h-3 w-3" /> : <ArrowDown className="mr-1 h-3 w-3" />}
+                                                {dataPoint.change.toFixed(2)}%
+                                            </div>
+                                        </TableCell>
                                     </TableRow>
                                 ))
                             )}
