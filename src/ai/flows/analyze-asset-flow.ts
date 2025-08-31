@@ -54,6 +54,18 @@ const getNewsForAssetTool = ai.defineTool(
         'EUR/BRL Histórico': [
             { title: "Crise energética na Europa gera preocupações e desvaloriza o Euro", source: "EuroInvest", url: "https://example.com/news5", publishedAt: new Date().toISOString() },
         ],
+        'Boi Gordo Futuros': [
+            { title: "Exportações de carne bovina atingem recorde no trimestre", source: "Pecuária Forte", url: "https://example.com/news6", publishedAt: new Date().toISOString() },
+        ],
+        'Milho Futuros': [
+            { title: "Previsão de safra recorde de milho pressiona preços para baixo", source: "AgroPortal", url: "https://example.com/news7", publishedAt: new Date().toISOString() },
+        ],
+        'Madeira Futuros': [
+            { title: "Mercado imobiliário aquecido nos EUA impulsiona demanda por madeira", source: "Construction Today", url: "https://example.com/news8", publishedAt: new Date().toISOString() },
+        ],
+        'Carbono Futuros': [
+            { title: "Novas regulamentações europeias para emissões podem aumentar o preço do crédito de carbono", source: "Climate Finance", url: "https://example.com/news9", publishedAt: new Date().toISOString() },
+        ],
     };
     return { headlines: mockNews[asset] || [] };
   }

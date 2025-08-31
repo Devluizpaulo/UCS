@@ -9,14 +9,18 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { ArrowDown, ArrowUp, DollarSign, Euro } from 'lucide-react';
+import { ArrowDown, ArrowUp, DollarSign, Euro, Leaf, Sprout, Wind, Fence, Beef } from 'lucide-react';
 import type { Commodity, CommodityPriceData } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Skeleton } from './ui/skeleton';
 import { AssetDetailModal } from './asset-detail-modal';
 
 const commodityDetails: Commodity[] = [
-  { name: 'Soja Futuros', icon: () => <span className="text-lg" data-ai-hint="plant">🌱</span> },
+  { name: 'Soja Futuros', icon: () => <span className="text-lg" data-ai-hint="soybean">🌱</span> },
+  { name: 'Milho Futuros', icon: () => <span className="text-lg" data-ai-hint="corn">🌽</span>},
+  { name: 'Boi Gordo Futuros', icon: Beef },
+  { name: 'Madeira Futuros', icon: Fence },
+  { name: 'Carbono Futuros', icon: Wind },
   { name: 'USD/BRL Histórico', icon: DollarSign },
   { name: 'EUR/BRL Histórico', icon: Euro },
 ];
@@ -50,7 +54,7 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
         </TableHeader>
         <TableBody>
           {loading ? (
-            Array.from({ length: 3 }).map((_, index) => (
+            Array.from({ length: 7 }).map((_, index) => (
               <TableRow key={index}>
                 <TableCell><Skeleton className="h-5 w-32" /></TableCell>
                 <TableCell className="text-right"><Skeleton className="h-5 w-24 ml-auto" /></TableCell>

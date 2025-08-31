@@ -31,20 +31,25 @@ export async function simulateScenario(input: SimulateScenarioInput): Promise<Sc
   return await simulateScenarioFlow(input);
 }
 
-// Helper function to calculate the index. Replicated from calculate-ucs-index-flow to avoid circular dependency.
-function calculateIndex(prices: { [key: string]: number }): number {
-    const weights = {
-        'Soja Futuros': 1/3,
-        'USD/BRL Histórico': 1/3,
-        'EUR/BRL Histórico': 1/3,
-    };
-    
-    const totalValue = 
-        (prices['Soja Futuros'] * weights['Soja Futuros']) +
-        (prices['USD/BRL Histórico'] * weights['USD/BRL Histórico']) +
-        (prices['EUR/BRL Histórico'] * weights['EUR/BRL Histórico']);
+const commodityNames = [
+    'Soja Futuros',
+    'USD/BRL Histórico',
+    'EUR/BRL Histórico',
+    'Boi Gordo Futuros',
+    'Milho Futuros',
+    'Madeira Futuros',
+    'Carbono Futuros'
+];
 
-    const normalizationFactor = 4;
+// Helper function to calculate the index.
+function calculateIndex(prices: { [key: string]: number }): number {
+    const weight = 1 / commodityNames.length;
+    
+    const totalValue = commodityNames.reduce((sum, name) => {
+        return sum + (prices[name] * weight);
+    }, 0);
+
+    const normalizationFactor = 10;
     return totalValue / normalizationFactor;
 }
 
@@ -57,7 +62,6 @@ const simulateScenarioFlow = ai.defineFlow(
   },
   async ({ asset, changeType, value }) => {
     // 1. Get current market prices
-    const commodityNames = ['Soja Futuros', 'USD/BRL Histórico', 'EUR/BRL Histórico'];
     const pricesData = await getCommodityPrices({ commodities: commodityNames });
     
     const originalPrices: { [key: string]: number } = pricesData.reduce((acc, item) => {

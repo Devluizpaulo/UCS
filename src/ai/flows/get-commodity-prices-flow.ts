@@ -39,6 +39,10 @@ const commodityData: { [key: string]: { price: number; change: number; url?: str
     'Soja Futuros': { price: 125.20, change: -1.1, currency: 'BRL', url: 'https://br.investing.com/commodities/us-soybeans-historical-data?cid=964523', selector: '[data-test="instrument-price-last"]' },
     'USD/BRL Histórico': { price: 5.45, change: 0.1, currency: 'BRL', url: 'https://br.investing.com/currencies/usd-brl-historical-data', selector: '[data-test="instrument-price-last"]' },
     'EUR/BRL Histórico': { price: 5.85, change: -0.2, currency: 'BRL', url: 'https://br.investing.com/currencies/eur-brl-historical-data', selector: '[data-test="instrument-price-last"]' },
+    'Boi Gordo Futuros': { price: 225.40, change: 0.5, currency: 'BRL', url: 'https://br.investing.com/commodities/live-cattle-historical-data', selector: '[data-test="instrument-price-last"]' },
+    'Carbono Futuros': { price: 7.80, change: 2.1, currency: 'EUR', url: 'https://br.investing.com/commodities/carbon-emissions-historical-data', selector: '[data-test="instrument-price-last"]' },
+    'Madeira Futuros': { price: 450.00, change: -3.2, currency: 'USD', url: 'https://br.investing.com/commodities/lumber-historical-data', selector: '[data-test="instrument-price-last"]' },
+    'Milho Futuros': { price: 45.30, change: 1.5, currency: 'BRL', url: 'https://br.investing.com/commodities/us-corn-historical-data?cid=964522', selector: '[data-test="instrument-price-last"]' },
 };
 
 

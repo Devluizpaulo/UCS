@@ -25,7 +25,15 @@ const calculateUcsIndexFlow = ai.defineFlow(
     outputSchema: CalculateUcsIndexOutputSchema,
   },
   async () => {
-    const commodityNames = ['Soja Futuros', 'USD/BRL Histórico', 'EUR/BRL Histórico'];
+    const commodityNames = [
+        'Soja Futuros',
+        'USD/BRL Histórico',
+        'EUR/BRL Histórico',
+        'Boi Gordo Futuros',
+        'Milho Futuros',
+        'Madeira Futuros',
+        'Carbono Futuros'
+    ];
     const pricesData = await getCommodityPrices({ commodities: commodityNames });
     
     const prices: { [key: string]: number } = pricesData.reduce((acc, item) => {
@@ -33,21 +41,15 @@ const calculateUcsIndexFlow = ai.defineFlow(
         return acc;
     }, {} as { [key: string]: number });
 
-    // Assuming equal weights for the new components for simplicity.
-    // This can be adjusted based on a new formula.
-    const weights = {
-        'Soja Futuros': 1/3,
-        'USD/BRL Histórico': 1/3,
-        'EUR/BRL Histórico': 1/3,
-    };
+    // Assuming equal weights for simplicity.
+    const weight = 1 / commodityNames.length;
     
-    const totalValue = 
-        (prices['Soja Futuros'] * weights['Soja Futuros']) +
-        (prices['USD/BRL Histórico'] * weights['USD/BRL Histórico']) +
-        (prices['EUR/BRL Histórico'] * weights['EUR/BRL Histórico']);
+    const totalValue = commodityNames.reduce((sum, name) => {
+        return sum + (prices[name] * weight);
+    }, 0);
 
     // A simple normalization factor, can be adjusted.
-    const normalizationFactor = 4; // Placeholder
+    const normalizationFactor = 10; // Placeholder
     const indexValue = totalValue / normalizationFactor;
 
     return { indexValue: parseFloat(indexValue.toFixed(2)) };
