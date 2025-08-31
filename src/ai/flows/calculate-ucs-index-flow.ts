@@ -9,8 +9,6 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { getCommodityPrices } from './get-commodity-prices-flow';
-import type { CommodityPriceData } from '@/lib/types';
-
 
 const CalculateUcsIndexOutputSchema = z.object({
   indexValue: z.number().describe('The calculated value of the UCS Index.'),
@@ -27,7 +25,7 @@ const calculateUcsIndexFlow = ai.defineFlow(
     outputSchema: CalculateUcsIndexOutputSchema,
   },
   async () => {
-    const commodityNames = ['Créditos de Carbono', 'Boi Gordo', 'Milho', 'Soja', 'Madeira', 'Água'];
+    const commodityNames = ['Soja Futuros', 'USD/BRL Histórico', 'EUR/BRL Histórico'];
     const pricesData = await getCommodityPrices({ commodities: commodityNames });
     
     const prices: { [key: string]: number } = pricesData.reduce((acc, item) => {
@@ -35,46 +33,21 @@ const calculateUcsIndexFlow = ai.defineFlow(
         return acc;
     }, {} as { [key: string]: number });
 
-
-    // Formula weights based on the user's spreadsheet
+    // Assuming equal weights for the new components for simplicity.
+    // This can be adjusted based on a new formula.
     const weights = {
-        agropecuaria: 0.15,
-        madeira: 0.68,
-        agua: 0.14,
-        carbono: 0.02,
+        'Soja Futuros': 1/3,
+        'USD/BRL Histórico': 1/3,
+        'EUR/BRL Histórico': 1/3,
     };
     
-    // Placeholder for sub-component weights within agropecuaria (can be refined later)
-    const agroWeights = {
-        boiGordo: 0.35,
-        milho: 0.30,
-        soja: 0.35,
-    };
-
-    // Calculate the value for each main component
-    const agroValue = (prices['Boi Gordo'] * agroWeights.boiGordo +
-                       prices['Milho'] * agroWeights.milho +
-                       prices['Soja'] * agroWeights.soja);
-
-    const madeiraValue = prices['Madeira'];
-    const aguaValue = prices['Água'];
-    const carbonoValue = prices['Créditos de Carbono'];
-    
-    // This is a simplified weighted sum.
-    // The formula from the spreadsheet seems to imply a much more complex calculation
-    // involving rentability per hectare and other factors.
-    // For now, we use this weighted sum as a starting point.
-    // A more complex implementation would require a dedicated flow to replicate the spreadsheet logic.
     const totalValue = 
-        (agroValue * weights.agropecuaria) +
-        (madeiraValue * weights.madeira) +
-        (aguaValue * weights.agua) +
-        (carbonoValue * weights.carbono);
+        (prices['Soja Futuros'] * weights['Soja Futuros']) +
+        (prices['USD/BRL Histórico'] * weights['USD/BRL Histórico']) +
+        (prices['EUR/BRL Histórico'] * weights['EUR/BRL Histórico']);
 
-    // The final index seems to be normalized. We'll use a placeholder divisor
-    // based on typical index values to get a result around 100.
-    // This should be replaced with the official normalization factor.
-    const normalizationFactor = 10; // Placeholder
+    // A simple normalization factor, can be adjusted.
+    const normalizationFactor = 4; // Placeholder
     const indexValue = totalValue / normalizationFactor;
 
     return { indexValue: parseFloat(indexValue.toFixed(2)) };

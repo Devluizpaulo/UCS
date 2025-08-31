@@ -16,7 +16,7 @@ export async function runScenarioSimulation(asset: string, changeType: 'percenta
 // Functions for the dashboard to get real-time data via flows
 export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
     const { getCommodityPrices } = await import('@/ai/flows/get-commodity-prices-flow');
-    const commodityNames = ['Créditos de Carbono', 'Boi Gordo', 'Milho', 'Soja', 'Madeira', 'Água'];
+    const commodityNames = ['Soja Futuros', 'USD/BRL Histórico', 'EUR/BRL Histórico'];
     return getCommodityPrices({ commodities: commodityNames });
 }
 

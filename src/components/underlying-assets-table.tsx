@@ -9,19 +9,16 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { ArrowDown, ArrowUp, Leaf, Droplets, TreePine } from 'lucide-react';
+import { ArrowDown, ArrowUp, DollarSign, Euro } from 'lucide-react';
 import type { Commodity, CommodityPriceData } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Skeleton } from './ui/skeleton';
 import { AssetDetailModal } from './asset-detail-modal';
 
 const commodityDetails: Commodity[] = [
-  { name: 'Créditos de Carbono', icon: Leaf },
-  { name: 'Boi Gordo', icon: () => <span className="text-lg" data-ai-hint="cow">🐄</span> },
-  { name: 'Milho', icon: () => <span className="text-lg" data-ai-hint="corn">🌽</span> },
-  { name: 'Soja', icon: () => <span className="text-lg" data-ai-hint="plant">🌱</span> },
-  { name: 'Madeira', icon: TreePine },
-  { name: 'Água', icon: Droplets },
+  { name: 'Soja Futuros', icon: () => <span className="text-lg" data-ai-hint="plant">🌱</span> },
+  { name: 'USD/BRL Histórico', icon: DollarSign },
+  { name: 'EUR/BRL Histórico', icon: Euro },
 ];
 
 interface UnderlyingAssetsTableProps {
@@ -34,7 +31,7 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
 
   const getIconForCommodity = (name: string) => {
     const details = commodityDetails.find(c => c.name === name);
-    return details ? details.icon : Leaf;
+    return details ? details.icon : DollarSign;
   };
 
   const handleRowClick = (asset: CommodityPriceData) => {
@@ -53,7 +50,7 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
         </TableHeader>
         <TableBody>
           {loading ? (
-            Array.from({ length: 6 }).map((_, index) => (
+            Array.from({ length: 3 }).map((_, index) => (
               <TableRow key={index}>
                 <TableCell><Skeleton className="h-5 w-32" /></TableCell>
                 <TableCell className="text-right"><Skeleton className="h-5 w-24 ml-auto" /></TableCell>
