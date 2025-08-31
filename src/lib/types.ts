@@ -24,6 +24,15 @@ export type HistoricalQuote = {
   change: number;
 };
 
+export type AnalyzeAssetOutput = {
+  analysis: string;
+  sources: {
+    title: string;
+    url: string;
+    source: string;
+  }[];
+};
+
 
 export type UcsComposition = {
   agropecuaria: {

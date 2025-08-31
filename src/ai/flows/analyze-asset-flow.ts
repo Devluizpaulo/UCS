@@ -18,6 +18,11 @@ export type AnalyzeAssetInput = z.infer<typeof AnalyzeAssetInputSchema>;
 
 const AnalyzeAssetOutputSchema = z.object({
   analysis: z.string().describe('A concise, expert analysis of the asset based on its historical data and recent news. Should cover volatility, recent trends, and overall market sentiment, referencing specific news that support the conclusion.'),
+  sources: z.array(z.object({
+    title: z.string().describe('The headline of the news article.'),
+    url: z.string().url().describe('The URL to the news article.'),
+    source: z.string().describe('The source of the news (e.g., news outlet name).'),
+  })).describe('A list of news articles used as sources for the analysis.'),
 });
 export type AnalyzeAssetOutput = z.infer<typeof AnalyzeAssetOutputSchema>;
 
@@ -85,10 +90,12 @@ Depois, analise o ativo '{{{assetName}}}' com base nos dados históricos de pre�
 
 Dados de Preço: {{{json historicalData}}}
 
-Sua análise deve conter no máximo 4 frases e abordar:
+Sua análise de texto, no campo 'analysis', deve conter no máximo 4 frases e abordar:
 1.  **Volatilidade:** O quão estável ou volátil o preço tem sido.
 2.  **Tendência:** Se há uma tendência clara de alta, baixa ou lateralização, considerando os dados e as notícias.
 3.  **Sentimento:** Uma conclusão geral sobre o sentimento do mercado para este ativo (otimista, pessimista, neutro), citando pelo menos uma notícia que embase sua conclusão.
+
+No campo 'sources', liste as notícias que você utilizou para a sua análise. Inclua o título, a URL e a fonte de cada notícia.
 
 Não use jargões. Seja claro, objetivo e profissional.
 `,

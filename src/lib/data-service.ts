@@ -1,10 +1,10 @@
 'use server';
 
-import type { ChartData, CommodityPriceData, ScenarioResult, HistoricalQuote } from './types';
+import type { ChartData, CommodityPriceData, ScenarioResult, HistoricalQuote, AnalyzeAssetOutput } from './types';
 import yahooFinance from 'yahoo-finance2';
 
 // Functions for the "Analysis" page that call Genkit flows directly.
-export async function getAssetAnalysis(assetName: string, historicalData: number[]) {
+export async function getAssetAnalysis(assetName: string, historicalData: number[]): Promise<AnalyzeAssetOutput> {
     const { analyzeAsset } = await import('@/ai/flows/analyze-asset-flow');
     return analyzeAsset({ assetName, historicalData });
 }
