@@ -57,7 +57,7 @@ const getCommodityPricesFlow = ai.defineFlow(
   },
   async (input) => {
     try {
-      const prices = await getCommoditoyPrices(input.commodities);
+      const prices = await getCommodityPrices(input);
       return { prices };
     } catch (error) {
       console.error('[LOG] Error fetching from Yahoo Finance API:', error);

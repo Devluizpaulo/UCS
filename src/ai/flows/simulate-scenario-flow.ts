@@ -39,19 +39,47 @@ const commodityNames = [
     'Milho Futuros',
     'Madeira Futuros',
     'Carbono Futuros',
+    'Agua Futuros',
 ];
-const commoditiesForIndex = commodityNames.filter(name => !name.includes('/BRL'));
 
-// Helper function to calculate the index.
+// Helper function to calculate the index based on the new methodology.
 function calculateIndex(prices: { [key: string]: number }): number {
-    const weight = 1 / commoditiesForIndex.length;
-    
-    const totalValue = commoditiesForIndex.reduce((sum, name) => {
-        return sum + ((prices[name] || 0) * weight);
-    }, 0);
+    // Constants from the formula
+    const Vmad = 0; // Per formula, Vmad = 0
+    const FAmed = 0.048; // Fator de Arrendamento médio
+    const FP_pecuari = 0.35;
+    const FP_milho = 0.3;
+    const FP_soja = 0.35;
+    const Pmed = 1; // Assuming Produção média por hectare = 1 for simplicity
+    const AtCO2n = 2.59; // Unidades de Cc por Hectare
+    const FCH2O = 0.07; // Fator de Conversão da água
+    const CE = 2.59; // Carbono estocado em equivalência à tCo2
 
-    const normalizationFactor = 1; // Adjusted for currency pair scale
-    return totalValue / normalizationFactor;
+    // Prices
+    const C_pecuari = prices['Boi Gordo Futuros'] || 0;
+    const C_milho = prices['Milho Futuros'] || 0;
+    const C_soja = prices['Soja Futuros'] || 0;
+    const Ccc = prices['Carbono Futuros'] || 0;
+    const Ch2o_price = prices['Agua Futuros'] || 0;
+
+    // Intermediate Calculations
+    const Vus_sum_part = (FP_pecuari * Pmed * C_pecuari) + (FP_milho * Pmed * C_milho) + (FP_soja * Pmed * C_soja);
+    const Vus = Vus_sum_part * FAmed;
+    
+    const Cc = Ccc * AtCO2n;
+    const CH2O = Ch2o_price * FCH2O;
+    const CRS = Cc + CH2O;
+    
+    // PDM = Potencial Desflorestador Monetizado
+    const PDM = Vmad + Vus + CRS;
+
+    // IVP = Índice de Viabilidade de Projeto
+    const IVP = (PDM / CE) / 2;
+
+    // UCS (CF) = Unidade de Crédito de Sustentabilidade
+    const ucsValue = 2 * IVP;
+    
+    return isFinite(ucsValue) ? ucsValue : 0;
 }
 
 
@@ -66,7 +94,15 @@ const simulateScenarioFlow = ai.defineFlow(
     const pricesData = await getCommodityPrices({ commodities: commodityNames });
     
     const originalPrices: { [key: string]: number } = pricesData.reduce((acc, item) => {
-        acc[item.name] = item.price;
+        let priceInBrl = item.price;
+         if (item.name === 'Soja Futuros' || item.name === 'Madeira Futuros' || item.name === 'Agua Futuros') { // USD assets
+            const usdRate = pricesData.find(p => p.name === 'USD/BRL Histórico')?.price || 1;
+            priceInBrl = item.price * usdRate;
+        } else if (item.name === 'Carbono Futuros') { // EUR asset
+            const eurRate = pricesData.find(p => p.name === 'EUR/BRL Histórico')?.price || 1;
+            priceInBrl = item.price * eurRate;
+        }
+        acc[item.name] = priceInBrl;
         return acc;
     }, {} as { [key: string]: number });
 

@@ -10,7 +10,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { AnimatedNumber } from '@/components/ui/animated-number';
-import { ArrowDown, ArrowUp, DollarSign, Euro, Beef, Leaf, TreePine, Recycle } from 'lucide-react';
+import { ArrowDown, ArrowUp, DollarSign, Euro, Beef, Leaf, TreePine, Recycle, Droplets } from 'lucide-react';
 import type { Commodity, CommodityPriceData } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Skeleton } from './ui/skeleton';
@@ -37,6 +37,7 @@ const commodityDetails: Commodity[] = [
   { name: 'Milho Futuros', icon: CornIcon },
   { name: 'Madeira Futuros', icon: TreePine },
   { name: 'Carbono Futuros', icon: Recycle },
+  { name: 'Agua Futuros', icon: Droplets },
 ];
 
 interface UnderlyingAssetsTableProps {
@@ -69,13 +70,11 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
                 </TableRow>
                 </TableHeader>
                 <TableBody>
-                {Array.from({ length: 7 }).map((_, index) => (
-                    <TableRow key={index}>
-                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                    <TableCell className="text-right"><Skeleton className="h-5 w-24 ml-auto" /></TableCell>
-                    <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
+                    <TableRow>
+                        <TableCell colSpan={3} className="text-center text-muted-foreground py-10">
+                            Carregando cotações...
+                        </TableCell>
                     </TableRow>
-                ))}
                 </TableBody>
             </Table>
         </div>

@@ -26,6 +26,7 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
         'Milho Futuros',
         'Madeira Futuros',
         'Carbono Futuros',
+        'Agua Futuros',
     ];
     return getCommodityPrices({ commodities: commodityNames });
 }

@@ -1,4 +1,3 @@
-
 // This file is intentionally not marked with 'use server' as it exports constant objects.
 
 // Yahoo Finance API Configuration
@@ -35,7 +34,8 @@ export const YAHOO_FINANCE_CONFIG = {
       'ZS=F': 1400.0, // Soja fallback price
       'CCM=F': 600.0, // Milho fallback price
       'LBS=F': 500.0, // Madeira fallback price
-      'KE=F': 300.0, // Carbono fallback price
+      'KE=F': 72.0, // Carbono fallback price in EUR
+      'NQH2O.CBT': 500.0, // Agua fallback price
     },
   },
 };
@@ -45,7 +45,7 @@ export const COMMODITY_TICKER_MAP: {
   [key: string]: { 
     ticker: string; 
     currency: 'BRL' | 'USD' | 'EUR';
-    category: 'exchange' | 'agriculture' | 'forestry' | 'carbon';
+    category: 'exchange' | 'agriculture' | 'forestry' | 'carbon' | 'water';
     description: string;
     fallbackPrice?: number;
   } 
@@ -96,7 +96,14 @@ export const COMMODITY_TICKER_MAP: {
     ticker: 'KE=F', 
     currency: 'EUR',
     category: 'carbon',
-    description: 'Contratos futuros de Carbono',
+    description: 'Contratos futuros de Carbono (ICE)',
     fallbackPrice: YAHOO_FINANCE_CONFIG.FALLBACK.COMMODITY_PRICES['KE=F']
   },
+  'Agua Futuros': {
+    ticker: 'NQH2O.CBT',
+    currency: 'USD',
+    category: 'water',
+    description: 'Contratos futuros de Água (Nasdaq Veles California Water Index)',
+    fallbackPrice: YAHOO_FINANCE_CONFIG.FALLBACK.COMMODITY_PRICES['NQH2O.CBT']
+  }
 };
