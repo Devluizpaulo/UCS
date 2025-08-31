@@ -9,14 +9,16 @@ import {
 } from '@/components/ui/dialog';
 import { Area, AreaChart, CartesianGrid, XAxis, Tooltip } from 'recharts';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
-import type { CommodityPriceData, ChartData, HistoricalQuote, AnalyzeAssetOutput } from '@/lib/types';
+import type { CommodityPriceData, ChartData, HistoricalQuote, AnalyzeAssetOutput, HistoryInterval } from '@/lib/types';
 import { Lightbulb, Loader2, Link as LinkIcon, ArrowDown, ArrowUp } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { ScrollArea } from './ui/scroll-area';
 import { getAssetAnalysis, getAssetHistoricalData } from '@/lib/data-service';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
+
 
 interface AssetDetailModalProps {
   asset: CommodityPriceData;
@@ -30,42 +32,55 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
     const [chartData, setChartData] = useState<ChartData[]>([]);
     const [analysisResult, setAnalysisResult] = useState<AnalyzeAssetOutput | null>(null);
     const [loading, setLoading] = useState(true);
+    const [loadingAnalysis, setLoadingAnalysis] = useState(true);
+    const [interval, setInterval] = useState<HistoryInterval>('1d');
+
+
+    const getDetails = useCallback(async (currentAsset: CommodityPriceData, currentInterval: HistoryInterval) => {
+        setLoading(true);
+        // Reset chart/table data, but not analysis
+        setHistoricalData([]);
+        setChartData([]);
+
+        try {
+            const history = await getAssetHistoricalData(currentAsset.name, currentInterval);
+            setHistoricalData(history);
+            
+            const chartPoints = history.map(d => ({ time: d.date, value: d.close }));
+            setChartData(chartPoints);
+
+            // Fetch analysis only once when the modal opens for the first time with daily data.
+            if (currentInterval === '1d' && !analysisResult) {
+                setLoadingAnalysis(true);
+                if (history.length > 0) {
+                    const result = await getAssetAnalysis(
+                        currentAsset.name, 
+                        history.map(d => d.close) 
+                    );
+                    setAnalysisResult(result);
+                } else {
+                    setAnalysisResult({ analysis: "Não há dados históricos suficientes para gerar uma análise.", sources: [] });
+                }
+                setLoadingAnalysis(false);
+            }
+
+        } catch (error) {
+            console.error("Failed to get asset details:", error);
+            if (!analysisResult) {
+                setAnalysisResult({ analysis: "Não foi possível carregar o histórico no momento.", sources: [] });
+            }
+        } finally {
+            setLoading(false);
+        }
+    }, [analysisResult]); // Depend on analysisResult to avoid re-fetching it
 
     useEffect(() => {
         if (isOpen) {
-            const getDetails = async () => {
-                setLoading(true);
-                setAnalysisResult(null);
-                setHistoricalData([]);
-                setChartData([]);
-
-                try {
-                    const history = await getAssetHistoricalData(asset.name);
-                    setHistoricalData(history);
-                    
-                    const chartPoints = history.map(d => ({ time: d.date, value: d.close }));
-                    setChartData(chartPoints);
-                    
-                    if (history.length > 0) {
-                        const result = await getAssetAnalysis(
-                            asset.name, 
-                            history.map(d => d.close) 
-                        );
-                        setAnalysisResult(result);
-                    } else {
-                        setAnalysisResult({ analysis: "Não há dados históricos suficientes para gerar uma análise.", sources: [] });
-                    }
-
-                } catch (error) {
-                    console.error("Failed to get asset details:", error);
-                    setAnalysisResult({ analysis: "Não foi possível carregar a análise ou o histórico no momento.", sources: [] });
-                } finally {
-                    setLoading(false);
-                }
-            };
-            getDetails();
+            // Reset analysis when asset changes
+            setAnalysisResult(null); 
+            getDetails(asset, interval);
         }
-    }, [isOpen, asset.name]);
+    }, [isOpen, asset.name, interval, getDetails]);
 
     const latestPrice = historicalData.length > 0 ? historicalData[historicalData.length-1].close : asset.price;
 
@@ -73,15 +88,26 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-4xl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-              <Icon className="h-6 w-6 text-muted-foreground" />
+          <div className="flex justify-between items-start">
+            <div className="flex-1">
+                <DialogTitle className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+                    <Icon className="h-6 w-6 text-muted-foreground" />
+                    </div>
+                    <span>{asset.name}</span>
+                </DialogTitle>
+                <DialogDescription className="mt-2">
+                    Análise detalhada do histórico de preços e tendências para {asset.name}.
+                </DialogDescription>
             </div>
-            <span>{asset.name}</span>
-          </DialogTitle>
-          <DialogDescription>
-            Análise detalhada do histórico de preços e tendências para {asset.name}.
-          </DialogDescription>
+            <Tabs defaultValue="1d" onValueChange={(value) => setInterval(value as HistoryInterval)} className="w-auto">
+                <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="1d">Diário</TabsTrigger>
+                    <TabsTrigger value="1wk">Semanal</TabsTrigger>
+                    <TabsTrigger value="1mo">Mensal</TabsTrigger>
+                </TabsList>
+            </Tabs>
+          </div>
         </DialogHeader>
         <div className="grid grid-cols-1 md:grid-cols-5 gap-8 py-4">
             {/* Left Column */}
@@ -96,7 +122,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                         <Lightbulb className="h-5 w-5 text-primary" />
                         Análise de IA
                     </h3>
-                    {loading || !analysisResult ? (
+                    {loadingAnalysis ? (
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <Loader2 className="h-4 w-4 animate-spin" />
                             <span>Analisando os dados...</span>
@@ -104,9 +130,9 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                     ) : (
                         <>
                             <p className="text-sm text-muted-foreground leading-relaxed">
-                                {analysisResult.analysis}
+                                {analysisResult?.analysis}
                             </p>
-                            {analysisResult.sources.length > 0 && (
+                            {analysisResult && analysisResult.sources.length > 0 && (
                                 <div className="mt-4">
                                     <h4 className="font-semibold text-sm mb-2">Fontes de Referência:</h4>
                                     <ul className="space-y-2">
@@ -126,7 +152,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                 </div>
 
                 <div>
-                    <h3 className="text-lg font-semibold mb-2">Histórico de Preços (Últimos 30 dias)</h3>
+                    <h3 className="text-lg font-semibold mb-2">Histórico de Preços ({interval === '1d' ? 'Diário' : interval === '1wk' ? 'Semanal' : 'Mensal'})</h3>
                     {loading ? (
                          <div className="h-[200px] w-full flex items-center justify-center rounded-md border">
                             <p className="text-sm text-muted-foreground">Carregando gráfico...</p>
@@ -148,7 +174,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
 
             {/* Right Column */}
             <div className="md:col-span-2">
-                 <h3 className="text-lg font-semibold mb-4">Cotações Diárias</h3>
+                 <h3 className="text-lg font-semibold mb-4">Cotações</h3>
                  <ScrollArea className="h-[450px] border rounded-md">
                      <Table>
                         <TableHeader className="sticky top-0 bg-muted/95 backdrop-blur-sm z-10">

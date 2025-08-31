@@ -1,6 +1,6 @@
 'use server';
 
-import type { ChartData, CommodityPriceData, ScenarioResult, HistoricalQuote, AnalyzeAssetOutput } from './types';
+import type { ChartData, CommodityPriceData, ScenarioResult, HistoricalQuote, AnalyzeAssetOutput, HistoryInterval } from './types';
 import yahooFinance from 'yahoo-finance2';
 
 // Functions for the "Analysis" page that call Genkit flows directly.
@@ -41,7 +41,7 @@ const commodityTickerMap: { [key: string]: string } = {
   'EUR/BRL Histórico': 'EURBRL=X',
 };
 
-export async function getAssetHistoricalData(assetName: string): Promise<HistoricalQuote[]> {
+export async function getAssetHistoricalData(assetName: string, interval: HistoryInterval = '1d'): Promise<HistoricalQuote[]> {
     const ticker = commodityTickerMap[assetName];
     if (!ticker) {
         console.error(`No ticker found for asset: ${assetName}`);
@@ -50,13 +50,24 @@ export async function getAssetHistoricalData(assetName: string): Promise<Histori
 
     try {
         const today = new Date();
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(today.getDate() - 31); // Fetch 31 days to ensure we get 30 data points
+        const startDate = new Date();
+
+        switch (interval) {
+            case '1d':
+                startDate.setDate(today.getDate() - 31); // Last 30 days
+                break;
+            case '1wk':
+                startDate.setFullYear(today.getFullYear() - 1); // Last year for weekly data
+                break;
+            case '1mo':
+                startDate.setFullYear(today.getFullYear() - 5); // Last 5 years for monthly data
+                break;
+        }
 
         const queryOptions = {
-            period1: thirtyDaysAgo.toISOString().split('T')[0],
-            period2: today.toISOString().split('T')[0], // Fetch up to today to get the latest completed session
-            interval: '1d' as const,
+            period1: startDate.toISOString().split('T')[0],
+            period2: today.toISOString().split('T')[0],
+            interval: interval,
         };
         
         const result = await yahooFinance.historical(ticker, queryOptions);
@@ -64,6 +75,16 @@ export async function getAssetHistoricalData(assetName: string): Promise<Histori
         if (!result || result.length === 0) {
             return [];
         }
+        
+        const getDateFormat = (date: Date) => {
+            switch(interval) {
+                case '1d': return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+                case '1wk': return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+                case '1mo': return date.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
+                default: return date.toLocaleDateString('pt-BR');
+            }
+        };
+
 
         const formattedData: HistoricalQuote[] = [];
         for (let i = 0; i < result.length; i++) {
@@ -73,7 +94,7 @@ export async function getAssetHistoricalData(assetName: string): Promise<Histori
             const change = previousClose === 0 ? 0 : ((current.close - previousClose) / previousClose) * 100;
 
             formattedData.push({
-                date: current.date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+                date: getDateFormat(current.date),
                 open: current.open,
                 high: current.high,
                 low: current.low,
@@ -83,7 +104,10 @@ export async function getAssetHistoricalData(assetName: string): Promise<Histori
             });
         }
 
-        return formattedData.slice(-30); // Return only the last 30 data points
+        if (interval === '1d') {
+            return formattedData.slice(-30); // Ensure we only show 30 data points for daily
+        }
+        return formattedData;
 
     } catch (error) {
         console.error(`[LOG] Error fetching historical data for ${ticker} from Yahoo Finance:`, error);

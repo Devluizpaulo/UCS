@@ -14,6 +14,8 @@ export type CommodityPriceData = {
     change: number;
 }
 
+export type HistoryInterval = '1d' | '1wk' | '1mo';
+
 export type HistoricalQuote = {
   date: string;
   open: number;
