@@ -1,4 +1,4 @@
-// This file is intentionally not marked with 'use server' as it exports constant objects.
+'// This file is intentionally not marked with 'use server' as it exports constant objects.
 
 // Yahoo Finance API Configuration
 export const YAHOO_FINANCE_CONFIG = {
