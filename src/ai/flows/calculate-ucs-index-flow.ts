@@ -39,24 +39,27 @@ const calculateUcsIndexFlow = ai.defineFlow(
   },
   async () => {
     
+    // Default result in case of any failure or if not configured
+    const defaultResult = { 
+        indexValue: 0, 
+        isConfigured: false, // Default to false
+        components: { vm: 0, vus: 0, crs: 0 }, 
+        vusDetails: { pecuaria: 0, milho: 0, soja: 0 }
+    };
+
     // Fetch dynamic data and parameters in parallel
     const [pricesData, params] = await Promise.all([
         getCommodityPrices(),
         getFormulaParameters()
     ]);
     
-    const defaultResult = { 
-        indexValue: 0, 
-        isConfigured: params.isConfigured,
-        components: { vm: 0, vus: 0, crs: 0 }, 
-        vusDetails: { pecuaria: 0, milho: 0, soja: 0 }
-    };
-    
     // If the formula has not been configured by the user, return zero.
     if (!params.isConfigured) {
         console.log('[LOG] Formula not configured. Returning default index value.');
-        return defaultResult;
+        return { ...defaultResult, isConfigured: false };
     }
+    
+    defaultResult.isConfigured = true; // From now on, we know it's configured.
 
     if (!pricesData || pricesData.length === 0) {
       console.error('[LOG] No commodity prices received for UCS calculation. Returning default index value.');
@@ -68,34 +71,52 @@ const calculateUcsIndexFlow = ai.defineFlow(
         return acc;
     }, {} as { [key: string]: number });
     
+    // --- Data Validation ---
+    const requiredAssets = [
+        'USD/BRL Histórico', 'EUR/BRL Histórico', 'Madeira Futuros',
+        'Boi Gordo Futuros - Ago 25 (BGIc1)', 'Milho Futuros', 'Soja Futuros', 'Carbono Futuros'
+    ];
+    for (const asset of requiredAssets) {
+        if (prices[asset] === undefined || prices[asset] === null || prices[asset] === 0) {
+            console.error(`[LOG] Missing or zero price for required asset: ${asset}. Aborting calculation.`);
+            return defaultResult;
+        }
+    }
+
+
     // Exchange Rates
-    const taxa_usd_brl = prices['USD/BRL Histórico'] || 1;
-    const taxa_eur_brl = prices['EUR/BRL Histórico'] || 1;
+    const taxa_usd_brl = prices['USD/BRL Histórico'];
+    const taxa_eur_brl = prices['EUR/BRL Histórico'];
 
     // Prices (raw from API)
-    const preco_lumber_mbf = prices['Madeira Futuros'] || 0; // Price per 1,000 board feet
-    const preco_boi_arroba = prices['Boi Gordo Futuros - Ago 25 (BGIc1)'] || 0; // Price in BRL/@
-    const preco_milho_bushel_cents = prices['Milho Futuros'] || 0; // Price in USD cents per bushel
-    const preco_soja_bushel_cents = prices['Soja Futuros'] || 0; // Price in USD cents per bushel
-    const preco_carbono_eur = prices['Carbono Futuros'] || 0; // Price in EUR/tCO₂
+    const preco_lumber_mbf = prices['Madeira Futuros']; // Price per 1,000 board feet (in USD)
+    const preco_boi_arroba = prices['Boi Gordo Futuros - Ago 25 (BGIc1)']; // Price in BRL/@
+    const preco_milho_bushel_cents = prices['Milho Futuros']; // Price in USD cents per bushel
+    const preco_soja_bushel_cents = prices['Soja Futuros']; // Price in USD cents per bushel
+    const preco_carbono_eur = prices['Carbono Futuros']; // Price in EUR/tCO₂
 
     // --- Price Conversions ---
     // 1 board foot = 0.00235974 m³ -> 1 m³ = 423.776 board feet. Using 424 as per examples.
-    const preco_madeira_serrada_m3 = (preco_lumber_mbf / 1000) * 424 * taxa_usd_brl;
-    const preco_madeira_tora_m3 = preco_madeira_serrada_m3 * params.FATOR_CONVERSAO_SERRADA_TORA;
+    const preco_madeira_serrada_m3_usd = (preco_lumber_mbf / 1000) * 424;
+    const preco_madeira_serrada_m3_brl = preco_madeira_serrada_m3_usd * taxa_usd_brl;
+    const preco_madeira_tora_m3_brl = preco_madeira_serrada_m3_brl * params.FATOR_CONVERSAO_SERRADA_TORA;
 
     // 1 bushel of corn = 25.4 kg. 1 ton = 1000 kg.
-    const preco_milho_ton = (preco_milho_bushel_cents / 100) * (1000 / 25.4) * taxa_usd_brl;
+    const preco_milho_ton_usd = (preco_milho_bushel_cents / 100) * (1000 / 25.4);
+    const preco_milho_ton_brl = preco_milho_ton_usd * taxa_usd_brl;
+    
     // 1 bushel of soy = 27.2 kg. 1 ton = 1000 kg.
-    const preco_soja_ton = (preco_soja_bushel_cents / 100) * (1000 / 27.2) * taxa_usd_brl;
+    const preco_soja_ton_usd = (preco_soja_bushel_cents / 100) * (1000 / 27.2);
+    const preco_soja_ton_brl = preco_soja_ton_usd * taxa_usd_brl;
+
     const preco_carbono_brl = preco_carbono_eur * taxa_eur_brl;
     
     // --- Formula Calculation using dynamic parameters ---
-    const VM = preco_madeira_tora_m3 * params.VOLUME_MADEIRA_HA;
+    const VM = preco_madeira_tora_m3_brl * params.VOLUME_MADEIRA_HA;
 
     const renda_pecuaria = params.PROD_BOI * preco_boi_arroba * params.PESO_PEC;
-    const renda_milho = params.PROD_MILHO * preco_milho_ton * params.PESO_MILHO;
-    const renda_soja = params.PROD_SOJA * preco_soja_ton * params.PESO_SOJA;
+    const renda_milho = params.PROD_MILHO * preco_milho_ton_brl * params.PESO_MILHO;
+    const renda_soja = params.PROD_SOJA * preco_soja_ton_brl * params.PESO_SOJA;
     const renda_bruta_ha = renda_pecuaria + renda_milho + renda_soja;
     const VUS = renda_bruta_ha / params.FATOR_ARREND;
     

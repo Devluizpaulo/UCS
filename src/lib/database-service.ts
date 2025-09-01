@@ -8,7 +8,7 @@
  */
 
 import { db } from './firebase-config';
-import { collection, doc, setDoc, serverTimestamp, query, orderBy, limit, getDocs } from 'firebase/firestore';
+import { collection, doc, setDoc, serverTimestamp, query, orderBy, limit, getDocs, Timestamp } from 'firebase/firestore';
 import type { CommodityPriceData } from './types';
 
 /**
@@ -73,8 +73,8 @@ export async function saveCommodityData(data: CommodityPriceData[] | CommodityPr
  * @returns {Promise<void>}
  */
 export async function saveUcsIndexData(indexValue: number): Promise<void> {
-    if (typeof indexValue !== 'number' || !isFinite(indexValue)) {
-        console.error('[DB] Invalid UCS index value provided for saving:', indexValue);
+    if (typeof indexValue !== 'number' || !isFinite(indexValue) || indexValue <= 0) {
+        console.error('[DB] Invalid or zero UCS index value provided for saving:', indexValue);
         return;
     }
 
@@ -93,10 +93,10 @@ export async function saveUcsIndexData(indexValue: number): Promise<void> {
         
         if (!querySnapshot.empty) {
             const lastDoc = querySnapshot.docs[0];
-            const lastDate = lastDoc.data().savedAt.toDate();
-            lastDate.setHours(0, 0, 0, 0);
+            const lastSavedDate = (lastDoc.data().savedAt as Timestamp).toDate();
+            lastSavedDate.setHours(0, 0, 0, 0);
 
-            if (lastDate.getTime() === today.getTime()) {
+            if (lastSavedDate.getTime() === today.getTime()) {
                 console.log(`[DB] UCS index value for today already exists. Skipping save.`);
                 return;
             }
