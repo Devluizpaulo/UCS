@@ -1,9 +1,8 @@
-
 'use server';
 
 import type { ChartData, CommodityPriceData, ScenarioResult, HistoricalQuote, HistoryInterval, UcsData, RiskAnalysisData, RiskMetric, GenerateReportInput, GenerateReportOutput } from './types';
 import { getOptimizedHistorical, getOptimizedCommodityPrices } from './yahoo-finance-optimizer';
-import { COMMODITY_TICKER_MAP } from './yahoo-finance-config-data';
+import { getCommodityConfig } from './commodity-config-service';
 import { calculate_volatility, calculate_correlation } from './statistics';
 import { db } from './firebase-config';
 import { collection, query, orderBy, limit, getDocs, Timestamp, getDoc, doc } from 'firebase/firestore';
@@ -18,7 +17,8 @@ export async function runScenarioSimulation(asset: string, changeType: 'percenta
 }
 
 export async function getRiskAnalysisData(): Promise<RiskAnalysisData> {
-    const assetNames = Object.keys(COMMODITY_TICKER_MAP);
+    const { commodityMap } = await getCommodityConfig();
+    const assetNames = Object.keys(commodityMap);
     
     try {
         // Fetch index history from our database
@@ -66,12 +66,13 @@ export async function getRiskAnalysisData(): Promise<RiskAnalysisData> {
  * This is the primary function used by the frontend to display data.
  */
 export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
-    const commodityNames = Object.keys(COMMODITY_TICKER_MAP);
+    const { commodityMap } = await getCommodityConfig();
+    const commodityNames = Object.keys(commodityMap);
     const prices: CommodityPriceData[] = [];
   
     for (const name of commodityNames) {
       try {
-        const commodityInfo = COMMODITY_TICKER_MAP[name];
+        const commodityInfo = commodityMap[name];
         if (!commodityInfo) continue;
   
         const pricesCollectionRef = collection(db, 'commodities_history', name, 'price_entries');
@@ -180,7 +181,8 @@ async function getUcsIndexHistory(interval: HistoryInterval, limitCount: number 
  * This ensures consistency and reduces external API calls.
  */
 export async function getAssetHistoricalData(assetName: string, interval: HistoryInterval = '1d', limitCount: number = 30): Promise<HistoricalQuote[]> {
-    const commodityInfo = COMMODITY_TICKER_MAP[assetName];
+    const { commodityMap } = await getCommodityConfig();
+    const commodityInfo = commodityMap[assetName];
     if (!commodityInfo) {
         console.error(`No configuration found for asset: ${assetName}`);
         return [];
@@ -248,7 +250,8 @@ export async function generateReport(input: GenerateReportInput): Promise<Genera
 
 export async function updateSingleCommodity(assetName: string): Promise<{success: boolean, message: string}> {
     console.log(`[DATA_SERVICE] Initiating manual update for ${assetName}`);
-    const commodityInfo = COMMODITY_TICKER_MAP[assetName];
+    const { commodityMap } = await getCommodityConfig();
+    const commodityInfo = commodityMap[assetName];
     if (!commodityInfo || !commodityInfo.scrapeConfig) {
         return { success: false, message: 'Ativo não configurado para atualização manual.' };
     }

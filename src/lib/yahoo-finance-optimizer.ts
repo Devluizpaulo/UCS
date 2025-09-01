@@ -2,7 +2,7 @@
 'use server';
 
 import { getCachedQuote, getCachedHistorical } from './yahoo-finance-cache';
-import { COMMODITY_TICKER_MAP } from './yahoo-finance-config-data';
+import { getCommodityConfig } from './commodity-config-service';
 import { getConversionTickers } from './yahoo-finance-config';
 import type { HistoryInterval, CommodityPriceData } from './types';
 
@@ -141,16 +141,18 @@ export async function getOptimizedHistorical(
 
 // Smart commodity price fetching with intelligent batching
 export async function getOptimizedCommodityPrices(commodityNames: string[]): Promise<CommodityPriceData[]> {
-  // Get all required tickers including conversion rates
-  const requestedCommodities = commodityNames
-    .map(name => COMMODITY_TICKER_MAP[name])
-    .filter(Boolean);
-  
-  const conversionTickers = await getConversionTickers();
-  const allTickers = [...new Set([
-    ...requestedCommodities.map(c => c.ticker),
-    ...conversionTickers
-  ])];
+    const { commodityMap } = await getCommodityConfig();
+
+    // Get all required tickers including conversion rates
+    const requestedCommodities = commodityNames
+      .map(name => commodityMap[name])
+      .filter(Boolean);
+    
+    const conversionTickers = await getConversionTickers();
+    const allTickers = [...new Set([
+      ...requestedCommodities.map(c => c.ticker),
+      ...conversionTickers
+    ])];
   
   if (allTickers.length === 0) {
     return [];
@@ -163,7 +165,7 @@ export async function getOptimizedCommodityPrices(commodityNames: string[]): Pro
   const getQuote = (ticker: string) => quotes.find((q: any) => q.symbol === ticker);
   
   const results = commodityNames.map((name): CommodityPriceData | null => {
-    const commodityInfo = COMMODITY_TICKER_MAP[name];
+    const commodityInfo = commodityMap[name];
     if (!commodityInfo) return null;
     
     const quote = getQuote(commodityInfo.ticker);
@@ -259,4 +261,4 @@ setInterval(() => {
       pendingHistoricalRequests.set(key, validRequests);
     }
   }
-}, 60 * 1000); // Run every minute
+}, 60 * 100

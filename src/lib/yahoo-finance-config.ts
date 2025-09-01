@@ -1,24 +1,28 @@
+
 'use server';
 
-import { COMMODITY_TICKER_MAP } from './yahoo-finance-config-data';
+import { getCommodityConfig } from './commodity-config-service';
 
 // Helper functions
 export async function getCommodityByTicker(ticker: string) {
-  return Object.entries(COMMODITY_TICKER_MAP).find(
+  const { commodityMap } = await getCommodityConfig();
+  const entry = Object.entries(commodityMap).find(
     ([_, config]) => config.ticker === ticker
-  )?.[1];
+  );
+  return entry ? { name: entry[0], ...entry[1] } : undefined;
 }
 
 export async function getCommoditiesByCategory(category: string) {
-  return Object.entries(COMMODITY_TICKER_MAP).filter(
+  const { commodityMap } = await getCommodityConfig();
+  return Object.entries(commodityMap).filter(
     ([_, config]) => config.category === category
-  );
+  ).map(([name, config]) => ({ name, ...config }));
 }
 
 export async function getAllTickers(): Promise<string[]> {
-  return Object.values(COMMODITY_TICKER_MAP).map(config => config.ticker);
+  const { commodityMap } = await getCommodityConfig();
+  return Object.values(commodityMap).map(config => config.ticker);
 }
 
 export async function getConversionTickers(): Promise<string[]> {
-  return ['BRL=X', 'EURBRL=X'];
-}
+  const { commodityMap } = await getCommodit

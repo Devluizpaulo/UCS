@@ -1,8 +1,7 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { MainLayout } from '@/components/main-layout';
@@ -16,7 +15,9 @@ import { Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getFormulaParameters, saveFormulaParameters } from '@/lib/formula-service';
 import { getApiConfig, saveApiConfig } from '@/lib/api-config-service';
-import type { FormulaParameters, YahooFinanceConfig } from '@/lib/types';
+import type { FormulaParameters, YahooFinanceConfig, CommodityConfig, CommodityMap } from '@/lib/types';
+import { getCommodityConfig, saveCommodityConfig } from '@/lib/commodity-config-service';
+import { CommoditySourcesTable } from '@/components/commodity-sources-table';
 
 
 const formulaSchema = z.object({
@@ -55,6 +56,7 @@ export default function SettingsPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const { toast } = useToast();
+  const [commodityConfig, setCommodityConfig] = useState<CommodityMap | null>(null);
 
   const formulaForm = useForm<Omit<FormulaParameters, 'isConfigured'>>({
       resolver: zodResolver(formulaSchema),
@@ -64,29 +66,32 @@ export default function SettingsPage() {
       resolver: zodResolver(apiSchema),
   });
 
-  useEffect(() => {
-    async function fetchParameters() {
-      setIsFetching(true);
-      try {
-        const [formulaParams, apiParams] = await Promise.all([
-            getFormulaParameters(),
-            getApiConfig()
-        ]);
-        formulaForm.reset(formulaParams);
-        apiForm.reset(apiParams.yahooFinance);
-      } catch (error) {
-        console.error("Failed to fetch settings:", error);
-        toast({
-          variant: "destructive",
-          title: "Erro ao carregar configurações",
-          description: "Não foi possível buscar as configurações. Usando valores padrão.",
-        });
-      } finally {
-        setIsFetching(false);
-      }
+  const fetchParameters = async () => {
+    setIsFetching(true);
+    try {
+      const [formulaParams, apiParams, commConfig] = await Promise.all([
+          getFormulaParameters(),
+          getApiConfig(),
+          getCommodityConfig()
+      ]);
+      formulaForm.reset(formulaParams);
+      apiForm.reset(apiParams.yahooFinance);
+      setCommodityConfig(commConfig.commodityMap);
+    } catch (error) {
+      console.error("Failed to fetch settings:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao carregar configurações",
+        description: "Não foi possível buscar as configurações. Usando valores padrão.",
+      });
+    } finally {
+      setIsFetching(false);
     }
+  };
+
+  useEffect(() => {
     fetchParameters();
-  }, [formulaForm.reset, apiForm.reset, toast]);
+  }, []);
   
 
   const onFormulaSubmit = async (data: Omit<FormulaParameters, 'isConfigured'>) => {
@@ -112,7 +117,7 @@ export default function SettingsPage() {
   const onApiSubmit = async (data: YahooFinanceConfig) => {
     setIsLoading(true);
     try {
-      await saveApiConfig(data);
+      await saveApiConfig({ yahooFinance: data });
       toast({
         title: 'Configurações de API Atualizadas',
         description: 'Os parâmetros da API do Yahoo Finance foram salvos.',
@@ -127,6 +132,31 @@ export default function SettingsPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+  
+  const handleSourceSave = async (updatedCommodity: CommodityConfig) => {
+     if (!commodityConfig) return;
+
+     const newConfig = { ...commodityConfig, [updatedCommodity.name]: updatedCommodity };
+     
+     setIsLoading(true);
+     try {
+        await saveCommodityConfig(newConfig);
+        setCommodityConfig(newConfig); // Update local state
+        toast({
+            title: "Fonte de Dados Atualizada",
+            description: `A configuração para ${updatedCommodity.name} foi salva.`
+        });
+     } catch(error) {
+        console.error("Failed to save commodity config:", error);
+        toast({
+            variant: "destructive",
+            title: "Erro ao Salvar",
+            description: "Não foi possível salvar a fonte de dados.",
+        });
+     } finally {
+        setIsLoading(false);
+     }
   };
 
   const renderFormulaForm = () => {
@@ -252,6 +282,28 @@ export default function SettingsPage() {
     );
   }
 
+  const renderSourcesTab = () => {
+    return (
+        <Card>
+           <CardHeader>
+               <CardTitle>Fontes de Dados dos Ativos</CardTitle>
+               <CardDescription>
+               Gerencie os ativos que compõem o índice, incluindo seus tickers e outras informações de busca de dados.
+               </CardDescription>
+           </CardHeader>
+           <CardContent>
+              <CommoditySourcesTable 
+                data={commodityConfig} 
+                loading={isFetching}
+                onSave={handleSourceSave}
+                isSaving={isLoading}
+              />
+           </CardContent>
+       </Card>
+     );
+  }
+
+
   return (
     <MainLayout>
       <div className="flex min-h-screen w-full flex-col">
@@ -264,15 +316,15 @@ export default function SettingsPage() {
                 className={activeTab === 'formula' ? "font-semibold text-primary" : ""}>
                 Fórmula do Índice
               </a>
-              <a href="#" 
-                onClick={() => setActiveTab('api')}
-                className={activeTab === 'api' ? "font-semibold text-primary" : ""}>
-                APIs
-              </a>
-              <a href="#" 
+               <a href="#" 
                  onClick={() => setActiveTab('sources')}
                  className={activeTab === 'sources' ? "font-semibold text-primary" : ""}>
                 Fontes de Dados
+              </a>
+              <a href="#" 
+                onClick={() => setActiveTab('api')}
+                className={activeTab === 'api' ? "font-semibold text-primary" : ""}>
+                Yahoo Finance API
               </a>
             </nav>
             <div className="grid gap-6">
@@ -292,7 +344,7 @@ export default function SettingsPage() {
                {activeTab === 'api' && (
                 <Card>
                     <CardHeader>
-                        <CardTitle>Configurações de API</CardTitle>
+                        <CardTitle>Configurações de API (Yahoo Finance)</CardTitle>
                         <CardDescription>
                             Gerencie os parâmetros para a comunicação com APIs externas, como o Yahoo Finance.
                         </CardDescription>
@@ -302,19 +354,7 @@ export default function SettingsPage() {
                     </CardContent>
                 </Card>
               )}
-               {activeTab === 'sources' && (
-                 <Card>
-                    <CardHeader>
-                        <CardTitle>Fontes de Dados</CardTitle>
-                        <CardDescription>
-                        Visualize as fontes de dados utilizadas para extração de cotações das commodities. Esta seção é apenas para visualização.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                       <p className="text-sm text-muted-foreground">As fontes de dados são gerenciadas através do arquivo de configuração `yahoo-finance-config-data.ts` e não são editáveis através desta interface.</p>
-                    </CardContent>
-                </Card>
-              )}
+               {activeTab === 'sources' && renderSourcesTab()}
             </div>
           </div>
         </main>

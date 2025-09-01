@@ -1,9 +1,5 @@
 
 
-
-
-
-
 export type ChartData = {
   time: string;
   value: number;
@@ -125,3 +121,28 @@ export type ApiConfig = {
     yahooFinance: YahooFinanceConfig;
     isConfigured: boolean;
 };
+
+// --- Commodity Configuration Types ---
+
+export type ScrapeConfig = {
+  url: string;
+  selector: string;
+};
+
+export type CommodityConfig = {
+  name: string; // The key from the map, added for convenience
+  ticker: string;
+  currency: 'BRL' | 'USD' | 'EUR';
+  category: 'exchange' | 'agriculture' | 'forestry' | 'carbon';
+  description: string;
+  unit: 'BRL' | '@' | 'cents/bushel' | 'USD/MBF' | 'EUR/tCO₂';
+  scrapeConfig?: ScrapeConfig;
+};
+
+export type CommodityMap = {
+  [key: string]: Omit<CommodityConfig, 'name'>;
+};
+
+export type FullCommodityConfig = {
+  commodityMap: CommodityMap;
+  isConfigured:
