@@ -2,7 +2,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -26,7 +25,6 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
   const { toast } = useToast();
   const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -45,9 +43,10 @@ export default function LoginPage() {
 
       toast({
         title: 'Login bem-sucedido',
-        description: 'Bem-vindo de volta!',
+        description: 'Bem-vindo de volta! Redirecionando...',
       });
-      router.push('/');
+      // Force a hard reload to ensure middleware picks up the cookie
+      window.location.href = '/';
     } catch (error: any) {
       console.error('Login failed:', error);
       toast({
@@ -70,8 +69,8 @@ export default function LoginPage() {
           priority
           className="h-full w-full object-cover dark:brightness-[0.2] dark:grayscale animate-ken-burns"
         />
-       <div className="absolute inset-0 bg-black/50"></div>
-       <div className="relative z-10 mx-auto w-full max-w-md rounded-2xl border border-border/20 bg-background/50 p-8 shadow-2xl backdrop-blur-sm">
+       <div className="absolute inset-0 bg-black/70"></div>
+       <div className="relative z-10 mx-auto w-full max-w-md rounded-2xl border border-border/20 bg-background/80 p-8 shadow-2xl backdrop-blur-sm">
         <div className="mx-auto grid w-full max-w-sm gap-6">
           <div className="grid gap-2 text-center">
              <div className="flex justify-center items-center gap-2 mb-2">
