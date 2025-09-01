@@ -81,38 +81,38 @@ export function UnderlyingAssetsTable({ data, loading, updatingAssets, onManualU
     }
     
     return dataSource.map((item) => {
-        const commodityName = typeof item === 'string' ? item : item.name;
-        const Icon = getIconForCommodity(commodityName);
-        
-        if (typeof item === 'string' || loading) { // Loading state
-             return (
+        if (loading) {
+            const commodityName = item as string;
+            const Icon = getIconForCommodity(commodityName);
+            return (
                 <TableRow key={commodityName} className="cursor-wait">
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
-                        <Icon className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                      <div>
-                        <div className="font-medium">{commodityName}</div>
-                        <div className="text-xs text-muted-foreground">Aguardando dados...</div>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right font-mono">
-                    <Skeleton className="h-5 w-20 ml-auto" />
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Skeleton className="h-6 w-24 ml-auto" />
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Skeleton className="h-8 w-8 rounded-full ml-auto" />
-                  </TableCell>
+                    <TableCell>
+                        <div className="flex items-center gap-3">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+                            <Icon className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                        <div>
+                            <div className="font-medium">{commodityName}</div>
+                            <div className="text-xs text-muted-foreground">Aguardando dados...</div>
+                        </div>
+                        </div>
+                    </TableCell>
+                    <TableCell className="text-right font-mono">
+                        <Skeleton className="h-5 w-20 ml-auto" />
+                    </TableCell>
+                    <TableCell className="text-right">
+                        <Skeleton className="h-6 w-24 ml-auto" />
+                    </TableCell>
+                    <TableCell className="text-right">
+                        <Skeleton className="h-8 w-8 rounded-full ml-auto" />
+                    </TableCell>
                 </TableRow>
             );
         }
 
         // Data loaded state
         const asset = item as CommodityPriceData;
+        const Icon = getIconForCommodity(asset.name);
         const currency = COMMODITY_TICKER_MAP[asset.name]?.currency || 'USD';
         const isUpdating = updatingAssets?.has(asset.name);
 
