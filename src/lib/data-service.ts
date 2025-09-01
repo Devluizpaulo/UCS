@@ -70,7 +70,7 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
     const commodityNames = [
         'USD/BRL Histórico',
         'EUR/BRL Histórico',
-        'Boi Gordo Futuros',
+        'Boi Gordo Futuros - Ago 25 (BGIc1)',
         'Soja Futuros',
         'Milho Futuros',
         'Madeira Futuros',

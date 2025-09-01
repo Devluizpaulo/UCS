@@ -32,7 +32,7 @@ const CornIcon = () => (
 const commodityDetails: Commodity[] = [
   { name: 'USD/BRL Histórico', icon: DollarSign },
   { name: 'EUR/BRL Histórico', icon: Euro },
-  { name: 'Boi Gordo Futuros', icon: Beef },
+  { name: 'Boi Gordo Futuros - Ago 25 (BGIc1)', icon: Beef },
   { name: 'Soja Futuros', icon: Leaf },
   { name: 'Milho Futuros', icon: CornIcon },
   { name: 'Madeira Futuros', icon: TreePine },

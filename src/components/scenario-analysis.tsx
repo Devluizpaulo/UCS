@@ -15,7 +15,7 @@ import { Loader2 } from 'lucide-react';
 
 const commodities = [
     // We only allow simulation on assets that are part of the formula
-    { value: 'Boi Gordo Futuros', label: 'Boi Gordo Futuros' },
+    { value: 'Boi Gordo Futuros - Ago 25 (BGIc1)', label: 'Boi Gordo Futuros - Ago 25 (BGIc1)' },
     { value: 'Soja Futuros', label: 'Soja Futuros' },
     { value: 'Milho Futuros', label: 'Milho Futuros' },
     { value: 'Madeira Futuros', label: 'Madeira Futuros' },

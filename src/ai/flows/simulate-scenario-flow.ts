@@ -34,7 +34,7 @@ export async function simulateScenario(input: SimulateScenarioInput): Promise<Sc
 const commodityNames = [
     'USD/BRL Histórico',
     'EUR/BRL Histórico',
-    'Boi Gordo Futuros',
+    'Boi Gordo Futuros - Ago 25 (BGIc1)',
     'Soja Futuros',
     'Milho Futuros',
     'Madeira Futuros',
@@ -62,7 +62,7 @@ function calculateIndex(prices: { [key: string]: number }): number {
 
     // Prices (raw from API)
     const preco_lumber_mbf = prices['Madeira Futuros'] || 0; // Price per 1,000 board feet
-    const preco_boi_arroba = prices['Boi Gordo Futuros'] || 0; // Price in BRL/@
+    const preco_boi_arroba = prices['Boi Gordo Futuros - Ago 25 (BGIc1)'] || 0; // Price in BRL/@
     const preco_milho_bushel_cents = prices['Milho Futuros'] || 0; // Price in USD cents per bushel
     const preco_soja_bushel_cents = prices['Soja Futuros'] || 0; // Price in USD cents per bushel
     const preco_carbono_eur = prices['Carbono Futuros'] || 0; // Price in EUR/tCO₂
