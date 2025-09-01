@@ -205,21 +205,19 @@ export function DashboardPage() {
             
             <AccordionItem value="item-3" className="border-none">
                 <Card>
-                    <AccordionTrigger className="p-6 w-full">
-                         <div className="flex flex-row items-center justify-between w-full">
-                            <div>
-                                <CardTitle className="text-left">Histórico de Cotações do Índice</CardTitle>
-                                <CardDescription className="text-left">Valores de fechamento do Índice UCS.</CardDescription>
-                            </div>
-                            <Tabs defaultValue="1d" onValueChange={(value) => setHistoryInterval(value as HistoryInterval)} className="w-auto" onClick={(e) => e.stopPropagation()}>
-                                <TabsList>
-                                    <TabsTrigger value="1d" disabled={!isConfigured}>Diário</TabsTrigger>
-                                    <TabsTrigger value="1wk" disabled={!isConfigured}>Semanal</TabsTrigger>
-                                    <TabsTrigger value="1mo" disabled={!isConfigured}>Mensal</TabsTrigger>
-                                </TabsList>
-                            </Tabs>
-                        </div>
-                    </AccordionTrigger>
+                     <CardHeader className="flex flex-row items-center justify-between">
+                        <AccordionTrigger className="flex-1 text-left p-0">
+                           <CardTitle>Histórico de Cotações do Índice</CardTitle>
+                           <CardDescription>Valores de fechamento do Índice UCS.</CardDescription>
+                        </AccordionTrigger>
+                        <Tabs defaultValue="1d" onValueChange={(value) => setHistoryInterval(value as HistoryInterval)} className="w-auto">
+                            <TabsList>
+                                <TabsTrigger value="1d" disabled={!isConfigured}>Diário</TabsTrigger>
+                                <TabsTrigger value="1wk" disabled={!isConfigured}>Semanal</TabsTrigger>
+                                <TabsTrigger value="1mo" disabled={!isConfigured}>Mensal</TabsTrigger>
+                            </TabsList>
+                        </Tabs>
+                    </CardHeader>
                     <AccordionContent>
                         <CardContent>
                             <IndexHistoryTable data={indexHistoryData} loading={loadingHistory} isConfigured={isConfigured} />
