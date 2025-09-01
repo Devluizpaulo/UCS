@@ -1,7 +1,4 @@
 
-
-
-
 'use server';
 
 import type { ChartData, CommodityPriceData, ScenarioResult, HistoricalQuote, HistoryInterval, UcsData, RiskAnalysisData, RiskMetric, GenerateReportInput, GenerateReportOutput } from './types';
@@ -24,17 +21,22 @@ export async function getRiskAnalysisData(): Promise<RiskAnalysisData> {
     const assetNames = Object.keys(COMMODITY_TICKER_MAP);
     
     try {
-        // Fetch index history
+        // Fetch index history from our database
         const indexHistoryRaw = await getUcsIndexHistory('1d', 30);
+        if (indexHistoryRaw.length < 2) throw new Error("Not enough index history to calculate risk.");
         const indexReturns = indexHistoryRaw.map((d, i, arr) => i === 0 ? 0 : (d.value - arr[i-1].value) / arr[i-1].value).slice(1);
         
         // Fetch asset histories and calculate metrics
         const metricsPromises = assetNames.map(async (assetName) => {
             const assetHistoryRaw = await getAssetHistoricalData(assetName, '1d', 30);
+             if (assetHistoryRaw.length < 2) return { asset: assetName, volatility: 0, correlation: 0 };
+
             const assetReturns = assetHistoryRaw.map((d, i, arr) => i === 0 ? 0 : (d.close - arr[i-1].close) / arr[i-1].close).slice(1);
             
             // Ensure arrays are the same length for correlation
             const minLength = Math.min(indexReturns.length, assetReturns.length);
+            if (minLength < 2) return { asset: assetName, volatility: 0, correlation: 0 };
+
             const alignedIndexReturns = indexReturns.slice(indexReturns.length - minLength);
             const alignedAssetReturns = assetReturns.slice(assetReturns.length - minLength);
 
@@ -50,9 +52,7 @@ export async function getRiskAnalysisData(): Promise<RiskAnalysisData> {
 
         const metrics: RiskMetric[] = await Promise.all(metricsPromises);
 
-        return {
-            metrics: metrics,
-        };
+        return { metrics };
 
     } catch (error) {
         console.error("[LOG] Failed to getRiskAnalysisData:", error);
@@ -75,15 +75,14 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
         if (!commodityInfo) continue;
   
         const pricesCollectionRef = collection(db, 'commodities_history', name, 'price_entries');
-        // Fetch the single most recent document.
         const q = query(pricesCollectionRef, orderBy('savedAt', 'desc'), limit(1));
         const querySnapshot = await getDocs(q);
   
         if (!querySnapshot.empty) {
-          const doc = querySnapshot.docs[0];
-          const data = doc.data() as any;
+          const docData = querySnapshot.docs[0];
+          const data = docData.data() as any;
           prices.push({
-            id: doc.id,
+            id: docData.id,
             name: data.name,
             ticker: data.ticker,
             price: data.price,
@@ -176,75 +175,66 @@ async function getUcsIndexHistory(interval: HistoryInterval, limitCount: number 
 }
 
 
-// Use centralized commodity ticker mapping
-export async function getAssetHistoricalData(assetName: string, interval: HistoryInterval = '1d', limit: number = 30): Promise<HistoricalQuote[]> {
+/**
+ * Fetches historical data for a given asset directly from the Firestore database.
+ * This ensures consistency and reduces external API calls.
+ */
+export async function getAssetHistoricalData(assetName: string, interval: HistoryInterval = '1d', limitCount: number = 30): Promise<HistoricalQuote[]> {
     const commodityInfo = COMMODITY_TICKER_MAP[assetName];
-    const ticker = commodityInfo?.ticker;
-    if (!ticker) {
-        console.error(`No ticker found for asset: ${assetName}`);
+    if (!commodityInfo) {
+        console.error(`No configuration found for asset: ${assetName}`);
         return [];
     }
 
     try {
-        const today = new Date();
-        const startDate = new Date();
+        const pricesCollectionRef = collection(db, 'commodities_history', assetName, 'price_entries');
+        const q = query(pricesCollectionRef, orderBy('savedAt', 'desc'), limit(limitCount));
+        const querySnapshot = await getDocs(q);
 
-        switch (interval) {
-            case '1d':
-                startDate.setDate(today.getDate() - (limit + 5)); // Fetch a bit more for calculations
-                break;
-            case '1wk':
-                 startDate.setDate(today.getDate() - (limit * 7 + 5));
-                break;
-            case '1mo':
-                startDate.setFullYear(today.getFullYear() - Math.ceil(limit / 12));
-                break;
-        }
-
-        const queryOptions = {
-            period1: startDate.toISOString().split('T')[0],
-            period2: today.toISOString().split('T')[0],
-            interval: interval,
-        };
-        
-        const result = await getOptimizedHistorical(ticker, queryOptions, interval);
-
-        if (!result || result.length === 0) {
+        if (querySnapshot.empty) {
             return [];
         }
-        
+
         const getDateFormat = (date: Date) => {
-            switch(interval) {
+            switch (interval) {
                 case '1d': return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
                 case '1wk': return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
                 case '1mo': return date.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
                 default: return date.toLocaleDateString('pt-BR');
             }
         };
-
-
-        const formattedData: HistoricalQuote[] = [];
-        for (let i = 0; i < result.length; i++) {
-            const current = result[i];
-            const previousClose = i > 0 ? result[i - 1].close : current.open; // Use open for the first day's change
-            
-            const change = previousClose === 0 ? 0 : ((current.close - previousClose) / previousClose) * 100;
-
-            formattedData.push({
-                date: getDateFormat(current.date),
-                open: current.open,
-                high: current.high,
-                low: current.low,
-                close: current.close,
-                volume: current.volume?.toLocaleString('pt-BR') ?? 'N/A',
-                change: change,
-            });
-        }
         
-        return formattedData.slice(-limit);
+        // Firestore data doesn't have open, high, low, so we adapt the model.
+        // We use the saved price as 'close' and calculate change based on the previous day's 'close'.
+        const historyData = querySnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                // We use the 'price' field from our saved data as the 'close' price
+                close: data.price, 
+                // The daily change is already pre-calculated and saved
+                change: data.change,
+                // The saved timestamp
+                date: (data.savedAt as Timestamp).toDate(),
+            };
+        }).reverse(); // .reverse() to get chronological order for change calculation.
 
+        const formattedData: HistoricalQuote[] = historyData.map((current, i) => {
+            const previous = i > 0 ? historyData[i - 1] : null;
+            return {
+                date: getDateFormat(current.date),
+                // Since we only store closing price, we'll use it for O-H-L as a reasonable approximation for the chart
+                open: previous ? previous.close : current.close,
+                high: current.close,
+                low: current.close,
+                close: current.close,
+                volume: 'N/A', // Volume is not stored in our DB
+                change: current.change, // Use the pre-calculated change
+            };
+        });
+
+        return formattedData;
     } catch (error) {
-        console.error(`[LOG] Error fetching historical data for ${ticker} from Yahoo Finance:`, error);
+        console.error(`[DATA_SERVICE] Error fetching historical data for ${assetName} from Firestore:`, error);
         return [];
     }
 }
