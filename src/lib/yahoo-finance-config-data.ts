@@ -30,7 +30,7 @@ export const YAHOO_FINANCE_CONFIG = {
       'EURBRL=X': 6.0, // EUR to BRL fallback rate
     },
     COMMODITY_PRICES: {
-      'BGIc1': 250.0, // Boi Gordo fallback price
+      'BGIc1.SA': 250.0, // Boi Gordo fallback price
       'ZS=F': 1400.0, // Soja fallback price (cents/bushel)
       'ZC=F': 600.0, // Milho fallback price (cents/bushel)
       'LBS=F': 500.0, // Madeira fallback price (USD/MBF)
@@ -67,11 +67,11 @@ export const COMMODITY_TICKER_MAP: {
     unit: 'BRL',
   },
   'Boi Gordo Futuros - Ago 25 (BGIc1)': { 
-    ticker: 'BGIc1', 
+    ticker: 'BGIc1.SA', 
     currency: 'BRL',
     category: 'agriculture',
     description: 'Contratos futuros de Boi Gordo para Agosto de 2025',
-    fallbackPrice: YAHOO_FINANCE_CONFIG.FALLBACK.COMMODITY_PRICES['BGIc1'],
+    fallbackPrice: YAHOO_FINANCE_CONFIG.FALLBACK.COMMODITY_PRICES['BGIc1.SA'],
     unit: '@',
   },
   'Soja Futuros': { 
