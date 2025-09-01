@@ -18,6 +18,7 @@ import { AnimatedNumber } from './ui/animated-number';
 import { IndexCompositionModal } from './index-composition-modal';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import Link from 'next/link';
+import Image from 'next/image';
 
 
 export function DashboardPage() {
@@ -125,15 +126,18 @@ export function DashboardPage() {
             onClick={() => isConfigured && setIsModalOpen(true)}
         >
             <div className="p-6">
-                 <CardTitle className="text-sm text-muted-foreground font-medium tracking-wider uppercase">Índice UCS (R$)</CardTitle>
+                 <CardTitle className="text-sm text-muted-foreground font-medium tracking-wider uppercase">Índice UCS</CardTitle>
                  {loading && !ucsData ? (
                     <Skeleton className="h-16 w-64 mt-2" />
                  ) : (
-                    <div className="text-6xl font-bold text-primary">
-                        <AnimatedNumber value={latestValue} formatter={(v) => v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/>
+                    <div className="flex items-center gap-4">
+                        <Image src="/image/currency.png" alt="Moeda UCS" width={64} height={64} className="rounded-full" />
+                        <div className="text-6xl font-bold text-primary">
+                            <AnimatedNumber value={latestValue} formatter={(v) => v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/>
+                        </div>
                     </div>
                  )}
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="text-xs text-muted-foreground mt-2">
                     {isConfigured ? "Powered by bmv.global" : "Aguardando configuração da fórmula"}
                   </p>
             </div>
