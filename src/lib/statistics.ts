@@ -1,5 +1,3 @@
-'use server';
-
 import { standardDeviation, sampleCorrelation } from 'simple-statistics';
 
 /**
