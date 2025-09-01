@@ -1,7 +1,7 @@
 
 'use server';
 
-import type { ChartData, CommodityPriceData, ScenarioResult, HistoricalQuote, HistoryInterval, UcsData, RiskAnalysisData, RiskMetric } from './types';
+import type { ChartData, CommodityPriceData, ScenarioResult, HistoricalQuote, HistoryInterval, UcsData, RiskAnalysisData, RiskMetric, GenerateReportInput, GenerateReportOutput } from './types';
 import { getOptimizedHistorical } from './yahoo-finance-optimizer';
 import { COMMODITY_TICKER_MAP } from './yahoo-finance-config-data';
 import { calculate_volatility, calculate_correlation } from './statistics';
@@ -263,4 +263,9 @@ async function getFormattedHistoricalData(ticker: string, interval: HistoryInter
         console.error(`[LOG] Error fetching historical benchmark data for ${ticker}:`, error);
         return [];
     }
+}
+
+export async function generateReport(input: GenerateReportInput): Promise<GenerateReportOutput> {
+    const { generateReportFlow } = await import('@/ai/flows/generate-report-flow');
+    return generateReportFlow(input);
 }

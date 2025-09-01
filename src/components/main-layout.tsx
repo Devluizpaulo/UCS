@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { ReactNode } from 'react';
@@ -14,6 +15,7 @@ import {
   Sun,
   LogOut,
   User as UserIcon,
+  FileText,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -34,6 +36,8 @@ import {
   SidebarMenuButton,
   SidebarFooter,
   SidebarInset,
+  SheetHeader,
+  SheetTitle,
 } from '@/components/ui/sidebar';
 import { getAuth, signOut, onAuthStateChanged, User } from 'firebase/auth';
 import { app } from '@/lib/firebase-config';
@@ -50,6 +54,7 @@ type NavItem = {
 const navItems: NavItem[] = [
   { href: '/', icon: LayoutDashboard, label: 'Painel' },
   { href: '/analysis', icon: Library, label: 'Análise' },
+  { href: '/reports', icon: FileText, label: 'Relatórios' },
   { href: '/settings', icon: Settings, label: 'Configurações' },
   { href: '/alerts', icon: Bell, label: 'Alertas' },
 ];

@@ -1,5 +1,6 @@
 
 
+
 export type ChartData = {
   time: string;
   value: number;
@@ -84,3 +85,15 @@ export type FormulaParameters = {
     FATOR_CONVERSAO_SERRADA_TORA: number;
     isConfigured: boolean;
 }
+
+export type GenerateReportInput = {
+  type: 'index_performance' | 'asset_performance';
+  period: 'daily' | 'monthly' | 'yearly';
+  format: 'pdf' | 'xlsx';
+};
+
+export type GenerateReportOutput = {
+  fileName: string;
+  fileContent: string;
+  mimeType: string;
+};
