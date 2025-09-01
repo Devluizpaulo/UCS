@@ -1,6 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import {
@@ -12,6 +13,7 @@ import {
   Moon,
   Sun,
   LogOut,
+  User as UserIcon,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -33,10 +35,11 @@ import {
   SidebarFooter,
   SidebarInset,
 } from '@/components/ui/sidebar';
-import { getAuth, signOut } from 'firebase/auth';
+import { getAuth, signOut, onAuthStateChanged, User } from 'firebase/auth';
 import { app } from '@/lib/firebase-config';
 import { useToast } from '@/hooks/use-toast';
 import { deleteCookie } from 'cookies-next';
+import { Skeleton } from './ui/skeleton';
 
 type NavItem = {
   href: string;
@@ -55,6 +58,18 @@ export function MainLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { toast } = useToast();
+  const [user, setUser] = useState<User | null>(null);
+  const [loadingUser, setLoadingUser] = useState(true);
+
+  useEffect(() => {
+    const auth = getAuth(app);
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setLoadingUser(false);
+    });
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
+  }, []);
 
   const toggleTheme = () => {
     const html = document.documentElement;
@@ -82,6 +97,15 @@ export function MainLayout({ children }: { children: ReactNode }) {
       });
     }
   };
+  
+  const getInitials = (name?: string | null) => {
+    if (!name) return 'U';
+    const names = name.split(' ');
+    if (names.length > 1) {
+        return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
+    }
+    return name[0].toUpperCase();
+  }
 
   return (
     <SidebarProvider>
@@ -118,20 +142,45 @@ export function MainLayout({ children }: { children: ReactNode }) {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <div className="flex w-full cursor-pointer items-center gap-2 overflow-hidden p-2 text-left text-sm outline-none transition-colors hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-sidebar-ring">
-                <Avatar className="h-9 w-9">
-                  <AvatarImage
-                    src="https://picsum.photos/36"
-                    alt="Usuário"
-                    data-ai-hint="profile picture"
-                  />
-                  <AvatarFallback>U</AvatarFallback>
-                </Avatar>
-                <div className="flex flex-col truncate">
-                  <span className="truncate font-medium">Nome do Usuário</span>
-                  <span className="truncate text-xs text-muted-foreground">
-                    usuario@email.com
-                  </span>
-                </div>
+                {loadingUser ? (
+                    <>
+                        <Skeleton className="h-9 w-9 rounded-full" />
+                        <div className="flex flex-col gap-1.5 flex-1">
+                            <Skeleton className="h-4 w-3/4" />
+                            <Skeleton className="h-3 w-full" />
+                        </div>
+                    </>
+                ) : user ? (
+                    <>
+                        <Avatar className="h-9 w-9">
+                            <AvatarImage
+                                src={user.photoURL ?? undefined}
+                                alt={user.displayName ?? 'Usuário'}
+                                data-ai-hint="profile picture"
+                            />
+                            <AvatarFallback>
+                                {getInitials(user.displayName)}
+                            </AvatarFallback>
+                        </Avatar>
+                        <div className="flex flex-col truncate">
+                            <span className="truncate font-medium">{user.displayName ?? 'Usuário'}</span>
+                            <span className="truncate text-xs text-muted-foreground">
+                                {user.email ?? 'Não foi possível carregar o e-mail'}
+                            </span>
+                        </div>
+                    </>
+                ) : (
+                    <>
+                        <Avatar className="h-9 w-9">
+                           <AvatarFallback>
+                                <UserIcon className="h-5 w-5" />
+                           </AvatarFallback>
+                        </Avatar>
+                        <div className="flex flex-col truncate">
+                            <span className="truncate font-medium">Não conectado</span>
+                        </div>
+                    </>
+                )}
               </div>
             </DropdownMenuTrigger>
             <DropdownMenuContent side="right" align="start" className="w-56">
