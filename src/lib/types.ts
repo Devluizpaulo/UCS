@@ -3,6 +3,7 @@
 
 
 
+
 export type ChartData = {
   time: string;
   value: number;
@@ -100,4 +101,27 @@ export type GenerateReportOutput = {
   fileName: string;
   fileContent: string;
   mimeType: string;
+};
+
+// --- API Configuration Types ---
+
+export type YahooFinanceConfig = {
+  RATE_LIMIT: {
+    MAX_REQUESTS_PER_MINUTE: number;
+  };
+  CACHE_TTL: {
+    QUOTE: number;
+    HISTORICAL_1D: number;
+    HISTORICAL_1WK: number;
+    HISTORICAL_1MO: number;
+  };
+  TIMEOUTS: {
+    QUOTE: number;
+    HISTORICAL: number;
+  };
+};
+
+export type ApiConfig = {
+    yahooFinance: YahooFinanceConfig;
+    isConfigured: boolean;
 };

@@ -2,8 +2,8 @@
 'use server';
 
 import yahooFinance from 'yahoo-finance2';
-import type { HistoricalQuote, HistoryInterval } from './types';
-import { YAHOO_FINANCE_CONFIG } from './yahoo-finance-config-data';
+import type { HistoryInterval } from './types';
+import { getApiConfig } from './api-config-service';
 
 // Cache interface
 interface CacheEntry<T> {
@@ -17,7 +17,7 @@ const cache = new Map<string, CacheEntry<any>>();
 
 // Rate limiting configuration
 const RATE_LIMIT = {
-  MAX_REQUESTS_PER_MINUTE: YAHOO_FINANCE_CONFIG.RATE_LIMIT.MAX_REQUESTS_PER_MINUTE,
+  MAX_REQUESTS_PER_MINUTE: 100, // Default, will be overridden by DB config
   requests: [] as number[],
 };
 
@@ -31,7 +31,10 @@ function isValidCacheEntry<T>(entry: CacheEntry<T> | undefined): entry is CacheE
   return Date.now() - entry.timestamp < entry.ttl;
 }
 
-function checkRateLimit(): boolean {
+async function checkRateLimit(): Promise<boolean> {
+  const config = await getApiConfig();
+  RATE_LIMIT.MAX_REQUESTS_PER_MINUTE = config.yahooFinance.RATE_LIMIT.MAX_REQUESTS_PER_MINUTE;
+  
   const now = Date.now();
   const oneMinuteAgo = now - 60 * 1000;
   
@@ -55,6 +58,7 @@ async function delay(ms: number): Promise<void> {
 
 // Enhanced Yahoo Finance functions with caching and rate limiting
 export async function getCachedQuote(tickers: string | string[], retries = 3): Promise<any> {
+  const config = await getApiConfig();
   const tickerArray = Array.isArray(tickers) ? tickers : [tickers];
   const cacheKey = getCacheKey('quote', tickerArray.sort());
   
@@ -66,10 +70,10 @@ export async function getCachedQuote(tickers: string | string[], retries = 3): P
   }
   
   // Check rate limit
-  if (!checkRateLimit()) {
+  if (!await checkRateLimit()) {
     console.warn('[RATE LIMIT] Waiting before making request...');
     await delay(1000); // Wait 1 second
-    if (!checkRateLimit()) {
+    if (!await checkRateLimit()) {
       throw new Error('Rate limit exceeded. Please try again later.');
     }
   }
@@ -78,13 +82,13 @@ export async function getCachedQuote(tickers: string | string[], retries = 3): P
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       console.log(`[API CALL] Fetching quote for ${tickerArray.join(', ')} (attempt ${attempt})`);
-      const result = await yahooFinance.quote(tickers);
+      const result = await yahooFinance.quote(tickers, {}, { timeout: config.yahooFinance.TIMEOUTS.QUOTE });
       
       // Cache the result
       cache.set(cacheKey, {
         data: result,
         timestamp: Date.now(),
-        ttl: YAHOO_FINANCE_CONFIG.CACHE_TTL.QUOTE,
+        ttl: config.yahooFinance.CACHE_TTL.QUOTE,
       });
       
       return result;
@@ -110,16 +114,17 @@ export async function getCachedHistorical(
   interval: HistoryInterval = '1d',
   retries = 3
 ): Promise<any> {
+  const config = await getApiConfig();
   const cacheKey = getCacheKey('historical', { ticker, options, interval });
   
   // Determine TTL based on interval
-  let ttl = YAHOO_FINANCE_CONFIG.CACHE_TTL.HISTORICAL_1D;
+  let ttl = config.yahooFinance.CACHE_TTL.HISTORICAL_1D;
   switch (interval) {
     case '1wk':
-      ttl = YAHOO_FINANCE_CONFIG.CACHE_TTL.HISTORICAL_1WK;
+      ttl = config.yahooFinance.CACHE_TTL.HISTORICAL_1WK;
       break;
     case '1mo':
-      ttl = YAHOO_FINANCE_CONFIG.CACHE_TTL.HISTORICAL_1MO;
+      ttl = config.yahooFinance.CACHE_TTL.HISTORICAL_1MO;
       break;
   }
   
@@ -131,10 +136,10 @@ export async function getCachedHistorical(
   }
   
   // Check rate limit
-  if (!checkRateLimit()) {
+  if (!await checkRateLimit()) {
     console.warn('[RATE LIMIT] Waiting before making request...');
     await delay(1000);
-    if (!checkRateLimit()) {
+    if (!await checkRateLimit()) {
       throw new Error('Rate limit exceeded. Please try again later.');
     }
   }
@@ -143,7 +148,7 @@ export async function getCachedHistorical(
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       console.log(`[API CALL] Fetching historical data for ${ticker} (${interval}) (attempt ${attempt})`);
-      const result = await yahooFinance.historical(ticker, options);
+      const result = await yahooFinance.historical(ticker, options, { timeout: config.yahooFinance.TIMEOUTS.HISTORICAL });
       
       // Cache the result
       cache.set(cacheKey, {
