@@ -84,7 +84,7 @@ export function UnderlyingAssetsTable({ data, loading, updatingAssets, onManualU
         const commodityName = typeof item === 'string' ? item : item.name;
         const Icon = getIconForCommodity(commodityName);
         
-        if (typeof item === 'string') { // Loading state
+        if (typeof item === 'string' || loading) { // Loading state
              return (
                 <TableRow key={commodityName} className="cursor-wait">
                   <TableCell>
