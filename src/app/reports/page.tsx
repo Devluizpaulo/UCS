@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Download, FileText, Loader2 } from 'lucide-react';
 import { generateReport } from '@/lib/data-service';
+import { Textarea } from '@/components/ui/textarea';
 
 const reportSchema = z.object({
   reportType: z.enum(['index_performance', 'asset_performance'], {
@@ -25,6 +26,7 @@ const reportSchema = z.object({
   format: z.enum(['xlsx', 'pdf'], {
     required_error: 'Selecione o formato do arquivo.',
   }),
+  observations: z.string().optional(),
 });
 
 type ReportFormData = z.infer<typeof reportSchema>;
@@ -36,6 +38,7 @@ export default function ReportsPage() {
   const {
     control,
     handleSubmit,
+    register,
     formState: { errors },
   } = useForm<ReportFormData>({
     resolver: zodResolver(reportSchema),
@@ -45,7 +48,7 @@ export default function ReportsPage() {
     setIsLoading(true);
     toast({
       title: 'Gerando Relatório',
-      description: 'Aguarde enquanto preparamos seu arquivo para download.',
+      description: 'Aguarde enquanto preparamos seu arquivo para download. Isso pode levar alguns segundos.',
     });
 
     try {
@@ -53,6 +56,7 @@ export default function ReportsPage() {
         type: data.reportType,
         period: data.period,
         format: data.format,
+        observations: data.observations,
       });
       
       if (result.fileContent) {
@@ -102,9 +106,9 @@ export default function ReportsPage() {
           <div className="mx-auto w-full max-w-2xl">
             <Card>
               <CardHeader>
-                <CardTitle>Exportar Dados</CardTitle>
+                <CardTitle>Exportar Dados com Análise de IA</CardTitle>
                 <CardDescription>
-                  Selecione os parâmetros abaixo para gerar e baixar relatórios de performance em formato Excel ou PDF.
+                  Selecione os parâmetros e adicione observações para que a IA gere um texto analítico no seu relatório.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -169,13 +173,24 @@ export default function ReportsPage() {
                       {errors.format && <p className="text-xs text-destructive">{errors.format.message}</p>}
                     </div>
                   </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="observations">Observações (Opcional)</Label>
+                    <Textarea 
+                        id="observations"
+                        placeholder="Ex: Focar na volatilidade do milho devido à quebra de safra e como isso impactou o índice."
+                        {...register('observations')}
+                        className="min-h-[100px]"
+                    />
+                  </div>
+
                   <Button className="w-full sm:w-auto" type="submit" disabled={isLoading}>
                     {isLoading ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     ) : (
                       <Download className="mr-2 h-4 w-4" />
                     )}
-                    Gerar Relatório
+                    Gerar Relatório com IA
                   </Button>
                 </form>
               </CardContent>
@@ -183,7 +198,7 @@ export default function ReportsPage() {
 
              <div className="mt-8 text-center text-muted-foreground">
                 <FileText className="mx-auto h-12 w-12" />
-                <h3 className="mt-4 text-lg font-semibold">Seus Dados, Seu Controle</h3>
+                <h3 className="mt-4 text-lg font-semibold">Seus Dados, Sua Análise</h3>
                 <p className="mt-2 text-sm">
                     Utilize os relatórios para análises aprofundadas, compartilhamento com sua equipe ou para manter registros históricos da performance do Índice UCS e seus ativos subjacentes.
                 </p>

@@ -1,5 +1,6 @@
 
 
+
 'use server';
 
 import type { ChartData, CommodityPriceData, ScenarioResult, HistoricalQuote, HistoryInterval, UcsData, RiskAnalysisData, RiskMetric, GenerateReportInput, GenerateReportOutput } from './types';
@@ -120,10 +121,10 @@ export async function getUcsIndexValue(interval: HistoryInterval = '1d'): Promis
     return { history, latest: result };
 }
 
-async function getUcsIndexHistory(interval: HistoryInterval, limit: number = 30): Promise<ChartData[]> {
+async function getUcsIndexHistory(interval: HistoryInterval, limitCount: number = 30): Promise<ChartData[]> {
     try {
         const historyCollectionRef = collection(db, 'ucs_index_history');
-        const q = query(historyCollectionRef, orderBy('savedAt', 'desc'), limit(limit));
+        const q = query(historyCollectionRef, orderBy('savedAt', 'desc'), limit(limitCount));
         const querySnapshot = await getDocs(q);
 
         if (querySnapshot.empty) {
@@ -273,17 +274,17 @@ export async function updateSingleCommodity(assetName: string): Promise<{success
         const change = lastPrice !== 0 ? (absoluteChange / lastPrice) * 100 : 0;
 
         // Step 3: Create the data object and save to Firestore
-        const priceData: Omit<CommodityPriceData, 'id'> = {
+        const priceData: Omit<CommodityPriceData, 'id' | 'lastUpdated'> & { lastUpdated: string | any } = {
             name: assetName,
             ticker: commodityInfo.ticker,
             price: newPrice,
             change: parseFloat(change.toFixed(2)),
             absoluteChange: parseFloat(absoluteChange.toFixed(4)),
-            lastUpdated: new Date().toLocaleString('pt-BR'),
+            lastUpdated: new Date().toISOString(), // Use ISO string for consistency
             currency: commodityInfo.currency,
         };
 
-        await saveCommodityData(priceData);
+        await saveCommodityData(priceData as CommodityPriceData);
 
         console.log(`[DATA_SERVICE] Successfully updated ${assetName} to ${newPrice}`);
         return { success: true, message: `${assetName} atualizado com sucesso.` };
