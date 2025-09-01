@@ -117,7 +117,7 @@ export function UnderlyingAssetsTable({ data, loading, updatingAssets, onManualU
         const isUpdating = updatingAssets?.has(asset.name);
 
         return (
-            <TableRow key={asset.name} >
+            <TableRow key={asset.name}>
               <TableCell onClick={() => handleRowClick(asset)} className="cursor-pointer">
                 <div className="flex items-center gap-3">
                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
