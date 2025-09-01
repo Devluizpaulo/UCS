@@ -3,7 +3,6 @@
 import yahooFinance from 'yahoo-finance2';
 import type { HistoricalQuote, HistoryInterval } from './types';
 import { YAHOO_FINANCE_CONFIG, COMMODITY_TICKER_MAP } from './yahoo-finance-config-data';
-import { getCommodityByTicker } from './yahoo-finance-config';
 
 // Cache interface
 interface CacheEntry<T> {
@@ -53,27 +52,32 @@ async function delay(ms: number): Promise<void> {
 }
 
 // Fallback function to generate mock data when API fails
-async function generateFallbackQuote(ticker: string): Promise<any> {
-  const commodity = await getCommodityByTicker(ticker);
-  const basePrice = commodity?.fallbackPrice || 100;
-  
-  // Generate some realistic variation (±2%)
-  const variation = (Math.random() - 0.5) * 0.04;
-  const price = basePrice * (1 + variation);
-  const change = variation * 100;
-  
-  return {
-    symbol: ticker,
-    regularMarketPrice: price,
-    regularMarketChange: basePrice * variation,
-    regularMarketTime: Math.floor(Date.now() / 1000),
-    currency: commodity?.currency || 'BRL',
-  };
+function generateFallbackQuote(ticker: string): any {
+    // Find the commodity configuration synchronously
+    const commodityEntry = Object.values(COMMODITY_TICKER_MAP).find(
+        (config) => config.ticker === ticker
+    );
+
+    const basePrice = commodityEntry?.fallbackPrice || 100;
+
+    // Generate some realistic variation (±2%)
+    const variation = (Math.random() - 0.5) * 0.04;
+    const price = basePrice * (1 + variation);
+    const change = basePrice * variation;
+
+    return {
+        symbol: ticker,
+        regularMarketPrice: price,
+        regularMarketChange: change,
+        regularMarketTime: Math.floor(Date.now() / 1000),
+        currency: commodityEntry?.currency || 'BRL',
+    };
 }
 
-async function generateFallbackQuotes(tickers: string[]): Promise<any[]> {
-    return Promise.all(tickers.map(ticker => generateFallbackQuote(ticker)));
+function generateFallbackQuotes(tickers: string[]): any[] {
+    return tickers.map(ticker => generateFallbackQuote(ticker));
 }
+
 
 // Enhanced Yahoo Finance functions with caching and rate limiting
 export async function getCachedQuote(tickers: string | string[], retries = 3): Promise<any> {
@@ -116,7 +120,7 @@ export async function getCachedQuote(tickers: string | string[], retries = 3): P
       if (attempt === retries) {
         // Last attempt failed, use fallback data
         console.warn(`[FALLBACK] Using mock data for ${tickerArray.join(', ')} after ${retries} failed attempts`);
-        const fallbackData = Array.isArray(tickers) ? await generateFallbackQuotes(tickerArray) : await generateFallbackQuote(tickerArray[0]);
+        const fallbackData = Array.isArray(tickers) ? generateFallbackQuotes(tickerArray) : generateFallbackQuote(tickerArray[0]);
         
         // Cache fallback data with shorter TTL
         cache.set(cacheKey, {
