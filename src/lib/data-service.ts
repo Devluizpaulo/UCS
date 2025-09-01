@@ -1,6 +1,7 @@
 
 
 
+
 'use server';
 
 import type { ChartData, CommodityPriceData, ScenarioResult, HistoricalQuote, HistoryInterval, UcsData, RiskAnalysisData, RiskMetric, GenerateReportInput, GenerateReportOutput } from './types';
@@ -8,8 +9,8 @@ import { getOptimizedHistorical, getOptimizedCommodityPrices } from './yahoo-fin
 import { COMMODITY_TICKER_MAP } from './yahoo-finance-config-data';
 import { calculate_volatility, calculate_correlation } from './statistics';
 import { db } from './firebase-config';
-import { collection, query, orderBy, limit, getDocs, Timestamp } from 'firebase/firestore';
-import { saveCommodityData, saveUcsIndexData } from './database-service';
+import { collection, query, orderBy, limit, getDocs, Timestamp, getDoc, doc } from 'firebase/firestore';
+import { saveCommodityData } from './database-service';
 import { scrapeUrlFlow } from '@/ai/flows/scrape-commodity-price-flow';
 
 
@@ -99,26 +100,44 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
     return prices;
   }
 
+/**
+ * Reads the latest calculated UCS index data and its history from Firestore.
+ * This function DOES NOT perform any calculations.
+ */
 export async function getUcsIndexValue(interval: HistoryInterval = '1d'): Promise<{ history: ChartData[], latest: UcsData }> {
     const { calculateUcsIndex } = await import('@/ai/flows/calculate-ucs-index-flow');
-    const result = await calculateUcsIndex();
     
-    // Save the newly calculated index value to its own history
-    if (result.isConfigured) {
-        await saveUcsIndexData(result.indexValue);
+    // We still call calculateUcsIndex on the fly to get the composition details (VM, VUS, CRS).
+    // The main indexValue displayed will be the one from the database.
+    const compositionDetails = await calculateUcsIndex();
+
+    // Fetch the single most recent index value from the history collection
+    const historyCollectionRef = collection(db, 'ucs_index_history');
+    const q = query(historyCollectionRef, orderBy('savedAt', 'desc'), limit(1));
+    const querySnapshot = await getDocs(q);
+
+    let latestIndexValue = 0;
+    if (!querySnapshot.empty) {
+        latestIndexValue = querySnapshot.docs[0].data().value;
     }
     
+    // Override the calculated index value with the one from the database for consistency.
+    const latestData: UcsData = {
+        ...compositionDetails,
+        indexValue: latestIndexValue,
+    };
+
     // If the formula is not configured, we don't need to fetch history.
-    if (!result.isConfigured) {
+    if (!latestData.isConfigured) {
         return {
             history: [],
-            latest: result
+            latest: { ...latestData, indexValue: 0 } // Ensure index is 0 if not configured
         }
     }
 
     const history = await getUcsIndexHistory(interval);
 
-    return { history, latest: result };
+    return { history, latest: latestData };
 }
 
 async function getUcsIndexHistory(interval: HistoryInterval, limitCount: number = 30): Promise<ChartData[]> {
@@ -274,7 +293,8 @@ export async function updateSingleCommodity(assetName: string): Promise<{success
         const change = lastPrice !== 0 ? (absoluteChange / lastPrice) * 100 : 0;
 
         // Step 3: Create the data object and save to Firestore
-        const priceData: Omit<CommodityPriceData, 'id' | 'lastUpdated'> & { lastUpdated: string | any } = {
+        const priceData: CommodityPriceData = {
+            id: new Date().toISOString(), // Temporary ID
             name: assetName,
             ticker: commodityInfo.ticker,
             price: newPrice,
@@ -284,7 +304,7 @@ export async function updateSingleCommodity(assetName: string): Promise<{success
             currency: commodityInfo.currency,
         };
 
-        await saveCommodityData(priceData as CommodityPriceData);
+        await saveCommodityData([priceData]);
 
         console.log(`[DATA_SERVICE] Successfully updated ${assetName} to ${newPrice}`);
         return { success: true, message: `${assetName} atualizado com sucesso.` };
