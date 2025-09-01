@@ -64,3 +64,14 @@ export type SimulateScenarioInput = {
     changeType: 'percentage' | 'absolute';
     value: number;
 };
+
+export type RiskMetric = {
+    asset: string;
+    volatility: number;
+    correlation: number;
+};
+
+export type RiskAnalysisData = {
+    summary: string;
+    metrics: RiskMetric[];
+};

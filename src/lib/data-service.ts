@@ -1,8 +1,9 @@
 'use server';
 
-import type { ChartData, CommodityPriceData, ScenarioResult, HistoricalQuote, AnalyzeAssetOutput, HistoryInterval, UcsData } from './types';
+import type { ChartData, CommodityPriceData, ScenarioResult, HistoricalQuote, AnalyzeAssetOutput, HistoryInterval, UcsData, RiskAnalysisData } from './types';
 import { getOptimizedHistorical, getOptimizedCommodityPrices } from './yahoo-finance-optimizer';
 import { COMMODITY_TICKER_MAP } from './yahoo-finance-config-data';
+import { calculate_volatility, calculate_correlation } from './statistics';
 
 // Functions for the "Analysis" page that call Genkit flows directly.
 export async function getAssetAnalysis(assetName: string, historicalData: number[]): Promise<AnalyzeAssetOutput> {
@@ -14,6 +15,55 @@ export async function runScenarioSimulation(asset: string, changeType: 'percenta
     const { simulateScenario } = await import('@/ai/flows/simulate-scenario-flow');
     return simulateScenario({ asset, changeType, value });
 }
+
+export async function getRiskAnalysisData(): Promise<RiskAnalysisData> {
+    const assetNames = Object.keys(COMMODITY_TICKER_MAP);
+    const today = new Date();
+    const startDate = new Date();
+    startDate.setDate(today.getDate() - 31); // Last 30 days for volatility/correlation
+
+    try {
+        // Fetch index history
+        const indexHistoryRaw = await getFormattedHistoricalData('BOVA11.SA', '1d', 30);
+        const indexReturns = indexHistoryRaw.map((d, i, arr) => i === 0 ? 0 : (d.value - arr[i-1].value) / arr[i-1].value).slice(1);
+        
+        // Fetch asset histories and calculate metrics
+        const metricsPromises = assetNames.map(async (assetName) => {
+            const assetHistoryRaw = await getAssetHistoricalData(assetName, '1d', 30);
+            const assetReturns = assetHistoryRaw.map((d, i, arr) => i === 0 ? 0 : (d.close - arr[i-1].close) / arr[i-1].close).slice(1);
+            
+            // Ensure arrays are the same length for correlation
+            const minLength = Math.min(indexReturns.length, assetReturns.length);
+            const alignedIndexReturns = indexReturns.slice(indexReturns.length - minLength);
+            const alignedAssetReturns = assetReturns.slice(assetReturns.length - minLength);
+
+            const volatility = calculate_volatility(alignedAssetReturns);
+            const correlation = calculate_correlation(alignedAssetReturns, alignedIndexReturns);
+
+            return {
+                asset: assetName,
+                volatility: isNaN(volatility) ? 0 : volatility,
+                correlation: isNaN(correlation) ? 0 : correlation,
+            };
+        });
+
+        const metrics = await Promise.all(metricsPromises);
+
+        // Get AI summary
+        const { analyzeRisk } = await import('@/ai/flows/analyze-risk-flow');
+        const aiSummary = await analyzeRisk({ riskData: metrics });
+
+        return {
+            summary: aiSummary.summary,
+            metrics: metrics,
+        };
+
+    } catch (error) {
+        console.error("[LOG] Failed to getRiskAnalysisData:", error);
+        throw new Error("Failed to compute risk analysis data.");
+    }
+}
+
 
 // Functions for the dashboard to get real-time data via flows
 export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
@@ -69,7 +119,7 @@ async function getBenchmarkHistoricalData(interval: HistoryInterval = '1d'): Pro
 
 
 // Use centralized commodity ticker mapping
-export async function getAssetHistoricalData(assetName: string, interval: HistoryInterval = '1d'): Promise<HistoricalQuote[]> {
+export async function getAssetHistoricalData(assetName: string, interval: HistoryInterval = '1d', limit: number = 30): Promise<HistoricalQuote[]> {
     const commodityInfo = COMMODITY_TICKER_MAP[assetName];
     const ticker = commodityInfo?.ticker;
     if (!ticker) {
@@ -83,7 +133,7 @@ export async function getAssetHistoricalData(assetName: string, interval: Histor
 
         switch (interval) {
             case '1d':
-                startDate.setDate(today.getDate() - 31); // Last 30 days
+                startDate.setDate(today.getDate() - (limit + 5)); // Fetch a bit more for calculations
                 break;
             case '1wk':
                 startDate.setFullYear(today.getFullYear() - 1); // Last year for weekly data
@@ -132,11 +182,8 @@ export async function getAssetHistoricalData(assetName: string, interval: Histor
                 change: change,
             });
         }
-
-        if (interval === '1d') {
-            return formattedData.slice(-30); // Ensure we only show 30 data points for daily
-        }
-        return formattedData;
+        
+        return formattedData.slice(-limit);
 
     } catch (error) {
         console.error(`[LOG] Error fetching historical data for ${ticker} from Yahoo Finance:`, error);
@@ -145,14 +192,14 @@ export async function getAssetHistoricalData(assetName: string, interval: Histor
 }
 
 
-async function getFormattedHistoricalData(ticker: string, interval: HistoryInterval): Promise<ChartData[]> {
+async function getFormattedHistoricalData(ticker: string, interval: HistoryInterval, limit: number = 30): Promise<ChartData[]> {
     try {
         const today = new Date();
         const startDate = new Date();
 
         switch (interval) {
             case '1d':
-                startDate.setDate(today.getDate() - 31);
+                startDate.setDate(today.getDate() - (limit + 5));
                 break;
             case '1wk':
                 startDate.setFullYear(today.getFullYear() - 1);
@@ -183,7 +230,7 @@ async function getFormattedHistoricalData(ticker: string, interval: HistoryInter
         return result.map((d: any) => ({
             time: getDateFormat(d.date),
             value: d.close
-        })).slice(-30); // Ensure we have a consistent number of points for the main chart
+        })).slice(-limit); // Ensure we have a consistent number of points for the main chart
 
     } catch (error) {
         console.error(`[LOG] Error fetching historical benchmark data for ${ticker}:`, error);

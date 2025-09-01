@@ -4,3 +4,4 @@ import './flows/get-commodity-prices-flow';
 import './flows/calculate-ucs-index-flow';
 import './flows/analyze-asset-flow';
 import './flows/simulate-scenario-flow';
+import './flows/analyze-risk-flow';
