@@ -9,16 +9,14 @@ import {
 } from '@/components/ui/dialog';
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
-import type { CommodityPriceData, ChartData, HistoricalQuote, AnalyzeAssetOutput, HistoryInterval } from '@/lib/types';
-import { Lightbulb, Loader2, Link as LinkIcon, ArrowDown, ArrowUp } from 'lucide-react';
+import type { CommodityPriceData, ChartData, HistoricalQuote, HistoryInterval } from '@/lib/types';
+import { Loader2, ArrowDown, ArrowUp } from 'lucide-react';
 import { useEffect, useState, useCallback } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { ScrollArea } from './ui/scroll-area';
-import { getAssetAnalysis, getAssetHistoricalData } from '@/lib/data-service';
+import { getAssetHistoricalData } from '@/lib/data-service';
 import { cn } from '@/lib/utils';
-import Link from 'next/link';
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
-import { Card, CardContent } from './ui/card';
 
 
 interface AssetDetailModalProps {
@@ -31,9 +29,7 @@ interface AssetDetailModalProps {
 export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDetailModalProps) {
     const [historicalData, setHistoricalData] = useState<HistoricalQuote[]>([]);
     const [chartData, setChartData] = useState<ChartData[]>([]);
-    const [analysisResult, setAnalysisResult] = useState<AnalyzeAssetOutput | null>(null);
     const [loading, setLoading] = useState(true);
-    const [loadingAnalysis, setLoadingAnalysis] = useState(true);
     const [interval, setInterval] = useState<HistoryInterval>('1d');
 
 
@@ -49,33 +45,15 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
             const chartPoints = history.map(d => ({ time: d.date, value: d.close }));
             setChartData(chartPoints);
 
-            if (currentInterval === '1d' && !analysisResult) {
-                setLoadingAnalysis(true);
-                if (history.length > 0) {
-                    const result = await getAssetAnalysis(
-                        currentAsset.name, 
-                        history.map(d => d.close) 
-                    );
-                    setAnalysisResult(result);
-                } else {
-                    setAnalysisResult({ analysis: "Não há dados históricos suficientes para gerar uma análise.", sources: [] });
-                }
-                setLoadingAnalysis(false);
-            }
-
         } catch (error) {
             console.error("Failed to get asset details:", error);
-            if (!analysisResult) {
-                setAnalysisResult({ analysis: "Não foi possível carregar o histórico no momento.", sources: [] });
-            }
         } finally {
             setLoading(false);
         }
-    }, [analysisResult]);
+    }, []);
 
     useEffect(() => {
         if (isOpen) {
-            setAnalysisResult(null); 
             getDetails(asset, interval);
         }
     }, [isOpen, asset, interval, getDetails]);
@@ -93,7 +71,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                     <span>{asset.name} ({asset.ticker})</span>
                 </DialogTitle>
                 <DialogDescription className="mt-2">
-                    Análise detalhada do histórico de preços e tendências para {asset.name}.
+                    Análise detalhada do histórico de preços para {asset.name}.
                 </DialogDescription>
             </div>
             <Tabs defaultValue="1d" onValueChange={(value) => setInterval(value as HistoryInterval)} className="w-auto shrink-0">
@@ -118,7 +96,8 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                     </div>
                     {loading ? (
                         <div className="h-[250px] w-full flex items-center justify-center rounded-md border">
-                            <p className="text-sm text-muted-foreground">Carregando gráfico...</p>
+                            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground"/>
+                            <p className="text-sm text-muted-foreground ml-2">Carregando gráfico...</p>
                         </div>
                     ) : (
                         <ChartContainer config={{
@@ -142,41 +121,6 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                         </ChartContainer>
                     )}
                 </div>
-                 <Card className="border-border/60 bg-card/50">
-                    <CardContent className="p-6">
-                        <h3 className="mb-3 flex items-center gap-2 text-lg font-semibold">
-                            <Lightbulb className="h-5 w-5 text-primary" />
-                            Análise de IA
-                        </h3>
-                        {loadingAnalysis ? (
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                                <span>Analisando os dados...</span>
-                            </div>
-                        ) : (
-                            <>
-                                <p className="text-sm text-muted-foreground leading-relaxed">
-                                    {analysisResult?.analysis}
-                                </p>
-                                {analysisResult && analysisResult.sources.length > 0 && (
-                                    <div className="mt-4">
-                                        <h4 className="font-semibold text-sm mb-2">Fontes de Referência:</h4>
-                                        <ul className="space-y-2">
-                                            {analysisResult.sources.map(source => (
-                                                <li key={source.url} className="flex items-start gap-2">
-                                                    <LinkIcon className="h-4 w-4 text-muted-foreground/80 mt-1 shrink-0" />
-                                                    <Link href={source.url} target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground hover:text-primary transition-colors">
-                                                        {source.title} ({source.source})
-                                                    </Link>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                )}
-                            </>
-                        )}
-                    </CardContent>
-                </Card>
              </div>
              <div className="flex flex-col min-h-0">
                  <h3 className="text-lg font-semibold mb-4">Cotações Históricas ({interval === '1d' ? 'Diário' : interval === '1wk' ? 'Semanal' : 'Mensal'})</h3>

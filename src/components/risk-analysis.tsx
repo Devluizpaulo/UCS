@@ -7,7 +7,6 @@ import { Badge } from '@/components/ui/badge';
 import { getRiskAnalysisData } from '@/lib/data-service';
 import type { RiskAnalysisData } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
-import { Lightbulb, Loader2 } from 'lucide-react';
 import { Skeleton } from './ui/skeleton';
 
 const getVolatilityBadge = (volatility: number) => {
@@ -51,13 +50,12 @@ export function RiskAnalysis() {
       <CardHeader>
         <CardTitle>Análise de Risco</CardTitle>
         <CardDescription>
-            Análise de volatilidade e correlação dos ativos subjacentes em relação ao Índice UCS, com insights gerados por IA.
+            Análise de volatilidade e correlação dos ativos subjacentes em relação ao Índice UCS.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {loading ? (
              <div className="space-y-4">
-                <Skeleton className="h-24 w-full" />
                 <Skeleton className="h-40 w-full" />
              </div>
         ) : error ? (
@@ -67,14 +65,6 @@ export function RiskAnalysis() {
             </Alert>
         ) : riskData ? (
           <>
-            <Alert>
-              <Lightbulb className="h-4 w-4" />
-              <AlertTitle>Sumário da IA</AlertTitle>
-              <AlertDescription>
-                {riskData.summary}
-              </AlertDescription>
-            </Alert>
-
             <Table>
               <TableHeader>
                 <TableRow>

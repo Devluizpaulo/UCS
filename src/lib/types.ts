@@ -30,15 +30,6 @@ export type HistoricalQuote = {
   change: number;
 };
 
-export type AnalyzeAssetOutput = {
-  analysis: string;
-  sources: {
-    title: string;
-    url: string;
-    source: string;
-  }[];
-};
-
 export type UcsData = {
   indexValue: number;
   components: {
@@ -73,6 +64,5 @@ export type RiskMetric = {
 };
 
 export type RiskAnalysisData = {
-    summary: string;
     metrics: RiskMetric[];
 };

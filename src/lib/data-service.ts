@@ -1,6 +1,6 @@
 'use server';
 
-import type { ChartData, CommodityPriceData, ScenarioResult, HistoricalQuote, AnalyzeAssetOutput, HistoryInterval, UcsData, RiskAnalysisData } from './types';
+import type { ChartData, CommodityPriceData, ScenarioResult, HistoricalQuote, HistoryInterval, UcsData, RiskAnalysisData, RiskMetric } from './types';
 import { getOptimizedHistorical } from './yahoo-finance-optimizer';
 import { COMMODITY_TICKER_MAP } from './yahoo-finance-config-data';
 import { calculate_volatility, calculate_correlation } from './statistics';
@@ -9,11 +9,6 @@ import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 
 
 // Functions for the "Analysis" page that call Genkit flows directly.
-export async function getAssetAnalysis(assetName: string, historicalData: number[]): Promise<AnalyzeAssetOutput> {
-    const { analyzeAsset } = await import('@/ai/flows/analyze-asset-flow');
-    return analyzeAsset({ assetName, historicalData });
-}
-
 export async function runScenarioSimulation(asset: string, changeType: 'percentage' | 'absolute', value: number): Promise<ScenarioResult> {
     const { simulateScenario } = await import('@/ai/flows/simulate-scenario-flow');
     return simulateScenario({ asset, changeType, value });
@@ -49,14 +44,9 @@ export async function getRiskAnalysisData(): Promise<RiskAnalysisData> {
             };
         });
 
-        const metrics = await Promise.all(metricsPromises);
-
-        // Get AI summary
-        const { analyzeRisk } = await import('@/ai/flows/analyze-risk-flow');
-        const aiSummary = await analyzeRisk({ riskData: metrics });
+        const metrics: RiskMetric[] = await Promise.all(metricsPromises);
 
         return {
-            summary: aiSummary.summary,
             metrics: metrics,
         };
 
