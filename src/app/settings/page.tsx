@@ -3,10 +3,12 @@
 
 import { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { MainLayout } from '@/components/main-layout';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
@@ -16,13 +18,30 @@ import { getFormulaParameters, saveFormulaParameters } from '@/lib/formula-servi
 import type { FormulaParameters } from '@/lib/types';
 
 
+const formulaSchema = z.object({
+    VOLUME_MADEIRA_HA: z.coerce.number(),
+    FATOR_CARBONO: z.coerce.number(),
+    PROD_BOI: z.coerce.number(),
+    PROD_MILHO: z.coerce.number(),
+    PROD_SOJA: z.coerce.number(),
+    PESO_PEC: z.coerce.number(),
+    PESO_MILHO: z.coerce.number(),
+    PESO_SOJA: z.coerce.number(),
+    FATOR_ARREND: z.coerce.number(),
+    FATOR_AGUA: z.coerce.number(),
+    FATOR_CONVERSAO_SERRADA_TORA: z.coerce.number(),
+});
+
+
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('formula');
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const { toast } = useToast();
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<FormulaParameters>();
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<Omit<FormulaParameters, 'isConfigured'>>({
+      resolver: zodResolver(formulaSchema),
+  });
 
   useEffect(() => {
     async function fetchParameters() {
@@ -45,7 +64,7 @@ export default function SettingsPage() {
   }, [reset, toast]);
   
 
-  const onSubmit = async (data: FormulaParameters) => {
+  const onSubmit = async (data: Omit<FormulaParameters, 'isConfigured'>) => {
     setIsLoading(true);
     try {
       await saveFormulaParameters(data);
@@ -104,11 +123,11 @@ export default function SettingsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <div className="space-y-2">
                         <Label htmlFor="VOLUME_MADEIRA_HA">Volume de Madeira por Hectare (m³)</Label>
-                        <Input id="VOLUME_MADEIRA_HA" type="number" step="any" {...register('VOLUME_MADEIRA_HA', { valueAsNumber: true })} />
+                        <Input id="VOLUME_MADEIRA_HA" type="number" step="any" {...register('VOLUME_MADEIRA_HA')} />
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="FATOR_CONVERSAO_SERRADA_TORA">Fator Conversão Madeira (Serrada p/ Tora)</Label>
-                        <Input id="FATOR_CONVERSAO_SERRada_TORA" type="number" step="any" {...register('FATOR_CONVERSAO_SERRADA_TORA', { valueAsNumber: true })} />
+                        <Input id="FATOR_CONVERSAO_SERRADA_TORA" type="number" step="any" {...register('FATOR_CONVERSAO_SERRADA_TORA')} />
                     </div>
                 </div>
             </div>
@@ -119,29 +138,29 @@ export default function SettingsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                      <div className="space-y-2">
                         <Label htmlFor="PROD_BOI">Produção de Boi (@/ha/ano)</Label>
-                        <Input id="PROD_BOI" type="number" step="any" {...register('PROD_BOI', { valueAsNumber: true })} />
+                        <Input id="PROD_BOI" type="number" step="any" {...register('PROD_BOI')} />
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="PROD_SOJA">Produção de Soja (t/ha/ano)</Label>
-                        <Input id="PROD_SOJA" type="number" step="any" {...register('PROD_SOJA', { valueAsNumber: true })} />
+                        <Input id="PROD_SOJA" type="number" step="any" {...register('PROD_SOJA')} />
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="PROD_MILHO">Produção de Milho (t/ha/ano)</Label>
-                        <Input id="PROD_MILHO" type="number" step="any" {...register('PROD_MILHO', { valueAsNumber: true })} />
+                        <Input id="PROD_MILHO" type="number" step="any" {...register('PROD_MILHO')} />
                     </div>
                 </div>
                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
                      <div className="space-y-2">
                         <Label htmlFor="PESO_PEC">Peso da Pecuária (%)</Label>
-                        <Input id="PESO_PEC" type="number" step="any" {...register('PESO_PEC', { valueAsNumber: true })} placeholder="Ex: 0.35 para 35%" />
+                        <Input id="PESO_PEC" type="number" step="any" {...register('PESO_PEC')} placeholder="Ex: 0.35 para 35%" />
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="PESO_SOJA">Peso da Soja (%)</Label>
-                        <Input id="PESO_SOJA" type="number" step="any" {...register('PESO_SOJA', { valueAsNumber: true })} placeholder="Ex: 0.35 para 35%" />
+                        <Input id="PESO_SOJA" type="number" step="any" {...register('PESO_SOJA')} placeholder="Ex: 0.35 para 35%" />
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="PESO_MILHO">Peso do Milho (%)</Label>
-                        <Input id="PESO_MILHO" type="number" step="any" {...register('PESO_MILHO', { valueAsNumber: true })} placeholder="Ex: 0.30 para 30%" />
+                        <Input id="PESO_MILHO" type="number" step="any" {...register('PESO_MILHO')} placeholder="Ex: 0.30 para 30%" />
                     </div>
                 </div>
             </div>
@@ -152,15 +171,15 @@ export default function SettingsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <div className="space-y-2">
                         <Label htmlFor="FATOR_ARREND">Fator de Arrendamento (%)</Label>
-                        <Input id="FATOR_ARREND" type="number" step="any" {...register('FATOR_ARREND', { valueAsNumber: true })} placeholder="Ex: 0.048 para 4.8%" />
+                        <Input id="FATOR_ARREND" type="number" step="any" {...register('FATOR_ARREND')} placeholder="Ex: 0.048 para 4.8%" />
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="FATOR_CARBONO">Fator de Carbono (tCO₂/m³)</Label>
-                        <Input id="FATOR_CARBONO" type="number" step="any" {...register('FATOR_CARBONO', { valueAsNumber: true })} />
+                        <Input id="FATOR_CARBONO" type="number" step="any" {...register('FATOR_CARBONO')} />
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="FATOR_AGUA">Fator Água (% do VUS)</Label>
-                        <Input id="FATOR_AGUA" type="number" step="any" {...register('FATOR_AGUA', { valueAsNumber: true })} placeholder="Ex: 0.07 para 7%" />
+                        <Input id="FATOR_AGUA" type="number" step="any" {...register('FATOR_AGUA')} placeholder="Ex: 0.07 para 7%" />
                     </div>
                 </div>
             </div>
@@ -197,7 +216,7 @@ export default function SettingsPage() {
                     <CardHeader>
                         <CardTitle>Parâmetros da Fórmula do Índice</CardTitle>
                         <CardDescription>
-                            Ajuste os pesos, fatores e produtividades que compõem o cálculo do Índice UCS.
+                            Ajuste os pesos, fatores e produtividades que compõem o cálculo do Índice UCS. As alterações aqui impactarão todos os cálculos do sistema.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>

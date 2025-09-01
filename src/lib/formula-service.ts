@@ -5,7 +5,7 @@
  */
 
 import { db } from './firebase-config';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import type { FormulaParameters } from './types';
 
 // The document ID for the formula parameters in Firestore
@@ -25,6 +25,7 @@ const defaultParameters: FormulaParameters = {
     FATOR_ARREND: 0.048,         // Fator de capitalização da renda
     FATOR_AGUA: 0.07,            // % do VUS que representa o valor da água
     FATOR_CONVERSAO_SERRADA_TORA: 0.3756, // Fator de conversão de madeira serrada para tora (em pé)
+    isConfigured: false, // Flag to check if user has saved the settings
 };
 
 /**
@@ -55,15 +56,15 @@ export async function getFormulaParameters(): Promise<FormulaParameters> {
 
 /**
  * Saves the updated formula parameters to Firestore.
- * @param {FormulaParameters} params - The new formula parameters to save.
+ * @param {Omit<FormulaParameters, 'isConfigured'>} params - The new formula parameters to save.
  * @returns {Promise<void>} A promise that resolves when the save is complete.
  */
-export async function saveFormulaParameters(params: FormulaParameters): Promise<void> {
+export async function saveFormulaParameters(params: Omit<FormulaParameters, 'isConfigured'>): Promise<void> {
   const docRef = doc(db, SETTINGS_COLLECTION, FORMULA_DOC_ID);
   try {
-    // The `setDoc` with merge option `false` (default) will overwrite the document.
-    // This is desired behavior as we are replacing the entire formula configuration.
-    await setDoc(docRef, params);
+    // Set the parameters and mark as configured.
+    // This will overwrite the document or create it if it doesn't exist.
+    await setDoc(docRef, { ...params, isConfigured: true });
     console.log('[FormulaService] Successfully saved formula parameters.');
   } catch (error) {
     console.error("[FormulaService] Error saving formula parameters: ", error);

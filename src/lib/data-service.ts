@@ -1,3 +1,4 @@
+
 'use server';
 
 import type { ChartData, CommodityPriceData, ScenarioResult, HistoricalQuote, HistoryInterval, UcsData, RiskAnalysisData, RiskMetric } from './types';
@@ -99,6 +100,14 @@ export async function getUcsIndexValue(interval: HistoryInterval = '1d'): Promis
     const { calculateUcsIndex } = await import('@/ai/flows/calculate-ucs-index-flow');
     const result = await calculateUcsIndex();
     
+    // If the formula is not configured, we don't need to fetch history.
+    if (!result.isConfigured) {
+        return {
+            history: [],
+            latest: result
+        }
+    }
+
     // For historical data, we need to calculate it day-by-day based on historical prices
     // This is a simplified version. A production system might pre-calculate and store this.
     // For now, we'll fetch the history of a benchmark (e.g., BOVA11) to represent the index trend.
@@ -107,7 +116,7 @@ export async function getUcsIndexValue(interval: HistoryInterval = '1d'): Promis
     // Adjust the history to end with the current calculated value
     if (history.length > 0) {
         const lastRealValue = history[history.length - 1].value;
-        const adjustmentFactor = result.indexValue / lastRealValue;
+        const adjustmentFactor = lastRealValue !== 0 ? result.indexValue / lastRealValue : 1;
         const adjustedHistory = history.map(point => ({
             ...point,
             value: point.value * adjustmentFactor

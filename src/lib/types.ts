@@ -1,4 +1,5 @@
 
+
 export type ChartData = {
   time: string;
   value: number;
@@ -33,6 +34,7 @@ export type HistoricalQuote = {
 
 export type UcsData = {
   indexValue: number;
+  isConfigured: boolean; // Add this flag
   components: {
     vm: number;
     vus: number;
@@ -80,4 +82,5 @@ export type FormulaParameters = {
     FATOR_ARREND: number;
     FATOR_AGUA: number;
     FATOR_CONVERSAO_SERRADA_TORA: number;
+    isConfigured: boolean;
 }

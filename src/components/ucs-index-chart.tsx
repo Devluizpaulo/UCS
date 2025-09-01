@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -21,22 +22,27 @@ interface UcsIndexChartProps {
 }
 
 export function UcsIndexChart({ data, loading }: UcsIndexChartProps) {
-
-  return (
-    <ChartContainer
-      config={{
-        value: {
-          label: 'UCS',
-          color: 'hsl(var(--primary))',
-        },
-      }}
-      className="h-[300px] w-full"
-    >
-      {loading && data.length === 0 ? (
-          <div className="flex h-full w-full items-center justify-center">
+  
+  const renderContent = () => {
+    if (loading) {
+      return (
+        <div className="flex h-full w-full items-center justify-center">
             <Skeleton className="h-[250px] w-full" />
-          </div>
-      ) : (
+        </div>
+      );
+    }
+
+    if (data.length === 0) {
+      return (
+        <div className="flex h-full w-full items-center justify-center">
+          <p className="text-sm text-muted-foreground">
+            Ainda não há dados suficientes para exibir o gráfico. Configure a fórmula para começar.
+          </p>
+        </div>
+      );
+    }
+
+    return (
         <LineChart
           data={data}
           margin={{ top: 5, right: 10, left: -20, bottom: 0 }}
@@ -75,7 +81,21 @@ export function UcsIndexChart({ data, loading }: UcsIndexChartProps) {
             animationDuration={200}
           />
         </LineChart>
-      )}
+    );
+  };
+
+
+  return (
+    <ChartContainer
+      config={{
+        value: {
+          label: 'UCS',
+          color: 'hsl(var(--primary))',
+        },
+      }}
+      className="h-[300px] w-full"
+    >
+      {renderContent()}
     </ChartContainer>
   );
 }
