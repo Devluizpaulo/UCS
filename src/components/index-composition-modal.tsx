@@ -7,10 +7,10 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { PieChart, Pie, Cell, Tooltip } from 'recharts';
-import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import type { UcsData } from '@/lib/types';
 import { Separator } from './ui/separator';
+import { ScrollArea } from './ui/scroll-area';
 
 interface IndexCompositionModalProps {
   data: UcsData;
@@ -66,106 +66,108 @@ export function IndexCompositionModal({ data, isOpen, onClose }: IndexCompositio
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-4xl">
+      <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col">
         <DialogHeader>
             <DialogTitle className="text-2xl">Composição do Índice UCS</DialogTitle>
             <DialogDescription>
                 Análise detalhada dos componentes que formam o valor do índice.
             </DialogDescription>
         </DialogHeader>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-4">
-            {/* Left Side: Details & Legend */}
-            <div className="flex flex-col space-y-6">
-                <div>
-                    <h3 className="text-sm font-medium text-muted-foreground">Valor Total do Índice</h3>
-                    <p className="text-3xl font-bold text-primary">{formatCurrency(indexValue)}</p>
+        <ScrollArea className="pr-6 -mr-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-4">
+                {/* Left Side: Details & Legend */}
+                <div className="flex flex-col space-y-6">
+                    <div>
+                        <h3 className="text-sm font-medium text-muted-foreground">Valor Total do Índice</h3>
+                        <p className="text-3xl font-bold text-primary">{formatCurrency(indexValue)}</p>
+                    </div>
+                    <Separator />
+                    <div className="space-y-4">
+                        <h4 className="font-semibold">Componentes Principais</h4>
+                        {ucsCompositionData.map(item => (
+                            <div key={item.name} className="flex justify-between items-center text-sm">
+                                <div className="flex items-center gap-2">
+                                    <div className="h-3 w-3 rounded-full" style={{ backgroundColor: item.fill }} />
+                                    <span>{item.name}</span>
+                                </div>
+                                <div className="text-right">
+                                    <p className="font-medium">{formatCurrency(item.value)}</p>
+                                    <p className="text-xs text-muted-foreground">{item.percent}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    <Separator />
+                    <div className="space-y-4">
+                        <h4 className="font-semibold">Detalhes do VUS</h4>
+                        {vusCompositionData.map(item => (
+                            <div key={item.name} className="flex justify-between items-center text-sm">
+                                <div className="flex items-center gap-2">
+                                    <div className="h-3 w-3 rounded-full" style={{ backgroundColor: item.fill }} />
+                                    <span>{item.name}</span>
+                                </div>
+                                <div className="text-right">
+                                    <p className="font-medium">{formatCurrency(item.value)}</p>
+                                    <p className="text-xs text-muted-foreground">{item.percent}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 </div>
-                <Separator />
-                <div className="space-y-4">
-                    <h4 className="font-semibold">Componentes Principais</h4>
-                    {ucsCompositionData.map(item => (
-                        <div key={item.name} className="flex justify-between items-center text-sm">
-                            <div className="flex items-center gap-2">
-                                <div className="h-3 w-3 rounded-full" style={{ backgroundColor: item.fill }} />
-                                <span>{item.name}</span>
-                            </div>
-                            <div className="text-right">
-                                <p className="font-medium">{formatCurrency(item.value)}</p>
-                                <p className="text-xs text-muted-foreground">{item.percent}</p>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-                <Separator />
-                 <div className="space-y-4">
-                    <h4 className="font-semibold">Detalhes do VUS</h4>
-                     {vusCompositionData.map(item => (
-                        <div key={item.name} className="flex justify-between items-center text-sm">
-                            <div className="flex items-center gap-2">
-                                <div className="h-3 w-3 rounded-full" style={{ backgroundColor: item.fill }} />
-                                <span>{item.name}</span>
-                            </div>
-                            <div className="text-right">
-                                <p className="font-medium">{formatCurrency(item.value)}</p>
-                                <p className="text-xs text-muted-foreground">{item.percent}</p>
-                            </div>
-                        </div>
-                    ))}
+                
+                {/* Right Side: Charts */}
+                <div className="flex flex-col space-y-2">
+                    <div className="w-full h-[250px]">
+                        <h4 className="text-center font-semibold text-muted-foreground mb-2">Composição UCS</h4>
+                        <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                                <Tooltip content={<CustomTooltip />} />
+                                <Pie
+                                    data={ucsCompositionData}
+                                    dataKey="value"
+                                    nameKey="name"
+                                    cx="50%"
+                                    cy="50%"
+                                    outerRadius={80}
+                                    innerRadius={50}
+                                    labelLine={false}
+                                    stroke="hsl(var(--background))"
+                                    strokeWidth={2}
+                                >
+                                    {ucsCompositionData.map((entry) => (
+                                        <Cell key={`cell-${entry.name}`} fill={entry.fill} />
+                                    ))}
+                                </Pie>
+                            </PieChart>
+                        </ResponsiveContainer>
+                    </div>
+                    <div className="w-full h-[250px] pt-4">
+                        <h4 className="text-center font-semibold text-muted-foreground mb-2">Composição VUS</h4>
+                        <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                                <Tooltip content={<CustomTooltip />} />
+                                <Pie
+                                    data={vusCompositionData}
+                                    dataKey="value"
+                                    nameKey="name"
+                                    cx="50%"
+                                    cy="50%"
+                                    outerRadius={80}
+                                    innerRadius={50}
+                                    labelLine={false}
+                                    stroke="hsl(var(--background))"
+                                    strokeWidth={2}
+                                >
+                                    {vusCompositionData.map((entry) => (
+                                        <Cell key={`cell-${entry.name}`} fill={entry.fill} />
+                                    ))}
+                                </Pie>
+                            </PieChart>
+                        </ResponsiveContainer>
+                    </div>
                 </div>
             </div>
-            
-            {/* Right Side: Charts */}
-            <div className="flex flex-col space-y-2">
-                <div className="w-full h-[250px]">
-                    <h4 className="text-center font-semibold text-muted-foreground mb-2">Composição UCS</h4>
-                    <ChartContainer config={{}} className="h-full w-full">
-                        <PieChart>
-                             <Tooltip content={<CustomTooltip />} />
-                            <Pie
-                                data={ucsCompositionData}
-                                dataKey="value"
-                                nameKey="name"
-                                cx="50%"
-                                cy="50%"
-                                outerRadius={80}
-                                innerRadius={50}
-                                labelLine={false}
-                                stroke="hsl(var(--background))"
-                                strokeWidth={2}
-                            >
-                                {ucsCompositionData.map((entry) => (
-                                    <Cell key={`cell-${entry.name}`} fill={entry.fill} />
-                                ))}
-                            </Pie>
-                        </PieChart>
-                    </ChartContainer>
-                </div>
-                <div className="w-full h-[250px] pt-4">
-                     <h4 className="text-center font-semibold text-muted-foreground mb-2">Composição VUS</h4>
-                     <ChartContainer config={{}} className="h-full w-full">
-                        <PieChart>
-                            <Tooltip content={<CustomTooltip />} />
-                            <Pie
-                                data={vusCompositionData}
-                                dataKey="value"
-                                nameKey="name"
-                                cx="50%"
-                                cy="50%"
-                                outerRadius={80}
-                                innerRadius={50}
-                                labelLine={false}
-                                stroke="hsl(var(--background))"
-                                strokeWidth={2}
-                            >
-                                {vusCompositionData.map((entry) => (
-                                    <Cell key={`cell-${entry.name}`} fill={entry.fill} />
-                                ))}
-                            </Pie>
-                        </PieChart>
-                    </ChartContainer>
-                </div>
-            </div>
-        </div>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );
