@@ -1,3 +1,4 @@
+
 export type ChartData = {
   time: string;
   value: number;
@@ -66,3 +67,17 @@ export type RiskMetric = {
 export type RiskAnalysisData = {
     metrics: RiskMetric[];
 };
+
+export type FormulaParameters = {
+    VOLUME_MADEIRA_HA: number;
+    FATOR_CARBONO: number;
+    PROD_BOI: number;
+    PROD_MILHO: number;
+    PROD_SOJA: number;
+    PESO_PEC: number;
+    PESO_MILHO: number;
+    PESO_SOJA: number;
+    FATOR_ARREND: number;
+    FATOR_AGUA: number;
+    FATOR_CONVERSAO_SERRADA_TORA: number;
+}

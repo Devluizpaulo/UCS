@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A flow for simulating the impact of price changes on the UCS Index.
@@ -10,7 +11,8 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { getCommodityPrices } from '@/lib/data-service';
-import type { ScenarioResult, SimulateScenarioInput } from '@/lib/types';
+import type { ScenarioResult, SimulateScenarioInput, FormulaParameters } from '@/lib/types';
+import { getFormulaParameters } from '@/lib/formula-service';
 
 
 const SimulateScenarioOutputSchema = z.object({
@@ -25,20 +27,8 @@ export async function simulateScenario(input: SimulateScenarioInput): Promise<Sc
 }
 
 // Helper function to calculate the index based on the new methodology.
-function calculateIndex(prices: { [key: string]: number }): number {
-    // Constants from the formula
-    const VOLUME_MADEIRA_HA = 120; // m³ de madeira comercial por hectare
-    const FATOR_CARBONO = 2.59; // tCO₂ estocadas por m³ de madeira
-    const PROD_BOI = 18; // Produção de arrobas de boi por ha/ano
-    const PROD_MILHO = 7.2; // Produção de toneladas de milho por ha/ano
-    const PROD_SOJA = 3.3; // Produção de toneladas de soja por ha/ano
-    const PESO_PEC = 0.35; // Peso da pecuária no uso do solo
-    const PESO_MILHO = 0.30; // Peso do milho no uso do solo
-    const PESO_SOJA = 0.35; // Peso da soja no uso do solo
-    const FATOR_ARREND = 0.048; // Fator de capitalização da renda
-    const FATOR_AGUA = 0.07; // % do VUS que representa o valor da água
-    const FATOR_CONVERSAO_SERRADA_TORA = 0.3756; // Fator de conversão de madeira serrada para tora (em pé)
-
+function calculateIndex(prices: { [key: string]: number }, params: FormulaParameters): number {
+    
     // Exchange Rates
     const taxa_usd_brl = prices['USD/BRL Histórico'] || 1;
     const taxa_eur_brl = prices['EUR/BRL Histórico'] || 1;
@@ -52,19 +42,19 @@ function calculateIndex(prices: { [key: string]: number }): number {
 
     // --- Price Conversions ---
     const preco_madeira_serrada_m3 = (preco_lumber_mbf / 1000) * 424 * taxa_usd_brl;
-    const preco_madeira_tora_m3 = preco_madeira_serrada_m3 * FATOR_CONVERSAO_SERRADA_TORA;
+    const preco_madeira_tora_m3 = preco_madeira_serrada_m3 * params.FATOR_CONVERSAO_SERRADA_TORA;
     const preco_milho_ton = (preco_milho_bushel_cents / 100) * (1000 / 25.4) * taxa_usd_brl;
     const preco_soja_ton = (preco_soja_bushel_cents / 100) * (1000 / 27.2) * taxa_usd_brl;
     const preco_carbono_brl = preco_carbono_eur * taxa_eur_brl;
     
     // --- Formula Calculation ---
-    const VM = preco_madeira_tora_m3 * VOLUME_MADEIRA_HA;
-    const renda_bruta_ha = (PROD_BOI * preco_boi_arroba * PESO_PEC) + 
-                           (PROD_MILHO * preco_milho_ton * PESO_MILHO) + 
-                           (PROD_SOJA * preco_soja_ton * PESO_SOJA);
-    const VUS = renda_bruta_ha / FATOR_ARREND;
-    const valor_carbono = preco_carbono_brl * VOLUME_MADEIRA_HA * FATOR_CARBONO;
-    const valor_agua = VUS * FATOR_AGUA;
+    const VM = preco_madeira_tora_m3 * params.VOLUME_MADEIRA_HA;
+    const renda_bruta_ha = (params.PROD_BOI * preco_boi_arroba * params.PESO_PEC) + 
+                           (params.PROD_MILHO * preco_milho_ton * params.PESO_MILHO) + 
+                           (params.PROD_SOJA * preco_soja_ton * params.PESO_SOJA);
+    const VUS = renda_bruta_ha / params.FATOR_ARREND;
+    const valor_carbono = preco_carbono_brl * params.VOLUME_MADEIRA_HA * params.FATOR_CARBONO;
+    const valor_agua = VUS * params.FATOR_AGUA;
     const CRS = valor_carbono + valor_agua;
     const ucsValue = VM + VUS + CRS;
 
@@ -83,8 +73,11 @@ const simulateScenarioFlow = ai.defineFlow(
     outputSchema: SimulateScenarioOutputSchema,
   },
   async ({ asset, changeType, value }) => {
-    // 1. Get current market prices
-    const pricesData = await getCommodityPrices();
+    // 1. Get current market prices and formula parameters
+    const [pricesData, params] = await Promise.all([
+        getCommodityPrices(),
+        getFormulaParameters()
+    ]);
     
     const originalPrices: { [key: string]: number } = pricesData.reduce((acc, item) => {
         // Here we use the raw prices from the API, conversion happens inside calculateIndex
@@ -96,7 +89,7 @@ const simulateScenarioFlow = ai.defineFlow(
     const originalAssetPrice = originalPrices[asset] || 0;
 
     // 2. Calculate the original index value
-    const originalIndexValue = calculateIndex(originalPrices);
+    const originalIndexValue = calculateIndex(originalPrices, params);
 
     // 3. Create the new set of prices based on the scenario
     const simulatedPrices = { ...originalPrices };
@@ -107,7 +100,7 @@ const simulateScenarioFlow = ai.defineFlow(
     }
 
     // 4. Calculate the new index value
-    const newIndexValue = calculateIndex(simulatedPrices);
+    const newIndexValue = calculateIndex(simulatedPrices, params);
 
     // 5. Calculate the percentage change
     const changePercentage = originalIndexValue === 0 ? 0 : ((newIndexValue - originalIndexValue) / originalIndexValue) * 100;
