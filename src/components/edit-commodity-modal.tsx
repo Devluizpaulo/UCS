@@ -29,9 +29,18 @@ const commoditySchema = z.object({
   description: z.string().min(1, 'Descrição é obrigatória.'),
   unit: z.string().min(1, 'Unidade é obrigatória.'),
   scrapeConfig: z.object({
-    url: z.string().url('URL inválida.'),
-    selector: z.string().min(1, 'Seletor é obrigatório.'),
-  }).optional(),
+    url: z.string().url('URL inválida.').or(z.literal('')),
+    selector: z.string(),
+  }).optional().refine(data => {
+    // If URL is provided, selector must also be provided.
+    if (data?.url && !data.selector) {
+      return false;
+    }
+    return true;
+  }, {
+    message: "O seletor CSS é obrigatório se a URL for fornecida.",
+    path: ["selector"],
+  }),
 });
 
 
@@ -117,7 +126,7 @@ export function EditCommodityModal({ isOpen, onClose, commodity, onSave, isSavin
           
            <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="scrapeConfig.url" className="text-right">URL de Scraping</Label>
-            <Input id="scrapeConfig.url" {...register('scrapeConfig.url')} className="col-span-3" />
+            <Input id="scrapeConfig.url" {...register('scrapeConfig.url')} className="col-span-3" placeholder="Deixe em branco para desativar"/>
              {errors.scrapeConfig?.url && <p className="col-span-4 text-xs text-destructive text-right">{errors.scrapeConfig.url.message}</p>}
           </div>
           

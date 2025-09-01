@@ -1,3 +1,4 @@
+
 'use server';
 
 import type { ChartData, CommodityPriceData, ScenarioResult, HistoricalQuote, HistoryInterval, UcsData, RiskAnalysisData, RiskMetric, GenerateReportInput, GenerateReportOutput } from './types';
@@ -252,7 +253,9 @@ export async function updateSingleCommodity(assetName: string): Promise<{success
     console.log(`[DATA_SERVICE] Initiating manual update for ${assetName}`);
     const { commodityMap } = await getCommodityConfig();
     const commodityInfo = commodityMap[assetName];
-    if (!commodityInfo || !commodityInfo.scrapeConfig) {
+    
+    // Robust check for scrapeConfig
+    if (!commodityInfo || !commodityInfo.scrapeConfig || !commodityInfo.scrapeConfig.url || !commodityInfo.scrapeConfig.selector) {
         return { success: false, message: 'Ativo não configurado para atualização manual.' };
     }
 
