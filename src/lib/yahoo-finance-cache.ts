@@ -1,8 +1,9 @@
+
 'use server';
 
 import yahooFinance from 'yahoo-finance2';
 import type { HistoricalQuote, HistoryInterval } from './types';
-import { YAHOO_FINANCE_CONFIG, COMMODITY_TICKER_MAP } from './yahoo-finance-config-data';
+import { YAHOO_FINANCE_CONFIG } from './yahoo-finance-config-data';
 
 // Cache interface
 interface CacheEntry<T> {
@@ -51,33 +52,6 @@ async function delay(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// Fallback function to generate mock data when API fails
-function generateFallbackQuote(ticker: string): any {
-    // Find the commodity configuration synchronously
-    const commodityEntry = Object.values(COMMODITY_TICKER_MAP).find(
-        (config) => config.ticker === ticker
-    );
-
-    const basePrice = commodityEntry?.fallbackPrice || 100;
-
-    // Generate some realistic variation (±2%)
-    const variation = (Math.random() - 0.5) * 0.04;
-    const price = basePrice * (1 + variation);
-    const change = basePrice * variation;
-
-    return {
-        symbol: ticker,
-        regularMarketPrice: price,
-        regularMarketChange: change,
-        regularMarketTime: Math.floor(Date.now() / 1000),
-        currency: commodityEntry?.currency || 'BRL',
-    };
-}
-
-function generateFallbackQuotes(tickers: string[]): any[] {
-    return tickers.map(ticker => generateFallbackQuote(ticker));
-}
-
 
 // Enhanced Yahoo Finance functions with caching and rate limiting
 export async function getCachedQuote(tickers: string | string[], retries = 3): Promise<any> {
@@ -116,20 +90,10 @@ export async function getCachedQuote(tickers: string | string[], retries = 3): P
       return result;
     } catch (error: any) {
       console.error(`[API ERROR] Attempt ${attempt} failed:`, error.message);
-      
       if (attempt === retries) {
-        // Last attempt failed, use fallback data
-        console.warn(`[FALLBACK] Using mock data for ${tickerArray.join(', ')} after ${retries} failed attempts`);
-        const fallbackData = Array.isArray(tickers) ? generateFallbackQuotes(tickerArray) : generateFallbackQuote(tickerArray[0]);
-        
-        // Cache fallback data with shorter TTL
-        cache.set(cacheKey, {
-          data: fallbackData,
-          timestamp: Date.now(),
-          ttl: 60 * 1000, // 1 minute TTL for fallback data
-        });
-        
-        return fallbackData;
+        // Last attempt failed, throw error instead of returning fallback data
+        console.error(`[FATAL API ERROR] Failed to fetch quote for ${tickerArray.join(', ')} after ${retries} attempts.`);
+        throw new Error(`Failed to fetch quote for ${tickerArray.join(', ')}.`);
       }
       
       // Wait before retry (exponential backoff)
@@ -193,18 +157,8 @@ export async function getCachedHistorical(
       console.error(`[API ERROR] Attempt ${attempt} failed:`, error.message);
       
       if (attempt === retries) {
-        // Last attempt failed, return empty array as fallback
-        console.warn(`[FALLBACK] Returning empty historical data for ${ticker} after ${retries} failed attempts`);
-        const fallbackData: any[] = [];
-        
-        // Cache empty fallback with shorter TTL
-        cache.set(cacheKey, {
-          data: fallbackData,
-          timestamp: Date.now(),
-          ttl: 60 * 1000, // 1 minute TTL for fallback data
-        });
-        
-        return fallbackData;
+        // Last attempt failed, throw an error
+        throw new Error(`Failed to fetch historical data for ${ticker} after ${retries} attempts.`);
       }
       
       const waitTime = Math.pow(2, attempt) * 1000;

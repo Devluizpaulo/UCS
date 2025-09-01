@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A service for interacting with the Firebase Firestore database.
@@ -10,24 +11,30 @@ import { collection, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import type { CommodityPriceData } from './types';
 
 /**
- * Saves a batch of commodity price data to Firestore.
+ * Saves a single or a batch of commodity price data to Firestore.
  * Each asset's data is saved in its own document, within a subcollection
  * for historical price entries.
  *
- * @param {CommodityPriceData[]} data - An array of commodity price data objects.
+ * @param {CommodityPriceData[] | CommodityPriceData} data - A single object or an array of commodity price data objects.
  * @returns {Promise<void>}
  */
-export async function saveCommodityData(data: CommodityPriceData[]): Promise<void> {
-  if (!data || data.length === 0) {
+export async function saveCommodityData(data: CommodityPriceData[] | CommodityPriceData): Promise<void> {
+  const dataArray = Array.isArray(data) ? data : [data];
+
+  if (!dataArray || dataArray.length === 0) {
     console.log('[DB] No data provided to save.');
     return;
   }
 
-  console.log(`[DB] Saving data for ${data.length} commodities.`);
+  console.log(`[DB] Saving data for ${dataArray.length} commodities.`);
 
   const writePromises: Promise<void>[] = [];
 
-  data.forEach((item) => {
+  dataArray.forEach((item) => {
+    if (!item || !item.name) {
+        console.warn('[DB] Skipping invalid item in data array:', item);
+        return;
+    }
     try {
       // A reference to the document for the specific commodity (e.g., 'Soja Futuros')
       const commodityDocRef = doc(db, 'commodities_history', item.name);
@@ -38,10 +45,7 @@ export async function saveCommodityData(data: CommodityPriceData[]): Promise<voi
       
       // Set the data for the new price entry
       const promise = setDoc(entryDocRef, {
-        price: item.price,
-        change: item.change,
-        absoluteChange: item.absoluteChange,
-        lastUpdated: item.lastUpdated,
+        ...item, // Save the whole item object
         savedAt: serverTimestamp(), // Use Firestore server timestamp
       });
       
@@ -56,5 +60,6 @@ export async function saveCommodityData(data: CommodityPriceData[]): Promise<voi
     console.log('[DB] Successfully saved all commodity data to Firestore.');
   } catch (error) {
     console.error('[DB] Failed to save one or more commodity data entries:', error);
+    throw new Error('Failed to save commodity data.');
   }
 }

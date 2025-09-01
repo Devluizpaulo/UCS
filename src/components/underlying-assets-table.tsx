@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -10,12 +11,13 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { AnimatedNumber } from '@/components/ui/animated-number';
-import { ArrowDown, ArrowUp, DollarSign, Euro, Beef, Leaf, TreePine, Recycle } from 'lucide-react';
+import { ArrowDown, ArrowUp, DollarSign, Euro, Beef, Leaf, TreePine, Recycle, RefreshCw, Loader2 } from 'lucide-react';
 import type { Commodity, CommodityPriceData } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { AssetDetailModal } from './asset-detail-modal';
 import { Skeleton } from './ui/skeleton';
 import { COMMODITY_TICKER_MAP } from '@/lib/yahoo-finance-config-data';
+import { Button } from './ui/button';
 
 
 // Helper component for Corn icon
@@ -43,9 +45,11 @@ const commodityDetails: Commodity[] = [
 interface UnderlyingAssetsTableProps {
     data?: CommodityPriceData[];
     loading?: boolean;
+    updatingAssets?: Set<string>;
+    onManualUpdate?: (assetName: string) => void;
 }
 
-export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTableProps) {
+export function UnderlyingAssetsTable({ data, loading, updatingAssets, onManualUpdate }: UnderlyingAssetsTableProps) {
   const [selectedAsset, setSelectedAsset] = useState<CommodityPriceData | null>(null);
 
   const getIconForCommodity = (name: string) => {
@@ -61,15 +65,15 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
   const renderTableRows = () => {
     // If loading, render skeleton rows for all possible commodities
     if (loading) {
-        return commodityDetails.map((commodity) => (
-            <TableRow key={commodity.name} className="cursor-wait">
+        return Object.keys(COMMODITY_TICKER_MAP).map((commodityName) => (
+            <TableRow key={commodityName} className="cursor-wait">
               <TableCell>
                 <div className="flex items-center gap-3">
                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
                     <Skeleton className="h-4 w-4" />
                   </div>
                   <div>
-                    <div className="font-medium">{commodity.name}</div>
+                    <div className="font-medium">{commodityName}</div>
                     <div className="text-xs text-muted-foreground">Aguardando dados...</div>
                   </div>
                 </div>
@@ -80,6 +84,9 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
               <TableCell className="text-right">
                 <Skeleton className="h-6 w-24 ml-auto" />
               </TableCell>
+              <TableCell className="text-right">
+                <Skeleton className="h-8 w-8 rounded-full ml-auto" />
+              </TableCell>
             </TableRow>
         ));
     }
@@ -88,8 +95,8 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
     if (!data || data.length === 0) {
         return (
             <TableRow>
-                <TableCell colSpan={3} className="h-24 text-center">
-                    Ainda não há dados de cotação. A primeira atualização automática ocorrerá em breve.
+                <TableCell colSpan={4} className="h-24 text-center">
+                    Ainda não há dados de cotação. A atualização automática ocorrerá às 6h da manhã.
                 </TableCell>
             </TableRow>
         );
@@ -100,10 +107,11 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
         const Icon = getIconForCommodity(item.name);
         const commodityConfig = COMMODITY_TICKER_MAP[item.name];
         const currency = commodityConfig?.currency || 'USD';
+        const isUpdating = updatingAssets?.has(item.name);
 
         return (
-            <TableRow key={item.name} onClick={() => handleRowClick(item)} className="cursor-pointer">
-              <TableCell>
+            <TableRow key={item.name} >
+              <TableCell onClick={() => handleRowClick(item)} className="cursor-pointer">
                 <div className="flex items-center gap-3">
                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
                     <Icon className="h-4 w-4 text-muted-foreground" />
@@ -114,10 +122,10 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
                   </div>
                 </div>
               </TableCell>
-              <TableCell className="text-right font-mono">
+              <TableCell onClick={() => handleRowClick(item)} className="text-right font-mono cursor-pointer">
                 <AnimatedNumber value={item.price} currency={currency} />
               </TableCell>
-              <TableCell className="text-right">
+              <TableCell onClick={() => handleRowClick(item)} className="text-right cursor-pointer">
                   <div className={cn(
                       "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold font-mono transition-colors",
                       item.change >= 0 ? "border-primary/50 text-primary" : "border-destructive/50 text-destructive"
@@ -125,6 +133,24 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
                       {item.change >= 0 ? <ArrowUp className="mr-1 h-3 w-3" /> : <ArrowDown className="mr-1 h-3 w-3" />}
                       <AnimatedNumber value={item.change} formatter={(v) => `${v.toFixed(2)}%`} />
                   </div>
+              </TableCell>
+              <TableCell className="text-right">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={(e) => {
+                        e.stopPropagation(); // Prevent row click from opening modal
+                        onManualUpdate?.(item.name)
+                    }}
+                    disabled={isUpdating}
+                    aria-label={`Atualizar ${item.name}`}
+                  >
+                    {isUpdating ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                        <RefreshCw className="h-4 w-4" />
+                    )}
+                  </Button>
               </TableCell>
             </TableRow>
         );
@@ -139,7 +165,8 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
           <TableRow>
             <TableHead>Ativo</TableHead>
             <TableHead className="text-right">Preço</TableHead>
-            <TableHead className="text-right">Variação (Fech.)</TableHead>
+            <TableHead className="text-right">Variação (24h)</TableHead>
+            <TableHead className="text-right w-[50px]">Atualizar</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

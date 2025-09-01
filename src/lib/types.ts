@@ -1,6 +1,7 @@
 
 
 
+
 export type ChartData = {
   time: string;
   value: number;
@@ -12,6 +13,7 @@ export type Commodity = {
 };
 
 export type CommodityPriceData = {
+    id: string; // Document ID from Firestore
     name: string;
     ticker: string;
     price: number;

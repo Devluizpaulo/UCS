@@ -1,3 +1,4 @@
+
 // This file is intentionally not marked with 'use server' as it exports constant objects.
 
 // Yahoo Finance API Configuration
@@ -22,22 +23,12 @@ export const YAHOO_FINANCE_CONFIG = {
     QUOTE: 10000, // 10 seconds
     HISTORICAL: 15000, // 15 seconds
   },
-  
-  // Fallback values
-  FALLBACK: {
-    EXCHANGE_RATES: {
-      'BRL=X': 5.5, // USD to BRL fallback rate
-      'EURBRL=X': 6.0, // EUR to BRL fallback rate
-    },
-    COMMODITY_PRICES: {
-      'BGIc1.SA': 250.0, // Boi Gordo fallback price
-      'ZS=F': 1400.0, // Soja fallback price (cents/bushel)
-      'ZC=F': 600.0, // Milho fallback price (cents/bushel)
-      'LBS=F': 500.0, // Madeira fallback price (USD/MBF)
-      'KE=F': 72.0, // Carbono fallback price in EUR
-    },
-  },
 };
+
+type ScrapeConfig = {
+  url: string;
+  selector: string;
+}
 
 // Commodity ticker mapping with enhanced metadata
 export const COMMODITY_TICKER_MAP: { 
@@ -46,8 +37,8 @@ export const COMMODITY_TICKER_MAP: {
     currency: 'BRL' | 'USD' | 'EUR';
     category: 'exchange' | 'agriculture' | 'forestry' | 'carbon';
     description: string;
-    fallbackPrice?: number;
     unit: 'BRL' | '@' | 'cents/bushel' | 'USD/MBF' | 'EUR/tCO₂';
+    scrapeConfig?: ScrapeConfig;
   } 
 } = {
   'USD/BRL Histórico': { 
@@ -55,55 +46,76 @@ export const COMMODITY_TICKER_MAP: {
     currency: 'BRL',
     category: 'exchange',
     description: 'Taxa de câmbio USD para BRL',
-    fallbackPrice: YAHOO_FINANCE_CONFIG.FALLBACK.EXCHANGE_RATES['BRL=X'],
     unit: 'BRL',
+    scrapeConfig: {
+      url: 'https://finance.yahoo.com/quote/BRL=X/',
+      selector: 'fin-streamer[data-field="regularMarketPrice"][data-symbol="BRL=X"]'
+    }
   },
   'EUR/BRL Histórico': { 
     ticker: 'EURBRL=X', 
     currency: 'BRL',
     category: 'exchange',
     description: 'Taxa de câmbio EUR para BRL',
-    fallbackPrice: YAHOO_FINANCE_CONFIG.FALLBACK.EXCHANGE_RATES['EURBRL=X'],
     unit: 'BRL',
+     scrapeConfig: {
+      url: 'https://finance.yahoo.com/quote/EURBRL=X/',
+      selector: 'fin-streamer[data-field="regularMarketPrice"][data-symbol="EURBRL=X"]'
+    }
   },
   'Boi Gordo Futuros - Ago 25 (BGIc1)': { 
     ticker: 'BGIc1.SA', 
     currency: 'BRL',
     category: 'agriculture',
     description: 'Contratos futuros de Boi Gordo para Agosto de 2025',
-    fallbackPrice: YAHOO_FINANCE_CONFIG.FALLBACK.COMMODITY_PRICES['BGIc1.SA'],
     unit: '@',
+    scrapeConfig: {
+      url: 'https://finance.yahoo.com/quote/BGIc1.SA/',
+      selector: 'fin-streamer[data-field="regularMarketPrice"][data-symbol="BGIc1.SA"]'
+    }
   },
   'Soja Futuros': { 
     ticker: 'ZS=F', 
     currency: 'USD',
     category: 'agriculture',
     description: 'Contratos futuros de Soja',
-    fallbackPrice: YAHOO_FINANCE_CONFIG.FALLBACK.COMMODITY_PRICES['ZS=F'],
     unit: 'cents/bushel',
+     scrapeConfig: {
+      url: 'https://finance.yahoo.com/quote/ZS=F/',
+      selector: 'fin-streamer[data-field="regularMarketPrice"][data-symbol="ZS=F"]'
+    }
   },
   'Milho Futuros': { 
     ticker: 'ZC=F', 
     currency: 'USD',
     category: 'agriculture',
     description: 'Contratos futuros de Milho',
-    fallbackPrice: YAHOO_FINANCE_CONFIG.FALLBACK.COMMODITY_PRICES['ZC=F'],
     unit: 'cents/bushel',
+     scrapeConfig: {
+      url: 'https://finance.yahoo.com/quote/ZC=F/',
+      selector: 'fin-streamer[data-field="regularMarketPrice"][data-symbol="ZC=F"]'
+    }
   },
   'Madeira Futuros': { 
     ticker: 'LBS=F', 
     currency: 'USD',
     category: 'forestry',
     description: 'Contratos futuros de Madeira (Lumber)',
-    fallbackPrice: YAHOO_FINANCE_CONFIG.FALLBACK.COMMODITY_PRICES['LBS=F'],
     unit: 'USD/MBF',
+     scrapeConfig: {
+      url: 'https://finance.yahoo.com/quote/LBS=F/',
+      selector: 'fin-streamer[data-field="regularMarketPrice"][data-symbol="LBS=F"]'
+    }
   },
   'Carbono Futuros': { 
     ticker: 'KE=F', 
     currency: 'EUR',
     category: 'carbon',
     description: 'Contratos futuros de Carbono (ICE)',
-    fallbackPrice: YAHOO_FINANCE_CONFIG.FALLBACK.COMMODITY_PRICES['KE=F'],
     unit: 'EUR/tCO₂',
+     scrapeConfig: {
+      url: 'https://finance.yahoo.com/quote/KE=F/',
+      selector: 'fin-streamer[data-field="regularMarketPrice"][data-symbol="KE=F"]'
+    }
   },
 };

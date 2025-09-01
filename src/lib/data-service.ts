@@ -1,12 +1,15 @@
 
+
 'use server';
 
 import type { ChartData, CommodityPriceData, ScenarioResult, HistoricalQuote, HistoryInterval, UcsData, RiskAnalysisData, RiskMetric, GenerateReportInput, GenerateReportOutput } from './types';
-import { getOptimizedHistorical } from './yahoo-finance-optimizer';
+import { getOptimizedHistorical, getOptimizedCommodityPrices } from './yahoo-finance-optimizer';
 import { COMMODITY_TICKER_MAP } from './yahoo-finance-config-data';
 import { calculate_volatility, calculate_correlation } from './statistics';
 import { db } from './firebase-config';
 import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
+import { saveCommodityData } from './database-service';
+import { scrapeUrlFlow } from '@/ai/flows/scrape-commodity-price-flow';
 
 
 // Functions for the "Analysis" page that call Genkit flows directly.
@@ -77,15 +80,16 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
         const querySnapshot = await getDocs(q);
   
         if (!querySnapshot.empty) {
-          const latestDoc = querySnapshot.docs[0];
-          const data = latestDoc.data();
+          const doc = querySnapshot.docs[0];
+          const data = doc.data() as any;
           prices.push({
-            name: name,
-            ticker: data.ticker || commodityInfo.ticker,
+            id: doc.id,
+            name: data.name,
+            ticker: data.ticker,
             price: data.price,
             change: data.change,
             absoluteChange: data.absoluteChange,
-            lastUpdated: new Date(data.savedAt.seconds * 1000).toLocaleDateString('pt-BR'),
+            lastUpdated: new Date(data.savedAt.seconds * 1000).toLocaleString('pt-BR'),
             currency: commodityInfo.currency,
           });
         }
@@ -268,4 +272,63 @@ async function getFormattedHistoricalData(ticker: string, interval: HistoryInter
 export async function generateReport(input: GenerateReportInput): Promise<GenerateReportOutput> {
     const { generateReportFlow } = await import('@/ai/flows/generate-report-flow');
     return generateReportFlow(input);
+}
+
+
+export async function updateSingleCommodity(assetName: string): Promise<{success: boolean, message: string}> {
+    console.log(`[DATA_SERVICE] Initiating manual update for ${assetName}`);
+    const commodityInfo = COMMODITY_TICKER_MAP[assetName];
+    if (!commodityInfo || !commodityInfo.scrapeConfig) {
+        return { success: false, message: 'Ativo não configurado para atualização manual.' };
+    }
+
+    try {
+        // Step 1: Scrape the latest price
+        const newPriceStr = await scrapeUrlFlow({ 
+            url: commodityInfo.scrapeConfig.url, 
+            selector: commodityInfo.scrapeConfig.selector 
+        });
+
+        if (!newPriceStr) {
+            throw new Error('Scraping did not return a value.');
+        }
+
+        const newPrice = parseFloat(newPriceStr);
+        if (isNaN(newPrice)) {
+            throw new Error(`Scraped value "${newPriceStr}" is not a valid number.`);
+        }
+
+        // Step 2: Fetch the last saved price from DB to calculate change
+        const pricesCollectionRef = collection(db, 'commodities_history', assetName, 'price_entries');
+        const q = query(pricesCollectionRef, orderBy('savedAt', 'desc'), limit(1));
+        const querySnapshot = await getDocs(q);
+
+        let lastPrice = newPrice; // Default if no previous price exists
+        if (!querySnapshot.empty) {
+            lastPrice = querySnapshot.docs[0].data().price;
+        }
+
+        const absoluteChange = newPrice - lastPrice;
+        const change = lastPrice !== 0 ? (absoluteChange / lastPrice) * 100 : 0;
+
+        // Step 3: Create the data object and save to Firestore
+        const priceData: Omit<CommodityPriceData, 'id'> = {
+            name: assetName,
+            ticker: commodityInfo.ticker,
+            price: newPrice,
+            change: parseFloat(change.toFixed(2)),
+            absoluteChange: parseFloat(absoluteChange.toFixed(4)),
+            lastUpdated: new Date().toLocaleString('pt-BR'),
+            currency: commodityInfo.currency,
+        };
+
+        await saveCommodityData(priceData);
+
+        console.log(`[DATA_SERVICE] Successfully updated ${assetName} to ${newPrice}`);
+        return { success: true, message: `${assetName} atualizado com sucesso.` };
+
+    } catch (error) {
+        console.error(`[DATA_SERVICE] Failed to manually update ${assetName}:`, error);
+        return { success: false, message: `Falha ao atualizar ${assetName}.` };
+    }
 }
