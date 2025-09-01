@@ -7,8 +7,8 @@ import { getOptimizedHistorical, getOptimizedCommodityPrices } from './yahoo-fin
 import { COMMODITY_TICKER_MAP } from './yahoo-finance-config-data';
 import { calculate_volatility, calculate_correlation } from './statistics';
 import { db } from './firebase-config';
-import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
-import { saveCommodityData } from './database-service';
+import { collection, query, orderBy, limit, getDocs, Timestamp } from 'firebase/firestore';
+import { saveCommodityData, saveUcsIndexData } from './database-service';
 import { scrapeUrlFlow } from '@/ai/flows/scrape-commodity-price-flow';
 
 
@@ -20,12 +20,10 @@ export async function runScenarioSimulation(asset: string, changeType: 'percenta
 
 export async function getRiskAnalysisData(): Promise<RiskAnalysisData> {
     const assetNames = Object.keys(COMMODITY_TICKER_MAP);
-    const startDate = new Date();
-    startDate.setDate(new Date().getDate() - 31); // Last 30 days for volatility/correlation
-
+    
     try {
         // Fetch index history
-        const indexHistoryRaw = await getFormattedHistoricalData('BOVA11.SA', '1d', 30);
+        const indexHistoryRaw = await getUcsIndexHistory('1d', 30);
         const indexReturns = indexHistoryRaw.map((d, i, arr) => i === 0 ? 0 : (d.value - arr[i-1].value) / arr[i-1].value).slice(1);
         
         // Fetch asset histories and calculate metrics
@@ -89,7 +87,7 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
             price: data.price,
             change: data.change,
             absoluteChange: data.absoluteChange,
-            lastUpdated: new Date(data.savedAt.seconds * 1000).toLocaleString('pt-BR'),
+            lastUpdated: new Date((data.savedAt as Timestamp).seconds * 1000).toLocaleString('pt-BR'),
             currency: commodityInfo.currency,
           });
         }
@@ -104,6 +102,11 @@ export async function getUcsIndexValue(interval: HistoryInterval = '1d'): Promis
     const { calculateUcsIndex } = await import('@/ai/flows/calculate-ucs-index-flow');
     const result = await calculateUcsIndex();
     
+    // Save the newly calculated index value to its own history
+    if (result.isConfigured) {
+        await saveUcsIndexData(result.indexValue);
+    }
+    
     // If the formula is not configured, we don't need to fetch history.
     if (!result.isConfigured) {
         return {
@@ -112,40 +115,44 @@ export async function getUcsIndexValue(interval: HistoryInterval = '1d'): Promis
         }
     }
 
-    // For historical data, we need to calculate it day-by-day based on historical prices
-    // This is a simplified version. A production system might pre-calculate and store this.
-    // For now, we'll fetch the history of a benchmark (e.g., BOVA11) to represent the index trend.
-    const history = await getBenchmarkHistoricalData(interval);
-    
-    // Adjust the history to end with the current calculated value
-    if (history.length > 0) {
-        const lastRealValue = history[history.length - 1].value;
-        const adjustmentFactor = lastRealValue !== 0 ? result.indexValue / lastRealValue : 1;
-        const adjustedHistory = history.map(point => ({
-            ...point,
-            value: point.value * adjustmentFactor
-        }));
-        
-        // Ensure the very last point is the exact calculated value
-        if (adjustedHistory.length > 0) {
-            adjustedHistory[adjustedHistory.length - 1].value = result.indexValue;
-        }
+    const history = await getUcsIndexHistory(interval);
 
-        return { history: adjustedHistory, latest: result };
-    }
-
-    // Fallback if benchmark history fails
-    return {
-        history: [{ time: new Date().toLocaleDateString('pt-BR'), value: result.indexValue }],
-        latest: result
-    };
+    return { history, latest: result };
 }
 
+async function getUcsIndexHistory(interval: HistoryInterval, limit: number = 30): Promise<ChartData[]> {
+    try {
+        const historyCollectionRef = collection(db, 'ucs_index_history');
+        const q = query(historyCollectionRef, orderBy('savedAt', 'desc'), limit(limit));
+        const querySnapshot = await getDocs(q);
 
-async function getBenchmarkHistoricalData(interval: HistoryInterval = '1d'): Promise<ChartData[]> {
-     // Using a major Brazilian ETF as a proxy for market trend
-    const ticker = 'BOVA11.SA'; 
-    return getFormattedHistoricalData(ticker, interval);
+        if (querySnapshot.empty) {
+            return [];
+        }
+
+        const getDateFormat = (date: Date) => {
+             switch(interval) {
+                case '1d': return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+                case '1wk': return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+                case '1mo': return date.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
+                default: return date.toLocaleDateString('pt-BR');
+            }
+        };
+
+        const history = querySnapshot.docs.map(doc => {
+            const data = doc.data();
+            const date = (data.savedAt as Timestamp).toDate();
+            return {
+                time: getDateFormat(date),
+                value: data.value,
+            };
+        }).reverse(); // Reverse to have chronological order for the chart
+
+        return history;
+    } catch (error) {
+        console.error("[LOG] Error fetching UCS index history:", error);
+        return [];
+    }
 }
 
 
@@ -167,10 +174,10 @@ export async function getAssetHistoricalData(assetName: string, interval: Histor
                 startDate.setDate(today.getDate() - (limit + 5)); // Fetch a bit more for calculations
                 break;
             case '1wk':
-                startDate.setFullYear(today.getFullYear() - 1); // Last year for weekly data
+                 startDate.setDate(today.getDate() - (limit * 7 + 5));
                 break;
             case '1mo':
-                startDate.setFullYear(today.getFullYear() - 5); // Last 5 years for monthly data
+                startDate.setFullYear(today.getFullYear() - Math.ceil(limit / 12));
                 break;
         }
 
@@ -222,52 +229,6 @@ export async function getAssetHistoricalData(assetName: string, interval: Histor
     }
 }
 
-
-async function getFormattedHistoricalData(ticker: string, interval: HistoryInterval, limit: number = 30): Promise<ChartData[]> {
-    try {
-        const today = new Date();
-        const startDate = new Date();
-
-        switch (interval) {
-            case '1d':
-                startDate.setDate(today.getDate() - (limit + 5));
-                break;
-            case '1wk':
-                startDate.setFullYear(today.getFullYear() - 1);
-                break;
-            case '1mo':
-                startDate.setFullYear(today.getFullYear() - 5);
-                break;
-        }
-
-        const queryOptions = {
-            period1: startDate.toISOString().split('T')[0],
-            period2: today.toISOString().split('T')[0],
-            interval: interval,
-        };
-
-        const result = await getOptimizedHistorical(ticker, queryOptions, interval);
-        if (!result || result.length === 0) return [];
-
-        const getDateFormat = (date: Date) => {
-            switch(interval) {
-                case '1d': return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-                case '1wk': return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
-                case '1mo': return date.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
-                default: return date.toLocaleDateString('pt-BR');
-            }
-        };
-
-        return result.map((d: any) => ({
-            time: getDateFormat(d.date),
-            value: d.close
-        })).slice(-limit); // Ensure we have a consistent number of points for the main chart
-
-    } catch (error) {
-        console.error(`[LOG] Error fetching historical benchmark data for ${ticker}:`, error);
-        return [];
-    }
-}
 
 export async function generateReport(input: GenerateReportInput): Promise<GenerateReportOutput> {
     const { generateReportFlow } = await import('@/ai/flows/generate-report-flow');

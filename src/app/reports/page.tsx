@@ -109,7 +109,7 @@ export default function ReportsPage() {
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
                     <div className="space-y-2">
                       <Label htmlFor="reportType">Tipo de Relatório</Label>
                       <Controller
@@ -149,7 +149,7 @@ export default function ReportsPage() {
                       />
                       {errors.period && <p className="text-xs text-destructive">{errors.period.message}</p>}
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-2 sm:col-span-2 lg:col-span-1">
                       <Label htmlFor="format">Formato</Label>
                        <Controller
                         name="format"

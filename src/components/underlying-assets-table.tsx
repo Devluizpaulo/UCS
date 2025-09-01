@@ -18,6 +18,7 @@ import { AssetDetailModal } from './asset-detail-modal';
 import { Skeleton } from './ui/skeleton';
 import { COMMODITY_TICKER_MAP } from '@/lib/yahoo-finance-config-data';
 import { Button } from './ui/button';
+import { ScrollArea } from './ui/scroll-area';
 
 
 // Helper component for Corn icon
@@ -32,15 +33,19 @@ const CornIcon = () => (
     </svg>
 );
 
-const commodityDetails: Commodity[] = [
-  { name: 'USD/BRL Histórico', icon: DollarSign },
-  { name: 'EUR/BRL Histórico', icon: Euro },
-  { name: 'Boi Gordo Futuros - Ago 25 (BGIc1)', icon: Beef },
-  { name: 'Soja Futuros', icon: Leaf },
-  { name: 'Milho Futuros', icon: CornIcon },
-  { name: 'Madeira Futuros', icon: TreePine },
-  { name: 'Carbono Futuros', icon: Recycle },
-];
+const commodityDetails: Commodity[] = Object.keys(COMMODITY_TICKER_MAP).map(name => {
+    const details = COMMODITY_TICKER_MAP[name];
+    let icon = DollarSign;
+    if (name.includes('EUR')) icon = Euro;
+    if (name.includes('Boi')) icon = Beef;
+    if (name.includes('Soja')) icon = Leaf;
+    if (name.includes('Milho')) icon = CornIcon;
+    if (name.includes('Madeira')) icon = TreePine;
+    if (name.includes('Carbono')) icon = Recycle;
+    
+    return { name, icon };
+});
+
 
 interface UnderlyingAssetsTableProps {
     data?: CommodityPriceData[];
@@ -63,36 +68,9 @@ export function UnderlyingAssetsTable({ data, loading, updatingAssets, onManualU
   };
   
   const renderTableRows = () => {
-    // If loading, render skeleton rows for all possible commodities
-    if (loading) {
-        return Object.keys(COMMODITY_TICKER_MAP).map((commodityName) => (
-            <TableRow key={commodityName} className="cursor-wait">
-              <TableCell>
-                <div className="flex items-center gap-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
-                    <Skeleton className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <div className="font-medium">{commodityName}</div>
-                    <div className="text-xs text-muted-foreground">Aguardando dados...</div>
-                  </div>
-                </div>
-              </TableCell>
-              <TableCell className="text-right font-mono">
-                <Skeleton className="h-5 w-20 ml-auto" />
-              </TableCell>
-              <TableCell className="text-right">
-                <Skeleton className="h-6 w-24 ml-auto" />
-              </TableCell>
-              <TableCell className="text-right">
-                <Skeleton className="h-8 w-8 rounded-full ml-auto" />
-              </TableCell>
-            </TableRow>
-        ));
-    }
+    const dataSource = loading ? Object.keys(COMMODITY_TICKER_MAP) : data;
 
-    // If not loading and no data, show message
-    if (!data || data.length === 0) {
+    if (!dataSource || dataSource.length === 0) {
         return (
             <TableRow>
                 <TableCell colSpan={4} className="h-24 text-center">
@@ -102,36 +80,65 @@ export function UnderlyingAssetsTable({ data, loading, updatingAssets, onManualU
         );
     }
     
-    // If data is available, render the actual data rows
-    return data.map((item) => {
-        const Icon = getIconForCommodity(item.name);
-        const commodityConfig = COMMODITY_TICKER_MAP[item.name];
-        const currency = commodityConfig?.currency || 'USD';
-        const isUpdating = updatingAssets?.has(item.name);
+    return dataSource.map((item) => {
+        const commodityName = typeof item === 'string' ? item : item.name;
+        const Icon = getIconForCommodity(commodityName);
+        
+        if (typeof item === 'string') { // Loading state
+             return (
+                <TableRow key={commodityName} className="cursor-wait">
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+                        <Icon className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                      <div>
+                        <div className="font-medium">{commodityName}</div>
+                        <div className="text-xs text-muted-foreground">Aguardando dados...</div>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right font-mono">
+                    <Skeleton className="h-5 w-20 ml-auto" />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Skeleton className="h-6 w-24 ml-auto" />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Skeleton className="h-8 w-8 rounded-full ml-auto" />
+                  </TableCell>
+                </TableRow>
+            );
+        }
+
+        // Data loaded state
+        const asset = item as CommodityPriceData;
+        const currency = COMMODITY_TICKER_MAP[asset.name]?.currency || 'USD';
+        const isUpdating = updatingAssets?.has(asset.name);
 
         return (
-            <TableRow key={item.name} >
-              <TableCell onClick={() => handleRowClick(item)} className="cursor-pointer">
+            <TableRow key={asset.name} >
+              <TableCell onClick={() => handleRowClick(asset)} className="cursor-pointer">
                 <div className="flex items-center gap-3">
                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
                     <Icon className="h-4 w-4 text-muted-foreground" />
                   </div>
                   <div>
-                    <div className="font-medium">{item.name}</div>
-                    <div className="text-xs text-muted-foreground">{item.lastUpdated}</div>
+                    <div className="font-medium">{asset.name}</div>
+                    <div className="text-xs text-muted-foreground">{asset.lastUpdated}</div>
                   </div>
                 </div>
               </TableCell>
-              <TableCell onClick={() => handleRowClick(item)} className="text-right font-mono cursor-pointer">
-                <AnimatedNumber value={item.price} currency={currency} />
+              <TableCell onClick={() => handleRowClick(asset)} className="text-right font-mono cursor-pointer">
+                <AnimatedNumber value={asset.price} currency={currency} />
               </TableCell>
-              <TableCell onClick={() => handleRowClick(item)} className="text-right cursor-pointer">
+              <TableCell onClick={() => handleRowClick(asset)} className="text-right cursor-pointer">
                   <div className={cn(
                       "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold font-mono transition-colors",
-                      item.change >= 0 ? "border-primary/50 text-primary" : "border-destructive/50 text-destructive"
+                      asset.change >= 0 ? "border-primary/50 text-primary" : "border-destructive/50 text-destructive"
                   )}>
-                      {item.change >= 0 ? <ArrowUp className="mr-1 h-3 w-3" /> : <ArrowDown className="mr-1 h-3 w-3" />}
-                      <AnimatedNumber value={item.change} formatter={(v) => `${v.toFixed(2)}%`} />
+                      {asset.change >= 0 ? <ArrowUp className="mr-1 h-3 w-3" /> : <ArrowDown className="mr-1 h-3 w-3" />}
+                      <AnimatedNumber value={asset.change} formatter={(v) => `${v.toFixed(2)}%`} />
                   </div>
               </TableCell>
               <TableCell className="text-right">
@@ -140,10 +147,10 @@ export function UnderlyingAssetsTable({ data, loading, updatingAssets, onManualU
                     size="icon" 
                     onClick={(e) => {
                         e.stopPropagation(); // Prevent row click from opening modal
-                        onManualUpdate?.(item.name)
+                        onManualUpdate?.(asset.name)
                     }}
                     disabled={isUpdating}
-                    aria-label={`Atualizar ${item.name}`}
+                    aria-label={`Atualizar ${asset.name}`}
                   >
                     {isUpdating ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -160,19 +167,21 @@ export function UnderlyingAssetsTable({ data, loading, updatingAssets, onManualU
 
   return (
     <div className="w-full">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Ativo</TableHead>
-            <TableHead className="text-right">Preço</TableHead>
-            <TableHead className="text-right">Variação (24h)</TableHead>
-            <TableHead className="text-right w-[50px]">Atualizar</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-            {renderTableRows()}
-        </TableBody>
-      </Table>
+      <ScrollArea className="h-[450px] w-full">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Ativo</TableHead>
+              <TableHead className="text-right">Preço</TableHead>
+              <TableHead className="text-right">Variação (24h)</TableHead>
+              <TableHead className="text-right w-[50px]">Atualizar</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+              {renderTableRows()}
+          </TableBody>
+        </Table>
+      </ScrollArea>
       {selectedAsset && (
         <AssetDetailModal
           asset={selectedAsset}

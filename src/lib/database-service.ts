@@ -4,10 +4,11 @@
  * @fileOverview A service for interacting with the Firebase Firestore database.
  *
  * - saveCommodityData - Saves commodity price data to Firestore.
+ * - saveUcsIndexData - Saves the calculated UCS index value to Firestore.
  */
 
 import { db } from './firebase-config';
-import { collection, doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, setDoc, serverTimestamp, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import type { CommodityPriceData } from './types';
 
 /**
@@ -62,4 +63,53 @@ export async function saveCommodityData(data: CommodityPriceData[] | CommodityPr
     console.error('[DB] Failed to save one or more commodity data entries:', error);
     throw new Error('Failed to save commodity data.');
   }
+}
+
+
+/**
+ * Saves the calculated UCS index value to its own historical collection.
+ * This should be called once per day by the scheduled job.
+ * @param {number} indexValue - The calculated UCS index value.
+ * @returns {Promise<void>}
+ */
+export async function saveUcsIndexData(indexValue: number): Promise<void> {
+    if (typeof indexValue !== 'number' || !isFinite(indexValue)) {
+        console.error('[DB] Invalid UCS index value provided for saving:', indexValue);
+        return;
+    }
+
+    try {
+        const historyCollectionRef = collection(db, 'ucs_index_history');
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Normalize to the beginning of the day
+
+        // Check if an entry for today already exists to avoid duplicates
+        const q = query(
+            historyCollectionRef,
+            orderBy('savedAt', 'desc'),
+            limit(1)
+        );
+        const querySnapshot = await getDocs(q);
+        
+        if (!querySnapshot.empty) {
+            const lastDoc = querySnapshot.docs[0];
+            const lastDate = lastDoc.data().savedAt.toDate();
+            lastDate.setHours(0, 0, 0, 0);
+
+            if (lastDate.getTime() === today.getTime()) {
+                console.log(`[DB] UCS index value for today already exists. Skipping save.`);
+                return;
+            }
+        }
+
+        const newDocRef = doc(historyCollectionRef);
+        await setDoc(newDocRef, {
+            value: indexValue,
+            savedAt: serverTimestamp(),
+        });
+        console.log(`[DB] Successfully saved UCS index value: ${indexValue}`);
+    } catch (error) {
+        console.error('[DB] Failed to save UCS index data:', error);
+        throw new Error('Failed to save UCS index data.');
+    }
 }

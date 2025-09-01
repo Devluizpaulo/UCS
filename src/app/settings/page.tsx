@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { MainLayout } from '@/components/main-layout';
@@ -88,30 +88,16 @@ export default function SettingsPage() {
     if (isFetching) {
       return (
         <div className="space-y-8">
-            <div>
-                <Skeleton className="h-6 w-1/3 mb-4" />
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <Skeleton className="h-16 w-full" />
-                    <Skeleton className="h-16 w-full" />
-                    <Skeleton className="h-16 w-full" />
+            {[...Array(3)].map((_, i) => (
+                <div key={i}>
+                    <Skeleton className="h-6 w-1/3 mb-4" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <Skeleton className="h-16 w-full" />
+                        <Skeleton className="h-16 w-full" />
+                        <Skeleton className="h-16 w-full" />
+                    </div>
                 </div>
-            </div>
-             <div>
-                <Skeleton className="h-6 w-1/3 mb-4" />
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <Skeleton className="h-16 w-full" />
-                    <Skeleton className="h-16 w-full" />
-                    <Skeleton className="h-16 w-full" />
-                </div>
-            </div>
-             <div>
-                <Skeleton className="h-6 w-1/3 mb-4" />
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <Skeleton className="h-16 w-full" />
-                    <Skeleton className="h-16 w-full" />
-                    <Skeleton className="h-16 w-full" />
-                </div>
-            </div>
+            ))}
         </div>
       );
     }
@@ -135,7 +121,7 @@ export default function SettingsPage() {
              {/* Uso do Solo (Agropecuária) */}
             <div>
                 <h3 className="text-lg font-medium mb-4">Uso do Solo (Agropecuária)</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                      <div className="space-y-2">
                         <Label htmlFor="PROD_BOI">Produção de Boi (@/ha/ano)</Label>
                         <Input id="PROD_BOI" type="number" step="any" {...register('PROD_BOI')} />
@@ -149,7 +135,7 @@ export default function SettingsPage() {
                         <Input id="PROD_MILHO" type="number" step="any" {...register('PROD_MILHO')} />
                     </div>
                 </div>
-                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
+                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
                      <div className="space-y-2">
                         <Label htmlFor="PESO_PEC">Peso da Pecuária (%)</Label>
                         <Input id="PESO_PEC" type="number" step="any" {...register('PESO_PEC')} placeholder="Ex: 0.35 para 35%" />
@@ -168,7 +154,7 @@ export default function SettingsPage() {
             {/* Fatores Gerais e Socioambientais */}
             <div>
                 <h3 className="text-lg font-medium mb-4">Fatores Gerais e Socioambientais</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     <div className="space-y-2">
                         <Label htmlFor="FATOR_ARREND">Fator de Arrendamento (%)</Label>
                         <Input id="FATOR_ARREND" type="number" step="any" {...register('FATOR_ARREND')} placeholder="Ex: 0.048 para 4.8%" />
@@ -198,7 +184,7 @@ export default function SettingsPage() {
         <PageHeader title="Configurações" />
         <main className="flex min-h-[calc(100vh_-_theme(spacing.16))] flex-1 flex-col gap-4 p-4 md:gap-8 md:p-10">
           <div className="mx-auto grid w-full max-w-6xl items-start gap-6 md:grid-cols-[180px_1fr] lg:grid-cols-[250px_1fr]">
-            <nav className="grid gap-4 text-sm text-muted-foreground">
+            <nav className="grid gap-4 text-sm text-muted-foreground md:sticky md:top-20">
               <a href="#" 
                 onClick={() => setActiveTab('formula')}
                 className={activeTab === 'formula' ? "font-semibold text-primary" : ""}>
