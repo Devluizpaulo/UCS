@@ -4,6 +4,9 @@ import type { ChartData, CommodityPriceData, ScenarioResult, HistoricalQuote, An
 import { getOptimizedHistorical, getOptimizedCommodityPrices } from './yahoo-finance-optimizer';
 import { COMMODITY_TICKER_MAP } from './yahoo-finance-config-data';
 import { calculate_volatility, calculate_correlation } from './statistics';
+import { db } from './firebase-config';
+import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
+
 
 // Functions for the "Analysis" page that call Genkit flows directly.
 export async function getAssetAnalysis(assetName: string, historicalData: number[]): Promise<AnalyzeAssetOutput> {
@@ -19,7 +22,6 @@ export async function runScenarioSimulation(asset: string, changeType: 'percenta
 export async function getRiskAnalysisData(): Promise<RiskAnalysisData> {
     const assetNames = Object.keys(COMMODITY_TICKER_MAP);
     const today = new Date();
-    const startDate = new Date();
     startDate.setDate(today.getDate() - 31); // Last 30 days for volatility/correlation
 
     try {
@@ -66,18 +68,57 @@ export async function getRiskAnalysisData(): Promise<RiskAnalysisData> {
 
 
 // Functions for the dashboard to get real-time data via flows
+// NOW READS FROM FIRESTORE
 export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
-    const commodityNames = [
-        'USD/BRL Histórico',
-        'EUR/BRL Histórico',
-        'Boi Gordo Futuros - Ago 25 (BGIc1)',
-        'Soja Futuros',
-        'Milho Futuros',
-        'Madeira Futuros',
-        'Carbono Futuros',
-    ];
-    return getOptimizedCommodityPrices(commodityNames);
-}
+    const commodityNames = Object.keys(COMMODITY_TICKER_MAP);
+    const prices: CommodityPriceData[] = [];
+  
+    for (const name of commodityNames) {
+      try {
+        const commodityInfo = COMMODITY_TICKER_MAP[name];
+        if (!commodityInfo) continue;
+  
+        const pricesCollectionRef = collection(db, 'commodities_history', name, 'price_entries');
+        const q = query(pricesCollectionRef, orderBy('savedAt', 'desc'), limit(1));
+        const querySnapshot = await getDocs(q);
+  
+        if (!querySnapshot.empty) {
+          const latestDoc = querySnapshot.docs[0];
+          const data = latestDoc.data();
+          prices.push({
+            name: name,
+            ticker: data.ticker || commodityInfo.ticker, // Use saved ticker or fallback
+            price: data.price,
+            change: data.change,
+            absoluteChange: data.absoluteChange,
+            lastUpdated: new Date(data.savedAt.seconds * 1000).toLocaleDateString('pt-BR'),
+          });
+        } else {
+            // If no data in Firestore, return a placeholder
+            prices.push({
+                name: name,
+                ticker: commodityInfo.ticker,
+                price: 0,
+                change: 0,
+                absoluteChange: 0,
+                lastUpdated: 'Aguardando dados',
+            });
+        }
+      } catch (error) {
+        console.error(`[DATA_SERVICE] Failed to fetch price for ${name} from Firestore:`, error);
+        // Push a placeholder on error to not break the UI
+        prices.push({
+            name: name,
+            ticker: COMMODITY_TICKER_MAP[name]?.ticker || 'N/A',
+            price: 0,
+            change: 0,
+            absoluteChange: 0,
+            lastUpdated: 'Erro ao carregar',
+        });
+      }
+    }
+    return prices;
+  }
 
 export async function getUcsIndexValue(interval: HistoryInterval = '1d'): Promise<{ history: ChartData[], latest: UcsData }> {
     const { calculateUcsIndex } = await import('@/ai/flows/calculate-ucs-index-flow');
@@ -237,3 +278,5 @@ async function getFormattedHistoricalData(ticker: string, interval: HistoryInter
         return [];
     }
 }
+
+    
