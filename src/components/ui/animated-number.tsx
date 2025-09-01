@@ -12,17 +12,33 @@ interface AnimatedNumberProps {
   duration?: number;
   formatter?: (value: number) => string;
   className?: string;
+  currency?: 'BRL' | 'USD' | 'EUR';
 }
+
+const currencyFormatters: { [key in 'BRL' | 'USD' | 'EUR']: (v: number) => string } = {
+    'BRL': (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
+    'USD': (v) => v.toLocaleString('en-US', { style: 'currency', currency: 'USD' }),
+    'EUR': (v) => v.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' }),
+};
+
 
 export function AnimatedNumber({ 
   value, 
   duration = 800, 
-  formatter = (v) => v.toFixed(4),
+  formatter,
   className,
+  currency,
 }: AnimatedNumberProps) {
   const [displayValue, setDisplayValue] = useState(value);
   const prevValueRef = useRef(value);
   const frameRef = useRef<number>();
+
+  const finalFormatter = formatter 
+    ? formatter
+    : currency 
+    ? currencyFormatters[currency]
+    : (v: number) => v.toFixed(4);
+
 
   useEffect(() => {
     const startValue = prevValueRef.current;
@@ -67,5 +83,5 @@ export function AnimatedNumber({
     };
   }, [value, duration]);
 
-  return <span className={className}>{formatter(displayValue)}</span>;
+  return <span className={className}>{finalFormatter(displayValue)}</span>;
 }

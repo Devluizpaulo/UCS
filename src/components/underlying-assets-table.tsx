@@ -15,6 +15,8 @@ import type { Commodity, CommodityPriceData } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { AssetDetailModal } from './asset-detail-modal';
 import { Skeleton } from './ui/skeleton';
+import { COMMODITY_TICKER_MAP } from '@/lib/yahoo-finance-config-data';
+
 
 // Helper component for Corn icon
 const CornIcon = () => (
@@ -27,7 +29,6 @@ const CornIcon = () => (
         <path d="m9 12 2-2"/>
     </svg>
 );
-
 
 const commodityDetails: Commodity[] = [
   { name: 'USD/BRL Histórico', icon: DollarSign },
@@ -56,26 +57,80 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
     if (loading || !asset.ticker) return;
     setSelectedAsset(asset);
   };
+  
+  const renderTableRows = () => {
+    // If loading, render skeleton rows for all possible commodities
+    if (loading) {
+        return commodityDetails.map((commodity) => (
+            <TableRow key={commodity.name} className="cursor-wait">
+              <TableCell>
+                <div className="flex items-center gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+                    <Skeleton className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <div className="font-medium">{commodity.name}</div>
+                    <div className="text-xs text-muted-foreground">Aguardando dados...</div>
+                  </div>
+                </div>
+              </TableCell>
+              <TableCell className="text-right font-mono">
+                <Skeleton className="h-5 w-20 ml-auto" />
+              </TableCell>
+              <TableCell className="text-right">
+                <Skeleton className="h-6 w-24 ml-auto" />
+              </TableCell>
+            </TableRow>
+        ));
+    }
 
-  const tableData = loading 
-    ? commodityDetails.map(c => ({ 
-        name: c.name, 
-        ticker: '', 
-        price: 0, 
-        change: 0, 
-        absoluteChange: 0, 
-        lastUpdated: 'Carregando...' 
-    }))
-    : data;
+    // If not loading and no data, show message
+    if (!data || data.length === 0) {
+        return (
+            <TableRow>
+                <TableCell colSpan={3} className="h-24 text-center">
+                    Ainda não há dados de cotação. A primeira atualização automática ocorrerá em breve.
+                </TableCell>
+            </TableRow>
+        );
+    }
+    
+    // If data is available, render the actual data rows
+    return data.map((item) => {
+        const Icon = getIconForCommodity(item.name);
+        const commodityConfig = COMMODITY_TICKER_MAP[item.name];
+        const currency = commodityConfig?.currency || 'USD';
 
-  if (!tableData || tableData.length === 0 && !loading) {
-      return (
-          <div className="text-center py-10 px-6 border rounded-lg bg-card/50">
-              <p className="text-muted-foreground">Nenhuma cotação de ativo disponível no momento.</p>
-              <p className="text-sm text-muted-foreground mt-1">Clique em "Atualizar Cotações" para buscar os dados.</p>
-          </div>
-      )
-  }
+        return (
+            <TableRow key={item.name} onClick={() => handleRowClick(item)} className="cursor-pointer">
+              <TableCell>
+                <div className="flex items-center gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+                    <Icon className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <div className="font-medium">{item.name}</div>
+                    <div className="text-xs text-muted-foreground">{item.lastUpdated}</div>
+                  </div>
+                </div>
+              </TableCell>
+              <TableCell className="text-right font-mono">
+                <AnimatedNumber value={item.price} currency={currency} />
+              </TableCell>
+              <TableCell className="text-right">
+                  <div className={cn(
+                      "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold font-mono transition-colors",
+                      item.change >= 0 ? "border-primary/50 text-primary" : "border-destructive/50 text-destructive"
+                  )}>
+                      {item.change >= 0 ? <ArrowUp className="mr-1 h-3 w-3" /> : <ArrowDown className="mr-1 h-3 w-3" />}
+                      <AnimatedNumber value={item.change} formatter={(v) => `${v.toFixed(2)}%`} />
+                  </div>
+              </TableCell>
+            </TableRow>
+        );
+    });
+  };
+
 
   return (
     <div className="w-full">
@@ -84,43 +139,11 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
           <TableRow>
             <TableHead>Ativo</TableHead>
             <TableHead className="text-right">Preço</TableHead>
-            <TableHead className="text-right">Variação (24h)</TableHead>
+            <TableHead className="text-right">Variação (Fech.)</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-            {tableData.map((item) => {
-              const Icon = getIconForCommodity(item.name);
-              return (
-                <TableRow key={item.name} onClick={() => handleRowClick(item)} className="cursor-pointer">
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
-                         {loading ? <Skeleton className="h-4 w-4" /> : <Icon className="h-4 w-4 text-muted-foreground" />}
-                      </div>
-                      <div>
-                        <div className="font-medium">{item.name}</div>
-                         <div className="text-xs text-muted-foreground">{item.lastUpdated}</div>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right font-mono">
-                     {loading ? <Skeleton className="h-5 w-20 ml-auto" /> : <AnimatedNumber value={item.price} formatter={(v) => v.toFixed(4)} />}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {loading ? <Skeleton className="h-6 w-24 ml-auto" /> : (
-                      <div className={cn(
-                          "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold font-mono transition-colors",
-                          item.change >= 0 ? "border-primary/50 text-primary" : "border-destructive/50 text-destructive"
-                      )}>
-                          {item.change >= 0 ? <ArrowUp className="mr-1 h-3 w-3" /> : <ArrowDown className="mr-1 h-3 w-3" />}
-                          <AnimatedNumber value={item.change} formatter={(v) => `${v.toFixed(2)}%`} />
-                      </div>
-                    )}
-                  </TableCell>
-                </TableRow>
-              );
-            })
-          }
+            {renderTableRows()}
         </TableBody>
       </Table>
       {selectedAsset && (

@@ -9,16 +9,9 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { getCommodityPrices } from './get-commodity-prices-flow';
-import type { ScenarioResult } from '@/lib/types';
+import { getCommodityPrices } from '@/lib/data-service';
+import type { ScenarioResult, SimulateScenarioInput } from '@/lib/types';
 
-
-const SimulateScenarioInputSchema = z.object({
-    asset: z.string().describe('The name of the commodity to change.'),
-    changeType: z.enum(['percentage', 'absolute']).describe('The type of change to apply.'),
-    value: z.number().describe('The value of the change (e.g., 10 for 10% or 250 for a new price).'),
-});
-export type SimulateScenarioInput = z.infer<typeof SimulateScenarioInputSchema>;
 
 const SimulateScenarioOutputSchema = z.object({
     newIndexValue: z.number(),
@@ -30,16 +23,6 @@ const SimulateScenarioOutputSchema = z.object({
 export async function simulateScenario(input: SimulateScenarioInput): Promise<ScenarioResult> {
   return await simulateScenarioFlow(input);
 }
-
-const commodityNames = [
-    'USD/BRL Histórico',
-    'EUR/BRL Histórico',
-    'Boi Gordo Futuros - Ago 25 (BGIc1)',
-    'Soja Futuros',
-    'Milho Futuros',
-    'Madeira Futuros',
-    'Carbono Futuros',
-];
 
 // Helper function to calculate the index based on the new methodology.
 function calculateIndex(prices: { [key: string]: number }): number {
@@ -92,12 +75,16 @@ function calculateIndex(prices: { [key: string]: number }): number {
 const simulateScenarioFlow = ai.defineFlow(
   {
     name: 'simulateScenarioFlow',
-    inputSchema: SimulateScenarioInputSchema,
+    inputSchema: z.object({
+        asset: z.string(),
+        changeType: z.enum(['percentage', 'absolute']),
+        value: z.number(),
+    }) satisfies z.ZodType<SimulateScenarioInput>,
     outputSchema: SimulateScenarioOutputSchema,
   },
   async ({ asset, changeType, value }) => {
     // 1. Get current market prices
-    const pricesData = await getCommodityPrices({ commodities: commodityNames });
+    const pricesData = await getCommodityPrices();
     
     const originalPrices: { [key: string]: number } = pricesData.reduce((acc, item) => {
         // Here we use the raw prices from the API, conversion happens inside calculateIndex

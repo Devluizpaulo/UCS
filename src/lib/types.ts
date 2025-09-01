@@ -15,6 +15,7 @@ export type CommodityPriceData = {
     change: number; // Percentage change
     absoluteChange: number;
     lastUpdated: string;
+    currency: 'BRL' | 'USD' | 'EUR';
 }
 
 export type HistoryInterval = '1d' | '1wk' | '1mo';

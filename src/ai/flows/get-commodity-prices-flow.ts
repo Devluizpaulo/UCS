@@ -1,67 +1,54 @@
 'use server';
 /**
- * @fileOverview A flow for fetching commodity prices from the Yahoo Finance API.
+ * @fileOverview A flow for fetching commodity prices from the Yahoo Finance API and saving them to Firestore.
+ * This flow is intended to be run by a scheduled job.
  *
- * - getCommodityPrices - A function that returns real-time commodity prices.
- * - CommodityPricesInput - The input type for the getCommodityPrices function.
- * - CommodityPricesOutput - The return type for the getCommodityPrices function.
+ * - fetchAndSavePrices - Fetches the latest commodity prices and saves them to the database.
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { getOptimizedCommodityPrices } from '@/lib/yahoo-finance-optimizer';
-import type { CommodityPriceData } from '@/lib/types';
 import { saveCommodityData } from '@/lib/database-service';
+import { COMMODITY_TICKER_MAP } from '@/lib/yahoo-finance-config-data';
 
-const CommodityPricesInputSchema = z.object({
-  commodities: z.array(z.string()).describe('A list of commodity names to fetch prices for.'),
+
+const FetchAndSaveOutputSchema = z.object({
+  success: z.boolean(),
+  message: z.string(),
+  savedCount: z.number(),
 });
-export type CommodityPricesInput = z.infer<typeof CommodityPricesInputSchema>;
 
-const CommodityPricesOutputSchema = z.object({
-  prices: z.array(
-    z.object({
-      name: z.string(),
-      ticker: z.string(),
-      price: z.number(),
-      change: z.number(),
-      absoluteChange: z.number(),
-      lastUpdated: z.string(),
-    })
-  ).describe('A list of commodities with their prices and 24h change percentage.'),
-});
-export type CommodityPricesOutput = z.infer<typeof CommodityPricesOutputSchema>;
+async function fetchAndSavePrices(): Promise<z.infer<typeof FetchAndSaveOutputSchema>> {
+  try {
+    const commodityNames = Object.keys(COMMODITY_TICKER_MAP);
+    console.log('[FLOW] Starting daily commodity price fetch...');
+    console.log(`[FLOW] Fetching prices for: ${commodityNames.join(', ')}`);
 
-export async function getCommodityPrices(
-  input: CommodityPricesInput
-): Promise<CommodityPriceData[]> {
-    const prices = await getOptimizedCommodityPrices(input.commodities);
-    
-    // Asynchronously save the fetched data to Firestore without blocking the response
-    if (prices && prices.length > 0) {
-        saveCommodityData(prices).catch(error => {
-            console.error('[LOG] Failed to save commodity data to Firestore:', error);
-        });
+    const prices = await getOptimizedCommodityPrices(commodityNames);
+
+    if (!prices || prices.length === 0) {
+      console.error('[FLOW] Failed to fetch any prices from the external API.');
+      return { success: false, message: 'Failed to fetch prices from API.', savedCount: 0 };
     }
     
-    return prices;
+    console.log(`[FLOW] Fetched ${prices.length} prices. Saving to database...`);
+    await saveCommodityData(prices);
+    console.log('[FLOW] Successfully fetched and saved commodity prices.');
+
+    return { success: true, message: 'Commodity prices updated successfully.', savedCount: prices.length };
+
+  } catch (error) {
+    console.error('[FLOW] An unexpected error occurred:', error);
+    return { success: false, message: 'Internal Server Error', savedCount: 0 };
+  }
 }
 
-
-// Keep the flow for backward compatibility, but use optimized function
-const getCommodityPricesFlow = ai.defineFlow(
+// Define the flow for use by the scheduled job.
+export const fetchAndSavePricesFlow = ai.defineFlow(
   {
-    name: 'getCommodityPricesFlow',
-    inputSchema: CommodityPricesInputSchema,
-    outputSchema: CommodityPricesOutputSchema,
+    name: 'fetchAndSavePricesFlow',
+    outputSchema: FetchAndSaveOutputSchema,
   },
-  async (input) => {
-    try {
-      const prices = await getCommodityPrices(input);
-      return { prices };
-    } catch (error) {
-      console.error('[LOG] Error fetching from Yahoo Finance API:', error);
-      return { prices: [] };
-    }
-  }
+  fetchAndSavePrices
 );

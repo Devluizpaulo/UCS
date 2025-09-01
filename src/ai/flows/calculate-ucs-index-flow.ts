@@ -8,7 +8,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { getCommodityPrices } from './get-commodity-prices-flow';
+import { getCommodityPrices } from '@/lib/data-service';
 
 const CalculateUcsIndexOutputSchema = z.object({
   indexValue: z.number().describe('The calculated value of the UCS Index.'),
@@ -35,17 +35,8 @@ const calculateUcsIndexFlow = ai.defineFlow(
     outputSchema: CalculateUcsIndexOutputSchema,
   },
   async () => {
-    const commodityNames = [
-        'USD/BRL Histórico',
-        'EUR/BRL Histórico',
-        'Boi Gordo Futuros - Ago 25 (BGIc1)',
-        'Soja Futuros',
-        'Milho Futuros',
-        'Madeira Futuros',
-        'Carbono Futuros',
-    ];
     
-    const pricesData = await getCommodityPrices({ commodities: commodityNames });
+    const pricesData = await getCommodityPrices();
     
     const defaultResult = { indexValue: 0, components: { vm: 0, vus: 0, crs: 0 }, vusDetails: { pecuaria: 0, milho: 0, soja: 0 }};
 

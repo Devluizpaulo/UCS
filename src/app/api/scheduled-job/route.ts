@@ -1,8 +1,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getOptimizedCommodityPrices } from '@/lib/yahoo-finance-optimizer';
-import { saveCommodityData } from '@/lib/database-service';
-import { COMMODITY_TICKER_MAP } from '@/lib/yahoo-finance-config-data';
+import { fetchAndSavePricesFlow } from '@/ai/flows/fetch-and-save-prices-flow';
 
 // This endpoint will be triggered by an external cron job service.
 export async function GET(request: NextRequest) {
@@ -12,30 +10,18 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
-  // 2. Fetch data from the external API
+  // 2. Run the Genkit flow to fetch and save data
   try {
-    const commodityNames = Object.keys(COMMODITY_TICKER_MAP);
-    console.log('[CRON JOB] Starting daily commodity price fetch...');
-    console.log(`[CRON JOB] Fetching prices for: ${commodityNames.join(', ')}`);
-
-    const prices = await getOptimizedCommodityPrices(commodityNames);
-
-    if (!prices || prices.length === 0) {
-      console.error('[CRON JOB] Failed to fetch any prices from the external API.');
-      return NextResponse.json({ message: 'Failed to fetch prices' }, { status: 500 });
-    }
+    const result = await fetchAndSavePricesFlow();
     
-    // 3. Save the data to Firestore
-    console.log(`[CRON JOB] Fetched ${prices.length} prices. Saving to database...`);
-    await saveCommodityData(prices);
-    console.log('[CRON JOB] Successfully fetched and saved commodity prices.');
-
-    return NextResponse.json({ message: 'Commodity prices updated successfully.' });
+    if (result.success) {
+        return NextResponse.json({ message: result.message, savedCount: result.savedCount });
+    } else {
+        return NextResponse.json({ message: result.message }, { status: 500 });
+    }
 
   } catch (error) {
-    console.error('[CRON JOB] An unexpected error occurred:', error);
+    console.error('[CRON JOB] An unexpected error occurred while running the flow:', error);
     return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
   }
 }
-
-    
