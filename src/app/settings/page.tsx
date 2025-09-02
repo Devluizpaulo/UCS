@@ -20,7 +20,7 @@ import type { FormulaParameters, MarketDataConfig, CommodityConfig } from '@/lib
 import { getCommodities, saveCommodity, deleteCommodity } from '@/lib/commodity-config-service';
 import { CommoditySourcesTable } from '@/components/commodity-sources-table';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { EditCommodityModal } from '../edit-commodity-modal';
+import { EditCommodityModal } from '@/components/edit-commodity-modal';
 import {
   AlertDialog,
   AlertDialogAction,
