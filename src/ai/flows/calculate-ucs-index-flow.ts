@@ -109,48 +109,46 @@ export async function calculateIndex(prices: { [key: string]: number }, params: 
     };
 }
 
+export async function calculateUcsIndex(): Promise<CalculateUcsIndexOutput> {
+  const calculateUcsIndexFlow = ai.defineFlow(
+    {
+      name: 'calculateUcsIndexFlow',
+      outputSchema: CalculateUcsIndexOutputSchema,
+    },
+    async () => {
+      // Fetch dynamic data and parameters in parallel
+      const [pricesData, params] = await Promise.all([
+          getCommodityPrices(),
+          getFormulaParameters()
+      ]);
 
-const calculateUcsIndexFlow = ai.defineFlow(
-  {
-    name: 'calculateUcsIndexFlow',
-    outputSchema: CalculateUcsIndexOutputSchema,
-  },
-  async () => {
-    // Fetch dynamic data and parameters in parallel
-    const [pricesData, params] = await Promise.all([
-        getCommodityPrices(),
-        getFormulaParameters()
-    ]);
-
-    if (!params.isConfigured) {
+      if (!params.isConfigured) {
+          return { 
+              indexValue: 0, 
+              isConfigured: false,
+              components: { vm: 0, vus: 0, crs: 0 }, 
+              vusDetails: { pecuaria: 0, milho: 0, soja: 0 }
+          };
+      }
+      
+      if (!pricesData || pricesData.length === 0) {
+        console.error('[LOG] No commodity prices received for UCS calculation.');
         return { 
             indexValue: 0, 
-            isConfigured: false,
+            isConfigured: true,
             components: { vm: 0, vus: 0, crs: 0 }, 
             vusDetails: { pecuaria: 0, milho: 0, soja: 0 }
         };
+      }
+
+      const prices: { [key: string]: number } = pricesData.reduce((acc, item) => {
+          acc[item.name] = item.price;
+          return acc;
+      }, {} as { [key: string]: number });
+      
+      return calculateIndex(prices, params);
     }
-    
-    if (!pricesData || pricesData.length === 0) {
-      console.error('[LOG] No commodity prices received for UCS calculation.');
-      return { 
-          indexValue: 0, 
-          isConfigured: true,
-          components: { vm: 0, vus: 0, crs: 0 }, 
-          vusDetails: { pecuaria: 0, milho: 0, soja: 0 }
-      };
-    }
-
-    const prices: { [key: string]: number } = pricesData.reduce((acc, item) => {
-        acc[item.name] = item.price;
-        return acc;
-    }, {} as { [key: string]: number });
-    
-    return calculateIndex(prices, params);
-  }
-);
-
-
-export async function calculateUcsIndex(): Promise<CalculateUcsIndexOutput> {
+  );
+  
   return await calculateUcsIndexFlow();
 }

@@ -78,62 +78,6 @@ const analysisPrompt = ai.definePrompt({
 });
 
 
-// --- Main Flow Definition ---
-
-const generateReportFlow = ai.defineFlow(
-  {
-    name: 'generateReportFlow',
-    inputSchema: GenerateReportInputSchema,
-    outputSchema: GenerateReportOutputSchema,
-  },
-  async (input) => {
-    const { type, period, format, observations } = input;
-    
-    // Determine interval and limit based on period
-    const { interval, limit, periodTitle } = {
-        daily: { interval: '1d' as const, limit: 30, periodTitle: 'Diário (Últimos 30 dias)' },
-        monthly: { interval: '1mo' as const, limit: 12, periodTitle: 'Mensal (Últimos 12 meses)' },
-        yearly: { interval: '1mo' as const, limit: 60, periodTitle: 'Anual (Últimos 5 anos)' },
-    }[period];
-
-    const reportTitle = type === 'index_performance' 
-        ? 'Relatório de Performance do Índice UCS' 
-        : 'Relatório de Performance dos Ativos Subjacentes';
-
-    // Fetch data
-    const [ucsIndex, assets] = await Promise.all([
-        getUcsIndexValue(interval),
-        getCommodityPrices()
-    ]);
-    const ucsHistory = ucsIndex.history.slice(-limit);
-
-    // Generate AI analysis
-    const analysisText = await analysisPrompt({
-        reportTitle,
-        periodTitle,
-        ucsHistory,
-        assets,
-        observations
-    });
-
-    // Generate file
-    let fileContent = '';
-    let mimeType = '';
-    const fileName = `report_${type}_${period}.${format}`;
-
-    if (format === 'pdf') {
-      fileContent = await generatePdfReport(reportTitle, periodTitle, analysisText, ucsHistory, assets);
-      mimeType = 'application/pdf';
-    } else { // xlsx
-      fileContent = await generateXlsxReport(reportTitle, periodTitle, analysisText, ucsHistory, assets);
-      mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-    }
-
-    return { fileName, fileContent, mimeType };
-  }
-);
-
-
 // --- PDF Generation Logic ---
 
 async function generatePdfReport(title: string, period: string, analysis: string, ucsHistory: ChartData[], assets: CommodityPriceData[]): Promise<string> {
@@ -252,5 +196,58 @@ async function generateXlsxReport(title: string, period: string, analysis: strin
 
 
 export async function generateReport(input: GenerateReportInput): Promise<GenerateReportOutput> {
+  const generateReportFlow = ai.defineFlow(
+    {
+      name: 'generateReportFlow',
+      inputSchema: GenerateReportInputSchema,
+      outputSchema: GenerateReportOutputSchema,
+    },
+    async (input) => {
+      const { type, period, format, observations } = input;
+      
+      // Determine interval and limit based on period
+      const { interval, limit, periodTitle } = {
+          daily: { interval: '1d' as const, limit: 30, periodTitle: 'Diário (Últimos 30 dias)' },
+          monthly: { interval: '1mo' as const, limit: 12, periodTitle: 'Mensal (Últimos 12 meses)' },
+          yearly: { interval: '1mo' as const, limit: 60, periodTitle: 'Anual (Últimos 5 anos)' },
+      }[period];
+
+      const reportTitle = type === 'index_performance' 
+          ? 'Relatório de Performance do Índice UCS' 
+          : 'Relatório de Performance dos Ativos Subjacentes';
+
+      // Fetch data
+      const [ucsIndex, assets] = await Promise.all([
+          getUcsIndexValue(interval),
+          getCommodityPrices()
+      ]);
+      const ucsHistory = ucsIndex.history.slice(-limit);
+
+      // Generate AI analysis
+      const analysisText = await analysisPrompt({
+          reportTitle,
+          periodTitle,
+          ucsHistory,
+          assets,
+          observations
+      });
+
+      // Generate file
+      let fileContent = '';
+      let mimeType = '';
+      const fileName = `report_${type}_${period}.${format}`;
+
+      if (format === 'pdf') {
+        fileContent = await generatePdfReport(reportTitle, periodTitle, analysisText, ucsHistory, assets);
+        mimeType = 'application/pdf';
+      } else { // xlsx
+        fileContent = await generateXlsxReport(reportTitle, periodTitle, analysisText, ucsHistory, assets);
+        mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      }
+
+      return { fileName, fileContent, mimeType };
+    }
+  );
+
   return await generateReportFlow(input);
 }
