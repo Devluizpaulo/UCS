@@ -48,29 +48,27 @@ export async function simulateScenario(input: SimulateScenarioInput): Promise<Sc
         if (!params.isConfigured) {
             throw new Error("Cannot run simulation because the index formula has not been configured.");
         }
-
-        const originalPrices: { [key: string]: number } = pricesData.reduce((acc, item) => {
-            acc[item.name] = item.price; 
-            return acc;
-        }, {} as { [key: string]: number });
         
         // Get the unconverted original price to show the user
-        const originalAssetPrice = originalPrices[asset] || 0;
+        const originalAssetPrice = pricesData.find(p => p.name === asset)?.price || 0;
 
         // 2. Calculate the original index value using the pure function
-        const originalIndexResult = calculateIndex(originalPrices, params);
+        const originalIndexResult = calculateIndex(pricesData, params);
         const originalIndexValue = originalIndexResult.indexValue;
 
         // 3. Create the new set of prices based on the scenario
-        const simulatedPrices = { ...originalPrices };
-        if (changeType === 'percentage') {
-            simulatedPrices[asset] = originalAssetPrice * (1 + value / 100);
-        } else { // absolute
-            simulatedPrices[asset] = value;
-        }
-
+        const simulatedPricesData = pricesData.map(p => {
+            if (p.name === asset) {
+                const newPrice = changeType === 'percentage' 
+                    ? p.price * (1 + value / 100)
+                    : value;
+                return { ...p, price: newPrice };
+            }
+            return p;
+        });
+       
         // 4. Calculate the new index value using the pure function
-        const newIndexResult = calculateIndex(simulatedPrices, params);
+        const newIndexResult = calculateIndex(simulatedPricesData, params);
         const newIndexValue = newIndexResult.indexValue;
 
         // 5. Calculate the percentage change

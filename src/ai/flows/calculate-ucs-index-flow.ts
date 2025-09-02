@@ -64,14 +64,9 @@ export async function calculateUcsIndex(): Promise<CalculateUcsIndexOutput> {
               vusDetails: { pecuaria: 0, milho: 0, soja: 0 }
           };
         }
-
-        const prices: { [key: string]: number } = pricesData.reduce((acc, item) => {
-            acc[item.name] = item.price;
-            return acc;
-        }, {} as { [key: string]: number });
         
         // Use the pure calculation function from the service
-        return calculateIndex(prices, params);
+        return calculateIndex(pricesData, params);
       }
     );
     

@@ -5,16 +5,33 @@
  * and is designed to be imported by server-side modules without causing build conflicts.
  */
 
-import type { FormulaParameters, CalculateUcsIndexOutput } from './types';
+import type { FormulaParameters, CalculateUcsIndexOutput, CommodityPriceData } from './types';
+
+
+/**
+ * Helper function to find a price by category and an optional name keyword.
+ * It makes the calculation robust against name changes in the config.
+ */
+function findPrice(commodities: CommodityPriceData[], category: CommodityPriceData['category'], nameIncludes?: string): number {
+    const asset = commodities.find(c => 
+        c.category === category && 
+        (nameIncludes ? c.name.toLowerCase().includes(nameIncludes.toLowerCase()) : true)
+    );
+    if (!asset || asset.price === undefined || asset.price === null) {
+        console.error(`[LOG] Missing or zero price for required asset in category: ${category} ${nameIncludes ? `(with keyword: ${nameIncludes})` : ''}.`);
+        return 0; // Return 0 to prevent calculation errors, the main function will handle this.
+    }
+    return asset.price;
+}
 
 
 /**
  * Pure calculation function for the UCS Index. This is not a flow and can be called from anywhere.
- * @param prices - A dictionary of asset names to their latest prices.
+ * @param commodities - An array of all commodity price data objects.
  * @param params - The formula parameters.
  * @returns {CalculateUcsIndexOutput} The calculated index data.
  */
-export function calculateIndex(prices: { [key: string]: number }, params: FormulaParameters): CalculateUcsIndexOutput {
+export function calculateIndex(commodities: CommodityPriceData[], params: FormulaParameters): CalculateUcsIndexOutput {
       const defaultResult = { 
           indexValue: 0, 
           isConfigured: params.isConfigured,
@@ -25,29 +42,22 @@ export function calculateIndex(prices: { [key: string]: number }, params: Formul
       if (!params.isConfigured) {
           return defaultResult;
       }
+      
+      // --- Dynamic Price Lookups based on Category ---
+      const taxa_usd_brl = findPrice(commodities, 'exchange', 'USD/BRL');
+      const taxa_eur_brl = findPrice(commodities, 'exchange', 'EUR/BRL');
+      const preco_lumber_mbf = findPrice(commodities, 'forestry'); // Assumes only one forestry product
+      const preco_boi_arroba = findPrice(commodities, 'agriculture', 'Boi');
+      const preco_milho_brl = findPrice(commodities, 'agriculture', 'Milho');
+      const preco_soja_usd = findPrice(commodities, 'agriculture', 'Soja');
+      const preco_carbono_eur = findPrice(commodities, 'carbon'); // Assumes only one carbon product
   
       // --- Data Validation ---
-      const requiredAssets = [
-          'USD/BRL Histórico', 'EUR/BRL Histórico', 'Madeira Serrada Futuros - Set 25 (LXRc1)',
-          'Boi Gordo Futuros - Ago 25 (BGIc1)', 'Milho Futuros - Set 25 (CCMc1)', 'Soja Futuros - Nov 25 (SJCc1)', 'Carbono Futuros'
-      ];
-      for (const asset of requiredAssets) {
-          if (prices[asset] === undefined || prices[asset] === null || prices[asset] === 0) {
-              console.error(`[LOG] Missing or zero price for required asset in calculation: ${asset}.`);
-              return { ...defaultResult, isConfigured: true }; // Return default but indicate it was configured
-          }
+      const prices = [taxa_usd_brl, taxa_eur_brl, preco_lumber_mbf, preco_boi_arroba, preco_milho_brl, preco_soja_usd, preco_carbono_eur];
+      if (prices.some(p => p === 0)) {
+          console.error("[LOG] One or more required asset prices are zero or missing. Aborting calculation.");
+          return { ...defaultResult, isConfigured: true }; // Return default but indicate it was configured
       }
-  
-      // Exchange Rates
-      const taxa_usd_brl = prices['USD/BRL Histórico'];
-      const taxa_eur_brl = prices['EUR/BRL Histórico'];
-  
-      // Prices (raw)
-      const preco_lumber_mbf = prices['Madeira Serrada Futuros - Set 25 (LXRc1)'];
-      const preco_boi_arroba = prices['Boi Gordo Futuros - Ago 25 (BGIc1)'];
-      const preco_milho_brl = prices['Milho Futuros - Set 25 (CCMc1)'];
-      const preco_soja_usd = prices['Soja Futuros - Nov 25 (SJCc1)'];
-      const preco_carbono_eur = prices['Carbono Futuros'];
   
       // --- Price Conversions ---
       const preco_madeira_serrada_m3_usd = (preco_lumber_mbf / 1000) * 424;
@@ -65,7 +75,7 @@ export function calculateIndex(prices: { [key: string]: number }, params: Formul
       const renda_soja = params.PROD_SOJA * preco_soja_ton_brl * params.PESO_SOJA;
       const renda_bruta_ha = renda_pecuaria + renda_milho + renda_soja;
       const VUS = renda_bruta_ha / params.FATOR_ARREND;
-      const valor_carbono = preco_carbono_brl * params.VOLUME_MADEIRA_HA * params.FATOR_CARBONO;
+      const valor_carbono = preco_carbono_brl * params.VOLUME_MADEIA_HA * params.FATOR_CARBONO;
       const valor_agua = VUS * params.FATOR_AGUA;
       const CRS = valor_carbono + valor_agua;
       
