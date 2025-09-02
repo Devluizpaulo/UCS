@@ -19,6 +19,7 @@ export type CommodityPriceData = {
     absoluteChange: number;
     lastUpdated: string;
     currency: 'BRL' | 'USD' | 'EUR';
+    source?: string; // e.g., 'B3', 'ICE', 'CME'
 }
 
 export type HistoryInterval = '1d' | '1wk' | '1mo';
@@ -133,6 +134,7 @@ export type CommodityConfig = {
   category: 'exchange' | 'agriculture' | 'forestry' | 'carbon';
   description: string;
   unit: 'BRL' | '@' | 'cents/bushel' | 'USD/MBF' | 'EUR/tCO₂';
+  source?: string; // e.g., 'B3', 'ICE', 'CME'
   scrapeConfig?: ScrapeConfig;
 };
 
@@ -147,14 +149,16 @@ export type FullCommodityConfig = {
 
 // --- MarketData API Response Types ---
 export interface MarketDataQuoteResponse {
-    s: 'ok' | 'error';
+    s: 'ok' | 'error' | 'no_data';
+    errmsg?: string;
     symbol: string[];
     last: number[];
     updated: number[];
 }
 
 export interface MarketDataHistoryResponse {
-    s: 'ok' | 'error';
+    s: 'ok' | 'error' | 'no_data';
+    errmsg?: string;
     t: number[]; // timestamp
     o: number[]; // open
     h: number[]; // high

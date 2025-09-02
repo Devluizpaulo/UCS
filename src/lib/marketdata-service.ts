@@ -65,7 +65,7 @@ async function fetchFromApi(endpoint: string, params: URLSearchParams, timeout: 
 }
 
 
-export async function getMarketDataQuote(ticker: string): Promise<any> {
+export async function getMarketDataQuote(ticker: string): Promise<MarketDataQuoteResponse> {
     const config = await getApiConfig();
     const cacheKey = getCacheKey('md_quote', { ticker });
     const cachedEntry = cache.get(cacheKey);
@@ -82,17 +82,11 @@ export async function getMarketDataQuote(ticker: string): Promise<any> {
         throw new Error(`No data returned from API for ticker ${ticker}`);
     }
     
-    const quote = {
-        symbol: data.symbol[0],
-        last: data.last[0],
-        updated: new Date(data.updated[0] * 1000),
-    };
-    
-    cache.set(cacheKey, { data: quote, timestamp: Date.now(), ttl: config.marketData.CACHE_TTL.QUOTE });
-    return quote;
+    cache.set(cacheKey, { data, timestamp: Date.now(), ttl: config.marketData.CACHE_TTL.QUOTE });
+    return data;
 }
 
-export async function getMarketDataHistory(ticker: string, resolution: 'D' | 'W' | 'M' = 'D', countback: number = 30): Promise<any> {
+export async function getMarketDataHistory(ticker: string, resolution: 'D' | 'W' | 'M' = 'D', countback: number = 30): Promise<MarketDataHistoryResponse> {
     const config = await getApiConfig();
     const cacheKey = getCacheKey('md_history', { ticker, resolution, countback });
     const cachedEntry = cache.get(cacheKey);

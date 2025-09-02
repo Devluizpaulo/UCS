@@ -32,6 +32,7 @@ export const COMMODITY_TICKER_MAP: {
     category: 'exchange' | 'agriculture' | 'forestry' | 'carbon';
     description: string;
     unit: 'BRL' | '@' | 'cents/bushel' | 'USD/MBF' | 'EUR/tCO₂';
+    source?: string;
     scrapeConfig?: ScrapeConfig;
   } 
 } = {
@@ -41,6 +42,7 @@ export const COMMODITY_TICKER_MAP: {
     category: 'exchange',
     description: 'Taxa de câmbio USD para BRL',
     unit: 'BRL',
+    source: 'MarketData',
   },
   'EUR/BRL Histórico': { 
     ticker: 'EURBRL', 
@@ -48,40 +50,46 @@ export const COMMODITY_TICKER_MAP: {
     category: 'exchange',
     description: 'Taxa de câmbio EUR para BRL',
     unit: 'BRL',
+    source: 'MarketData',
   },
   'Boi Gordo Futuros - Ago 25 (BGIc1)': { 
-    ticker: 'BGIc1.SA', // This likely needs to be changed for MarketData.app
+    ticker: 'BGI=F', 
     currency: 'BRL',
     category: 'agriculture',
     description: 'Contratos futuros de Boi Gordo para Agosto de 2025',
     unit: '@',
+    source: 'B3',
   },
   'Soja Futuros': { 
-    ticker: 'SOYBEAN', // This likely needs to be changed for MarketData.app
+    ticker: 'ZS=F', 
     currency: 'USD',
     category: 'agriculture',
     description: 'Contratos futuros de Soja',
     unit: 'cents/bushel',
+    source: 'CME',
   },
   'Milho Futuros': { 
-    ticker: 'CORN', // This likely needs to be changed for MarketData.app
+    ticker: 'ZC=F', 
     currency: 'USD',
     category: 'agriculture',
     description: 'Contratos futuros de Milho',
     unit: 'cents/bushel',
+    source: 'CME',
   },
   'Madeira Futuros': { 
-    ticker: 'LUMBER', // This likely needs to be changed for MarketData.app
+    ticker: 'LBS=F',
     currency: 'USD',
     category: 'forestry',
     description: 'Contratos futuros de Madeira (Lumber)',
     unit: 'USD/MBF',
+    source: 'CME',
   },
   'Carbono Futuros': { 
-    ticker: 'CARBON', // This likely needs to be changed for MarketData.app
+    ticker: 'MFI=F',
     currency: 'EUR',
     category: 'carbon',
     description: 'Contratos futuros de Carbono (ICE)',
     unit: 'EUR/tCO₂',
+    source: 'ICE',
   },
 };

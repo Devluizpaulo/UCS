@@ -11,7 +11,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { getMarketDataQuote } from '@/lib/marketdata-service';
+import { getMarketDataHistory } from '@/lib/marketdata-service';
 import { saveCommodityData, saveUcsIndexData } from '@/lib/database-service';
 import { getCommodityConfig } from '@/lib/commodity-config-service';
 import { calculateUcsIndex } from './calculate-ucs-index-flow';
@@ -47,7 +47,7 @@ export const fetchAndSavePricesFlow = ai.defineFlow(
       let fetchedPrices: CommodityPriceData[] = [];
       const assetsToUpdate = assetName ? [assetName] : Object.keys(commodityMap);
 
-      // 1. Fetch latest commodity prices
+      // 1. Fetch latest commodity prices (closing price of the last day)
       for (const name of assetsToUpdate) {
           try {
             const commodityInfo = commodityMap[name];
@@ -56,22 +56,15 @@ export const fetchAndSavePricesFlow = ai.defineFlow(
                 continue;
             }
             
-            const quote = await getMarketDataQuote(commodityInfo.ticker);
-             if (!quote || typeof quote.last === 'undefined') {
-                console.warn(`[FLOW] API response for ${name} is invalid. Skipping.`);
+            // Get last day's closing price
+            const history = await getMarketDataHistory(commodityInfo.ticker, 'D', 2);
+            if (history.s !== 'ok' || history.c.length === 0) {
+                console.warn(`[FLOW] API response for ${name} is invalid or has no data. Skipping.`);
                 continue;
             }
-            
-            const newPrice = quote.last;
-            
-            // Get last saved price to calculate change
-            const pricesCollectionRef = collection(db, 'commodities_history', name, 'price_entries');
-            const q = query(pricesCollectionRef, orderBy('savedAt', 'desc'), limit(1));
-            const querySnapshot = await getDocs(q);
-            let lastPrice = newPrice;
-            if (!querySnapshot.empty) {
-                lastPrice = querySnapshot.docs[0].data().price;
-            }
+
+            const newPrice = history.c[history.c.length - 1]; // Get the most recent closing price
+            const lastPrice = history.c.length > 1 ? history.c[history.c.length - 2] : newPrice;
 
             const absoluteChange = newPrice - lastPrice;
             const change = lastPrice !== 0 ? (absoluteChange / lastPrice) * 100 : 0;
@@ -85,6 +78,7 @@ export const fetchAndSavePricesFlow = ai.defineFlow(
                 absoluteChange,
                 lastUpdated: new Date().toISOString(),
                 currency: commodityInfo.currency,
+                source: commodityInfo.source,
             });
           } catch (error) {
               console.error(`[FLOW] Failed to fetch price for ${name}. Skipping.`, error);
@@ -114,6 +108,8 @@ export const fetchAndSavePricesFlow = ai.defineFlow(
       } else {
         console.log('[FLOW] UCS Index not calculated because formula is not configured.');
       }
+
+      console.log('[FLOW] Cotações e Índice UCS atualizados com sucesso.');
 
       const message = assetName 
         ? `${assetName} foi atualizado e o índice recalculado.`

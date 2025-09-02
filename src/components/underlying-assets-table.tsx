@@ -68,7 +68,7 @@ export function UnderlyingAssetsTable({ data, loading, updatingAssets, onManualU
   };
   
   const renderTableRows = () => {
-    const dataSource = loading ? Array.from({ length: Object.keys(COMMODITY_TICKER_MAP).length }).map((_, i) => ({ name: Object.keys(COMMODITY_TICKER_MAP)[i] })) : data;
+    const dataSource = loading ? Array.from({ length: Object.keys(COMMODITY_TICKER_MAP).length }).map((_, i) => ({ name: Object.keys(COMMODITY_TICKER_MAP)[i], source: COMMODITY_TICKER_MAP[Object.keys(COMMODITY_TICKER_MAP)[i]].source })) : data;
 
     if (!dataSource || dataSource.length === 0) {
         return (
@@ -83,15 +83,19 @@ export function UnderlyingAssetsTable({ data, loading, updatingAssets, onManualU
     return dataSource.map((item) => {
         if (loading) {
             const commodityName = (item as {name: string}).name;
+            const sourceName = (item as {source?: string}).source;
             const Icon = getIconForCommodity(commodityName);
             return (
                 <TableRow key={commodityName} className="cursor-wait">
                     <TableCell>
                         <div className="flex items-center gap-3">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
-                            <Icon className="h-4 w-4 text-muted-foreground" />
-                        </div>
-                        <Skeleton className="h-5 w-32" />
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+                                <Icon className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                            <div>
+                                <Skeleton className="h-5 w-32 mb-1" />
+                                <Skeleton className="h-3 w-16" />
+                            </div>
                         </div>
                     </TableCell>
                     <TableCell className="text-right font-mono">
@@ -120,7 +124,12 @@ export function UnderlyingAssetsTable({ data, loading, updatingAssets, onManualU
                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
                     <Icon className="h-4 w-4 text-muted-foreground" />
                   </div>
-                  <div className="font-medium">{asset.name}</div>
+                  <div>
+                    <div className="font-medium">{asset.name}</div>
+                    {asset.source && (
+                        <div className="text-xs text-muted-foreground">Fonte: {asset.source}</div>
+                    )}
+                  </div>
                 </div>
               </TableCell>
               <TableCell onClick={() => handleRowClick(asset)} className="text-right font-mono cursor-pointer">

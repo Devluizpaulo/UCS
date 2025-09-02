@@ -83,6 +83,8 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
       
       const lastUpdatedTimestamp = latestData.savedAt as Timestamp;
       const lastUpdated = lastUpdatedTimestamp ? lastUpdatedTimestamp.toDate().toLocaleString('pt-BR') : 'N/A';
+      
+      const commodityInfo = commodityMap[name];
 
       prices.push({
         id: latestDoc.id,
@@ -93,6 +95,7 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
         absoluteChange,
         lastUpdated,
         currency: latestData.currency,
+        source: commodityInfo?.source,
       });
 
     } catch (error) {
@@ -157,7 +160,7 @@ export async function getAssetHistoricalData(assetName: string, interval: Histor
     );
 
     if (history.s !== 'ok') {
-        throw new Error(`MarketData API returned error for ${assetName}: ${history.s}`);
+        throw new Error(`MarketData API returned error for ${assetName}: ${history.errmsg || 'Unknown error'}`);
     }
     
     const formattedHistory: HistoricalQuote[] = [];
