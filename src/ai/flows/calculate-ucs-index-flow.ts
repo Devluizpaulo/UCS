@@ -32,7 +32,8 @@ export type CalculateUcsIndexOutput = z.infer<typeof CalculateUcsIndexOutputSche
 // Internal helper function for calculation. Can be reused by other flows.
 // THIS IS NOT A SERVER ACTION and does not need to be async.
 // It's a pure calculation function.
-export function calculateIndex(prices: { [key: string]: number }, params: FormulaParameters): CalculateUcsIndexOutput {
+// Removed 'export' to avoid Server Action conflict
+function calculateIndex(prices: { [key: string]: number }, params: FormulaParameters): CalculateUcsIndexOutput {
     const defaultResult = { 
         indexValue: 0, 
         isConfigured: params.isConfigured,
