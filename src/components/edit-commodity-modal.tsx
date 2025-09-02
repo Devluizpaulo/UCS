@@ -1,6 +1,7 @@
 
 'use client';
 
+import { useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -16,26 +17,25 @@ import { Loader2 } from 'lucide-react';
 interface EditCommodityModalProps {
   isOpen: boolean;
   onClose: () => void;
-  commodity: CommodityConfig;
+  commodity: CommodityConfig | null; // Can be null for creating a new one
   onSave: (data: CommodityConfig) => void;
   isSaving: boolean;
 }
 
 const commoditySchema = z.object({
-  name: z.string(),
+  id: z.string().min(1, 'O ID (Nome do Ativo) é obrigatório e não pode ser alterado após a criação.').regex(/^[a-zA-Z0-9_ -]+$/, 'ID pode conter apenas letras, números, espaços, _ e -'),
+  name: z.string().min(1, 'O Nome de Exibição é obrigatório.'),
   ticker: z.string().min(1, 'Ticker é obrigatório.'),
   currency: z.enum(['BRL', 'USD', 'EUR']),
   category: z.enum(['exchange', 'agriculture', 'forestry', 'carbon']),
   description: z.string().min(1, 'Descrição é obrigatória.'),
   unit: z.string().min(1, 'Unidade é obrigatória.'),
+  source: z.string().optional(),
   scrapeConfig: z.object({
     url: z.string().url('URL inválida.').or(z.literal('')),
     selector: z.string(),
   }).optional().refine(data => {
-    // If URL is provided, selector must also be provided.
-    if (data?.url && !data.selector) {
-      return false;
-    }
+    if (data?.url && !data.selector) return false;
     return true;
   }, {
     message: "O seletor CSS é obrigatório se a URL for fornecida.",
@@ -45,26 +45,70 @@ const commoditySchema = z.object({
 
 
 export function EditCommodityModal({ isOpen, onClose, commodity, onSave, isSaving }: EditCommodityModalProps) {
-  const { register, handleSubmit, control, formState: { errors } } = useForm<CommodityConfig>({
+  const { register, handleSubmit, control, formState: { errors }, reset } = useForm<CommodityConfig>({
     resolver: zodResolver(commoditySchema),
-    defaultValues: commodity,
+    defaultValues: commodity || {
+      id: '',
+      name: '',
+      ticker: '',
+      currency: 'USD',
+      category: 'agriculture',
+      description: '',
+      unit: '',
+      source: 'MarketData',
+      scrapeConfig: { url: '', selector: '' }
+    },
   });
 
+  useEffect(() => {
+    // Reset form when commodity data changes (e.g., opening modal for different items)
+    reset(commodity || {
+      id: '',
+      name: '',
+      ticker: '',
+      currency: 'USD',
+      category: 'agriculture',
+      description: '',
+      unit: '',
+      source: 'MarketData',
+      scrapeConfig: { url: '', selector: '' }
+    });
+  }, [commodity, reset]);
+
   const onSubmit = (data: CommodityConfig) => {
-    onSave(data);
-    onClose(); // Ideally, close should only happen on successful save
+    // When creating, the user-provided ID is used.
+    // The name field is used for display.
+    const finalData = {
+        ...data,
+        name: data.name || data.id, // Fallback name to id if empty
+    };
+    onSave(finalData);
   };
+  
+  const isCreating = !commodity;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Editar Ativo: {commodity.name}</DialogTitle>
+          <DialogTitle>{isCreating ? 'Adicionar Novo Ativo' : `Editar Ativo: ${commodity.name}`}</DialogTitle>
           <DialogDescription>
-            Ajuste os parâmetros de busca de dados para este ativo.
+            Ajuste os parâmetros de busca de dados para este ativo. O ID do Ativo é único e não pode ser alterado.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 py-4">
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="id" className="text-right">ID do Ativo</Label>
+            <Input id="id" {...register('id')} className="col-span-3" disabled={!isCreating} placeholder="Ex: Soja Futuros"/>
+            {errors.id && <p className="col-span-4 text-xs text-destructive text-right">{errors.id.message}</p>}
+          </div>
+
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="name" className="text-right">Nome de Exibição</Label>
+            <Input id="name" {...register('name')} className="col-span-3" />
+            {errors.name && <p className="col-span-4 text-xs text-destructive text-right">{errors.name.message}</p>}
+          </div>
+
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="ticker" className="text-right">Ticker</Label>
             <Input id="ticker" {...register('ticker')} className="col-span-3" />
@@ -125,17 +169,10 @@ export function EditCommodityModal({ isOpen, onClose, commodity, onSave, isSavin
           </div>
           
            <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="scrapeConfig.url" className="text-right">URL de Scraping</Label>
-            <Input id="scrapeConfig.url" {...register('scrapeConfig.url')} className="col-span-3" placeholder="Deixe em branco para desativar"/>
-             {errors.scrapeConfig?.url && <p className="col-span-4 text-xs text-destructive text-right">{errors.scrapeConfig.url.message}</p>}
+            <Label htmlFor="source" className="text-right">Fonte</Label>
+            <Input id="source" {...register('source')} className="col-span-3" />
+             {errors.source && <p className="col-span-4 text-xs text-destructive text-right">{errors.source.message}</p>}
           </div>
-          
-           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="scrapeConfig.selector" className="text-right">Seletor CSS</Label>
-            <Input id="scrapeConfig.selector" {...register('scrapeConfig.selector')} className="col-span-3" />
-             {errors.scrapeConfig?.selector && <p className="col-span-4 text-xs text-destructive text-right">{errors.scrapeConfig.selector.message}</p>}
-          </div>
-
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>

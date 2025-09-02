@@ -1,27 +1,34 @@
 
-
-
 export type ChartData = {
   time: string;
   value: number;
 };
 
-export type Commodity = {
-  name: string;
-  icon: React.ElementType;
+// Represents the static configuration of a commodity asset
+export type CommodityConfig = {
+  id: string; // Document ID in Firestore, unique, e.g. "Soja_Futuros"
+  name: string; // User-facing name, e.g. "Soja Futuros"
+  ticker: string;
+  currency: 'BRL' | 'USD' | 'EUR';
+  category: 'exchange' | 'agriculture' | 'forestry' | 'carbon';
+  description: string;
+  unit: string;
+  source?: string;
+  price?: number; // Latest price, stored directly on the object
+  lastUpdated?: string | object; // Can be string or Firestore Timestamp
+  scrapeConfig?: {
+    url: string;
+    selector: string;
+  };
 };
 
-export type CommodityPriceData = {
-    id: string; // Document ID from Firestore
-    name: string;
-    ticker: string;
+// Represents commodity data combined with real-time pricing information
+export type CommodityPriceData = CommodityConfig & {
     price: number;
     change: number; // Percentage change
     absoluteChange: number;
     lastUpdated: string;
-    currency: 'BRL' | 'USD' | 'EUR';
-    source?: string; // e.g., 'B3', 'ICE', 'CME'
-}
+};
 
 export type HistoryInterval = '1d' | '1wk' | '1mo';
 
@@ -120,32 +127,11 @@ export type ApiConfig = {
     isConfigured: boolean;
 };
 
-
-// --- Commodity Configuration Types ---
-
-export type ScrapeConfig = {
-  url: string;
-  selector: string;
-};
-
-export type CommodityConfig = {
-  name: string; // The key from the map, added for convenience
-  ticker: string;
-  currency: 'BRL' | 'USD' | 'EUR';
-  category: 'exchange' | 'agriculture' | 'forestry' | 'carbon';
-  description: string;
-  unit: string;
-  source?: string; // e.g., 'B3', 'ICE', 'CME'
-  scrapeConfig?: ScrapeConfig;
-};
+// --- Initial Config Types ---
+export type InitialCommodityConfig = Omit<CommodityConfig, 'id' | 'price' | 'lastUpdated'>;
 
 export type CommodityMap = {
-  [key: string]: Omit<CommodityConfig, 'name'>;
-};
-
-export type FullCommodityConfig = {
-  commodityMap: CommodityMap;
-  isConfigured: boolean;
+  [key: string]: InitialCommodityConfig;
 };
 
 // --- MarketData API Response Types ---
@@ -167,4 +153,3 @@ export interface MarketDataHistoryResponse {
     c: number[]; // close
     v: number[]; // volume
 }
-

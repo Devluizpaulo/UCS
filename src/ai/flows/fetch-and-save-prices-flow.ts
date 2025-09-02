@@ -12,10 +12,10 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { getMarketDataHistory } from '@/lib/marketdata-service';
-import { saveCommodityData, saveUcsIndexData } from '@/lib/database-service';
-import { getCommodityConfig } from '@/lib/commodity-config-service';
+import { saveCommodityData } from '@/lib/database-service';
+import { getCommodities } from '@/lib/commodity-config-service';
 import { calculateUcsIndex } from './calculate-ucs-index-flow';
-import type { CommodityPriceData } from '@/lib/types';
+import type { CommodityConfig, CommodityPriceData } from '@/lib/types';
 
 
 const FetchAndSavePricesInputSchema = z.object({
@@ -40,45 +40,38 @@ const fetchAndSavePricesFlow = ai.defineFlow(
     try {
       console.log(`[FLOW] Starting data processing... Mode: ${assetName ? `Single asset (${assetName})` : 'All assets'}`);
       
-      const { commodityMap } = await getCommodityConfig();
-      let fetchedPrices: CommodityPriceData[] = [];
-      const assetsToUpdate = assetName ? [assetName] : Object.keys(commodityMap);
+      const allCommodities = await getCommodities();
+      const assetsToUpdate = assetName 
+        ? allCommodities.filter(c => c.name === assetName) 
+        : allCommodities;
 
-      // 1. Fetch latest commodity prices (closing price of the last day)
-      for (const name of assetsToUpdate) {
+      if (assetsToUpdate.length === 0) {
+        return { success: false, message: `Asset '${assetName}' not found.`, savedCount: 0 };
+      }
+      
+      let fetchedPrices: CommodityPriceData[] = [];
+
+      for (const commodityInfo of assetsToUpdate) {
           try {
-            const commodityInfo = commodityMap[name];
-            if (!commodityInfo) {
-                console.warn(`[FLOW] Asset ${name} not found in config. Skipping.`);
-                continue;
-            }
-            
             // Get last day's closing price
             const history = await getMarketDataHistory(commodityInfo.ticker, 'D', 2);
             if (history.s !== 'ok' || history.c.length === 0) {
-                console.warn(`[FLOW] API response for ${name} is invalid or has no data. Skipping.`);
+                console.warn(`[FLOW] API response for ${commodityInfo.name} is invalid or has no data. Skipping.`);
                 continue;
             }
 
             const newPrice = history.c[history.c.length - 1]; // Get the most recent closing price
-            const lastPrice = history.c.length > 1 ? history.c[history.c.length - 2] : newPrice;
-
-            const absoluteChange = newPrice - lastPrice;
-            const change = lastPrice !== 0 ? (absoluteChange / lastPrice) * 100 : 0;
             
             fetchedPrices.push({
-                id: '', // Firestore generates
-                name: name,
-                ticker: commodityInfo.ticker,
+                ...commodityInfo,
                 price: newPrice,
-                change,
-                absoluteChange,
                 lastUpdated: new Date().toISOString(),
-                currency: commodityInfo.currency,
-                source: commodityInfo.source,
+                // Placeholder values, will be calculated on read
+                change: 0, 
+                absoluteChange: 0,
             });
           } catch (error) {
-              console.error(`[FLOW] Failed to fetch price for ${name}. Skipping.`, error);
+              console.error(`[FLOW] Failed to fetch price for ${commodityInfo.name}. Skipping.`, error);
           }
       }
       
@@ -99,7 +92,8 @@ const fetchAndSavePricesFlow = ai.defineFlow(
       let calculatedIndexValue: number | undefined;
       // 4. Save the new UCS Index value if the formula is configured
       if (ucsResult.isConfigured) {
-        await saveUcsIndexData(ucsResult.indexValue);
+        // This is now handled within saveCommodityData to ensure atomicity
+        // await saveUcsIndexData(ucsResult.indexValue);
         calculatedIndexValue = ucsResult.indexValue;
         console.log(`[FLOW] Successfully calculated and saved UCS Index value: ${ucsResult.indexValue}`);
       } else {

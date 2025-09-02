@@ -1,4 +1,7 @@
 
+import type { CommodityMap } from "./types";
+
+
 // This file is intentionally not marked with 'use server' as it exports constant objects.
 
 // MarketData API Configuration
@@ -18,25 +21,13 @@ export const MARKETDATA_CONFIG = {
   },
 };
 
-type ScrapeConfig = {
-  url: string;
-  selector: string;
-}
-
-// Commodity ticker mapping with enhanced metadata for MarketData.app
-// Note: Tickers might need adjustment based on the new API's format.
-export const COMMODITY_TICKER_MAP: { 
-  [key: string]: { 
-    ticker: string; 
-    currency: 'BRL' | 'USD' | 'EUR';
-    category: 'exchange' | 'agriculture' | 'forestry' | 'carbon';
-    description: string;
-    unit: 'BRL' | '@' | 'cents/bushel' | 'USD/MBF' | 'EUR/tCO₂';
-    source?: string;
-    scrapeConfig?: ScrapeConfig;
-  } 
-} = {
+// This map defines the INITIAL set of commodities to be seeded into the database
+// on the very first run. After that, the master list is managed in Firestore
+// via the Settings page. The keys here (e.g., 'USD/BRL Histórico') will become the
+// document IDs in Firestore.
+export const COMMODITY_TICKER_MAP: CommodityMap = {
   'USD/BRL Histórico': { 
+    name: 'USD/BRL Histórico',
     ticker: 'USDBRL', 
     currency: 'BRL',
     category: 'exchange',
@@ -45,6 +36,7 @@ export const COMMODITY_TICKER_MAP: {
     source: 'MarketData',
   },
   'EUR/BRL Histórico': { 
+    name: 'EUR/BRL Histórico',
     ticker: 'EURBRL', 
     currency: 'BRL',
     category: 'exchange',
@@ -53,6 +45,7 @@ export const COMMODITY_TICKER_MAP: {
     source: 'MarketData',
   },
   'Boi Gordo Futuros - Ago 25 (BGIc1)': { 
+    name: 'Boi Gordo Futuros - Ago 25 (BGIc1)',
     ticker: 'BGI=F', 
     currency: 'BRL',
     category: 'agriculture',
@@ -61,6 +54,7 @@ export const COMMODITY_TICKER_MAP: {
     source: 'B3',
   },
   'Soja Futuros': { 
+    name: 'Soja Futuros',
     ticker: 'ZS=F', 
     currency: 'USD',
     category: 'agriculture',
@@ -69,6 +63,7 @@ export const COMMODITY_TICKER_MAP: {
     source: 'CME',
   },
   'Milho Futuros': { 
+    name: 'Milho Futuros',
     ticker: 'ZC=F', 
     currency: 'USD',
     category: 'agriculture',
@@ -77,6 +72,7 @@ export const COMMODITY_TICKER_MAP: {
     source: 'CME',
   },
   'Madeira Futuros': { 
+    name: 'Madeira Futuros',
     ticker: 'LBS=F',
     currency: 'USD',
     category: 'forestry',
@@ -85,6 +81,7 @@ export const COMMODITY_TICKER_MAP: {
     source: 'CME',
   },
   'Carbono Futuros': { 
+    name: 'Carbono Futuros',
     ticker: 'MFI=F',
     currency: 'EUR',
     category: 'carbon',
@@ -93,4 +90,3 @@ export const COMMODITY_TICKER_MAP: {
     source: 'ICE',
   },
 };
-

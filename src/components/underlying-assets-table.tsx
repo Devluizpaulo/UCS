@@ -11,55 +11,38 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { AnimatedNumber } from '@/components/ui/animated-number';
-import { ArrowDown, ArrowUp, DollarSign, Euro, Beef, Leaf, TreePine, Recycle, RefreshCw, Loader2 } from 'lucide-react';
-import type { Commodity, CommodityPriceData } from '@/lib/types';
+import { ArrowDown, ArrowUp, DollarSign, Euro, Beef, Leaf, TreePine, Recycle, RefreshCw, Loader2, Wheat } from 'lucide-react';
+import type { CommodityConfig, CommodityPriceData } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { AssetDetailModal } from './asset-detail-modal';
 import { Skeleton } from './ui/skeleton';
-import { COMMODITY_TICKER_MAP } from '@/lib/marketdata-config';
 import { Button } from './ui/button';
 import { ScrollArea } from './ui/scroll-area';
 
-
-// Helper component for Corn icon
+// Helper for Corn Icon
 const CornIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-corn">
-        <path d="M9 12c-2 0-4-2-4-4V4c0-2 2-4 4-4h2c2 0 4 2 4 4v4c0 2-2 4-4 4Z"/>
-        <path d="M9 12v10"/>
-        <path d="m9 12-2 2"/>
-        <path d="m9 12 2 2"/>
-        <path d="m9 12-2-2"/>
-        <path d="m9 12 2-2"/>
-    </svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-corn"><path d="M9 12c-2 0-4-2-4-4V4c0-2 2-4 4-4h2c2 0 4 2 4 4v4c0 2-2 4-4 4Z"/><path d="M9 12v10"/><path d="m9 12-2 2"/><path d="m9 12 2 2"/><path d="m9 12-2-2"/><path d="m9 12 2-2"/></svg>
 );
 
-const commodityDetails: Commodity[] = Object.keys(COMMODITY_TICKER_MAP).map(name => {
-    let icon = DollarSign;
-    if (name.includes('EUR')) icon = Euro;
-    if (name.includes('Boi')) icon = Beef;
-    if (name.includes('Soja')) icon = Leaf;
-    if (name.includes('Milho')) icon = CornIcon;
-    if (name.includes('Madeira')) icon = TreePine;
-    if (name.includes('Carbono')) icon = Recycle;
-    
-    return { name, icon };
-});
-
+const getIconForCategory = (category: string) => {
+    switch (category) {
+        case 'exchange': return DollarSign;
+        case 'agriculture': return Wheat;
+        case 'forestry': return TreePine;
+        case 'carbon': return Recycle;
+        default: return DollarSign;
+    }
+};
 
 interface UnderlyingAssetsTableProps {
-    data?: CommodityPriceData[];
+    commodities?: CommodityPriceData[];
     loading?: boolean;
     updatingAssets?: Set<string>;
     onManualUpdate?: (assetName: string) => void;
 }
 
-export function UnderlyingAssetsTable({ data, loading, updatingAssets, onManualUpdate }: UnderlyingAssetsTableProps) {
+export function UnderlyingAssetsTable({ commodities, loading, updatingAssets, onManualUpdate }: UnderlyingAssetsTableProps) {
   const [selectedAsset, setSelectedAsset] = useState<CommodityPriceData | null>(null);
-
-  const getIconForCommodity = (name: string) => {
-    const details = commodityDetails.find(c => c.name === name);
-    return details ? details.icon : DollarSign;
-  };
 
   const handleRowClick = (asset: CommodityPriceData) => {
     if (loading || !asset.ticker) return;
@@ -67,39 +50,34 @@ export function UnderlyingAssetsTable({ data, loading, updatingAssets, onManualU
   };
   
   const renderTableRows = () => {
-    const commodityNames = Object.keys(COMMODITY_TICKER_MAP);
-
     if (loading) {
-        return commodityNames.map(name => {
-            const Icon = getIconForCommodity(name);
-            return (
-                 <TableRow key={name} className="cursor-wait">
-                    <TableCell>
-                        <div className="flex items-center gap-3">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
-                                <Icon className="h-4 w-4 text-muted-foreground" />
-                            </div>
-                            <div>
-                                <Skeleton className="h-5 w-32 mb-1" />
-                                <Skeleton className="h-3 w-16" />
-                            </div>
+        return Array.from({length: 7}).map((_, i) => (
+             <TableRow key={i} className="cursor-wait">
+                <TableCell>
+                    <div className="flex items-center gap-3">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+                           <Skeleton className="h-4 w-4 rounded-full"/>
                         </div>
-                    </TableCell>
-                    <TableCell className="text-right font-mono">
-                        <Skeleton className="h-5 w-20 ml-auto" />
-                    </TableCell>
-                    <TableCell className="text-right">
-                        <Skeleton className="h-6 w-24 ml-auto" />
-                    </TableCell>
-                    <TableCell className="text-right">
-                        <Skeleton className="h-8 w-8 rounded-full ml-auto" />
-                    </TableCell>
-                </TableRow>
-            );
-        });
+                        <div>
+                            <Skeleton className="h-5 w-32 mb-1" />
+                            <Skeleton className="h-3 w-16" />
+                        </div>
+                    </div>
+                </TableCell>
+                <TableCell className="text-right font-mono">
+                    <Skeleton className="h-5 w-20 ml-auto" />
+                </TableCell>
+                <TableCell className="text-right">
+                    <Skeleton className="h-6 w-24 ml-auto" />
+                </TableCell>
+                <TableCell className="text-right">
+                    <Skeleton className="h-8 w-8 rounded-full ml-auto" />
+                </TableCell>
+            </TableRow>
+        ));
     }
 
-    if (!data || data.length === 0) {
+    if (!commodities || commodities.length === 0) {
         return (
             <TableRow>
                 <TableCell colSpan={4} className="h-24 text-center">
@@ -109,9 +87,8 @@ export function UnderlyingAssetsTable({ data, loading, updatingAssets, onManualU
         );
     }
     
-    return data.map((asset) => {
-        const Icon = getIconForCommodity(asset.name);
-        const currency = COMMODITY_TICKER_MAP[asset.name]?.currency || 'USD';
+    return commodities.map((asset) => {
+        const Icon = getIconForCategory(asset.category);
         const isUpdating = updatingAssets?.has(asset.name);
 
         return (
@@ -123,14 +100,12 @@ export function UnderlyingAssetsTable({ data, loading, updatingAssets, onManualU
                   </div>
                   <div>
                     <div className="font-medium">{asset.name}</div>
-                    {asset.source && (
-                        <div className="text-xs text-muted-foreground">Fonte: {asset.source}</div>
-                    )}
+                    <div className="text-xs text-muted-foreground">Fonte: {asset.source}</div>
                   </div>
                 </div>
               </TableCell>
               <TableCell onClick={() => handleRowClick(asset)} className="text-right font-mono cursor-pointer">
-                <AnimatedNumber value={asset.price} currency={currency} />
+                <AnimatedNumber value={asset.price} currency={asset.currency} />
               </TableCell>
               <TableCell onClick={() => handleRowClick(asset)} className="text-right cursor-pointer">
                   <div className={cn(
@@ -185,7 +160,7 @@ export function UnderlyingAssetsTable({ data, loading, updatingAssets, onManualU
       {selectedAsset && (
         <AssetDetailModal
           asset={selectedAsset}
-          icon={getIconForCommodity(selectedAsset.name)}
+          icon={getIconForCategory(selectedAsset.category)}
           isOpen={!!selectedAsset}
           onClose={() => setSelectedAsset(null)}
         />
