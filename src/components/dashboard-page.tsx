@@ -156,7 +156,7 @@ export function DashboardPage() {
     <div className="flex min-h-screen w-full flex-col relative">
        {isInitialising && <InitialLoadingScreen message={loadingMessage} />}
       <PageHeader title="Painel">
-        <Button onClick={handleUpdateAll} disabled={isUpdatingAll || !isConfigured}>
+        <Button onClick={handleUpdateAll} disabled={isUpdatingAll}>
             {isUpdatingAll ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
