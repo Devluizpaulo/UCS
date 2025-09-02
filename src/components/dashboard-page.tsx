@@ -168,8 +168,8 @@ export function DashboardPage() {
         <Accordion type="single" collapsible className="w-full space-y-4" defaultValue="item-1">
              <AccordionItem value="item-1" className="border-none">
                  <Card>
-                    <AccordionTrigger className="p-6 text-left">
-                        <CardHeader className="p-0">
+                    <AccordionTrigger className="w-full flex justify-between p-6 text-left hover:no-underline">
+                        <CardHeader className="p-0 text-left">
                             <CardTitle>Histórico do Índice</CardTitle>
                             <CardDescription>Performance do Índice UCS nos últimos 30 dias.</CardDescription>
                         </CardHeader>
@@ -184,8 +184,8 @@ export function DashboardPage() {
              
              <AccordionItem value="item-2" className="border-none">
                 <Card>
-                     <AccordionTrigger className="p-6 text-left">
-                        <CardHeader className="p-0">
+                     <AccordionTrigger className="w-full flex justify-between p-6 text-left hover:no-underline">
+                        <CardHeader className="p-0 text-left">
                             <CardTitle>Ativos Subjacentes</CardTitle>
                             <CardDescription>Cotações de fechamento diário. Clique em recarregar para obter o preço em tempo real.</CardDescription>
                         </CardHeader>
@@ -204,22 +204,24 @@ export function DashboardPage() {
             </AccordionItem>
             
             <AccordionItem value="item-3" className="border-none">
-                <Card>
-                     <CardHeader className="flex flex-row items-center justify-between">
-                        <AccordionTrigger className="flex-1 text-left p-0">
+                 <Card>
+                    <AccordionTrigger className="w-full flex justify-between p-6 text-left hover:no-underline">
+                        <CardHeader className="p-0 text-left">
                            <CardTitle>Histórico de Cotações do Índice</CardTitle>
                            <CardDescription>Valores de fechamento do Índice UCS.</CardDescription>
-                        </AccordionTrigger>
-                        <Tabs defaultValue="1d" onValueChange={(value) => setHistoryInterval(value as HistoryInterval)} className="w-auto">
-                            <TabsList>
-                                <TabsTrigger value="1d" disabled={!isConfigured}>Diário</TabsTrigger>
-                                <TabsTrigger value="1wk" disabled={!isConfigured}>Semanal</TabsTrigger>
-                                <TabsTrigger value="1mo" disabled={!isConfigured}>Mensal</TabsTrigger>
-                            </TabsList>
-                        </Tabs>
-                    </CardHeader>
+                        </CardHeader>
+                    </AccordionTrigger>
                     <AccordionContent>
                         <CardContent>
+                            <div className="flex justify-end mb-4">
+                                <Tabs defaultValue="1d" onValueChange={(value) => setHistoryInterval(value as HistoryInterval)} className="w-auto">
+                                    <TabsList>
+                                        <TabsTrigger value="1d" disabled={!isConfigured}>Diário</TabsTrigger>
+                                        <TabsTrigger value="1wk" disabled={!isConfigured}>Semanal</TabsTrigger>
+                                        <TabsTrigger value="1mo" disabled={!isConfigured}>Mensal</TabsTrigger>
+                                    </TabsList>
+                                </Tabs>
+                            </div>
                             <IndexHistoryTable data={indexHistoryData} loading={loadingHistory} isConfigured={isConfigured} />
                         </CardContent>
                     </AccordionContent>

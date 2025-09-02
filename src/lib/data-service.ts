@@ -83,6 +83,7 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
         if (!querySnapshot.empty) {
           const docData = querySnapshot.docs[0];
           const data = docData.data() as any;
+          const savedDate = (data.savedAt as Timestamp).toDate();
           prices.push({
             id: docData.id,
             name: data.name,
@@ -90,7 +91,7 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
             price: data.price,
             change: data.change,
             absoluteChange: data.absoluteChange,
-            lastUpdated: new Date((data.savedAt as Timestamp).seconds * 1000).toLocaleString('pt-BR'),
+            lastUpdated: `Fech. ${savedDate.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}`,
             currency: commodityInfo.currency,
           });
         }

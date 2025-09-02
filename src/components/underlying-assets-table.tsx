@@ -80,21 +80,18 @@ export function UnderlyingAssetsTable({ data, loading, updatingAssets, onManualU
         );
     }
     
-    return dataSource.map((item) => {
+    return dataSource.map((item, index) => {
         if (loading) {
             const commodityName = item as string;
             const Icon = getIconForCommodity(commodityName);
             return (
-                <TableRow key={`skeleton-${commodityName}`} className="cursor-wait">
+                <TableRow key={`skeleton-${index}`} className="cursor-wait">
                     <TableCell>
                         <div className="flex items-center gap-3">
                         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
                             <Icon className="h-4 w-4 text-muted-foreground" />
                         </div>
-                        <div>
-                            <div className="font-medium">{commodityName}</div>
-                            <div className="text-xs text-muted-foreground">Aguardando dados...</div>
-                        </div>
+                        <Skeleton className="h-5 w-32" />
                         </div>
                     </TableCell>
                     <TableCell className="text-right font-mono">
@@ -123,10 +120,7 @@ export function UnderlyingAssetsTable({ data, loading, updatingAssets, onManualU
                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
                     <Icon className="h-4 w-4 text-muted-foreground" />
                   </div>
-                  <div>
-                    <div className="font-medium">{asset.name}</div>
-                    <div className="text-xs text-muted-foreground">{asset.lastUpdated}</div>
-                  </div>
+                  <div className="font-medium">{asset.name}</div>
                 </div>
               </TableCell>
               <TableCell onClick={() => handleRowClick(asset)} className="text-right font-mono cursor-pointer">
