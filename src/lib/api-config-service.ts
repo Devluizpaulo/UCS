@@ -4,7 +4,7 @@
  * @fileOverview A service for managing API configurations in Firestore.
  */
 
-import { db } from './firebase-admin-config'; // Use server-side admin SDK
+import { getDb } from './firebase-admin-config'; // Use server-side admin SDK
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import type { ApiConfig } from './types';
 import { MARKETDATA_CONFIG as defaultConfig } from './marketdata-config';
@@ -23,6 +23,7 @@ const defaultApiConfig: ApiConfig = {
  * @returns {Promise<ApiConfig>} A promise that resolves to the API config.
  */
 export async function getApiConfig(): Promise<ApiConfig> {
+  const db = await getDb();
   const docRef = doc(db, SETTINGS_COLLECTION, API_CONFIG_DOC_ID);
   try {
     const docSnap = await getDoc(docRef);
@@ -56,6 +57,7 @@ export async function getApiConfig(): Promise<ApiConfig> {
  * @returns {Promise<void>} A promise that resolves when the save is complete.
  */
 export async function saveApiConfig(params: Partial<Omit<ApiConfig, 'isConfigured'>>): Promise<void> {
+  const db = await getDb();
   const docRef = doc(db, SETTINGS_COLLECTION, API_CONFIG_DOC_ID);
   try {
     // Use merge: true to avoid overwriting the whole document if we only pass partial data
