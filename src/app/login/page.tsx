@@ -63,6 +63,8 @@ export default function LoginPage() {
       });
       
       setRedirectOnSuccess(true);
+      setIsLoading(false);
+
 
     } catch (error: any) {
       console.error('Login failed:', error);
@@ -73,8 +75,7 @@ export default function LoginPage() {
             ? 'Credenciais inválidas. Verifique seu e-mail e senha.'
             : 'Ocorreu um erro. Por favor, tente novamente.',
       });
-    } finally {
-        setIsLoading(false);
+       setIsLoading(false);
     }
   };
 
@@ -86,7 +87,7 @@ export default function LoginPage() {
                 alt="Imagem de uma floresta com árvores altas."
                 fill
                 priority
-                className="h-full w-full object-cover animate-ken-burns"
+                className="h-full w-full object-cover"
                 data-ai-hint="forest trees"
             />
             <div className="absolute inset-0 bg-black/70"></div>

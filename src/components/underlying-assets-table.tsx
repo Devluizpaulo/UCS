@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/table';
 import { AnimatedNumber } from '@/components/ui/animated-number';
 import { ArrowDown, ArrowUp, DollarSign, Euro, Beef, Leaf, TreePine, Recycle, RefreshCw, Loader2, Wheat } from 'lucide-react';
-import type { CommodityConfig, CommodityPriceData } from '@/lib/types';
+import type { CommodityPriceData } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { AssetDetailModal } from './asset-detail-modal';
 import { Skeleton } from './ui/skeleton';
@@ -35,13 +35,13 @@ const getIconForCategory = (category: string) => {
 };
 
 interface UnderlyingAssetsTableProps {
-    commodities?: CommodityPriceData[];
+    data: CommodityPriceData[];
     loading?: boolean;
     updatingAssets?: Set<string>;
     onManualUpdate?: (assetName: string) => void;
 }
 
-export function UnderlyingAssetsTable({ commodities, loading, updatingAssets, onManualUpdate }: UnderlyingAssetsTableProps) {
+export function UnderlyingAssetsTable({ data, loading, updatingAssets, onManualUpdate }: UnderlyingAssetsTableProps) {
   const [selectedAsset, setSelectedAsset] = useState<CommodityPriceData | null>(null);
 
   const handleRowClick = (asset: CommodityPriceData) => {
@@ -77,7 +77,7 @@ export function UnderlyingAssetsTable({ commodities, loading, updatingAssets, on
         ));
     }
 
-    if (!commodities || commodities.length === 0) {
+    if (!data || data.length === 0) {
         return (
             <TableRow>
                 <TableCell colSpan={4} className="h-24 text-center">
@@ -87,7 +87,7 @@ export function UnderlyingAssetsTable({ commodities, loading, updatingAssets, on
         );
     }
     
-    return commodities.map((asset) => {
+    return data.map((asset) => {
         const Icon = getIconForCategory(asset.category);
         const isUpdating = updatingAssets?.has(asset.name);
 

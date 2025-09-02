@@ -6,11 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Settings, Loader2, RefreshCw } from 'lucide-react';
 import { PageHeader } from '@/components/page-header';
 import { UcsIndexChart } from '@/components/ucs-index-chart';
-import type { ChartData, CommodityPriceData, UcsData, HistoryInterval } from '@/lib/types';
+import type { ChartData, UcsData, HistoryInterval } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { getCommodityPrices, getUcsIndexValue } from '@/lib/data-service';
+import { getUcsIndexValue } from '@/lib/data-service';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { UnderlyingAssetsTable } from './underlying-assets-table';
 import { IndexHistoryTable } from './index-history-table';
 import { Skeleton } from './ui/skeleton';
 import { AnimatedNumber } from './ui/animated-number';
@@ -20,6 +19,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
+import { UnderlyingAssetsCard } from './underlying-assets-card';
 
 
 async function runFetchAndSavePrices(assetName?: string): Promise<{success: boolean, message: string}> {
@@ -51,7 +51,6 @@ function InitialLoadingScreen({ message }: { message: string }) {
 
 export function DashboardPage() {
   const [ucsData, setUcsData] = useState<UcsData | null>(null);
-  const [commodities, setCommodities] = useState<CommodityPriceData[]>([]);
   const { toast } = useToast();
   const [isInitialising, setIsInitialising] = useState(true);
   const [loadingMessage, setLoadingMessage] = useState(loadingMessages[0]);
@@ -59,21 +58,14 @@ export function DashboardPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [historyInterval, setHistoryInterval] = useState<HistoryInterval>('1d');
   const [indexHistoryData, setIndexHistoryData] = useState<ChartData[]>([]);
-  const [updatingAssets, setUpdatingAssets] = useState<Set<string>>(new Set());
   const [isUpdatingAll, setIsUpdatingAll] = useState(false);
 
 
   const fetchDashboardData = useCallback(async () => {
       try {
-        const [ucsResult, pricesResult] = await Promise.all([
-          getUcsIndexValue(),
-          getCommodityPrices()
-        ]);
-        
+        const ucsResult = await getUcsIndexValue();
         setUcsData(ucsResult.latest);
         setIndexHistoryData(ucsResult.history); // Initial history (daily)
-        setCommodities(pricesResult);
-        
       } catch (error) {
         console.error("Failed to fetch dashboard data:", error);
         toast({
@@ -83,29 +75,6 @@ export function DashboardPage() {
         });
       }
   }, [toast]);
-
-  const handleManualUpdate = useCallback(async (assetName: string) => {
-    setUpdatingAssets(prev => new Set(prev).add(assetName));
-    toast({ title: 'Atualizando...', description: `Buscando a cotação mais recente para ${assetName}.` });
-    try {
-        const result = await runFetchAndSavePrices(assetName);
-        if (result.success) {
-            toast({ title: 'Sucesso!', description: result.message });
-            await fetchDashboardData();
-        } else {
-            throw new Error(result.message);
-        }
-    } catch (error: any) {
-        console.error(`Manual update for ${assetName} failed:`, error);
-        toast({ variant: 'destructive', title: 'Falha na Atualização', description: error.message });
-    } finally {
-        setUpdatingAssets(prev => {
-            const next = new Set(prev);
-            next.delete(assetName);
-            return next;
-        });
-    }
-  }, [toast, fetchDashboardData]);
 
   const handleUpdateAll = async () => {
     setIsUpdatingAll(true);
@@ -157,8 +126,6 @@ export function DashboardPage() {
         }, 2000);
 
         try {
-            // Data is now primarily loaded by the scheduled job.
-            // This fetch just gets the latest data from the DB.
             await fetchDashboardData();
         } catch (error: any) {
              console.error('Initial data fetch failed:', error);
@@ -272,24 +239,7 @@ export function DashboardPage() {
              </AccordionItem>
              
              <AccordionItem value="item-2" className="border-none">
-                <Card>
-                     <AccordionTrigger className="w-full flex justify-between p-6 text-left hover:no-underline">
-                        <CardHeader className="p-0 text-left">
-                            <CardTitle>Ativos Subjacentes</CardTitle>
-                            <CardDescription>Cotações de fechamento diário. Clique em recarregar para obter o preço em tempo real.</CardDescription>
-                        </CardHeader>
-                     </AccordionTrigger>
-                     <AccordionContent>
-                        <CardContent>
-                            <UnderlyingAssetsTable 
-                                data={commodities} 
-                                loading={isLoading}
-                                updatingAssets={updatingAssets}
-                                onManualUpdate={handleManualUpdate}
-                            />
-                        </CardContent>
-                     </AccordionContent>
-                </Card>
+                <UnderlyingAssetsCard onDataChange={fetchDashboardData}/>
             </AccordionItem>
             
             <AccordionItem value="item-3" className="border-none">
