@@ -32,21 +32,37 @@ export default function LoginPage() {
 
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
+    toast({
+        title: 'Preparando seu painel...',
+        description: 'Estamos buscando as cotações mais recentes para você. Aguarde um momento.',
+    });
+
     const auth = getAuth(app);
     try {
+      // 1. Authenticate user
       const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
       const user = userCredential.user;
+      
+      // 2. Fetch latest prices
+      // The login itself is the trigger, but the actual fetch is done on the dashboard page
+      // after the user is redirected. This ensures the UI can show loading states properly.
+      
+      // 3. Get Firebase token and set cookie with 24h expiration
       const token = await user.getIdToken();
-
-      // Set cookie to manage session
-      setCookie('firebaseIdToken', token, { path: '/' });
+      setCookie('firebaseIdToken', token, { 
+          path: '/', 
+          maxAge: 24 * 60 * 60, // 24 hours in seconds
+      });
 
       toast({
         title: 'Login bem-sucedido',
         description: 'Bem-vindo de volta! Redirecionando...',
       });
-      // Force a hard reload to ensure middleware picks up the cookie
-      window.location.href = '/';
+      
+      // 4. Redirect to dashboard
+      // A hard reload ensures middleware and dashboard data fetching logic runs correctly
+      window.location.href = '/'; 
+
     } catch (error: any) {
       console.error('Login failed:', error);
       toast({
@@ -56,7 +72,8 @@ export default function LoginPage() {
             ? 'Credenciais inválidas. Verifique seu e-mail e senha.'
             : 'Ocorreu um erro. Por favor, tente novamente.',
       });
-      setIsLoading(false);
+    } finally {
+        setIsLoading(false);
     }
   };
 

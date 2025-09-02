@@ -125,12 +125,41 @@ export function DashboardPage() {
   }, [toast, ucsData?.isConfigured]);
 
   useEffect(() => {
-    fetchDashboardData();
-  }, [fetchDashboardData]);
+    // Initial data fetch when the component mounts
+    // This is triggered once after a successful login and redirection
+    const initialFetch = async () => {
+        toast({
+            title: "Buscando dados...",
+            description: "Atualizando cotações para exibir os dados mais recentes."
+        });
+        setIsUpdatingAll(true); // Use the general loading state
+        try {
+            const result = await runFetchAndSavePrices(); // Update all prices
+            if (result.success) {
+                toast({ title: 'Dados atualizados!', description: 'Exibindo as informações mais recentes.' });
+                await fetchDashboardData(); // Now fetch the processed data to display
+            } else {
+                throw new Error(result.message);
+            }
+        } catch (error: any) {
+             console.error('Initial data fetch failed:', error);
+             toast({ variant: 'destructive', title: 'Falha na Busca de Dados', description: "Não foi possível buscar os dados. Exibindo as últimas informações salvas." });
+             // Even if update fails, try to show whatever is in the DB
+             await fetchDashboardData();
+        } finally {
+            setIsUpdatingAll(false);
+        }
+    };
+    
+    initialFetch();
+  }, [fetchDashboardData, toast]);
+
 
   useEffect(() => {
-    fetchIndexHistory(historyInterval);
-  }, [historyInterval, fetchIndexHistory]);
+    if (historyInterval && ucsData) { // only refetch if interval changes
+      fetchIndexHistory(historyInterval);
+    }
+  }, [historyInterval, ucsData, fetchIndexHistory]);
   
   const latestValue = ucsData?.indexValue ?? 0;
   const isConfigured = ucsData?.isConfigured ?? false;
