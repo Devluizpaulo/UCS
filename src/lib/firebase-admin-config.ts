@@ -1,3 +1,4 @@
+
 // @ts-nocheck
 'use server';
 /**
@@ -8,6 +9,10 @@
  */
 
 import admin from 'firebase-admin';
+
+let db: admin.firestore.Firestore;
+let auth: admin.auth.Auth;
+
 
 // Check if the app is already initialized to prevent errors
 if (!admin.apps.length) {
@@ -23,8 +28,10 @@ if (!admin.apps.length) {
   }
 }
 
-const db = admin.firestore();
-const auth = admin.auth();
+// Initialize services after the app is configured
+db = admin.firestore();
+auth = admin.auth();
+
 
 /**
  * Returns the singleton Firestore instance.
