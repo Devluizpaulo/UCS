@@ -73,7 +73,8 @@ export default function LoginPage() {
             ? 'Credenciais inválidas. Verifique seu e-mail e senha.'
             : 'Ocorreu um erro. Por favor, tente novamente.',
       });
-      setIsLoading(false);
+    } finally {
+        setIsLoading(false);
     }
   };
 
