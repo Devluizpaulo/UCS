@@ -192,7 +192,7 @@ export async function getAssetHistoricalData(assetName: string, interval: Histor
  * @param params - The formula parameters.
  * @returns {CalculateUcsIndexOutput} The calculated index data.
  */
-export function calculateIndex(prices: { [key: string]: number }, params: FormulaParameters): CalculateUcsIndexOutput {
+export async function calculateIndex(prices: { [key: string]: number }, params: FormulaParameters): Promise<CalculateUcsIndexOutput> {
     const defaultResult = { 
         indexValue: 0, 
         isConfigured: params.isConfigured,
@@ -215,11 +215,11 @@ export function calculateIndex(prices: { [key: string]: number }, params: Formul
             return { ...defaultResult, isConfigured: true }; // Return default but indicate it was configured
         }
     }
-
+  
     // Exchange Rates
     const taxa_usd_brl = prices['USD/BRL Histórico'];
     const taxa_eur_brl = prices['EUR/BRL Histórico'];
-
+  
     // Prices (raw)
     const preco_lumber_mbf = prices['Madeira Futuros'];
     const preco_boi_arroba = prices['Boi Gordo Futuros - Ago 25 (BGIc1)'];

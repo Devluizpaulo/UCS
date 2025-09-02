@@ -67,7 +67,7 @@ export async function calculateUcsIndex(): Promise<CalculateUcsIndexOutput> {
       }, {} as { [key: string]: number });
       
       // Use the pure calculation function from the service
-      return calculateIndex(prices, params);
+      return await calculateIndex(prices, params);
     }
   );
   
