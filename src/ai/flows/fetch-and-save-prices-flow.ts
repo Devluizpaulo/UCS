@@ -1,7 +1,7 @@
 
 'use server';
 /**
- * @fileOverview A flow for fetching commodity prices from the Yahoo Finance API,
+ * @fileOverview A flow for fetching commodity prices from the MarketData API,
  * calculating the UCS Index, and saving both to Firestore.
  * This flow is intended to be run by a scheduled job.
  *
@@ -10,9 +10,9 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { getOptimizedCommodityPrices } from '@/lib/yahoo-finance-optimizer';
+import { getMarketDataCandles } from '@/lib/marketdata-service';
 import { saveCommodityData, saveUcsIndexData } from '@/lib/database-service';
-import { COMMODITY_TICKER_MAP } from '@/lib/yahoo-finance-config-data';
+import { getCommodityConfig } from '@/lib/commodity-config-service';
 import { calculateUcsIndex } from './calculate-ucs-index-flow';
 
 
@@ -32,12 +32,13 @@ export const fetchAndSavePricesFlow = ai.defineFlow(
   },
   async () => {
     try {
-      const commodityNames = Object.keys(COMMODITY_TICKER_MAP);
+      const { commodityMap } = await getCommodityConfig();
+      const commodityNames = Object.keys(commodityMap);
       console.log('[FLOW] Starting daily data processing...');
       console.log(`[FLOW] Fetching prices for: ${commodityNames.join(', ')}`);
 
       // 1. Fetch latest commodity prices from external API
-      const prices = await getOptimizedCommodityPrices(commodityNames);
+      const prices = await getMarketDataCandles(commodityNames);
 
       if (!prices || prices.length === 0) {
         console.error('[FLOW] Failed to fetch any prices from the external API.');

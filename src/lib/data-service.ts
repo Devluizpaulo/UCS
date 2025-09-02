@@ -2,13 +2,13 @@
 'use server';
 
 import type { ChartData, CommodityPriceData, ScenarioResult, HistoricalQuote, HistoryInterval, UcsData, RiskAnalysisData, RiskMetric, GenerateReportInput, GenerateReportOutput } from './types';
-import { getOptimizedHistorical, getOptimizedCommodityPrices } from './yahoo-finance-optimizer';
 import { getCommodityConfig } from './commodity-config-service';
 import { calculate_volatility, calculate_correlation } from './statistics';
 import { db } from './firebase-config';
 import { collection, query, orderBy, limit, getDocs, Timestamp, getDoc, doc } from 'firebase/firestore';
 import { saveCommodityData } from './database-service';
 import { scrapeUrlFlow } from '@/ai/flows/scrape-commodity-price-flow';
+import { getMarketDataQuote, getMarketDataHistory } from './marketdata-service';
 
 
 // Functions for the "Analysis" page that call Genkit flows directly.
@@ -255,26 +255,19 @@ export async function updateSingleCommodity(assetName: string): Promise<{success
     const { commodityMap } = await getCommodityConfig();
     const commodityInfo = commodityMap[assetName];
     
-    // Robust check for scrapeConfig
-    if (!commodityInfo || !commodityInfo.scrapeConfig || !commodityInfo.scrapeConfig.url || !commodityInfo.scrapeConfig.selector) {
-        return { success: false, message: 'Ativo não configurado para atualização manual.' };
+    if (!commodityInfo) {
+        return { success: false, message: 'Ativo não encontrado na configuração.' };
     }
 
     try {
-        // Step 1: Scrape the latest price
-        const newPriceStr = await scrapeUrlFlow({ 
-            url: commodityInfo.scrapeConfig.url, 
-            selector: commodityInfo.scrapeConfig.selector 
-        });
-
-        if (!newPriceStr) {
-            throw new Error('Scraping did not return a value.');
+        // Step 1: Get the latest price from the new API
+        const quote = await getMarketDataQuote(commodityInfo.ticker);
+        
+        if (!quote || typeof quote.last === 'undefined') {
+             throw new Error(`API response for ${assetName} is invalid.`);
         }
-
-        const newPrice = parseFloat(newPriceStr);
-        if (isNaN(newPrice)) {
-            throw new Error(`Scraped value "${newPriceStr}" is not a valid number.`);
-        }
+        
+        const newPrice = quote.last;
 
         // Step 2: Fetch the last saved price from DB to calculate change
         const pricesCollectionRef = collection(db, 'commodities_history', assetName, 'price_entries');

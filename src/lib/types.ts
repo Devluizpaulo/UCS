@@ -1,5 +1,6 @@
 
 
+
 export type ChartData = {
   time: string;
   value: number;
@@ -101,15 +102,11 @@ export type GenerateReportOutput = {
 
 // --- API Configuration Types ---
 
-export type YahooFinanceConfig = {
-  RATE_LIMIT: {
-    MAX_REQUESTS_PER_MINUTE: number;
-  };
+export type MarketDataConfig = {
+  API_BASE_URL: string;
   CACHE_TTL: {
     QUOTE: number;
-    HISTORICAL_1D: number;
-    HISTORICAL_1WK: number;
-    HISTORICAL_1MO: number;
+    HISTORICAL: number;
   };
   TIMEOUTS: {
     QUOTE: number;
@@ -118,9 +115,10 @@ export type YahooFinanceConfig = {
 };
 
 export type ApiConfig = {
-    yahooFinance: YahooFinanceConfig;
+    marketData: MarketDataConfig;
     isConfigured: boolean;
 };
+
 
 // --- Commodity Configuration Types ---
 
@@ -145,4 +143,23 @@ export type CommodityMap = {
 
 export type FullCommodityConfig = {
   commodityMap: CommodityMap;
-  isConfigured:
+  isConfigured: boolean;
+};
+
+// --- MarketData API Response Types ---
+export interface MarketDataQuoteResponse {
+    s: 'ok' | 'error';
+    symbol: string[];
+    last: number[];
+    updated: number[];
+}
+
+export interface MarketDataHistoryResponse {
+    s: 'ok' | 'error';
+    t: number[]; // timestamp
+    o: number[]; // open
+    h: number[]; // high
+    l: number[]; // low
+    c: number[]; // close
+    v: number[]; // volume
+}

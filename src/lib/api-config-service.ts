@@ -7,13 +7,13 @@
 import { db } from './firebase-config';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import type { ApiConfig } from './types';
-import { YAHOO_FINANCE_CONFIG as defaultConfig } from './yahoo-finance-config-data';
+import { MARKETDATA_CONFIG as defaultConfig } from './marketdata-config';
 
 const API_CONFIG_DOC_ID = 'api_config';
 const SETTINGS_COLLECTION = 'settings';
 
 const defaultApiConfig: ApiConfig = {
-    yahooFinance: defaultConfig,
+    marketData: defaultConfig,
     isConfigured: false,
 };
 
@@ -33,9 +33,9 @@ export async function getApiConfig(): Promise<ApiConfig> {
       return {
           ...defaultApiConfig,
           ...dbConfig,
-          yahooFinance: {
-            ...defaultApiConfig.yahooFinance,
-            ...dbConfig.yahooFinance,
+          marketData: {
+            ...defaultApiConfig.marketData,
+            ...dbConfig.marketData,
           },
       };
     } else {
@@ -51,7 +51,7 @@ export async function getApiConfig(): Promise<ApiConfig> {
 }
 
 /**
- * Saves the updated Yahoo Finance API configuration to Firestore.
+ * Saves the updated MarketData API configuration to Firestore.
  * @param {Partial<ApiConfig>} params - The new config to save.
  * @returns {Promise<void>} A promise that resolves when the save is complete.
  */
@@ -64,3 +64,5 @@ export async function saveApiConfig(params: Partial<Omit<ApiConfig, 'isConfigure
   } catch (error) {
     console.error("[ApiConfigService] Error saving API config: ", error);
     throw new Error("Failed to save API config to the database.");
+  }
+}

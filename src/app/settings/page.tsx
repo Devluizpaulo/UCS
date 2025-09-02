@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -15,7 +16,7 @@ import { Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getFormulaParameters, saveFormulaParameters } from '@/lib/formula-service';
 import { getApiConfig, saveApiConfig } from '@/lib/api-config-service';
-import type { FormulaParameters, YahooFinanceConfig, CommodityConfig, CommodityMap } from '@/lib/types';
+import type { FormulaParameters, MarketDataConfig, CommodityConfig, CommodityMap } from '@/lib/types';
 import { getCommodityConfig, saveCommodityConfig } from '@/lib/commodity-config-service';
 import { CommoditySourcesTable } from '@/components/commodity-sources-table';
 
@@ -35,14 +36,10 @@ const formulaSchema = z.object({
 });
 
 const apiSchema = z.object({
-    RATE_LIMIT: z.object({
-        MAX_REQUESTS_PER_MINUTE: z.coerce.number().int().positive(),
-    }),
+    API_BASE_URL: z.string().url(),
     CACHE_TTL: z.object({
         QUOTE: z.coerce.number().int().positive(),
-        HISTORICAL_1D: z.coerce.number().int().positive(),
-        HISTORICAL_1WK: z.coerce.number().int().positive(),
-        HISTORICAL_1MO: z.coerce.number().int().positive(),
+        HISTORICAL: z.coerce.number().int().positive(),
     }),
     TIMEOUTS: z.object({
         QUOTE: z.coerce.number().int().positive(),
@@ -62,7 +59,7 @@ export default function SettingsPage() {
       resolver: zodResolver(formulaSchema),
   });
 
-  const apiForm = useForm<YahooFinanceConfig>({
+  const apiForm = useForm<MarketDataConfig>({
       resolver: zodResolver(apiSchema),
   });
 
@@ -75,7 +72,7 @@ export default function SettingsPage() {
           getCommodityConfig()
       ]);
       formulaForm.reset(formulaParams);
-      apiForm.reset(apiParams.yahooFinance);
+      apiForm.reset(apiParams.marketData);
       setCommodityConfig(commConfig.commodityMap);
     } catch (error) {
       console.error("Failed to fetch settings:", error);
@@ -114,13 +111,13 @@ export default function SettingsPage() {
     }
   };
   
-  const onApiSubmit = async (data: YahooFinanceConfig) => {
+  const onApiSubmit = async (data: MarketDataConfig) => {
     setIsLoading(true);
     try {
-      await saveApiConfig({ yahooFinance: data });
+      await saveApiConfig({ marketData: data });
       toast({
         title: 'Configurações de API Atualizadas',
-        description: 'Os parâmetros da API do Yahoo Finance foram salvos.',
+        description: 'Os parâmetros da API MarketData foram salvos.',
       });
     } catch (error) {
       console.error('Error saving API config:', error);
@@ -237,33 +234,30 @@ export default function SettingsPage() {
     return (
         <form onSubmit={apiForm.handleSubmit(onApiSubmit)} className="space-y-8">
             <div>
+                <h3 className="text-lg font-medium mb-4">Configuração Geral</h3>
+                 <div className="grid grid-cols-1 gap-6">
+                     <div className="space-y-2">
+                        <Label htmlFor="API_BASE_URL">URL Base da API</Label>
+                        <Input id="API_BASE_URL" type="url" {...apiForm.register('API_BASE_URL')} />
+                    </div>
+                </div>
+            </div>
+            <div>
                 <h3 className="text-lg font-medium mb-4">Cache (TTL em milissegundos)</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
                         <Label htmlFor="CACHE_TTL.QUOTE">Cotações (Real-time)</Label>
                         <Input id="CACHE_TTL.QUOTE" type="number" {...apiForm.register('CACHE_TTL.QUOTE')} />
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="CACHE_TTL.HISTORICAL_1D">Histórico (Diário)</Label>
-                        <Input id="CACHE_TTL.HISTORICAL_1D" type="number" {...apiForm.register('CACHE_TTL.HISTORICAL_1D')} />
-                    </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="CACHE_TTL.HISTORICAL_1WK">Histórico (Semanal)</Label>
-                        <Input id="CACHE_TTL.HISTORICAL_1WK" type="number" {...apiForm.register('CACHE_TTL.HISTORICAL_1WK')} />
-                    </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="CACHE_TTL.HISTORICAL_1MO">Histórico (Mensal)</Label>
-                        <Input id="CACHE_TTL.HISTORICAL_1MO" type="number" {...apiForm.register('CACHE_TTL.HISTORICAL_1MO')} />
+                        <Label htmlFor="CACHE_TTL.HISTORICAL">Histórico</Label>
+                        <Input id="CACHE_TTL.HISTORICAL" type="number" {...apiForm.register('CACHE_TTL.HISTORICAL')} />
                     </div>
                 </div>
             </div>
             <div>
-                <h3 className="text-lg font-medium mb-4">Limites e Timeouts (em milissegundos)</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <div className="space-y-2">
-                        <Label htmlFor="RATE_LIMIT.MAX_REQUESTS_PER_MINUTE">Req. por Minuto</Label>
-                        <Input id="RATE_LIMIT.MAX_REQUESTS_PER_MINUTE" type="number" {...apiForm.register('RATE_LIMIT.MAX_REQUESTS_PER_MINUTE')} />
-                    </div>
+                <h3 className="text-lg font-medium mb-4">Timeouts (em milissegundos)</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
                         <Label htmlFor="TIMEOUTS.QUOTE">Timeout Cotações</Label>
                         <Input id="TIMEOUTS.QUOTE" type="number" {...apiForm.register('TIMEOUTS.QUOTE')} />
@@ -324,7 +318,7 @@ export default function SettingsPage() {
               <a href="#" 
                 onClick={() => setActiveTab('api')}
                 className={activeTab === 'api' ? "font-semibold text-primary" : ""}>
-                Yahoo Finance API
+                MarketData API
               </a>
             </nav>
             <div className="grid gap-6">
@@ -344,9 +338,9 @@ export default function SettingsPage() {
                {activeTab === 'api' && (
                 <Card>
                     <CardHeader>
-                        <CardTitle>Configurações de API (Yahoo Finance)</CardTitle>
+                        <CardTitle>Configurações de API (MarketData)</CardTitle>
                         <CardDescription>
-                            Gerencie os parâmetros para a comunicação com APIs externas, como o Yahoo Finance.
+                            Gerencie os parâmetros para a comunicação com a API MarketData.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
