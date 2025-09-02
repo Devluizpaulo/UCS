@@ -113,6 +113,12 @@ export type GenerateReportOutput = {
   mimeType: string;
 };
 
+export type SearchedAsset = {
+  symbol: string;
+  description: string;
+  country: string;
+}
+
 // --- API Configuration Types ---
 
 export type MarketDataConfig = {
@@ -157,4 +163,12 @@ export interface MarketDataHistoryResponse {
     l: number[]; // low
     c: number[]; // close
     v: number[]; // volume
+}
+
+export interface MarketDataSearchResponse {
+    s: 'ok' | 'error' | 'no_data';
+    errmsg?: string;
+    symbol: string[];
+    description: string[];
+    country: string[];
 }

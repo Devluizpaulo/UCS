@@ -1,7 +1,7 @@
 
 'use server';
 
-import type { HistoryInterval, MarketDataQuoteResponse, MarketDataHistoryResponse, HistoricalQuote } from './types';
+import type { HistoryInterval, MarketDataQuoteResponse, MarketDataHistoryResponse, HistoricalQuote, MarketDataSearchResponse, SearchedAsset } from './types';
 import { getApiConfig } from './api-config-service';
 import { getCommodities } from './commodity-config-service';
 import { getDb } from './firebase-admin-config'; // Correctly use server-side db
@@ -153,4 +153,34 @@ export async function getAssetHistoricalData(assetName: string, interval: Histor
         console.error(`Failed to get historical data for ${assetName}:`, error);
         return []; // Return empty array on failure
     }
+}
+
+
+export async function searchMarketDataAssets(query: string): Promise<SearchedAsset[]> {
+    const config = await getApiConfig();
+    const cacheKey = getCacheKey('md_search', { query });
+    const cachedEntry = cache.get(cacheKey);
+
+    if (isValidCacheEntry(cachedEntry)) {
+        console.log(`[CACHE HIT] Search for ${query}`);
+        return cachedEntry.data;
+    }
+
+    const params = new URLSearchParams({ query });
+    // This endpoint is hypothetical, assuming MarketData has a symbol search.
+    // If this fails, the endpoint URL might need to be adjusted.
+    const data: MarketDataSearchResponse = await fetchFromApi('/stocks/search/', params, config.marketData.TIMEOUTS.QUOTE);
+    
+    if (data.s !== 'ok' || !data.symbol) {
+        return [];
+    }
+
+    const results: SearchedAsset[] = data.symbol.map((symbol, index) => ({
+        symbol,
+        description: data.description[index],
+        country: data.country[index],
+    }));
+    
+    cache.set(cacheKey, { data: results, timestamp: Date.now(), ttl: config.marketData.CACHE_TTL.HISTORICAL }); // Longer TTL for search
+    return results;
 }
