@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -26,30 +26,31 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
+  const [redirectOnSuccess, setRedirectOnSuccess] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
   const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   });
 
+  useEffect(() => {
+    if (redirectOnSuccess) {
+        const timer = setTimeout(() => {
+            router.push('/');
+        }, 500); // Small delay to allow toast to be seen
+        return () => clearTimeout(timer);
+    }
+  }, [redirectOnSuccess, router]);
+
+
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
-    toast({
-        title: 'Preparando seu painel...',
-        description: 'Estamos buscando as cotações mais recentes para você. Aguarde um momento.',
-    });
-
+    
     const auth = getAuth(app);
     try {
-      // 1. Authenticate user
       const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
       const user = userCredential.user;
       
-      // 2. Fetch latest prices
-      // The login itself is the trigger, but the actual fetch is done on the dashboard page
-      // after the user is redirected. This ensures the UI can show loading states properly.
-      
-      // 3. Get Firebase token and set cookie with 24h expiration
       const token = await user.getIdToken();
       setCookie('firebaseIdToken', token, { 
           path: '/', 
@@ -61,8 +62,7 @@ export default function LoginPage() {
         description: 'Bem-vindo de volta! Redirecionando...',
       });
       
-      // 4. Redirect to dashboard using Next.js router
-      router.push('/');
+      setRedirectOnSuccess(true);
 
     } catch (error: any) {
       console.error('Login failed:', error);
@@ -73,8 +73,7 @@ export default function LoginPage() {
             ? 'Credenciais inválidas. Verifique seu e-mail e senha.'
             : 'Ocorreu um erro. Por favor, tente novamente.',
       });
-    } finally {
-        setIsLoading(false);
+      setIsLoading(false);
     }
   };
 
