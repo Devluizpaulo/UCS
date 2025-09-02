@@ -78,6 +78,7 @@ export default function LoginPage() {
   };
 
   return (
+    <div className="relative h-screen w-full overflow-hidden">
      <div className="relative flex min-h-screen w-full items-center justify-center bg-background">
       <Image
           src="/image/login.jpg"
@@ -130,6 +131,7 @@ export default function LoginPage() {
           </form>
         </div>
       </div>
+    </div>
     </div>
   );
 }
