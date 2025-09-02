@@ -1,5 +1,6 @@
 
 
+
 export type ChartData = {
   time: string;
   value: number;
@@ -166,3 +167,4 @@ export interface MarketDataHistoryResponse {
     c: number[]; // close
     v: number[]; // volume
 }
+

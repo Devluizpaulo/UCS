@@ -93,3 +93,4 @@ export const COMMODITY_TICKER_MAP: {
     source: 'ICE',
   },
 };
+

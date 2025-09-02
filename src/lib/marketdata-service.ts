@@ -106,3 +106,4 @@ export async function getMarketDataHistory(ticker: string, resolution: 'D' | 'W'
     cache.set(cacheKey, { data, timestamp: Date.now(), ttl: config.marketData.CACHE_TTL.HISTORICAL });
     return data;
 }
+
