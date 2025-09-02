@@ -4,8 +4,9 @@
 import type { HistoryInterval, MarketDataQuoteResponse, MarketDataHistoryResponse, HistoricalQuote } from './types';
 import { getApiConfig } from './api-config-service';
 import { getCommodities } from './commodity-config-service';
+import { getDb } from './firebase-admin-config'; // Correctly use server-side db
 import { collection, getDocs, limit, orderBy, query } from 'firebase/firestore';
-import { db } from './firebase-config';
+
 
 // In-memory cache
 interface CacheEntry<T> {
