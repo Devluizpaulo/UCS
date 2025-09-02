@@ -25,6 +25,9 @@
     --ring: 100 100% 40%;
     --chart-1: 100 100% 40%;
     --chart-2: 217 33% 17%;
+    --chart-3: 100 80% 35%;
+    --chart-4: 210 40% 96.1%;
+    --chart-5: 215 20% 45%;
     --radius: 0.5rem;
     --sidebar-background: 222 84% 4.9%;
     --sidebar-foreground: 210 40% 98%;
@@ -58,6 +61,9 @@
     --ring: 100 80% 35%;
     --chart-1: 100 80% 35%;
     --chart-2: 210 40% 96.1%;
+    --chart-3: 100 100% 40%;
+    --chart-4: 217 33% 17%;
+    --chart-5: 215 20% 65%;
     --sidebar-background: 210 40% 98%;
     --sidebar-foreground: 222 84% 4.9%;
     --sidebar-primary: 100 80% 35%;

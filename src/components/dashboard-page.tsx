@@ -35,6 +35,7 @@ export function DashboardPage() {
 
   const fetchDashboardData = useCallback(async () => {
       setLoading(true);
+      setLoadingHistory(true);
       try {
         const [ucsResult, pricesResult] = await Promise.all([
           getUcsIndexValue('1d'), // Fetch with initial interval
@@ -105,8 +106,6 @@ export function DashboardPage() {
   }, [fetchDashboardData]);
 
   useEffect(() => {
-    // Only fetch history on interval change if it's not the initial '1d' load
-    // and if the formula is configured. This check avoids a double-fetch on page load.
     if (!loading && ucsData?.isConfigured) {
         fetchIndexHistory(historyInterval);
     }
@@ -171,11 +170,20 @@ export function DashboardPage() {
                     <AccordionTrigger className="w-full flex justify-between p-6 text-left hover:no-underline">
                         <CardHeader className="p-0 text-left">
                             <CardTitle>Histórico do Índice</CardTitle>
-                            <CardDescription>Performance do Índice UCS nos últimos 30 dias.</CardDescription>
+                            <CardDescription>Performance do Índice UCS.</CardDescription>
                         </CardHeader>
                     </AccordionTrigger>
                     <AccordionContent>
                         <CardContent>
+                             <div className="flex justify-end mb-4">
+                                <Tabs defaultValue="1d" onValueChange={(value) => setHistoryInterval(value as HistoryInterval)} className="w-auto">
+                                    <TabsList>
+                                        <TabsTrigger value="1d" disabled={!isConfigured}>Diário</TabsTrigger>
+                                        <TabsTrigger value="1wk" disabled={!isConfigured}>Semanal</TabsTrigger>
+                                        <TabsTrigger value="1mo" disabled={!isConfigured}>Mensal</TabsTrigger>
+                                    </TabsList>
+                                </Tabs>
+                            </div>
                             <UcsIndexChart data={indexHistoryData} loading={loadingHistory || !isConfigured}/>
                         </CardContent>
                     </AccordionContent>
@@ -207,21 +215,12 @@ export function DashboardPage() {
                  <Card>
                     <AccordionTrigger className="w-full flex justify-between p-6 text-left hover:no-underline">
                         <CardHeader className="p-0 text-left">
-                           <CardTitle>Histórico de Cotações do Índice</CardTitle>
+                           <CardTitle>Tabela Histórica de Cotações</CardTitle>
                            <CardDescription>Valores de fechamento do Índice UCS.</CardDescription>
                         </CardHeader>
                     </AccordionTrigger>
                     <AccordionContent>
                         <CardContent>
-                            <div className="flex justify-end mb-4">
-                                <Tabs defaultValue="1d" onValueChange={(value) => setHistoryInterval(value as HistoryInterval)} className="w-auto">
-                                    <TabsList>
-                                        <TabsTrigger value="1d" disabled={!isConfigured}>Diário</TabsTrigger>
-                                        <TabsTrigger value="1wk" disabled={!isConfigured}>Semanal</TabsTrigger>
-                                        <TabsTrigger value="1mo" disabled={!isConfigured}>Mensal</TabsTrigger>
-                                    </TabsList>
-                                </Tabs>
-                            </div>
                             <IndexHistoryTable data={indexHistoryData} loading={loadingHistory} isConfigured={isConfigured} />
                         </CardContent>
                     </AccordionContent>

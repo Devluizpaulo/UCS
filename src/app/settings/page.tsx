@@ -12,13 +12,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertTriangle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getFormulaParameters, saveFormulaParameters } from '@/lib/formula-service';
 import { getApiConfig, saveApiConfig } from '@/lib/api-config-service';
 import type { FormulaParameters, MarketDataConfig, CommodityConfig, CommodityMap } from '@/lib/types';
 import { getCommodityConfig, saveCommodityConfig } from '@/lib/commodity-config-service';
 import { CommoditySourcesTable } from '@/components/commodity-sources-table';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 
 const formulaSchema = z.object({
@@ -52,6 +53,7 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('formula');
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
+  const [showFormulaAlert, setShowFormulaAlert] = useState(false);
   const { toast } = useToast();
   const [commodityConfig, setCommodityConfig] = useState<CommodityMap | null>(null);
 
@@ -93,12 +95,14 @@ export default function SettingsPage() {
 
   const onFormulaSubmit = async (data: Omit<FormulaParameters, 'isConfigured'>) => {
     setIsLoading(true);
+    setShowFormulaAlert(false);
     try {
       await saveFormulaParameters(data);
       toast({
         title: 'Fórmula Atualizada',
         description: 'Os parâmetros da fórmula do índice foram salvos com sucesso.',
       });
+      setShowFormulaAlert(true);
     } catch (error) {
       console.error('Error saving formula parameters:', error);
       toast({
@@ -160,6 +164,15 @@ export default function SettingsPage() {
     if (isFetching) return <SettingsSkeleton />;
     return (
         <form onSubmit={formulaForm.handleSubmit(onFormulaSubmit)} className="space-y-8">
+            {showFormulaAlert && (
+                 <Alert>
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle>Parâmetros Salvos!</AlertTitle>
+                    <AlertDescription>
+                        Os parâmetros foram salvos. O valor do índice foi recalculado. Por favor, retorne ao painel para ver os valores atualizados.
+                    </AlertDescription>
+                </Alert>
+            )}
             <div>
                 <h3 className="text-lg font-medium mb-4">Parâmetros da Madeira</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
