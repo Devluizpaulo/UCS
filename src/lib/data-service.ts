@@ -15,7 +15,7 @@ export async function runScenarioSimulation(asset: string, changeType: 'percenta
     return simulateScenario({ asset, changeType, value });
 }
 
-export async function runFetchAndSavePrices(assetName: string): Promise<{success: boolean, message: string}> {
+export async function runFetchAndSavePrices(assetName?: string): Promise<{success: boolean, message: string}> {
     const { fetchAndSavePricesFlow } = await import('@/ai/flows/fetch-and-save-prices-flow');
     return fetchAndSavePricesFlow({ assetName });
 }
@@ -65,27 +65,21 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
       const q = query(pricesCollectionRef, orderBy('savedAt', 'desc'), limit(2));
       const querySnapshot = await getDocs(q);
 
-      if (querySnapshot.size < 2) {
-        // Not enough data, just add the latest price if available
-         if (querySnapshot.size === 1) {
-             const latestDoc = querySnapshot.docs[0];
-             prices.push({
-                ...latestDoc.data(),
-                id: latestDoc.id,
-                change: 0,
-                absoluteChange: 0,
-            } as CommodityPriceData);
-         }
+      if (querySnapshot.empty) {
         continue;
       }
-
+      
       const latestDoc = querySnapshot.docs[0];
-      const previousDoc = querySnapshot.docs[1];
       const latestData = latestDoc.data();
-      const previousData = previousDoc.data();
+      let change = 0;
+      let absoluteChange = 0;
 
-      const absoluteChange = latestData.price - previousData.price;
-      const change = previousData.price !== 0 ? (absoluteChange / previousData.price) * 100 : 0;
+      if (querySnapshot.size > 1) {
+        const previousDoc = querySnapshot.docs[1];
+        const previousData = previousDoc.data();
+        absoluteChange = latestData.price - previousData.price;
+        change = previousData.price !== 0 ? (absoluteChange / previousData.price) * 100 : 0;
+      }
       
       const lastUpdatedTimestamp = latestData.savedAt as Timestamp;
       const lastUpdated = lastUpdatedTimestamp ? lastUpdatedTimestamp.toDate().toLocaleString('pt-BR') : 'N/A';
@@ -111,12 +105,14 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
 
 export async function getUcsIndexValue(interval: HistoryInterval): Promise<{ latest: UcsData, history: ChartData[] }> {
     const { calculateUcsIndex } = await import('@/ai/flows/calculate-ucs-index-flow');
+    
+    // This will calculate the index based on latest prices in DB.
     const ucsResult = await calculateUcsIndex();
 
     const historyCollectionRef = collection(db, 'ucs_index_history');
     
     // Determine limit based on interval
-    const limitMap = { '1d': 30, '1wk': 26, '1mo': 24 };
+    const limitMap = { '1d': 30, '1wk': 26, '1mo': 60 };
     const qLimit = limitMap[interval] || 30;
 
     const q = query(historyCollectionRef, orderBy('savedAt', 'desc'), limit(qLimit));

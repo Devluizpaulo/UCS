@@ -1,8 +1,9 @@
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Settings, Loader2 } from 'lucide-react';
+import { Settings, Loader2, RefreshCw } from 'lucide-react';
 import { PageHeader } from '@/components/page-header';
 import { UcsIndexChart } from '@/components/ucs-index-chart';
 import type { ChartData, CommodityPriceData, UcsData, HistoryInterval } from '@/lib/types';
@@ -31,20 +32,22 @@ export function DashboardPage() {
   const [historyInterval, setHistoryInterval] = useState<HistoryInterval>('1d');
   const [indexHistoryData, setIndexHistoryData] = useState<ChartData[]>([]);
   const [updatingAssets, setUpdatingAssets] = useState<Set<string>>(new Set());
+  const [isUpdatingAll, setIsUpdatingAll] = useState(false);
 
 
-  const fetchDashboardData = useCallback(async () => {
+  const fetchDashboardData = useCallback(async (interval: HistoryInterval = '1d') => {
       setLoading(true);
       setLoadingHistory(true);
       try {
         const [ucsResult, pricesResult] = await Promise.all([
-          getUcsIndexValue('1d'), // Fetch with initial interval
+          getUcsIndexValue(interval),
           getCommodityPrices()
         ]);
         
         setUcsData(ucsResult.latest);
+        setIndexHistoryData(ucsResult.history);
         setCommodities(pricesResult);
-        setIndexHistoryData(ucsResult.history); // Set initial history from the main call
+        
 
       } catch (error) {
         console.error("Failed to fetch dashboard data:", error);
@@ -55,7 +58,7 @@ export function DashboardPage() {
         });
       } finally {
         setLoading(false);
-        setLoadingHistory(false); // Initial history is also loaded
+        setLoadingHistory(false);
       }
   }, [toast]);
 
@@ -67,7 +70,7 @@ export function DashboardPage() {
         if (result.success) {
             toast({ title: 'Sucesso!', description: result.message });
             // Refetch all data to ensure consistency across the dashboard
-            await fetchDashboardData();
+            await fetchDashboardData(historyInterval);
         } else {
             throw new Error(result.message);
         }
@@ -81,10 +84,30 @@ export function DashboardPage() {
             return next;
         });
     }
-  }, [toast, fetchDashboardData]);
+  }, [toast, fetchDashboardData, historyInterval]);
+
+  const handleUpdateAll = async () => {
+    setIsUpdatingAll(true);
+    toast({ title: 'Atualizando Tudo...', description: `Buscando todas as cotações. Isso pode levar um momento.` });
+    try {
+        const result = await runFetchAndSavePrices(); // Call without assetName
+        if (result.success) {
+            toast({ title: 'Sucesso!', description: result.message });
+            await fetchDashboardData(historyInterval);
+        } else {
+            throw new Error(result.message);
+        }
+    } catch (error: any) {
+        console.error('Full update failed:', error);
+        toast({ variant: 'destructive', title: 'Falha na Atualização Geral', description: error.message });
+    } finally {
+        setIsUpdatingAll(false);
+    }
+  };
 
 
   const fetchIndexHistory = useCallback(async (interval: HistoryInterval) => {
+    if(!isConfigured) return;
     setLoadingHistory(true);
     try {
         const result = await getUcsIndexValue(interval);
@@ -99,24 +122,31 @@ export function DashboardPage() {
     } finally {
         setLoadingHistory(false);
     }
-  }, [toast]);
+  }, [toast, ucsData?.isConfigured]);
 
   useEffect(() => {
     fetchDashboardData();
   }, [fetchDashboardData]);
 
   useEffect(() => {
-    if (!loading && ucsData?.isConfigured) {
-        fetchIndexHistory(historyInterval);
-    }
-  }, [historyInterval, ucsData?.isConfigured, loading, fetchIndexHistory]);
+    fetchIndexHistory(historyInterval);
+  }, [historyInterval, fetchIndexHistory]);
   
   const latestValue = ucsData?.indexValue ?? 0;
   const isConfigured = ucsData?.isConfigured ?? false;
 
   return (
     <div className="flex min-h-screen w-full flex-col">
-      <PageHeader title="Painel" />
+      <PageHeader title="Painel">
+        <Button onClick={handleUpdateAll} disabled={isUpdatingAll || !isConfigured}>
+            {isUpdatingAll ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+                <RefreshCw className="mr-2 h-4 w-4" />
+            )}
+            Atualizar Tudo
+        </Button>
+      </PageHeader>
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
        
         {!loading && !isConfigured && (
@@ -176,11 +206,11 @@ export function DashboardPage() {
                     <AccordionContent>
                         <CardContent>
                              <div className="flex justify-end mb-4">
-                                <Tabs defaultValue="1d" onValueChange={(value) => setHistoryInterval(value as HistoryInterval)} className="w-auto">
+                                <Tabs defaultValue={historyInterval} onValueChange={(value) => setHistoryInterval(value as HistoryInterval)} className="w-auto">
                                     <TabsList>
                                         <TabsTrigger value="1d" disabled={!isConfigured}>Diário</TabsTrigger>
                                         <TabsTrigger value="1wk" disabled={!isConfigured}>Semanal</TabsTrigger>
-                                        <TabsTrigger value="1mo" disabled={!isConfigured}>Mensal</TabsTrigger>
+                                        <TabsTrigger value="1mo" disabled={!isConfigured}>Anual</TabsTrigger>
                                     </TabsList>
                                 </Tabs>
                             </div>
