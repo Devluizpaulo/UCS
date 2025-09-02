@@ -4,7 +4,7 @@
  * @fileOverview A service for managing the UCS Index formula parameters in Firestore.
  */
 
-import { db } from './firebase-config';
+import { db } from './firebase-admin-config'; // Use server-side admin SDK
 import { doc, getDoc, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import type { FormulaParameters } from './types';
 

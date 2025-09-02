@@ -4,7 +4,7 @@
  * @fileOverview A service for managing API configurations in Firestore.
  */
 
-import { db } from './firebase-config';
+import { db } from './firebase-admin-config'; // Use server-side admin SDK
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import type { ApiConfig } from './types';
 import { MARKETDATA_CONFIG as defaultConfig } from './marketdata-config';

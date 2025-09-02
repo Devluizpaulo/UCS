@@ -5,7 +5,7 @@
  * This replaces the static COMMODITY_TICKER_MAP file.
  */
 
-import { db } from './firebase-config';
+import { db } from './firebase-admin-config'; // Use server-side admin SDK
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import type { CommodityMap, FullCommodityConfig } from './types';
 import { COMMODITY_TICKER_MAP as defaultConfigMap } from './marketdata-config';

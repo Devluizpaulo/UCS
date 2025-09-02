@@ -4,7 +4,7 @@
 import type { ChartData, CommodityPriceData, ScenarioResult, HistoricalQuote, HistoryInterval, UcsData, RiskAnalysisData, RiskMetric, GenerateReportInput, GenerateReportOutput, SimulateScenarioInput } from './types';
 import { getCommodityConfig } from './commodity-config-service';
 import { calculate_volatility, calculate_correlation } from './statistics';
-import { db } from './firebase-config';
+import { db } from './firebase-admin-config'; // Use server-side admin SDK
 import { collection, query, orderBy, limit, getDocs, Timestamp } from 'firebase/firestore';
 import { getMarketDataHistory } from './marketdata-service';
 

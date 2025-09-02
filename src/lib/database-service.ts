@@ -7,7 +7,7 @@
  * - saveUcsIndexData - Saves the calculated UCS index value to Firestore.
  */
 
-import { db } from './firebase-config';
+import { db } from './firebase-admin-config'; // Use server-side admin SDK
 import { collection, doc, setDoc, serverTimestamp, query, orderBy, limit, getDocs, Timestamp } from 'firebase/firestore';
 import type { CommodityPriceData } from './types';
 
