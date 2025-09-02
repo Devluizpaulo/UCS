@@ -21,6 +21,7 @@ import { getCommodities, saveCommodity, deleteCommodity } from '@/lib/commodity-
 import { CommoditySourcesTable } from '@/components/commodity-sources-table';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { EditCommodityModal } from '@/components/edit-commodity-modal';
+import { fetchAndSavePrices } from '@/ai/flows/fetch-and-save-prices-flow';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -123,15 +124,27 @@ export default function SettingsPage() {
       await saveFormulaParameters(data);
       toast({
         title: 'Fórmula Atualizada',
-        description: 'Os parâmetros da fórmula do índice foram salvos com sucesso.',
+        description: 'Buscando cotações e recalculando o índice. Aguarde um momento.',
       });
-      setShowFormulaAlert(true);
+
+      // Trigger the initial data fetch after saving the formula
+      const result = await fetchAndSavePrices({});
+      if (result.success) {
+         toast({
+            title: 'Índice Calculado!',
+            description: 'Os dados foram buscados e o índice foi calculado com sucesso. Volte ao painel para ver o resultado.',
+         });
+         setShowFormulaAlert(true);
+      } else {
+         throw new Error(result.message);
+      }
+
     } catch (error) {
-      console.error('Error saving formula parameters:', error);
+      console.error('Error saving formula parameters or fetching prices:', error);
       toast({
         variant: 'destructive',
         title: 'Erro ao Salvar',
-        description: 'Não foi possível salvar os parâmetros da fórmula. Tente novamente.',
+        description: 'Não foi possível salvar os parâmetros ou buscar as cotações. Tente novamente.',
       });
     } finally {
       setIsLoading(false);

@@ -90,17 +90,9 @@ export async function fetchAndSavePrices(input: z.infer<typeof FetchAndSavePrice
         console.log('[FLOW] Calculating UCS Index value...');
         const ucsResult = await calculateUcsIndex();
 
-        let calculatedIndexValue: number | undefined;
-        // 4. Save the new UCS Index value if the formula is configured
-        if (ucsResult.isConfigured) {
-          await saveUcsIndexData(ucsResult.indexValue);
-          calculatedIndexValue = ucsResult.indexValue;
-          console.log(`[FLOW] Successfully calculated and saved UCS Index value: ${ucsResult.indexValue}`);
-        } else {
-          console.log('[FLOW] UCS Index not calculated because formula is not configured.');
-        }
-
-        console.log('[FLOW] Cotações e Índice UCS atualizados com sucesso.');
+        // 4. Save the new UCS Index value. If the formula is not configured, this will save a value of 0.
+        await saveUcsIndexData(ucsResult);
+        console.log(`[FLOW] Successfully calculated and saved UCS Index value: ${ucsResult.indexValue}`);
 
         const message = assetName 
           ? `${assetName} foi atualizado e o índice recalculado.`
@@ -110,7 +102,7 @@ export async function fetchAndSavePrices(input: z.infer<typeof FetchAndSavePrice
           success: true,
           message,
           savedCount: fetchedPrices.length,
-          calculatedIndex: calculatedIndexValue,
+          calculatedIndex: ucsResult.indexValue,
         };
 
       } catch (error) {
