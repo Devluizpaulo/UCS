@@ -49,7 +49,9 @@ async function fetchFromApi(endpoint: string, params: URLSearchParams, timeout: 
         
         const data = await response.json();
         if (data.s !== 'ok') {
-            throw new Error(`API returned an error: ${data.message || 'Unknown error'}`);
+            // MarketData can sometimes return a string error message.
+            const errorMessage = typeof data.errmsg === 'string' ? data.errmsg : 'Unknown API error';
+            throw new Error(`API returned an error: ${errorMessage}`);
         }
         
         return data;
@@ -105,19 +107,19 @@ export async function getMarketDataHistory(ticker: string, resolution: 'D' | 'W'
     return data;
 }
 
-export async function getMarketDataCandles(commodityNames: string[]): Promise<CommodityPriceData[]> {
+export async function getMarketDataCandles(assetsToFetch: {name: string, ticker: string}[]): Promise<CommodityPriceData[]> {
     const { commodityMap } = await getCommodityConfig();
     const priceData: CommodityPriceData[] = [];
 
-    for (const name of commodityNames) {
+    for (const asset of assetsToFetch) {
         try {
-            const commodityInfo = commodityMap[name];
+            const commodityInfo = commodityMap[asset.name];
             if (!commodityInfo) continue;
 
             // Using history to get the last closing price
-            const history = await getMarketDataHistory(commodityInfo.ticker, 'D', 2);
+            const history = await getMarketDataHistory(asset.ticker, 'D', 2);
             if (!history || history.c.length < 2) {
-                console.warn(`[MarketData] Not enough historical data for ${name} to calculate change.`);
+                console.warn(`[MarketData] Not enough historical data for ${asset.name} to calculate change.`);
                 continue;
             }
             
@@ -129,8 +131,8 @@ export async function getMarketDataCandles(commodityNames: string[]): Promise<Co
 
             priceData.push({
                 id: '', // Firestore will generate
-                name,
-                ticker: commodityInfo.ticker,
+                name: asset.name,
+                ticker: asset.ticker,
                 price: lastPrice,
                 change,
                 absoluteChange,
@@ -139,7 +141,7 @@ export async function getMarketDataCandles(commodityNames: string[]): Promise<Co
             });
 
         } catch (error) {
-            console.error(`[MarketData] Failed to fetch candle data for ${name}:`, error);
+            console.error(`[MarketData] Failed to fetch candle data for ${asset.name}:`, error);
         }
     }
 

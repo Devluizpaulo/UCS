@@ -44,7 +44,6 @@ export const fetchAndSavePricesFlow = ai.defineFlow(
       console.log(`[FLOW] Starting data processing... Mode: ${assetName ? `Single asset (${assetName})` : 'All assets'}`);
       
       const { commodityMap } = await getCommodityConfig();
-      const assetsToFetch = assetName ? [assetName] : Object.keys(commodityMap);
       let fetchedPrices: CommodityPriceData[] = [];
 
       // 1. Fetch latest commodity prices
@@ -85,7 +84,8 @@ export const fetchAndSavePricesFlow = ai.defineFlow(
 
       } else {
         // --- All Assets Update Logic (Scheduled Job) ---
-        console.log(`[FLOW] Fetching prices for: ${assetsToFetch.join(', ')}`);
+        const assetsToFetch = Object.values(commodityMap).map(c => ({ name: c.name, ticker: c.ticker }));
+        console.log(`[FLOW] Fetching prices for: ${assetsToFetch.map(a => a.name).join(', ')}`);
         fetchedPrices = await getMarketDataCandles(assetsToFetch);
       }
       
