@@ -149,8 +149,7 @@ export function DashboardPage() {
 
   useEffect(() => {
     let messageInterval: NodeJS.Timeout;
-    
-    // This is the main initialisation effect
+
     const initialFetch = async () => {
         setIsInitialising(true);
         let messageIndex = 0;
@@ -160,15 +159,12 @@ export function DashboardPage() {
         }, 2000);
 
         try {
-            const result = await runFetchAndSavePrices(); // Update all prices
+            await runFetchAndSavePrices(); // Update all prices
             await fetchDashboardData(); // Now fetch the processed data to display
-            if (!result.success) {
-                 throw new Error(result.message);
-            }
         } catch (error: any) {
              console.error('Initial data fetch failed:', error);
              toast({ variant: 'destructive', title: 'Falha na Busca de Dados', description: "Não foi possível buscar os dados. Exibindo as últimas informações salvas." });
-             await fetchDashboardData();
+             await fetchDashboardData(); // Try to fetch whatever is in the DB
         } finally {
             clearInterval(messageInterval);
             setIsInitialising(false);
@@ -177,9 +173,9 @@ export function DashboardPage() {
     
     initialFetch();
 
-    // Cleanup interval on unmount
     return () => clearInterval(messageInterval);
-  }, [fetchDashboardData, toast]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run only once on mount
 
 
   useEffect(() => {
@@ -318,3 +314,5 @@ export function DashboardPage() {
     </div>
   );
 }
+
+    
