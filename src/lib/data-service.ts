@@ -1,57 +1,12 @@
 
 'use server';
 
-import type { ChartData, CommodityPriceData, ScenarioResult, HistoricalQuote, HistoryInterval, UcsData, RiskAnalysisData, RiskMetric, GenerateReportInput, GenerateReportOutput, CommodityConfig, FormulaParameters } from './types';
+import type { ChartData, CommodityPriceData, HistoryInterval, UcsData, RiskAnalysisData, RiskMetric, CommodityConfig, FormulaParameters } from './types';
 import type { CalculateUcsIndexOutput } from '@/ai/flows/calculate-ucs-index-flow';
 import { getCommodities } from './commodity-config-service';
 import { calculate_volatility, calculate_correlation } from './statistics';
 import { db } from './firebase-admin-config';
 import { collection, query, orderBy, limit, getDocs, Timestamp } from 'firebase/firestore';
-import { getMarketDataHistory } from './marketdata-service';
-
-
-// Functions for the "Analysis" page that call Genkit flows directly.
-export async function runScenarioSimulation(asset: string, changeType: 'percentage' | 'absolute', value: number): Promise<ScenarioResult> {
-    const { simulateScenario } = await import('@/ai/flows/simulate-scenario-flow');
-    return simulateScenario({ asset, changeType, value });
-}
-
-export async function runFetchAndSavePrices(assetName?: string): Promise<{success: boolean, message: string}> {
-    const { fetchAndSavePrices } = await import('@/ai/flows/fetch-and-save-prices-flow');
-    return fetchAndSavePrices({ assetName });
-}
-
-
-export async function getRiskAnalysisData(): Promise<RiskAnalysisData> {
-    const commodities = await getCommodities();
-    const ucsHistoryData = await getUcsIndexValue('1d'); // Use daily data for correlation
-    const ucsReturns = ucsHistoryData.history.map(d => d.value).slice(1).map((v, i, a) => (v / a[i-1]) -1);
-
-    const metrics: RiskMetric[] = [];
-
-    for (const asset of commodities) {
-        try {
-            const assetHistory = await getAssetHistoricalData(asset.name, '1d');
-            if (assetHistory.length < 2) continue;
-
-            const assetReturns = assetHistory.map(d => d.close).slice(1).map((v, i, a) => (v / a[i-1]) -1);
-            const volatility = calculate_volatility(assetReturns);
-            
-            // Ensure array lengths match for correlation
-            const correlation = calculate_correlation(ucsReturns.slice(-assetReturns.length), assetReturns);
-            
-            metrics.push({ asset: asset.name, volatility, correlation });
-        } catch (error) {
-            console.error(`Could not analyze risk for ${asset.name}:`, error);
-        }
-    }
-    return { metrics };
-}
-
-export async function generateReport(input: GenerateReportInput): Promise<GenerateReportOutput> {
-  const { generateReport } = await import('@/ai/flows/generate-report-flow');
-  return generateReport(input);
-}
 
 
 // --- Functions to get data from FIRESTORE ---
@@ -139,53 +94,6 @@ export async function getUcsIndexValue(interval: HistoryInterval = '1d'): Promis
 }
 
 
-// Function to get detailed historical data for a single asset for the modal
-export async function getAssetHistoricalData(assetName: string, interval: HistoryInterval): Promise<HistoricalQuote[]> {
-    const commodities = await getCommodities();
-    const commodityInfo = commodities.find(c => c.name === assetName);
-
-    if (!commodityInfo) {
-        throw new Error(`Asset ${assetName} not found in config.`);
-    }
-  
-    const resolutionMap = { '1d': 'D', '1wk': 'W', '1mo': 'M' };
-    const countbackMap = { '1d': 90, '1wk': 52, '1mo': 60 }; // 3 months, 1 year, 5 years
-
-    try {
-        const history = await getMarketDataHistory(
-            commodityInfo.ticker,
-            resolutionMap[interval] as 'D' | 'W' | 'M',
-            countbackMap[interval]
-        );
-
-        if (history.s !== 'ok') {
-            throw new Error(`MarketData API returned error for ${assetName}: ${history.errmsg || 'Unknown error'}`);
-        }
-    
-        const formattedHistory: HistoricalQuote[] = [];
-        for (let i = 0; i < history.t.length; i++) {
-            const prevClose = i > 0 ? history.c[i - 1] : history.o[i];
-            const change = prevClose !== 0 ? ((history.c[i] - prevClose) / prevClose) * 100 : 0;
-            formattedHistory.push({
-                date: new Date(history.t[i] * 1000).toLocaleDateString('pt-BR'),
-                open: history.o[i],
-                high: history.h[i],
-                low: history.l[i],
-                close: history.c[i],
-                volume: history.v[i].toString(),
-                change: change,
-            });
-        }
-    
-        return formattedHistory;
-
-    } catch (error) {
-        console.error(`Failed to get historical data for ${assetName}:`, error);
-        return []; // Return empty array on failure
-    }
-}
-
-
 /**
  * Pure calculation function for the UCS Index. This is not a flow and can be called from anywhere.
  * @param prices - A dictionary of asset names to their latest prices.
@@ -269,4 +177,31 @@ export async function calculateIndex(prices: { [key: string]: number }, params: 
             soja: parseFloat((renda_soja / params.FATOR_ARREND).toFixed(2)),
         }
     };
+}
+
+
+export async function getRiskAnalysisData(): Promise<RiskAnalysisData> {
+    const commodities = await getCommodities();
+    const ucsHistoryData = await getUcsIndexValue('1d'); // Use daily data for correlation
+    const ucsReturns = ucsHistoryData.history.map(d => d.value).slice(1).map((v, i, a) => (v / a[i-1]) -1);
+
+    const metrics: RiskMetric[] = [];
+
+    for (const asset of commodities) {
+        try {
+            const assetHistory = await getAssetHistoricalData(asset.name, '1d');
+            if (assetHistory.length < 2) continue;
+
+            const assetReturns = assetHistory.map(d => d.close).slice(1).map((v, i, a) => (v / a[i-1]) -1);
+            const volatility = calculate_volatility(assetReturns);
+            
+            // Ensure array lengths match for correlation
+            const correlation = calculate_correlation(ucsReturns.slice(-assetReturns.length), assetReturns);
+            
+            metrics.push({ asset: asset.name, volatility, correlation });
+        } catch (error) {
+            console.error(`Could not analyze risk for ${asset.name}:`, error);
+        }
+    }
+    return { metrics };
 }

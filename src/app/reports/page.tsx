@@ -13,8 +13,15 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { Download, FileText, Loader2 } from 'lucide-react';
-import { generateReport } from '@/lib/data-service';
+import type { GenerateReportInput } from '@/lib/types';
 import { Textarea } from '@/components/ui/textarea';
+
+
+async function generateReport(input: GenerateReportInput) {
+  const { generateReport } = await import('@/ai/flows/generate-report-flow');
+  return generateReport(input);
+}
+
 
 const reportSchema = z.object({
   reportType: z.enum(['index_performance', 'asset_performance'], {

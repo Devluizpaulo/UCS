@@ -1,3 +1,4 @@
+
 'use client';
 import { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
@@ -9,9 +10,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { runScenarioSimulation } from '@/lib/data-service';
 import type { ScenarioResult, SimulateScenarioInput } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
+
+
+async function runScenarioSimulation(asset: string, changeType: 'percentage' | 'absolute', value: number): Promise<ScenarioResult> {
+    const { simulateScenario } = await import('@/ai/flows/simulate-scenario-flow');
+    return simulateScenario({ asset, changeType, value });
+}
 
 const commodities = [
     // We only allow simulation on assets that are part of the formula

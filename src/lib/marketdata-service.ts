@@ -1,9 +1,9 @@
 
 'use server';
 
-import type { CommodityPriceData, HistoryInterval, MarketDataQuoteResponse, MarketDataHistoryResponse } from './types';
+import type { HistoryInterval, MarketDataQuoteResponse, MarketDataHistoryResponse, HistoricalQuote } from './types';
 import { getApiConfig } from './api-config-service';
-import { getCommodityConfig } from './commodity-config-service';
+import { getCommodities } from './commodity-config-service';
 import { collection, getDocs, limit, orderBy, query } from 'firebase/firestore';
 import { db } from './firebase-config';
 
@@ -107,3 +107,49 @@ export async function getMarketDataHistory(ticker: string, resolution: 'D' | 'W'
     return data;
 }
 
+
+// Function to get detailed historical data for a single asset for the modal
+export async function getAssetHistoricalData(assetName: string, interval: HistoryInterval): Promise<HistoricalQuote[]> {
+    const commodities = await getCommodities();
+    const commodityInfo = commodities.find(c => c.name === assetName);
+
+    if (!commodityInfo) {
+        throw new Error(`Asset ${assetName} not found in config.`);
+    }
+  
+    const resolutionMap = { '1d': 'D', '1wk': 'W', '1mo': 'M' };
+    const countbackMap = { '1d': 90, '1wk': 52, '1mo': 60 }; // 3 months, 1 year, 5 years
+
+    try {
+        const history = await getMarketDataHistory(
+            commodityInfo.ticker,
+            resolutionMap[interval] as 'D' | 'W' | 'M',
+            countbackMap[interval]
+        );
+
+        if (history.s !== 'ok') {
+            throw new Error(`MarketData API returned error for ${assetName}: ${history.errmsg || 'Unknown error'}`);
+        }
+    
+        const formattedHistory: HistoricalQuote[] = [];
+        for (let i = 0; i < history.t.length; i++) {
+            const prevClose = i > 0 ? history.c[i - 1] : history.o[i];
+            const change = prevClose !== 0 ? ((history.c[i] - prevClose) / prevClose) * 100 : 0;
+            formattedHistory.push({
+                date: new Date(history.t[i] * 1000).toLocaleDateString('pt-BR'),
+                open: history.o[i],
+                high: history.h[i],
+                low: history.l[i],
+                close: history.c[i],
+                volume: history.v[i].toString(),
+                change: change,
+            });
+        }
+    
+        return formattedHistory;
+
+    } catch (error) {
+        console.error(`Failed to get historical data for ${assetName}:`, error);
+        return []; // Return empty array on failure
+    }
+}

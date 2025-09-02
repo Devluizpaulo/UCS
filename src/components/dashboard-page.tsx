@@ -8,7 +8,7 @@ import { PageHeader } from '@/components/page-header';
 import { UcsIndexChart } from '@/components/ucs-index-chart';
 import type { ChartData, CommodityPriceData, UcsData, HistoryInterval } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { getCommodityPrices, getUcsIndexValue, runFetchAndSavePrices } from '@/lib/data-service';
+import { getCommodityPrices, getUcsIndexValue } from '@/lib/data-service';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { UnderlyingAssetsTable } from './underlying-assets-table';
 import { IndexHistoryTable } from './index-history-table';
@@ -20,6 +20,12 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
+
+
+async function runFetchAndSavePrices(assetName?: string): Promise<{success: boolean, message: string}> {
+    const { fetchAndSavePrices } = await import('@/ai/flows/fetch-and-save-prices-flow');
+    return fetchAndSavePrices({ assetName });
+}
 
 
 const loadingMessages = [
