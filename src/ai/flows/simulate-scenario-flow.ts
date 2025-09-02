@@ -10,9 +10,9 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { getCommodityPrices, calculateIndex } from '@/lib/data-service';
+import { getCommodityPrices } from '@/lib/data-service';
 import type { ScenarioResult, SimulateScenarioInput } from '@/lib/types';
-import { getFormulaParameters } from '@/lib/formula-service';
+import { getFormulaParameters, calculateIndex } from '@/lib/formula-service';
 
 const SimulateScenarioInputSchema = z.object({
     asset: z.string(),
@@ -55,7 +55,7 @@ export async function simulateScenario(input: SimulateScenarioInput): Promise<Sc
         const originalAssetPrice = originalPrices[asset] || 0;
 
         // 2. Calculate the original index value using the pure function
-        const originalIndexResult = await calculateIndex(originalPrices, params);
+        const originalIndexResult = calculateIndex(originalPrices, params);
         const originalIndexValue = originalIndexResult.indexValue;
 
         // 3. Create the new set of prices based on the scenario
@@ -67,7 +67,7 @@ export async function simulateScenario(input: SimulateScenarioInput): Promise<Sc
         }
 
         // 4. Calculate the new index value using the pure function
-        const newIndexResult = await calculateIndex(simulatedPrices, params);
+        const newIndexResult = calculateIndex(simulatedPrices, params);
         const newIndexValue = newIndexResult.indexValue;
 
         // 5. Calculate the percentage change

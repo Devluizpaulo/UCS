@@ -5,10 +5,40 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { getRiskAnalysisData } from '@/lib/data-service';
 import type { RiskAnalysisData } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { Skeleton } from './ui/skeleton';
+import { getCommodities } from '@/lib/commodity-config-service';
+import { getUcsIndexValue } from '@/lib/data-service';
+import { getAssetHistoricalData } from '@/lib/marketdata-service';
+import { calculate_volatility, calculate_correlation } from '@/lib/statistics';
+
+async function getRiskAnalysisData(): Promise<RiskAnalysisData> {
+    const commodities = await getCommodities();
+    const ucsHistoryData = await getUcsIndexValue('1d'); // Use daily data for correlation
+    const ucsReturns = ucsHistoryData.history.map(d => d.value).slice(1).map((v, i, a) => (v / a[i-1]) -1);
+
+    const metrics = [];
+
+    for (const asset of commodities) {
+        try {
+            const assetHistory = await getAssetHistoricalData(asset.name, '1d');
+            if (assetHistory.length < 2) continue;
+
+            const assetReturns = assetHistory.map(d => d.close).slice(1).map((v, i, a) => (v / a[i-1]) -1);
+            const volatility = calculate_volatility(assetReturns);
+            
+            // Ensure array lengths match for correlation
+            const correlation = calculate_correlation(ucsReturns.slice(-assetReturns.length), assetReturns);
+            
+            metrics.push({ asset: asset.name, volatility, correlation });
+        } catch (error) {
+            console.error(`Could not analyze risk for ${asset.name}:`, error);
+        }
+    }
+    return { metrics };
+}
+
 
 const getVolatilityBadge = (volatility: number) => {
     if (volatility > 4) return { variant: 'destructive', label: 'Alta' };
