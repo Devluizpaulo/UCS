@@ -140,7 +140,7 @@ export function DashboardPage() {
   }, [toast, ucsData?.isConfigured]);
 
   useEffect(() => {
-    let messageInterval: NodeJS.Timeout;
+    let messageInterval: NodeJS.Timeout | undefined;
 
     const initialFetch = async () => {
         setIsInitialising(true);
@@ -151,21 +151,27 @@ export function DashboardPage() {
         }, 2000);
 
         try {
-            await runFetchAndSavePrices();
+            // Data is now primarily loaded by the scheduled job.
+            // This fetch just gets the latest data from the DB.
             await fetchDashboardData();
         } catch (error: any) {
              console.error('Initial data fetch failed:', error);
-             toast({ variant: 'destructive', title: 'Falha na Busca de Dados', description: "Não foi possível buscar os dados. Exibindo as últimas informações salvas." });
-             await fetchDashboardData();
+             toast({ variant: 'destructive', title: 'Falha na Busca de Dados', description: "Não foi possível buscar os dados. Verifique a conexão e tente atualizar." });
         } finally {
-            clearInterval(messageInterval);
+            if (messageInterval) {
+                clearInterval(messageInterval);
+            }
             setIsInitialising(false);
         }
     };
     
     initialFetch();
 
-    return () => clearInterval(messageInterval);
+    return () => {
+        if (messageInterval) {
+            clearInterval(messageInterval)
+        }
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
