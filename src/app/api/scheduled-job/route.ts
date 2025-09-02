@@ -10,9 +10,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
-  // 2. Run the Genkit flow to fetch and save data
+  // 2. Run the Genkit flow to fetch and save data for ALL assets.
   try {
-    const result = await fetchAndSavePricesFlow();
+    const result = await fetchAndSavePricesFlow({}); // Empty input means all assets
     
     if (result.success) {
         return NextResponse.json({ message: result.message, savedCount: result.savedCount });

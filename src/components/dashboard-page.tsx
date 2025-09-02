@@ -3,12 +3,12 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Loader2, Settings, ChevronDown, RefreshCw } from 'lucide-react';
+import { Settings, Loader2 } from 'lucide-react';
 import { PageHeader } from '@/components/page-header';
 import { UcsIndexChart } from '@/components/ucs-index-chart';
 import type { ChartData, CommodityPriceData, UcsData, HistoryInterval } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { getCommodityPrices, getUcsIndexValue, updateSingleCommodity } from '@/lib/data-service';
+import { getCommodityPrices, getUcsIndexValue, runFetchAndSavePrices } from '@/lib/data-service';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { UnderlyingAssetsTable } from './underlying-assets-table';
 import { IndexHistoryTable } from './index-history-table';
@@ -62,10 +62,10 @@ export function DashboardPage() {
     setUpdatingAssets(prev => new Set(prev).add(assetName));
     toast({ title: 'Atualizando...', description: `Buscando a cotação mais recente para ${assetName}.` });
     try {
-        const result = await updateSingleCommodity(assetName);
+        const result = await runFetchAndSavePrices(assetName);
         if (result.success) {
             toast({ title: 'Sucesso!', description: result.message });
-            // Refetch all data to ensure consistency
+            // Refetch all data to ensure consistency across the dashboard
             await fetchDashboardData();
         } else {
             throw new Error(result.message);

@@ -5,10 +5,7 @@ import type { ChartData, CommodityPriceData, ScenarioResult, HistoricalQuote, Hi
 import { getCommodityConfig } from './commodity-config-service';
 import { calculate_volatility, calculate_correlation } from './statistics';
 import { db } from './firebase-config';
-import { collection, query, orderBy, limit, getDocs, Timestamp, getDoc, doc } from 'firebase/firestore';
-import { saveCommodityData } from './database-service';
-import { scrapeUrlFlow } from '@/ai/flows/scrape-commodity-price-flow';
-import { getMarketDataQuote, getMarketDataHistory } from './marketdata-service';
+import { collection, query, orderBy, limit, getDocs, Timestamp } from 'firebase/firestore';
 
 
 // Functions for the "Analysis" page that call Genkit flows directly.
@@ -104,16 +101,16 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
 
 /**
  * Reads the latest calculated UCS index data and its history from Firestore.
- * This function DOES NOT perform any calculations.
+ * This function DOES NOT perform any calculations itself. It reads what's been saved.
  */
 export async function getUcsIndexValue(interval: HistoryInterval = '1d'): Promise<{ history: ChartData[], latest: UcsData }> {
     const { calculateUcsIndex } = await import('@/ai/flows/calculate-ucs-index-flow');
     
-    // We still call calculateUcsIndex on the fly to get the composition details (VM, VUS, CRS).
-    // The main indexValue displayed will be the one from the database.
+    // We call calculateUcsIndex on the fly to get the composition details (VM, VUS, CRS)
+    // based on the very latest data in the database.
     const compositionDetails = await calculateUcsIndex();
 
-    // Fetch the single most recent index value from the history collection
+    // The main indexValue displayed, however, will be the one from the database's history for consistency.
     const historyCollectionRef = collection(db, 'ucs_index_history');
     const q = query(historyCollectionRef, orderBy('savedAt', 'desc'), limit(1));
     const querySnapshot = await getDocs(q);
@@ -123,7 +120,7 @@ export async function getUcsIndexValue(interval: HistoryInterval = '1d'): Promis
         latestIndexValue = querySnapshot.docs[0].data().value;
     }
     
-    // Override the calculated index value with the one from the database for consistency.
+    // Override the calculated index value with the one from the database.
     const latestData: UcsData = {
         ...compositionDetails,
         indexValue: latestIndexValue,
@@ -208,31 +205,25 @@ export async function getAssetHistoricalData(assetName: string, interval: Histor
             }
         };
         
-        // Firestore data doesn't have open, high, low, so we adapt the model.
-        // We use the saved price as 'close' and calculate change based on the previous day's 'close'.
         const historyData = querySnapshot.docs.map(doc => {
             const data = doc.data();
             return {
-                // We use the 'price' field from our saved data as the 'close' price
                 close: data.price, 
-                // The daily change is already pre-calculated and saved
                 change: data.change,
-                // The saved timestamp
                 date: (data.savedAt as Timestamp).toDate(),
             };
-        }).reverse(); // .reverse() to get chronological order for change calculation.
+        }).reverse(); 
 
         const formattedData: HistoricalQuote[] = historyData.map((current, i) => {
             const previous = i > 0 ? historyData[i - 1] : null;
             return {
                 date: getDateFormat(current.date),
-                // Since we only store closing price, we'll use it for O-H-L as a reasonable approximation for the chart
                 open: previous ? previous.close : current.close,
                 high: current.close,
                 low: current.close,
                 close: current.close,
-                volume: 'N/A', // Volume is not stored in our DB
-                change: current.change, // Use the pre-calculated change
+                volume: 'N/A',
+                change: current.change,
             };
         });
 
@@ -250,57 +241,12 @@ export async function generateReport(input: GenerateReportInput): Promise<Genera
 }
 
 
-export async function updateSingleCommodity(assetName: string): Promise<{success: boolean, message: string}> {
-    console.log(`[DATA_SERVICE] Initiating manual update for ${assetName}`);
-    const { commodityMap } = await getCommodityConfig();
-    const commodityInfo = commodityMap[assetName];
-    
-    if (!commodityInfo) {
-        return { success: false, message: 'Ativo não encontrado na configuração.' };
-    }
-
-    try {
-        // Step 1: Get the latest price from the new API
-        const quote = await getMarketDataQuote(commodityInfo.ticker);
-        
-        if (!quote || typeof quote.last === 'undefined') {
-             throw new Error(`API response for ${assetName} is invalid.`);
-        }
-        
-        const newPrice = quote.last;
-
-        // Step 2: Fetch the last saved price from DB to calculate change
-        const pricesCollectionRef = collection(db, 'commodities_history', assetName, 'price_entries');
-        const q = query(pricesCollectionRef, orderBy('savedAt', 'desc'), limit(1));
-        const querySnapshot = await getDocs(q);
-
-        let lastPrice = newPrice; // Default if no previous price exists
-        if (!querySnapshot.empty) {
-            lastPrice = querySnapshot.docs[0].data().price;
-        }
-
-        const absoluteChange = newPrice - lastPrice;
-        const change = lastPrice !== 0 ? (absoluteChange / lastPrice) * 100 : 0;
-
-        // Step 3: Create the data object and save to Firestore
-        const priceData: CommodityPriceData = {
-            id: new Date().toISOString(), // Temporary ID
-            name: assetName,
-            ticker: commodityInfo.ticker,
-            price: newPrice,
-            change: parseFloat(change.toFixed(2)),
-            absoluteChange: parseFloat(absoluteChange.toFixed(4)),
-            lastUpdated: new Date().toISOString(), // Use ISO string for consistency
-            currency: commodityInfo.currency,
-        };
-
-        await saveCommodityData([priceData]);
-
-        console.log(`[DATA_SERVICE] Successfully updated ${assetName} to ${newPrice}`);
-        return { success: true, message: `${assetName} atualizado com sucesso.` };
-
-    } catch (error) {
-        console.error(`[DATA_SERVICE] Failed to manually update ${assetName}:`, error);
-        return { success: false, message: `Falha ao atualizar ${assetName}.` };
-    }
+/**
+ * Triggers the Genkit flow to update a single commodity's price.
+ * @param assetName The name of the commodity to update.
+ * @returns The result of the flow execution.
+ */
+export async function runFetchAndSavePrices(assetName: string) {
+    const { fetchAndSavePricesFlow } = await import('@/ai/flows/fetch-and-save-prices-flow');
+    return await fetchAndSavePricesFlow({ assetName });
 }
