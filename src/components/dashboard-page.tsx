@@ -145,7 +145,7 @@ export function DashboardPage() {
                     <Skeleton className="h-16 w-full max-w-xs mt-2" />
                  ) : (
                     <div className="flex items-center gap-4">
-                        <Image src="/image/currency.png" alt="Moeda UCS" width={64} height={64} className="rounded-full" />
+                        <Image src="/image/ucs.png" alt="Moeda UCS" width={64} height={64} className="rounded-full" />
                         <div className="text-5xl md:text-6xl font-bold text-primary">
                             <AnimatedNumber value={latestValue} formatter={(v) => v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/>
                         </div>

@@ -85,7 +85,7 @@ export function UnderlyingAssetsTable({ data, loading, updatingAssets, onManualU
             const commodityName = item as string;
             const Icon = getIconForCommodity(commodityName);
             return (
-                <TableRow key={`skeleton-${index}`} className="cursor-wait">
+                <TableRow key={commodityName} className="cursor-wait">
                     <TableCell>
                         <div className="flex items-center gap-3">
                         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
