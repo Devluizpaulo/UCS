@@ -39,6 +39,11 @@ export async function fetchAndSavePrices(input: z.infer<typeof FetchAndSavePrice
     },
     async ({ assetName }) => {
       try {
+        const apiKey = process.env.MARKETDATA_API_KEY;
+        if (!apiKey) {
+            throw new Error("A chave da API MarketData não está configurada no ambiente do servidor.");
+        }
+
         console.log(`[FLOW] Starting data processing... Mode: ${assetName ? `Single asset (${assetName})` : 'All assets'}`);
         
         const allCommodities = await getCommodities();
@@ -55,7 +60,7 @@ export async function fetchAndSavePrices(input: z.infer<typeof FetchAndSavePrice
         for (const commodityInfo of assetsToUpdate) {
             try {
               // Get last day's closing price
-              const history = await getMarketDataHistory(commodityInfo.ticker, 'D', 2);
+              const history = await getMarketDataHistory(apiKey, commodityInfo.ticker, 'D', 2);
               if (history.s !== 'ok' || history.c.length === 0) {
                   console.warn(`[FLOW] API response for ${commodityInfo.name} is invalid or has no data. Skipping.`);
                   continue;

@@ -25,13 +25,8 @@ function isValidCacheEntry<T>(entry: CacheEntry<T> | undefined): entry is CacheE
   return Date.now() - entry.timestamp < entry.ttl;
 }
 
-async function fetchFromApi(endpoint: string, params: URLSearchParams, timeout: number): Promise<any> {
+async function fetchFromApi(apiKey: string, endpoint: string, params: URLSearchParams, timeout: number): Promise<any> {
     const config = await getApiConfig();
-    const apiKey = process.env.MARKETDATA_API_KEY;
-
-    if (!apiKey) {
-        throw new Error("MarketData API key is not configured.");
-    }
     
     params.append('token', apiKey);
     const url = `${config.marketData.API_BASE_URL}${endpoint}?${params.toString()}`;
@@ -66,7 +61,7 @@ async function fetchFromApi(endpoint: string, params: URLSearchParams, timeout: 
 }
 
 
-export async function getMarketDataQuote(ticker: string): Promise<MarketDataQuoteResponse> {
+export async function getMarketDataQuote(apiKey: string, ticker: string): Promise<MarketDataQuoteResponse> {
     const config = await getApiConfig();
     const cacheKey = getCacheKey('md_quote', { ticker });
     const cachedEntry = cache.get(cacheKey);
@@ -77,7 +72,7 @@ export async function getMarketDataQuote(ticker: string): Promise<MarketDataQuot
     }
 
     const params = new URLSearchParams({ symbol: ticker });
-    const data: MarketDataQuoteResponse = await fetchFromApi('/stocks/quotes/', params, config.marketData.TIMEOUTS.QUOTE);
+    const data: MarketDataQuoteResponse = await fetchFromApi(apiKey, '/stocks/quotes/', params, config.marketData.TIMEOUTS.QUOTE);
     
     if (data.s === 'no_data' || !data.symbol || data.symbol.length === 0) {
         throw new Error(`No data returned from API for ticker ${ticker}`);
@@ -87,7 +82,7 @@ export async function getMarketDataQuote(ticker: string): Promise<MarketDataQuot
     return data;
 }
 
-export async function getMarketDataHistory(ticker: string, resolution: 'D' | 'W' | 'M' = 'D', countback: number = 30): Promise<MarketDataHistoryResponse> {
+export async function getMarketDataHistory(apiKey: string, ticker: string, resolution: 'D' | 'W' | 'M' = 'D', countback: number = 30): Promise<MarketDataHistoryResponse> {
     const config = await getApiConfig();
     const cacheKey = getCacheKey('md_history', { ticker, resolution, countback });
     const cachedEntry = cache.get(cacheKey);
@@ -102,7 +97,7 @@ export async function getMarketDataHistory(ticker: string, resolution: 'D' | 'W'
         resolution,
         countback: countback.toString()
     });
-    const data: MarketDataHistoryResponse = await fetchFromApi('/stocks/candles/', params, config.marketData.TIMEOUTS.HISTORICAL);
+    const data: MarketDataHistoryResponse = await fetchFromApi(apiKey, '/stocks/candles/', params, config.marketData.TIMEOUTS.HISTORICAL);
     
     cache.set(cacheKey, { data, timestamp: Date.now(), ttl: config.marketData.CACHE_TTL.HISTORICAL });
     return data;
@@ -117,12 +112,21 @@ export async function getAssetHistoricalData(assetName: string, interval: Histor
     if (!commodityInfo) {
         throw new Error(`Asset ${assetName} not found in config.`);
     }
+
+    const apiKey = process.env.MARKETDATA_API_KEY;
+    if (!apiKey) {
+      // This function is called from the client component, so we can't throw a fatal error.
+      // We return an empty array and log an error.
+      console.error("MarketData API key is not configured. Cannot fetch historical data.");
+      return [];
+    }
   
     const resolutionMap = { '1d': 'D', '1wk': 'W', '1mo': 'M' };
     const countbackMap = { '1d': 90, '1wk': 52, '1mo': 60 }; // 3 months, 1 year, 5 years
 
     try {
         const history = await getMarketDataHistory(
+            apiKey,
             commodityInfo.ticker,
             resolutionMap[interval] as 'D' | 'W' | 'M',
             countbackMap[interval]
@@ -156,7 +160,7 @@ export async function getAssetHistoricalData(assetName: string, interval: Histor
 }
 
 
-export async function searchMarketDataAssets(query: string): Promise<SearchedAsset[]> {
+export async function searchMarketDataAssets(apiKey: string, query: string): Promise<SearchedAsset[]> {
     const config = await getApiConfig();
     const cacheKey = getCacheKey('md_search', { query });
     const cachedEntry = cache.get(cacheKey);
@@ -167,9 +171,7 @@ export async function searchMarketDataAssets(query: string): Promise<SearchedAss
     }
 
     const params = new URLSearchParams({ query });
-    // This endpoint is hypothetical, assuming MarketData has a symbol search.
-    // If this fails, the endpoint URL might need to be adjusted.
-    const data: MarketDataSearchResponse = await fetchFromApi('/stocks/search/', params, config.marketData.TIMEOUTS.QUOTE);
+    const data: MarketDataSearchResponse = await fetchFromApi(apiKey, '/stocks/search/', params, config.marketData.TIMEOUTS.QUOTE);
     
     if (data.s !== 'ok' || !data.symbol) {
         return [];

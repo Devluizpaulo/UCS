@@ -34,8 +34,12 @@ export async function searchAssetsFlow(
       outputSchema: SearchAssetsOutputSchema,
     },
     async ({ query }) => {
+      const apiKey = process.env.MARKETDATA_API_KEY;
+      if (!apiKey) {
+          throw new Error("A chave da API MarketData não está configurada no ambiente do servidor.");
+      }
       console.log(`[FLOW] Searching for assets with query: "${query}"`);
-      const results = await searchMarketDataAssets(query);
+      const results = await searchMarketDataAssets(apiKey, query);
       console.log(`[FLOW] Found ${results.length} assets.`);
       return results;
     }

@@ -108,7 +108,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                                 <CartesianGrid vertical={false} />
                                 <XAxis dataKey="time" tickLine={false} axisLine={false} tickMargin={8} fontSize={12} />
                                 <YAxis 
-                                    domain={['dataMin - 0.05', 'dataMax + 0.05']}
+                                    domain={['dataMin - (dataMin * 0.05)', 'dataMax + (dataMax * 0.05)']}
                                     tickLine={false} 
                                     axisLine={false} 
                                     tickMargin={8} 

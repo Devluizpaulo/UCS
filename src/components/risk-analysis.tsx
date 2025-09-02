@@ -41,9 +41,9 @@ async function getRiskAnalysisData(): Promise<RiskAnalysisData> {
 
 
 const getVolatilityBadge = (volatility: number) => {
-    if (volatility > 4) return { variant: 'destructive', label: 'Alta' };
-    if (volatility > 2) return { variant: 'secondary', label: 'Média' };
-    return { variant: 'default', label: 'Baixa' };
+    if (volatility > 4) return { variant: 'destructive', label: 'Alta' } as const;
+    if (volatility > 2) return { variant: 'secondary', label: 'Média' } as const;
+    return { variant: 'default', label: 'Baixa' } as const;
 };
 
 const getCorrelationBadge = (correlation: number) => {
