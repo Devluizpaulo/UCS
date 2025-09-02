@@ -36,7 +36,7 @@ export type HistoricalQuote = {
 
 export type UcsData = {
   indexValue: number;
-  isConfigured: boolean; // Add this flag
+  isConfigured: boolean;
   components: {
     vm: number;
     vus: number;
@@ -133,7 +133,7 @@ export type CommodityConfig = {
   currency: 'BRL' | 'USD' | 'EUR';
   category: 'exchange' | 'agriculture' | 'forestry' | 'carbon';
   description: string;
-  unit: 'BRL' | '@' | 'cents/bushel' | 'USD/MBF' | 'EUR/tCO₂';
+  unit: string;
   source?: string; // e.g., 'B3', 'ICE', 'CME'
   scrapeConfig?: ScrapeConfig;
 };

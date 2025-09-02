@@ -5,7 +5,7 @@
  * calculating the UCS Index, and saving both to Firestore.
  * This flow can be run for all commodities (by a scheduled job) or for a single one (manual trigger).
  *
- * - fetchAndSavePrices - The main flow executed.
+ * - fetchAndSavePrices - The main flow function.
  * - FetchAndSavePricesInput - The input type for the flow.
  */
 
@@ -16,8 +16,6 @@ import { saveCommodityData, saveUcsIndexData } from '@/lib/database-service';
 import { getCommodityConfig } from '@/lib/commodity-config-service';
 import { calculateUcsIndex } from './calculate-ucs-index-flow';
 import type { CommodityPriceData } from '@/lib/types';
-import { collection, getDocs, limit, orderBy, query } from 'firebase/firestore';
-import { db } from '@/lib/firebase-admin-config';
 
 
 const FetchAndSavePricesInputSchema = z.object({
@@ -32,7 +30,6 @@ const FetchAndSaveOutputSchema = z.object({
 });
 
 
-// This is the main function that can be called by the scheduled job or manually.
 const fetchAndSavePricesFlow = ai.defineFlow(
   {
     name: 'fetchAndSavePricesFlow',

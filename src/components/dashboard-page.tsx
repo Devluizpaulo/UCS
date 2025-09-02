@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Settings, Loader2, RefreshCw } from 'lucide-react';
 import { PageHeader } from '@/components/page-header';
@@ -47,10 +47,9 @@ export function DashboardPage() {
   const [ucsData, setUcsData] = useState<UcsData | null>(null);
   const [commodities, setCommodities] = useState<CommodityPriceData[]>([]);
   const { toast } = useToast();
-  const [loading, setLoading] = useState(true);
   const [isInitialising, setIsInitialising] = useState(true);
   const [loadingMessage, setLoadingMessage] = useState(loadingMessages[0]);
-  const [loadingHistory, setLoadingHistory] = useState(true);
+  const [loadingHistory, setLoadingHistory] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [historyInterval, setHistoryInterval] = useState<HistoryInterval>('1d');
   const [indexHistoryData, setIndexHistoryData] = useState<ChartData[]>([]);
@@ -58,20 +57,17 @@ export function DashboardPage() {
   const [isUpdatingAll, setIsUpdatingAll] = useState(false);
 
 
-  const fetchDashboardData = useCallback(async (interval: HistoryInterval = '1d') => {
-      setLoading(true);
-      setLoadingHistory(true);
+  const fetchDashboardData = useCallback(async () => {
       try {
         const [ucsResult, pricesResult] = await Promise.all([
-          getUcsIndexValue(interval),
+          getUcsIndexValue(),
           getCommodityPrices()
         ]);
         
         setUcsData(ucsResult.latest);
-        setIndexHistoryData(ucsResult.history);
+        setIndexHistoryData(ucsResult.history); // Initial history (daily)
         setCommodities(pricesResult);
         
-
       } catch (error) {
         console.error("Failed to fetch dashboard data:", error);
         toast({
@@ -79,9 +75,6 @@ export function DashboardPage() {
           title: "Erro ao buscar dados",
           description: "Não foi possível obter os dados do banco de dados.",
         });
-      } finally {
-        setLoading(false);
-        setLoadingHistory(false);
       }
   }, [toast]);
 
@@ -92,8 +85,7 @@ export function DashboardPage() {
         const result = await runFetchAndSavePrices(assetName);
         if (result.success) {
             toast({ title: 'Sucesso!', description: result.message });
-            // Refetch all data to ensure consistency across the dashboard
-            await fetchDashboardData(historyInterval);
+            await fetchDashboardData();
         } else {
             throw new Error(result.message);
         }
@@ -107,7 +99,7 @@ export function DashboardPage() {
             return next;
         });
     }
-  }, [toast, fetchDashboardData, historyInterval]);
+  }, [toast, fetchDashboardData]);
 
   const handleUpdateAll = async () => {
     setIsUpdatingAll(true);
@@ -116,7 +108,7 @@ export function DashboardPage() {
         const result = await runFetchAndSavePrices(); // Call without assetName
         if (result.success) {
             toast({ title: 'Sucesso!', description: result.message });
-            await fetchDashboardData(historyInterval);
+            await fetchDashboardData();
         } else {
             throw new Error(result.message);
         }
@@ -128,8 +120,8 @@ export function DashboardPage() {
     }
   };
 
-
-  const fetchIndexHistory = useCallback(async (interval: HistoryInterval) => {
+  const handleIntervalChange = useCallback(async (interval: HistoryInterval) => {
+    setHistoryInterval(interval);
     if(!ucsData?.isConfigured) return;
     setLoadingHistory(true);
     try {
@@ -159,12 +151,12 @@ export function DashboardPage() {
         }, 2000);
 
         try {
-            await runFetchAndSavePrices(); // Update all prices
-            await fetchDashboardData(); // Now fetch the processed data to display
+            await runFetchAndSavePrices();
+            await fetchDashboardData();
         } catch (error: any) {
              console.error('Initial data fetch failed:', error);
              toast({ variant: 'destructive', title: 'Falha na Busca de Dados', description: "Não foi possível buscar os dados. Exibindo as últimas informações salvas." });
-             await fetchDashboardData(); // Try to fetch whatever is in the DB
+             await fetchDashboardData();
         } finally {
             clearInterval(messageInterval);
             setIsInitialising(false);
@@ -175,17 +167,11 @@ export function DashboardPage() {
 
     return () => clearInterval(messageInterval);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Run only once on mount
+  }, []);
 
-
-  useEffect(() => {
-    if (historyInterval && ucsData) { // only refetch if interval changes
-      fetchIndexHistory(historyInterval);
-    }
-  }, [historyInterval, ucsData, fetchIndexHistory]);
-  
   const latestValue = ucsData?.indexValue ?? 0;
   const isConfigured = ucsData?.isConfigured ?? false;
+  const isLoading = isInitialising && !ucsData;
 
   return (
     <div className="flex min-h-screen w-full flex-col relative">
@@ -202,7 +188,7 @@ export function DashboardPage() {
       </PageHeader>
       <main className={`flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6 transition-opacity duration-500 ${isInitialising ? 'opacity-0' : 'opacity-100'}`}>
        
-        {!loading && !isConfigured && (
+        {!isLoading && !isConfigured && (
             <Alert>
                 <Settings className="h-4 w-4" />
                 <AlertTitle>Ação Necessária</AlertTitle>
@@ -223,7 +209,7 @@ export function DashboardPage() {
         >
             <div className="p-6">
                  <CardTitle className="text-sm text-muted-foreground font-medium tracking-wider uppercase">Índice UCS</CardTitle>
-                 {loading && !ucsData ? (
+                 {isLoading ? (
                     <Skeleton className="h-16 w-full max-w-xs mt-2" />
                  ) : (
                     <div className="flex items-center gap-4">
@@ -259,7 +245,7 @@ export function DashboardPage() {
                     <AccordionContent>
                         <CardContent>
                              <div className="flex justify-end mb-4">
-                                <Tabs defaultValue={historyInterval} onValueChange={(value) => setHistoryInterval(value as HistoryInterval)} className="w-auto">
+                                <Tabs defaultValue={historyInterval} onValueChange={(value) => handleIntervalChange(value as HistoryInterval)} className="w-auto">
                                     <TabsList>
                                         <TabsTrigger value="1d" disabled={!isConfigured}>Diário</TabsTrigger>
                                         <TabsTrigger value="1wk" disabled={!isConfigured}>Semanal</TabsTrigger>
@@ -285,7 +271,7 @@ export function DashboardPage() {
                         <CardContent>
                             <UnderlyingAssetsTable 
                                 data={commodities} 
-                                loading={loading}
+                                loading={isLoading}
                                 updatingAssets={updatingAssets}
                                 onManualUpdate={handleManualUpdate}
                             />
@@ -314,5 +300,3 @@ export function DashboardPage() {
     </div>
   );
 }
-
-    

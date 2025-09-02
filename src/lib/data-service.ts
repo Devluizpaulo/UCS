@@ -48,8 +48,8 @@ export async function getRiskAnalysisData(): Promise<RiskAnalysisData> {
 }
 
 export async function generateReport(input: GenerateReportInput): Promise<GenerateReportOutput> {
-  const { generateReportFlow } = await import('@/ai/flows/generate-report-flow');
-  return generateReportFlow(input);
+  const { generateReport } = await import('@/ai/flows/generate-report-flow');
+  return generateReport(input);
 }
 
 
@@ -58,8 +58,9 @@ export async function generateReport(input: GenerateReportInput): Promise<Genera
 export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
   const { commodityMap } = await getCommodityConfig();
   const prices: CommodityPriceData[] = [];
+  const commodityNames = Object.keys(commodityMap);
 
-  for (const name in commodityMap) {
+  for (const name of commodityNames) {
     try {
       const pricesCollectionRef = collection(db, 'commodities_history', name, 'price_entries');
       const q = query(pricesCollectionRef, orderBy('savedAt', 'desc'), limit(2));
@@ -103,10 +104,11 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
     }
   }
 
-  return prices;
+  // Ensure the order matches the configuration file
+  return commodityNames.map(name => prices.find(p => p.name === name)).filter(Boolean) as CommodityPriceData[];
 }
 
-export async function getUcsIndexValue(interval: HistoryInterval): Promise<{ latest: UcsData, history: ChartData[] }> {
+export async function getUcsIndexValue(interval: HistoryInterval = '1d'): Promise<{ latest: UcsData, history: ChartData[] }> {
     const { calculateUcsIndex } = await import('@/ai/flows/calculate-ucs-index-flow');
     
     // This will calculate the index based on latest prices in DB.

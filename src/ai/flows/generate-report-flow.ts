@@ -14,7 +14,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { getUcsIndexValue, getCommodityPrices } from '@/lib/data-service';
-import type { HistoricalQuote, CommodityPriceData, ChartData } from '@/lib/types';
+import type { ChartData, CommodityPriceData } from '@/lib/types';
 
 
 // --- Zod Schemas for Input and Output ---
@@ -80,7 +80,7 @@ const analysisPrompt = ai.definePrompt({
 
 // --- Main Flow Definition ---
 
-export const generateReportFlow = ai.defineFlow(
+const generateReportFlow = ai.defineFlow(
   {
     name: 'generateReportFlow',
     inputSchema: GenerateReportInputSchema,

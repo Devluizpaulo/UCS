@@ -34,7 +34,6 @@ const CornIcon = () => (
 );
 
 const commodityDetails: Commodity[] = Object.keys(COMMODITY_TICKER_MAP).map(name => {
-    const details = COMMODITY_TICKER_MAP[name];
     let icon = DollarSign;
     if (name.includes('EUR')) icon = Euro;
     if (name.includes('Boi')) icon = Beef;
@@ -68,25 +67,13 @@ export function UnderlyingAssetsTable({ data, loading, updatingAssets, onManualU
   };
   
   const renderTableRows = () => {
-    const dataSource = loading ? Array.from({ length: Object.keys(COMMODITY_TICKER_MAP).length }).map((_, i) => ({ name: Object.keys(COMMODITY_TICKER_MAP)[i], source: COMMODITY_TICKER_MAP[Object.keys(COMMODITY_TICKER_MAP)[i]].source })) : data;
+    const commodityNames = Object.keys(COMMODITY_TICKER_MAP);
 
-    if (!dataSource || dataSource.length === 0) {
-        return (
-            <TableRow>
-                <TableCell colSpan={4} className="h-24 text-center">
-                    Ainda não há dados de cotação. A atualização automática ocorrerá às 6h da manhã.
-                </TableCell>
-            </TableRow>
-        );
-    }
-    
-    return dataSource.map((item) => {
-        if (loading) {
-            const commodityName = (item as {name: string}).name;
-            const sourceName = (item as {source?: string}).source;
-            const Icon = getIconForCommodity(commodityName);
+    if (loading) {
+        return commodityNames.map(name => {
+            const Icon = getIconForCommodity(name);
             return (
-                <TableRow key={commodityName} className="cursor-wait">
+                 <TableRow key={name} className="cursor-wait">
                     <TableCell>
                         <div className="flex items-center gap-3">
                             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
@@ -109,10 +96,20 @@ export function UnderlyingAssetsTable({ data, loading, updatingAssets, onManualU
                     </TableCell>
                 </TableRow>
             );
-        }
+        });
+    }
 
-        // Data loaded state
-        const asset = item as CommodityPriceData;
+    if (!data || data.length === 0) {
+        return (
+            <TableRow>
+                <TableCell colSpan={4} className="h-24 text-center">
+                    Ainda não há dados de cotação. A atualização automática ocorrerá às 6h da manhã.
+                </TableCell>
+            </TableRow>
+        );
+    }
+    
+    return data.map((asset) => {
         const Icon = getIconForCommodity(asset.name);
         const currency = COMMODITY_TICKER_MAP[asset.name]?.currency || 'USD';
         const isUpdating = updatingAssets?.has(asset.name);
@@ -149,7 +146,7 @@ export function UnderlyingAssetsTable({ data, loading, updatingAssets, onManualU
                     variant="ghost" 
                     size="icon" 
                     onClick={(e) => {
-                        e.stopPropagation(); // Prevent row click from opening modal
+                        e.stopPropagation();
                         onManualUpdate?.(asset.name)
                     }}
                     disabled={isUpdating}
