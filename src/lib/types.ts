@@ -11,7 +11,7 @@ export type CommodityConfig = {
   name: string; // User-facing name, e.g. "Soja Futuros"
   ticker: string;
   currency: 'BRL' | 'USD' | 'EUR';
-  category: 'exchange' | 'agriculture' | 'forestry' | 'carbon';
+  category: 'exchange' | 'vus' | 'vmad' | 'crs';
   description: string;
   unit: string;
   source?: string;

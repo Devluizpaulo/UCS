@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
@@ -29,7 +30,7 @@ const commoditySchema = z.object({
   name: z.string().min(1, 'O Nome de Exibição é obrigatório.'),
   ticker: z.string().min(1, 'Ticker é obrigatório.'),
   currency: z.enum(['BRL', 'USD', 'EUR']),
-  category: z.enum(['exchange', 'agriculture', 'forestry', 'carbon']),
+  category: z.enum(['exchange', 'vus', 'vmad', 'crs']),
   description: z.string().min(1, 'Descrição é obrigatória.'),
   unit: z.string().min(1, 'Unidade é obrigatória.'),
   source: z.string().optional(),
@@ -54,7 +55,7 @@ export function EditCommodityModal({ isOpen, onClose, commodity, onSave, isSavin
       name: '',
       ticker: '',
       currency: 'USD',
-      category: 'agriculture',
+      category: 'vus',
       description: '',
       unit: '',
       source: 'MarketData',
@@ -76,7 +77,7 @@ export function EditCommodityModal({ isOpen, onClose, commodity, onSave, isSavin
       name: '',
       ticker: '',
       currency: 'USD',
-      category: 'agriculture',
+      category: 'vus',
       description: '',
       unit: '',
       source: 'MarketData',
@@ -217,20 +218,20 @@ export function EditCommodityModal({ isOpen, onClose, commodity, onSave, isSavin
           </div>
 
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="category" className="text-right">Categoria</Label>
+            <Label htmlFor="category" className="text-right">Componente do Índice</Label>
              <Controller
                 name="category"
                 control={control}
                 render={({ field }) => (
                     <Select onValueChange={field.onChange} value={field.value}>
                         <SelectTrigger className="col-span-3">
-                            <SelectValue placeholder="Selecione a Categoria" />
+                            <SelectValue placeholder="Selecione o Componente" />
                         </SelectTrigger>
                         <SelectContent>
-                             <SelectItem value="exchange">Câmbio</SelectItem>
-                             <SelectItem value="agriculture">Agricultura</SelectItem>
-                             <SelectItem value="forestry">Florestal</SelectItem>
-                             <SelectItem value="carbon">Carbono</SelectItem>
+                             <SelectItem value="exchange">Câmbio (Moedas)</SelectItem>
+                             <SelectItem value="vus">Uso do Solo (VUS)</SelectItem>
+                             <SelectItem value="vmad">Madeira (VMAD)</SelectItem>
+                             <SelectItem value="crs">Socioambiental (CRS)</SelectItem>
                         </SelectContent>
                     </Select>
                 )}

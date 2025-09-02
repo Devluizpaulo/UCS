@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -27,6 +28,14 @@ interface CommoditySourcesTableProps {
   onEdit: (commodity: CommodityConfig) => void;
   onDelete: (commodityId: string) => void;
 }
+
+const categoryLabels: Record<CommodityConfig['category'], string> = {
+    exchange: 'Câmbio',
+    vus: 'Uso do Solo (VUS)',
+    vmad: 'Madeira (VMAD)',
+    crs: 'Socioambiental (CRS)',
+};
+
 
 export function CommoditySourcesTable({ data, loading, onEdit, onDelete }: CommoditySourcesTableProps) {
   if (loading) {
@@ -60,7 +69,7 @@ export function CommoditySourcesTable({ data, loading, onEdit, onDelete }: Commo
           <TableRow>
             <TableHead>Nome do Ativo</TableHead>
             <TableHead>Ticker</TableHead>
-            <TableHead>Categoria</TableHead>
+            <TableHead>Componente do Índice</TableHead>
             <TableHead>Fonte</TableHead>
             <TableHead className="text-right w-[50px]">Ações</TableHead>
           </TableRow>
@@ -70,7 +79,7 @@ export function CommoditySourcesTable({ data, loading, onEdit, onDelete }: Commo
             <TableRow key={commodity.id}>
               <TableCell className="font-medium">{commodity.name}</TableCell>
               <TableCell className="font-mono text-xs">{commodity.ticker}</TableCell>
-              <TableCell className="text-sm text-muted-foreground capitalize">{commodity.category}</TableCell>
+              <TableCell className="text-sm text-muted-foreground">{categoryLabels[commodity.category] || commodity.category}</TableCell>
               <TableCell className="text-sm text-muted-foreground">{commodity.source || 'N/A'}</TableCell>
               <TableCell className="text-right">
                 <DropdownMenu>

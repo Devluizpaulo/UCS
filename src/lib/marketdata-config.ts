@@ -1,4 +1,5 @@
 
+
 import type { CommodityMap } from "./types";
 
 
@@ -48,7 +49,7 @@ export const COMMODITY_TICKER_MAP: CommodityMap = {
     name: 'Boi Gordo Futuros - Ago 25 (BGIc1)',
     ticker: 'BGI=F', 
     currency: 'BRL',
-    category: 'agriculture',
+    category: 'vus',
     description: 'Contratos futuros de Boi Gordo para Agosto de 2025',
     unit: '@',
     source: 'B3',
@@ -57,7 +58,7 @@ export const COMMODITY_TICKER_MAP: CommodityMap = {
     name: 'Soja Futuros - Nov 25 (SJCc1)',
     ticker: 'SJCc1', 
     currency: 'USD',
-    category: 'agriculture',
+    category: 'vus',
     description: 'Contratos futuros de Soja para Novembro de 2025',
     unit: 'USD/Saca 60kg',
     source: 'B3',
@@ -66,7 +67,7 @@ export const COMMODITY_TICKER_MAP: CommodityMap = {
     name: 'Milho Futuros - Set 25 (CCMc1)',
     ticker: 'CCMc1', 
     currency: 'BRL',
-    category: 'agriculture',
+    category: 'vus',
     description: 'Contratos futuros de Milho para Setembro de 2025',
     unit: 'BRL/Saca 60kg',
     source: 'B3',
@@ -75,7 +76,7 @@ export const COMMODITY_TICKER_MAP: CommodityMap = {
     name: 'Madeira Serrada Futuros - Set 25 (LXRc1)',
     ticker: 'LXRc1',
     currency: 'USD',
-    category: 'forestry',
+    category: 'vmad',
     description: 'Contratos futuros de Madeira (Lumber)',
     unit: 'USD/MBF',
     source: 'CME',
@@ -84,7 +85,7 @@ export const COMMODITY_TICKER_MAP: CommodityMap = {
     name: 'Carbono Futuros',
     ticker: 'MFI=F',
     currency: 'EUR',
-    category: 'carbon',
+    category: 'crs',
     description: 'Contratos futuros de Carbono (ICE)',
     unit: 'EUR/tCO₂',
     source: 'ICE',

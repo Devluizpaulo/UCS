@@ -1,4 +1,5 @@
 
+
 /**
  * @fileOverview A pure, synchronous service for performing UCS Index calculations.
  * This file should NOT be marked with 'use server' as it contains only calculation logic
@@ -46,11 +47,11 @@ export function calculateIndex(commodities: CommodityPriceData[], params: Formul
       // --- Dynamic Price Lookups based on Category ---
       const taxa_usd_brl = findPrice(commodities, 'exchange', 'USD/BRL');
       const taxa_eur_brl = findPrice(commodities, 'exchange', 'EUR/BRL');
-      const preco_lumber_mbf = findPrice(commodities, 'forestry'); // Assumes only one forestry product
-      const preco_boi_arroba = findPrice(commodities, 'agriculture', 'Boi');
-      const preco_milho_brl = findPrice(commodities, 'agriculture', 'Milho');
-      const preco_soja_usd = findPrice(commodities, 'agriculture', 'Soja');
-      const preco_carbono_eur = findPrice(commodities, 'carbon'); // Assumes only one carbon product
+      const preco_lumber_mbf = findPrice(commodities, 'vmad'); // Assumes only one forestry product
+      const preco_boi_arroba = findPrice(commodities, 'vus', 'Boi');
+      const preco_milho_brl = findPrice(commodities, 'vus', 'Milho');
+      const preco_soja_usd = findPrice(commodities, 'vus', 'Soja');
+      const preco_carbono_eur = findPrice(commodities, 'crs'); // Assumes only one carbon product
   
       // --- Data Validation ---
       const prices = [taxa_usd_brl, taxa_eur_brl, preco_lumber_mbf, preco_boi_arroba, preco_milho_brl, preco_soja_usd, preco_carbono_eur];
@@ -75,7 +76,7 @@ export function calculateIndex(commodities: CommodityPriceData[], params: Formul
       const renda_soja = params.PROD_SOJA * preco_soja_ton_brl * params.PESO_SOJA;
       const renda_bruta_ha = renda_pecuaria + renda_milho + renda_soja;
       const VUS = renda_bruta_ha / params.FATOR_ARREND;
-      const valor_carbono = preco_carbono_brl * params.VOLUME_MADEIA_HA * params.FATOR_CARBONO;
+      const valor_carbono = preco_carbono_brl * params.VOLUME_MADEIRA_HA * params.FATOR_CARBONO;
       const valor_agua = VUS * params.FATOR_AGUA;
       const CRS = valor_carbono + valor_agua;
       
