@@ -24,7 +24,7 @@ export async function middleware(request: NextRequest) {
   }
   
   // If token exists, let the request through.
-  // The actual validation of the token will be handled on the client-side
+  // The actual validation of the token is handled on the client-side
   // or in server components/API routes where the full Node.js environment is available.
   return NextResponse.next();
 }
