@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -38,7 +37,7 @@ export function DashboardPage() {
       setLoading(true);
       try {
         const [ucsResult, pricesResult] = await Promise.all([
-          getUcsIndexValue(),
+          getUcsIndexValue('1d'), // Fetch with initial interval
           getCommodityPrices()
         ]);
         
@@ -55,6 +54,7 @@ export function DashboardPage() {
         });
       } finally {
         setLoading(false);
+        setLoadingHistory(false); // Initial history is also loaded
       }
   }, [toast]);
 
@@ -106,11 +106,11 @@ export function DashboardPage() {
 
   useEffect(() => {
     // Only fetch history on interval change if it's not the initial '1d' load
-    // and if the formula is configured.
-    if (ucsData?.isConfigured) {
+    // and if the formula is configured. This check avoids a double-fetch on page load.
+    if (!loading && ucsData?.isConfigured) {
         fetchIndexHistory(historyInterval);
     }
-  }, [historyInterval, fetchIndexHistory, ucsData?.isConfigured]);
+  }, [historyInterval, ucsData?.isConfigured, loading, fetchIndexHistory]);
   
   const latestValue = ucsData?.indexValue ?? 0;
   const isConfigured = ucsData?.isConfigured ?? false;
@@ -176,7 +176,7 @@ export function DashboardPage() {
                     </AccordionTrigger>
                     <AccordionContent>
                         <CardContent>
-                            <UcsIndexChart data={indexHistoryData} loading={loading || !isConfigured}/>
+                            <UcsIndexChart data={indexHistoryData} loading={loadingHistory || !isConfigured}/>
                         </CardContent>
                     </AccordionContent>
                 </Card>
