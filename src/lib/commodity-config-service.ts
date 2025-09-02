@@ -14,7 +14,7 @@ const COMMODITIES_COLLECTION = 'commodities';
 
 /**
  * Seeds the database with a default set of commodities if the collection is empty.
- * This is useful for initial setup.
+ * This is useful for initial setup and prevents errors from empty collections.
  */
 async function seedDefaultCommodities() {
     const db = await getDb();
@@ -41,6 +41,7 @@ async function seedDefaultCommodities() {
 
 /**
  * Retrieves all commodities from Firestore, ordered by name.
+ * It ensures the collection is seeded with default data if it's empty.
  * @returns {Promise<CommodityConfig[]>} A promise that resolves to an array of commodities.
  */
 export async function getCommodities(): Promise<CommodityConfig[]> {

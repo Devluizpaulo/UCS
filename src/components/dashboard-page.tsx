@@ -30,7 +30,7 @@ async function runFetchAndSavePrices(assetName?: string): Promise<{success: bool
 
 const loadingMessages = [
     "Preparando seu painel...",
-    "Buscando as cotações mais recentes...",
+    "Verificando a estrutura de dados...",
     "Calculando o índice UCS...",
     "Otimizando a visualização...",
     "Quase pronto!",
@@ -128,7 +128,7 @@ export function DashboardPage() {
         }, 2000);
 
         try {
-            // Step 1: Fetch initial data from DB to show something quickly
+            // Step 1: Fetch initial data from DB to show something quickly and ensure collections are seeded
             const isConfigured = await fetchDashboardData();
 
             // Step 2: If configured, attempt a silent background update
@@ -178,7 +178,7 @@ export function DashboardPage() {
     <div className="flex min-h-screen w-full flex-col relative">
        {isInitialising && <InitialLoadingScreen message={loadingMessage} />}
       <PageHeader title="Painel">
-        <Button onClick={handleUpdateAll} disabled={isUpdatingAll || !isConfigured}>
+        <Button onClick={handleUpdateAll} disabled={isUpdatingAll}>
             {isUpdatingAll ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
@@ -192,12 +192,12 @@ export function DashboardPage() {
         {!isLoading && !isConfigured && (
             <Alert>
                 <Settings className="h-4 w-4" />
-                <AlertTitle>Ação Necessária</AlertTitle>
+                <AlertTitle>Ação Necessária: Configure a Fórmula</AlertTitle>
                 <AlertDescription className="flex items-center justify-between">
                     <span>A fórmula do Índice UCS ainda não foi configurada. O valor do índice não será calculado até que os parâmetros sejam salvos.</span>
                     <Button asChild variant="outline" size="sm" className="ml-4">
                         <Link href="/settings">
-                            Configurar Fórmula
+                            Ir para Configurações
                         </Link>
                     </Button>
                 </AlertDescription>
