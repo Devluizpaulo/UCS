@@ -66,7 +66,7 @@ export async function getCommodities(): Promise<CommodityConfig[]> {
  * @param {string} id - The ID of the commodity to retrieve.
  * @returns {Promise<CommodityConfig | null>} A promise that resolves to the commodity or null if not found.
  */
-export async function getCommodity(id: string): Promise<CommododyConfig | null> {
+export async function getCommodity(id: string): Promise<CommodityConfig | null> {
     const db = await getDb();
     try {
         const docRef = doc(db, COMMODITIES_COLLECTION, id);
