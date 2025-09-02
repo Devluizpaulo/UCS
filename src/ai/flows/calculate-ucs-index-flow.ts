@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A flow for calculating the UCS Index based on a detailed pricing methodology.
@@ -29,7 +30,7 @@ const CalculateUcsIndexOutputSchema = z.object({
 export type CalculateUcsIndexOutput = z.infer<typeof CalculateUcsIndexOutputSchema>;
 
 // Internal helper function for calculation. Can be reused by other flows.
-export function calculateIndex(prices: { [key: string]: number }, params: FormulaParameters): CalculateUcsIndexOutput {
+export async function calculateIndex(prices: { [key: string]: number }, params: FormulaParameters): Promise<CalculateUcsIndexOutput> {
     const defaultResult = { 
         indexValue: 0, 
         isConfigured: params.isConfigured,
