@@ -9,8 +9,8 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { getCommodityPrices } from '@/lib/data-service';
-import { getFormulaParameters, calculateIndex } from '@/lib/formula-service';
+import { getCommodityPrices, calculateIndex } from '@/lib/data-service';
+import { getFormulaParameters } from '@/lib/formula-service';
 
 const CalculateUcsIndexOutputSchema = z.object({
   indexValue: z.number().describe('The calculated value of the UCS Index.'),

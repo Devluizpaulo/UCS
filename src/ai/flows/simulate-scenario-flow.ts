@@ -10,9 +10,9 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { getCommodityPrices } from '@/lib/data-service';
+import { getCommodityPrices, calculateIndex } from '@/lib/data-service';
 import type { ScenarioResult, SimulateScenarioInput } from '@/lib/types';
-import { getFormulaParameters, calculateIndex } from '@/lib/formula-service';
+import { getFormulaParameters } from '@/lib/formula-service';
 
 const SimulateScenarioInputSchema = z.object({
     asset: z.string(),
