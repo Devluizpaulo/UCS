@@ -68,7 +68,7 @@ export function UnderlyingAssetsTable({ data, loading, updatingAssets, onManualU
   };
   
   const renderTableRows = () => {
-    const dataSource = loading ? Object.keys(COMMODITY_TICKER_MAP) : data;
+    const dataSource = loading ? Array.from({ length: Object.keys(COMMODITY_TICKER_MAP).length }).map((_, i) => ({ name: Object.keys(COMMODITY_TICKER_MAP)[i] })) : data;
 
     if (!dataSource || dataSource.length === 0) {
         return (
@@ -80,9 +80,9 @@ export function UnderlyingAssetsTable({ data, loading, updatingAssets, onManualU
         );
     }
     
-    return dataSource.map((item, index) => {
+    return dataSource.map((item) => {
         if (loading) {
-            const commodityName = item as string;
+            const commodityName = (item as {name: string}).name;
             const Icon = getIconForCommodity(commodityName);
             return (
                 <TableRow key={commodityName} className="cursor-wait">

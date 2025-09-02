@@ -1,7 +1,7 @@
 
 'use server';
 
-import type { ChartData, CommodityPriceData, ScenarioResult, HistoricalQuote, HistoryInterval, UcsData, RiskAnalysisData, RiskMetric, GenerateReportInput, GenerateReportOutput } from './types';
+import type { ChartData, CommodityPriceData, ScenarioResult, HistoricalQuote, HistoryInterval, UcsData, RiskAnalysisData, RiskMetric, GenerateReportInput, GenerateReportOutput, SimulateScenarioInput } from './types';
 import { getCommodityConfig } from './commodity-config-service';
 import { calculate_volatility, calculate_correlation } from './statistics';
 import { db } from './firebase-config';

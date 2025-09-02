@@ -50,7 +50,7 @@ async function fetchFromApi(endpoint: string, params: URLSearchParams, timeout: 
         }
         
         const data = await response.json();
-        if (data.s !== 'ok') {
+        if (data.s !== 'ok' && data.s !== 'no_data') { // allow no_data for some queries
             // MarketData can sometimes return a string error message.
             const errorMessage = typeof data.errmsg === 'string' ? data.errmsg : 'Unknown API error';
             throw new Error(`API returned an error: ${errorMessage}`);
@@ -77,6 +77,10 @@ export async function getMarketDataQuote(ticker: string): Promise<any> {
 
     const params = new URLSearchParams({ symbol: ticker });
     const data: MarketDataQuoteResponse = await fetchFromApi('/stocks/quotes/', params, config.marketData.TIMEOUTS.QUOTE);
+    
+    if (data.s === 'no_data' || !data.symbol || data.symbol.length === 0) {
+        throw new Error(`No data returned from API for ticker ${ticker}`);
+    }
     
     const quote = {
         symbol: data.symbol[0],
@@ -123,6 +127,11 @@ export async function getMarketDataCandles(tickersToFetch: string[]): Promise<Co
         const params = new URLSearchParams({ symbol: tickersString });
         const data: MarketDataQuoteResponse = await fetchFromApi('/stocks/quotes/', params, config.marketData.TIMEOUTS.QUOTE);
         
+        if (data.s === 'no_data') {
+             console.warn(`[MarketData] API returned no_data for tickers: ${tickersString}`);
+             return [];
+        }
+
         // Create a reverse map from ticker to name for easy lookup
         const tickerToNameMap = Object.fromEntries(
             Object.entries(commodityMap).map(([name, config]) => [config.ticker, name])

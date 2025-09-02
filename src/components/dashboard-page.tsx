@@ -107,7 +107,7 @@ export function DashboardPage() {
 
 
   const fetchIndexHistory = useCallback(async (interval: HistoryInterval) => {
-    if(!isConfigured) return;
+    if(!ucsData?.isConfigured) return;
     setLoadingHistory(true);
     try {
         const result = await getUcsIndexValue(interval);
