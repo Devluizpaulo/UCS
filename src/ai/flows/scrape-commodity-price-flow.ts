@@ -3,7 +3,7 @@
 /**
  * @fileOverview A flow for scraping a value from a website.
  *
- * - scrapeUrlFlow - A function that scrapes a value from a given URL and selector.
+ * - scrapeUrl - A function that scrapes a value from a given URL and selector.
  */
 
 import { ai } from '@/ai/genkit';
@@ -17,7 +17,7 @@ const ScrapeUrlInputSchema = z.object({
 
 const ScrapeUrlOutputSchema = z.string().nullable().describe('The scraped text content, or null if not found.');
 
-export const scrapeUrlFlow = ai.defineFlow(
+const scrapeUrlFlow = ai.defineFlow(
   {
     name: 'scrapeUrlFlow',
     inputSchema: ScrapeUrlInputSchema,
@@ -61,3 +61,8 @@ export const scrapeUrlFlow = ai.defineFlow(
     }
   }
 );
+
+
+export async function scrapeUrl(input: z.infer<typeof ScrapeUrlInputSchema>): Promise<z.infer<typeof ScrapeUrlOutputSchema>> {
+    return await scrapeUrlFlow(input);
+}

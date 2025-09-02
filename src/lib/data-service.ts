@@ -16,8 +16,8 @@ export async function runScenarioSimulation(asset: string, changeType: 'percenta
 }
 
 export async function runFetchAndSavePrices(assetName?: string): Promise<{success: boolean, message: string}> {
-    const { fetchAndSavePricesFlow } = await import('@/ai/flows/fetch-and-save-prices-flow');
-    return fetchAndSavePricesFlow({ assetName });
+    const { fetchAndSavePrices } = await import('@/ai/flows/fetch-and-save-prices-flow');
+    return fetchAndSavePrices({ assetName });
 }
 
 

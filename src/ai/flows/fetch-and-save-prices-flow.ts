@@ -5,8 +5,8 @@
  * calculating the UCS Index, and saving both to Firestore.
  * This flow can be run for all commodities (by a scheduled job) or for a single one (manual trigger).
  *
- * - fetchAndSavePricesFlow - The main flow executed.
- * - FetchAndSavePricesInputSchema - The input for the flow.
+ * - fetchAndSavePrices - The main flow executed.
+ * - FetchAndSavePricesInput - The input type for the flow.
  */
 
 import { ai } from '@/ai/genkit';
@@ -17,7 +17,7 @@ import { getCommodityConfig } from '@/lib/commodity-config-service';
 import { calculateUcsIndex } from './calculate-ucs-index-flow';
 import type { CommodityPriceData } from '@/lib/types';
 import { collection, getDocs, limit, orderBy, query } from 'firebase/firestore';
-import { db } from '@/lib/firebase-config';
+import { db } from '@/lib/firebase-admin-config';
 
 
 const FetchAndSavePricesInputSchema = z.object({
@@ -33,7 +33,7 @@ const FetchAndSaveOutputSchema = z.object({
 
 
 // This is the main function that can be called by the scheduled job or manually.
-export const fetchAndSavePricesFlow = ai.defineFlow(
+const fetchAndSavePricesFlow = ai.defineFlow(
   {
     name: 'fetchAndSavePricesFlow',
     inputSchema: FetchAndSavePricesInputSchema,
@@ -129,3 +129,8 @@ export const fetchAndSavePricesFlow = ai.defineFlow(
     }
   }
 );
+
+
+export async function fetchAndSavePrices(input: z.infer<typeof FetchAndSavePricesInputSchema>): Promise<z.infer<typeof FetchAndSaveOutputSchema>> {
+    return await fetchAndSavePricesFlow(input);
+}

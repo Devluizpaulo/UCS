@@ -1,6 +1,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { fetchAndSavePricesFlow } from '@/ai/flows/fetch-and-save-prices-flow';
+import { fetchAndSavePrices } from '@/ai/flows/fetch-and-save-prices-flow';
 
 // This endpoint will be triggered by an external cron job service.
 export async function GET(request: NextRequest) {
@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
 
   // 2. Run the Genkit flow to fetch and save data for ALL assets.
   try {
-    const result = await fetchAndSavePricesFlow({}); // Empty input means all assets
+    const result = await fetchAndSavePrices({}); // Empty input means all assets
     
     if (result.success) {
         return NextResponse.json({ message: result.message, savedCount: result.savedCount });
