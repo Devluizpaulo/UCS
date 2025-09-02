@@ -24,17 +24,8 @@ async function seedDefaultCommodities() {
     if (snapshot.empty) {
         console.log('[CommodityConfigService] No commodities found, seeding database with defaults.');
         const promises = Object.entries(COMMODITY_TICKER_MAP).map(([id, config]) => {
-            const commodityData: InitialCommodityConfig = {
-                name: config.name,
-                ticker: config.ticker,
-                currency: config.currency,
-                category: config.category,
-                description: config.description,
-                unit: config.unit,
-                source: config.source,
-            };
             const docRef = doc(db, COMMODITIES_COLLECTION, id);
-            return setDoc(docRef, commodityData);
+            return setDoc(docRef, config);
         });
         await Promise.all(promises);
         console.log('[CommodityConfigService] Default commodities seeded successfully.');

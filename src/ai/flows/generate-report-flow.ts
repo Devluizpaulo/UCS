@@ -217,11 +217,11 @@ export async function generateReport(input: GenerateReportInput): Promise<Genera
           : 'Relatório de Performance dos Ativos Subjacentes';
 
       // Fetch data
-      const [ucsIndex, assets] = await Promise.all([
+      const [ucsData, assets] = await Promise.all([
           getUcsIndexValue(interval),
           getCommodityPrices()
       ]);
-      const ucsHistory = ucsIndex.history.slice(-limit);
+      const ucsHistory = ucsData.history.slice(-limit);
       
       const assetsForAnalysis = assets.map(a => ({ name: a.name, price: a.price, change: a.change }));
 
