@@ -11,7 +11,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { getMarketDataCandles, getMarketDataQuote } from '@/lib/marketdata-service';
+import { getMarketDataQuote } from '@/lib/marketdata-service';
 import { saveCommodityData, saveUcsIndexData } from '@/lib/database-service';
 import { getCommodityConfig } from '@/lib/commodity-config-service';
 import { calculateUcsIndex } from './calculate-ucs-index-flow';
@@ -45,48 +45,50 @@ export const fetchAndSavePricesFlow = ai.defineFlow(
       
       const { commodityMap } = await getCommodityConfig();
       let fetchedPrices: CommodityPriceData[] = [];
+      const assetsToUpdate = assetName ? [assetName] : Object.keys(commodityMap);
 
       // 1. Fetch latest commodity prices
-      if (assetName) {
-        // --- Single Asset Update Logic ---
-        const commodityInfo = commodityMap[assetName];
-        if (!commodityInfo) throw new Error(`Asset ${assetName} not found in config.`);
-        
-        const quote = await getMarketDataQuote(commodityInfo.ticker);
-        if (!quote || typeof quote.last === 'undefined') {
-            throw new Error(`API response for ${assetName} is invalid.`);
-        }
-        
-        const newPrice = quote.last;
-        
-        // Get last saved price to calculate change
-        const pricesCollectionRef = collection(db, 'commodities_history', assetName, 'price_entries');
-        const q = query(pricesCollectionRef, orderBy('savedAt', 'desc'), limit(1));
-        const querySnapshot = await getDocs(q);
-        let lastPrice = newPrice;
-        if (!querySnapshot.empty) {
-            lastPrice = querySnapshot.docs[0].data().price;
-        }
+      for (const name of assetsToUpdate) {
+          try {
+            const commodityInfo = commodityMap[name];
+            if (!commodityInfo) {
+                console.warn(`[FLOW] Asset ${name} not found in config. Skipping.`);
+                continue;
+            }
+            
+            const quote = await getMarketDataQuote(commodityInfo.ticker);
+             if (!quote || typeof quote.last === 'undefined') {
+                console.warn(`[FLOW] API response for ${name} is invalid. Skipping.`);
+                continue;
+            }
+            
+            const newPrice = quote.last;
+            
+            // Get last saved price to calculate change
+            const pricesCollectionRef = collection(db, 'commodities_history', name, 'price_entries');
+            const q = query(pricesCollectionRef, orderBy('savedAt', 'desc'), limit(1));
+            const querySnapshot = await getDocs(q);
+            let lastPrice = newPrice;
+            if (!querySnapshot.empty) {
+                lastPrice = querySnapshot.docs[0].data().price;
+            }
 
-        const absoluteChange = newPrice - lastPrice;
-        const change = lastPrice !== 0 ? (absoluteChange / lastPrice) * 100 : 0;
-        
-        fetchedPrices.push({
-            id: '', // Firestore generates
-            name: assetName,
-            ticker: commodityInfo.ticker,
-            price: newPrice,
-            change,
-            absoluteChange,
-            lastUpdated: new Date().toISOString(),
-            currency: commodityInfo.currency,
-        });
-
-      } else {
-        // --- All Assets Update Logic (Scheduled Job) ---
-        const tickersToFetch = Object.values(commodityMap).map(c => c.ticker);
-        console.log(`[FLOW] Fetching prices for tickers: ${tickersToFetch.join(', ')}`);
-        fetchedPrices = await getMarketDataCandles(tickersToFetch);
+            const absoluteChange = newPrice - lastPrice;
+            const change = lastPrice !== 0 ? (absoluteChange / lastPrice) * 100 : 0;
+            
+            fetchedPrices.push({
+                id: '', // Firestore generates
+                name: name,
+                ticker: commodityInfo.ticker,
+                price: newPrice,
+                change,
+                absoluteChange,
+                lastUpdated: new Date().toISOString(),
+                currency: commodityInfo.currency,
+            });
+          } catch (error) {
+              console.error(`[FLOW] Failed to fetch price for ${name}. Skipping.`, error);
+          }
       }
       
       if (fetchedPrices.length === 0) {
