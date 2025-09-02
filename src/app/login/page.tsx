@@ -15,6 +15,7 @@ import { FileSpreadsheet, Loader2 } from 'lucide-react';
 import { setCookie } from 'cookies-next';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 const loginSchema = z.object({
   email: z.string().email('Por favor, insira um e-mail válido.'),
@@ -25,6 +26,7 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
   const { toast } = useToast();
   const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -59,9 +61,8 @@ export default function LoginPage() {
         description: 'Bem-vindo de volta! Redirecionando...',
       });
       
-      // 4. Redirect to dashboard
-      // A hard reload ensures middleware and dashboard data fetching logic runs correctly
-      window.location.href = '/'; 
+      // 4. Redirect to dashboard using Next.js router
+      router.push('/');
 
     } catch (error: any) {
       console.error('Login failed:', error);
@@ -80,13 +81,16 @@ export default function LoginPage() {
   return (
     <div className="relative h-screen w-full overflow-hidden">
      <div className="relative flex min-h-screen w-full items-center justify-center bg-background">
-      <Image
-          src="/image/login.jpg"
-          alt="Imagem de uma floresta com árvores altas."
-          fill
-          priority
-          className="h-full w-full object-cover dark:brightness-[0.2] dark:grayscale animate-ken-burns"
-        />
+      <div className="absolute inset-0 overflow-hidden">
+        <Image
+            src="/image/login.jpg"
+            alt="Imagem de uma floresta com árvores altas."
+            fill
+            priority
+            className="h-full w-full object-cover animate-ken-burns"
+            data-ai-hint="forest trees"
+          />
+       </div>
        <div className="absolute inset-0 bg-black/70"></div>
        <div className="relative z-10 mx-auto w-full max-w-md rounded-2xl border border-border/20 bg-background/80 p-8 shadow-2xl backdrop-blur-sm">
         <div className="mx-auto grid w-full max-w-sm gap-6">
