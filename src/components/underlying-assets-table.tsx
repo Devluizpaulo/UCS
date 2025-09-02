@@ -9,6 +9,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  TableCaption,
 } from '@/components/ui/table';
 import { AnimatedNumber } from '@/components/ui/animated-number';
 import { ArrowDown, ArrowUp, DollarSign, Euro, Beef, Leaf, TreePine, Recycle, RefreshCw, Loader2, Wheat } from 'lucide-react';
@@ -77,11 +78,12 @@ export function UnderlyingAssetsTable({ data, loading, updatingAssets, onManualU
         ));
     }
 
+    // This case will now be rare since getCommodityPrices returns all configured assets
     if (!data || data.length === 0) {
         return (
             <TableRow>
                 <TableCell colSpan={4} className="h-24 text-center">
-                    Ainda não há dados de cotação. A atualização automática ocorrerá às 6h da manhã.
+                    Nenhum ativo configurado. Adicione ativos na página de Configurações.
                 </TableCell>
             </TableRow>
         );
@@ -139,11 +141,18 @@ export function UnderlyingAssetsTable({ data, loading, updatingAssets, onManualU
     });
   };
 
+  // Check if any asset has a price greater than 0
+  const hasAnyPriceData = data.some(asset => asset.price > 0);
 
   return (
     <div className="w-full">
       <ScrollArea className="h-[450px] w-full">
         <Table>
+          {!loading && !hasAnyPriceData && (
+              <TableCaption className="py-4">
+                  Os preços ainda não foram carregados. Clique em "Atualizar Tudo" para buscar os dados.
+              </TableCaption>
+          )}
           <TableHeader>
             <TableRow>
               <TableHead>Ativo</TableHead>

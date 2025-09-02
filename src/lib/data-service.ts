@@ -24,12 +24,16 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
 
             let change = 0;
             let absoluteChange = 0;
+            let currentPrice = commodity.price || 0; // Use stored price or default to 0
 
-            if (querySnapshot.size > 1) {
-                const latestData = querySnapshot.docs[0].data();
-                const previousData = querySnapshot.docs[1].data();
-                absoluteChange = latestData.price - previousData.price;
-                change = previousData.price !== 0 ? (absoluteChange / previousData.price) * 100 : 0;
+            if (querySnapshot.docs.length > 0) {
+                 const latestData = querySnapshot.docs[0].data();
+                 currentPrice = latestData.price;
+                 if (querySnapshot.docs.length > 1) {
+                    const previousData = querySnapshot.docs[1].data();
+                    absoluteChange = latestData.price - previousData.price;
+                    change = previousData.price !== 0 ? (absoluteChange / previousData.price) * 100 : 0;
+                 }
             }
             
             const lastUpdatedTimestamp = commodity.lastUpdated ? (commodity.lastUpdated as unknown as Timestamp) : null;
@@ -37,7 +41,7 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
             
             prices.push({
                 ...commodity,
-                price: commodity.price || 0,
+                price: currentPrice,
                 change,
                 absoluteChange,
                 lastUpdated,
