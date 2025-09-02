@@ -1,8 +1,7 @@
 
-
 'use server';
 
-import type { ChartData, CommodityPriceData, HistoryInterval, UcsData, CalculateUcsIndexOutput, FormulaParameters } from './types';
+import type { ChartData, CommodityPriceData, HistoryInterval, UcsData } from './types';
 import { getCommodities } from './commodity-config-service';
 import { getDb } from './firebase-admin-config';
 import { collection, query, orderBy, limit, getDocs, Timestamp, getDoc, doc } from 'firebase/firestore';
@@ -24,20 +23,23 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
 
             let change = 0;
             let absoluteChange = 0;
-            let currentPrice = commodity.price || 0; // Use stored price or default to 0
+            let currentPrice = 0;
+            let lastUpdated = 'N/A';
 
             if (querySnapshot.docs.length > 0) {
-                 const latestData = querySnapshot.docs[0].data();
+                 const latestDoc = querySnapshot.docs[0];
+                 const latestData = latestDoc.data();
                  currentPrice = latestData.price;
+                 
+                 const lastUpdatedTimestamp = latestData.savedAt as Timestamp;
+                 lastUpdated = lastUpdatedTimestamp ? lastUpdatedTimestamp.toDate().toLocaleString('pt-BR') : 'N/A';
+
                  if (querySnapshot.docs.length > 1) {
                     const previousData = querySnapshot.docs[1].data();
                     absoluteChange = latestData.price - previousData.price;
                     change = previousData.price !== 0 ? (absoluteChange / previousData.price) * 100 : 0;
                  }
             }
-            
-            const lastUpdatedTimestamp = commodity.lastUpdated ? (commodity.lastUpdated as unknown as Timestamp) : null;
-            const lastUpdated = lastUpdatedTimestamp ? lastUpdatedTimestamp.toDate().toLocaleString('pt-BR') : 'N/A';
             
             prices.push({
                 ...commodity,

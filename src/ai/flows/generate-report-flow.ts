@@ -208,7 +208,7 @@ export async function generateReport(input: GenerateReportInput): Promise<Genera
       // Determine interval and limit based on period
       const { interval, limit, periodTitle } = {
           daily: { interval: '1d' as const, limit: 30, periodTitle: 'Diário (Últimos 30 dias)' },
-          monthly: { interval: '1mo' as const, limit: 12, periodTitle: 'Mensal (Últimos 12 meses)' },
+          monthly: { interval: '1wk' as const, limit: 12, periodTitle: 'Mensal (Últimos 12 meses)' },
           yearly: { interval: '1mo' as const, limit: 60, periodTitle: 'Anual (Últimos 5 anos)' },
       }[period];
 
@@ -222,13 +222,15 @@ export async function generateReport(input: GenerateReportInput): Promise<Genera
           getCommodityPrices()
       ]);
       const ucsHistory = ucsIndex.history.slice(-limit);
+      
+      const assetsForAnalysis = assets.map(a => ({ name: a.name, price: a.price, change: a.change }));
 
       // Generate AI analysis
       const analysisText = await analysisPrompt({
           reportTitle,
           periodTitle,
           ucsHistory,
-          assets,
+          assets: assetsForAnalysis,
           observations
       });
 

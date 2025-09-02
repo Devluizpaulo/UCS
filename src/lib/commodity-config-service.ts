@@ -7,7 +7,7 @@
 
 import { getDb } from './firebase-admin-config';
 import { collection, doc, getDocs, getDoc, setDoc, deleteDoc, query, orderBy, limit } from 'firebase/firestore';
-import type { CommodityConfig } from './types';
+import type { CommodityConfig, InitialCommodityConfig } from './types';
 import { COMMODITY_TICKER_MAP } from './marketdata-config';
 
 const COMMODITIES_COLLECTION = 'commodities';
@@ -23,16 +23,18 @@ async function seedDefaultCommodities() {
     
     if (snapshot.empty) {
         console.log('[CommodityConfigService] No commodities found, seeding database with defaults.');
-        const promises = Object.entries(COMMODITY_TICKER_MAP).map(([name, config]) => {
-            const commodity: CommodityConfig = {
-                id: name, // Use the key as the document ID
-                name: name,
-                ...config,
+        const promises = Object.entries(COMMODITY_TICKER_MAP).map(([id, config]) => {
+            const commodityData: InitialCommodityConfig = {
+                name: config.name,
+                ticker: config.ticker,
+                currency: config.currency,
+                category: config.category,
+                description: config.description,
+                unit: config.unit,
+                source: config.source,
             };
-            // Use the internal save function to create the documents
-            const { id, ...dataToSave } = commodity;
             const docRef = doc(db, COMMODITIES_COLLECTION, id);
-            return setDoc(docRef, dataToSave, { merge: true });
+            return setDoc(docRef, commodityData);
         });
         await Promise.all(promises);
         console.log('[CommodityConfigService] Default commodities seeded successfully.');
@@ -53,7 +55,7 @@ export async function getCommodities(): Promise<CommodityConfig[]> {
         const querySnapshot = await getDocs(q);
         const commodities: CommodityConfig[] = [];
         querySnapshot.forEach((doc) => {
-            commodities.push({ id: doc.id, ...doc.data() } as CommodityConfig);
+            commodities.push({ id: doc.id, ...(doc.data() as InitialCommodityConfig) });
         });
         return commodities;
     } catch (error) {
@@ -73,7 +75,7 @@ export async function getCommodity(id: string): Promise<CommodityConfig | null> 
         const docRef = doc(db, COMMODITIES_COLLECTION, id);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
-            return { id: docSnap.id, ...docSnap.data() } as CommodityConfig;
+            return { id: docSnap.id, ...(docSnap.data() as InitialCommodityConfig) };
         }
         return null;
     } catch (error) {
@@ -95,6 +97,12 @@ export async function saveCommodity(commodity: CommodityConfig): Promise<void> {
     }
     try {
         const { id, ...dataToSave } = commodity;
+        // Ensure price and lastUpdated are not part of the config document
+        delete (dataToSave as any).price;
+        delete (dataToSave as any).lastUpdated;
+        delete (dataToSave as any).change;
+        delete (dataToSave as any).absoluteChange;
+
         const docRef = doc(db, COMMODITIES_COLLECTION, id);
         await setDoc(docRef, dataToSave, { merge: true }); // Use merge to avoid overwriting fields on update
         console.log(`[CommodityConfigService] Successfully saved commodity: ${id}`);
@@ -115,6 +123,8 @@ export async function deleteCommodity(id: string): Promise<void> {
         throw new Error("Commodity ID is required for deletion.");
     }
     try {
+        // Here you might also want to delete the `price_entries` subcollection.
+        // This is a more complex operation and is omitted for now for simplicity.
         const docRef = doc(db, COMMODITIES_COLLECTION, id);
         await deleteDoc(docRef);
         console.log(`[CommodityConfigService] Successfully deleted commodity: ${id}`);

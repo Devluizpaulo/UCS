@@ -40,8 +40,9 @@ export async function getFormulaParameters(): Promise<FormulaParameters> {
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
-      // Return existing data
-      return docSnap.data() as FormulaParameters;
+      // Merge with defaults to ensure new parameters are not missing
+      const dbData = docSnap.data();
+      return { ...defaultParameters, ...dbData } as FormulaParameters;
     } else {
       // Document doesn't exist, so create it with default values and return them
       console.log('[FormulaService] No parameters found, creating with default values.');
@@ -74,5 +75,3 @@ export async function saveFormulaParameters(params: Omit<FormulaParameters, 'isC
     throw new Error("Failed to save formula parameters to the database.");
   }
 }
-
-

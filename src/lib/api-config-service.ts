@@ -31,14 +31,15 @@ export async function getApiConfig(): Promise<ApiConfig> {
     if (docSnap.exists()) {
       // Merge with default config to ensure all keys are present
       const dbConfig = docSnap.data();
-      return {
+      const mergedConfig = {
           ...defaultApiConfig,
           ...dbConfig,
           marketData: {
             ...defaultApiConfig.marketData,
-            ...dbConfig.marketData,
+            ...(dbConfig.marketData || {}),
           },
       };
+      return mergedConfig as ApiConfig;
     } else {
       console.log('[ApiConfigService] No config found, creating with default values.');
       await setDoc(docRef, defaultApiConfig);

@@ -1,5 +1,4 @@
 
-
 'use server';
 /**
  * @fileOverview A service for interacting with the Firebase Firestore database.
@@ -12,8 +11,8 @@ import type { CommodityPriceData, CalculateUcsIndexOutput } from './types';
 
 /**
  * Saves a batch of commodity price data to Firestore using a batched write for efficiency.
- * It updates the main document for each commodity with the latest price and adds a new
- * historical entry in the 'price_entries' subcollection.
+ * It creates a new historical entry in the 'price_entries' subcollection for each asset.
+ * It DOES NOT update the main commodity document, as that holds static config.
  *
  * @param {CommodityPriceData[]} data - An array of commodity price data objects.
  * @returns {Promise<void>}
@@ -33,28 +32,17 @@ export async function saveCommodityData(data: CommodityPriceData[]): Promise<voi
         return;
     }
     
-    // 1. Reference to the main commodity document (e.g., /commodities/Soja Futuros)
-    const commodityDocRef = doc(db, 'commodities', item.id);
-    
-    // 2. Reference to the new document in the 'price_entries' subcollection
-    const newPriceEntryRef = doc(collection(commodityDocRef, 'price_entries'));
+    // Reference to the new document in the 'price_entries' subcollection
+    const newPriceEntryRef = doc(collection(db, 'commodities', item.id, 'price_entries'));
     
     // Data for the historical price entry
     const priceEntryData = {
         price: item.price,
         savedAt: serverTimestamp(),
     };
-    
-    // Data to update the main commodity document
-    const mainDocUpdateData = {
-        price: item.price,
-        lastUpdated: serverTimestamp(),
-        // Keep other fields like ticker, name, etc. as they are
-    };
 
-    // Add operations to the batch
+    // Add operation to the batch
     batch.set(newPriceEntryRef, priceEntryData);
-    batch.set(commodityDocRef, mainDocUpdateData, { merge: true }); // Merge to avoid overwriting static data
   });
 
   try {
@@ -76,9 +64,10 @@ export async function saveUcsIndexData(indexData: CalculateUcsIndexOutput): Prom
     const { indexValue, isConfigured, components, vusDetails } = indexData;
     const db = await getDb();
 
-    if (typeof indexValue !== 'number' || !isFinite(indexValue) || (isConfigured && indexValue <= 0) ) {
-        console.warn('[DB] Invalid or zero UCS index value provided for saving, but will save components if available:', indexValue);
-        // Allow saving even if index is 0, but log it.
+    if (typeof indexValue !== 'number' || !isFinite(indexValue)) {
+        console.warn('[DB] Invalid or non-finite UCS index value provided. Skipping save.', indexValue);
+        // Only save if the value is valid.
+        return;
     }
 
     try {
