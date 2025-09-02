@@ -28,8 +28,8 @@ export function calculateIndex(prices: { [key: string]: number }, params: Formul
   
       // --- Data Validation ---
       const requiredAssets = [
-          'USD/BRL Histórico', 'EUR/BRL Histórico', 'Madeira Futuros',
-          'Boi Gordo Futuros - Ago 25 (BGIc1)', 'Milho Futuros', 'Soja Futuros', 'Carbono Futuros'
+          'USD/BRL Histórico', 'EUR/BRL Histórico', 'Madeira Serrada Futuros - Set 25 (LXRc1)',
+          'Boi Gordo Futuros - Ago 25 (BGIc1)', 'Milho Futuros - Set 25 (CCMc1)', 'Soja Futuros - Nov 25 (SJCc1)', 'Carbono Futuros'
       ];
       for (const asset of requiredAssets) {
           if (prices[asset] === undefined || prices[asset] === null || prices[asset] === 0) {
@@ -43,19 +43,18 @@ export function calculateIndex(prices: { [key: string]: number }, params: Formul
       const taxa_eur_brl = prices['EUR/BRL Histórico'];
   
       // Prices (raw)
-      const preco_lumber_mbf = prices['Madeira Futuros'];
+      const preco_lumber_mbf = prices['Madeira Serrada Futuros - Set 25 (LXRc1)'];
       const preco_boi_arroba = prices['Boi Gordo Futuros - Ago 25 (BGIc1)'];
-      const preco_milho_bushel_cents = prices['Milho Futuros'];
-      const preco_soja_bushel_cents = prices['Soja Futuros'];
+      const preco_milho_brl = prices['Milho Futuros - Set 25 (CCMc1)'];
+      const preco_soja_usd = prices['Soja Futuros - Nov 25 (SJCc1)'];
       const preco_carbono_eur = prices['Carbono Futuros'];
   
       // --- Price Conversions ---
       const preco_madeira_serrada_m3_usd = (preco_lumber_mbf / 1000) * 424;
       const preco_madeira_serrada_m3_brl = preco_madeira_serrada_m3_usd * taxa_usd_brl;
       const preco_madeira_tora_m3_brl = preco_madeira_serrada_m3_brl * params.FATOR_CONVERSAO_SERRADA_TORA;
-      const preco_milho_ton_usd = (preco_milho_bushel_cents / 100) * (1000 / 25.4);
-      const preco_milho_ton_brl = preco_milho_ton_usd * taxa_usd_brl;
-      const preco_soja_ton_usd = (preco_soja_bushel_cents / 100) * (1000 / 27.2);
+      const preco_milho_ton_brl = preco_milho_brl * (1000 / 60);
+      const preco_soja_ton_usd = preco_soja_usd * (1000 / 60);
       const preco_soja_ton_brl = preco_soja_ton_usd * taxa_usd_brl;
       const preco_carbono_brl = preco_carbono_eur * taxa_eur_brl;
       

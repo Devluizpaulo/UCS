@@ -22,9 +22,9 @@ async function runScenarioSimulation(asset: string, changeType: 'percentage' | '
 const commodities = [
     // We only allow simulation on assets that are part of the formula
     { value: 'Boi Gordo Futuros - Ago 25 (BGIc1)', label: 'Boi Gordo Futuros - Ago 25 (BGIc1)' },
-    { value: 'Soja Futuros', label: 'Soja Futuros' },
-    { value: 'Milho Futuros', label: 'Milho Futuros' },
-    { value: 'Madeira Futuros', label: 'Madeira Futuros' },
+    { value: 'Soja Futuros - Nov 25 (SJCc1)', label: 'Soja Futuros - Nov 25 (SJCc1)' },
+    { value: 'Milho Futuros - Set 25 (CCMc1)', label: 'Milho Futuros - Set 25 (CCMc1)' },
+    { value: 'Madeira Serrada Futuros - Set 25 (LXRc1)', label: 'Madeira Serrada Futuros - Set 25 (LXRc1)' },
     { value: 'Carbono Futuros', label: 'Carbono Futuros' },
 ];
 
