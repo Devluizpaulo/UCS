@@ -30,7 +30,9 @@ const CalculateUcsIndexOutputSchema = z.object({
 export type CalculateUcsIndexOutput = z.infer<typeof CalculateUcsIndexOutputSchema>;
 
 // Internal helper function for calculation. Can be reused by other flows.
-export async function calculateIndex(prices: { [key: string]: number }, params: FormulaParameters): Promise<CalculateUcsIndexOutput> {
+// THIS IS NOT A SERVER ACTION and does not need to be async.
+// It's a pure calculation function.
+export function calculateIndex(prices: { [key: string]: number }, params: FormulaParameters): CalculateUcsIndexOutput {
     const defaultResult = { 
         indexValue: 0, 
         isConfigured: params.isConfigured,
@@ -146,6 +148,7 @@ export async function calculateUcsIndex(): Promise<CalculateUcsIndexOutput> {
           return acc;
       }, {} as { [key: string]: number });
       
+      // Use the pure calculation function
       return calculateIndex(prices, params);
     }
   );

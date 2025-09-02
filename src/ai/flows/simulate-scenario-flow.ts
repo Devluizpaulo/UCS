@@ -13,7 +13,7 @@ import { z } from 'genkit';
 import { getCommodityPrices } from '@/lib/data-service';
 import type { ScenarioResult, SimulateScenarioInput } from '@/lib/types';
 import { getFormulaParameters } from '@/lib/formula-service';
-import { calculateIndex } from './calculate-ucs-index-flow';
+import { calculateIndex } from './calculate-ucs-index-flow'; // Import the pure calculation function
 
 const SimulateScenarioInputSchema = z.object({
     asset: z.string(),
@@ -55,8 +55,8 @@ export async function simulateScenario(input: SimulateScenarioInput): Promise<Sc
         // Get the unconverted original price to show the user
         const originalAssetPrice = originalPrices[asset] || 0;
 
-        // 2. Calculate the original index value
-        const originalIndexResult = await calculateIndex(originalPrices, params);
+        // 2. Calculate the original index value using the pure function
+        const originalIndexResult = calculateIndex(originalPrices, params);
         const originalIndexValue = originalIndexResult.indexValue;
 
         // 3. Create the new set of prices based on the scenario
@@ -67,8 +67,8 @@ export async function simulateScenario(input: SimulateScenarioInput): Promise<Sc
             simulatedPrices[asset] = value;
         }
 
-        // 4. Calculate the new index value
-        const newIndexResult = await calculateIndex(simulatedPrices, params);
+        // 4. Calculate the new index value using the pure function
+        const newIndexResult = calculateIndex(simulatedPrices, params);
         const newIndexValue = newIndexResult.indexValue;
 
         // 5. Calculate the percentage change
