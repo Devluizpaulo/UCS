@@ -59,7 +59,7 @@ export default function LoginPage() {
 
       toast({
         title: 'Login bem-sucedido',
-        description: 'Bem-vindo de volta! Redirecionando...',
+        description: 'Bem-vindo de volta! Preparando seu painel...',
       });
       
       setRedirectOnSuccess(true);

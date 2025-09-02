@@ -96,4 +96,15 @@
   .animate-ken-burns {
     animation: ken-burns 20s ease-in-out infinite alternate-reverse;
   }
+  @keyframes spin-around {
+      from {
+          transform: rotate(0deg);
+      }
+      to {
+          transform: rotate(360deg);
+      }
+  }
+  .animate-spin-around {
+      animation: spin-around 1.5s linear infinite;
+  }
 }

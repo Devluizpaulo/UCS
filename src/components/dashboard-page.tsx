@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Settings, Loader2, RefreshCw } from 'lucide-react';
 import { PageHeader } from '@/components/page-header';
@@ -22,11 +22,34 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
 
 
+const loadingMessages = [
+    "Preparando seu painel...",
+    "Buscando as cotações mais recentes...",
+    "Calculando o índice UCS...",
+    "Otimizando a visualização...",
+    "Quase pronto!",
+];
+
+function InitialLoadingScreen({ message }: { message: string }) {
+    return (
+        <div className="flex flex-col items-center justify-center h-full w-full absolute inset-0 bg-background z-50">
+            <div className="relative flex items-center justify-center h-48 w-48">
+                <div className="absolute inset-0 border-4 border-primary/20 rounded-full"></div>
+                <div className="absolute inset-2 border-4 border-primary/20 rounded-full animate-spin-around [animation-direction:reverse]"></div>
+                <Image src="/image/ucs.png" alt="Ícone do Índice UCS" width={128} height={128} className="rounded-full" />
+            </div>
+            <p className="text-lg mt-8 text-muted-foreground animate-pulse">{message}</p>
+        </div>
+    );
+}
+
 export function DashboardPage() {
   const [ucsData, setUcsData] = useState<UcsData | null>(null);
   const [commodities, setCommodities] = useState<CommodityPriceData[]>([]);
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
+  const [isInitialising, setIsInitialising] = useState(true);
+  const [loadingMessage, setLoadingMessage] = useState(loadingMessages[0]);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [historyInterval, setHistoryInterval] = useState<HistoryInterval>('1d');
@@ -125,33 +148,37 @@ export function DashboardPage() {
   }, [toast, ucsData?.isConfigured]);
 
   useEffect(() => {
-    // Initial data fetch when the component mounts
-    // This is triggered once after a successful login and redirection
+    let messageInterval: NodeJS.Timeout;
+    
+    // This is the main initialisation effect
     const initialFetch = async () => {
-        toast({
-            title: "Buscando dados...",
-            description: "Atualizando cotações para exibir os dados mais recentes."
-        });
-        setIsUpdatingAll(true); // Use the general loading state
+        setIsInitialising(true);
+        let messageIndex = 0;
+        messageInterval = setInterval(() => {
+            messageIndex = (messageIndex + 1) % loadingMessages.length;
+            setLoadingMessage(loadingMessages[messageIndex]);
+        }, 2000);
+
         try {
             const result = await runFetchAndSavePrices(); // Update all prices
-            if (result.success) {
-                toast({ title: 'Dados atualizados!', description: 'Exibindo as informações mais recentes.' });
-                await fetchDashboardData(); // Now fetch the processed data to display
-            } else {
-                throw new Error(result.message);
+            await fetchDashboardData(); // Now fetch the processed data to display
+            if (!result.success) {
+                 throw new Error(result.message);
             }
         } catch (error: any) {
              console.error('Initial data fetch failed:', error);
              toast({ variant: 'destructive', title: 'Falha na Busca de Dados', description: "Não foi possível buscar os dados. Exibindo as últimas informações salvas." });
-             // Even if update fails, try to show whatever is in the DB
              await fetchDashboardData();
         } finally {
-            setIsUpdatingAll(false);
+            clearInterval(messageInterval);
+            setIsInitialising(false);
         }
     };
     
     initialFetch();
+
+    // Cleanup interval on unmount
+    return () => clearInterval(messageInterval);
   }, [fetchDashboardData, toast]);
 
 
@@ -165,7 +192,8 @@ export function DashboardPage() {
   const isConfigured = ucsData?.isConfigured ?? false;
 
   return (
-    <div className="flex min-h-screen w-full flex-col">
+    <div className="flex min-h-screen w-full flex-col relative">
+       {isInitialising && <InitialLoadingScreen message={loadingMessage} />}
       <PageHeader title="Painel">
         <Button onClick={handleUpdateAll} disabled={isUpdatingAll || !isConfigured}>
             {isUpdatingAll ? (
@@ -176,7 +204,7 @@ export function DashboardPage() {
             Atualizar Tudo
         </Button>
       </PageHeader>
-      <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
+      <main className={`flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6 transition-opacity duration-500 ${isInitialising ? 'opacity-0' : 'opacity-100'}`}>
        
         {!loading && !isConfigured && (
             <Alert>
