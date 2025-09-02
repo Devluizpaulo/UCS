@@ -1,4 +1,5 @@
 
+
 export type ChartData = {
   time: string;
   value: number;
@@ -42,7 +43,7 @@ export type HistoricalQuote = {
   change: number;
 };
 
-export type UcsData = {
+export type UcsIndexComponents = {
   indexValue: number;
   isConfigured: boolean;
   components: {
@@ -56,6 +57,10 @@ export type UcsData = {
     soja: number;
   };
 };
+
+export type UcsData = UcsIndexComponents;
+export type CalculateUcsIndexOutput = UcsIndexComponents;
+
 
 export type ScenarioResult = {
   newIndexValue: number;

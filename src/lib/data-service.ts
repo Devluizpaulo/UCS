@@ -1,12 +1,11 @@
 
+
 'use server';
 
-import type { ChartData, CommodityPriceData, HistoryInterval, UcsData, RiskAnalysisData, RiskMetric, CommodityConfig, FormulaParameters } from './types';
-import type { CalculateUcsIndexOutput } from '@/ai/flows/calculate-ucs-index-flow';
+import type { ChartData, CommodityPriceData, HistoryInterval, UcsData } from './types';
 import { getCommodities } from './commodity-config-service';
-import { calculate_volatility, calculate_correlation } from './statistics';
 import { db } from './firebase-admin-config';
-import { collection, query, orderBy, limit, getDocs, Timestamp } from 'firebase/firestore';
+import { collection, query, orderBy, limit, getDocs, Timestamp, getDoc, doc } from 'firebase/firestore';
 
 
 // --- Functions to get data from FIRESTORE ---
@@ -61,20 +60,37 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
 
 
 export async function getUcsIndexValue(interval: HistoryInterval = '1d'): Promise<{ latest: UcsData, history: ChartData[] }> {
-    const { calculateUcsIndex } = await import('@/ai/flows/calculate-ucs-index-flow');
-    
-    // This will calculate the index based on latest prices in DB.
-    const ucsResult = await calculateUcsIndex();
-
     const historyCollectionRef = collection(db, 'ucs_index_history');
     
-    // Determine limit based on interval
     const limitMap = { '1d': 30, '1wk': 26, '1mo': 60 };
     const qLimit = limitMap[interval] || 30;
 
     const q = query(historyCollectionRef, orderBy('savedAt', 'desc'), limit(qLimit));
     const querySnapshot = await getDocs(q);
     
+    let latestData: UcsData = {
+        indexValue: 0, isConfigured: false,
+        components: { vm: 0, vus: 0, crs: 0 },
+        vusDetails: { pecuaria: 0, milho: 0, soja: 0 }
+    };
+    
+    if (!querySnapshot.empty) {
+        const latestDoc = querySnapshot.docs[0];
+        const data = latestDoc.data();
+        latestData = {
+            indexValue: data.value,
+            isConfigured: data.isConfigured ?? false, // Ensure isConfigured exists
+            components: data.components ?? { vm: 0, vus: 0, crs: 0 },
+            vusDetails: data.vusDetails ?? { pecuaria: 0, milho: 0, soja: 0 }
+        };
+    } else {
+        // If no history, check if formula is configured to show correct status
+        const formulaDoc = await getDoc(doc(db, 'settings', 'formula_parameters'));
+        if (formulaDoc.exists()) {
+            latestData.isConfigured = formulaDoc.data().isConfigured ?? false;
+        }
+    }
+
     const history: ChartData[] = [];
     querySnapshot.forEach(doc => {
         const data = doc.data();
@@ -88,7 +104,7 @@ export async function getUcsIndexValue(interval: HistoryInterval = '1d'): Promis
     });
 
     return {
-        latest: ucsResult,
+        latest: latestData,
         history: history.reverse(),
     };
 }

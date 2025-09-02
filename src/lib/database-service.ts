@@ -1,4 +1,5 @@
 
+
 'use server';
 /**
  * @fileOverview A service for interacting with the Firebase Firestore database.
@@ -7,7 +8,7 @@
 
 import { db } from './firebase-admin-config';
 import { collection, doc, setDoc, serverTimestamp, writeBatch, Timestamp, query, orderBy, limit, getDocs } from 'firebase/firestore';
-import type { CommodityPriceData } from './types';
+import type { CommodityPriceData, CalculateUcsIndexOutput } from './types';
 
 /**
  * Saves a batch of commodity price data to Firestore using a batched write for efficiency.
@@ -66,15 +67,17 @@ export async function saveCommodityData(data: CommodityPriceData[]): Promise<voi
 }
 
 /**
- * Saves the calculated UCS index value to its own historical collection.
+ * Saves the calculated UCS index value and its components to its historical collection.
  * This should be called once per day by the scheduled job.
- * @param {number} indexValue - The calculated UCS index value.
+ * @param {CalculateUcsIndexOutput} indexData - The calculated UCS index data object.
  * @returns {Promise<void>}
  */
-export async function saveUcsIndexData(indexValue: number): Promise<void> {
-    if (typeof indexValue !== 'number' || !isFinite(indexValue) || indexValue <= 0) {
-        console.error('[DB] Invalid or zero UCS index value provided for saving:', indexValue);
-        return;
+export async function saveUcsIndexData(indexData: CalculateUcsIndexOutput): Promise<void> {
+    const { indexValue, isConfigured, components, vusDetails } = indexData;
+
+    if (typeof indexValue !== 'number' || !isFinite(indexValue) || (isConfigured && indexValue <= 0) ) {
+        console.warn('[DB] Invalid or zero UCS index value provided for saving, but will save components if available:', indexValue);
+        // Allow saving even if index is 0, but log it.
     }
 
     try {
@@ -90,23 +93,33 @@ export async function saveUcsIndexData(indexValue: number): Promise<void> {
         );
         const querySnapshot = await getDocs(q);
         
+        let docRef;
+
         if (!querySnapshot.empty) {
             const lastDoc = querySnapshot.docs[0];
             const lastSavedDate = (lastDoc.data().savedAt as Timestamp).toDate();
             lastSavedDate.setHours(0, 0, 0, 0);
 
             if (lastSavedDate.getTime() === today.getTime()) {
-                console.log(`[DB] UCS index value for today already exists. Skipping save.`);
-                return;
+                console.log(`[DB] UCS index value for today already exists. Updating existing document.`);
+                docRef = lastDoc.ref;
             }
         }
+        
+        // If no document for today, create a new one
+        if (!docRef) {
+            docRef = doc(historyCollectionRef);
+        }
 
-        const newDocRef = doc(historyCollectionRef);
-        await setDoc(newDocRef, {
+        await setDoc(docRef, {
             value: indexValue,
+            isConfigured,
+            components,
+            vusDetails,
             savedAt: serverTimestamp(),
-        });
-        console.log(`[DB] Successfully saved UCS index value: ${indexValue}`);
+        }, { merge: true }); // Use merge to update or create
+        
+        console.log(`[DB] Successfully saved UCS index data. Value: ${indexValue}`);
     } catch (error) {
         console.error('[DB] Failed to save UCS index data:', error);
         throw new Error('Failed to save UCS index data.');
