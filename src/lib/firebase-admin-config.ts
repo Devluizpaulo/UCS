@@ -1,5 +1,4 @@
 
-// @ts-nocheck
 'use server';
 /**
  * @fileOverview Firebase Admin SDK configuration for SERVER-SIDE use only.
@@ -10,41 +9,42 @@
 
 import admin from 'firebase-admin';
 
-let db: admin.firestore.Firestore;
-let auth: admin.auth.Auth;
-
-
-// Check if the app is already initialized to prevent errors
-if (!admin.apps.length) {
-  try {
-    console.log('[Firebase Admin] Initializing Firebase Admin SDK...');
-    admin.initializeApp({
-      // Environment variables are used for security and are automatically
-      // available in the Vercel environment.
-    });
-    console.log('[Firebase Admin] SDK initialized successfully.');
-  } catch (error) {
-    console.error('[Firebase Admin] Initialization error:', error.stack);
-  }
+// This function ensures that we initialize the app only once.
+function getFirebaseApp() {
+    if (!admin.apps.length) {
+        try {
+            console.log('[Firebase Admin] Initializing Firebase Admin SDK...');
+            admin.initializeApp({
+                 // Environment variables are used for security and are automatically
+                 // available in the Vercel environment.
+            });
+            console.log('[Firebase Admin] SDK initialized successfully.');
+        } catch(error: any) {
+            console.error('[Firebase Admin] Initialization error:', error.stack);
+            throw error; // Re-throw the error to fail fast if initialization is impossible.
+        }
+    }
+    // Return the default app instance.
+    return admin.app();
 }
-
-// Initialize services after the app is configured
-db = admin.firestore();
-auth = admin.auth();
 
 
 /**
  * Returns the singleton Firestore instance.
+ * Ensures the app is initialized before returning the db object.
  * @returns {Promise<admin.firestore.Firestore>} The Firestore database object.
  */
-export async function getDb() {
-  return db;
+export async function getDb(): Promise<admin.firestore.Firestore> {
+  const app = getFirebaseApp();
+  return admin.firestore(app);
 }
 
 /**
  * Returns the singleton Auth instance.
+ * Ensures the app is initialized before returning the auth object.
  * @returns {Promise<admin.auth.Auth>} The Firebase Auth object.
  */
-export async function getAuth() {
-  return auth;
+export async function getAuth(): Promise<admin.auth.Auth> {
+  const app = getFirebaseApp();
+  return admin.auth(app);
 }
