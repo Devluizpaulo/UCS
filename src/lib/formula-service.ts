@@ -5,7 +5,7 @@
  * @fileOverview A service for managing the UCS Index formula parameters.
  */
 
-import { db } from './firebase-admin-config'; // Use server-side admin SDK
+import { getDb } from './firebase-admin-config'; // Use server-side admin SDK
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import type { FormulaParameters } from './types';
 
@@ -35,6 +35,7 @@ const defaultParameters: FormulaParameters = {
  * @returns {Promise<FormulaParameters>} A promise that resolves to the formula parameters.
  */
 export async function getFormulaParameters(): Promise<FormulaParameters> {
+  const db = await getDb();
   const docRef = doc(db, SETTINGS_COLLECTION, FORMULA_DOC_ID);
   try {
     const docSnap = await getDoc(docRef);
@@ -61,6 +62,7 @@ export async function getFormulaParameters(): Promise<FormulaParameters> {
  * @returns {Promise<void>} A promise that resolves when the save is complete.
  */
 export async function saveFormulaParameters(params: Omit<FormulaParameters, 'isConfigured'>): Promise<void> {
+  const db = await getDb();
   const docRef = doc(db, SETTINGS_COLLECTION, FORMULA_DOC_ID);
   try {
     // Set the parameters and mark as configured.
@@ -73,3 +75,4 @@ export async function saveFormulaParameters(params: Omit<FormulaParameters, 'isC
     throw new Error("Failed to save formula parameters to the database.");
   }
 }
+

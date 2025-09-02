@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -12,7 +12,6 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { app } from '@/lib/firebase-config';
 import { FileSpreadsheet, Loader2 } from 'lucide-react';
-import { setCookie } from 'cookies-next';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -26,46 +25,25 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
-  const [redirectOnSuccess, setRedirectOnSuccess] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+  const auth = getAuth(app);
+
   const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   });
 
-  useEffect(() => {
-    if (redirectOnSuccess) {
-        const timer = setTimeout(() => {
-            router.push('/');
-        }, 500); // Small delay to allow toast to be seen
-        return () => clearTimeout(timer);
-    }
-  }, [redirectOnSuccess, router]);
-
 
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
-    
-    const auth = getAuth(app);
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
-      const user = userCredential.user;
-      
-      const token = await user.getIdToken();
-      setCookie('firebaseIdToken', token, { 
-          path: '/', 
-          maxAge: 24 * 60 * 60, // 24 hours in seconds
-      });
-
+      await signInWithEmailAndPassword(auth, data.email, data.password);
       toast({
         title: 'Login bem-sucedido',
-        description: 'Bem-vindo de volta! Preparando seu painel...',
+        description: 'Bem-vindo de volta! Redirecionando...',
       });
-      
-      setRedirectOnSuccess(true);
-      setIsLoading(false);
-
-
+      // On success, force redirect to the dashboard.
+      router.push('/');
     } catch (error: any) {
       console.error('Login failed:', error);
       toast({
@@ -76,7 +54,8 @@ export default function LoginPage() {
             : 'Ocorreu um erro. Por favor, tente novamente.',
       });
        setIsLoading(false);
-    }
+    } 
+    // Do not set isLoading to false on success, as the page will be redirected.
   };
 
   return (

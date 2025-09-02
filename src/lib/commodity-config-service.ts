@@ -5,8 +5,8 @@
  * This service provides CRUD (Create, Read, Update, Delete) operations.
  */
 
-import { db } from './firebase-admin-config';
-import { collection, doc, getDocs, getDoc, setDoc, deleteDoc, query, orderBy } from 'firebase/firestore';
+import { getDb } from './firebase-admin-config';
+import { collection, doc, getDocs, getDoc, setDoc, deleteDoc, query, orderBy, limit } from 'firebase/firestore';
 import type { CommodityConfig } from './types';
 import { COMMODITY_TICKER_MAP } from './marketdata-config';
 
@@ -17,6 +17,7 @@ const COMMODITIES_COLLECTION = 'commodities';
  * This is useful for initial setup.
  */
 async function seedDefaultCommodities() {
+    const db = await getDb();
     const q = query(collection(db, COMMODITIES_COLLECTION), orderBy('name'), limit(1));
     const snapshot = await getDocs(q);
     
@@ -41,6 +42,7 @@ async function seedDefaultCommodities() {
  */
 export async function getCommodities(): Promise<CommodityConfig[]> {
     await seedDefaultCommodities(); // Ensure defaults exist on first run
+    const db = await getDb();
     
     try {
         const q = query(collection(db, COMMODITIES_COLLECTION), orderBy('name'));
@@ -59,9 +61,10 @@ export async function getCommodities(): Promise<CommodityConfig[]> {
 /**
  * Retrieves a single commodity by its ID.
  * @param {string} id - The ID of the commodity to retrieve.
- * @returns {Promise<CommodityConfig | null>} A promise that resolves to the commodity or null if not found.
+ * @returns {Promise<CommododyConfig | null>} A promise that resolves to the commodity or null if not found.
  */
 export async function getCommodity(id: string): Promise<CommodityConfig | null> {
+    const db = await getDb();
     try {
         const docRef = doc(db, COMMODITIES_COLLECTION, id);
         const docSnap = await getDoc(docRef);
@@ -82,6 +85,7 @@ export async function getCommodity(id: string): Promise<CommodityConfig | null> 
  * @returns {Promise<void>} A promise that resolves when the save is complete.
  */
 export async function saveCommodity(commodity: CommodityConfig): Promise<void> {
+    const db = await getDb();
     if (!commodity.id) {
         throw new Error("Commodity ID cannot be empty.");
     }
@@ -102,6 +106,7 @@ export async function saveCommodity(commodity: CommodityConfig): Promise<void> {
  * @returns {Promise<void>} A promise that resolves when the deletion is complete.
  */
 export async function deleteCommodity(id: string): Promise<void> {
+    const db = await getDb();
     if (!id) {
         throw new Error("Commodity ID is required for deletion.");
     }

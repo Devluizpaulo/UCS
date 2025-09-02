@@ -2,9 +2,9 @@
 
 'use server';
 
-import type { ChartData, CommodityPriceData, HistoryInterval, UcsData } from './types';
+import type { ChartData, CommodityPriceData, HistoryInterval, UcsData, CalculateUcsIndexOutput, FormulaParameters } from './types';
 import { getCommodities } from './commodity-config-service';
-import { db } from './firebase-admin-config';
+import { getDb } from './firebase-admin-config';
 import { collection, query, orderBy, limit, getDocs, Timestamp, getDoc, doc } from 'firebase/firestore';
 
 
@@ -13,6 +13,7 @@ import { collection, query, orderBy, limit, getDocs, Timestamp, getDoc, doc } fr
 export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
     const commodities = await getCommodities();
     const prices: CommodityPriceData[] = [];
+    const db = await getDb();
 
     for (const commodity of commodities) {
         try {
@@ -60,6 +61,7 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
 
 
 export async function getUcsIndexValue(interval: HistoryInterval = '1d'): Promise<{ latest: UcsData, history: ChartData[] }> {
+    const db = await getDb();
     const historyCollectionRef = collection(db, 'ucs_index_history');
     
     const limitMap = { '1d': 30, '1wk': 26, '1mo': 60 };

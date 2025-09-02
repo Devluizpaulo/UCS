@@ -6,7 +6,7 @@
  * This service handles writing data to the 'commodities' and 'ucs_index_history' collections.
  */
 
-import { db } from './firebase-admin-config';
+import { getDb } from './firebase-admin-config';
 import { collection, doc, setDoc, serverTimestamp, writeBatch, Timestamp, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import type { CommodityPriceData, CalculateUcsIndexOutput } from './types';
 
@@ -23,7 +23,7 @@ export async function saveCommodityData(data: CommodityPriceData[]): Promise<voi
     console.log('[DB] No data provided to save.');
     return;
   }
-
+  const db = await getDb();
   console.log(`[DB] Starting batched write for ${data.length} commodities.`);
   const batch = writeBatch(db);
 
@@ -74,6 +74,7 @@ export async function saveCommodityData(data: CommodityPriceData[]): Promise<voi
  */
 export async function saveUcsIndexData(indexData: CalculateUcsIndexOutput): Promise<void> {
     const { indexValue, isConfigured, components, vusDetails } = indexData;
+    const db = await getDb();
 
     if (typeof indexValue !== 'number' || !isFinite(indexValue) || (isConfigured && indexValue <= 0) ) {
         console.warn('[DB] Invalid or zero UCS index value provided for saving, but will save components if available:', indexValue);
