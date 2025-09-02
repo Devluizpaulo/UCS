@@ -1,3 +1,4 @@
+
 'use client';
 
 import { PageHeader } from '@/components/page-header';
@@ -5,8 +6,9 @@ import { MarketTrends } from '@/components/market-trends';
 import { RiskAnalysis } from '@/components/risk-analysis';
 import { ScenarioAnalysis } from '@/components/scenario-analysis';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { UnderlyingAssetsTable } from './underlying-assets-table';
+import { UnderlyingAssetsCard } from './underlying-assets-card';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Accordion } from './ui/accordion';
 
 export function AnalysisPage() {
   return (
@@ -30,15 +32,9 @@ export function AnalysisPage() {
             <ScenarioAnalysis />
           </TabsContent>
            <TabsContent value="assets">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Ativos Subjacentes do Índice</CardTitle>
-                    <CardDescription>Preços e variações diárias das commodities que compõem o índice UCS.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <UnderlyingAssetsTable />
-                </CardContent>
-            </Card>
+            <Accordion type="single" collapsible className="w-full space-y-4" defaultValue="item-1">
+                <UnderlyingAssetsCard onDataChange={() => {}} />
+            </Accordion>
           </TabsContent>
         </Tabs>
       </main>
