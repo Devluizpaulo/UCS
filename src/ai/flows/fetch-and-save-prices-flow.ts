@@ -84,9 +84,9 @@ export const fetchAndSavePricesFlow = ai.defineFlow(
 
       } else {
         // --- All Assets Update Logic (Scheduled Job) ---
-        const assetsToFetch = Object.values(commodityMap).map(c => ({ name: c.name, ticker: c.ticker }));
-        console.log(`[FLOW] Fetching prices for: ${assetsToFetch.map(a => a.name).join(', ')}`);
-        fetchedPrices = await getMarketDataCandles(assetsToFetch);
+        const tickersToFetch = Object.values(commodityMap).map(c => c.ticker);
+        console.log(`[FLOW] Fetching prices for tickers: ${tickersToFetch.join(', ')}`);
+        fetchedPrices = await getMarketDataCandles(tickersToFetch);
       }
       
       if (fetchedPrices.length === 0) {

@@ -4,6 +4,8 @@
 import type { CommodityPriceData, HistoryInterval, MarketDataQuoteResponse, MarketDataHistoryResponse } from './types';
 import { getApiConfig } from './api-config-service';
 import { getCommodityConfig } from './commodity-config-service';
+import { collection, getDocs, limit, orderBy, query } from 'firebase/firestore';
+import { db } from './firebase-config';
 
 // In-memory cache
 interface CacheEntry<T> {
@@ -107,43 +109,66 @@ export async function getMarketDataHistory(ticker: string, resolution: 'D' | 'W'
     return data;
 }
 
-export async function getMarketDataCandles(assetsToFetch: {name: string, ticker: string}[]): Promise<CommodityPriceData[]> {
+export async function getMarketDataCandles(tickersToFetch: string[]): Promise<CommodityPriceData[]> {
     const { commodityMap } = await getCommodityConfig();
     const priceData: CommodityPriceData[] = [];
+    
+    if (!tickersToFetch || tickersToFetch.length === 0) {
+        return [];
+    }
 
-    for (const asset of assetsToFetch) {
-        try {
-            const commodityInfo = commodityMap[asset.name];
-            if (!commodityInfo) continue;
+    try {
+        const config = await getApiConfig();
+        const tickersString = tickersToFetch.join(',');
+        const params = new URLSearchParams({ symbol: tickersString });
+        const data: MarketDataQuoteResponse = await fetchFromApi('/stocks/quotes/', params, config.marketData.TIMEOUTS.QUOTE);
+        
+        // Create a reverse map from ticker to name for easy lookup
+        const tickerToNameMap = Object.fromEntries(
+            Object.entries(commodityMap).map(([name, config]) => [config.ticker, name])
+        );
 
-            // Using history to get the last closing price
-            const history = await getMarketDataHistory(asset.ticker, 'D', 2);
-            if (!history || history.c.length < 2) {
-                console.warn(`[MarketData] Not enough historical data for ${asset.name} to calculate change.`);
+        for (let i = 0; i < data.symbol.length; i++) {
+            const ticker = data.symbol[i];
+            const name = tickerToNameMap[ticker];
+            
+            if (!name) {
+                console.warn(`[MarketData] Received data for unknown ticker: ${ticker}`);
                 continue;
             }
+
+            const commodityInfo = commodityMap[name];
+            const newPrice = data.last[i];
+            const lastUpdated = new Date(data.updated[i] * 1000);
+
+            // Get last saved price from Firestore to calculate change
+            const pricesCollectionRef = collection(db, 'commodities_history', name, 'price_entries');
+            const q = query(pricesCollectionRef, orderBy('savedAt', 'desc'), limit(1));
+            const querySnapshot = await getDocs(q);
+            let lastPrice = newPrice; // Default to newPrice if no history
+            if (!querySnapshot.empty) {
+                lastPrice = querySnapshot.docs[0].data().price;
+            }
             
-            const lastPrice = history.c[history.c.length - 1];
-            const prevPrice = history.c[history.c.length - 2];
-            const absoluteChange = lastPrice - prevPrice;
-            const change = prevPrice !== 0 ? (absoluteChange / prevPrice) * 100 : 0;
-            const lastUpdated = new Date(history.t[history.t.length - 1] * 1000);
+            const absoluteChange = newPrice - lastPrice;
+            const change = lastPrice !== 0 ? (absoluteChange / lastPrice) * 100 : 0;
 
             priceData.push({
                 id: '', // Firestore will generate
-                name: asset.name,
-                ticker: asset.ticker,
-                price: lastPrice,
+                name: name,
+                ticker: ticker,
+                price: newPrice,
                 change,
                 absoluteChange,
-                lastUpdated: `Fech. ${lastUpdated.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit'})}`,
+                lastUpdated: `Live ${lastUpdated.toLocaleTimeString('pt-BR')}`,
                 currency: commodityInfo.currency,
             });
-
-        } catch (error) {
-            console.error(`[MarketData] Failed to fetch candle data for ${asset.name}:`, error);
         }
+    } catch (error) {
+        console.error(`[MarketData] Failed to fetch bulk candle data for tickers ${tickersToFetch.join(',')}:`, error);
+        // Return empty array on failure to prevent partial updates
+        return []; 
     }
-
+    
     return priceData;
 }
