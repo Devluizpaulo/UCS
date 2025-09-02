@@ -8,7 +8,7 @@
 import { db } from './firebase-config';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import type { CommodityMap, FullCommodityConfig } from './types';
-import { COMMODITY_TICKER_MAP as defaultConfigMap } from './yahoo-finance-config-data';
+import { COMMODITY_TICKER_MAP as defaultConfigMap } from './marketdata-config';
 
 const COMMODITY_CONFIG_DOC_ID = 'commodity_config';
 const SETTINGS_COLLECTION = 'settings';

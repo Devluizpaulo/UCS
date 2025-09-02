@@ -16,7 +16,7 @@ import type { Commodity, CommodityPriceData } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { AssetDetailModal } from './asset-detail-modal';
 import { Skeleton } from './ui/skeleton';
-import { COMMODITY_TICKER_MAP } from '@/lib/yahoo-finance-config-data';
+import { COMMODITY_TICKER_MAP } from '@/lib/marketdata-config';
 import { Button } from './ui/button';
 import { ScrollArea } from './ui/scroll-area';
 
