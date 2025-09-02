@@ -45,7 +45,7 @@ const commoditySchema = z.object({
 
 
 export function EditCommodityModal({ isOpen, onClose, commodity, onSave, isSaving }: EditCommodityModalProps) {
-  const { register, handleSubmit, control, formState: { errors }, reset } = useForm<CommodityConfig>({
+  const { register, handleSubmit, control, formState: { errors }, reset, watch } = useForm<CommodityConfig>({
     resolver: zodResolver(commoditySchema),
     defaultValues: commodity || {
       id: '',
@@ -86,17 +86,18 @@ export function EditCommodityModal({ isOpen, onClose, commodity, onSave, isSavin
   };
   
   const isCreating = !commodity;
+  const source = watch('source');
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{isCreating ? 'Adicionar Novo Ativo' : `Editar Ativo: ${commodity.name}`}</DialogTitle>
+          <DialogTitle>{isCreating ? 'Adicionar Novo Ativo' : `Editar Ativo: ${commodity?.name}`}</DialogTitle>
           <DialogDescription>
             Ajuste os parâmetros de busca de dados para este ativo. O ID do Ativo é único e não pode ser alterado.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 py-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-6">
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="id" className="text-right">ID do Ativo</Label>
             <Input id="id" {...register('id')} className="col-span-3" disabled={!isCreating} placeholder="Ex: Soja Futuros"/>
@@ -174,7 +175,7 @@ export function EditCommodityModal({ isOpen, onClose, commodity, onSave, isSavin
              {errors.source && <p className="col-span-4 text-xs text-destructive text-right">{errors.source.message}</p>}
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="pt-4">
             <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
             <Button type="submit" disabled={isSaving}>
               {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
