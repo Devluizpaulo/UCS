@@ -66,6 +66,7 @@ export function DashboardPage() {
         const ucsResult = await getUcsIndexValue();
         setUcsData(ucsResult.latest);
         setIndexHistoryData(ucsResult.history); // Initial history (daily)
+        return ucsResult.latest.isConfigured;
       } catch (error) {
         console.error("Failed to fetch dashboard data:", error);
         toast({
@@ -73,6 +74,7 @@ export function DashboardPage() {
           title: "Erro ao buscar dados",
           description: "Não foi possível obter os dados do banco de dados.",
         });
+        return false;
       }
   }, [toast]);
 
@@ -126,9 +128,29 @@ export function DashboardPage() {
         }, 2000);
 
         try {
-            await fetchDashboardData();
+            // Step 1: Fetch initial data from DB to show something quickly
+            const isConfigured = await fetchDashboardData();
+
+            // Step 2: If configured, attempt a silent background update
+            if (isConfigured) {
+                console.log("[Dashboard] Formula is configured, attempting background price fetch...");
+                const result = await runFetchAndSavePrices();
+                if (result.success) {
+                    console.log("[Dashboard] Background fetch successful, refreshing data.");
+                    await fetchDashboardData(); // Refresh data with latest prices
+                } else {
+                    console.warn("[Dashboard] Background fetch failed, showing stale data.", result.message);
+                    toast({
+                      title: 'Aviso de Atualização',
+                      description: 'Não foi possível buscar as cotações mais recentes. Exibindo os últimos dados salvos.',
+                    });
+                }
+            } else {
+                console.log("[Dashboard] Formula is not configured. Skipping background price fetch.");
+            }
+
         } catch (error: any) {
-             console.error('Initial data fetch failed:', error);
+             console.error('Initial data fetch or background update failed:', error);
              toast({ variant: 'destructive', title: 'Falha na Busca de Dados', description: "Não foi possível buscar os dados. Verifique a conexão e tente atualizar." });
         } finally {
             if (messageInterval) {
@@ -156,7 +178,7 @@ export function DashboardPage() {
     <div className="flex min-h-screen w-full flex-col relative">
        {isInitialising && <InitialLoadingScreen message={loadingMessage} />}
       <PageHeader title="Painel">
-        <Button onClick={handleUpdateAll} disabled={isUpdatingAll}>
+        <Button onClick={handleUpdateAll} disabled={isUpdatingAll || !isConfigured}>
             {isUpdatingAll ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
