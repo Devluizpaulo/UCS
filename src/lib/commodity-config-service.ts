@@ -18,7 +18,7 @@ const COMMODITIES_COLLECTION = 'commodities';
  */
 async function seedDefaultCommodities() {
     const db = await getDb();
-    const q = query(collection(db, COMMODITIES_COLLECTION), orderBy('name'), limit(1));
+    const q = query(collection(db, COMMODITIES_COLLECTION), limit(1));
     const snapshot = await getDocs(q);
     
     if (snapshot.empty) {
@@ -29,7 +29,10 @@ async function seedDefaultCommodities() {
                 name: name,
                 ...config,
             };
-            return saveCommodity(commodity);
+            // Use the internal save function to create the documents
+            const { id, ...dataToSave } = commodity;
+            const docRef = doc(db, COMMODITIES_COLLECTION, id);
+            return setDoc(docRef, dataToSave, { merge: true });
         });
         await Promise.all(promises);
         console.log('[CommodityConfigService] Default commodities seeded successfully.');
@@ -61,9 +64,9 @@ export async function getCommodities(): Promise<CommodityConfig[]> {
 /**
  * Retrieves a single commodity by its ID.
  * @param {string} id - The ID of the commodity to retrieve.
- * @returns {Promise<CommododyConfig | null>} A promise that resolves to the commodity or null if not found.
+ * @returns {Promise<CommodityConfig | null>} A promise that resolves to the commodity or null if not found.
  */
-export async function getCommodity(id: string): Promise<CommodityConfig | null> {
+export async function getCommodity(id: string): Promise<CommododyConfig | null> {
     const db = await getDb();
     try {
         const docRef = doc(db, COMMODITIES_COLLECTION, id);
