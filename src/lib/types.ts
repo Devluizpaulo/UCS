@@ -1,5 +1,6 @@
 
 
+
 export type ChartData = {
   time: string;
   value: number;
@@ -100,6 +101,19 @@ export type FormulaParameters = {
     isConfigured: boolean;
 }
 
+export type ReportPreviewData = {
+    reportTitle: string;
+    periodTitle: string;
+    analysisText: string;
+    ucsHistory: ChartData[];
+    assets: {
+        name: string;
+        price: number;
+        change: number;
+        currency: string;
+    }[];
+}
+
 export type GenerateReportInput = {
   type: 'index_performance' | 'asset_performance';
   period: 'daily' | 'monthly' | 'yearly';
@@ -111,6 +125,7 @@ export type GenerateReportOutput = {
   fileName: string;
   fileContent: string;
   mimeType: string;
+  previewData: ReportPreviewData;
 };
 
 export type SearchedAsset = {

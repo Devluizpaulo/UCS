@@ -13,8 +13,9 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { Download, FileText, Loader2 } from 'lucide-react';
-import type { GenerateReportInput } from '@/lib/types';
+import type { GenerateReportInput, GenerateReportOutput } from '@/lib/types';
 import { Textarea } from '@/components/ui/textarea';
+import { ReportPreviewModal } from '@/components/report-preview-modal';
 
 
 async function generateReport(input: GenerateReportInput) {
@@ -40,6 +41,7 @@ type ReportFormData = z.infer<typeof reportSchema>;
 
 export default function ReportsPage() {
   const [isLoading, setIsLoading] = useState(false);
+  const [reportData, setReportData] = useState<GenerateReportOutput | null>(null);
   const { toast } = useToast();
 
   const {
@@ -53,9 +55,10 @@ export default function ReportsPage() {
 
   const onSubmit = async (data: ReportFormData) => {
     setIsLoading(true);
+    setReportData(null);
     toast({
-      title: 'Gerando Relatório',
-      description: 'Aguarde enquanto preparamos seu arquivo para download. Isso pode levar alguns segundos.',
+      title: 'Gerando Pré-visualização',
+      description: 'Aguarde enquanto a IA analisa os dados. Isso pode levar alguns segundos.',
     });
 
     try {
@@ -66,44 +69,53 @@ export default function ReportsPage() {
         observations: data.observations,
       });
       
-      if (result.fileContent) {
-          const mimeType = data.format === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-          const fileName = `relatorio_ucs_${data.reportType}_${data.period}.${data.format}`;
-
-          const byteCharacters = atob(result.fileContent);
-          const byteNumbers = new Array(byteCharacters.length);
-          for (let i = 0; i < byteCharacters.length; i++) {
-              byteNumbers[i] = byteCharacters.charCodeAt(i);
-          }
-          const byteArray = new Uint8Array(byteNumbers);
-          const blob = new Blob([byteArray], { type: mimeType });
-
-          const link = document.createElement('a');
-          link.href = window.URL.createObjectURL(blob);
-          link.download = fileName;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          
-          toast({
-              title: 'Download Iniciado',
-              description: 'Seu relatório foi gerado com sucesso.',
-          });
-      } else {
-          throw new Error('O conteúdo do arquivo não foi retornado pelo servidor.');
-      }
+      setReportData(result);
 
     } catch (error) {
       console.error('Falha ao gerar relatório:', error);
       toast({
         variant: 'destructive',
         title: 'Erro ao Gerar Relatório',
-        description: 'Não foi possível gerar o arquivo. Tente novamente mais tarde.',
+        description: 'Não foi possível gerar a pré-visualização. Tente novamente mais tarde.',
       });
     } finally {
       setIsLoading(false);
     }
   };
+
+  const handleDownload = () => {
+    if (!reportData) return;
+
+    try {
+        const byteCharacters = atob(reportData.fileContent);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: reportData.mimeType });
+
+        const link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.download = reportData.fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        toast({
+            title: 'Download Iniciado',
+            description: 'Seu relatório foi baixado com sucesso.',
+        });
+        setReportData(null); // Close modal on download
+    } catch(e) {
+         toast({
+            variant: 'destructive',
+            title: 'Erro no Download',
+            description: 'Ocorreu um erro ao tentar baixar o arquivo.',
+        });
+    }
+  };
+
 
   return (
     <MainLayout>
@@ -115,7 +127,7 @@ export default function ReportsPage() {
               <CardHeader>
                 <CardTitle>Exportar Dados com Análise de IA</CardTitle>
                 <CardDescription>
-                  Selecione os parâmetros e adicione observações para que a IA gere um texto analítico no seu relatório.
+                  Selecione os parâmetros e adicione observações para que a IA gere uma análise para o seu relatório.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -195,9 +207,9 @@ export default function ReportsPage() {
                     {isLoading ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     ) : (
-                      <Download className="mr-2 h-4 w-4" />
+                      <FileText className="mr-2 h-4 w-4" />
                     )}
-                    Gerar Relatório com IA
+                    Gerar Pré-visualização
                   </Button>
                 </form>
               </CardContent>
@@ -213,6 +225,17 @@ export default function ReportsPage() {
           </div>
         </main>
       </div>
+      
+      {reportData && (
+          <ReportPreviewModal 
+            isOpen={!!reportData} 
+            onClose={() => setReportData(null)}
+            previewData={reportData.previewData}
+            onDownload={handleDownload}
+            format={reportData.fileName.split('.').pop() as 'pdf' | 'xlsx'}
+          />
+      )}
+
     </MainLayout>
   );
 }
