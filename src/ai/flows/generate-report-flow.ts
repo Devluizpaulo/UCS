@@ -257,7 +257,7 @@ export async function generateReport(input: GenerateReportInput): Promise<Genera
           assets: assetsForAnalysis,
           observations
       });
-      const analysisText = analysisResponse.text();
+      const analysisText = analysisResponse.text;
 
 
       // Generate file
