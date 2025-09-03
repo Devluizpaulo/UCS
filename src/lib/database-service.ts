@@ -22,7 +22,7 @@ export async function saveCommodityData(data: CommodityPriceData[]): Promise<voi
     console.log('[DB] No data provided to save.');
     return;
   }
-  const db = await getDb();
+  const db = getDb();
   console.log(`[DB] Starting batched write for ${data.length} commodities.`);
   const batch = db.batch();
 
@@ -62,7 +62,7 @@ export async function saveCommodityData(data: CommodityPriceData[]): Promise<voi
  */
 export async function saveUcsIndexData(indexData: CalculateUcsIndexOutput): Promise<void> {
     const { indexValue, isConfigured, components, vusDetails } = indexData;
-    const db = await getDb();
+    const db = getDb();
 
     if (typeof indexValue !== 'number' || !isFinite(indexValue)) {
         console.warn('[DB] Invalid or non-finite UCS index value provided. Skipping save.', indexValue);

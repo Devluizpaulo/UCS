@@ -1,20 +1,17 @@
-
-'use server';
 /**
  * @fileOverview Firebase Admin SDK configuration for SERVER-SIDE use only.
- * This file provides singleton instances of Firebase services to prevent
- * re-initialization on every server request, which is crucial for performance
- * and avoiding errors in a serverless environment.
+ * This file provides a robust way to get Firebase service instances,
+ * ensuring the SDK is initialized only once.
  */
 
 import admin from 'firebase-admin';
 
+// Check if the app is already initialized to prevent errors.
 if (!admin.apps.length) {
     try {
         console.log('[Firebase Admin] Initializing Firebase Admin SDK...');
         admin.initializeApp({
-             // Environment variables are used for security and are automatically
-             // available in the Vercel/Firebase environment.
+             // Environment variables are automatically available in the Vercel/Firebase environment.
         });
         console.log('[Firebase Admin] SDK initialized successfully.');
     } catch(error: any) {
@@ -25,21 +22,18 @@ if (!admin.apps.length) {
     }
 }
 
-const db = admin.firestore();
-const auth = admin.auth();
-
 /**
- * Returns the singleton Firestore instance.
- * @returns {Promise<admin.firestore.Firestore>} A promise that resolves to the Firestore database object.
+ * Returns the initialized Firestore instance.
+ * @returns {admin.firestore.Firestore} The Firestore database object.
  */
-export async function getDb(): Promise<admin.firestore.Firestore> {
-  return db;
+export function getDb(): admin.firestore.Firestore {
+  return admin.firestore();
 }
 
 /**
- * Returns the singleton Auth instance.
- * @returns {Promise<admin.auth.Auth>} A promise that resolves to the Firebase Auth object.
+ * Returns the initialized Auth instance.
+ * @returns {admin.auth.Auth} The Firebase Auth object.
  */
-export async function getAuth(): Promise<admin.auth.Auth> {
-  return auth;
+export function getAuth(): admin.auth.Auth {
+  return admin.auth();
 }

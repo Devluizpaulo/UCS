@@ -30,7 +30,7 @@ const defaultParameters: FormulaParameters = {
     FATOR_CARBONO: 2.59,         // Fator de Crédito de Carbono (tCO₂ estocadas por m³ de madeira)
     FATOR_AGUA: 0.07,            // Fator Água (% do VUS que representa o valor da água)
 
-    // Flag to check if user has saved the settings
+    // Status
     isConfigured: false, 
 };
 
@@ -40,7 +40,7 @@ const defaultParameters: FormulaParameters = {
  * @returns {Promise<FormulaParameters>} A promise that resolves to the formula parameters.
  */
 export async function getFormulaParameters(): Promise<FormulaParameters> {
-  const db = await getDb();
+  const db = getDb();
   const docRef = db.collection(SETTINGS_COLLECTION).doc(FORMULA_DOC_ID);
   try {
     const docSnap = await docRef.get();
@@ -68,7 +68,7 @@ export async function getFormulaParameters(): Promise<FormulaParameters> {
  * @returns {Promise<void>} A promise that resolves when the save is complete.
  */
 export async function saveFormulaParameters(params: Omit<FormulaParameters, 'isConfigured'>): Promise<void> {
-  const db = await getDb();
+  const db = getDb();
   const docRef = db.collection(SETTINGS_COLLECTION).doc(FORMULA_DOC_ID);
   try {
     // Set the parameters and mark as configured.

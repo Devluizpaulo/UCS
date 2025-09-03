@@ -18,7 +18,7 @@ const COMMODITIES_COLLECTION = 'commodities';
  * errors if they already exist, which avoids read-before-write issues on a new database.
  */
 async function seedDefaultCommodities() {
-    const db = await getDb();
+    const db = getDb();
     const collectionRef = db.collection(COMMODITIES_COLLECTION);
     
     try {
@@ -60,21 +60,38 @@ export async function getCommodities(): Promise<CommodityConfig[]> {
     await seedDefaultCommodities(); // Attempt to seed the DB for consistency, but don't depend on it.
 
     try {
-        // Return the static list directly from the config file to avoid server errors.
-        const commodities = Object.entries(COMMODITY_TICKER_MAP).map(([id, config]) => ({
+        const db = getDb();
+        const collectionRef = db.collection(COMMODITIES_COLLECTION);
+        const snapshot = await collectionRef.get();
+        
+        if (snapshot.empty) {
+            console.warn('[CommodityConfigService] Firestore collection is empty, falling back to hardcoded config.');
+            // Fallback to hardcoded list if firestore is empty after seeding attempt
+            const commodities = Object.entries(COMMODITY_TICKER_MAP).map(([id, config]) => ({
+                id: id,
+                ...config,
+                source: config.source || 'MarketData',
+                scrapeConfig: config.scrapeConfig || { url: '', selector: '' }
+            }));
+            return commodities.sort((a, b) => a.name.localeCompare(b.name));
+        }
+
+        const commodities = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+        } as CommodityConfig));
+        
+        return commodities.sort((a, b) => a.name.localeCompare(b.name));
+
+    } catch (error) {
+        console.error('[CommodityConfigService] Error fetching commodities from DB, falling back to hardcoded list:', error);
+         const commodities = Object.entries(COMMODITY_TICKER_MAP).map(([id, config]) => ({
             id: id,
             ...config,
             source: config.source || 'MarketData',
             scrapeConfig: config.scrapeConfig || { url: '', selector: '' }
         }));
-        
-        // Sort alphabetically by name for consistent ordering
         return commodities.sort((a, b) => a.name.localeCompare(b.name));
-
-    } catch (error) {
-        console.error('[CommodityConfigService] Error processing hardcoded commodities:', error);
-        // This should theoretically never fail, but as a fallback, return an empty array.
-        return [];
     }
 }
 
@@ -95,7 +112,7 @@ export async function getCommodity(id: string): Promise<CommodityConfig | null> 
  * @returns {Promise<void>} A promise that resolves when the save is complete.
  */
 export async function saveCommodity(commodity: CommodityConfig): Promise<void> {
-    const db = await getDb();
+    const db = getDb();
     if (!commodity.id) {
         throw new Error("Commodity ID cannot be empty.");
     }
@@ -116,14 +133,14 @@ export async function saveCommodity(commodity: CommodityConfig): Promise<void> {
  * @returns {Promise<void>} A promise that resolves when the deletion is complete.
  */
 export async function deleteCommodity(id: string): Promise<void> {
-    const db = await getDb();
+    const db = getDb();
     if (!id) {
         throw new Error("Commodity ID is required for deletion.");
     }
     try {
         const docRef = db.collection(COMMODITIES_COLLECTION).doc(id);
         await docRef.delete();
-        console.log(`[CommododyConfigService] Successfully deleted commodity: ${id}`);
+        console.log(`[CommodityConfigService] Successfully deleted commodity: ${id}`);
     } catch (error) {
         console.error(`[CommodityConfigService] Error deleting commodity ${id}:`, error);
         throw new Error(`Failed to delete commodity ${id}.`);
