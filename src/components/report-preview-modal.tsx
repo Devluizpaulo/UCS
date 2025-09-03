@@ -12,23 +12,29 @@ import {
 import type { ReportPreviewData } from '@/lib/types';
 import { ScrollArea } from './ui/scroll-area';
 import { Button } from './ui/button';
-import { Download, File as FileIcon, FileSpreadsheet } from 'lucide-react';
+import { Download, File as FileIcon, FileSpreadsheet, Share2 } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
+import { useToast } from '@/hooks/use-toast';
+import { useState } from 'react';
 
 interface ReportPreviewModalProps {
   isOpen: boolean;
   onClose: () => void;
   onDownload: () => void;
+  onShare: () => Promise<void>;
   previewData: ReportPreviewData;
   format: 'pdf' | 'xlsx';
+  isSharing: boolean;
 }
 
 export function ReportPreviewModal({
   isOpen,
   onClose,
   onDownload,
+  onShare,
   previewData,
   format,
+  isSharing,
 }: ReportPreviewModalProps) {
   const { reportTitle, periodTitle, analysisText, ucsHistory, assets } = previewData;
 
@@ -105,14 +111,24 @@ export function ReportPreviewModal({
             </div>
         </ScrollArea>
 
-        <DialogFooter className="pt-4 border-t">
-          <Button type="button" variant="outline" onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button onClick={onDownload}>
-            {format === 'pdf' ? <FileIcon className="mr-2 h-4 w-4" /> : <FileSpreadsheet className="mr-2 h-4 w-4" />}
-            Baixar Relatório .{format}
-          </Button>
+        <DialogFooter className="pt-4 border-t sm:justify-between">
+            <Button
+              variant="outline"
+              onClick={onShare}
+              disabled={isSharing}
+            >
+              <Share2 className="mr-2 h-4 w-4" />
+              {isSharing ? 'Compartilhando...' : 'Compartilhar'}
+            </Button>
+            <div className="flex gap-2 justify-end">
+                <Button type="button" variant="ghost" onClick={onClose}>
+                    Cancelar
+                </Button>
+                <Button onClick={onDownload}>
+                    {format === 'pdf' ? <FileIcon className="mr-2 h-4 w-4" /> : <FileSpreadsheet className="mr-2 h-4 w-4" />}
+                    Baixar Relatório .{format}
+                </Button>
+            </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -41,6 +41,7 @@ type ReportFormData = z.infer<typeof reportSchema>;
 
 export default function ReportsPage() {
   const [isLoading, setIsLoading] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
   const [reportData, setReportData] = useState<GenerateReportOutput | null>(null);
   const { toast } = useToast();
 
@@ -83,18 +84,21 @@ export default function ReportsPage() {
     }
   };
 
+  const base64ToBlob = (base64: string, mimeType: string): Blob => {
+    const byteCharacters = atob(base64);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    return new Blob([byteArray], { type: mimeType });
+  }
+
   const handleDownload = () => {
     if (!reportData) return;
 
     try {
-        const byteCharacters = atob(reportData.fileContent);
-        const byteNumbers = new Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-            byteNumbers[i] = byteCharacters.charCodeAt(i);
-        }
-        const byteArray = new Uint8Array(byteNumbers);
-        const blob = new Blob([byteArray], { type: reportData.mimeType });
-
+        const blob = base64ToBlob(reportData.fileContent, reportData.mimeType);
         const link = document.createElement('a');
         link.href = window.URL.createObjectURL(blob);
         link.download = reportData.fileName;
@@ -115,6 +119,53 @@ export default function ReportsPage() {
         });
     }
   };
+
+  const handleShare = async () => {
+     if (!reportData) return;
+     if (!navigator.share) {
+        toast({
+            variant: 'destructive',
+            title: 'Navegador não suportado',
+            description: 'Seu navegador não suporta a função de compartilhamento.'
+        });
+        return;
+     }
+
+     setIsSharing(true);
+     try {
+        const blob = base64ToBlob(reportData.fileContent, reportData.mimeType);
+        const file = new File([blob], reportData.fileName, { type: reportData.mimeType });
+        
+        const shareData = {
+            title: reportData.previewData.reportTitle,
+            text: reportData.previewData.analysisText,
+            files: [file],
+        };
+
+        if (navigator.canShare && navigator.canShare(shareData)) {
+            await navigator.share(shareData);
+             toast({
+                title: 'Relatório Compartilhado',
+                description: 'Seu relatório foi enviado com sucesso.',
+            });
+        } else {
+            throw new Error('Não é possível compartilhar este tipo de arquivo.');
+        }
+
+     } catch(err: any) {
+        // Avoid showing an error if the user closes the share sheet
+        if (err.name !== 'AbortError') {
+            console.error('Share failed:', err);
+            toast({
+                variant: 'destructive',
+                title: 'Falha ao Compartilhar',
+                description: err.message || 'Ocorreu um erro ao tentar compartilhar o arquivo.'
+            });
+        }
+     } finally {
+        setIsSharing(false);
+     }
+  }
 
 
   return (
@@ -232,7 +283,9 @@ export default function ReportsPage() {
             onClose={() => setReportData(null)}
             previewData={reportData.previewData}
             onDownload={handleDownload}
+            onShare={handleShare}
             format={reportData.fileName.split('.').pop() as 'pdf' | 'xlsx'}
+            isSharing={isSharing}
           />
       )}
 
