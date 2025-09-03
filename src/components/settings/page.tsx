@@ -15,8 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, AlertTriangle, PlusCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getFormulaParameters, saveFormulaParameters } from '@/lib/formula-service';
-import { getApiConfig, saveApiConfig } from '@/lib/api-config-service';
-import type { FormulaParameters, MarketDataConfig, CommodityConfig } from '@/lib/types';
+import type { FormulaParameters, CommodityConfig } from '@/lib/types';
 import { getCommodities, saveCommodity, deleteCommodity } from '@/lib/commodity-config-service';
 import { CommoditySourcesTable } from '@/components/commodity-sources-table';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -48,18 +47,6 @@ const formulaSchema = z.object({
     FATOR_CONVERSAO_SERRADA_TORA: z.coerce.number(),
 });
 
-const apiSchema = z.object({
-    API_BASE_URL: z.string().url(),
-    CACHE_TTL: z.object({
-        QUOTE: z.coerce.number().int().positive(),
-        HISTORICAL: z.coerce.number().int().positive(),
-    }),
-    TIMEOUTS: z.object({
-        QUOTE: z.coerce.number().int().positive(),
-        HISTORICAL: z.coerce.number().int().positive(),
-    }),
-});
-
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('sources');
@@ -76,24 +63,16 @@ export default function SettingsPage() {
       resolver: zodResolver(formulaSchema),
   });
 
-  const apiForm = useForm<MarketDataConfig>({
-      resolver: zodResolver(apiSchema),
-  });
   
   const fetchAllData = useCallback(async () => {
     setIsFetching(true);
     try {
-      const [formulaParams, apiParams, comms] = await Promise.all([
+      const [formulaParams, comms] = await Promise.all([
           getFormulaParameters(),
-          getApiConfig(),
           getCommodities()
       ]);
       formulaForm.reset(formulaParams);
-      apiForm.reset(apiParams.marketData);
       setCommodities(comms);
-      if (!formulaParams.isConfigured) {
-        setShowFormulaAlert(true);
-      }
     } catch (error) {
       console.error("Failed to fetch settings:", error);
       toast({
@@ -104,7 +83,7 @@ export default function SettingsPage() {
     } finally {
       setIsFetching(false);
     }
-  }, [toast, formulaForm, apiForm]);
+  }, [toast, formulaForm]);
 
   useEffect(() => {
     fetchAllData();
@@ -147,27 +126,7 @@ export default function SettingsPage() {
       toast({
         variant: 'destructive',
         title: 'Erro ao Salvar',
-        description: `Não foi possível salvar os parâmetros ou buscar as cotações. Erro: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
-  const onApiSubmit = async (data: MarketDataConfig) => {
-    setIsLoading(true);
-    try {
-      await saveApiConfig({ marketData: data });
-      toast({
-        title: 'Configurações de API Atualizadas',
-        description: 'Os parâmetros da API MarketData foram salvos.',
-      });
-    } catch (error) {
-      console.error('Error saving API config:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Erro ao Salvar',
-        description: 'Não foi possível salvar as configurações da API.',
+        description: 'Não foi possível salvar os parâmetros ou buscar as cotações. Tente novamente.',
       });
     } finally {
       setIsLoading(false);
@@ -204,7 +163,7 @@ export default function SettingsPage() {
         await deleteCommodity(deletingCommodityId);
         toast({
             title: "Ativo Excluído",
-            description: `O ativo foi removido do sistema.`
+            description: `O ativo ${deletingCommodityId} foi removido do sistema.`
         });
         await fetchAllData(); // Refresh the list
     } catch(error) {
@@ -227,9 +186,9 @@ export default function SettingsPage() {
             {showFormulaAlert && (
                  <Alert>
                     <AlertTriangle className="h-4 w-4" />
-                    <AlertTitle>Ação Necessária: Salve os Parâmetros da Fórmula</AlertTitle>
+                    <AlertTitle>Parâmetros Salvos!</AlertTitle>
                     <AlertDescription>
-                        Bem-vindo! Os parâmetros da fórmula foram carregados com valores padrão. Revise-os e clique em "Salvar Fórmula" pela primeira vez para ativar o cálculo do índice.
+                        Os parâmetros foram salvos. O valor do índice foi recalculado. Por favor, retorne ao painel para ver os valores atualizados.
                     </AlertDescription>
                 </Alert>
             )}
@@ -242,7 +201,7 @@ export default function SettingsPage() {
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="FATOR_CONVERSAO_SERRADA_TORA">Fator Conversão Madeira (Serrada p/ Tora)</Label>
-                        <Input id="FATOR_CONVERSAO_SERRADA_TORA" type="number" step="any" {...formulaForm.register('FATOR_CONVERSAO_SERRADA_TORA')} />
+                        <Input id="FATOR_CONVERSAO_SERRADA_Tora" type="number" step="any" {...formulaForm.register('FATOR_CONVERSAO_SERRADA_TORA')} />
                     </div>
                 </div>
             </div>
@@ -296,59 +255,12 @@ export default function SettingsPage() {
             </div>
             <Button type="submit" disabled={isLoading}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Salvar Fórmula e Recalcular Índice
+                Salvar Fórmula
             </Button>
         </form>
     );
   };
   
-  const renderApiForm = () => {
-    if (isFetching) return <SettingsSkeleton />;
-    return (
-        <form onSubmit={apiForm.handleSubmit(onApiSubmit)} className="space-y-8">
-            <div>
-                <h3 className="text-lg font-medium mb-4">Configuração Geral</h3>
-                 <div className="grid grid-cols-1 gap-6">
-                     <div className="space-y-2">
-                        <Label htmlFor="API_BASE_URL">URL Base da API</Label>
-                        <Input id="API_BASE_URL" type="url" {...apiForm.register('API_BASE_URL')} />
-                    </div>
-                </div>
-            </div>
-            <div>
-                <h3 className="text-lg font-medium mb-4">Cache (TTL em milissegundos)</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                        <Label htmlFor="CACHE_TTL.QUOTE">Cotações (Real-time)</Label>
-                        <Input id="CACHE_TTL.QUOTE" type="number" {...apiForm.register('CACHE_TTL.QUOTE')} />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="CACHE_TTL.HISTORICAL">Histórico</Label>
-                        <Input id="CACHE_TTL.HISTORICAL" type="number" {...apiForm.register('CACHE_TTL.HISTORICAL')} />
-                    </div>
-                </div>
-            </div>
-            <div>
-                <h3 className="text-lg font-medium mb-4">Timeouts (em milissegundos)</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                        <Label htmlFor="TIMEOUTS.QUOTE">Timeout Cotações</Label>
-                        <Input id="TIMEOUTS.QUOTE" type="number" {...apiForm.register('TIMEOUTS.QUOTE')} />
-                    </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="TIMEOUTS.HISTORICAL">Timeout Histórico</Label>
-                        <Input id="TIMEOUTS.HISTORICAL" type="number" {...apiForm.register('TIMEOUTS.HISTORICAL')} />
-                    </div>
-                </div>
-            </div>
-            <Button type="submit" disabled={isLoading}>
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Salvar Configurações da API
-            </Button>
-        </form>
-    );
-  }
-
   const renderSourcesTab = () => {
     return (
         <Card>
@@ -356,7 +268,7 @@ export default function SettingsPage() {
                <div>
                     <CardTitle>Fontes de Dados dos Ativos</CardTitle>
                     <CardDescription>
-                    Gerencie os ativos que compõem o índice. A fórmula requer pelo menos um ativo de cada categoria para um cálculo preciso: Câmbio, Agricultura, Florestal e Carbono.
+                    Gerencie os ativos que compõem o índice.
                     </CardDescription>
                </div>
                 <Button onClick={handleNewCommodity}>
@@ -394,11 +306,6 @@ export default function SettingsPage() {
                 className={activeTab === 'formula' ? "font-semibold text-primary" : ""}>
                 Fórmula do Índice
               </a>
-              <a href="#" 
-                onClick={() => setActiveTab('api')}
-                className={activeTab === 'api' ? "font-semibold text-primary" : ""}>
-                MarketData API
-              </a>
             </nav>
             <div className="grid gap-6">
               {activeTab === 'formula' && (
@@ -411,19 +318,6 @@ export default function SettingsPage() {
                     </CardHeader>
                     <CardContent>
                         {renderFormulaForm()}
-                    </CardContent>
-                </Card>
-              )}
-               {activeTab === 'api' && (
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Configurações de API (MarketData)</CardTitle>
-                        <CardDescription>
-                            Gerencie os parâmetros para a comunicação com a API MarketData.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        {renderApiForm()}
                     </CardContent>
                 </Card>
               )}
@@ -448,7 +342,7 @@ export default function SettingsPage() {
                 <AlertDialogHeader>
                 <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
                 <AlertDialogDescription>
-                    Esta ação não pode ser desfeita. Isso excluirá permanentemente o ativo do sistema. O histórico de cotações associado a ele também será perdido.
+                    Esta ação não pode ser desfeita. Isso excluirá permanentemente o ativo <span className="font-bold">{deletingCommodityId}</span> do sistema.
                 </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
