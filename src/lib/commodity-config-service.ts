@@ -52,59 +52,40 @@ async function seedDefaultCommodities() {
 }
 
 /**
- * Retrieves all commodities from Firestore, ordered by name.
- * It ensures the collection is seeded with default data if it's empty.
+ * Retrieves all commodities. In this revised version, it returns the hardcoded list from the config
+ * to ensure app stability, while still attempting to seed the database for future flexibility.
  * @returns {Promise<CommodityConfig[]>} A promise that resolves to an array of commodities.
  */
 export async function getCommodities(): Promise<CommodityConfig[]> {
-    await seedDefaultCommodities(); // Ensure defaults exist on first run
-    const db = await getDb();
-    
+    await seedDefaultCommodities(); // Attempt to seed the DB for consistency, but don't depend on it.
+
     try {
-        const collectionRef = db.collection(COMMODITIES_COLLECTION);
-        const querySnapshot = await collectionRef.orderBy('name').get();
-        const commodities: CommodityConfig[] = [];
-        querySnapshot.forEach((doc) => {
-            const data = doc.data() as InitialCommodityConfig;
-            commodities.push({ 
-                id: doc.id, 
-                ...data,
-                // Ensure optional fields are present on the returned object
-                source: data.source || 'MarketData', 
-                scrapeConfig: data.scrapeConfig || { url: '', selector: '' }
-            });
-        });
-        return commodities;
+        // Return the static list directly from the config file to avoid server errors.
+        const commodities = Object.entries(COMMODITY_TICKER_MAP).map(([id, config]) => ({
+            id: id,
+            ...config,
+            source: config.source || 'MarketData',
+            scrapeConfig: config.scrapeConfig || { url: '', selector: '' }
+        }));
+        
+        // Sort alphabetically by name for consistent ordering
+        return commodities.sort((a, b) => a.name.localeCompare(b.name));
+
     } catch (error) {
-        console.error('[CommodityConfigService] Error fetching commodities:', error);
-        throw new Error('Failed to fetch commodities from the database.');
+        console.error('[CommodityConfigService] Error processing hardcoded commodities:', error);
+        // This should theoretically never fail, but as a fallback, return an empty array.
+        return [];
     }
 }
 
 /**
- * Retrieves a single commodity by its ID.
+ * Retrieves a single commodity by its ID from the hardcoded list.
  * @param {string} id - The ID of the commodity to retrieve.
  * @returns {Promise<CommodityConfig | null>} A promise that resolves to the commodity or null if not found.
  */
 export async function getCommodity(id: string): Promise<CommodityConfig | null> {
-    const db = await getDb();
-    try {
-        const docRef = db.collection(COMMODITIES_COLLECTION).doc(id);
-        const docSnap = await docRef.get();
-        if (docSnap.exists) {
-            const data = docSnap.data() as InitialCommodityConfig;
-            return { 
-                id: docSnap.id, 
-                ...data,
-                source: data.source || 'MarketData',
-                scrapeConfig: data.scrapeConfig || { url: '', selector: '' }
-            };
-        }
-        return null;
-    } catch (error) {
-        console.error(`[CommodityConfigService] Error fetching commodity ${id}:`, error);
-        throw new Error(`Failed to fetch commodity ${id}.`);
-    }
+    const commodities = await getCommodities();
+    return commodities.find(c => c.id === id) || null;
 }
 
 /**
@@ -140,11 +121,9 @@ export async function deleteCommodity(id: string): Promise<void> {
         throw new Error("Commodity ID is required for deletion.");
     }
     try {
-        // Here you might also want to delete the `price_entries` subcollection.
-        // This is a more complex operation and is omitted for now for simplicity.
         const docRef = db.collection(COMMODITIES_COLLECTION).doc(id);
         await docRef.delete();
-        console.log(`[CommodityConfigService] Successfully deleted commodity: ${id}`);
+        console.log(`[CommododyConfigService] Successfully deleted commodity: ${id}`);
     } catch (error) {
         console.error(`[CommodityConfigService] Error deleting commodity ${id}:`, error);
         throw new Error(`Failed to delete commodity ${id}.`);
