@@ -9,26 +9,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, AlertTriangle, CheckCircle, ArrowRight } from 'lucide-react';
-import type { CommodityPriceData } from '@/lib/types';
 import { getCommodities } from '@/lib/commodity-config-service';
 import { getMarketDataHistory } from '@/lib/data-provider-service';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useRouter } from 'next/navigation';
-import { saveCommodityData, saveUcsIndexData } from '@/lib/database-service';
-import { calculateUcsIndex } from '@/ai/flows/calculate-ucs-index-flow';
+import { saveConfirmedPrices, type StagedPrice } from './actions';
 
-type StagedPrice = {
-    id: string;
-    name: string;
-    ticker: string;
-    currency: 'BRL' | 'USD' | 'EUR';
-    category: 'exchange' | 'vus' | 'vmad' | 'crs';
-    description: string;
-    unit: string;
-    source?: string;
-    price: number;
-    lastUpdated: string;
-}
 
 // Client-side action to get prices for review
 async function getStagedPrices(): Promise<StagedPrice[]> {
@@ -63,28 +49,6 @@ async function getStagedPrices(): Promise<StagedPrice[]> {
 
     return Promise.all(stagedPricesPromises);
 }
-
-// Server action to save confirmed prices
-async function saveConfirmedPrices(prices: StagedPrice[]): Promise<{ success: boolean; message: string; newIndexValue?: number }> {
-    'use server';
-    try {
-        const pricesToSave: CommodityPriceData[] = prices.map(p => ({
-            ...p,
-            change: 0, // Not calculated in this flow
-            absoluteChange: 0, // Not calculated in this flow
-        }));
-        
-        await saveCommodityData(pricesToSave);
-        const ucsResult = await calculateUcsIndex();
-        await saveUcsIndexData(ucsResult);
-
-        return { success: true, message: 'Preços salvos e índice recalculado com sucesso!', newIndexValue: ucsResult.indexValue };
-    } catch (error) {
-        console.error('Failed to save prices and recalculate index:', error);
-        return { success: false, message: 'Ocorreu um erro ao salvar os dados.' };
-    }
-}
-
 
 export default function UpdatePricesPage() {
     const [stagedPrices, setStagedPrices] = useState<StagedPrice[]>([]);
