@@ -1,9 +1,4 @@
 
-
-
-
-
-
 export type ChartData = {
   time: string;
   value: number;
@@ -18,11 +13,7 @@ export type CommodityConfig = {
   category: 'exchange' | 'vus' | 'vmad' | 'crs';
   description: string;
   unit: string;
-  source?: string;
-  scrapeConfig?: {
-    url: string;
-    selector: string;
-  };
+  source?: 'MarketData'; // Simplified to one source
 };
 
 // Represents commodity data combined with real-time pricing information
@@ -134,11 +125,6 @@ export type GenerateReportOutput = {
   previewData: ReportPreviewData;
 };
 
-export type SearchedAsset = {
-  symbol: string;
-  description: string;
-  country: string;
-}
 
 // --- API Configuration Types ---
 
@@ -154,10 +140,6 @@ export type MarketDataConfig = {
   };
 };
 
-export type ApiConfig = {
-    marketData: MarketDataConfig;
-    isConfigured: boolean;
-};
 
 // --- Initial Config Types ---
 export type InitialCommodityConfig = Omit<CommodityConfig, 'id'>;
@@ -167,14 +149,6 @@ export type CommodityMap = {
 };
 
 // --- MarketData API Response Types ---
-export interface MarketDataQuoteResponse {
-    s: 'ok' | 'error' | 'no_data';
-    errmsg?: string;
-    symbol: string[];
-    last: number[];
-    updated: number[];
-}
-
 export interface MarketDataHistoryResponse {
     s: 'ok' | 'error' | 'no_data';
     errmsg?: string;
@@ -184,12 +158,4 @@ export interface MarketDataHistoryResponse {
     l: number[]; // low
     c: number[]; // close
     v: number[]; // volume
-}
-
-export interface MarketDataSearchResponse {
-    s: 'ok' | 'error' | 'no_data';
-    errmsg?: string;
-    symbol: string[];
-    description: string[];
-    country: string[];
 }

@@ -20,7 +20,6 @@ import { getCommodities, saveCommodity, deleteCommodity } from '@/lib/commodity-
 import { CommoditySourcesTable } from '@/components/commodity-sources-table';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { EditCommodityModal } from '@/components/edit-commodity-modal';
-import { fetchAndSavePrices } from '@/ai/flows/fetch-and-save-prices-flow';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,6 +30,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { useRouter } from 'next/navigation';
 
 
 const formulaSchema = z.object({
@@ -57,6 +57,7 @@ export default function SettingsPage() {
   const [isFetching, setIsFetching] = useState(true);
   const [showFormulaAlert, setShowFormulaAlert] = useState(false);
   const { toast } = useToast();
+  const router = useRouter();
   const [commodities, setCommodities] = useState<CommodityConfig[]>([]);
   const [editingCommodity, setEditingCommodity] = useState<CommodityConfig | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -109,27 +110,18 @@ export default function SettingsPage() {
       await saveFormulaParameters(data);
       toast({
         title: 'Fórmula Atualizada',
-        description: 'Buscando cotações e recalculando o índice. Aguarde um momento.',
+        description: 'Os parâmetros da fórmula foram salvos. Redirecionando para a página de atualização de preços.',
       });
-
-      // Trigger the initial data fetch after saving the formula
-      const result = await fetchAndSavePrices({});
-      if (result.success) {
-         toast({
-            title: 'Índice Calculado!',
-            description: 'Os dados foram buscados e o índice foi calculado com sucesso. Volte ao painel para ver o resultado.',
-         });
-         setShowFormulaAlert(true);
-      } else {
-         throw new Error(result.message);
-      }
+      setShowFormulaAlert(true);
+      // Redirect to update prices page to confirm and recalculate
+      router.push('/update-prices');
 
     } catch (error) {
-      console.error('Error saving formula parameters or fetching prices:', error);
+      console.error('Error saving formula parameters:', error);
       toast({
         variant: 'destructive',
         title: 'Erro ao Salvar',
-        description: 'Não foi possível salvar os parâmetros ou buscar as cotações. Tente novamente.',
+        description: 'Não foi possível salvar os parâmetros. Tente novamente.',
       });
     } finally {
       setIsLoading(false);
@@ -191,7 +183,7 @@ export default function SettingsPage() {
                     <AlertTriangle className="h-4 w-4" />
                     <AlertTitle>Parâmetros Salvos!</AlertTitle>
                     <AlertDescription>
-                        Os parâmetros foram salvos. O valor do índice foi recalculado. Por favor, retorne ao painel para ver os valores atualizados.
+                        Os parâmetros foram salvos. Para que o índice seja recalculado, você será redirecionado para a página de atualização de preços.
                     </AlertDescription>
                 </Alert>
             )}
@@ -265,7 +257,7 @@ export default function SettingsPage() {
 
             <Button type="submit" disabled={isLoading}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Salvar Fórmula e Recalcular Índice
+                Salvar e Ir para Atualização
             </Button>
         </form>
     );

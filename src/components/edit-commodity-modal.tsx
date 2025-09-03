@@ -12,17 +12,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import type { CommodityConfig, SearchedAsset } from '@/lib/types';
-import { Loader2, Search } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { useDebounce } from '@/hooks/use-debounce';
-
-
-async function searchAssets(query: string): Promise<SearchedAsset[]> {
-    if (!query) return [];
-    const { searchAssetsFlow } = await import('@/ai/flows/search-assets-flow');
-    return searchAssetsFlow({ query });
-}
+import type { CommodityConfig } from '@/lib/types';
+import { Loader2 } from 'lucide-react';
 
 
 const commoditySchema = z.object({
@@ -33,22 +24,12 @@ const commoditySchema = z.object({
   category: z.enum(['exchange', 'vus', 'vmad', 'crs']),
   description: z.string().min(1, 'Descrição é obrigatória.'),
   unit: z.string().min(1, 'Unidade é obrigatória.'),
-  source: z.string().optional(),
-  scrapeConfig: z.object({
-    url: z.string().url('URL inválida.').or(z.literal('')),
-    selector: z.string(),
-  }).optional().refine(data => {
-    if (data?.url && !data.selector) return false;
-    return true;
-  }, {
-    message: "O seletor CSS é obrigatório se a URL for fornecida.",
-    path: ["selector"],
-  }),
+  source: z.enum(['MarketData']).default('MarketData'),
 });
 
 
 export function EditCommodityModal({ isOpen, onClose, commodity, onSave, isSaving }: EditCommodityModalProps) {
-  const { register, handleSubmit, control, formState: { errors }, reset, watch, setValue } = useForm<CommodityConfig>({
+  const { register, handleSubmit, control, formState: { errors }, reset } = useForm<CommodityConfig>({
     resolver: zodResolver(commoditySchema),
     defaultValues: commodity || {
       id: '',
@@ -59,17 +40,9 @@ export function EditCommodityModal({ isOpen, onClose, commodity, onSave, isSavin
       description: '',
       unit: '',
       source: 'MarketData',
-      scrapeConfig: { url: '', selector: '' }
     },
   });
   
-  const { toast } = useToast();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<SearchedAsset[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const debouncedSearchQuery = useDebounce(searchQuery, 300);
-
-
   useEffect(() => {
     // Reset form when commodity data changes (e.g., opening modal for different items)
     reset(commodity || {
@@ -81,56 +54,19 @@ export function EditCommodityModal({ isOpen, onClose, commodity, onSave, isSavin
       description: '',
       unit: '',
       source: 'MarketData',
-      scrapeConfig: { url: '', selector: '' }
     });
   }, [commodity, reset]);
 
-  const handleSearch = useCallback(async (query: string) => {
-    if (query.length < 2) {
-        setSearchResults([]);
-        return;
-    }
-    setIsSearching(true);
-    try {
-        const results = await searchAssets(query);
-        setSearchResults(results);
-    } catch (error) {
-        console.error("Failed to search assets:", error);
-        toast({
-            variant: "destructive",
-            title: "Erro na Busca",
-            description: "Não foi possível buscar os ativos na API.",
-        });
-    } finally {
-        setIsSearching(false);
-    }
-  }, [toast]);
-  
-  useEffect(() => {
-    handleSearch(debouncedSearchQuery);
-  }, [debouncedSearchQuery, handleSearch]);
-
-  const handleAssetSelect = (asset: SearchedAsset) => {
-    setValue('id', asset.description, { shouldValidate: true });
-    setValue('name', asset.description, { shouldValidate: true });
-    setValue('ticker', asset.symbol, { shouldValidate: true });
-    setValue('source', asset.country || 'MarketData');
-    setSearchQuery('');
-    setSearchResults([]);
-  };
 
   const onSubmit = (data: CommodityConfig) => {
-    // When creating, the user-provided ID is used.
-    // The name field is used for display.
     const finalData = {
         ...data,
-        name: data.name || data.id, // Fallback name to id if empty
+        name: data.name || data.id,
     };
     onSave(finalData);
   };
   
   const isCreating = !commodity;
-  const source = watch('source');
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -142,43 +78,7 @@ export function EditCommodityModal({ isOpen, onClose, commodity, onSave, isSavin
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-6">
-
-          {isCreating && (
-             <div className="relative grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="search" className="text-right">
-                    Busca de Ativos
-                </Label>
-                <div className="col-span-3">
-                  <div className="relative">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="search"
-                      placeholder="Digite para buscar (ex: 'Soybean', 'Corn')..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-8"
-                    />
-                    {isSearching && <Loader2 className="absolute right-2.5 top-2.5 h-4 w-4 animate-spin text-muted-foreground" />}
-                  </div>
-                  {searchResults.length > 0 && (
-                    <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-auto">
-                        {searchResults.map((asset) => (
-                            <div 
-                                key={asset.symbol} 
-                                className="p-2 hover:bg-accent cursor-pointer text-sm"
-                                onClick={() => handleAssetSelect(asset)}
-                            >
-                                <p className="font-semibold">{asset.symbol}</p>
-                                <p className="text-muted-foreground">{asset.description}</p>
-                            </div>
-                        ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-          )}
-
-
+          
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="id" className="text-right">ID do Ativo</Label>
             <Input id="id" {...register('id')} className="col-span-3" disabled={!isCreating} placeholder="Ex: Soja Futuros"/>
@@ -252,7 +152,20 @@ export function EditCommodityModal({ isOpen, onClose, commodity, onSave, isSavin
           
            <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="source" className="text-right">Fonte</Label>
-            <Input id="source" {...register('source')} className="col-span-3" />
+             <Controller
+                name="source"
+                control={control}
+                render={({ field }) => (
+                    <Select onValueChange={field.onChange} value={field.value} disabled>
+                        <SelectTrigger className="col-span-3">
+                            <SelectValue placeholder="Selecione a Fonte" />
+                        </SelectTrigger>
+                        <SelectContent>
+                             <SelectItem value="MarketData">MarketData API</SelectItem>
+                        </SelectContent>
+                    </Select>
+                )}
+            />
              {errors.source && <p className="col-span-4 text-xs text-destructive text-right">{errors.source.message}</p>}
           </div>
 

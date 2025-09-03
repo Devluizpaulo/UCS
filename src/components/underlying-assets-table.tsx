@@ -39,11 +39,9 @@ const getIconForCategory = (category: CommodityPriceData['category']) => {
 interface UnderlyingAssetsTableProps {
     data: CommodityPriceData[];
     loading?: boolean;
-    updatingAssets?: Set<string>;
-    onManualUpdate?: (assetName: string) => void;
 }
 
-export function UnderlyingAssetsTable({ data, loading, updatingAssets, onManualUpdate }: UnderlyingAssetsTableProps) {
+export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTableProps) {
   const [selectedAsset, setSelectedAsset] = useState<CommodityPriceData | null>(null);
 
   const handleRowClick = (asset: CommodityPriceData) => {
@@ -72,18 +70,14 @@ export function UnderlyingAssetsTable({ data, loading, updatingAssets, onManualU
                 <TableCell className="text-right">
                     <Skeleton className="h-6 w-24 ml-auto" />
                 </TableCell>
-                <TableCell className="text-right">
-                    <Skeleton className="h-8 w-8 rounded-full ml-auto" />
-                </TableCell>
             </TableRow>
         ));
     }
 
-    // This case will now be rare since getCommodityPrices returns all configured assets
     if (!data || data.length === 0) {
         return (
             <TableRow>
-                <TableCell colSpan={4} className="h-24 text-center">
+                <TableCell colSpan={3} className="h-24 text-center">
                     Nenhum ativo configurado. Adicione ativos na página de Configurações.
                 </TableCell>
             </TableRow>
@@ -92,25 +86,24 @@ export function UnderlyingAssetsTable({ data, loading, updatingAssets, onManualU
     
     return data.map((asset) => {
         const Icon = getIconForCategory(asset.category);
-        const isUpdating = updatingAssets?.has(asset.name);
 
         return (
-            <TableRow key={asset.name}>
-              <TableCell onClick={() => handleRowClick(asset)} className="cursor-pointer">
+            <TableRow key={asset.name} onClick={() => handleRowClick(asset)} className="cursor-pointer">
+              <TableCell>
                 <div className="flex items-center gap-3">
                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
                     <Icon className="h-4 w-4 text-muted-foreground" />
                   </div>
                   <div>
                     <div className="font-medium">{asset.name}</div>
-                    <div className="text-xs text-muted-foreground">Fonte: {asset.source}</div>
+                    <div className="text-xs text-muted-foreground">Fonte: MarketData</div>
                   </div>
                 </div>
               </TableCell>
-              <TableCell onClick={() => handleRowClick(asset)} className="text-right font-mono cursor-pointer">
+              <TableCell className="text-right font-mono">
                 <AnimatedNumber value={asset.price} currency={asset.currency} />
               </TableCell>
-              <TableCell onClick={() => handleRowClick(asset)} className="text-right cursor-pointer">
+              <TableCell className="text-right">
                   <div className={cn(
                       "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold font-mono transition-colors",
                       asset.change >= 0 ? "border-primary/50 text-primary" : "border-destructive/50 text-destructive"
@@ -119,30 +112,11 @@ export function UnderlyingAssetsTable({ data, loading, updatingAssets, onManualU
                       <AnimatedNumber value={asset.change} formatter={(v) => `${v.toFixed(2)}%`} />
                   </div>
               </TableCell>
-              <TableCell className="text-right">
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        onManualUpdate?.(asset.name)
-                    }}
-                    disabled={isUpdating}
-                    aria-label={`Atualizar ${asset.name}`}
-                  >
-                    {isUpdating ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                        <RefreshCw className="h-4 w-4" />
-                    )}
-                  </Button>
-              </TableCell>
             </TableRow>
         );
     });
   };
 
-  // Check if any asset has a price greater than 0
   const hasAnyPriceData = data.some(asset => asset.price > 0);
 
   return (
@@ -151,7 +125,7 @@ export function UnderlyingAssetsTable({ data, loading, updatingAssets, onManualU
         <Table>
           {!loading && !hasAnyPriceData && (
               <TableCaption className="py-4">
-                  Os preços ainda não foram carregados. Clique em "Atualizar Tudo" para buscar os dados.
+                  Os preços ainda não foram carregados. Clique em "Atualizar Preços" para buscar os dados.
               </TableCaption>
           )}
           <TableHeader>
@@ -159,7 +133,6 @@ export function UnderlyingAssetsTable({ data, loading, updatingAssets, onManualU
               <TableHead>Ativo</TableHead>
               <TableHead className="text-right">Preço</TableHead>
               <TableHead className="text-right">Variação (24h)</TableHead>
-              <TableHead className="text-right w-[50px]">Atualizar</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

@@ -47,37 +47,37 @@ export const COMMODITY_TICKER_MAP: CommodityMap = {
   },
   'Boi-Gordo-Futuros-Ago25': { 
     name: 'Boi Gordo Futuros - Ago 25',
-    ticker: 'BGIc1', 
+    ticker: 'BGIQ24', // Example Ticker, user should verify 
     currency: 'BRL',
     category: 'vus',
-    description: 'Contratos futuros de Boi Gordo para Agosto de 2025.',
+    description: 'Contratos futuros de Boi Gordo.',
     unit: '@',
     source: 'MarketData',
   },
   'Soja-Futuros-Out25': { 
     name: 'Soja Futuros - Out 25',
-    ticker: 'SJCc1', 
+    ticker: 'SJCZ24', // Example Ticker, user should verify
     currency: 'USD',
     category: 'vus',
-    description: 'Contratos futuros de Soja para Outubro de 2025.',
+    description: 'Contratos futuros de Soja.',
     unit: 'USD/Saca 60kg',
     source: 'MarketData',
   },
   'Milho-Futuros-Set25': { 
     name: 'Milho Futuros - Set 25',
-    ticker: 'CCMc1', 
+    ticker: 'CCMU24', // Example Ticker, user should verify
     currency: 'BRL',
     category: 'vus',
-    description: 'Contratos futuros de Milho para Setembro de 2025.',
+    description: 'Contratos futuros de Milho.',
     unit: 'BRL/Saca 60kg',
     source: 'MarketData',
   },
   'Madeira-Serrada-Futuros-Set25': { 
     name: 'Madeira Serrada Futuros - Set 25',
-    ticker: 'LXRc1',
+    ticker: 'LBSV24', // Example Ticker, user should verify
     currency: 'USD',
     category: 'vmad',
-    description: 'Contratos futuros de Madeira (Lumber) para Setembro de 2025.',
+    description: 'Contratos futuros de Madeira (Lumber).',
     unit: 'USD/MBF',
     source: 'MarketData',
   },
@@ -88,6 +88,6 @@ export const COMMODITY_TICKER_MAP: CommodityMap = {
     category: 'crs',
     description: 'Contratos futuros de Crédito de Carbono para Dezembro de 2025.',
     unit: 'EUR/tCO₂',
-    source: 'Google', // Changed to use the new AI-powered Google Search source
+    source: 'MarketData',
   },
 };

@@ -20,12 +20,7 @@ import Image from 'next/image';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
 import { UnderlyingAssetsCard } from './underlying-assets-card';
-
-
-async function runFetchAndSavePrices(assetName?: string): Promise<{success: boolean, message: string}> {
-    const { fetchAndSavePrices } = await import('@/ai/flows/fetch-and-save-prices-flow');
-    return fetchAndSavePrices({ assetName });
-}
+import { useRouter } from 'next/navigation';
 
 
 const loadingMessages = [
@@ -58,7 +53,7 @@ export function DashboardPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [historyInterval, setHistoryInterval] = useState<HistoryInterval>('1d');
   const [indexHistoryData, setIndexHistoryData] = useState<ChartData[]>([]);
-  const [isUpdatingAll, setIsUpdatingAll] = useState(false);
+  const router = useRouter();
 
 
   const fetchDashboardData = useCallback(async () => {
@@ -78,24 +73,39 @@ export function DashboardPage() {
       }
   }, [toast]);
 
-  const handleUpdateAll = async () => {
-    setIsUpdatingAll(true);
-    toast({ title: 'Atualizando Tudo...', description: `Buscando todas as cotações. Isso pode levar um momento.` });
-    try {
-        const result = await runFetchAndSavePrices(); // Call without assetName
-        if (result.success) {
-            toast({ title: 'Sucesso!', description: result.message });
+  useEffect(() => {
+    let messageInterval: NodeJS.Timeout | undefined;
+
+    const initialFetch = async () => {
+        setIsInitialising(true);
+        let messageIndex = 0;
+        messageInterval = setInterval(() => {
+            messageIndex = (messageIndex + 1) % loadingMessages.length;
+            setLoadingMessage(loadingMessages[messageIndex]);
+        }, 2000);
+
+        try {
             await fetchDashboardData();
-        } else {
-            throw new Error(result.message);
+        } catch (error: any) {
+             console.error('Initial data fetch failed:', error);
+             toast({ variant: 'destructive', title: 'Falha na Busca de Dados', description: "Não foi possível buscar os dados. Verifique a conexão e tente atualizar." });
+        } finally {
+            if (messageInterval) {
+                clearInterval(messageInterval);
+            }
+            setIsInitialising(false);
         }
-    } catch (error: any) {
-        console.error('Full update failed:', error);
-        toast({ variant: 'destructive', title: 'Falha na Atualização Geral', description: error.message });
-    } finally {
-        setIsUpdatingAll(false);
-    }
-  };
+    };
+    
+    initialFetch();
+
+    return () => {
+        if (messageInterval) {
+            clearInterval(messageInterval)
+        }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleIntervalChange = useCallback(async (interval: HistoryInterval) => {
     setHistoryInterval(interval);
@@ -116,60 +126,6 @@ export function DashboardPage() {
     }
   }, [toast, ucsData?.isConfigured]);
 
-  useEffect(() => {
-    let messageInterval: NodeJS.Timeout | undefined;
-
-    const initialFetch = async () => {
-        setIsInitialising(true);
-        let messageIndex = 0;
-        messageInterval = setInterval(() => {
-            messageIndex = (messageIndex + 1) % loadingMessages.length;
-            setLoadingMessage(loadingMessages[messageIndex]);
-        }, 2000);
-
-        try {
-            // Step 1: Fetch initial data from DB to show something quickly and ensure collections are seeded
-            const isConfigured = await fetchDashboardData();
-
-            // Step 2: If configured, attempt a silent background update
-            if (isConfigured) {
-                console.log("[Dashboard] Formula is configured, attempting background price fetch...");
-                const result = await runFetchAndSavePrices();
-                if (result.success) {
-                    console.log("[Dashboard] Background fetch successful, refreshing data.");
-                    await fetchDashboardData(); // Refresh data with latest prices
-                } else {
-                    console.warn("[Dashboard] Background fetch failed, showing stale data.", result.message);
-                    toast({
-                      title: 'Aviso de Atualização',
-                      description: 'Não foi possível buscar as cotações mais recentes. Exibindo os últimos dados salvos.',
-                    });
-                }
-            } else {
-                console.log("[Dashboard] Formula is not configured. Skipping background price fetch.");
-            }
-
-        } catch (error: any) {
-             console.error('Initial data fetch or background update failed:', error);
-             toast({ variant: 'destructive', title: 'Falha na Busca de Dados', description: "Não foi possível buscar os dados. Verifique a conexão e tente atualizar." });
-        } finally {
-            if (messageInterval) {
-                clearInterval(messageInterval);
-            }
-            setIsInitialising(false);
-        }
-    };
-    
-    initialFetch();
-
-    return () => {
-        if (messageInterval) {
-            clearInterval(messageInterval)
-        }
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const latestValue = ucsData?.indexValue ?? 0;
   const isConfigured = ucsData?.isConfigured ?? false;
   const isLoading = isInitialising && !ucsData;
@@ -178,13 +134,9 @@ export function DashboardPage() {
     <div className="flex min-h-screen w-full flex-col relative">
        {isInitialising && <InitialLoadingScreen message={loadingMessage} />}
       <PageHeader title="Painel">
-        <Button onClick={handleUpdateAll} disabled={isUpdatingAll}>
-            {isUpdatingAll ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-                <RefreshCw className="mr-2 h-4 w-4" />
-            )}
-            Atualizar Tudo
+        <Button onClick={() => router.push('/update-prices')}>
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Atualizar Preços
         </Button>
       </PageHeader>
       <main className={`flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6 transition-opacity duration-500 ${isInitialising ? 'opacity-0' : 'opacity-100'}`}>
