@@ -4,7 +4,7 @@
 import type { ChartData, CommodityPriceData, HistoryInterval, UcsData } from './types';
 import { getCommodities } from './commodity-config-service';
 import { getDb } from './firebase-admin-config';
-import { collection, query, orderBy, limit, getDocs, Timestamp, getDoc, doc } from 'firebase/firestore';
+import admin from 'firebase-admin';
 
 
 // --- Functions to get data from FIRESTORE ---
@@ -17,9 +17,9 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
     for (const commodity of commodities) {
         try {
             // Get the latest price entry to calculate the change
-            const pricesCollectionRef = collection(db, 'commodities', commodity.id, 'price_entries');
-            const q = query(pricesCollectionRef, orderBy('savedAt', 'desc'), limit(2));
-            const querySnapshot = await getDocs(q);
+            const pricesCollectionRef = db.collection('commodities').doc(commodity.id).collection('price_entries');
+            const q = pricesCollectionRef.orderBy('savedAt', 'desc').limit(2);
+            const querySnapshot = await q.get();
 
             let change = 0;
             let absoluteChange = 0;
@@ -31,7 +31,7 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
                  const latestData = latestDoc.data();
                  currentPrice = latestData.price;
                  
-                 const lastUpdatedTimestamp = latestData.savedAt as Timestamp;
+                 const lastUpdatedTimestamp = latestData.savedAt as admin.firestore.Timestamp;
                  lastUpdated = lastUpdatedTimestamp ? lastUpdatedTimestamp.toDate().toLocaleString('pt-BR') : 'N/A';
 
                  if (querySnapshot.docs.length > 1) {
@@ -68,13 +68,13 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
 
 export async function getUcsIndexValue(interval: HistoryInterval = '1d'): Promise<{ latest: UcsData, history: ChartData[] }> {
     const db = await getDb();
-    const historyCollectionRef = collection(db, 'ucs_index_history');
+    const historyCollectionRef = db.collection('ucs_index_history');
     
     const limitMap = { '1d': 30, '1wk': 26, '1mo': 60 };
     const qLimit = limitMap[interval] || 30;
 
-    const q = query(historyCollectionRef, orderBy('savedAt', 'desc'), limit(qLimit));
-    const querySnapshot = await getDocs(q);
+    const q = historyCollectionRef.orderBy('savedAt', 'desc').limit(qLimit);
+    const querySnapshot = await q.get();
     
     let latestData: UcsData = {
         indexValue: 0, isConfigured: false,
@@ -93,16 +93,16 @@ export async function getUcsIndexValue(interval: HistoryInterval = '1d'): Promis
         };
     } else {
         // If no history, check if formula is configured to show correct status
-        const formulaDoc = await getDoc(doc(db, 'settings', 'formula_parameters'));
-        if (formulaDoc.exists()) {
-            latestData.isConfigured = formulaDoc.data().isConfigured ?? false;
+        const formulaDoc = await db.collection('settings').doc('formula_parameters').get();
+        if (formulaDoc.exists) {
+            latestData.isConfigured = formulaDoc.data()?.isConfigured ?? false;
         }
     }
 
     const history: ChartData[] = [];
     querySnapshot.forEach(doc => {
         const data = doc.data();
-        const timestamp = data.savedAt as Timestamp;
+        const timestamp = data.savedAt as admin.firestore.Timestamp;
         const date = timestamp.toDate();
         let formattedDate = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
         history.push({

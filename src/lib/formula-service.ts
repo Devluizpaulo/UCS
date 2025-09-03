@@ -1,10 +1,10 @@
+
 'use server';
 /**
  * @fileOverview A service for managing the UCS Index formula parameters.
  */
 
 import { getDb } from './firebase-admin-config'; // Use server-side admin SDK
-import { doc, getDoc, setDoc } from 'firebase/firestore';
 import type { FormulaParameters } from './types';
 
 // The document ID for the formula parameters in Firestore
@@ -34,18 +34,18 @@ const defaultParameters: FormulaParameters = {
  */
 export async function getFormulaParameters(): Promise<FormulaParameters> {
   const db = await getDb();
-  const docRef = doc(db, SETTINGS_COLLECTION, FORMULA_DOC_ID);
+  const docRef = db.collection(SETTINGS_COLLECTION).doc(FORMULA_DOC_ID);
   try {
-    const docSnap = await getDoc(docRef);
+    const docSnap = await docRef.get();
 
-    if (docSnap.exists()) {
+    if (docSnap.exists) {
       // Merge with defaults to ensure new parameters are not missing
       const dbData = docSnap.data();
       return { ...defaultParameters, ...dbData } as FormulaParameters;
     } else {
       // Document doesn't exist, so create it with default values and return them
       console.log('[FormulaService] No parameters found, creating with default values.');
-      await setDoc(docRef, defaultParameters);
+      await docRef.set(defaultParameters);
       return defaultParameters;
     }
   } catch (error) {
@@ -62,11 +62,11 @@ export async function getFormulaParameters(): Promise<FormulaParameters> {
  */
 export async function saveFormulaParameters(params: Omit<FormulaParameters, 'isConfigured'>): Promise<void> {
   const db = await getDb();
-  const docRef = doc(db, SETTINGS_COLLECTION, FORMULA_DOC_ID);
+  const docRef = db.collection(SETTINGS_COLLECTION).doc(FORMULA_DOC_ID);
   try {
     // Set the parameters and mark as configured.
     // This will overwrite the document or create it if it doesn't exist.
-    await setDoc(docRef, { ...params, isConfigured: true }, { merge: true });
+    await docRef.set({ ...params, isConfigured: true }, { merge: true });
     console.log('[FormulaService] Successfully saved formula parameters.');
   } catch (error) {
     console.error("[FormulaService] Error saving formula parameters: ", error);

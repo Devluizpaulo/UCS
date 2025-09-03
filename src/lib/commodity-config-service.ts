@@ -6,7 +6,6 @@
  */
 
 import { getDb } from './firebase-admin-config';
-import { collection, doc, getDocs, getDoc, setDoc, deleteDoc, query, orderBy, limit, writeBatch } from 'firebase/firestore';
 import type { CommodityConfig, InitialCommodityConfig } from './types';
 import { COMMODITY_TICKER_MAP } from './marketdata-config';
 
@@ -18,14 +17,14 @@ const COMMODITIES_COLLECTION = 'commodities';
  */
 async function seedDefaultCommodities() {
     const db = await getDb();
-    const q = query(collection(db, COMMODITIES_COLLECTION), limit(1));
-    const snapshot = await getDocs(q);
+    const collectionRef = db.collection(COMMODITIES_COLLECTION);
+    const snapshot = await collectionRef.limit(1).get();
     
     if (snapshot.empty) {
         console.log('[CommodityConfigService] No commodities found, seeding database with defaults.');
-        const batch = writeBatch(db);
+        const batch = db.batch();
         Object.entries(COMMODITY_TICKER_MAP).forEach(([id, config]) => {
-            const docRef = doc(db, COMMODITIES_COLLECTION, id);
+            const docRef = collectionRef.doc(id);
             // Ensure every field from CommodityConfig is present, even optional ones
             const dataToSeed: InitialCommodityConfig = {
                 name: config.name,
@@ -54,8 +53,8 @@ export async function getCommodities(): Promise<CommodityConfig[]> {
     const db = await getDb();
     
     try {
-        const q = query(collection(db, COMMODITIES_COLLECTION), orderBy('name'));
-        const querySnapshot = await getDocs(q);
+        const collectionRef = db.collection(COMMODITIES_COLLECTION);
+        const querySnapshot = await collectionRef.orderBy('name').get();
         const commodities: CommodityConfig[] = [];
         querySnapshot.forEach((doc) => {
             const data = doc.data() as InitialCommodityConfig;
@@ -82,9 +81,9 @@ export async function getCommodities(): Promise<CommodityConfig[]> {
 export async function getCommodity(id: string): Promise<CommodityConfig | null> {
     const db = await getDb();
     try {
-        const docRef = doc(db, COMMODITIES_COLLECTION, id);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
+        const docRef = db.collection(COMMODITIES_COLLECTION).doc(id);
+        const docSnap = await docRef.get();
+        if (docSnap.exists) {
             const data = docSnap.data() as InitialCommodityConfig;
             return { 
                 id: docSnap.id, 
@@ -113,8 +112,8 @@ export async function saveCommodity(commodity: CommodityConfig): Promise<void> {
     }
     try {
         const { id, ...dataToSave } = commodity;
-        const docRef = doc(db, COMMODIOTIES_COLLECTION, id);
-        await setDoc(docRef, dataToSave, { merge: true }); // Use merge to avoid overwriting fields on update
+        const docRef = db.collection(COMMODITIES_COLLECTION).doc(id);
+        await docRef.set(dataToSave, { merge: true }); // Use merge to avoid overwriting fields on update
         console.log(`[CommodityConfigService] Successfully saved commodity: ${id}`);
     } catch (error) {
         console.error(`[CommodityConfigService] Error saving commodity ${commodity.id}:`, error);
@@ -135,8 +134,8 @@ export async function deleteCommodity(id: string): Promise<void> {
     try {
         // Here you might also want to delete the `price_entries` subcollection.
         // This is a more complex operation and is omitted for now for simplicity.
-        const docRef = doc(db, COMMODITIES_COLLECTION, id);
-        await deleteDoc(docRef);
+        const docRef = db.collection(COMMODITIES_COLLECTION).doc(id);
+        await docRef.delete();
         console.log(`[CommodityConfigService] Successfully deleted commodity: ${id}`);
     } catch (error) {
         console.error(`[CommodityConfigService] Error deleting commodity ${id}:`, error);

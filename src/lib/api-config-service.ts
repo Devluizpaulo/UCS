@@ -5,7 +5,6 @@
  */
 
 import { getDb } from './firebase-admin-config'; // Use server-side admin SDK
-import { doc, getDoc, setDoc } from 'firebase/firestore';
 import type { ApiConfig } from './types';
 import { MARKETDATA_CONFIG as defaultConfig } from './marketdata-config';
 
@@ -24,11 +23,11 @@ const defaultApiConfig: ApiConfig = {
  */
 export async function getApiConfig(): Promise<ApiConfig> {
   const db = await getDb();
-  const docRef = doc(db, SETTINGS_COLLECTION, API_CONFIG_DOC_ID);
+  const docRef = db.collection(SETTINGS_COLLECTION).doc(API_CONFIG_DOC_ID);
   try {
-    const docSnap = await getDoc(docRef);
+    const docSnap = await docRef.get();
 
-    if (docSnap.exists()) {
+    if (docSnap.exists) {
       // Merge with default config to ensure all keys are present
       const dbConfig = docSnap.data();
       const mergedConfig = {
@@ -36,13 +35,13 @@ export async function getApiConfig(): Promise<ApiConfig> {
           ...dbConfig,
           marketData: {
             ...defaultApiConfig.marketData,
-            ...(dbConfig.marketData || {}),
+            ...(dbConfig?.marketData || {}),
           },
       };
       return mergedConfig as ApiConfig;
     } else {
       console.log('[ApiConfigService] No config found, creating with default values.');
-      await setDoc(docRef, defaultApiConfig);
+      await docRef.set(defaultApiConfig);
       return defaultApiConfig;
     }
   } catch (error) {
@@ -59,10 +58,10 @@ export async function getApiConfig(): Promise<ApiConfig> {
  */
 export async function saveApiConfig(params: Partial<Omit<ApiConfig, 'isConfigured'>>): Promise<void> {
   const db = await getDb();
-  const docRef = doc(db, SETTINGS_COLLECTION, API_CONFIG_DOC_ID);
+  const docRef = db.collection(SETTINGS_COLLECTION).doc(API_CONFIG_DOC_ID);
   try {
     // Use merge: true to avoid overwriting the whole document if we only pass partial data
-    await setDoc(docRef, { ...params, isConfigured: true }, { merge: true });
+    await docRef.set({ ...params, isConfigured: true }, { merge: true });
     console.log('[ApiConfigService] Successfully saved API configuration.');
   } catch (error) {
     console.error("[ApiConfigService] Error saving API config: ", error);

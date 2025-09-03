@@ -61,7 +61,7 @@ const AnalysisPromptInputSchema = z.object({
 const analysisPrompt = ai.definePrompt({
     name: 'reportAnalysisPrompt',
     input: { schema: AnalysisPromptInputSchema },
-    output: { schema: z.string() },
+    output: { format: 'text' },
     prompt: `
         You are a financial analyst specializing in commodity markets and composite indices for an audience of financial experts, traders, and farmers in Brazil.
         Your task is to write an insightful, well-structured executive summary for a financial report. The tone should be professional, objective, and data-driven.
@@ -82,7 +82,7 @@ const analysisPrompt = ai.definePrompt({
         **Your Task:**
         Based on all the provided data, generate a concise analytical summary (2-4 paragraphs) in Brazilian Portuguese.
         - **Paragraph 1: Overview.** Start with a clear overview of the index's performance (e.g., "O Índice UCS demonstrou resiliência, fechando o período com uma valorização de X%..."). Mention the general market sentiment reflected by the index movement.
-        - **Paragraph 2: Key Drivers.** Identify and elaborate on the primary drivers behind the index's performance. Which assets were most influential (positively or negatively)? Connect asset movements to potential market factors (e.g., "A alta foi impulsionada principalmente pelo desempenho do milho, que subiu Y% em meio a preocupações com a quebra de safra no Sul...").
+        - **Paragraph 2: Key Drivers.** Identify and elaborate on the primary drivers behind the index's performance. Which assets were most influential (positivamente or negatively)? Connect asset movements to potential market factors (e.g., "A alta foi impulsionada principalmente pelo desempenho do milho, que subiu Y% em meio a preocupações com a quebra de safra no Sul...").
         - **Paragraph 3: Correlation and Outlook.** Briefly touch upon any notable correlations or divergences between assets. If the user provided observations, ensure they are addressed here. Conclude with a brief, neutral-to-cautious forward-looking statement (e.g., "A volatilidade no mercado de grãos deve continuar sendo um ponto de atenção para a trajetória do índice nas próximas semanas.").
         
         - **Crucially, DO NOT include a title or header like "Análise do Relatório".** Just provide the raw text of the analysis.
@@ -150,7 +150,7 @@ async function generatePdfReport(title: string, period: string, analysis: string
         headStyles: { fillColor: [41, 128, 185] },
     });
 
-    return doc.output('base64');
+    return doc.output('datauristring').split(',')[1];
 }
 
 
@@ -250,13 +250,15 @@ export async function generateReport(input: GenerateReportInput): Promise<Genera
       const assetsForAnalysis = assets.map(a => ({ name: a.name, price: a.price, change: a.change }));
 
       // Generate AI analysis
-      const analysisText = await analysisPrompt({
+      const analysisResponse = await analysisPrompt({
           reportTitle,
           periodTitle,
           ucsHistory,
           assets: assetsForAnalysis,
           observations
       });
+      const analysisText = analysisResponse.text();
+
 
       // Generate file
       let fileContent = '';

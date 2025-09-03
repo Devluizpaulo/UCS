@@ -5,8 +5,8 @@
  * This service handles writing data to the 'commodities' and 'ucs_index_history' collections.
  */
 
+import admin from 'firebase-admin';
 import { getDb } from './firebase-admin-config';
-import { collection, doc, setDoc, serverTimestamp, writeBatch, Timestamp, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import type { CommodityPriceData, CalculateUcsIndexOutput } from './types';
 
 /**
@@ -24,7 +24,7 @@ export async function saveCommodityData(data: CommodityPriceData[]): Promise<voi
   }
   const db = await getDb();
   console.log(`[DB] Starting batched write for ${data.length} commodities.`);
-  const batch = writeBatch(db);
+  const batch = db.batch();
 
   data.forEach((item) => {
     if (!item || !item.id) {
@@ -33,12 +33,12 @@ export async function saveCommodityData(data: CommodityPriceData[]): Promise<voi
     }
     
     // Reference to the new document in the 'price_entries' subcollection
-    const newPriceEntryRef = doc(collection(db, 'commodities', item.id, 'price_entries'));
+    const newPriceEntryRef = db.collection('commodities').doc(item.id).collection('price_entries').doc();
     
     // Data for the historical price entry
     const priceEntryData = {
         price: item.price,
-        savedAt: serverTimestamp(),
+        savedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
 
     // Add operation to the batch
@@ -71,23 +71,19 @@ export async function saveUcsIndexData(indexData: CalculateUcsIndexOutput): Prom
     }
 
     try {
-        const historyCollectionRef = collection(db, 'ucs_index_history');
+        const historyCollectionRef = db.collection('ucs_index_history');
         const today = new Date();
         today.setHours(0, 0, 0, 0); // Normalize to the beginning of the day
 
         // Check if an entry for today already exists to avoid duplicates
-        const q = query(
-            historyCollectionRef,
-            orderBy('savedAt', 'desc'),
-            limit(1)
-        );
-        const querySnapshot = await getDocs(q);
+        const q = historyCollectionRef.orderBy('savedAt', 'desc').limit(1);
+        const querySnapshot = await q.get();
         
         let docRef;
 
         if (!querySnapshot.empty) {
             const lastDoc = querySnapshot.docs[0];
-            const lastSavedDate = (lastDoc.data().savedAt as Timestamp).toDate();
+            const lastSavedDate = (lastDoc.data().savedAt as admin.firestore.Timestamp).toDate();
             lastSavedDate.setHours(0, 0, 0, 0);
 
             if (lastSavedDate.getTime() === today.getTime()) {
@@ -98,15 +94,15 @@ export async function saveUcsIndexData(indexData: CalculateUcsIndexOutput): Prom
         
         // If no document for today, create a new one
         if (!docRef) {
-            docRef = doc(historyCollectionRef);
+            docRef = historyCollectionRef.doc();
         }
 
-        await setDoc(docRef, {
+        await docRef.set({
             value: indexValue,
             isConfigured,
             components,
             vusDetails,
-            savedAt: serverTimestamp(),
+            savedAt: admin.firestore.FieldValue.serverTimestamp(),
         }, { merge: true }); // Use merge to update or create
         
         console.log(`[DB] Successfully saved UCS index data. Value: ${indexValue}`);
