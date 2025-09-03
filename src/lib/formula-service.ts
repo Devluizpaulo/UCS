@@ -13,7 +13,7 @@ const SETTINGS_COLLECTION = 'settings';
 
 // Default values aligned with the user-provided formula specification.
 const defaultParameters: FormulaParameters = {
-    // VUS - Valor de Uso do Solo
+    // VUS
     PROD_BOI: 18,                // Produção de arrobas de boi por ha/ano
     PROD_MILHO: 7.2,             // Produção de toneladas de milho por ha/ano
     PROD_SOJA: 3.3,              // Produção de toneladas de soja por ha/ano
@@ -22,7 +22,7 @@ const defaultParameters: FormulaParameters = {
     PESO_SOJA: 0.35,             // Peso da soja no uso do solo (35%)
     FATOR_ARREND: 0.048,         // Fator de capitalização da renda (ex: 4.8%)
 
-    // VMAD - Valor da Madeira
+    // VMAD
     VOLUME_MADEIRA_HA: 120,      // Fator m³ (Volume de madeira comercial por hectare)
     FATOR_CONVERSAO_SERRADA_TORA: 0.10, // Fator de Conversão de madeira (10%)
 

@@ -56,16 +56,16 @@ async function seedDefaultCommodities() {
  * @returns {Promise<CommodityConfig[]>} A promise that resolves to an array of commodities.
  */
 export async function getCommodities(): Promise<CommodityConfig[]> {
-    await seedDefaultCommodities(); // Attempt to seed the DB for consistency, but don't depend on it.
+    await seedDefaultCommodities(); // Attempt to seed the DB for consistency.
 
     try {
         const collectionRef = db.collection(COMMODITIES_COLLECTION);
         const snapshot = await collectionRef.get();
         
         if (snapshot.empty) {
-            console.warn('[CommodityConfigService] Firestore collection is empty, falling back to hardcoded config.');
-            // Fallback to hardcoded list if firestore is empty after seeding attempt
-            const commodities = Object.entries(COMMODITY_TICKER_MAP).map(([id, config]) => ({
+            console.warn('[CommodityConfigService] Firestore collection is empty after seeding, falling back to hardcoded config.');
+            // Fallback to hardcoded list if firestore is still empty
+             const commodities = Object.entries(COMMODITY_TICKER_MAP).map(([id, config]) => ({
                 id: id,
                 ...config,
                 source: config.source || 'MarketData',
@@ -94,13 +94,17 @@ export async function getCommodities(): Promise<CommodityConfig[]> {
 }
 
 /**
- * Retrieves a single commodity by its ID from the hardcoded list.
+ * Retrieves a single commodity by its ID.
  * @param {string} id - The ID of the commodity to retrieve.
  * @returns {Promise<CommodityConfig | null>} A promise that resolves to the commodity or null if not found.
  */
 export async function getCommodity(id: string): Promise<CommodityConfig | null> {
-    const commodities = await getCommodities();
-    return commodities.find(c => c.id === id) || null;
+    const docRef = db.collection(COMMODITIES_COLLECTION).doc(id);
+    const docSnap = await docRef.get();
+    if (docSnap.exists) {
+        return { id: docSnap.id, ...docSnap.data() } as CommodityConfig;
+    }
+    return null;
 }
 
 /**
