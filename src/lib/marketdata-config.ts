@@ -27,7 +27,7 @@ export const MARKETDATA_CONFIG = {
 // via the Settings page. The keys here (e.g., 'USD/BRL Histórico') will become the
 // document IDs in Firestore.
 export const COMMODITY_TICKER_MAP: CommodityMap = {
-  'USD/BRL Histórico': { 
+  'USD-BRL-Historico': { 
     name: 'USD/BRL Histórico',
     ticker: 'USDBRL', 
     currency: 'BRL',
@@ -36,7 +36,7 @@ export const COMMODITY_TICKER_MAP: CommodityMap = {
     unit: 'BRL',
     source: 'MarketData',
   },
-  'EUR/BRL Histórico': { 
+  'EUR-BRL-Historico': { 
     name: 'EUR/BRL Histórico',
     ticker: 'EURBRL', 
     currency: 'BRL',
@@ -45,48 +45,48 @@ export const COMMODITY_TICKER_MAP: CommodityMap = {
     unit: 'BRL',
     source: 'MarketData',
   },
-  'Boi Gordo Futuros - Ago 25 (BGIc1)': { 
-    name: 'Boi Gordo Futuros - Ago 25 (BGIc1)',
+  'Boi-Gordo-Futuros': { 
+    name: 'Boi Gordo Futuros',
     ticker: 'BGI=F', 
     currency: 'BRL',
     category: 'vus',
-    description: 'Contratos futuros de Boi Gordo para Agosto de 2025',
+    description: 'Contratos futuros de Boi Gordo',
     unit: '@',
     source: 'B3',
   },
-  'Soja Futuros - Nov 25 (SJCc1)': { 
-    name: 'Soja Futuros - Nov 25 (SJCc1)',
-    ticker: 'SJCc1', 
+  'Soja-Futuros': { 
+    name: 'Soja Futuros',
+    ticker: 'SJC=F', 
     currency: 'USD',
     category: 'vus',
-    description: 'Contratos futuros de Soja para Novembro de 2025',
+    description: 'Contratos futuros de Soja',
     unit: 'USD/Saca 60kg',
     source: 'B3',
   },
-  'Milho Futuros - Set 25 (CCMc1)': { 
-    name: 'Milho Futuros - Set 25 (CCMc1)',
-    ticker: 'CCMc1', 
+  'Milho-Futuros': { 
+    name: 'Milho Futuros',
+    ticker: 'CCM=F', 
     currency: 'BRL',
     category: 'vus',
-    description: 'Contratos futuros de Milho para Setembro de 2025',
+    description: 'Contratos futuros de Milho',
     unit: 'BRL/Saca 60kg',
     source: 'B3',
   },
-  'Madeira Serrada Futuros - Set 25 (LXRc1)': { 
-    name: 'Madeira Serrada Futuros - Set 25 (LXRc1)',
-    ticker: 'LXRc1',
+  'Madeira-Serrada-Futuros': { 
+    name: 'Madeira Serrada Futuros',
+    ticker: 'LBS=F',
     currency: 'USD',
     category: 'vmad',
     description: 'Contratos futuros de Madeira (Lumber)',
     unit: 'USD/MBF',
     source: 'CME',
   },
-  'Carbono Futuros': { 
-    name: 'Carbono Futuros',
+  'Credito-Carbono-Futuros': { 
+    name: 'Crédito de Carbono Futuros',
     ticker: 'MFI=F',
     currency: 'EUR',
     category: 'crs',
-    description: 'Contratos futuros de Carbono (ICE)',
+    description: 'Contratos futuros de Crédito de Carbono (ICE)',
     unit: 'EUR/tCO₂',
     source: 'ICE',
   },
