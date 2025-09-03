@@ -12,7 +12,7 @@ import type { CommodityPriceData, CalculateUcsIndexOutput } from './types';
 /**
  * Saves a batch of commodity price data to Firestore using a batched write for efficiency.
  * It creates a new historical entry in the 'price_entries' subcollection for each asset.
- * It DOES NOT update the main commodity document, as that holds static config.
+ * It uses { merge: true } to create the main commodity document if it doesn't exist.
  *
  * @param {CommodityPriceData[]} data - An array of commodity price data objects.
  * @returns {Promise<void>}
@@ -31,16 +31,21 @@ export async function saveCommodityData(data: CommodityPriceData[]): Promise<voi
         return;
     }
     
+    // Reference to the main commodity document.
+    const commodityDocRef = db.collection('commodities').doc(item.id);
+    // This operation ensures the main document exists, creating it if it doesn't.
+    // It only sets the static configuration fields, avoiding overwriting price history.
+    const { price, change, absoluteChange, lastUpdated, ...configData } = item;
+    batch.set(commodityDocRef, configData, { merge: true });
+
     // Reference to the new document in the 'price_entries' subcollection
-    const newPriceEntryRef = db.collection('commodities').doc(item.id).collection('price_entries').doc();
+    const newPriceEntryRef = commodityDocRef.collection('price_entries').doc();
     
-    // Data for the historical price entry
     const priceEntryData = {
         price: item.price,
         savedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
 
-    // Add operation to the batch
     batch.set(newPriceEntryRef, priceEntryData);
   });
 

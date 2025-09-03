@@ -57,26 +57,28 @@ export async function fetchAndSavePrices(input: z.infer<typeof FetchAndSavePrice
           return { success: false, message: `Asset '${assetName}' not found.`, savedCount: 0 };
         }
         
-        let fetchedPrices: CommodityPriceData[] = [];
-
-        for (const commodityInfo of assetsToUpdate) {
+        // Fetch all prices in parallel for performance
+        const pricePromises = assetsToUpdate.map(async (commodityInfo) => {
             try {
               const newPrice = await getMarketDataQuote(apiKey, commodityInfo.ticker);
-              
-              fetchedPrices.push({
+              return {
                   ...commodityInfo,
                   price: newPrice,
                   lastUpdated: new Date().toISOString(),
-                  // Placeholder values, will be calculated on read
                   change: 0, 
                   absoluteChange: 0,
-              });
+              } as CommodityPriceData;
             } catch (error: any) {
                 console.error(`[FLOW] Failed to fetch price for ${commodityInfo.name} (${commodityInfo.ticker}). Skipping. Error: ${error.message}`);
+                return null; // Return null on failure to filter out later
             }
-        }
+        });
+
+        const fetchedPricesResults = await Promise.all(pricePromises);
+        const fetchedPrices = fetchedPricesResults.filter((p): p is CommodityPriceData => p !== null);
         
         if (fetchedPrices.length === 0) {
+          console.error('[FLOW ERROR] No prices could be fetched for the selected assets.');
           return { success: false, message: 'Failed to fetch any prices.', savedCount: 0 };
         }
 
