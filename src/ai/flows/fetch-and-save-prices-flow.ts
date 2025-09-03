@@ -5,7 +5,7 @@
  * calculating the UCS Index, and saving both to Firestore.
  * This flow can be run for all commodities (by a scheduled job) or for a single one (manual trigger).
  *
- * - fetchAndSavePrices - The main flow function.
+ * - fetchAndSavePrices - The main flow function..
  * - FetchAndSavePricesInput - The input type for the flow.
  */
 
