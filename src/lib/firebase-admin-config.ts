@@ -22,18 +22,7 @@ if (!admin.apps.length) {
     }
 }
 
-/**
- * Returns the initialized Firestore instance.
- * @returns {admin.firestore.Firestore} The Firestore database object.
- */
-export function getDb(): admin.firestore.Firestore {
-  return admin.firestore();
-}
+const db = admin.firestore();
+const auth = admin.auth();
 
-/**
- * Returns the initialized Auth instance.
- * @returns {admin.auth.Auth} The Firebase Auth object.
- */
-export function getAuth(): admin.auth.Auth {
-  return admin.auth();
-}
+export { db, auth };

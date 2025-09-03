@@ -3,7 +3,7 @@
 
 import type { ChartData, CommodityPriceData, HistoryInterval, UcsData } from './types';
 import { getCommodities } from './commodity-config-service';
-import { getDb } from './firebase-admin-config';
+import { db } from './firebase-admin-config';
 import type admin from 'firebase-admin';
 
 
@@ -12,7 +12,6 @@ import type admin from 'firebase-admin';
 export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
     const commodities = await getCommodities();
     const prices: CommodityPriceData[] = [];
-    const db = getDb();
 
     for (const commodity of commodities) {
         try {
@@ -67,7 +66,6 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
 
 
 export async function getUcsIndexValue(interval: HistoryInterval = '1d'): Promise<{ latest: UcsData, history: ChartData[] }> {
-    const db = getDb();
     const historyCollectionRef = db.collection('ucs_index_history');
     
     const limitMap = { '1d': 30, '1wk': 26, '1mo': 60 };

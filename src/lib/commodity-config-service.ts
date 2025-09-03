@@ -5,7 +5,7 @@
  * This service provides CRUD (Create, Read, Update, Delete) operations.
  */
 
-import { getDb } from './firebase-admin-config';
+import { db } from './firebase-admin-config';
 import type { CommodityConfig, InitialCommodityConfig } from './types';
 import { COMMODITY_TICKER_MAP } from './marketdata-config';
 
@@ -18,7 +18,6 @@ const COMMODITIES_COLLECTION = 'commodities';
  * errors if they already exist, which avoids read-before-write issues on a new database.
  */
 async function seedDefaultCommodities() {
-    const db = getDb();
     const collectionRef = db.collection(COMMODITIES_COLLECTION);
     
     try {
@@ -60,7 +59,6 @@ export async function getCommodities(): Promise<CommodityConfig[]> {
     await seedDefaultCommodities(); // Attempt to seed the DB for consistency, but don't depend on it.
 
     try {
-        const db = getDb();
         const collectionRef = db.collection(COMMODITIES_COLLECTION);
         const snapshot = await collectionRef.get();
         
@@ -112,7 +110,6 @@ export async function getCommodity(id: string): Promise<CommodityConfig | null> 
  * @returns {Promise<void>} A promise that resolves when the save is complete.
  */
 export async function saveCommodity(commodity: CommodityConfig): Promise<void> {
-    const db = getDb();
     if (!commodity.id) {
         throw new Error("Commodity ID cannot be empty.");
     }
@@ -133,7 +130,6 @@ export async function saveCommodity(commodity: CommodityConfig): Promise<void> {
  * @returns {Promise<void>} A promise that resolves when the deletion is complete.
  */
 export async function deleteCommodity(id: string): Promise<void> {
-    const db = getDb();
     if (!id) {
         throw new Error("Commodity ID is required for deletion.");
     }

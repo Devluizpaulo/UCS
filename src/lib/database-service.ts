@@ -6,7 +6,7 @@
  */
 
 import admin from 'firebase-admin';
-import { getDb } from './firebase-admin-config';
+import { db } from './firebase-admin-config';
 import type { CommodityPriceData, CalculateUcsIndexOutput } from './types';
 
 /**
@@ -22,7 +22,6 @@ export async function saveCommodityData(data: CommodityPriceData[]): Promise<voi
     console.log('[DB] No data provided to save.');
     return;
   }
-  const db = getDb();
   console.log(`[DB] Starting batched write for ${data.length} commodities.`);
   const batch = db.batch();
 
@@ -62,7 +61,6 @@ export async function saveCommodityData(data: CommodityPriceData[]): Promise<voi
  */
 export async function saveUcsIndexData(indexData: CalculateUcsIndexOutput): Promise<void> {
     const { indexValue, isConfigured, components, vusDetails } = indexData;
-    const db = getDb();
 
     if (typeof indexValue !== 'number' || !isFinite(indexValue)) {
         console.warn('[DB] Invalid or non-finite UCS index value provided. Skipping save.', indexValue);
