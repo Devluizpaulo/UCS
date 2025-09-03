@@ -106,13 +106,21 @@ A aplicação é construída com uma arquitetura moderna baseada em componentes,
 
 ## 6. Configuração e Variáveis de Ambiente
 
-Para o funcionamento correto da aplicação, é necessário configurar uma variável de ambiente no arquivo `.env` na raiz do projeto.
+Para o funcionamento correto da aplicação, é necessário configurar as seguintes variáveis de ambiente no arquivo `.env` na raiz do projeto.
 
 -   `MARKETDATA_API_KEY`: Sua chave de API para o serviço MarketData.app.
+-   `CRON_SECRET`: Uma chave secreta que você mesmo cria para proteger o endpoint de atualização automática (`/api/scheduled-job`).
+
+**Como Gerar o `CRON_SECRET`:**
+Você precisa gerar uma chave longa e aleatória. Pode usar um gerador de senhas online ou o seguinte comando no terminal (Linux/macOS):
+```bash
+openssl rand -base64 32
+```
 
 **Exemplo de `.env`:**
 ```
 MARKETDATA_API_KEY=sua_chave_de_api_aqui
+CRON_SECRET=sua_chave_secreta_gerada_aqui
 ```
 
 ## 7. Como Executar Localmente
@@ -122,11 +130,12 @@ MARKETDATA_API_KEY=sua_chave_de_api_aqui
     npm install
     ```
 2.  **Configurar Variáveis de Ambiente:**
-    - Crie um arquivo `.env.local` na raiz do projeto.
-    - Adicione a `MARKETDATA_API_KEY`.
+    - Crie um arquivo `.env` na raiz do projeto.
+    - Adicione as chaves `MARKETDATA_API_KEY` e `CRON_SECRET`.
 3.  **Executar o Servidor de Desenvolvimento:**
     ```bash
     npm run dev
     ```
 4.  **Acessar a Aplicação:**
     - Abra `http://localhost:9002` em seu navegador.
+```
