@@ -34,8 +34,7 @@ import {
 
 
 const formulaSchema = z.object({
-    VOLUME_MADEIRA_HA: z.coerce.number(),
-    FATOR_CARBONO: z.coerce.number(),
+    // VUS
     PROD_BOI: z.coerce.number(),
     PROD_MILHO: z.coerce.number(),
     PROD_SOJA: z.coerce.number(),
@@ -43,8 +42,12 @@ const formulaSchema = z.object({
     PESO_MILHO: z.coerce.number(),
     PESO_SOJA: z.coerce.number(),
     FATOR_ARREND: z.coerce.number(),
-    FATOR_AGUA: z.coerce.number(),
+    // VMAD
+    VOLUME_MADEIRA_HA: z.coerce.number(),
     FATOR_CONVERSAO_SERRADA_TORA: z.coerce.number(),
+    // CRS
+    FATOR_CARBONO: z.coerce.number(),
+    FATOR_AGUA: z.coerce.number(),
 });
 
 
@@ -163,7 +166,7 @@ export default function SettingsPage() {
         await deleteCommodity(deletingCommodityId);
         toast({
             title: "Ativo Excluído",
-            description: `O ativo ${deletingCommodityId} foi removido do sistema.`
+            description: `O ativo foi removido do sistema.`
         });
         await fetchAllData(); // Refresh the list
     } catch(error) {
@@ -192,59 +195,65 @@ export default function SettingsPage() {
                     </AlertDescription>
                 </Alert>
             )}
+
+            {/* VUS Section */}
             <div>
-                <h3 className="text-lg font-medium mb-4">Parâmetros da Madeira</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <div className="space-y-2">
-                        <Label htmlFor="VOLUME_MADEIRA_HA">Volume de Madeira por Hectare (m³)</Label>
-                        <Input id="VOLUME_MADEIRA_HA" type="number" step="any" {...formulaForm.register('VOLUME_MADEIRA_HA')} />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="FATOR_CONVERSAO_SERRADA_TORA">Fator Conversão Madeira (Serrada p/ Tora)</Label>
-                        <Input id="FATOR_CONVERSAO_SERRADA_TORA" type="number" step="any" {...formulaForm.register('FATOR_CONVERSAO_SERRADA_TORA')} />
-                    </div>
-                </div>
-            </div>
-            <div>
-                <h3 className="text-lg font-medium mb-4">Uso do Solo (Agropecuária)</h3>
+                <h3 className="text-lg font-medium mb-4">1. Valor de Uso da Terra (VUS)</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                      <div className="space-y-2">
-                        <Label htmlFor="PROD_BOI">Produção de Boi (@/ha/ano)</Label>
+                        <Label htmlFor="PROD_BOI">Produção Boi (@/ha/ano)</Label>
                         <Input id="PROD_BOI" type="number" step="any" {...formulaForm.register('PROD_BOI')} />
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="PROD_SOJA">Produção de Soja (t/ha/ano)</Label>
+                        <Label htmlFor="PROD_SOJA">Produção Soja (t/ha/ano)</Label>
                         <Input id="PROD_SOJA" type="number" step="any" {...formulaForm.register('PROD_SOJA')} />
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="PROD_MILHO">Produção de Milho (t/ha/ano)</Label>
+                        <Label htmlFor="PROD_MILHO">Produção Milho (t/ha/ano)</Label>
                         <Input id="PROD_MILHO" type="number" step="any" {...formulaForm.register('PROD_MILHO')} />
                     </div>
                 </div>
-                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
                      <div className="space-y-2">
-                        <Label htmlFor="PESO_PEC">Peso da Pecuária (%)</Label>
+                        <Label htmlFor="PESO_PEC">Peso Pecuária (%)</Label>
                         <Input id="PESO_PEC" type="number" step="any" {...formulaForm.register('PESO_PEC')} placeholder="Ex: 0.35 para 35%" />
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="PESO_SOJA">Peso da Soja (%)</Label>
+                        <Label htmlFor="PESO_SOJA">Peso Soja (%)</Label>
                         <Input id="PESO_SOJA" type="number" step="any" {...formulaForm.register('PESO_SOJA')} placeholder="Ex: 0.35 para 35%" />
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="PESO_MILHO">Peso do Milho (%)</Label>
+                        <Label htmlFor="PESO_MILHO">Peso Milho (%)</Label>
                         <Input id="PESO_MILHO" type="number" step="any" {...formulaForm.register('PESO_MILHO')} placeholder="Ex: 0.30 para 30%" />
                     </div>
-                </div>
-            </div>
-            <div>
-                <h3 className="text-lg font-medium mb-4">Fatores Gerais e Socioambientais</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <div className="space-y-2">
+                     <div className="space-y-2">
                         <Label htmlFor="FATOR_ARREND">Fator de Arrendamento (%)</Label>
                         <Input id="FATOR_ARREND" type="number" step="any" {...formulaForm.register('FATOR_ARREND')} placeholder="Ex: 0.048 para 4.8%" />
                     </div>
+                </div>
+            </div>
+
+            {/* VMAD Section */}
+            <div>
+                <h3 className="text-lg font-medium mb-4">2. Valor da Madeira (VMAD)</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <div className="space-y-2">
-                        <Label htmlFor="FATOR_CARBONO">Fator de Carbono (tCO₂/m³)</Label>
+                        <Label htmlFor="VOLUME_MADEIRA_HA">Fator m³ (Volume Madeira/ha)</Label>
+                        <Input id="VOLUME_MADEIRA_HA" type="number" step="any" {...formulaForm.register('VOLUME_MADEIRA_HA')} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="FATOR_CONVERSAO_SERRADA_TORA">Fator Conversão Madeira (%)</Label>
+                        <Input id="FATOR_CONVERSAO_SERRADA_TORA" type="number" step="any" {...formulaForm.register('FATOR_CONVERSAO_SERRADA_TORA')} placeholder="Ex: 0.10 para 10%" />
+                    </div>
+                </div>
+            </div>
+            
+            {/* CRS Section */}
+            <div>
+                <h3 className="text-lg font-medium mb-4">3. Custo da Responsabilidade Socioambiental (CRS)</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                     <div className="space-y-2">
+                        <Label htmlFor="FATOR_CARBONO">Fator Crédito de Carbono</Label>
                         <Input id="FATOR_CARBONO" type="number" step="any" {...formulaForm.register('FATOR_CARBONO')} />
                     </div>
                     <div className="space-y-2">
@@ -253,9 +262,10 @@ export default function SettingsPage() {
                     </div>
                 </div>
             </div>
+
             <Button type="submit" disabled={isLoading}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Salvar Fórmula
+                Salvar Fórmula e Recalcular Índice
             </Button>
         </form>
     );
@@ -342,7 +352,7 @@ export default function SettingsPage() {
                 <AlertDialogHeader>
                 <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
                 <AlertDialogDescription>
-                    Esta ação não pode ser desfeita. Isso excluirá permanentemente o ativo <span className="font-bold">{deletingCommodityId}</span> do sistema.
+                    Esta ação não pode ser desfeita. Isso excluirá permanentemente o ativo e seus dados históricos do sistema.
                 </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

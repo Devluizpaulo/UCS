@@ -87,9 +87,9 @@ export type RiskAnalysisData = {
     metrics: RiskMetric[];
 };
 
+// Based on the user's formula specification
 export type FormulaParameters = {
-    VOLUME_MADEIRA_HA: number;
-    FATOR_CARBONO: number;
+    // VUS
     PROD_BOI: number;
     PROD_MILHO: number;
     PROD_SOJA: number;
@@ -97,8 +97,13 @@ export type FormulaParameters = {
     PESO_MILHO: number;
     PESO_SOJA: number;
     FATOR_ARREND: number;
-    FATOR_AGUA: number;
+    // VMAD
+    VOLUME_MADEIRA_HA: number;
     FATOR_CONVERSAO_SERRADA_TORA: number;
+    // CRS
+    FATOR_CARBONO: number;
+    FATOR_AGUA: number;
+    // Status
     isConfigured: boolean;
 }
 

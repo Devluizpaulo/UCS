@@ -1,5 +1,4 @@
 
-
 /**
  * @fileOverview A pure, synchronous service for performing UCS Index calculations.
  * This file should NOT be marked with 'use server' as it contains only calculation logic
@@ -47,40 +46,47 @@ export function calculateIndex(commodities: CommodityPriceData[], params: Formul
       // --- Dynamic Price Lookups based on Category ---
       const taxa_usd_brl = findPrice(commodities, 'exchange', 'USD/BRL');
       const taxa_eur_brl = findPrice(commodities, 'exchange', 'EUR/BRL');
-      const preco_lumber_mbf = findPrice(commodities, 'vmad'); // Assumes only one forestry product
-      const preco_boi_arroba = findPrice(commodities, 'vus', 'Boi');
-      const preco_milho_brl = findPrice(commodities, 'vus', 'Milho');
-      const preco_soja_usd = findPrice(commodities, 'vus', 'Soja');
-      const preco_carbono_eur = findPrice(commodities, 'crs'); // Assumes only one carbon product
+      const preco_madeira_usd = findPrice(commodities, 'vmad'); // Lumber price from CME
+      const preco_boi_arroba_brl = findPrice(commodities, 'vus', 'Boi');
+      const preco_milho_saca_brl = findPrice(commodities, 'vus', 'Milho');
+      const preco_soja_saca_usd = findPrice(commodities, 'vus', 'Soja');
+      const preco_carbono_eur = findPrice(commodities, 'crs'); // Carbon credit price
   
       // --- Data Validation ---
-      const prices = [taxa_usd_brl, taxa_eur_brl, preco_lumber_mbf, preco_boi_arroba, preco_milho_brl, preco_soja_usd, preco_carbono_eur];
+      const prices = [taxa_usd_brl, taxa_eur_brl, preco_madeira_usd, preco_boi_arroba_brl, preco_milho_saca_brl, preco_soja_saca_usd, preco_carbono_eur];
       if (prices.some(p => p === 0)) {
           console.error("[LOG] One or more required asset prices are zero or missing. Aborting calculation.");
           return { ...defaultResult, isConfigured: true }; // Return default but indicate it was configured
       }
   
       // --- Price Conversions ---
-      const preco_madeira_serrada_m3_usd = (preco_lumber_mbf / 1000) * 424;
-      const preco_madeira_serrada_m3_brl = preco_madeira_serrada_m3_usd * taxa_usd_brl;
-      const preco_madeira_tora_m3_brl = preco_madeira_serrada_m3_brl * params.FATOR_CONVERSAO_SERRADA_TORA;
-      const preco_milho_ton_brl = preco_milho_brl * (1000 / 60);
-      const preco_soja_ton_usd = preco_soja_usd * (1000 / 60);
-      const preco_soja_ton_brl = preco_soja_ton_usd * taxa_usd_brl;
+      const preco_soja_saca_brl = preco_soja_saca_usd * taxa_usd_brl;
+      const preco_milho_ton_brl = preco_milho_saca_brl * (1000 / 60);
+      const preco_soja_ton_brl = preco_soja_saca_brl * (1000 / 60);
       const preco_carbono_brl = preco_carbono_eur * taxa_eur_brl;
+
+      // --- 1. VUS (Valor de Uso do Solo) ---
+      const renda_pecuaria = params.PROD_BOI * preco_boi_arroba_brl;
+      const renda_milho = params.PROD_MILHO * preco_milho_ton_brl;
+      const renda_soja = params.PROD_SOJA * preco_soja_ton_brl;
       
-      // --- Formula Calculation ---
-      const VM = preco_madeira_tora_m3_brl * params.VOLUME_MADEIRA_HA;
-      const renda_pecuaria = params.PROD_BOI * preco_boi_arroba * params.PESO_PEC;
-      const renda_milho = params.PROD_MILHO * preco_milho_ton_brl * params.PESO_MILHO;
-      const renda_soja = params.PROD_SOJA * preco_soja_ton_brl * params.PESO_SOJA;
-      const renda_bruta_ha = renda_pecuaria + renda_milho + renda_soja;
-      const VUS = renda_bruta_ha / params.FATOR_ARREND;
-      const valor_carbono = preco_carbono_brl * params.VOLUME_MADEIRA_HA * params.FATOR_CARBONO;
+      const renda_bruta_ponderada = (renda_pecuaria * params.PESO_PEC) + (renda_milho * params.PESO_MILHO) + (renda_soja * params.PESO_SOJA);
+      const VUS = renda_bruta_ponderada / params.FATOR_ARREND;
+      
+      // --- 2. VMAD (Valor da Madeira) ---
+      // According to user: VMAD = (Fator_m3 × preço_madeira) × fator_conversão
+      // Assuming Fator_m3 is volume, price is per unit, and conversion adjusts it.
+      const VMAD = (params.VOLUME_MADEIRA_HA * (preco_madeira_usd * taxa_usd_brl)) * params.FATOR_CONVERSAO_SERRADA_TORA;
+
+      // --- 3. CRS (Custo da Responsabilidade Socioambiental) ---
+      // According to user: CRS = (Crédito_Carbono × fator_CC) + (Custo_Água × fator_água)
+      // Custo_Água is defined as 7% of VUS.
+      const valor_carbono = preco_carbono_brl * params.FATOR_CARBONO;
       const valor_agua = VUS * params.FATOR_AGUA;
       const CRS = valor_carbono + valor_agua;
       
-      const ucsValue = VM + VUS + CRS;
+      // --- 4. UCS INDEX (Final Value) ---
+      const ucsValue = VUS + VMAD + CRS;
   
       if (!isFinite(ucsValue)) {
           console.error('[LOG] UCS calculation resulted in a non-finite number. Returning default.');
@@ -91,7 +97,7 @@ export function calculateIndex(commodities: CommodityPriceData[], params: Formul
           indexValue: parseFloat(ucsValue.toFixed(2)),
           isConfigured: params.isConfigured,
           components: {
-              vm: parseFloat(VM.toFixed(2)),
+              vm: parseFloat(VMAD.toFixed(2)),
               vus: parseFloat(VUS.toFixed(2)),
               crs: parseFloat(CRS.toFixed(2)),
           },
