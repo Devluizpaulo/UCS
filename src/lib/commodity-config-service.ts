@@ -134,7 +134,7 @@ export async function saveCommodity(commodity: CommodityConfig): Promise<void> {
  * @param {string} id - The ID of the commodity to delete.
  * @returns {Promise<void>} A promise that resolves when the deletion is complete.
  */
-export async function deleteCommodody(id: string): Promise<void> {
+export async function deleteCommodity(id: string): Promise<void> {
     const db = await getDb();
     if (!id) {
         throw new Error("Commodity ID is required for deletion.");
