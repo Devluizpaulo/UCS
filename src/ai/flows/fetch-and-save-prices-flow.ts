@@ -41,7 +41,9 @@ export async function fetchAndSavePrices(input: z.infer<typeof FetchAndSavePrice
       try {
         const apiKey = process.env.MARKETDATA_API_KEY;
         if (!apiKey) {
-            throw new Error("A chave da API MarketData não está configurada no ambiente do servidor.");
+            const errorMessage = "A chave da API MarketData não está configurada no ambiente do servidor. Verifique o arquivo .env.";
+            console.error(`[FLOW ERROR] ${errorMessage}`);
+            return { success: false, message: errorMessage, savedCount: 0 };
         }
 
         console.log(`[FLOW] Starting data processing... Mode: ${assetName ? `Single asset (${assetName})` : 'All assets'}`);
@@ -62,7 +64,7 @@ export async function fetchAndSavePrices(input: z.infer<typeof FetchAndSavePrice
               // Get last day's closing price
               const history = await getMarketDataHistory(apiKey, commodityInfo.ticker, 'D', 2);
               if (history.s !== 'ok' || history.c.length === 0) {
-                  console.warn(`[FLOW] API response for ${commodityInfo.name} is invalid or has no data. Skipping.`);
+                  console.warn(`[FLOW] API response for ${commodityInfo.name} (${commodityInfo.ticker}) is invalid or has no data. Skipping. Response: ${history.errmsg || 'N/A'}`);
                   continue;
               }
 
@@ -77,7 +79,7 @@ export async function fetchAndSavePrices(input: z.infer<typeof FetchAndSavePrice
                   absoluteChange: 0,
               });
             } catch (error) {
-                console.error(`[FLOW] Failed to fetch price for ${commodityInfo.name}. Skipping.`, error);
+                console.error(`[FLOW] Failed to fetch price for ${commodityInfo.name} (${commodityInfo.ticker}). Skipping.`, error);
             }
         }
         
