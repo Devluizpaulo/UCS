@@ -12,18 +12,25 @@ import { getCommodities } from '@/lib/commodity-config-service';
 import { getUcsIndexValue } from '@/lib/data-service';
 import { getAssetHistoricalData } from '@/lib/marketdata-service';
 import { calculate_volatility, calculate_correlation } from '@/lib/statistics';
+import { getFormulaParameters } from '@/lib/formula-service';
 
 async function getRiskAnalysisData(): Promise<RiskAnalysisData> {
-    const commodities = await getCommodities();
-    const ucsHistoryData = await getUcsIndexValue('1d'); // Use daily data for correlation
+    const [commodities, ucsHistoryData, formulaParams] = await Promise.all([
+        getCommodities(),
+        getUcsIndexValue('1d'), // Use daily data for correlation
+        getFormulaParameters(),
+    ]);
+
+    if (!formulaParams.isConfigured) {
+        return { metrics: [] }; // Return empty if formula is not configured
+    }
+    
     const ucsReturns = ucsHistoryData.history.map(d => d.value).slice(1).map((v, i, a) => (v / a[i-1]) -1);
-
-    const metrics = [];
-
-    for (const asset of commodities) {
+    
+    const metricsPromises = commodities.map(async (asset) => {
         try {
             const assetHistory = await getAssetHistoricalData(asset.name, '1d');
-            if (assetHistory.length < 2) continue;
+            if (assetHistory.length < 2) return null;
 
             const assetReturns = assetHistory.map(d => d.close).slice(1).map((v, i, a) => (v / a[i-1]) -1);
             const volatility = calculate_volatility(assetReturns);
@@ -31,12 +38,17 @@ async function getRiskAnalysisData(): Promise<RiskAnalysisData> {
             // Ensure array lengths match for correlation
             const correlation = calculate_correlation(ucsReturns.slice(-assetReturns.length), assetReturns);
             
-            metrics.push({ asset: asset.name, volatility, correlation });
+            return { asset: asset.name, volatility, correlation };
         } catch (error) {
             console.error(`Could not analyze risk for ${asset.name}:`, error);
+            return null; // Return null on error for this specific asset
         }
-    }
-    return { metrics };
+    });
+
+    const settledMetrics = await Promise.all(metricsPromises);
+    const validMetrics = settledMetrics.filter(m => m !== null) as RiskAnalysisData['metrics'];
+    
+    return { metrics: validMetrics };
 }
 
 
@@ -76,26 +88,36 @@ export function RiskAnalysis() {
     fetchData();
   }, []);
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Análise de Risco</CardTitle>
-        <CardDescription>
-            Análise de volatilidade e correlação dos ativos subjacentes em relação ao Índice UCS.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {loading ? (
-             <div className="space-y-4">
-                <Skeleton className="h-40 w-full" />
-             </div>
-        ) : error ? (
-            <Alert variant="destructive">
-                <AlertTitle>Erro</AlertTitle>
-                <AlertDescription>{error}</AlertDescription>
-            </Alert>
-        ) : riskData ? (
-          <>
+  const renderContent = () => {
+        if (loading) {
+             return (
+                 <div className="space-y-4">
+                    <Skeleton className="h-40 w-full" />
+                 </div>
+            )
+        }
+        
+        if (error) {
+            return (
+                <Alert variant="destructive">
+                    <AlertTitle>Erro</AlertTitle>
+                    <AlertDescription>{error}</AlertDescription>
+                </Alert>
+            );
+        }
+
+        if (!riskData || riskData.metrics.length === 0) {
+            return (
+                 <Alert>
+                    <AlertTitle>Dados Insuficientes para Análise</AlertTitle>
+                    <AlertDescription>
+                        A análise de risco não pode ser gerada. Isso pode ocorrer porque a fórmula do índice ainda não foi configurada ou não há dados históricos suficientes para os ativos.
+                    </AlertDescription>
+                </Alert>
+            );
+        }
+
+        return (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -125,8 +147,19 @@ export function RiskAnalysis() {
                 })}
               </TableBody>
             </Table>
-          </>
-        ) : null}
+        );
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Análise de Risco</CardTitle>
+        <CardDescription>
+            Análise de volatilidade e correlação dos ativos subjacentes em relação ao Índice UCS.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {renderContent()}
       </CardContent>
     </Card>
   );

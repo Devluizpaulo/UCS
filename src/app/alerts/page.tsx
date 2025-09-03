@@ -24,10 +24,7 @@ type AlertFormData = z.infer<typeof alertSchema>;
 type ActiveAlert = AlertFormData & { id: string };
 
 export default function AlertsPage() {
-  const [activeAlerts, setActiveAlerts] = useState<ActiveAlert[]>([
-    { id: '1', email: 'voce@exemplo.com', condition: 'below', threshold: 5.4000 },
-    { id: '2', email: 'voce@exemplo.com', condition: 'above', threshold: 5.6000 },
-  ]);
+  const [activeAlerts, setActiveAlerts] = useState<ActiveAlert[]>([]);
   const { toast } = useToast();
 
   const { register, handleSubmit, control, formState: { errors }, reset } = useForm<AlertFormData>({

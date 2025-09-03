@@ -1,6 +1,6 @@
 
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -10,23 +10,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import type { ScenarioResult, SimulateScenarioInput } from '@/lib/types';
+import type { ScenarioResult, SimulateScenarioInput, CommodityConfig } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
+import { getCommodities } from '@/lib/commodity-config-service';
+import { Skeleton } from './ui/skeleton';
 
 
 async function runScenarioSimulation(asset: string, changeType: 'percentage' | 'absolute', value: number): Promise<ScenarioResult> {
     const { simulateScenario } = await import('@/ai/flows/simulate-scenario-flow');
     return simulateScenario({ asset, changeType, value });
 }
-
-const commodities = [
-    // We only allow simulation on assets that are part of the formula
-    { value: 'Boi Gordo Futuros - Ago 25 (BGIc1)', label: 'Boi Gordo Futuros - Ago 25 (BGIc1)' },
-    { value: 'Soja Futuros - Nov 25 (SJCc1)', label: 'Soja Futuros - Nov 25 (SJCc1)' },
-    { value: 'Milho Futuros - Set 25 (CCMc1)', label: 'Milho Futuros - Set 25 (CCMc1)' },
-    { value: 'Madeira Serrada Futuros - Set 25 (LXRc1)', label: 'Madeira Serrada Futuros - Set 25 (LXRc1)' },
-    { value: 'Carbono Futuros', label: 'Carbono Futuros' },
-];
 
 const scenarioSchema = z.object({
   asset: z.string().min(1, 'Selecione um ativo.'),
@@ -38,10 +31,35 @@ const scenarioSchema = z.object({
 export function ScenarioAnalysis() {
     const [result, setResult] = useState<ScenarioResult | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [commodities, setCommodities] = useState<CommodityConfig[]>([]);
+    const [isLoadingCommodities, setIsLoadingCommodities] = useState(true);
     const { toast } = useToast();
+    
     const { register, handleSubmit, control, formState: { errors }, watch } = useForm<SimulateScenarioInput>({
         resolver: zodResolver(scenarioSchema),
     });
+
+    useEffect(() => {
+        const fetchCommodities = async () => {
+            setIsLoadingCommodities(true);
+            try {
+                // We only allow simulation on assets that are part of the VUS and VMAD formula for direct impact.
+                const allCommodities = await getCommodities();
+                const filtered = allCommodities.filter(c => c.category === 'vus' || c.category === 'vmad' || c.category === 'crs');
+                setCommodities(filtered);
+            } catch (error) {
+                 toast({
+                    variant: 'destructive',
+                    title: 'Erro ao carregar ativos',
+                    description: 'Não foi possível buscar a lista de ativos para simulação.',
+                });
+            } finally {
+                setIsLoadingCommodities(false);
+            }
+        };
+        fetchCommodities();
+    }, [toast]);
+
 
     const onSubmit = async (data: SimulateScenarioInput) => {
         setIsLoading(true);
@@ -61,7 +79,7 @@ export function ScenarioAnalysis() {
         }
     };
     
-    const selectedAssetLabel = commodities.find(c => c.value === watch('asset'))?.label;
+    const selectedAssetLabel = commodities.find(c => c.name === watch('asset'))?.name;
 
   return (
     <Card>
@@ -70,58 +88,66 @@ export function ScenarioAnalysis() {
         <CardDescription>Simule o impacto de diferentes cenários econômicos e de mercado no Índice UCS.</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-6">
-        <form onSubmit={handleSubmit(onSubmit)} className="grid gap-6">
+       {isLoadingCommodities ? (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="space-y-2">
-                <Label htmlFor="asset">Ativo</Label>
-                <Controller
-                    name="asset"
-                    control={control}
-                    render={({ field }) => (
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <SelectTrigger id="asset">
-                                <SelectValue placeholder="Selecione um ativo" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {commodities.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                    )}
-                />
-                 {errors.asset && <p className="text-xs text-destructive">{errors.asset.message}</p>}
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
             </div>
-            <div className="space-y-2">
-                <Label htmlFor="change-type">Tipo de Mudança</Label>
-                <Controller
-                    name="changeType"
-                    control={control}
-                    render={({ field }) => (
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <SelectTrigger id="change-type">
-                                <SelectValue placeholder="Selecione o tipo" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="percentage">Variação Percentual (%)</SelectItem>
-                                <SelectItem value="absolute">Novo Valor Absoluto (na moeda original)</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    )}
-                />
-                 {errors.changeType && <p className="text-xs text-destructive">{errors.changeType.message}</p>}
-            </div>
-            <div className="space-y-2">
-                <Label htmlFor="change-value">Valor</Label>
-                <Input id="change-value" type="number" step="any" placeholder="ex: 10 ou -5" {...register('value')} />
-                 {errors.value && <p className="text-xs text-destructive">{errors.value.message}</p>}
-            </div>
-            </div>
-            <div className="flex justify-start">
-                <Button type="submit" disabled={isLoading}>
-                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Simular Cenário
-                </Button>
-            </div>
-        </form>
+       ) : (
+            <form onSubmit={handleSubmit(onSubmit)} className="grid gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                    <Label htmlFor="asset">Ativo</Label>
+                    <Controller
+                        name="asset"
+                        control={control}
+                        render={({ field }) => (
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <SelectTrigger id="asset">
+                                    <SelectValue placeholder="Selecione um ativo" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {commodities.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        )}
+                    />
+                    {errors.asset && <p className="text-xs text-destructive">{errors.asset.message}</p>}
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="change-type">Tipo de Mudança</Label>
+                    <Controller
+                        name="changeType"
+                        control={control}
+                        render={({ field }) => (
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <SelectTrigger id="change-type">
+                                    <SelectValue placeholder="Selecione o tipo" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="percentage">Variação Percentual (%)</SelectItem>
+                                    <SelectItem value="absolute">Novo Valor Absoluto (na moeda original)</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        )}
+                    />
+                    {errors.changeType && <p className="text-xs text-destructive">{errors.changeType.message}</p>}
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="change-value">Valor</Label>
+                    <Input id="change-value" type="number" step="any" placeholder="ex: 10 ou -5" {...register('value')} />
+                    {errors.value && <p className="text-xs text-destructive">{errors.value.message}</p>}
+                </div>
+                </div>
+                <div className="flex justify-start">
+                    <Button type="submit" disabled={isLoading}>
+                        {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Simular Cenário
+                    </Button>
+                </div>
+            </form>
+       )}
 
         {(isLoading || result) && (
             <div className="mt-6 border-t pt-6">
