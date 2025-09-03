@@ -1,12 +1,12 @@
 
 
-import type { CommodityMap } from "./types";
+import type { CommodityMap, MarketDataConfig } from "./types";
 
 
 // This file is intentionally not marked with 'use server' as it exports constant objects.
 
 // MarketData API Configuration
-export const MARKETDATA_CONFIG = {
+export const MARKETDATA_CONFIG: MarketDataConfig = {
   API_BASE_URL: "https://api.marketdata.app/v1",
   
   // Cache TTL (Time To Live) in milliseconds
