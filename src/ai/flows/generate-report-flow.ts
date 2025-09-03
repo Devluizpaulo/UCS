@@ -15,6 +15,7 @@ import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { getUcsIndexValue, getCommodityPrices } from '@/lib/data-service';
 import type { ChartData, CommodityPriceData } from '@/lib/types';
+import type { GenerateReportInput, GenerateReportOutput, ReportPreviewData } from '@/lib/types';
 
 
 // --- Zod Schemas for Input and Output ---
@@ -25,16 +26,15 @@ const GenerateReportInputSchema = z.object({
   format: z.enum(['pdf', 'xlsx']),
   observations: z.string().optional().describe('User-provided observations to guide the AI analysis.'),
 });
-export type GenerateReportInput = z.infer<typeof GenerateReportInputSchema>;
 
 const PreviewDataSchema = z.object({
     reportTitle: z.string(),
     periodTitle: z.string(),
     analysisText: z.string(),
     ucsHistory: z.array(z.object({ time: z.string(), value: z.number() })),
-    assets: z.array(z.object({ 
-        name: z.string(), 
-        price: z.number(), 
+    assets: z.array(z.object({
+        name: z.string(),
+        price: z.number(),
         change: z.number(),
         currency: z.string(),
     })),
@@ -44,9 +44,8 @@ const GenerateReportOutputSchema = z.object({
   fileName: z.string(),
   fileContent: z.string().describe('The generated file content as a Base64 encoded string.'),
   mimeType: z.string(),
-  previewData: PreviewDataSchema,
+  previewData: PreviewDataSchema satisfies z.ZodType<ReportPreviewData>,
 });
-export type GenerateReportOutput = z.infer<typeof GenerateReportOutputSchema>;
 
 
 const AnalysisPromptInputSchema = z.object({
@@ -201,10 +200,10 @@ async function generateXlsxReport(title: string, period: string, analysis: strin
     [],
     ['Ativo', 'Ticker', 'Moeda', 'Último Preço', 'Variação %', 'Variação Absoluta', 'Última Atualização'],
     ...assets.map(a => [
-        a.name, 
-        a.ticker, 
-        a.currency, 
-        a.price, 
+        a.name,
+        a.ticker,
+        a.currency,
+        a.price,
         a.change,
         a.absoluteChange,
         a.lastUpdated
@@ -237,8 +236,8 @@ export async function generateReport(input: GenerateReportInput): Promise<Genera
           yearly: { interval: '1mo' as const, limit: 60, periodTitle: 'Anual (Últimos 5 anos)' },
       }[period];
 
-      const reportTitle = type === 'index_performance' 
-          ? 'Relatório de Performance do Índice UCS' 
+      const reportTitle = type === 'index_performance'
+          ? 'Relatório de Performance do Índice UCS'
           : 'Relatório de Performance dos Ativos Subjacentes';
 
       // Fetch data
@@ -272,9 +271,9 @@ export async function generateReport(input: GenerateReportInput): Promise<Genera
         mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
       }
 
-      return { 
-        fileName, 
-        fileContent, 
+      return {
+        fileName,
+        fileContent,
         mimeType,
         previewData: {
           reportTitle,

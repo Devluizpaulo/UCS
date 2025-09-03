@@ -26,7 +26,18 @@ async function seedDefaultCommodities() {
         const batch = writeBatch(db);
         Object.entries(COMMODITY_TICKER_MAP).forEach(([id, config]) => {
             const docRef = doc(db, COMMODITIES_COLLECTION, id);
-            batch.set(docRef, config);
+            // Ensure every field from CommodityConfig is present, even optional ones
+            const dataToSeed: InitialCommodityConfig = {
+                name: config.name,
+                ticker: config.ticker,
+                currency: config.currency,
+                category: config.category,
+                description: config.description,
+                unit: config.unit,
+                source: config.source || 'MarketData',
+                scrapeConfig: config.scrapeConfig || { url: '', selector: '' }
+            };
+            batch.set(docRef, dataToSeed);
         });
         await batch.commit();
         console.log('[CommodityConfigService] Default commodities seeded successfully.');
@@ -47,7 +58,14 @@ export async function getCommodities(): Promise<CommodityConfig[]> {
         const querySnapshot = await getDocs(q);
         const commodities: CommodityConfig[] = [];
         querySnapshot.forEach((doc) => {
-            commodities.push({ id: doc.id, ...(doc.data() as InitialCommodityConfig) });
+            const data = doc.data() as InitialCommodityConfig;
+            commodities.push({ 
+                id: doc.id, 
+                ...data,
+                // Ensure optional fields are present on the returned object
+                source: data.source || 'MarketData', 
+                scrapeConfig: data.scrapeConfig || { url: '', selector: '' }
+            });
         });
         return commodities;
     } catch (error) {
@@ -67,7 +85,13 @@ export async function getCommodity(id: string): Promise<CommodityConfig | null> 
         const docRef = doc(db, COMMODITIES_COLLECTION, id);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
-            return { id: docSnap.id, ...(docSnap.data() as InitialCommodityConfig) };
+            const data = docSnap.data() as InitialCommodityConfig;
+            return { 
+                id: docSnap.id, 
+                ...data,
+                source: data.source || 'MarketData',
+                scrapeConfig: data.scrapeConfig || { url: '', selector: '' }
+            };
         }
         return null;
     } catch (error) {
@@ -89,7 +113,7 @@ export async function saveCommodity(commodity: CommodityConfig): Promise<void> {
     }
     try {
         const { id, ...dataToSave } = commodity;
-        const docRef = doc(db, COMMODITIES_COLLECTION, id);
+        const docRef = doc(db, COMMODIOTIES_COLLECTION, id);
         await setDoc(docRef, dataToSave, { merge: true }); // Use merge to avoid overwriting fields on update
         console.log(`[CommodityConfigService] Successfully saved commodity: ${id}`);
     } catch (error) {
