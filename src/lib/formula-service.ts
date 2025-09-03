@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview A service for managing the UCS Index formula parameters.

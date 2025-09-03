@@ -6,7 +6,7 @@
  */
 
 import { getDb } from './firebase-admin-config';
-import { collection, doc, getDocs, getDoc, setDoc, deleteDoc, query, orderBy, limit } from 'firebase/firestore';
+import { collection, doc, getDocs, getDoc, setDoc, deleteDoc, query, orderBy, limit, writeBatch } from 'firebase/firestore';
 import type { CommodityConfig, InitialCommodityConfig } from './types';
 import { COMMODITY_TICKER_MAP } from './marketdata-config';
 
@@ -23,11 +23,12 @@ async function seedDefaultCommodities() {
     
     if (snapshot.empty) {
         console.log('[CommodityConfigService] No commodities found, seeding database with defaults.');
-        const promises = Object.entries(COMMODITY_TICKER_MAP).map(([id, config]) => {
+        const batch = writeBatch(db);
+        Object.entries(COMMODITY_TICKER_MAP).forEach(([id, config]) => {
             const docRef = doc(db, COMMODITIES_COLLECTION, id);
-            return setDoc(docRef, config);
+            batch.set(docRef, config);
         });
-        await Promise.all(promises);
+        await batch.commit();
         console.log('[CommodityConfigService] Default commodities seeded successfully.');
     }
 }
@@ -88,12 +89,6 @@ export async function saveCommodity(commodity: CommodityConfig): Promise<void> {
     }
     try {
         const { id, ...dataToSave } = commodity;
-        // Ensure price and lastUpdated are not part of the config document
-        delete (dataToSave as any).price;
-        delete (dataToSave as any).lastUpdated;
-        delete (dataToSave as any).change;
-        delete (dataToSave as any).absoluteChange;
-
         const docRef = doc(db, COMMODITIES_COLLECTION, id);
         await setDoc(docRef, dataToSave, { merge: true }); // Use merge to avoid overwriting fields on update
         console.log(`[CommodityConfigService] Successfully saved commodity: ${id}`);

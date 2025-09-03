@@ -3,6 +3,7 @@
 
 
 
+
 export type ChartData = {
   time: string;
   value: number;
@@ -18,8 +19,6 @@ export type CommodityConfig = {
   description: string;
   unit: string;
   source?: string;
-  price?: number; // Latest price, stored directly on the object
-  lastUpdated?: string | object; // Can be string or Firestore Timestamp
   scrapeConfig?: {
     url: string;
     selector: string;
@@ -156,7 +155,7 @@ export type ApiConfig = {
 };
 
 // --- Initial Config Types ---
-export type InitialCommodityConfig = Omit<CommodityConfig, 'id' | 'price' | 'lastUpdated'>;
+export type InitialCommodityConfig = Omit<CommodityConfig, 'id'>;
 
 export type CommodityMap = {
   [key: string]: InitialCommodityConfig;
