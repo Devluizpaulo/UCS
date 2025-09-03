@@ -44,8 +44,8 @@ async function fetchFromApi(apiKey: string, endpoint: string, params: URLSearchP
         }
         
         const data = await response.json();
-        if (data.s !== 'ok' && data.s !== 'no_data') { // allow no_data for some queries
-            // MarketData can sometimes return a string error message.
+        // Allow no_data for some queries, but treat it as an error for critical ones.
+        if (data.s === 'error') {
             const errorMessage = typeof data.errmsg === 'string' ? data.errmsg : 'Unknown API error';
             throw new Error(`API returned an error: ${errorMessage}`);
         }
@@ -59,7 +59,7 @@ async function fetchFromApi(apiKey: string, endpoint: string, params: URLSearchP
 }
 
 
-export async function getMarketDataQuote(apiKey: string, ticker: string): Promise<MarketDataQuoteResponse> {
+export async function getMarketDataQuote(apiKey: string, ticker: string): Promise<number> {
     const config = await getApiConfig();
     const cacheKey = getCacheKey('md_quote', { ticker });
     const cachedEntry = cache.get(cacheKey);
@@ -68,17 +68,21 @@ export async function getMarketDataQuote(apiKey: string, ticker: string): Promis
         console.log(`[CACHE HIT] Quote for ${ticker}`);
         return cachedEntry.data;
     }
-
-    const params = new URLSearchParams({ symbol: ticker });
-    const data: MarketDataQuoteResponse = await fetchFromApi(apiKey, '/stocks/quotes/', params, config.marketData.TIMEOUTS.QUOTE);
     
-    if (data.s === 'no_data' || !data.symbol || data.symbol.length === 0) {
-        throw new Error(`No data returned from API for ticker ${ticker}`);
+    console.log(`[API] Fetching latest price for ${ticker}`);
+    // Use the history endpoint to get the last closing price, which is more reliable for commodities
+    const history = await getMarketDataHistory(apiKey, ticker, 'D', 2);
+    
+    if (history.s !== 'ok' || !history.c || history.c.length === 0) {
+        throw new Error(`No valid data returned from API for ticker ${ticker}. Response: ${history.errmsg || 'N/A'}`);
     }
+
+    const lastPrice = history.c[history.c.length - 1];
     
-    cache.set(cacheKey, { data, timestamp: Date.now(), ttl: config.marketData.CACHE_TTL.QUOTE });
-    return data;
+    cache.set(cacheKey, { data: lastPrice, timestamp: Date.now(), ttl: config.marketData.CACHE_TTL.QUOTE });
+    return lastPrice;
 }
+
 
 export async function getMarketDataHistory(apiKey: string, ticker: string, resolution: 'D' | 'W' | 'M' = 'D', countback: number = 30): Promise<MarketDataHistoryResponse> {
     const config = await getApiConfig();
@@ -97,7 +101,10 @@ export async function getMarketDataHistory(apiKey: string, ticker: string, resol
     });
     const data: MarketDataHistoryResponse = await fetchFromApi(apiKey, '/stocks/candles/', params, config.marketData.TIMEOUTS.HISTORICAL);
     
-    cache.set(cacheKey, { data, timestamp: Date.now(), ttl: config.marketData.CACHE_TTL.HISTORICAL });
+    if (data.s === 'ok') {
+        cache.set(cacheKey, { data, timestamp: Date.now(), ttl: config.marketData.CACHE_TTL.HISTORICAL });
+    }
+    
     return data;
 }
 
@@ -113,8 +120,6 @@ export async function getAssetHistoricalData(assetName: string, interval: Histor
 
     const apiKey = process.env.MARKETDATA_API_KEY;
     if (!apiKey) {
-      // This function is called from the client component, so we can't throw a fatal error.
-      // We return an empty array and log an error.
       console.error("MarketData API key is not configured. Cannot fetch historical data.");
       return [];
     }

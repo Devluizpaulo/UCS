@@ -11,7 +11,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { getMarketDataHistory } from '@/lib/marketdata-service';
+import { getMarketDataQuote } from '@/lib/marketdata-service';
 import { saveCommodityData, saveUcsIndexData } from '@/lib/database-service';
 import { getCommodities } from '@/lib/commodity-config-service';
 import { calculateUcsIndex } from './calculate-ucs-index-flow';
@@ -61,14 +61,7 @@ export async function fetchAndSavePrices(input: z.infer<typeof FetchAndSavePrice
 
         for (const commodityInfo of assetsToUpdate) {
             try {
-              // Get last day's closing price
-              const history = await getMarketDataHistory(apiKey, commodityInfo.ticker, 'D', 2);
-              if (history.s !== 'ok' || history.c.length === 0) {
-                  console.warn(`[FLOW] API response for ${commodityInfo.name} (${commodityInfo.ticker}) is invalid or has no data. Skipping. Response: ${history.errmsg || 'N/A'}`);
-                  continue;
-              }
-
-              const newPrice = history.c[history.c.length - 1]; // Get the most recent closing price
+              const newPrice = await getMarketDataQuote(apiKey, commodityInfo.ticker);
               
               fetchedPrices.push({
                   ...commodityInfo,
@@ -78,8 +71,8 @@ export async function fetchAndSavePrices(input: z.infer<typeof FetchAndSavePrice
                   change: 0, 
                   absoluteChange: 0,
               });
-            } catch (error) {
-                console.error(`[FLOW] Failed to fetch price for ${commodityInfo.name} (${commodityInfo.ticker}). Skipping.`, error);
+            } catch (error: any) {
+                console.error(`[FLOW] Failed to fetch price for ${commodityInfo.name} (${commodityInfo.ticker}). Skipping. Error: ${error.message}`);
             }
         }
         
