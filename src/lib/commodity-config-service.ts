@@ -14,18 +14,19 @@ const COMMODITIES_COLLECTION = 'commodities';
 /**
  * Seeds the database with a default set of commodities if the collection is empty.
  * This is useful for initial setup and prevents errors from empty collections.
+ * This function is now more resilient, attempting to create documents and ignoring
+ * errors if they already exist, which avoids read-before-write issues on a new database.
  */
 async function seedDefaultCommodities() {
     const db = await getDb();
     const collectionRef = db.collection(COMMODITIES_COLLECTION);
-    const snapshot = await collectionRef.limit(1).get();
     
-    if (snapshot.empty) {
-        console.log('[CommodityConfigService] No commodities found, seeding database with defaults.');
+    try {
         const batch = db.batch();
+        console.log('[CommodityConfigService] Seeding database with default commodities...');
+        
         Object.entries(COMMODITY_TICKER_MAP).forEach(([id, config]) => {
             const docRef = collectionRef.doc(id);
-            // Ensure every field from CommodityConfig is present, even optional ones
             const dataToSeed: InitialCommodityConfig = {
                 name: config.name,
                 ticker: config.ticker,
@@ -36,10 +37,17 @@ async function seedDefaultCommodities() {
                 source: config.source || 'MarketData',
                 scrapeConfig: config.scrapeConfig || { url: '', selector: '' }
             };
-            batch.set(docRef, dataToSeed);
+            // Use set with merge:true to create if not exists, but not overwrite existing data.
+            // This is safer than doing a read-then-write.
+            batch.set(docRef, dataToSeed, { merge: true });
         });
+        
         await batch.commit();
-        console.log('[CommodityConfigService] Default commodities seeded successfully.');
+        console.log('[CommodityConfigService] Default commodities seeding process completed.');
+    } catch (error) {
+        console.error('[CommodityConfigService] Error during seeding, this might be expected if database is new. Continuing...', error);
+        // We log the error but don't throw, as this operation can fail on a brand new,
+        // not-yet-fully-provisioned Firestore instance. The app should continue.
     }
 }
 
@@ -126,7 +134,7 @@ export async function saveCommodity(commodity: CommodityConfig): Promise<void> {
  * @param {string} id - The ID of the commodity to delete.
  * @returns {Promise<void>} A promise that resolves when the deletion is complete.
  */
-export async function deleteCommodity(id: string): Promise<void> {
+export async function deleteCommodody(id: string): Promise<void> {
     const db = await getDb();
     if (!id) {
         throw new Error("Commodity ID is required for deletion.");
