@@ -1,11 +1,11 @@
 
 'use server';
 /**
- * @fileOverview A flow for fetching commodity prices from the MarketData API,
+ * @fileOverview A flow for fetching commodity prices from various sources,
  * calculating the UCS Index, and saving both to Firestore.
  * This flow can be run for all commodities (by a scheduled job) or for a single one (manual trigger).
  *
- * - fetchAndSavePrices - The main flow function..
+ * - fetchAndSavePrices - The main flow function.
  * - FetchAndSavePricesInput - The input type for the flow.
  */
 
@@ -15,7 +15,8 @@ import { getMarketDataQuote } from '@/lib/marketdata-service';
 import { saveCommodityData, saveUcsIndexData } from '@/lib/database-service';
 import { getCommodities } from '@/lib/commodity-config-service';
 import { calculateUcsIndex } from './calculate-ucs-index-flow';
-import type { CommodityPriceData } from '@/lib/types';
+import type { CommodityConfig, CommodityPriceData } from '@/lib/types';
+import { getCommodityQuoteFlow } from './get-commodity-quote-flow';
 
 
 const FetchAndSavePricesInputSchema = z.object({
@@ -28,6 +29,21 @@ const FetchAndSaveOutputSchema = z.object({
   savedCount: z.number(),
   calculatedIndex: z.number().optional(),
 });
+
+async function fetchPriceForCommodity(apiKey: string, commodity: CommodityConfig): Promise<number> {
+    switch (commodity.source?.toLowerCase()) {
+        case 'google':
+            console.log(`[FLOW] Fetching price for ${commodity.name} using Google Search AI Flow...`);
+            // The AI flow can determine the price based on the name and description.
+            const query = `preço atual da commodity ${commodity.name} (${commodity.description}) em ${commodity.currency}`;
+            const result = await getCommodityQuoteFlow({ commodity_query: query });
+            return result.price;
+        case 'marketdata':
+        default:
+             console.log(`[FLOW] Fetching price for ${commodity.name} using MarketData API...`);
+             return getMarketDataQuote(apiKey, commodity.ticker);
+    }
+}
 
 
 export async function fetchAndSavePrices(input: z.infer<typeof FetchAndSavePricesInputSchema>): Promise<z.infer<typeof FetchAndSaveOutputSchema>> {
@@ -60,7 +76,7 @@ export async function fetchAndSavePrices(input: z.infer<typeof FetchAndSavePrice
         // Fetch all prices in parallel for performance
         const pricePromises = assetsToUpdate.map(async (commodityInfo) => {
             try {
-              const newPrice = await getMarketDataQuote(apiKey, commodityInfo.ticker);
+              const newPrice = await fetchPriceForCommodity(apiKey, commodityInfo);
               return {
                   ...commodityInfo,
                   price: newPrice,

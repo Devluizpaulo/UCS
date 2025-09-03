@@ -2,7 +2,7 @@
 'use server';
 
 import type { HistoryInterval, MarketDataQuoteResponse, MarketDataHistoryResponse, HistoricalQuote, MarketDataSearchResponse, SearchedAsset } from './types';
-import { getApiConfig } from './api-config-service';
+import { MARKETDATA_CONFIG } from './marketdata-config';
 import { getCommodities } from './commodity-config-service';
 
 
@@ -24,10 +24,10 @@ function isValidCacheEntry<T>(entry: CacheEntry<T> | undefined): entry is CacheE
 }
 
 async function fetchFromApi(apiKey: string, endpoint: string, params: URLSearchParams, timeout: number): Promise<any> {
-    const config = await getApiConfig();
+    const config = MARKETDATA_CONFIG;
     
     params.append('token', apiKey);
-    const url = `${config.marketData.API_BASE_URL}${endpoint}?${params.toString()}`;
+    const url = `${config.API_BASE_URL}${endpoint}?${params.toString()}`;
     
     console.log(`[API CALL] Fetching from ${url}`);
     
@@ -60,7 +60,7 @@ async function fetchFromApi(apiKey: string, endpoint: string, params: URLSearchP
 
 
 export async function getMarketDataQuote(apiKey: string, ticker: string): Promise<number> {
-    const config = await getApiConfig();
+    const config = MARKETDATA_CONFIG;
     const cacheKey = getCacheKey('md_quote', { ticker });
     const cachedEntry = cache.get(cacheKey);
 
@@ -79,13 +79,13 @@ export async function getMarketDataQuote(apiKey: string, ticker: string): Promis
 
     const lastPrice = history.c[history.c.length - 1];
     
-    cache.set(cacheKey, { data: lastPrice, timestamp: Date.now(), ttl: config.marketData.CACHE_TTL.QUOTE });
+    cache.set(cacheKey, { data: lastPrice, timestamp: Date.now(), ttl: config.CACHE_TTL.QUOTE });
     return lastPrice;
 }
 
 
 export async function getMarketDataHistory(apiKey: string, ticker: string, resolution: 'D' | 'W' | 'M' = 'D', countback: number = 30): Promise<MarketDataHistoryResponse> {
-    const config = await getApiConfig();
+    const config = MARKETDATA_CONFIG;
     const cacheKey = getCacheKey('md_history', { ticker, resolution, countback });
     const cachedEntry = cache.get(cacheKey);
 
@@ -99,10 +99,10 @@ export async function getMarketDataHistory(apiKey: string, ticker: string, resol
         resolution,
         countback: countback.toString()
     });
-    const data: MarketDataHistoryResponse = await fetchFromApi(apiKey, '/stocks/candles/', params, config.marketData.TIMEOUTS.HISTORICAL);
+    const data: MarketDataHistoryResponse = await fetchFromApi(apiKey, '/stocks/candles/', params, config.TIMEOUTS.HISTORICAL);
     
     if (data.s === 'ok') {
-        cache.set(cacheKey, { data, timestamp: Date.now(), ttl: config.marketData.CACHE_TTL.HISTORICAL });
+        cache.set(cacheKey, { data, timestamp: Date.now(), ttl: config.CACHE_TTL.HISTORICAL });
     }
     
     return data;
@@ -164,7 +164,7 @@ export async function getAssetHistoricalData(assetName: string, interval: Histor
 
 
 export async function searchMarketDataAssets(apiKey: string, query: string): Promise<SearchedAsset[]> {
-    const config = await getApiConfig();
+    const config = MARKETDATA_CONFIG;
     const cacheKey = getCacheKey('md_search', { query });
     const cachedEntry = cache.get(cacheKey);
 
@@ -174,7 +174,7 @@ export async function searchMarketDataAssets(apiKey: string, query: string): Pro
     }
 
     const params = new URLSearchParams({ query });
-    const data: MarketDataSearchResponse = await fetchFromApi(apiKey, '/stocks/search/', params, config.marketData.TIMEOUTS.QUOTE);
+    const data: MarketDataSearchResponse = await fetchFromApi(apiKey, '/stocks/search/', params, config.TIMEOUTS.QUOTE);
     
     if (data.s !== 'ok' || !data.symbol) {
         return [];
@@ -186,6 +186,6 @@ export async function searchMarketDataAssets(apiKey: string, query: string): Pro
         country: data.country[index],
     }));
     
-    cache.set(cacheKey, { data: results, timestamp: Date.now(), ttl: config.marketData.CACHE_TTL.HISTORICAL }); // Longer TTL for search
+    cache.set(cacheKey, { data: results, timestamp: Date.now(), ttl: config.CACHE_TTL.HISTORICAL }); // Longer TTL for search
     return results;
 }

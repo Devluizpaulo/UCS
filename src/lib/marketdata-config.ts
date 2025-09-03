@@ -52,7 +52,7 @@ export const COMMODITY_TICKER_MAP: CommodityMap = {
     category: 'vus',
     description: 'Contratos futuros de Boi Gordo para Agosto de 2025.',
     unit: '@',
-    source: 'B3',
+    source: 'MarketData',
   },
   'Soja-Futuros-Out25': { 
     name: 'Soja Futuros - Out 25',
@@ -61,7 +61,7 @@ export const COMMODITY_TICKER_MAP: CommodityMap = {
     category: 'vus',
     description: 'Contratos futuros de Soja para Outubro de 2025.',
     unit: 'USD/Saca 60kg',
-    source: 'B3',
+    source: 'MarketData',
   },
   'Milho-Futuros-Set25': { 
     name: 'Milho Futuros - Set 25',
@@ -70,7 +70,7 @@ export const COMMODITY_TICKER_MAP: CommodityMap = {
     category: 'vus',
     description: 'Contratos futuros de Milho para Setembro de 2025.',
     unit: 'BRL/Saca 60kg',
-    source: 'B3',
+    source: 'MarketData',
   },
   'Madeira-Serrada-Futuros-Set25': { 
     name: 'Madeira Serrada Futuros - Set 25',
@@ -79,7 +79,7 @@ export const COMMODITY_TICKER_MAP: CommodityMap = {
     category: 'vmad',
     description: 'Contratos futuros de Madeira (Lumber) para Setembro de 2025.',
     unit: 'USD/MBF',
-    source: 'CME',
+    source: 'MarketData',
   },
   'Credito-Carbono-Futuros-Dez25': { 
     name: 'Crédito Carbono Futuros - Dez 25',
@@ -88,7 +88,6 @@ export const COMMODITY_TICKER_MAP: CommodityMap = {
     category: 'crs',
     description: 'Contratos futuros de Crédito de Carbono para Dezembro de 2025.',
     unit: 'EUR/tCO₂',
-    source: 'ICE',
+    source: 'Google', // Changed to use the new AI-powered Google Search source
   },
 };
-

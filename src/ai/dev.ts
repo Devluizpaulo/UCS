@@ -6,3 +6,4 @@ import './flows/calculate-ucs-index-flow';
 import './flows/simulate-scenario-flow';
 import './flows/generate-report-flow';
 import './flows/search-assets-flow';
+import './flows/get-commodity-quote-flow';
