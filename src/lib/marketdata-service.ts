@@ -1,115 +1,91 @@
 
 'use server';
 
-import type { HistoryInterval, MarketDataQuoteResponse, MarketDataHistoryResponse, HistoricalQuote, MarketDataSearchResponse, SearchedAsset } from './types';
-import { MARKETDATA_CONFIG } from './marketdata-config';
+import type { HistoryInterval, HistoricalQuote } from './types';
 import { getCommodities } from './commodity-config-service';
+import yahooFinance from 'yahoo-finance2';
+import { sub, format } from 'date-fns';
 
-
-// In-memory cache
-interface CacheEntry<T> {
-  data: T;
-  timestamp: number;
-  ttl: number;
-}
-const cache = new Map<string, CacheEntry<any>>();
-
-function getCacheKey(type: string, params: any): string {
-  return `${type}:${JSON.stringify(params)}`;
-}
-
-function isValidCacheEntry<T>(entry: CacheEntry<T> | undefined): entry is CacheEntry<T> {
-  if (!entry) return false;
-  return Date.now() - entry.timestamp < entry.ttl;
-}
-
-async function fetchFromApi(apiKey: string, endpoint: string, params: URLSearchParams, timeout: number): Promise<any> {
-    const config = MARKETDATA_CONFIG;
-    
-    params.append('token', apiKey);
-    const url = `${config.API_BASE_URL}${endpoint}?${params.toString()}`;
-    
-    console.log(`[API CALL] Fetching from ${url}`);
-    
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeout);
-    
+/**
+ * Gets a single, most recent quote for a given ticker from Yahoo Finance.
+ * @param ticker The stock/commodity ticker symbol.
+ * @returns The most recent regular market price.
+ */
+export async function getYahooFinanceQuote(ticker: string): Promise<number> {
     try {
-        const response = await fetch(url, { signal: controller.signal });
-        clearTimeout(timeoutId);
+        const quote = await yahooFinance.quote(ticker);
+        // For futures, the price might be in pre or post market, so we check in order
+        const price = quote?.regularMarketPrice ?? quote?.preMarketPrice ?? quote?.postMarketPrice ?? 0;
         
-        if (!response.ok) {
-            const errorBody = await response.text();
-            throw new Error(`API request failed with status ${response.status}: ${errorBody}`);
+        if (price === 0) {
+           console.warn(`[Yahoo] Ticker ${ticker} returned a price of 0.`);
+        }
+
+        // Yahoo returns some futures prices (like ZC=F for corn) in cents. We need to convert to dollars.
+        if (quote?.currency === 'USd') {
+            return price / 100;
         }
         
-        const data = await response.json();
-        // Allow no_data for some queries, but treat it as an error for critical ones.
-        if (data.s === 'error') {
-            const errorMessage = typeof data.errmsg === 'string' ? data.errmsg : 'Unknown API error';
-            throw new Error(`API returned an error: ${errorMessage}`);
-        }
-        
-        return data;
+        return price;
     } catch (error) {
-        clearTimeout(timeoutId);
-        console.error(`[API ERROR] Failed to fetch from ${url}:`, error);
-        throw error;
+        console.error(`[Yahoo] Failed to fetch quote for ticker ${ticker}:`, error);
+        throw new Error(`Could not fetch quote for ${ticker} from Yahoo Finance.`);
     }
 }
 
 
-export async function getMarketDataQuote(apiKey: string, ticker: string): Promise<number> {
-    const config = MARKETDATA_CONFIG;
-    const cacheKey = getCacheKey('md_quote', { ticker });
-    const cachedEntry = cache.get(cacheKey);
+/**
+ * Gets historical data for a given ticker from Yahoo Finance.
+ * @param ticker The stock/commodity ticker symbol.
+ * @param interval The desired interval ('1d', '1wk', '1mo').
+ * @returns An array of historical data points.
+ */
+export async function getYahooFinanceHistory(ticker: string, interval: HistoryInterval = '1d'): Promise<HistoricalQuote[]> {
+    const periodMap = {
+        '1d': { period1: sub(new Date(), { months: 3 }) }, // Last 3 months for daily
+        '1wk': { period1: sub(new Date(), { years: 2 }) }, // Last 2 years for weekly
+        '1mo': { period1: sub(new Date(), { years: 5 }) }, // Last 5 years for monthly
+    };
 
-    if (isValidCacheEntry(cachedEntry)) {
-        console.log(`[CACHE HIT] Quote for ${ticker}`);
-        return cachedEntry.data;
-    }
-    
-    console.log(`[API] Fetching latest price for ${ticker}`);
-    // Use the history endpoint to get the last closing price, which is more reliable for commodities
-    const history = await getMarketDataHistory(apiKey, ticker, 'D', 2);
-    
-    if (history.s !== 'ok' || !history.c || history.c.length === 0) {
-        throw new Error(`No valid data returned from API for ticker ${ticker}. Response: ${history.errmsg || 'N/A'}`);
-    }
+    try {
+        const results = await yahooFinance.historical(ticker, {
+            period1: format(periodMap[interval].period1, 'yyyy-MM-dd'),
+            interval: interval,
+        });
 
-    const lastPrice = history.c[history.c.length - 1];
-    
-    cache.set(cacheKey, { data: lastPrice, timestamp: Date.now(), ttl: config.CACHE_TTL.QUOTE });
-    return lastPrice;
+        if (!results || results.length === 0) {
+            return [];
+        }
+
+        return results.map((data, index, arr) => {
+            const prevClose = index > 0 ? arr[index - 1].close : data.open;
+            const change = prevClose !== 0 ? ((data.close - prevClose) / prevClose) * 100 : 0;
+            
+            return {
+                date: format(new Date(data.date), 'dd/MM/yyyy'),
+                open: data.open,
+                high: data.high,
+                low: data.low,
+                close: data.close,
+                volume: data.volume?.toString() ?? '0',
+                change: change,
+            };
+        });
+
+    } catch (error) {
+        console.error(`[Yahoo] Failed to fetch history for ticker ${ticker}:`, error);
+        throw new Error(`Could not fetch history for ${ticker} from Yahoo Finance.`);
+    }
 }
 
 
-export async function getMarketDataHistory(apiKey: string, ticker: string, resolution: 'D' | 'W' | 'M' = 'D', countback: number = 30): Promise<MarketDataHistoryResponse> {
-    const config = MARKETDATA_CONFIG;
-    const cacheKey = getCacheKey('md_history', { ticker, resolution, countback });
-    const cachedEntry = cache.get(cacheKey);
-
-    if (isValidCacheEntry(cachedEntry)) {
-        console.log(`[CACHE HIT] History for ${ticker}`);
-        return cachedEntry.data;
-    }
-
-    const params = new URLSearchParams({
-        symbol: ticker,
-        resolution,
-        countback: countback.toString()
-    });
-    const data: MarketDataHistoryResponse = await fetchFromApi(apiKey, '/stocks/candles/', params, config.TIMEOUTS.HISTORICAL);
-    
-    if (data.s === 'ok') {
-        cache.set(cacheKey, { data, timestamp: Date.now(), ttl: config.CACHE_TTL.HISTORICAL });
-    }
-    
-    return data;
-}
-
-
-// Function to get detailed historical data for a single asset for the modal
+/**
+ * Wrapper function to get historical data for an asset by its internal name (e.g., 'Soja Futuros').
+ * This is used by the AssetDetailModal to populate charts and tables.
+ * @param assetName The internal name of the asset from the configuration.
+ * @param interval The desired interval.
+ * @returns An array of historical quotes.
+ */
 export async function getAssetHistoricalData(assetName: string, interval: HistoryInterval): Promise<HistoricalQuote[]> {
     const commodities = await getCommodities();
     const commodityInfo = commodities.find(c => c.name === assetName);
@@ -118,74 +94,10 @@ export async function getAssetHistoricalData(assetName: string, interval: Histor
         throw new Error(`Asset ${assetName} not found in config.`);
     }
 
-    const apiKey = process.env.MARKETDATA_API_KEY;
-    if (!apiKey) {
-      console.error("MarketData API key is not configured. Cannot fetch historical data.");
-      return [];
-    }
-  
-    const resolutionMap = { '1d': 'D', '1wk': 'W', '1mo': 'M' };
-    const countbackMap = { '1d': 90, '1wk': 52, '1mo': 60 }; // 3 months, 1 year, 5 years
-
     try {
-        const history = await getMarketDataHistory(
-            apiKey,
-            commodityInfo.ticker,
-            resolutionMap[interval] as 'D' | 'W' | 'M',
-            countbackMap[interval]
-        );
-
-        if (history.s !== 'ok') {
-            throw new Error(`MarketData API returned error for ${assetName}: ${history.errmsg || 'Unknown error'}`);
-        }
-    
-        const formattedHistory: HistoricalQuote[] = [];
-        for (let i = 0; i < history.t.length; i++) {
-            const prevClose = i > 0 ? history.c[i - 1] : history.o[i];
-            const change = prevClose !== 0 ? ((history.c[i] - prevClose) / prevClose) * 100 : 0;
-            formattedHistory.push({
-                date: new Date(history.t[i] * 1000).toLocaleDateString('pt-BR'),
-                open: history.o[i],
-                high: history.h[i],
-                low: history.l[i],
-                close: history.c[i],
-                volume: history.v[i].toString(),
-                change: change,
-            });
-        }
-    
-        return formattedHistory;
-
+        return await getYahooFinanceHistory(commodityInfo.ticker, interval);
     } catch (error) {
-        console.error(`Failed to get historical data for ${assetName}:`, error);
-        return []; // Return empty array on failure
+        console.error(`Failed to get historical data for ${assetName} via wrapper:`, error);
+        return []; // Return empty array on failure to avoid crashing the UI
     }
-}
-
-
-export async function searchMarketDataAssets(apiKey: string, query: string): Promise<SearchedAsset[]> {
-    const config = MARKETDATA_CONFIG;
-    const cacheKey = getCacheKey('md_search', { query });
-    const cachedEntry = cache.get(cacheKey);
-
-    if (isValidCacheEntry(cachedEntry)) {
-        console.log(`[CACHE HIT] Search for ${query}`);
-        return cachedEntry.data;
-    }
-
-    const params = new URLSearchParams({ query });
-    const data: MarketDataSearchResponse = await fetchFromApi(apiKey, '/stocks/search/', params, config.TIMEOUTS.QUOTE);
-    
-    if (data.s !== 'ok' || !data.symbol) {
-        return [];
-    }
-
-    const results: SearchedAsset[] = data.symbol.map((symbol, index) => ({
-        symbol,
-        description: data.description[index],
-        country: data.country[index],
-    }));
-    
-    cache.set(cacheKey, { data: results, timestamp: Date.now(), ttl: config.CACHE_TTL.HISTORICAL }); // Longer TTL for search
-    return results;
 }

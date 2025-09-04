@@ -25,14 +25,14 @@ async function getRiskAnalysisData(): Promise<RiskAnalysisData> {
         return { metrics: [] }; // Return empty if formula is not configured
     }
     
-    const ucsReturns = ucsHistoryData.history.map(d => d.value).slice(1).map((v, i, a) => (v / a[i-1]) -1);
+    const ucsReturns = ucsHistoryData.history.map(d => d.value).slice(1).map((v, i, a) => (a[i-1] === 0 ? 0 : (v / a[i-1]) -1));
     
     const metricsPromises = commodities.map(async (asset) => {
         try {
             const assetHistory = await getAssetHistoricalData(asset.name, '1d');
             if (assetHistory.length < 2) return null;
 
-            const assetReturns = assetHistory.map(d => d.close).slice(1).map((v, i, a) => (v / a[i-1]) -1);
+            const assetReturns = assetHistory.map(d => d.close).slice(1).map((v, i, a) => (a[i-1] === 0 ? 0 : (v / a[i-1]) -1));
             const volatility = calculate_volatility(assetReturns);
             
             // Ensure array lengths match for correlation

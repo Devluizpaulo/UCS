@@ -1,5 +1,4 @@
 
-
 import type { CommodityMap, MarketDataConfig } from "./types";
 
 
@@ -24,70 +23,70 @@ export const MARKETDATA_CONFIG: MarketDataConfig = {
 
 // This map defines the INITIAL set of commodities to be seeded into the database
 // on the very first run. After that, the master list is managed in Firestore
-// via the Settings page. The keys here (e.g., 'USD/BRL Histórico') will become the
-// document IDs in Firestore.
+// via the Settings page. The keys here (e.g., 'USD-BRL-Cambio') will become the
+// document IDs in Firestore. The tickers have been updated for Yahoo Finance.
 export const COMMODITY_TICKER_MAP: CommodityMap = {
   'USD-BRL-Cambio': { 
     name: 'USD/BRL - Dólar Americano Real Brasileiro',
-    ticker: 'USDBRL', 
+    ticker: 'BRL=X', 
     currency: 'BRL',
     category: 'exchange',
-    description: 'Taxa de câmbio USD para BRL em tempo real',
+    description: 'Taxa de câmbio USD para BRL.',
     unit: 'BRL',
-    source: 'MarketData',
+    source: 'Yahoo Finance',
   },
   'EUR-BRL-Cambio': { 
     name: 'EUR/BRL - Euro Real Brasileiro',
-    ticker: 'EURBRL', 
+    ticker: 'EURBRL=X', 
     currency: 'BRL',
     category: 'exchange',
-    description: 'Taxa de câmbio EUR para BRL em tempo real',
+    description: 'Taxa de câmbio EUR para BRL.',
     unit: 'BRL',
-    source: 'MarketData',
+    source: 'Yahoo Finance',
   },
-  'Boi-Gordo-Futuros-Ago25': { 
-    name: 'Boi Gordo Futuros - Ago 25',
-    ticker: 'BGIQ24', // Example Ticker, user should verify 
+  'Boi-Gordo-Futuros': { 
+    name: 'Boi Gordo Futuros (B3)',
+    ticker: 'BGI=F', 
     currency: 'BRL',
     category: 'vus',
     description: 'Contratos futuros de Boi Gordo.',
     unit: '@',
-    source: 'MarketData',
+    source: 'Yahoo Finance',
   },
-  'Soja-Futuros-Out25': { 
-    name: 'Soja Futuros - Out 25',
-    ticker: 'SJCZ24', // Example Ticker, user should verify
+  'Soja-Futuros': { 
+    name: 'Soja Futuros (CBOT)',
+    ticker: 'ZS=F',
     currency: 'USD',
     category: 'vus',
     description: 'Contratos futuros de Soja.',
-    unit: 'USD/Saca 60kg',
-    source: 'MarketData',
+    unit: 'USd/bu', // US Cents per Bushel
+    source: 'Yahoo Finance',
   },
-  'Milho-Futuros-Set25': { 
-    name: 'Milho Futuros - Set 25',
-    ticker: 'CCMU24', // Example Ticker, user should verify
-    currency: 'BRL',
+  'Milho-Futuros': { 
+    name: 'Milho Futuros (CBOT)',
+    ticker: 'ZC=F',
+    currency: 'USD',
     category: 'vus',
     description: 'Contratos futuros de Milho.',
-    unit: 'BRL/Saca 60kg',
-    source: 'MarketData',
+    unit: 'USd/bu', // US Cents per Bushel
+    source: 'Yahoo Finance',
   },
-  'Madeira-Serrada-Futuros-Set25': { 
-    name: 'Madeira Serrada Futuros - Set 25',
-    ticker: 'LBSV24', // Example Ticker, user should verify
+  'Madeira-Serrada-Futuros': { 
+    name: 'Madeira Serrada Futuros (CME)',
+    ticker: 'LBS=F',
     currency: 'USD',
     category: 'vmad',
     description: 'Contratos futuros de Madeira (Lumber).',
-    unit: 'USD/MBF',
-    source: 'MarketData',
+    unit: 'USD/1,000 board feet',
+    source: 'Yahoo Finance',
   },
-  'Credito-Carbono-Futuros-Dez25': { 
-    name: 'Crédito Carbono Futuros - Dez 25',
-    ticker: 'CFI2Z5',
-    currency: 'EUR',
+  'Credito-Carbono-Futuros': { 
+    name: 'Crédito Carbono Futuros (ICE)',
+    ticker: 'KRBN', // Using KRBN ETF as a proxy for Carbon Credits
+    currency: 'USD',
     category: 'crs',
-    description: 'Contratos futuros de Crédito de Carbono para Dezembro de 2025.',
-    unit: 'EUR/tCO₂',
-    source: 'MarketData',
+    description: 'KraneShares Global Carbon Strategy ETF como proxy para créditos de carbono.',
+    unit: 'USD',
+    source: 'Yahoo Finance',
   },
 };

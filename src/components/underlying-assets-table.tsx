@@ -13,18 +13,13 @@ import {
   TableCaption,
 } from '@/components/ui/table';
 import { AnimatedNumber } from '@/components/ui/animated-number';
-import { ArrowDown, ArrowUp, DollarSign, Euro, Beef, Leaf, TreePine, Recycle, RefreshCw, Loader2, Wheat, LandPlot, Sun, Droplets } from 'lucide-react';
+import { ArrowDown, ArrowUp, DollarSign, LandPlot, TreePine, Droplets } from 'lucide-react';
 import type { CommodityPriceData } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { AssetDetailModal } from './asset-detail-modal';
 import { Skeleton } from './ui/skeleton';
-import { Button } from './ui/button';
 import { ScrollArea } from './ui/scroll-area';
 
-// Helper for Corn Icon
-const CornIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-corn"><path d="M9 12c-2 0-4-2-4-4V4c0-2 2-4 4-4h2c2 0 4 2 4 4v4c0 2-2 4-4 4Z"/><path d="M9 12v10"/><path d="m9 12-2 2"/><path d="m9 12 2 2"/><path d="m9 12-2-2"/><path d="m9 12 2-2"/></svg>
-);
 
 const getIconForCategory = (category: CommodityPriceData['category']) => {
     switch (category) {
@@ -96,7 +91,7 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
                   </div>
                   <div>
                     <div className="font-medium">{asset.name}</div>
-                    <div className="text-xs text-muted-foreground">Fonte: MarketData</div>
+                    <div className="text-xs text-muted-foreground">Fonte: Yahoo Finance</div>
                   </div>
                 </div>
               </TableCell>
@@ -125,7 +120,7 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
         <Table>
           {!loading && !hasAnyPriceData && (
               <TableCaption className="py-4">
-                  Os preços ainda não foram carregados. Clique em "Atualizar Preços" para buscar os dados.
+                  Os preços ainda não foram carregados. Clique em "Atualizar Tudo" para buscar os dados.
               </TableCaption>
           )}
           <TableHeader>

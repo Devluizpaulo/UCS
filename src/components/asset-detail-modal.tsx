@@ -72,7 +72,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                     <span>{asset.name} ({asset.ticker})</span>
                 </DialogTitle>
                 <DialogDescription className="mt-2">
-                    Análise detalhada do histórico de preços para {asset.name}.
+                    Análise detalhada do histórico de preços para {asset.name}. Fonte: Yahoo Finance.
                 </DialogDescription>
             </div>
             <Tabs defaultValue="1d" onValueChange={(value) => setInterval(value as HistoryInterval)} className="w-auto shrink-0">
@@ -88,7 +88,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
              <div className="flex flex-col gap-6">
                 <div className="space-y-4">
                     <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-                        <span className="text-4xl font-bold text-primary">R$ {asset.price.toFixed(4)}</span>
+                        <span className="text-4xl font-bold text-primary">{asset.currency} {asset.price.toFixed(4)}</span>
                         <div className={cn("flex items-baseline gap-2 text-lg font-semibold", asset.absoluteChange >= 0 ? "text-primary" : "text-destructive")}>
                             <span>{asset.absoluteChange >= 0 ? '+' : ''}{asset.absoluteChange.toFixed(4)}</span>
                             <span>({asset.change >= 0 ? '+' : ''}{asset.change.toFixed(2)}%)</span>
@@ -114,7 +114,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                                     tickMargin={8} 
                                     fontSize={12} 
                                     width={70} 
-                                    tickFormatter={(value) => `R$ ${Number(value).toFixed(2)}`}
+                                    tickFormatter={(value) => `${asset.currency} ${Number(value).toFixed(2)}`}
                                 />
                                 <Tooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
                                 <Area dataKey="value" type="natural" fill="var(--color-value)" fillOpacity={0.4} stroke="var(--color-value)" />
@@ -154,7 +154,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                                     historicalData.slice().reverse().map((dataPoint) => (
                                         <TableRow key={dataPoint.date}>
                                             <TableCell className="font-medium text-xs">{dataPoint.date}</TableCell>
-                                            <TableCell className="text-right font-mono text-xs">R$ {dataPoint.close.toFixed(4)}</TableCell>
+                                            <TableCell className="text-right font-mono text-xs">{asset.currency} {dataPoint.close.toFixed(4)}</TableCell>
                                             <TableCell className="text-right font-mono text-xs">{dataPoint.open.toFixed(4)}</TableCell>
                                             <TableCell className="text-right font-mono text-xs">{dataPoint.high.toFixed(4)}</TableCell>
                                             <TableCell className="text-right font-mono text-xs">{dataPoint.low.toFixed(4)}</TableCell>
