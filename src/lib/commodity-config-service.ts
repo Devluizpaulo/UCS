@@ -33,8 +33,7 @@ async function seedDefaultCommodities() {
                 category: config.category,
                 description: config.description,
                 unit: config.unit,
-                source: config.source || 'MarketData',
-                scrapeConfig: config.scrapeConfig || { url: '', selector: '' }
+                source: config.source || 'Yahoo Finance',
             };
             // Use set with merge:true to create if not exists, but not overwrite existing data.
             // This is safer than doing a read-then-write.
@@ -68,8 +67,7 @@ export async function getCommodities(): Promise<CommodityConfig[]> {
              const commodities = Object.entries(COMMODITY_TICKER_MAP).map(([id, config]) => ({
                 id: id,
                 ...config,
-                source: config.source || 'MarketData',
-                scrapeConfig: config.scrapeConfig || { url: '', selector: '' }
+                source: config.source || 'Yahoo Finance',
             }));
             return commodities.sort((a, b) => a.name.localeCompare(b.name));
         }
@@ -79,17 +77,24 @@ export async function getCommodities(): Promise<CommodityConfig[]> {
             ...doc.data(),
         } as CommodityConfig));
         
-        return commodities.sort((a, b) => a.name.localeCompare(b.name));
+        return commodities.sort((a, b) => {
+            if (a.category === 'exchange' && b.category !== 'exchange') return -1;
+            if (a.category !== 'exchange' && b.category === 'exchange') return 1;
+            return a.name.localeCompare(b.name);
+        });
 
     } catch (error) {
         console.error('[CommodityConfigService] Error fetching commodities from DB, falling back to hardcoded list:', error);
          const commodities = Object.entries(COMMODITY_TICKER_MAP).map(([id, config]) => ({
             id: id,
             ...config,
-            source: config.source || 'MarketData',
-            scrapeConfig: config.scrapeConfig || { url: '', selector: '' }
+            source: config.source || 'Yahoo Finance',
         }));
-        return commodities.sort((a, b) => a.name.localeCompare(b.name));
+        return commodities.sort((a, b) => {
+            if (a.category === 'exchange' && b.category !== 'exchange') return -1;
+            if (a.category !== 'exchange' && b.category === 'exchange') return 1;
+            return a.name.localeCompare(b.name);
+        });
     }
 }
 

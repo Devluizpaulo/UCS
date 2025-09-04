@@ -13,7 +13,7 @@ export type CommodityConfig = {
   category: 'exchange' | 'vus' | 'vmad' | 'crs';
   description: string;
   unit: string;
-  source?: 'MarketData'; // Simplified to one source
+  source?: 'Yahoo Finance'; // Simplified to one source
 };
 
 // Represents commodity data combined with real-time pricing information
@@ -142,10 +142,11 @@ export type MarketDataConfig = {
 
 
 // --- Initial Config Types ---
-export type InitialCommodityConfig = Omit<CommodityConfig, 'id'>;
+export type InitialCommodityConfig = Omit<CommodityConfig, 'id' | 'source'> & { source: 'Yahoo Finance' };
+
 
 export type CommodityMap = {
-  [key: string]: InitialCommodityConfig;
+  [key: string]: Omit<CommodityConfig, 'id'>;
 };
 
 // --- MarketData API Response Types ---
