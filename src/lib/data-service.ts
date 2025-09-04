@@ -61,7 +61,17 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
         }
     }
 
-    return prices.sort((a, b) => a.name.localeCompare(b.name));
+    return prices.sort((a, b) => {
+        // Prioritize 'exchange' category
+        if (a.category === 'exchange' && b.category !== 'exchange') {
+            return -1;
+        }
+        if (a.category !== 'exchange' && b.category === 'exchange') {
+            return 1;
+        }
+        // Then sort by name
+        return a.name.localeCompare(b.name);
+    });
 }
 
 
