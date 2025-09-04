@@ -1,9 +1,7 @@
-
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Button } from '@/components/ui/button';
-import { Settings, Loader2, RefreshCw } from 'lucide-react';
+import { Settings } from 'lucide-react';
 import { PageHeader } from '@/components/page-header';
 import { UcsIndexChart } from '@/components/ucs-index-chart';
 import type { ChartData, UcsData, HistoryInterval } from '@/lib/types';
@@ -20,7 +18,7 @@ import Image from 'next/image';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
 import { UnderlyingAssetsCard } from './underlying-assets-card';
-import { fetchAndSavePrices } from '@/ai/flows/update-prices-flow';
+import { Button } from './ui/button';
 
 
 const loadingMessages = [
@@ -48,7 +46,6 @@ export function DashboardPage() {
   const [ucsData, setUcsData] = useState<UcsData | null>(null);
   const { toast } = useToast();
   const [isInitialising, setIsInitialising] = useState(true);
-  const [isUpdating, setIsUpdating] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState(loadingMessages[0]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -107,35 +104,6 @@ export function DashboardPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleUpdateAll = async () => {
-    setIsUpdating(true);
-    toast({
-        title: "Atualizando Preços...",
-        description: "Buscando as cotações mais recentes. Isso pode levar um momento."
-    });
-    try {
-        const result = await fetchAndSavePrices();
-        if (result.success) {
-             toast({
-                title: "Sucesso!",
-                description: result.message,
-            });
-            // Refresh dashboard data
-            await fetchDashboardData();
-        } else {
-            throw new Error(result.message);
-        }
-    } catch (error: any) {
-        console.error("Update failed:", error);
-        toast({
-            variant: "destructive",
-            title: "Falha na Atualização",
-            description: error.message || "Ocorreu um erro ao buscar e salvar os preços.",
-        });
-    } finally {
-        setIsUpdating(false);
-    }
-  };
 
   const handleIntervalChange = useCallback(async (interval: HistoryInterval) => {
     setHistoryInterval(interval);
@@ -163,12 +131,7 @@ export function DashboardPage() {
   return (
     <div className="flex min-h-screen w-full flex-col relative">
        {isInitialising && <InitialLoadingScreen message={loadingMessage} />}
-      <PageHeader title="Painel">
-        <Button onClick={handleUpdateAll} disabled={isUpdating || isInitialising}>
-            {isUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-            Atualizar Tudo
-        </Button>
-      </PageHeader>
+      <PageHeader title="Painel" />
       <main className={`flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6 transition-opacity duration-500 ${isInitialising ? 'opacity-0' : 'opacity-100'}`}>
        
         {!isLoading && !isConfigured && (
