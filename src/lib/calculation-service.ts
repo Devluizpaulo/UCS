@@ -53,10 +53,12 @@ export function calculateIndex(commodities: CommodityPriceData[], params: Formul
       const preco_carbono_eur = findPrice(commodities, 'crs'); // Carbon credit price
   
       // --- Data Validation ---
-      const prices = [taxa_usd_brl, taxa_eur_brl, preco_madeira_usd, preco_boi_arroba_brl, preco_milho_saca_brl, preco_soja_saca_usd, preco_carbono_eur];
-      if (prices.some(p => p === 0)) {
-          console.error("[LOG] One or more required asset prices are zero or missing. Aborting calculation.");
-          return { ...defaultResult, isConfigured: true }; // Return default but indicate it was configured
+      const prices = {taxa_usd_brl, taxa_eur_brl, preco_madeira_usd, preco_boi_arroba_brl, preco_milho_saca_brl, preco_soja_saca_usd, preco_carbono_eur};
+      for (const [key, value] of Object.entries(prices)) {
+         if (value === 0) {
+            console.error(`[LOG] Price for ${key} is zero or missing. Aborting calculation.`);
+            return { ...defaultResult, isConfigured: true }; // Return default but indicate it was configured
+         }
       }
   
       // --- Price Conversions ---

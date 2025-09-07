@@ -30,6 +30,7 @@ import { RefreshCw, TrendingUp, TrendingDown } from 'lucide-react';
 import { getCotacoesHistorico, organizeCotacoesHistorico } from '@/lib/data-service';
 import { AnimatedNumber } from '@/components/ui/animated-number';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 interface CotacaoHistorica {
   id: string;
@@ -55,6 +56,7 @@ export function CotacoesHistorico({ ativos }: CotacoesHistoricoProps) {
   const [historico, setHistorico] = useState<CotacaoHistorica[]>([]);
   const [loading, setLoading] = useState(false);
   const [organizing, setOrganizing] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (ativos.length > 0 && !selectedAtivo) {
@@ -69,6 +71,11 @@ export function CotacoesHistorico({ ativos }: CotacoesHistoricoProps) {
       setHistorico(data);
     } catch (error) {
       console.error('Erro ao carregar histórico:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao Carregar Histórico",
+        description: "Não foi possível buscar os dados do histórico para este ativo.",
+      });
     } finally {
       setLoading(false);
     }
@@ -83,12 +90,29 @@ export function CotacoesHistorico({ ativos }: CotacoesHistoricoProps) {
   const handleOrganizeData = async () => {
     setOrganizing(true);
     try {
-      await organizeCotacoesHistorico();
-      if (selectedAtivo) {
-        await loadHistorico(selectedAtivo);
+      const result = await organizeCotacoesHistorico();
+      if (result.success) {
+        toast({
+            title: "Operação Concluída",
+            description: result.message,
+        });
+        if (selectedAtivo) {
+            await loadHistorico(selectedAtivo);
+        }
+      } else {
+         toast({
+            variant: "destructive",
+            title: "Erro na Organização",
+            description: result.message,
+        });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao organizar dados:', error);
+       toast({
+            variant: "destructive",
+            title: "Erro Inesperado",
+            description: error.message || "Ocorreu uma falha ao tentar organizar os dados.",
+        });
     } finally {
       setOrganizing(false);
     }
@@ -96,6 +120,12 @@ export function CotacoesHistorico({ ativos }: CotacoesHistoricoProps) {
 
   const formatDate = (dateStr: string) => {
     try {
+      // Assuming the ID is in 'YYYY-MM-DD' format after the organization step
+      if (dateStr.includes('-')) {
+        const [year, month, day] = dateStr.split('-');
+        return `${day}/${month}/${year}`;
+      }
+      // Fallback for old format
       const [day, month, year] = dateStr.split('/');
       return `${day}/${month}/${year}`;
     } catch {
@@ -134,7 +164,7 @@ export function CotacoesHistorico({ ativos }: CotacoesHistoricoProps) {
       return (
         <TableRow key={cotacao.id}>
           <TableCell className="font-medium">
-            {formatDate(cotacao.data)}
+            {formatDate(cotacao.id)}
           </TableCell>
           <TableCell className="text-right font-mono">
             <AnimatedNumber value={cotacao.abertura} currency={cotacao.moeda as 'BRL' | 'USD' | 'EUR'} />

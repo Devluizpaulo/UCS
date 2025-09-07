@@ -64,8 +64,10 @@ export function DashboardPage() {
         
         // Fetch available assets for historical quotes
         const commodityPrices = await getCommodityPrices();
-        const ativos = commodityPrices.map(commodity => commodity.name);
-        setAvailableAtivos(ativos);
+        if (commodityPrices.length > 0) {
+            const ativos = commodityPrices.map(commodity => commodity.name);
+            setAvailableAtivos(ativos);
+        }
         
         return ucsResult.latest.isConfigured;
       } catch (error) {
