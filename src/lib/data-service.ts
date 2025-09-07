@@ -101,12 +101,12 @@ export async function organizeCotacoesHistorico(): Promise<void> {
                 // Convert date format from "07/09/2025" to "07-09-2025"
                 const formattedDate = dataStr.replace(/\//g, '-');
                 
-                // Normalize asset name for subcollection (remove spaces, lowercase)
-                const normalizedAtivo = ativo.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+                // Normalize asset name for document ID (e.g., "Soja Futuros" -> "soja_futuros")
+                const normalizedAtivoId = ativo.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
                 
                 // Create reference to historical subcollection
                 const historicoRef = db.collection('cotacoes_historico')
-                    .doc(normalizedAtivo)
+                    .doc(normalizedAtivoId)
                     .collection('dados')
                     .doc(formattedDate);
                 
@@ -114,7 +114,7 @@ export async function organizeCotacoesHistorico(): Promise<void> {
                 batch.set(historicoRef, {
                     ...data,
                     organized_at: admin.firestore.FieldValue.serverTimestamp()
-                });
+                }, { merge: true });
                 
                 batchCount++;
                 
@@ -141,10 +141,10 @@ export async function organizeCotacoesHistorico(): Promise<void> {
 // Function to get historical quotes for a specific asset
 export async function getCotacoesHistorico(ativo: string, limit: number = 30): Promise<any[]> {
     try {
-        const normalizedAtivo = ativo.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+        const normalizedAtivoId = ativo.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
         
         const historicoRef = db.collection('cotacoes_historico')
-            .doc(normalizedAtivo)
+            .doc(normalizedAtivoId)
             .collection('dados')
             .orderBy('timestamp', 'desc')
             .limit(limit);
