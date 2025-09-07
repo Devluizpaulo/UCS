@@ -2,7 +2,7 @@
 
 'use server';
 
-import type { ChartData, CommodityPriceData, HistoryInterval, UcsData } from './types';
+import type { ChartData, CommodityPriceData, HistoryInterval, UcsData, FirestoreQuote } from './types';
 import { getCommodities } from './commodity-config-service';
 import { db } from './firebase-admin-config';
 import admin from 'firebase-admin';
@@ -103,8 +103,9 @@ export async function organizeCotacoesHistorico(): Promise<{ success: boolean; m
             return { success: true, message: 'Nenhuma cotação nova para organizar.' };
         }
 
-        const batch = db.batch();
+        let batch = db.batch();
         let batchCount = 0;
+        let processedCount = 0;
 
         for (const doc of querySnapshot.docs) {
             const data = doc.data();
@@ -117,27 +118,28 @@ export async function organizeCotacoesHistorico(): Promise<{ success: boolean; m
                 if (dateParts.length !== 3) continue; // Skip invalid date formats
                 const formattedDateId = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
                 
-                // Normalize asset name for document ID (e.g., "Soja Futuros" -> "soja_futuros")
                 const normalizedAtivoId = ativo.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
                 
-                // Create reference to historical subcollection
                 const historicoRef = db.collection('cotacoes_historico')
                     .doc(normalizedAtivoId)
                     .collection('dados')
                     .doc(formattedDateId);
                 
-                // Add to batch
+                // Add set and delete to batch
                 batch.set(historicoRef, {
                     ...data,
                     organized_at: admin.firestore.FieldValue.serverTimestamp()
                 }, { merge: true });
                 
-                batchCount++;
+                batch.delete(doc.ref);
+                
+                batchCount+=2; // 1 set + 1 delete
+                processedCount++;
                 
                 // Firestore batch limit is 500 operations. Commit and create a new batch.
                 if (batchCount >= 450) {
                     await batch.commit();
-                    // batch = db.batch(); // Re-initialize batch
+                    batch = db.batch(); // Re-initialize batch
                     batchCount = 0;
                 }
             }
@@ -148,8 +150,8 @@ export async function organizeCotacoesHistorico(): Promise<{ success: boolean; m
             await batch.commit();
         }
 
-        console.log('Cotações organizadas em subcoleções históricas com sucesso');
-        return { success: true, message: 'Cotações organizadas com sucesso!' };
+        console.log(`${processedCount} cotações foram organizadas com sucesso.`);
+        return { success: true, message: `${processedCount} cotações organizadas com sucesso!` };
 
     } catch (error: any) {
         console.error('Erro ao organizar cotações históricas:', error);
@@ -162,7 +164,7 @@ export async function organizeCotacoesHistorico(): Promise<{ success: boolean; m
 }
 
 // Function to get historical quotes for a specific asset
-export async function getCotacoesHistorico(ativo: string, limit: number = 30): Promise<any[]> {
+export async function getCotacoesHistorico(ativo: string, limit: number = 30): Promise<FirestoreQuote[]> {
     try {
         const normalizedAtivoId = ativo.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
         
