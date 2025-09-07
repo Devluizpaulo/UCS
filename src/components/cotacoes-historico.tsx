@@ -62,12 +62,6 @@ export function CotacoesHistorico({ ativos }: CotacoesHistoricoProps) {
     }
   }, [ativos, selectedAtivo]);
 
-  useEffect(() => {
-    if (selectedAtivo) {
-      loadHistorico(selectedAtivo);
-    }
-  }, [selectedAtivo]);
-
   const loadHistorico = async (ativo: string) => {
     setLoading(true);
     try {
@@ -79,6 +73,12 @@ export function CotacoesHistorico({ ativos }: CotacoesHistoricoProps) {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (selectedAtivo) {
+      loadHistorico(selectedAtivo);
+    }
+  }, [selectedAtivo]);
 
   const handleOrganizeData = async () => {
     setOrganizing(true);
