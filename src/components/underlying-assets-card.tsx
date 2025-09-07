@@ -3,13 +3,21 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "./ui/card";
-import { AccordionTrigger, AccordionContent } from "./ui/accordion";
 import { UnderlyingAssetsTable } from "./underlying-assets-table";
 import { useToast } from "@/hooks/use-toast";
-import type { CommodityPriceData } from "@/lib/types";
+import type { CommodityPriceData, ChartData } from "@/lib/types";
 import { getCommodityPrices } from "@/lib/data-service";
+import { IndexHistoryTable } from './index-history-table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { CotacoesHistorico } from './cotacoes-historico';
 
-export function UnderlyingAssetsCard({ onDataChange }: { onDataChange: () => void }) {
+interface UnderlyingAssetsCardProps {
+    indexHistory: ChartData[];
+    loadingIndexHistory: boolean;
+    isConfigured: boolean;
+}
+
+export function UnderlyingAssetsCard({ indexHistory, loadingIndexHistory, isConfigured }: UnderlyingAssetsCardProps) {
     const [commodities, setCommodities] = useState<CommodityPriceData[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const { toast } = useToast();
@@ -33,23 +41,40 @@ export function UnderlyingAssetsCard({ onDataChange }: { onDataChange: () => voi
     useEffect(() => {
         fetchAssets();
     }, [fetchAssets]);
+    
+    const availableAtivos = commodities.map(c => c.name);
 
     return (
         <Card>
-             <AccordionTrigger className="w-full flex justify-between p-6 text-left hover:no-underline">
-                <CardHeader className="p-0 text-left">
-                    <CardTitle>Ativos Subjacentes</CardTitle>
-                    <CardDescription>Cotações de fechamento diário.</CardDescription>
-                </CardHeader>
-             </AccordionTrigger>
-             <AccordionContent>
-                <CardContent>
-                    <UnderlyingAssetsTable 
-                        data={commodities} 
-                        loading={isLoading}
-                    />
-                </CardContent>
-             </AccordionContent>
+            <CardHeader>
+                <CardTitle>Mercado Subjacente</CardTitle>
+                <CardDescription>Visão geral dos ativos e do histórico do índice.</CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+                <Tabs defaultValue="assets">
+                    <TabsList className="px-6">
+                        <TabsTrigger value="assets">Visão Geral dos Ativos</TabsTrigger>
+                        <TabsTrigger value="index_history">Histórico do Índice</TabsTrigger>
+                        <TabsTrigger value="data_source">Fonte de Dados (n8n)</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="assets" className="px-6 pb-6">
+                        <UnderlyingAssetsTable 
+                            data={commodities} 
+                            loading={isLoading}
+                        />
+                    </TabsContent>
+                    <TabsContent value="index_history" className="px-6 pb-6">
+                         <IndexHistoryTable 
+                            data={indexHistory} 
+                            loading={loadingIndexHistory} 
+                            isConfigured={isConfigured} 
+                        />
+                    </TabsContent>
+                     <TabsContent value="data_source" className="px-6 pb-6">
+                        <CotacoesHistorico ativos={availableAtivos} />
+                    </TabsContent>
+                </Tabs>
+            </CardContent>
         </Card>
     );
 }
