@@ -13,6 +13,10 @@ import admin from 'firebase-admin';
 export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
     try {
         const commodities = await getCommodities();
+        if (!commodities || commodities.length === 0) {
+            console.warn('[DataService] No commodities configured. Returning empty array.');
+            return [];
+        }
 
         // Use Promise.all to fetch prices in parallel for better performance
         const pricePromises = commodities.map(async (commodity) => {
@@ -102,7 +106,7 @@ export async function organizeCotacoesHistorico(): Promise<{ success: boolean; m
         const batch = db.batch();
         let batchCount = 0;
 
-        querySnapshot.forEach(doc => {
+        for (const doc of querySnapshot.docs) {
             const data = doc.data();
             const ativo = data.ativo;
             const dataStr = data.data; // Format: "07/09/2025"
@@ -110,7 +114,7 @@ export async function organizeCotacoesHistorico(): Promise<{ success: boolean; m
             if (ativo && dataStr) {
                 // Convert date format from "07/09/2025" to a safe document ID "2025-09-07"
                 const dateParts = dataStr.split('/');
-                if (dateParts.length !== 3) return; // Skip invalid date formats
+                if (dateParts.length !== 3) continue; // Skip invalid date formats
                 const formattedDateId = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
                 
                 // Normalize asset name for document ID (e.g., "Soja Futuros" -> "soja_futuros")
@@ -132,11 +136,12 @@ export async function organizeCotacoesHistorico(): Promise<{ success: boolean; m
                 
                 // Firestore batch limit is 500 operations. Commit and create a new batch.
                 if (batchCount >= 450) {
-                    batch.commit();
+                    await batch.commit();
+                    // batch = db.batch(); // Re-initialize batch
                     batchCount = 0;
                 }
             }
-        });
+        }
 
         // Commit remaining operations
         if (batchCount > 0) {

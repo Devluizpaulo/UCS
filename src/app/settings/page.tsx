@@ -110,12 +110,9 @@ export default function SettingsPage() {
       await saveFormulaParameters(data);
       toast({
         title: 'Fórmula Atualizada',
-        description: 'Os parâmetros da fórmula foram salvos. Redirecionando para a página de atualização de preços.',
+        description: 'Os parâmetros da fórmula foram salvos. O índice será recalculado na próxima atualização de dados.',
       });
       setShowFormulaAlert(true);
-      // Redirect to update prices page to confirm and recalculate
-      router.push('/update-prices');
-
     } catch (error) {
       console.error('Error saving formula parameters:', error);
       toast({
@@ -183,7 +180,7 @@ export default function SettingsPage() {
                     <AlertTriangle className="h-4 w-4" />
                     <AlertTitle>Parâmetros Salvos!</AlertTitle>
                     <AlertDescription>
-                        Os parâmetros foram salvos. Para que o índice seja recalculado, você será redirecionado para a página de atualização de preços.
+                        Os parâmetros foram salvos. O índice será recalculado automaticamente na próxima vez que os dados do n8n forem recebidos.
                     </AlertDescription>
                 </Alert>
             )}
@@ -257,7 +254,7 @@ export default function SettingsPage() {
 
             <Button type="submit" disabled={isLoading}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Salvar e Ir para Atualização
+                Salvar Parâmetros
             </Button>
         </form>
     );
