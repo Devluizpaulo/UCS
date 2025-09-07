@@ -58,7 +58,7 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
                 };
 
             } catch (error) {
-                console.error(`Error fetching price for ${commodity.name} from 'cotacoes_do_dia':`, error);
+                console.error(`[DataService] Error fetching price for ${commodity.name} from 'cotacoes_do_dia':`, error);
                 // Return commodity with default values if fetching details fails, ensuring it's always displayed.
                 return {
                     ...commodity,
@@ -84,8 +84,8 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
             return a.name.localeCompare(b.name);
         });
     } catch (error) {
-        console.error(`[DataService] Failed to get commodity list. Error: ${error}`);
-        // If we can't even get the list of commodities, return an empty array.
+        console.error(`[DataService] CRITICAL: Failed to get commodity list to begin price fetching. Error: ${error}`);
+        // If we can't even get the list of commodities, return an empty array to prevent a server crash.
         return [];
     }
 }
@@ -110,6 +110,7 @@ export async function organizeCotacoesHistorico(): Promise<{ success: boolean; m
             if (ativo && dataStr) {
                 // Convert date format from "07/09/2025" to a safe document ID "2025-09-07"
                 const dateParts = dataStr.split('/');
+                if (dateParts.length !== 3) return; // Skip invalid date formats
                 const formattedDateId = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
                 
                 // Normalize asset name for document ID (e.g., "Soja Futuros" -> "soja_futuros")
@@ -158,7 +159,7 @@ export async function organizeCotacoesHistorico(): Promise<{ success: boolean; m
 // Function to get historical quotes for a specific asset
 export async function getCotacoesHistorico(ativo: string, limit: number = 30): Promise<any[]> {
     try {
-        const normalizedAtivoId = ativo.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0--9_]/g, '');
+        const normalizedAtivoId = ativo.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
         
         const historicoRef = db.collection('cotacoes_historico')
             .doc(normalizedAtivoId)
@@ -231,9 +232,14 @@ export async function getUcsIndexValue(interval: HistoryInterval = '1d'): Promis
         console.error(`[DataService] Failed to get index history. Error: ${error}`);
         // In case of error, we will return the default latestData and an empty history array
         // to prevent the app from crashing.
-        const formulaDoc = await db.collection('settings').doc('formula_parameters').get().catch(() => null);
-        if (formulaDoc && formulaDoc.exists) {
-            latestData.isConfigured = formulaDoc.data()?.isConfigured ?? false;
+        try {
+            const formulaDoc = await db.collection('settings').doc('formula_parameters').get();
+             if (formulaDoc && formulaDoc.exists) {
+                latestData.isConfigured = formulaDoc.data()?.isConfigured ?? false;
+            }
+        } catch(e) {
+             console.error(`[DataService] CRITICAL: Could not even fetch formula status after initial failure. Error: ${e}`);
+             latestData.isConfigured = false; // Assume not configured on total failure
         }
     }
 
