@@ -69,14 +69,28 @@ export async function getFormulaParameters(): Promise<FormulaParameters> {
  */
 export async function saveFormulaParameters(params: Omit<FormulaParameters, 'isConfigured'>): Promise<void> {
   const docRef = db.collection(SETTINGS_COLLECTION).doc(FORMULA_DOC_ID);
+  const dataToSave = { ...params, isConfigured: true };
+  
   try {
-    // Set the parameters and mark as configured.
-    // This will overwrite the document or create it if it doesn't exist.
-    await docRef.set({ ...params, isConfigured: true }, { merge: true });
-    console.log('[FormulaService] Successfully saved formula parameters.');
-  } catch (error) {
-    console.error("[FormulaService] Error saving formula parameters: ", error);
-    // Re-throw the error to be handled by the calling function (e.g., to show a toast to the user)
-    throw new Error("Failed to save formula parameters to the database.");
+    // First, try to update. This is safer and more common.
+    await docRef.update(dataToSave);
+    console.log('[FormulaService] Successfully updated formula parameters.');
+  } catch (error: any) {
+    // If the document does not exist (e.g., first run), the update will fail with 'NOT_FOUND'.
+    // In this case, we create the document using set().
+    if (error.code === 'NOT_FOUND' || error.code === 5) {
+      try {
+        console.log('[FormulaService] Document not found, creating new one...');
+        await docRef.set(dataToSave);
+        console.log('[FormulaService] Successfully created and saved formula parameters.');
+      } catch (setError) {
+         console.error("[FormulaService] Error creating formula parameters after update failed: ", setError);
+         throw new Error("Failed to create formula parameters in the database.");
+      }
+    } else {
+      // For any other error (permissions, network, etc.), re-throw it.
+      console.error("[FormulaService] Error saving formula parameters: ", error);
+      throw new Error("Failed to save formula parameters to the database.");
+    }
   }
 }
