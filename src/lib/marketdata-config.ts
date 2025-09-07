@@ -1,4 +1,5 @@
 
+
 import type { CommodityMap, MarketDataConfig } from "./types";
 
 
@@ -33,7 +34,7 @@ export const COMMODITY_TICKER_MAP: CommodityMap = {
     category: 'exchange',
     description: 'Taxa de câmbio USD para BRL.',
     unit: 'BRL',
-    source: 'Yahoo Finance',
+    source: 'n8n',
   },
   'EUR-BRL-Cambio': { 
     name: 'EUR/BRL - Euro Real Brasileiro',
@@ -42,51 +43,51 @@ export const COMMODITY_TICKER_MAP: CommodityMap = {
     category: 'exchange',
     description: 'Taxa de câmbio EUR para BRL.',
     unit: 'BRL',
-    source: 'Yahoo Finance',
+    source: 'n8n',
   },
   'Boi-Gordo-Futuros': { 
-    name: 'Boi Gordo Futuros (B3)',
+    name: 'Boi Gordo Futuros',
     ticker: 'BGI=F', 
     currency: 'BRL',
     category: 'vus',
     description: 'Contratos futuros de Boi Gordo.',
     unit: '@',
-    source: 'Yahoo Finance',
+    source: 'n8n',
   },
   'Soja-Futuros': { 
-    name: 'Soja Futuros (CBOT)',
+    name: 'Soja Futuros',
     ticker: 'ZS=F',
     currency: 'USD',
     category: 'vus',
     description: 'Contratos futuros de Soja.',
     unit: 'USd/bu', // US Cents per Bushel
-    source: 'Yahoo Finance',
+    source: 'n8n',
   },
   'Milho-Futuros': { 
-    name: 'Milho Futuros (CBOT)',
+    name: 'Milho Futuros',
     ticker: 'ZC=F',
     currency: 'USD',
     category: 'vus',
     description: 'Contratos futuros de Milho.',
     unit: 'USd/bu', // US Cents per Bushel
-    source: 'Yahoo Finance',
+    source: 'n8n',
   },
   'Madeira-Serrada-Futuros': { 
-    name: 'Madeira Serrada Futuros (CME)',
+    name: 'Madeira Serrada Futuros',
     ticker: 'LBS=F',
     currency: 'USD',
     category: 'vmad',
     description: 'Contratos futuros de Madeira (Lumber).',
     unit: 'USD/1,000 board feet',
-    source: 'Yahoo Finance',
+    source: 'n8n',
   },
   'Credito-Carbono-Futuros': { 
-    name: 'Crédito Carbono Futuros (ICE)',
+    name: 'Crédito Carbono Futuros',
     ticker: 'KRBN', // Using KRBN ETF as a proxy for Carbon Credits
     currency: 'USD',
     category: 'crs',
     description: 'KraneShares Global Carbon Strategy ETF como proxy para créditos de carbono.',
     unit: 'USD',
-    source: 'Yahoo Finance',
+    source: 'n8n',
   },
 };

@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import type { ChartData, CommodityPriceData, HistoryInterval, UcsData } from './types';
@@ -11,14 +12,17 @@ import type admin from 'firebase-admin';
 
 export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
     const commodities = await getCommodities();
-    const prices: CommodityPriceData[] = [];
 
     // Use Promise.all to fetch prices in parallel for better performance
     const pricePromises = commodities.map(async (commodity) => {
         try {
-            // Get the latest price entry to calculate the change
-            const pricesCollectionRef = db.collection('commodities').doc(commodity.id).collection('price_entries');
-            const q = pricesCollectionRef.orderBy('savedAt', 'desc').limit(2);
+            // Query the new `cotacoes_do_dia` collection based on the asset name
+            const pricesCollectionRef = db.collection('cotacoes_do_dia');
+            const q = pricesCollectionRef
+                .where('ativo', '==', commodity.name)
+                .orderBy('timestamp', 'desc')
+                .limit(2);
+                
             const querySnapshot = await q.get();
 
             let change = 0;
@@ -29,15 +33,18 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
             if (querySnapshot.docs.length > 0) {
                  const latestDoc = querySnapshot.docs[0];
                  const latestData = latestDoc.data();
-                 currentPrice = latestData.price;
                  
-                 const lastUpdatedTimestamp = latestData.savedAt as admin.firestore.Timestamp;
+                 // Use 'ultimo' field for price as per the new schema
+                 currentPrice = latestData.ultimo || 0;
+                 
+                 const lastUpdatedTimestamp = latestData.timestamp as admin.firestore.Timestamp;
                  lastUpdated = lastUpdatedTimestamp ? lastUpdatedTimestamp.toDate().toLocaleString('pt-BR') : 'N/A';
 
                  if (querySnapshot.docs.length > 1) {
                     const previousData = querySnapshot.docs[1].data();
-                    absoluteChange = latestData.price - previousData.price;
-                    change = previousData.price !== 0 ? (absoluteChange / previousData.price) * 100 : 0;
+                    const previousPrice = previousData.ultimo || 0;
+                    absoluteChange = currentPrice - previousPrice;
+                    change = previousPrice !== 0 ? (absoluteChange / previousPrice) * 100 : 0;
                  }
             }
             
@@ -50,7 +57,7 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
             };
 
         } catch (error) {
-            console.error(`Error fetching price for ${commodity.name} from Firestore:`, error);
+            console.error(`Error fetching price for ${commodity.name} from 'cotacoes_do_dia':`, error);
             // Return commodity with default values if fetching details fails, ensuring it's always displayed.
             return {
                 ...commodity,

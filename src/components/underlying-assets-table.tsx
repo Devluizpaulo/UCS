@@ -91,7 +91,7 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
                   </div>
                   <div>
                     <div className="font-medium">{asset.name}</div>
-                    <div className="text-xs text-muted-foreground">Fonte: Yahoo Finance</div>
+                    <div className="text-xs text-muted-foreground">Fonte: {asset.source || 'n/a'}</div>
                   </div>
                 </div>
               </TableCell>
@@ -120,7 +120,7 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
         <Table>
           {!loading && !hasAnyPriceData && (
               <TableCaption className="py-4">
-                  Os preços ainda não foram carregados. Clique em "Atualizar Tudo" para buscar os dados.
+                  Os preços ainda não foram carregados. Aguardando dados do n8n.
               </TableCaption>
           )}
           <TableHeader>
