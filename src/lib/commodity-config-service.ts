@@ -34,43 +34,46 @@ async function seedDefaultCommodities() {
                 category: config.category,
                 description: config.description,
                 unit: config.unit,
-                source: config.source || 'Yahoo Finance',
+                source: config.source || 'n8n', // Default source
             };
-            // Use set with merge:true to create if not exists, but not overwrite existing data.
-            // This is safer than doing a read-then-write.
             batch.set(docRef, dataToSeed, { merge: true });
         });
         
         await batch.commit();
         console.log('[CommodityConfigService] Default commodities seeding process completed.');
     } catch (error) {
-        console.error('[CommodityConfigService] Error during seeding, this might be expected if database is new. Continuing...', error);
-        // We log the error but don't throw, as this operation can fail on a brand new,
-        // not-yet-fully-provisioned Firestore instance. The app should continue.
+        console.error('[CommodityConfigService] Error during seeding, this might be expected if the database is new. The process will continue, but the database might not be seeded.', error);
     }
 }
 
 /**
- * Retrieves all commodities. In this revised version, it returns the hardcoded list from the config
- * to ensure app stability, while still attempting to seed the database for future flexibility.
+ * Retrieves all commodities. It first attempts to fetch from Firestore. If that fails,
+ * it falls back to the hardcoded list from the config to ensure app stability.
  * @returns {Promise<CommodityConfig[]>} A promise that resolves to an array of commodities.
  */
 export async function getCommodities(): Promise<CommodityConfig[]> {
-    await seedDefaultCommodities(); // Attempt to seed the DB for consistency.
-
     try {
         const collectionRef = db.collection(COMMODITIES_COLLECTION);
         const snapshot = await collectionRef.get();
         
         if (snapshot.empty) {
-            console.warn('[CommodityConfigService] Firestore collection is empty after seeding, falling back to hardcoded config.');
-            // Fallback to hardcoded list if firestore is still empty
-             const commodities = Object.entries(COMMODITY_TICKER_MAP).map(([id, config]) => ({
-                id: id,
-                ...config,
-                source: config.source || 'Yahoo Finance',
-            }));
-            return commodities.sort((a, b) => a.name.localeCompare(b.name));
+            console.warn('[CommodityConfigService] Firestore collection is empty. Attempting to seed...');
+            await seedDefaultCommodities();
+            const seededSnapshot = await collectionRef.get();
+            if (seededSnapshot.empty) {
+                 console.error('[CommodityConfigService] FATAL: Firestore is still empty after seeding. Falling back to hardcoded config.');
+                 // Fallback to hardcoded list if firestore is still empty
+                 return Object.entries(COMMODITY_TICKER_MAP).map(([id, config]) => ({
+                    id: id,
+                    ...config,
+                    source: config.source || 'n8n',
+                })).sort((a, b) => a.name.localeCompare(b.name));
+            }
+            const commodities = seededSnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+            } as CommodityConfig));
+            return commodities;
         }
 
         const commodities = snapshot.docs.map(doc => ({
@@ -86,12 +89,11 @@ export async function getCommodities(): Promise<CommodityConfig[]> {
 
     } catch (error) {
         console.error('[CommodityConfigService] Error fetching commodities from DB, falling back to hardcoded list:', error);
-         const commodities = Object.entries(COMMODITY_TICKER_MAP).map(([id, config]) => ({
+        return Object.entries(COMMODITY_TICKER_MAP).map(([id, config]) => ({
             id: id,
             ...config,
-            source: config.source || 'Yahoo Finance',
-        }));
-        return commodities.sort((a, b) => {
+            source: config.source || 'n8n',
+        })).sort((a, b) => {
             if (a.category === 'exchange' && b.category !== 'exchange') return -1;
             if (a.category !== 'exchange' && b.category === 'exchange') return 1;
             return a.name.localeCompare(b.name);

@@ -5,14 +5,14 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import type { RiskAnalysisData } from '@/lib/types';
+import type { RiskAnalysisData, FirestoreQuote } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { Skeleton } from './ui/skeleton';
 import { getCommodities } from '@/lib/commodity-config-service';
-import { getUcsIndexValue } from '@/lib/data-service';
-import { getAssetHistoricalData } from '@/lib/marketdata-service';
+import { getUcsIndexValue, getCotacoesHistorico } from '@/lib/data-service';
 import { calculate_volatility, calculate_correlation } from '@/lib/statistics';
 import { getFormulaParameters } from '@/lib/formula-service';
+
 
 async function getRiskAnalysisData(): Promise<RiskAnalysisData> {
     const [commodities, ucsHistoryData, formulaParams] = await Promise.all([
@@ -25,18 +25,33 @@ async function getRiskAnalysisData(): Promise<RiskAnalysisData> {
         return { metrics: [] }; // Return empty if formula is not configured
     }
     
-    const ucsReturns = ucsHistoryData.history.map(d => d.value).slice(1).map((v, i, a) => (a[i-1] === 0 ? 0 : (v / a[i-1]) -1));
+    // Calculate returns for the index. Filter out zero values to avoid division by zero.
+    const ucsPrices = ucsHistoryData.history.map(d => d.value).filter(v => v > 0);
+    if (ucsPrices.length < 2) return { metrics: [] };
+
+    const ucsReturns = ucsPrices.slice(1).map((v, i) => (ucsPrices[i] === 0 ? 0 : (v / ucsPrices[i]) -1));
     
     const metricsPromises = commodities.map(async (asset) => {
         try {
-            const assetHistory = await getAssetHistoricalData(asset.name, '1d');
+            // Get historical data from our Firestore historical collection
+            const assetHistory: FirestoreQuote[] = await getCotacoesHistorico(asset.name, 30);
             if (assetHistory.length < 2) return null;
 
-            const assetReturns = assetHistory.map(d => d.close).slice(1).map((v, i, a) => (a[i-1] === 0 ? 0 : (v / a[i-1]) -1));
+            // Sort by date ascending to calculate returns correctly
+            const sortedHistory = assetHistory.sort((a,b) => a.timestamp.toDate() - b.timestamp.toDate());
+            
+            const assetPrices = sortedHistory.map(d => d.ultimo).filter(v => v > 0);
+            if (assetPrices.length < 2) return null;
+            
+            const assetReturns = assetPrices.slice(1).map((v, i) => (assetPrices[i] === 0 ? 0 : (v / assetPrices[i]) - 1));
+            
+            if (assetReturns.length < 2) return null;
+            
             const volatility = calculate_volatility(assetReturns);
             
-            // Ensure array lengths match for correlation
-            const correlation = calculate_correlation(ucsReturns.slice(-assetReturns.length), assetReturns);
+            // Ensure array lengths match for correlation by taking the minimum length
+            const minLength = Math.min(ucsReturns.length, assetReturns.length);
+            const correlation = calculate_correlation(ucsReturns.slice(-minLength), assetReturns.slice(-minLength));
             
             return { asset: asset.name, volatility, correlation };
         } catch (error) {
@@ -91,9 +106,26 @@ export function RiskAnalysis() {
   const renderContent = () => {
         if (loading) {
              return (
-                 <div className="space-y-4">
-                    <Skeleton className="h-40 w-full" />
-                 </div>
+                 <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Ativo</TableHead>
+                            <TableHead className="text-center">Volatilidade (30d)</TableHead>
+                            <TableHead className="text-center">Correlação com Índice</TableHead>
+                            <TableHead className="text-right">Sentimento</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {Array.from({ length: 5 }).map((_, i) => (
+                            <TableRow key={i}>
+                                <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                                <TableCell className="text-center"><Skeleton className="h-6 w-16 mx-auto" /></TableCell>
+                                <TableCell className="text-center"><Skeleton className="h-5 w-20 mx-auto" /></TableCell>
+                                <TableCell className="text-right"><Skeleton className="h-5 w-24 ml-auto" /></TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                 </Table>
             )
         }
         

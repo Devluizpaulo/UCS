@@ -1,31 +1,15 @@
 
 
-import type { CommodityMap, MarketDataConfig } from "./types";
+import type { CommodityMap } from "./types";
 
 
 // This file is intentionally not marked with 'use server' as it exports constant objects.
 
-// MarketData API Configuration
-export const MARKETDATA_CONFIG: MarketDataConfig = {
-  API_BASE_URL: "https://api.marketdata.app/v1",
-  
-  // Cache TTL (Time To Live) in milliseconds
-  CACHE_TTL: {
-    QUOTE: 30 * 1000, // 30 seconds for real-time quotes
-    HISTORICAL: 5 * 60 * 1000, // 5 minutes for historical data
-  },
-  
-  // API timeouts
-  TIMEOUTS: {
-    QUOTE: 10000, // 10 seconds
-    HISTORICAL: 15000, // 15 seconds
-  },
-};
-
 // This map defines the INITIAL set of commodities to be seeded into the database
 // on the very first run. After that, the master list is managed in Firestore
 // via the Settings page. The keys here (e.g., 'USD-BRL-Cambio') will become the
-// document IDs in Firestore. The tickers have been updated for Yahoo Finance.
+// document IDs in Firestore. The tickers have been updated for Yahoo Finance compatibility
+// but the 'source' should reflect where the data is coming from (n8n).
 export const COMMODITY_TICKER_MAP: CommodityMap = {
   'USD-BRL-Cambio': { 
     name: 'USD/BRL - Dólar Americano Real Brasileiro',

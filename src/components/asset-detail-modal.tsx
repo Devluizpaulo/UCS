@@ -10,12 +10,12 @@ import {
 } from '@/components/ui/dialog';
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
-import type { CommodityPriceData, ChartData, HistoricalQuote, HistoryInterval } from '@/lib/types';
+import type { CommodityPriceData, ChartData, HistoryInterval, FirestoreQuote } from '@/lib/types';
 import { Loader2, ArrowDown, ArrowUp } from 'lucide-react';
 import { useEffect, useState, useCallback } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { ScrollArea } from './ui/scroll-area';
-import { getAssetHistoricalData } from '@/lib/marketdata-service';
+import { getCotacoesHistorico } from '@/lib/data-service';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
 
@@ -27,8 +27,15 @@ interface AssetDetailModalProps {
   onClose: () => void;
 }
 
+const intervalLimitMap: Record<HistoryInterval, number> = {
+    '1d': 30,
+    '1wk': 26,
+    '1mo': 60
+}
+
+
 export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDetailModalProps) {
-    const [historicalData, setHistoricalData] = useState<HistoricalQuote[]>([]);
+    const [historicalData, setHistoricalData] = useState<FirestoreQuote[]>([]);
     const [chartData, setChartData] = useState<ChartData[]>([]);
     const [loading, setLoading] = useState(true);
     const [interval, setInterval] = useState<HistoryInterval>('1d');
@@ -40,11 +47,16 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
         setChartData([]);
 
         try {
-            const history = await getAssetHistoricalData(currentAsset.name, currentInterval);
+            const limit = intervalLimitMap[currentInterval];
+            const history = await getCotacoesHistorico(currentAsset.name, limit);
             setHistoricalData(history);
             
-            const chartPoints = history.map(d => ({ time: d.date, value: d.close }));
-            setChartData(chartPoints);
+            const chartPoints = history.map(d => ({ 
+                time: d.id, // Use the date ID 'YYYY-MM-DD'
+                value: d.ultimo 
+            }));
+            
+            setChartData(chartPoints.reverse()); // Reverse for correct chart direction
 
         } catch (error) {
             console.error("Failed to get asset details:", error);
@@ -72,7 +84,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                     <span>{asset.name} ({asset.ticker})</span>
                 </DialogTitle>
                 <DialogDescription className="mt-2">
-                    Análise detalhada do histórico de preços para {asset.name}. Fonte: Yahoo Finance.
+                    Análise detalhada do histórico de preços para {asset.name}. Fonte: n8n.
                 </DialogDescription>
             </div>
             <Tabs defaultValue="1d" onValueChange={(value) => setInterval(value as HistoryInterval)} className="w-auto shrink-0">
@@ -135,7 +147,6 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                                     <TableHead className="text-right">Abertura</TableHead>
                                     <TableHead className="text-right">Máxima</TableHead>
                                     <TableHead className="text-right">Mínima</TableHead>
-                                    <TableHead className="text-right w-[90px]">Variação</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -147,26 +158,16 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                                             <TableCell><div className="h-5 w-20 bg-muted rounded-md animate-pulse ml-auto"/></TableCell>
                                             <TableCell><div className="h-5 w-20 bg-muted rounded-md animate-pulse ml-auto"/></TableCell>
                                             <TableCell><div className="h-5 w-20 bg-muted rounded-md animate-pulse ml-auto"/></TableCell>
-                                            <TableCell><div className="h-5 w-16 bg-muted rounded-md animate-pulse ml-auto"/></TableCell>
                                         </TableRow>
                                     ))
                                 ) : (
-                                    historicalData.slice().reverse().map((dataPoint) => (
-                                        <TableRow key={dataPoint.date}>
-                                            <TableCell className="font-medium text-xs">{dataPoint.date}</TableCell>
-                                            <TableCell className="text-right font-mono text-xs">{asset.currency} {dataPoint.close.toFixed(4)}</TableCell>
-                                            <TableCell className="text-right font-mono text-xs">{dataPoint.open.toFixed(4)}</TableCell>
-                                            <TableCell className="text-right font-mono text-xs">{dataPoint.high.toFixed(4)}</TableCell>
-                                            <TableCell className="text-right font-mono text-xs">{dataPoint.low.toFixed(4)}</TableCell>
-                                            <TableCell className="text-right">
-                                                <div className={cn(
-                                                    "inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold font-mono transition-colors",
-                                                    dataPoint.change >= 0 ? "border-primary/50 text-primary" : "border-destructive/50 text-destructive"
-                                                )}>
-                                                    {dataPoint.change >= 0 ? <ArrowUp className="mr-1 h-3 w-3" /> : <ArrowDown className="mr-1 h-3 w-3" />}
-                                                    {dataPoint.change.toFixed(2)}%
-                                                </div>
-                                            </TableCell>
+                                    historicalData.map((dataPoint) => (
+                                        <TableRow key={dataPoint.id}>
+                                            <TableCell className="font-medium text-xs">{dataPoint.data}</TableCell>
+                                            <TableCell className="text-right font-mono text-xs">{asset.currency} {dataPoint.ultimo.toFixed(4)}</TableCell>
+                                            <TableCell className="text-right font-mono text-xs">{dataPoint.abertura.toFixed(4)}</TableCell>
+                                            <TableCell className="text-right font-mono text-xs">{dataPoint.maxima.toFixed(4)}</TableCell>
+                                            <TableCell className="text-right font-mono text-xs">{dataPoint.minima.toFixed(4)}</TableCell>
                                         </TableRow>
                                     ))
                                 )}

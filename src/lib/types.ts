@@ -17,6 +17,13 @@ export type CommodityConfig = {
   source?: 'n8n' | 'Investing.com' | 'Yahoo Finance'; // Source is now more flexible
 };
 
+export type InitialCommodityConfig = Omit<CommodityConfig, 'id'>;
+
+export type CommodityMap = {
+  [key: string]: InitialCommodityConfig;
+};
+
+
 // Represents commodity data combined with real-time pricing information
 export type CommodityPriceData = CommodityConfig & {
     price: number;
@@ -36,6 +43,19 @@ export type HistoricalQuote = {
   volume: string;
   change: number;
 };
+
+export type FirestoreQuote = {
+  id: string;
+  ativo: string;
+  data: string; // "DD/MM/YYYY"
+  abertura: number;
+  maxima: number;
+  minima: number;
+  ultimo: number;
+  moeda: string;
+  timestamp: any; // Firestore Timestamp
+  [key: string]: any; // Allow other properties
+}
 
 export type UcsIndexComponents = {
   indexValue: number;
@@ -125,39 +145,3 @@ export type GenerateReportOutput = {
   mimeType: string;
   previewData: ReportPreviewData;
 };
-
-
-// --- API Configuration Types ---
-
-export type MarketDataConfig = {
-  API_BASE_URL: string;
-  CACHE_TTL: {
-    QUOTE: number;
-    HISTORICAL: number;
-  };
-  TIMEOUTS: {
-    QUOTE: number;
-    HISTORICAL: number;
-  };
-};
-
-
-// --- Initial Config Types ---
-export type InitialCommodityConfig = Omit<CommodityConfig, 'id' | 'source'> & { source?: 'n8n' | 'Investing.com' | 'Yahoo Finance' };
-
-
-export type CommodityMap = {
-  [key: string]: Omit<CommodityConfig, 'id'>;
-};
-
-// --- MarketData API Response Types ---
-export interface MarketDataHistoryResponse {
-    s: 'ok' | 'error' | 'no_data';
-    errmsg?: string;
-    t: number[]; // timestamp
-    o: number[]; // open
-    h: number[]; // high
-    l: number[]; // low
-    c: number[]; // close
-    v: number[]; // volume
-}
