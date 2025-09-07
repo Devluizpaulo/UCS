@@ -24,7 +24,7 @@ const commoditySchema = z.object({
   category: z.enum(['exchange', 'vus', 'vmad', 'crs']),
   description: z.string().min(1, 'Descrição é obrigatória.'),
   unit: z.string().min(1, 'Unidade é obrigatória.'),
-  source: z.enum(['MarketData']).default('MarketData'),
+  source: z.enum(['n8n', 'Investing.com', 'Yahoo Finance']).optional(),
 });
 
 
@@ -39,7 +39,7 @@ export function EditCommodityModal({ isOpen, onClose, commodity, onSave, isSavin
       category: 'vus',
       description: '',
       unit: '',
-      source: 'MarketData',
+      source: 'n8n',
     },
   });
   
@@ -53,7 +53,7 @@ export function EditCommodityModal({ isOpen, onClose, commodity, onSave, isSavin
       category: 'vus',
       description: '',
       unit: '',
-      source: 'MarketData',
+      source: 'n8n',
     });
   }, [commodity, reset]);
 
@@ -161,7 +161,9 @@ export function EditCommodityModal({ isOpen, onClose, commodity, onSave, isSavin
                             <SelectValue placeholder="Selecione a Fonte" />
                         </SelectTrigger>
                         <SelectContent>
-                             <SelectItem value="MarketData">MarketData API</SelectItem>
+                             <SelectItem value="n8n">n8n</SelectItem>
+                              <SelectItem value="Investing.com">Investing.com</SelectItem>
+                              <SelectItem value="Yahoo Finance">Yahoo Finance</SelectItem>
                         </SelectContent>
                     </Select>
                 )}

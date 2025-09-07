@@ -5,7 +5,7 @@
 import type { ChartData, CommodityPriceData, HistoryInterval, UcsData } from './types';
 import { getCommodities } from './commodity-config-service';
 import { db } from './firebase-admin-config';
-import type admin from 'firebase-admin';
+import admin from 'firebase-admin';
 
 
 // --- Functions to get data from FIRESTORE ---
@@ -83,7 +83,88 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
         return a.name.localeCompare(b.name);
     });
 }
+// Function to organize daily quotes into historical subcollections
+export async function organizeCotacoesHistorico(): Promise<void> {
+    try {
+        const cotacoesDoDiaRef = db.collection('cotacoes_do_dia');
+        const querySnapshot = await cotacoesDoDiaRef.get();
 
+        const batch = db.batch();
+        let batchCount = 0;
+
+        querySnapshot.forEach(doc => {
+            const data = doc.data();
+            const ativo = data.ativo;
+            const dataStr = data.data; // Format: "07/09/2025"
+            
+            if (ativo && dataStr) {
+                // Convert date format from "07/09/2025" to "07-09-2025"
+                const formattedDate = dataStr.replace(/\//g, '-');
+                
+                // Normalize asset name for subcollection (remove spaces, lowercase)
+                const normalizedAtivo = ativo.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+                
+                // Create reference to historical subcollection
+                const historicoRef = db.collection('cotacoes_historico')
+                    .doc(normalizedAtivo)
+                    .collection('dados')
+                    .doc(formattedDate);
+                
+                // Add to batch
+                batch.set(historicoRef, {
+                    ...data,
+                    organized_at: admin.firestore.FieldValue.serverTimestamp()
+                });
+                
+                batchCount++;
+                
+                // Firestore batch limit is 500 operations
+                if (batchCount >= 450) {
+                    batch.commit();
+                    batchCount = 0;
+                }
+            }
+        });
+
+        // Commit remaining operations
+        if (batchCount > 0) {
+            await batch.commit();
+        }
+
+        console.log('Cotações organizadas em subcoleções históricas com sucesso');
+    } catch (error) {
+        console.error('Erro ao organizar cotações históricas:', error);
+        throw error;
+    }
+}
+
+// Function to get historical quotes for a specific asset
+export async function getCotacoesHistorico(ativo: string, limit: number = 30): Promise<any[]> {
+    try {
+        const normalizedAtivo = ativo.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+        
+        const historicoRef = db.collection('cotacoes_historico')
+            .doc(normalizedAtivo)
+            .collection('dados')
+            .orderBy('timestamp', 'desc')
+            .limit(limit);
+            
+        const querySnapshot = await historicoRef.get();
+        const historico: any[] = [];
+        
+        querySnapshot.forEach(doc => {
+            historico.push({
+                id: doc.id,
+                ...doc.data()
+            });
+        });
+        
+        return historico;
+    } catch (error) {
+        console.error(`Erro ao buscar histórico para ${ativo}:`, error);
+        return [];
+    }
+}
 
 export async function getUcsIndexValue(interval: HistoryInterval = '1d'): Promise<{ latest: UcsData, history: ChartData[] }> {
     const historyCollectionRef = db.collection('ucs_index_history');

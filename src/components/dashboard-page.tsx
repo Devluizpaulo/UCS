@@ -19,6 +19,8 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
 import { UnderlyingAssetsCard } from './underlying-assets-card';
 import { Button } from './ui/button';
+import { CotacoesHistorico } from './cotacoes-historico';
+import { getCommodityPrices } from '@/lib/data-service';
 
 
 const loadingMessages = [
@@ -51,6 +53,7 @@ export function DashboardPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [historyInterval, setHistoryInterval] = useState<HistoryInterval>('1d');
   const [indexHistoryData, setIndexHistoryData] = useState<ChartData[]>([]);
+  const [availableAtivos, setAvailableAtivos] = useState<string[]>([]);
 
 
   const fetchDashboardData = useCallback(async () => {
@@ -58,6 +61,12 @@ export function DashboardPage() {
         const ucsResult = await getUcsIndexValue();
         setUcsData(ucsResult.latest);
         setIndexHistoryData(ucsResult.history); // Initial history (daily)
+        
+        // Fetch available assets for historical quotes
+        const commodityPrices = await getCommodityPrices();
+        const ativos = commodityPrices.map(commodity => commodity.name);
+        setAvailableAtivos(ativos);
+        
         return ucsResult.latest.isConfigured;
       } catch (error) {
         console.error("Failed to fetch dashboard data:", error);
@@ -223,6 +232,10 @@ export function DashboardPage() {
                         </CardContent>
                     </AccordionContent>
                 </Card>
+            </AccordionItem>
+            
+            <AccordionItem value="item-4" className="border-none">
+                <CotacoesHistorico ativos={availableAtivos} />
             </AccordionItem>
         </Accordion>
       </main>
