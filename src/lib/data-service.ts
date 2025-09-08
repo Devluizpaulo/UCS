@@ -310,3 +310,159 @@ export async function saveLatestQuotes(quotes: Omit<FirestoreQuote, 'id' | 'time
     throw new Error('Failed to save latest quotes.');
   }
 }
+
+/**
+ * Migrates data from cotacoes_do_dia collection to organized collections by asset and date
+ * Structure: {ativo_normalizado}/{data_normalizada}
+ * @param onlyRecent - If true, only processes documents from the last 24 hours
+ */
+export async function migrateDataToOrganizedCollections(onlyRecent: boolean = false): Promise<{ success: boolean; message: string; processed: number }> {
+  try {
+    console.log('[DataService] Starting data migration to organized collections...');
+    
+    // Get documents from cotacoes_do_dia
+    let cotacoesDoDiaRef = db.collection('cotacoes_do_dia');
+    
+    if (onlyRecent) {
+      // Only process documents from the last 24 hours
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      cotacoesDoDiaRef = cotacoesDoDiaRef.where('timestamp', '>=', yesterday) as any;
+    }
+    
+    const snapshot = await cotacoesDoDiaRef.get();
+    
+    if (snapshot.empty) {
+      return { success: true, message: 'No data to migrate', processed: 0 };
+    }
+    
+    let processedCount = 0;
+    const batch = db.batch();
+    
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      
+      // Skip if already processed (has migrated_at field)
+      if (data.migrated_at && onlyRecent) {
+        return;
+      }
+      
+      // Normalize asset name for collection name
+      const normalizedAsset = data.ativo
+        .toLowerCase()
+        .replace(/\s+/g, '_')
+        .replace(/[^a-z0-9_]/g, '')
+        .replace(/_+/g, '_')
+        .replace(/^_|_$/g, '');
+      
+      // Normalize date for document ID (DD-MM-YYYY format)
+      let normalizedDate = '';
+      if (data.data) {
+        // Convert DD/MM/YYYY to DD-MM-YYYY
+        normalizedDate = data.data.replace(/\//g, '-');
+      } else if (data.timestamp) {
+        // Convert timestamp to DD-MM-YYYY format
+        const date = data.timestamp.toDate ? data.timestamp.toDate() : new Date(data.timestamp);
+        normalizedDate = date.toLocaleDateString('pt-BR').replace(/\//g, '-');
+      }
+      
+      if (!normalizedAsset || !normalizedDate) {
+        console.warn(`[DataService] Skipping document ${doc.id} - missing asset or date`);
+        return;
+      }
+      
+      // Create document in organized structure: {asset}/{date}
+      const organizedDocRef = db.collection(normalizedAsset).doc(normalizedDate);
+      
+      // Prepare data with source information
+      const organizedData = {
+        ...data,
+        fonte_original: data.fonte || 'n8n',
+        migrated_from: 'cotacoes_do_dia',
+        migrated_at: admin.firestore.FieldValue.serverTimestamp(),
+        original_doc_id: doc.id
+      };
+      
+      batch.set(organizedDocRef, organizedData, { merge: true });
+      
+      // Mark original document as processed
+      const originalDocRef = db.collection('cotacoes_do_dia').doc(doc.id);
+      batch.update(originalDocRef, {
+        migrated_at: admin.firestore.FieldValue.serverTimestamp(),
+        organized_to: `${normalizedAsset}/${normalizedDate}`
+      });
+      
+      processedCount++;
+    });
+    
+    // Commit the batch
+    await batch.commit();
+    
+    console.log(`[DataService] Migration completed successfully. Processed ${processedCount} documents.`);
+    return { 
+      success: true, 
+      message: `Successfully migrated ${processedCount} documents to organized collections`, 
+      processed: processedCount 
+    };
+    
+  } catch (error: any) {
+    console.error('[DataService] Migration failed:', error);
+    return { 
+      success: false, 
+      message: `Migration failed: ${error.message}`, 
+      processed: 0 
+    };
+  }
+}
+
+/**
+ * Automatically reorganizes new data from cotacoes_do_dia
+ * This function is designed to be called by webhooks or scheduled tasks
+ */
+export async function autoReorganizeNewData(): Promise<{ success: boolean; message: string; processed: number }> {
+  return await migrateDataToOrganizedCollections(true);
+}
+
+/**
+ * Gets data from organized collection structure
+ * @param asset - Asset name (will be normalized)
+ * @param date - Date in DD/MM/YYYY or DD-MM-YYYY format
+ */
+export async function getOrganizedAssetData(asset: string, date?: string): Promise<any[]> {
+  try {
+    const normalizedAsset = asset
+      .toLowerCase()
+      .replace(/\s+/g, '_')
+      .replace(/[^a-z0-9_]/g, '')
+      .replace(/_+/g, '_')
+      .replace(/^_|_$/g, '');
+    
+    const collectionRef = db.collection(normalizedAsset);
+    
+    if (date) {
+      // Get specific date
+      const normalizedDate = date.replace(/\//g, '-');
+      const docRef = collectionRef.doc(normalizedDate);
+      const doc = await docRef.get();
+      
+      if (doc.exists) {
+        return [{ id: doc.id, ...doc.data() }];
+      } else {
+        return [];
+      }
+    } else {
+      // Get all dates for this asset
+      const snapshot = await collectionRef.orderBy('timestamp', 'desc').get();
+      const results: any[] = [];
+      
+      snapshot.forEach(doc => {
+        results.push({ id: doc.id, ...doc.data() });
+      });
+      
+      return results;
+    }
+  } catch (error: any) {
+    console.error(`[DataService] Error getting organized data for ${asset}:`, error);
+    return [];
+  }
+}

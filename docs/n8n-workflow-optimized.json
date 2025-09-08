@@ -1,0 +1,510 @@
+{
+  "name": "Cotações - Integração Automática",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9,15 * * 1-5"
+            }
+          ]
+        }
+      },
+      "id": "scheduler-node",
+      "name": "🕐 Agendador (9h e 15h)",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        -1200,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://br.investing.com/commodities/us-corn-historical-data?cid=964522",
+        "responseFormat": "string",
+        "options": {}
+      },
+      "id": "corn-fetch",
+      "name": "🌐 Buscar Milho",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        -768,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "extractionValues": {
+          "values": [
+            {
+              "key": "preco",
+              "cssSelector": "span[data-test='instrument-price-last'], .text-2xl, .instrument-price_instrument-price__*, [data-test*='price'], #last_last"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "corn-extract",
+      "name": "🔍 Extrair Preço Milho",
+      "type": "n8n-nodes-base.htmlExtract",
+      "typeVersion": 1,
+      "position": [
+        -576,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Processamento otimizado para Milho\nif ($input.first() === undefined) {\n  return [{ json: { \n    erro: 'Nenhum dado recebido do nó anterior.', \n    timestamp: new Date().toISOString() \n  } }];\n}\n\nlet precoExtraido = $input.first().json.preco;\n\nif (precoExtraido === undefined || precoExtraido === null || precoExtraido === '') {\n  return [{ json: { \n    ativo: 'milho',\n    erro: 'Preço não encontrado',\n    timestamp: new Date().toISOString(),\n    status: 'erro'\n  } }];\n}\n\ntry {\n  let precoLimpo = precoExtraido\n    .replace(/\\s/g, '')\n    .replace(/[R$]/g, '')\n    .replace(/\\./g, '')\n    .replace(/,/g, '.');\n  \n  let precoNumerico = parseFloat(precoLimpo);\n  \n  if (isNaN(precoNumerico)) {\n    throw new Error('Conversão para número falhou: ' + precoExtraido);\n  }\n  \n  const currentDate = new Date().toISOString().split('T')[0];\n  const [year, month, day] = currentDate.split('-');\n  const brazilianDate = `${day}/${month}/${year}`;\n  \n  return [{ json: {\n    ativo: 'milho',\n    data: brazilianDate,\n    ultimo: precoNumerico,\n    abertura: precoNumerico,\n    maxima: precoNumerico,\n    minima: precoNumerico,\n    volume: null,\n    variacao_pct: null,\n    moeda: 'BRL',\n    fonte: 'Investing.com',\n    timestamp: new Date().toISOString(),\n    status: 'sucesso'\n  } }];\n} catch (error) {\n  return [{ json: {\n    ativo: 'milho',\n    erro: 'Erro na conversão: ' + error.message,\n    timestamp: new Date().toISOString(),\n    status: 'erro'\n  } }];\n}"
+      },
+      "id": "corn-process",
+      "name": "⚙️ Processar Milho",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -368,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "upsert",
+        "projectId": "ucs-index-tracker",
+        "collection": "cotacoes_do_dia",
+        "updateKey": "timestamp",
+        "columns": "ativo,data,ultimo,abertura,maxima,minima,volume,variacao_pct,moeda,fonte,timestamp,status"
+      },
+      "id": "corn-save",
+      "name": "💾 Salvar Milho",
+      "type": "n8n-nodes-base.googleFirebaseCloudFirestore",
+      "typeVersion": 1,
+      "position": [
+        -176,
+        128
+      ],
+      "credentials": {
+        "googleApi": {
+          "id": "7BpBqB87SWkOYvB1",
+          "name": "Google Firebase Cloud Firestore account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://br.investing.com/commodities/live-cattle-historical-data?cid=964528",
+        "responseFormat": "string",
+        "options": {}
+      },
+      "id": "cattle-fetch",
+      "name": "🌐 Buscar Boi Gordo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        -768,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "extractionValues": {
+          "values": [
+            {
+              "key": "preco",
+              "cssSelector": "span[data-test='instrument-price-last'], .text-2xl, .instrument-price_instrument-price__*, [data-test*='price'], #last_last"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "cattle-extract",
+      "name": "🔍 Extrair Preço Boi",
+      "type": "n8n-nodes-base.htmlExtract",
+      "typeVersion": 1,
+      "position": [
+        -576,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Processamento otimizado para Boi Gordo\nif ($input.first() === undefined) {\n  return [{ json: { \n    erro: 'Nenhum dado recebido do nó anterior.', \n    timestamp: new Date().toISOString() \n  } }];\n}\n\nlet precoExtraido = $input.first().json.preco;\n\nif (precoExtraido === undefined || precoExtraido === null || precoExtraido === '') {\n  return [{ json: { \n    ativo: 'boi_gordo',\n    erro: 'Preço não encontrado',\n    timestamp: new Date().toISOString(),\n    status: 'erro'\n  } }];\n}\n\ntry {\n  let precoLimpo = precoExtraido\n    .replace(/\\s/g, '')\n    .replace(/[R$]/g, '')\n    .replace(/\\./g, '')\n    .replace(/,/g, '.');\n  \n  let precoNumerico = parseFloat(precoLimpo);\n  \n  if (isNaN(precoNumerico)) {\n    throw new Error('Conversão para número falhou: ' + precoExtraido);\n  }\n  \n  const currentDate = new Date().toISOString().split('T')[0];\n  const [year, month, day] = currentDate.split('-');\n  const brazilianDate = `${day}/${month}/${year}`;\n  \n  return [{ json: {\n    ativo: 'boi_gordo',\n    data: brazilianDate,\n    ultimo: precoNumerico,\n    abertura: precoNumerico,\n    maxima: precoNumerico,\n    minima: precoNumerico,\n    volume: null,\n    variacao_pct: null,\n    moeda: 'BRL',\n    fonte: 'Investing.com',\n    timestamp: new Date().toISOString(),\n    status: 'sucesso'\n  } }];\n} catch (error) {\n  return [{ json: {\n    ativo: 'boi_gordo',\n    erro: 'Erro na conversão: ' + error.message,\n    timestamp: new Date().toISOString(),\n    status: 'erro'\n  } }];\n}"
+      },
+      "id": "cattle-process",
+      "name": "⚙️ Processar Boi",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -368,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "upsert",
+        "projectId": "ucs-index-tracker",
+        "collection": "cotacoes_do_dia",
+        "updateKey": "timestamp",
+        "columns": "ativo,data,ultimo,abertura,maxima,minima,volume,variacao_pct,moeda,fonte,timestamp,status"
+      },
+      "id": "cattle-save",
+      "name": "💾 Salvar Boi",
+      "type": "n8n-nodes-base.googleFirebaseCloudFirestore",
+      "typeVersion": 1,
+      "position": [
+        -176,
+        288
+      ],
+      "credentials": {
+        "googleApi": {
+          "id": "7BpBqB87SWkOYvB1",
+          "name": "Google Firebase Cloud Firestore account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://br.investing.com/commodities/us-soybeans-historical-data?cid=964523",
+        "responseFormat": "string",
+        "options": {}
+      },
+      "id": "soy-fetch",
+      "name": "🌐 Buscar Soja",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        -768,
+        448
+      ]
+    },
+    {
+      "parameters": {
+        "extractionValues": {
+          "values": [
+            {
+              "key": "preco",
+              "cssSelector": "span[data-test='instrument-price-last'], .text-2xl, .instrument-price_instrument-price__*, [data-test*='price'], #last_last"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "soy-extract",
+      "name": "🔍 Extrair Preço Soja",
+      "type": "n8n-nodes-base.htmlExtract",
+      "typeVersion": 1,
+      "position": [
+        -576,
+        448
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Processamento otimizado para Soja\nif ($input.first() === undefined) {\n  return [{ json: { \n    erro: 'Nenhum dado recebido do nó anterior.', \n    timestamp: new Date().toISOString() \n  } }];\n}\n\nlet precoExtraido = $input.first().json.preco;\n\nif (precoExtraido === undefined || precoExtraido === null || precoExtraido === '') {\n  return [{ json: { \n    ativo: 'soja',\n    erro: 'Preço não encontrado',\n    timestamp: new Date().toISOString(),\n    status: 'erro'\n  } }];\n}\n\ntry {\n  let precoLimpo = precoExtraido\n    .replace(/\\s/g, '')\n    .replace(/[$]/g, '')\n    .replace(/\\./g, '')\n    .replace(/,/g, '.');\n  \n  let precoNumerico = parseFloat(precoLimpo);\n  \n  if (isNaN(precoNumerico)) {\n    throw new Error('Conversão para número falhou: ' + precoExtraido);\n  }\n  \n  const currentDate = new Date().toISOString().split('T')[0];\n  const [year, month, day] = currentDate.split('-');\n  const brazilianDate = `${day}/${month}/${year}`;\n  \n  return [{ json: {\n    ativo: 'soja',\n    data: brazilianDate,\n    ultimo: precoNumerico,\n    abertura: precoNumerico,\n    maxima: precoNumerico,\n    minima: precoNumerico,\n    volume: null,\n    variacao_pct: null,\n    moeda: 'USD',\n    fonte: 'Investing.com',\n    timestamp: new Date().toISOString(),\n    status: 'sucesso'\n  } }];\n} catch (error) {\n  return [{ json: {\n    ativo: 'soja',\n    erro: 'Erro na conversão: ' + error.message,\n    timestamp: new Date().toISOString(),\n    status: 'erro'\n  } }];\n}"
+      },
+      "id": "soy-process",
+      "name": "⚙️ Processar Soja",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -368,
+        448
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "upsert",
+        "projectId": "ucs-index-tracker",
+        "collection": "cotacoes_do_dia",
+        "updateKey": "timestamp",
+        "columns": "ativo,data,ultimo,abertura,maxima,minima,volume,variacao_pct,moeda,fonte,timestamp,status"
+      },
+      "id": "soy-save",
+      "name": "💾 Salvar Soja",
+      "type": "n8n-nodes-base.googleFirebaseCloudFirestore",
+      "typeVersion": 1,
+      "position": [
+        -176,
+        448
+      ],
+      "credentials": {
+        "googleApi": {
+          "id": "7BpBqB87SWkOYvB1",
+          "name": "Google Firebase Cloud Firestore account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Aguarda todos os salvamentos terminarem\nconst results = [];\n\n// Coleta resultados de todos os nós de salvamento\nconst cornResult = $('💾 Salvar Milho').first();\nconst cattleResult = $('💾 Salvar Boi').first();\nconst soyResult = $('💾 Salvar Soja').first();\n\nif (cornResult) results.push(cornResult.json);\nif (cattleResult) results.push(cattleResult.json);\nif (soyResult) results.push(soyResult.json);\n\nreturn [{\n  json: {\n    message: 'Dados salvos, iniciando reorganização automática',\n    saved_items: results.length,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "merge-results",
+      "name": "🔄 Consolidar Resultados",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        48,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:3000/api/webhook/reorganize",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "httpMethod": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer sua_chave_secreta_aqui"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "trigger",
+              "value": "n8n_data_saved"
+            },
+            {
+              "name": "timestamp",
+              "value": "={{ new Date().toISOString() }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "trigger-reorganization",
+      "name": "🚀 Trigger Reorganização",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        272,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Processa resposta da reorganização\nconst webhookResponse = $input.first().json;\n\nreturn [{\n  json: {\n    status: 'workflow_completed',\n    reorganization_triggered: webhookResponse.success || false,\n    message: webhookResponse.message || 'Reorganização automática executada',\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "final-response",
+      "name": "✅ Resposta Final",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        496,
+        288
+      ]
+    }
+  ],
+  "connections": {
+    "🕐 Agendador (9h e 15h)": {
+      "main": [
+        [
+          {
+            "node": "🌐 Buscar Milho",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "🌐 Buscar Boi Gordo",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "🌐 Buscar Soja",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🌐 Buscar Milho": {
+      "main": [
+        [
+          {
+            "node": "🔍 Extrair Preço Milho",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔍 Extrair Preço Milho": {
+      "main": [
+        [
+          {
+            "node": "⚙️ Processar Milho",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⚙️ Processar Milho": {
+      "main": [
+        [
+          {
+            "node": "💾 Salvar Milho",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💾 Salvar Milho": {
+      "main": [
+        [
+          {
+            "node": "🔄 Consolidar Resultados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🌐 Buscar Boi Gordo": {
+      "main": [
+        [
+          {
+            "node": "🔍 Extrair Preço Boi",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔍 Extrair Preço Boi": {
+      "main": [
+        [
+          {
+            "node": "⚙️ Processar Boi",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⚙️ Processar Boi": {
+      "main": [
+        [
+          {
+            "node": "💾 Salvar Boi",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💾 Salvar Boi": {
+      "main": [
+        [
+          {
+            "node": "🔄 Consolidar Resultados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🌐 Buscar Soja": {
+      "main": [
+        [
+          {
+            "node": "🔍 Extrair Preço Soja",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔍 Extrair Preço Soja": {
+      "main": [
+        [
+          {
+            "node": "⚙️ Processar Soja",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⚙️ Processar Soja": {
+      "main": [
+        [
+          {
+            "node": "💾 Salvar Soja",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💾 Salvar Soja": {
+      "main": [
+        [
+          {
+            "node": "🔄 Consolidar Resultados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔄 Consolidar Resultados": {
+      "main": [
+        [
+          {
+            "node": "🚀 Trigger Reorganização",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🚀 Trigger Reorganização": {
+      "main": [
+        [
+          {
+            "node": "✅ Resposta Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": [
+    {
+      "name": "automated-integration"
+    },
+    {
+      "name": "firebase-reorganization"
+    },
+    {
+      "name": "commodities-optimized"
+    }
+  ]
+}
