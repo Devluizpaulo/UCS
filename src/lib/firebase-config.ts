@@ -1,3 +1,4 @@
+
 // This file exports the plain Firebase config object.
 // It is NOT marked with 'use server' and is safe for both client and server use.
 // Components and services are responsible for initializing the app instance themselves
