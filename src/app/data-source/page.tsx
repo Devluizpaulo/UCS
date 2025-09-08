@@ -13,21 +13,31 @@ import {
 import { getCotacoesDoDia } from '@/lib/data-service';
 import type { FirestoreQuote } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Database } from 'lucide-react';
+import { Database, AlertTriangle } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 // This is now a Server Component
 export const dynamic = 'force-dynamic'; // Ensures the data is fetched on every request
 
-async function loadQuotes() {
+type LoadQuotesResult = {
+    quotes: FirestoreQuote[];
+    error?: string;
+};
+
+async function loadQuotes(): Promise<LoadQuotesResult> {
   try {
     const data = await getCotacoesDoDia(undefined, 200);
-    return data;
-  } catch (error) {
+    return { quotes: data };
+  } catch (error: any) {
     console.error('Erro ao carregar cotações do dia:', error);
-    // In a server component, we can't use hooks like toast.
-    // We'll return an empty array and the error will be logged on the server.
-    return [];
+    // Pass a specific error message for auth failures
+    if (error.message && error.message.includes('Could not refresh access token')) {
+        return { 
+            quotes: [], 
+            error: 'Falha na autenticação com o Firebase. Verifique se suas Credenciais Padrão da Aplicação (ADC) estão configuradas corretamente no ambiente do servidor. Execute `gcloud auth application-default login` em seu terminal.' 
+        };
+    }
+    return { quotes: [], error: 'Ocorreu um erro desconhecido ao buscar os dados do Firestore.' };
   }
 }
 
@@ -43,7 +53,7 @@ const formatDate = (date: any) => {
 
 
 export default async function DataSourcePage() {
-  const quotes = await loadQuotes();
+  const { quotes, error } = await loadQuotes();
 
   return (
     <MainLayout>
@@ -58,13 +68,23 @@ export default async function DataSourcePage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Alert>
-                <Database className="h-4 w-4" />
-                <AlertTitle>Visualização Direta do Servidor</AlertTitle>
-                <AlertDescription>
-                  Os dados abaixo são uma leitura direta do Firestore feita pelo servidor. Se a tabela estiver vazia, significa que não há documentos na coleção `cotacoes_do_dia`.
-                </AlertDescription>
-              </Alert>
+              {error ? (
+                 <Alert variant="destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle>Erro ao Carregar Dados do Servidor</AlertTitle>
+                    <AlertDescription>
+                        {error}
+                    </AlertDescription>
+                </Alert>
+              ) : (
+                <Alert>
+                  <Database className="h-4 w-4" />
+                  <AlertTitle>Visualização Direta do Servidor</AlertTitle>
+                  <AlertDescription>
+                    Os dados abaixo são uma leitura direta do Firestore feita pelo servidor. Se a tabela estiver vazia, significa que não há documentos na coleção `cotacoes_do_dia`.
+                  </AlertDescription>
+                </Alert>
+              )}
               <ScrollArea className="h-[60vh] mt-4 w-full border rounded-md">
                 <Table>
                   <TableHeader>
@@ -76,7 +96,7 @@ export default async function DataSourcePage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {quotes.length === 0 ? (
+                    {quotes.length === 0 && !error ? (
                         <TableRow>
                             <TableCell colSpan={4} className="h-24 text-center">
                                 Nenhuma cotação encontrada na coleção `cotacoes_do_dia`.
