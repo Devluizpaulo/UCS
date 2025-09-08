@@ -16,6 +16,7 @@ import {
   User as UserIcon,
   FileText,
   Loader2,
+  Database,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -54,6 +55,7 @@ const navItems: NavItem[] = [
   { href: '/', icon: LayoutDashboard, label: 'Painel' },
   { href: '/analysis', icon: Library, label: 'Análise' },
   { href: '/reports', icon: FileText, label: 'Relatórios' },
+  { href: '/data-source', icon: Database, label: 'Fonte de Dados' },
   { href: '/settings', icon: Settings, label: 'Configurações' },
   { href: '/alerts', icon: Bell, label: 'Alertas' },
 ];

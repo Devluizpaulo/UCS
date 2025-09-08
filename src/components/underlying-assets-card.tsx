@@ -9,7 +9,6 @@ import type { CommodityPriceData, ChartData } from "@/lib/types";
 import { getCommodityPrices } from "@/lib/data-service";
 import { IndexHistoryTable } from './index-history-table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { CotacoesHistorico } from './cotacoes-historico';
 
 interface UnderlyingAssetsCardProps {
     indexHistory: ChartData[];
@@ -55,7 +54,6 @@ export function UnderlyingAssetsCard({ indexHistory, loadingIndexHistory, isConf
                     <TabsList className="px-6">
                         <TabsTrigger value="assets">Visão Geral dos Ativos</TabsTrigger>
                         <TabsTrigger value="index_history">Histórico do Índice</TabsTrigger>
-                        <TabsTrigger value="data_source">Fonte de Dados (n8n)</TabsTrigger>
                     </TabsList>
                     <TabsContent value="assets" className="px-6 pb-6">
                         <UnderlyingAssetsTable 
@@ -69,9 +67,6 @@ export function UnderlyingAssetsCard({ indexHistory, loadingIndexHistory, isConf
                             loading={loadingIndexHistory} 
                             isConfigured={isConfigured} 
                         />
-                    </TabsContent>
-                     <TabsContent value="data_source" className="px-6 pb-6">
-                        <CotacoesHistorico ativos={availableAtivos} />
                     </TabsContent>
                 </Tabs>
             </CardContent>
