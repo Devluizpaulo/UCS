@@ -174,8 +174,12 @@ export async function getCotacoesDoDia(ativo?: string, limit: number = 50): Prom
         });
         
         return cotacoes;
-    } catch (error) {
-        console.error(`Erro ao buscar cotações do dia para ${ativo || 'todos os ativos'}:`, error);
+    } catch (error: any) {
+        if (error.message && error.message.includes('Could not refresh access token')) {
+            console.error(`[DataService] FIREBASE AUTHENTICATION ERROR while fetching 'cotacoes_do_dia': ${error.message}. This is likely an issue with Application Default Credentials in the server environment.`);
+        } else {
+            console.error(`[DataService] Error fetching 'cotacoes_do_dia' for ${ativo || 'all assets'}:`, error);
+        }
         return [];
     }
 }

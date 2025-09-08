@@ -15,10 +15,10 @@ if (!admin.apps.length) {
         });
         console.log('[Firebase Admin] SDK initialized successfully.');
     } catch(error: any) {
-        console.error('[Firebase Admin] Initialization error:', error.stack);
+        console.error('[Firebase Admin] CRITICAL INITIALIZATION ERROR:', error);
         // We throw the error to fail fast if initialization is impossible.
         // This prevents the app from running in a broken state.
-        throw new Error('Failed to initialize Firebase Admin SDK.');
+        throw new Error(`Failed to initialize Firebase Admin SDK. Details: ${error.message}`);
     }
 }
 
