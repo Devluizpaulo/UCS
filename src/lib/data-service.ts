@@ -18,10 +18,8 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
             return [];
         }
 
-        // Use Promise.all to fetch prices in parallel for better performance
         const pricePromises = commodities.map(async (commodity) => {
             try {
-                // Query the 'cotacoes_do_dia' collection to get the latest 2 entries for each asset to calculate change.
                 const pricesCollectionRef = db.collection('cotacoes_do_dia');
                 const q = pricesCollectionRef
                     .where('ativo', '==', commodity.name)
@@ -39,13 +37,11 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
                      const latestDoc = querySnapshot.docs[0];
                      const latestData = latestDoc.data();
                      
-                     // Use 'ultimo' field for price as per the schema
                      currentPrice = latestData.ultimo || 0;
                      
                      const lastUpdatedTimestamp = latestData.timestamp as admin.firestore.Timestamp;
                      lastUpdated = lastUpdatedTimestamp ? lastUpdatedTimestamp.toDate().toLocaleString('pt-BR') : 'N/A';
 
-                     // Calculate change if there is a previous entry
                      if (querySnapshot.docs.length > 1) {
                         const previousData = querySnapshot.docs[1].data();
                         const previousPrice = previousData.ultimo || 0;
@@ -66,7 +62,6 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
 
             } catch (error) {
                 console.error(`[DataService] Error fetching price for ${commodity.name} from 'cotacoes_do_dia':`, error);
-                // Return commodity with default values if fetching details fails, ensuring it's always displayed.
                 return {
                     ...commodity,
                     price: 0,
@@ -80,23 +75,15 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
         const settledPrices = await Promise.all(pricePromises);
 
         return settledPrices.sort((a, b) => {
-            // Prioritize 'exchange' category
-            if (a.category === 'exchange' && b.category !== 'exchange') {
-                return -1;
-            }
-            if (a.category !== 'exchange' && b.category === 'exchange') {
-                return 1;
-            }
-            // Then sort by name
+            if (a.category === 'exchange' && b.category !== 'exchange') return -1;
+            if (a.category !== 'exchange' && b.category === 'exchange') return 1;
             return a.name.localeCompare(b.name);
         });
     } catch (error) {
         console.error(`[DataService] CRITICAL: Failed to get commodity list to begin price fetching. Error: ${error}`);
-        // If we can't even get the list of commodities, return an empty array to prevent a server crash.
         return [];
     }
 }
-// Function to organize daily quotes into historical subcollections
 export async function organizeCotacoesHistorico(): Promise<{ success: boolean; message: string; }> {
     try {
         const cotacoesDoDiaRef = db.collection('cotacoes_do_dia');
@@ -116,9 +103,8 @@ export async function organizeCotacoesHistorico(): Promise<{ success: boolean; m
             const dataStr = data.data; // Format: "07/09/2025"
             
             if (ativo && dataStr) {
-                // Convert date format from "07/09/2025" to a safe document ID "2025-09-07"
                 const dateParts = dataStr.split('/');
-                if (dateParts.length !== 3) continue; // Skip invalid date formats
+                if (dateParts.length !== 3) continue; 
                 const formattedDateId = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
                 
                 const normalizedAtivoId = ativo.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
@@ -128,7 +114,6 @@ export async function organizeCotacoesHistorico(): Promise<{ success: boolean; m
                     .collection('dados')
                     .doc(formattedDateId);
                 
-                // Add set and delete to batch
                 batch.set(historicoRef, {
                     ...data,
                     organized_at: admin.firestore.FieldValue.serverTimestamp()
@@ -136,19 +121,17 @@ export async function organizeCotacoesHistorico(): Promise<{ success: boolean; m
                 
                 batch.delete(doc.ref);
                 
-                batchCount+=2; // 1 set + 1 delete
+                batchCount+=2;
                 processedCount++;
                 
-                // Firestore batch limit is 500 operations. Commit and create a new batch.
                 if (batchCount >= 450) {
                     await batch.commit();
-                    batch = db.batch(); // Re-initialize batch
+                    batch = db.batch();
                     batchCount = 0;
                 }
             }
         }
 
-        // Commit remaining operations
         if (batchCount > 0) {
             await batch.commit();
         }
@@ -158,7 +141,6 @@ export async function organizeCotacoesHistorico(): Promise<{ success: boolean; m
 
     } catch (error: any) {
         console.error('Erro ao organizar cotações históricas:', error);
-        // Provide a more specific error message if possible
         const errorMessage = error.message.includes('Could not refresh access token')
             ? 'Falha na autenticação com o banco de dados. Tente novamente mais tarde.'
             : 'Ocorreu um erro desconhecido ao organizar os dados.';
@@ -166,8 +148,6 @@ export async function organizeCotacoesHistorico(): Promise<{ success: boolean; m
     }
 }
 
-// Function to get historical quotes for a specific asset
-// Function to read documents directly from cotacoes_do_dia collection
 export async function getCotacoesDoDia(ativo?: string, limit: number = 50): Promise<FirestoreQuote[]> {
     try {
         let query: admin.firestore.Query = db.collection('cotacoes_do_dia');
@@ -243,12 +223,11 @@ export async function getUcsIndexValue(interval: HistoryInterval = '1d'): Promis
             const data = latestDoc.data();
             latestData = {
                 indexValue: data.value,
-                isConfigured: data.isConfigured ?? false, // Ensure isConfigured exists
+                isConfigured: data.isConfigured ?? false, 
                 components: data.components ?? { vm: 0, vus: 0, crs: 0 },
                 vusDetails: data.vusDetails ?? { pecuaria: 0, milho: 0, soja: 0 }
             };
         } else {
-            // If no history, check if formula is configured to show correct status
             const formulaDoc = await db.collection('settings').doc('formula_parameters').get();
             if (formulaDoc.exists) {
                 latestData.isConfigured = formulaDoc.data()?.isConfigured ?? false;
@@ -267,8 +246,6 @@ export async function getUcsIndexValue(interval: HistoryInterval = '1d'): Promis
         });
     } catch (error) {
         console.error(`[DataService] Failed to get index history. Error: ${error}`);
-        // In case of error, we will return the default latestData and an empty history array
-        // to prevent the app from crashing.
         try {
             const formulaDoc = await db.collection('settings').doc('formula_parameters').get();
              if (formulaDoc && formulaDoc.exists) {
@@ -276,7 +253,7 @@ export async function getUcsIndexValue(interval: HistoryInterval = '1d'): Promis
             }
         } catch(e) {
              console.error(`[DataService] CRITICAL: Could not even fetch formula status after initial failure. Error: ${e}`);
-             latestData.isConfigured = false; // Assume not configured on total failure
+             latestData.isConfigured = false;
         }
     }
 

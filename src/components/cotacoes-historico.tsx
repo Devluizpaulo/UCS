@@ -24,11 +24,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
-import { RefreshCw, TrendingUp, TrendingDown } from 'lucide-react';
-import { getCotacoesDoDia, organizeCotacoesHistorico } from '@/lib/data-service';
+import { TrendingUp, TrendingDown } from 'lucide-react';
+import { getCotacoesDoDia } from '@/lib/data-service';
 import type { FirestoreQuote } from '@/lib/types';
 import { AnimatedNumber } from '@/components/ui/animated-number';
 import { cn } from '@/lib/utils';
@@ -43,13 +42,11 @@ export function CotacoesHistorico({ ativos }: CotacoesHistoricoProps) {
   const [selectedAtivo, setSelectedAtivo] = useState<string>('todos');
   const [historico, setHistorico] = useState<FirestoreQuote[]>([]);
   const [loading, setLoading] = useState(true);
-  const [organizing, setOrganizing] = useState(false);
   const { toast } = useToast();
 
   const loadHistorico = useCallback(async (ativo: string) => {
     setLoading(true);
     try {
-      // This function now exclusively calls getCotacoesDoDia, ensuring it reads from the n8n source collection.
       const data = await getCotacoesDoDia(ativo === 'todos' ? undefined : ativo, 50);
       setHistorico(data);
     } catch (error) {
@@ -69,37 +66,13 @@ export function CotacoesHistorico({ ativos }: CotacoesHistoricoProps) {
   }, [selectedAtivo, loadHistorico]);
 
 
-  const handleOrganizeData = async () => {
-    setOrganizing(true);
-    try {
-      const result = await organizeCotacoesHistorico();
-      toast({
-          title: result.success ? "Operação Concluída" : "Erro na Organização",
-          description: result.message,
-          variant: result.success ? "default" : "destructive",
-      });
-      // After organizing, reload the data. The table should now be empty or show fewer items.
-      await loadHistorico(selectedAtivo);
-    } catch (error: any) {
-      console.error('Erro ao organizar dados:', error);
-       toast({
-            variant: "destructive",
-            title: "Erro Inesperado",
-            description: error.message || "Ocorreu uma falha ao tentar organizar os dados.",
-        });
-    } finally {
-      setOrganizing(false);
-    }
-  };
-
   const formatDate = (dateStr: string) => {
     try {
-      // Handle 'YYYY-MM-DD' from organized data or 'DD/MM/YYYY' from raw data
       if (dateStr.includes('-')) {
         const [year, month, day] = dateStr.split('-');
         return `${day}/${month}/${year}`;
       }
-      return dateStr; // Assume it's already DD/MM/YYYY
+      return dateStr; 
     } catch {
       return dateStr;
     }
@@ -124,14 +97,13 @@ export function CotacoesHistorico({ ativos }: CotacoesHistoricoProps) {
       return (
         <TableRow>
           <TableCell colSpan={7} className="h-24 text-center">
-            Nenhuma cotação aguardando organização na coleção 'cotacoes_do_dia'.
+            Nenhuma cotação recebida do n8n na coleção 'cotacoes_do_dia'.
           </TableCell>
         </TableRow>
       );
     }
 
     return historico.map((cotacao) => {
-      // The 'variacao_pct' can be null, so we default to 0
       const variacao = cotacao.variacao_pct ?? 0;
       const isPositive = variacao >= 0;
       const hasVariacao = cotacao.variacao_pct !== null && cotacao.variacao_pct !== undefined;
@@ -181,18 +153,9 @@ export function CotacoesHistorico({ ativos }: CotacoesHistoricoProps) {
           <div>
             <CardTitle>Cotações Recebidas (Fonte n8n)</CardTitle>
             <CardDescription>
-              Dados brutos da coleção <code className="font-mono text-xs bg-muted p-1 rounded-sm">cotacoes_do_dia</code> aguardando organização.
+              Dados brutos da coleção <code className="font-mono text-xs bg-muted p-1 rounded-sm">cotacoes_do_dia</code>.
             </CardDescription>
           </div>
-          <Button
-            onClick={handleOrganizeData}
-            disabled={organizing || loading || historico.length === 0}
-            variant="outline"
-            size="sm"
-          >
-            <RefreshCw className={cn("mr-2 h-4 w-4", organizing && "animate-spin")} />
-            {organizing ? 'Organizando...' : 'Organizar e Arquivar'}
-          </Button>
         </div>
       </CardHeader>
       <CardContent>
