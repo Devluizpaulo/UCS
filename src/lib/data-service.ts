@@ -156,8 +156,9 @@ export async function organizeCotacoesHistorico(): Promise<{ success: boolean; m
 export async function getCotacoesDoDia(ativo?: string, limit: number = 50): Promise<FirestoreQuote[]> {
     try {
         let query: admin.firestore.Query = db.collection('cotacoes_do_dia');
-            
-        if (ativo && ativo !== 'todos') {
+        
+        // Only add the 'where' clause if 'ativo' is a valid, non-empty string
+        if (typeof ativo === 'string' && ativo.trim() !== '' && ativo !== 'todos') {
             query = query.where('ativo', '==', ativo);
         }
         
