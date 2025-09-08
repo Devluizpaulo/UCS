@@ -49,14 +49,15 @@ export function CotacoesHistorico({ ativos }: CotacoesHistoricoProps) {
   const loadHistorico = useCallback(async (ativo: string) => {
     setLoading(true);
     try {
+      // This function now exclusively calls getCotacoesDoDia, ensuring it reads from the n8n source collection.
       const data = await getCotacoesDoDia(ativo === 'todos' ? undefined : ativo, 50);
       setHistorico(data);
     } catch (error) {
-      console.error('Erro ao carregar histórico:', error);
+      console.error('Erro ao carregar cotações do dia:', error);
       toast({
         variant: "destructive",
-        title: "Erro ao Carregar Histórico",
-        description: "Não foi possível buscar os dados do histórico para este ativo.",
+        title: "Erro ao Carregar Cotações",
+        description: "Não foi possível buscar os dados da fonte n8n.",
       });
     } finally {
       setLoading(false);
@@ -77,7 +78,7 @@ export function CotacoesHistorico({ ativos }: CotacoesHistoricoProps) {
           description: result.message,
           variant: result.success ? "default" : "destructive",
       });
-      // Refresh the data after organizing to show the updated (likely empty) list
+      // After organizing, reload the data. The table should now be empty or show fewer items.
       await loadHistorico(selectedAtivo);
     } catch (error: any) {
       console.error('Erro ao organizar dados:', error);
