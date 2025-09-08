@@ -21,7 +21,7 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
         // Use Promise.all to fetch prices in parallel for better performance
         const pricePromises = commodities.map(async (commodity) => {
             try {
-                // Query the new `cotacoes_do_dia` collection based on the asset name
+                // Query the 'cotacoes_do_dia' collection to get the latest 2 entries for each asset to calculate change.
                 const pricesCollectionRef = db.collection('cotacoes_do_dia');
                 const q = pricesCollectionRef
                     .where('ativo', '==', commodity.name)
@@ -39,17 +39,20 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
                      const latestDoc = querySnapshot.docs[0];
                      const latestData = latestDoc.data();
                      
-                     // Use 'ultimo' field for price as per the new schema
+                     // Use 'ultimo' field for price as per the schema
                      currentPrice = latestData.ultimo || 0;
                      
                      const lastUpdatedTimestamp = latestData.timestamp as admin.firestore.Timestamp;
                      lastUpdated = lastUpdatedTimestamp ? lastUpdatedTimestamp.toDate().toLocaleString('pt-BR') : 'N/A';
 
+                     // Calculate change if there is a previous entry
                      if (querySnapshot.docs.length > 1) {
                         const previousData = querySnapshot.docs[1].data();
                         const previousPrice = previousData.ultimo || 0;
-                        absoluteChange = currentPrice - previousPrice;
-                        change = previousPrice !== 0 ? (absoluteChange / previousPrice) * 100 : 0;
+                        if (previousPrice !== 0) {
+                            absoluteChange = currentPrice - previousPrice;
+                            change = (absoluteChange / previousPrice) * 100;
+                        }
                      }
                 }
                 
@@ -165,16 +168,15 @@ export async function organizeCotacoesHistorico(): Promise<{ success: boolean; m
 
 // Function to get historical quotes for a specific asset
 // Function to read documents directly from cotacoes_do_dia collection
-export async function getCotacoesDoDia(ativo?: string, limit: number = 30): Promise<FirestoreQuote[]> {
+export async function getCotacoesDoDia(ativo?: string, limit: number = 50): Promise<FirestoreQuote[]> {
     try {
-        let query = db.collection('cotacoes_do_dia')
-            .orderBy('timestamp', 'desc');
+        let query: admin.firestore.Query = db.collection('cotacoes_do_dia');
             
-        if (ativo) {
+        if (ativo && ativo !== 'todos') {
             query = query.where('ativo', '==', ativo);
         }
         
-        query = query.limit(limit);
+        query = query.orderBy('timestamp', 'desc').limit(limit);
         const querySnapshot = await query.get();
         const cotacoes: any[] = [];
         
