@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Card,
   CardContent,
@@ -27,26 +27,12 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RefreshCw, TrendingUp, TrendingDown } from 'lucide-react';
-import { getCotacoesHistorico, getCotacoesDoDia, organizeCotacoesHistorico } from '@/lib/data-service';
+import { getCotacoesDoDia, organizeCotacoesHistorico } from '@/lib/data-service';
+import type { FirestoreQuote } from '@/lib/types';
 import { AnimatedNumber } from '@/components/ui/animated-number';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
-interface CotacaoHistorica {
-  id: string;
-  ativo: string;
-  data: string;
-  abertura: number;
-  maxima: number;
-  minima: number;
-  ultimo: number;
-  volume?: number | null;
-  variacao_pct?: number | null;
-  fonte?: string;
-  moeda: string;
-  status?: string;
-  timestamp: any;
-}
 
 interface CotacoesHistoricoProps {
   ativos: string[];
@@ -54,29 +40,15 @@ interface CotacoesHistoricoProps {
 
 export function CotacoesHistorico({ ativos }: CotacoesHistoricoProps) {
   const [selectedAtivo, setSelectedAtivo] = useState<string>('todos');
-  const [historico, setHistorico] = useState<CotacaoHistorica[]>([]);
+  const [historico, setHistorico] = useState<FirestoreQuote[]>([]);
   const [loading, setLoading] = useState(false);
   const [organizing, setOrganizing] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (selectedAtivo) {
-      loadHistorico(selectedAtivo);
-    }
-  }, [selectedAtivo]);
-
-  useEffect(() => {
-    // Carregar dados iniciais quando o componente for montado
-    if (selectedAtivo === 'todos') {
-      loadHistorico('todos');
-    }
-  }, []);
-
-  const loadHistorico = async (ativo: string) => {
+  const loadHistorico = useCallback(async (ativo: string) => {
     setLoading(true);
     try {
-      // Usar getCotacoesDoDia para ler diretamente da coleção cotacoes_do_dia
-      // Se ativo for "todos", não passar filtro de ativo
+      // Always query the "staging" collection 'cotacoes_do_dia'
       const data = await getCotacoesDoDia(ativo === 'todos' ? undefined : ativo, 50);
       setHistorico(data);
     } catch (error) {
@@ -89,33 +61,25 @@ export function CotacoesHistorico({ ativos }: CotacoesHistoricoProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
-    if (selectedAtivo) {
-      loadHistorico(selectedAtivo);
-    }
-  }, [selectedAtivo]);
+    // Initial load when component mounts or selectedAtivo changes
+    loadHistorico(selectedAtivo);
+  }, [selectedAtivo, loadHistorico]);
+
 
   const handleOrganizeData = async () => {
     setOrganizing(true);
     try {
       const result = await organizeCotacoesHistorico();
-      if (result.success) {
-        toast({
-            title: "Operação Concluída",
-            description: result.message,
-        });
-        if (selectedAtivo) {
-            await loadHistorico(selectedAtivo);
-        }
-      } else {
-         toast({
-            variant: "destructive",
-            title: "Erro na Organização",
-            description: result.message,
-        });
-      }
+      toast({
+          title: result.success ? "Operação Concluída" : "Erro na Organização",
+          description: result.message,
+          variant: result.success ? "default" : "destructive",
+      });
+      // Refresh the data after organizing to show the updated (likely empty) list
+      await loadHistorico(selectedAtivo);
     } catch (error: any) {
       console.error('Erro ao organizar dados:', error);
        toast({
@@ -130,14 +94,12 @@ export function CotacoesHistorico({ ativos }: CotacoesHistoricoProps) {
 
   const formatDate = (dateStr: string) => {
     try {
-      // Assuming the ID is in 'YYYY-MM-DD' format after the organization step
+      // Handle 'YYYY-MM-DD' from organized data or 'DD/MM/YYYY' from raw data
       if (dateStr.includes('-')) {
         const [year, month, day] = dateStr.split('-');
         return `${day}/${month}/${year}`;
       }
-      // Fallback for old format
-      const [day, month, year] = dateStr.split('/');
-      return `${day}/${month}/${year}`;
+      return dateStr; // Assume it's already DD/MM/YYYY
     } catch {
       return dateStr;
     }
@@ -162,13 +124,14 @@ export function CotacoesHistorico({ ativos }: CotacoesHistoricoProps) {
       return (
         <TableRow>
           <TableCell colSpan={7} className="h-24 text-center">
-            Nenhum histórico encontrado para este ativo.
+            Nenhuma cotação aguardando organização.
           </TableCell>
         </TableRow>
       );
     }
 
     return historico.map((cotacao) => {
+      // The 'variacao_pct' can be null, so we default to 0
       const variacao = cotacao.variacao_pct ?? 0;
       const isPositive = variacao >= 0;
       const hasVariacao = cotacao.variacao_pct !== null && cotacao.variacao_pct !== undefined;
@@ -176,9 +139,9 @@ export function CotacoesHistorico({ ativos }: CotacoesHistoricoProps) {
       return (
         <TableRow key={cotacao.id}>
           <TableCell className="font-medium">
-            {formatDate(cotacao.id)}
+            {formatDate(cotacao.data)}
           </TableCell>
-          <TableCell className="font-medium">
+          <TableCell className="font-medium truncate max-w-xs">
             {cotacao.ativo}
           </TableCell>
           <TableCell className="text-right font-mono">
@@ -214,11 +177,11 @@ export function CotacoesHistorico({ ativos }: CotacoesHistoricoProps) {
   return (
     <Card className="shadow-sm">
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <CardTitle>Histórico de Cotações</CardTitle>
+            <CardTitle>Cotações Recebidas (Fonte n8n)</CardTitle>
             <CardDescription>
-              Histórico organizado por ativo das cotações capturadas pelo n8n.
+              Dados brutos da coleção <code className="font-mono text-xs bg-muted p-1 rounded-sm">cotacoes_do_dia</code> aguardando organização.
             </CardDescription>
           </div>
           <Button
@@ -228,18 +191,18 @@ export function CotacoesHistorico({ ativos }: CotacoesHistoricoProps) {
             size="sm"
           >
             <RefreshCw className={cn("mr-2 h-4 w-4", organizing && "animate-spin")} />
-            {organizing ? 'Organizando...' : 'Organizar Dados'}
+            {organizing ? 'Organizando...' : 'Organizar e Arquivar'}
           </Button>
         </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
           <div className="flex items-center gap-4">
-            <label htmlFor="ativo-select" className="text-sm font-medium">
-              Selecionar Ativo:
+            <label htmlFor="ativo-select" className="text-sm font-medium shrink-0">
+              Filtrar Ativo:
             </label>
             <Select value={selectedAtivo} onValueChange={setSelectedAtivo}>
-              <SelectTrigger className="w-[200px]">
+              <SelectTrigger className="w-full sm:w-[250px]">
                 <SelectValue placeholder="Escolha um ativo" />
               </SelectTrigger>
               <SelectContent>
@@ -255,7 +218,7 @@ export function CotacoesHistorico({ ativos }: CotacoesHistoricoProps) {
             </Select>
           </div>
 
-          <ScrollArea className="h-[400px] w-full">
+          <ScrollArea className="h-[400px] w-full border rounded-md">
             <Table>
               <TableHeader>
                 <TableRow>
