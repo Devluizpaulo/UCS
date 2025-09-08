@@ -10,77 +10,82 @@ import admin from 'firebase-admin';
 
 // --- Functions to get data from FIRESTORE ---
 
+/**
+ * Retrieves the latest prices for all configured commodities.
+ * This function is optimized to fetch all recent quotes in a single query
+ * and then process them in memory, making it more efficient and resilient.
+ */
 export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
     try {
-        const commodities = await getCommodities();
+        const [commodities, dailyQuotes] = await Promise.all([
+            getCommodities(),
+            getCotacoesDoDia(undefined, 200) // Fetch a larger batch of recent quotes
+        ]);
+
         if (!commodities || commodities.length === 0) {
-            console.warn('[DataService] No commodities configured. Returning empty array.');
+            console.warn('[DataService] No commodities configured.');
             return [];
         }
 
-        const pricePromises = commodities.map(async (commodity) => {
-            try {
-                const pricesCollectionRef = db.collection('cotacoes_do_dia');
-                const q = pricesCollectionRef
-                    .where('ativo', '==', commodity.name)
-                    .orderBy('timestamp', 'desc')
-                    .limit(2);
-                    
-                const querySnapshot = await q.get();
+        // Create a map for quick lookup of the latest two prices for each asset
+        const priceMap = new Map<string, { latest: FirestoreQuote, previous: FirestoreQuote | null }>();
 
-                let change = 0;
-                let absoluteChange = 0;
-                let currentPrice = 0;
-                let lastUpdated = 'N/A';
+        // Sort quotes by timestamp descending to easily find latest and previous
+        dailyQuotes.sort((a, b) => b.timestamp.toMillis() - a.timestamp.toMillis());
 
-                if (querySnapshot.docs.length > 0) {
-                     const latestDoc = querySnapshot.docs[0];
-                     const latestData = latestDoc.data();
-                     
-                     currentPrice = latestData.ultimo || 0;
-                     
-                     const lastUpdatedTimestamp = latestData.timestamp as admin.firestore.Timestamp;
-                     lastUpdated = lastUpdatedTimestamp ? lastUpdatedTimestamp.toDate().toLocaleString('pt-BR') : 'N/A';
-
-                     if (querySnapshot.docs.length > 1) {
-                        const previousData = querySnapshot.docs[1].data();
-                        const previousPrice = previousData.ultimo || 0;
-                        if (previousPrice !== 0) {
-                            absoluteChange = currentPrice - previousPrice;
-                            change = (absoluteChange / previousPrice) * 100;
-                        }
-                     }
+        for (const quote of dailyQuotes) {
+            if (!priceMap.has(quote.ativo)) {
+                // This is the first time we see this asset, so it's the latest
+                priceMap.set(quote.ativo, { latest: quote, previous: null });
+            } else {
+                const entry = priceMap.get(quote.ativo)!;
+                if (!entry.previous) {
+                    // This is the second time, so it's the previous price
+                    entry.previous = quote;
                 }
-                
-                return {
-                    ...commodity,
-                    price: currentPrice,
-                    change,
-                    absoluteChange,
-                    lastUpdated,
-                };
-
-            } catch (error) {
-                console.error(`[DataService] Error fetching price for ${commodity.name} from 'cotacoes_do_dia':`, error);
-                return {
-                    ...commodity,
-                    price: 0,
-                    change: 0,
-                    absoluteChange: 0,
-                    lastUpdated: 'Erro ao carregar',
-                };
             }
+        }
+        
+        // Build the final data structure
+        const result = commodities.map(commodity => {
+            const prices = priceMap.get(commodity.name);
+            
+            let currentPrice = 0;
+            let change = 0;
+            let absoluteChange = 0;
+            let lastUpdated = 'N/A';
+
+            if (prices?.latest) {
+                currentPrice = prices.latest.ultimo || 0;
+                const ts = prices.latest.timestamp as admin.firestore.Timestamp;
+                lastUpdated = ts ? ts.toDate().toLocaleString('pt-BR') : 'N/A';
+
+                if (prices.previous) {
+                    const previousPrice = prices.previous.ultimo || 0;
+                    if (previousPrice !== 0) {
+                        absoluteChange = currentPrice - previousPrice;
+                        change = (absoluteChange / previousPrice) * 100;
+                    }
+                }
+            }
+
+            return {
+                ...commodity,
+                price: currentPrice,
+                change,
+                absoluteChange,
+                lastUpdated,
+            };
         });
 
-        const settledPrices = await Promise.all(pricePromises);
-
-        return settledPrices.sort((a, b) => {
+        return result.sort((a, b) => {
             if (a.category === 'exchange' && b.category !== 'exchange') return -1;
             if (a.category !== 'exchange' && b.category === 'exchange') return 1;
             return a.name.localeCompare(b.name);
         });
+
     } catch (error) {
-        console.error(`[DataService] CRITICAL: Failed to get commodity list to begin price fetching. Error: ${error}`);
+        console.error(`[DataService] CRITICAL: Failed to get commodity list or prices. Error: ${error}`);
         return [];
     }
 }
