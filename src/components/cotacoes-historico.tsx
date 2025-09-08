@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -41,14 +42,13 @@ interface CotacoesHistoricoProps {
 export function CotacoesHistorico({ ativos }: CotacoesHistoricoProps) {
   const [selectedAtivo, setSelectedAtivo] = useState<string>('todos');
   const [historico, setHistorico] = useState<FirestoreQuote[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [organizing, setOrganizing] = useState(false);
   const { toast } = useToast();
 
   const loadHistorico = useCallback(async (ativo: string) => {
     setLoading(true);
     try {
-      // Always query the "staging" collection 'cotacoes_do_dia'
       const data = await getCotacoesDoDia(ativo === 'todos' ? undefined : ativo, 50);
       setHistorico(data);
     } catch (error) {
@@ -64,7 +64,6 @@ export function CotacoesHistorico({ ativos }: CotacoesHistoricoProps) {
   }, [toast]);
 
   useEffect(() => {
-    // Initial load when component mounts or selectedAtivo changes
     loadHistorico(selectedAtivo);
   }, [selectedAtivo, loadHistorico]);
 
@@ -124,7 +123,7 @@ export function CotacoesHistorico({ ativos }: CotacoesHistoricoProps) {
       return (
         <TableRow>
           <TableCell colSpan={7} className="h-24 text-center">
-            Nenhuma cotação aguardando organização.
+            Nenhuma cotação aguardando organização na coleção 'cotacoes_do_dia'.
           </TableCell>
         </TableRow>
       );
@@ -186,7 +185,7 @@ export function CotacoesHistorico({ ativos }: CotacoesHistoricoProps) {
           </div>
           <Button
             onClick={handleOrganizeData}
-            disabled={organizing}
+            disabled={organizing || loading || historico.length === 0}
             variant="outline"
             size="sm"
           >
@@ -201,7 +200,7 @@ export function CotacoesHistorico({ ativos }: CotacoesHistoricoProps) {
             <label htmlFor="ativo-select" className="text-sm font-medium shrink-0">
               Filtrar Ativo:
             </label>
-            <Select value={selectedAtivo} onValueChange={setSelectedAtivo}>
+            <Select value={selectedAtivo} onValueChange={setSelectedAtivo} disabled={loading}>
               <SelectTrigger className="w-full sm:w-[250px]">
                 <SelectValue placeholder="Escolha um ativo" />
               </SelectTrigger>
