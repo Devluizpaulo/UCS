@@ -65,7 +65,7 @@ A aplicação é construída com uma arquitetura moderna baseada em componentes,
 │   │   ├── firebase-config.ts        # Configuração do Firebase (cliente)
 │   │   ├── formula-service.ts        # CRUD para os parâmetros da fórmula
 │   │   ├── marketdata-config.ts      # Configuração dos ativos padrão
-│   │   └── marketdata-service.ts     # Comunicação com a API MarketData
+│   │   └── seed-test-data.ts         # Dados de teste para desenvolvimento
 │   │
 │   ├── ai/                 # Lógica de Inteligência Artificial com Genkit
 │   │   ├── flows/          # Arquivos de fluxos do Genkit
@@ -75,7 +75,7 @@ A aplicação é construída com uma arquitetura moderna baseada em componentes,
 │
 ├── public/                 # Arquivos estáticos (imagens, etc.)
 │
-├── .env                    # Arquivo para variáveis de ambiente (MARKETDATA_API_KEY)
+├── .env                    # Arquivo para variáveis de ambiente (Firebase)
 ├── next.config.ts          # Configuração do Next.js
 └── tailwind.config.ts      # Configuração do Tailwind CSS
 ```
@@ -84,12 +84,9 @@ A aplicação é construída com uma arquitetura moderna baseada em componentes,
 
 ### 5.1. Cálculo e Atualização do Índice
 
-1.  **Gatilho:** O processo pode ser iniciado manualmente ("Atualizar Tudo" no painel) ou por um cron job agendado que chama o endpoint `/api/scheduled-job`.
-2.  **Fluxo Principal (`fetchAndSavePricesFlow`):**
-    - Busca a lista de todos os ativos configurados em `marketdata-config.ts`.
-    - Itera sobre cada ativo, chamando `marketdata-service.ts` para obter a cotação mais recente da API MarketData.
-    - Chama `database-service.ts` para salvar cada cotação recebida em um histórico na subcoleção `price_entries` do ativo no Firestore.
-    - Após salvar os preços, invoca o fluxo `calculateUcsIndex`.
+1.  **Dados de Teste:** O sistema utiliza dados de teste gerados automaticamente através do `seed-test-data.ts`.
+2.  **Fluxo de Dados:**
+    - Os dados são carregados diretamente do Firebase através do `data-service.ts`.
 3.  **Cálculo (`calculateUcsIndex`):**
     - Busca os preços mais recentes e os parâmetros da fórmula (`formula-service.ts`).
     - Executa a lógica de cálculo em `calculation-service.ts`.
@@ -108,19 +105,15 @@ A aplicação é construída com uma arquitetura moderna baseada em componentes,
 
 Para o funcionamento correto da aplicação, é necessário configurar as seguintes variáveis de ambiente no arquivo `.env` na raiz do projeto.
 
--   `MARKETDATA_API_KEY`: Sua chave de API para o serviço MarketData.app.
--   `CRON_SECRET`: Uma chave secreta que você mesmo cria para proteger o endpoint de atualização automática (`/api/scheduled-job`).
+**Configurações do Firebase:**
 
-**Como Gerar o `CRON_SECRET`:**
+O projeto utiliza Firebase Admin SDK para conectar com o banco de dados. As configurações são feitas através de variáveis de ambiente no arquivo `.env`.
 Você precisa gerar uma chave longa e aleatória. Pode usar um gerador de senhas online ou o seguinte comando no terminal (Linux/macOS):
-```bash
-openssl rand -base64 32
-```
+**Exemplo de arquivo `.env`:**
 
-**Exemplo de `.env`:**
 ```
-MARKETDATA_API_KEY=sua_chave_de_api_aqui
-CRON_SECRET=sua_chave_secreta_gerada_aqui
+FIREBASE_SERVICE_ACCOUNT=sua_chave_privada_do_firebase
+NEXT_PUBLIC_APP_ENV=development
 ```
 
 ## 7. Como Executar Localmente
@@ -131,7 +124,7 @@ CRON_SECRET=sua_chave_secreta_gerada_aqui
     ```
 2.  **Configurar Variáveis de Ambiente:**
     - Crie um arquivo `.env` na raiz do projeto.
-    - Adicione as chaves `MARKETDATA_API_KEY` e `CRON_SECRET`.
+    - Configure as variáveis do Firebase conforme necessário.
 3.  **Executar o Servidor de Desenvolvimento:**
     ```bash
     npm run dev
