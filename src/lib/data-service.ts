@@ -164,6 +164,34 @@ export async function organizeCotacoesHistorico(): Promise<{ success: boolean; m
 }
 
 // Function to get historical quotes for a specific asset
+// Function to read documents directly from cotacoes_do_dia collection
+export async function getCotacoesDoDia(ativo?: string, limit: number = 30): Promise<FirestoreQuote[]> {
+    try {
+        let query = db.collection('cotacoes_do_dia')
+            .orderBy('timestamp', 'desc');
+            
+        if (ativo) {
+            query = query.where('ativo', '==', ativo);
+        }
+        
+        query = query.limit(limit);
+        const querySnapshot = await query.get();
+        const cotacoes: any[] = [];
+        
+        querySnapshot.forEach(doc => {
+            cotacoes.push({
+                id: doc.id,
+                ...doc.data()
+            });
+        });
+        
+        return cotacoes;
+    } catch (error) {
+        console.error(`Erro ao buscar cotações do dia para ${ativo || 'todos os ativos'}:`, error);
+        return [];
+    }
+}
+
 export async function getCotacoesHistorico(ativo: string, limit: number = 30): Promise<FirestoreQuote[]> {
     try {
         const normalizedAtivoId = ativo.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');

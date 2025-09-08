@@ -27,7 +27,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RefreshCw, TrendingUp, TrendingDown } from 'lucide-react';
-import { getCotacoesHistorico, organizeCotacoesHistorico } from '@/lib/data-service';
+import { getCotacoesHistorico, getCotacoesDoDia, organizeCotacoesHistorico } from '@/lib/data-service';
 import { AnimatedNumber } from '@/components/ui/animated-number';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -40,10 +40,11 @@ interface CotacaoHistorica {
   maxima: number;
   minima: number;
   ultimo: number;
-  volume?: number;
-  variacao_pct?: number;
-  fonte: string;
+  volume?: number | null;
+  variacao_pct?: number | null;
+  fonte?: string;
   moeda: string;
+  status?: string;
   timestamp: any;
 }
 
@@ -52,22 +53,31 @@ interface CotacoesHistoricoProps {
 }
 
 export function CotacoesHistorico({ ativos }: CotacoesHistoricoProps) {
-  const [selectedAtivo, setSelectedAtivo] = useState<string>('');
+  const [selectedAtivo, setSelectedAtivo] = useState<string>('todos');
   const [historico, setHistorico] = useState<CotacaoHistorica[]>([]);
   const [loading, setLoading] = useState(false);
   const [organizing, setOrganizing] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
-    if (ativos.length > 0 && !selectedAtivo) {
-      setSelectedAtivo(ativos[0]);
+    if (selectedAtivo) {
+      loadHistorico(selectedAtivo);
     }
-  }, [ativos, selectedAtivo]);
+  }, [selectedAtivo]);
+
+  useEffect(() => {
+    // Carregar dados iniciais quando o componente for montado
+    if (selectedAtivo === 'todos') {
+      loadHistorico('todos');
+    }
+  }, []);
 
   const loadHistorico = async (ativo: string) => {
     setLoading(true);
     try {
-      const data = await getCotacoesHistorico(ativo, 50);
+      // Usar getCotacoesDoDia para ler diretamente da coleção cotacoes_do_dia
+      // Se ativo for "todos", não passar filtro de ativo
+      const data = await getCotacoesDoDia(ativo === 'todos' ? undefined : ativo, 50);
       setHistorico(data);
     } catch (error) {
       console.error('Erro ao carregar histórico:', error);
@@ -138,6 +148,7 @@ export function CotacoesHistorico({ ativos }: CotacoesHistoricoProps) {
       return Array.from({ length: 10 }).map((_, i) => (
         <TableRow key={i}>
           <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+          <TableCell><Skeleton className="h-4 w-24" /></TableCell>
           <TableCell><Skeleton className="h-4 w-16" /></TableCell>
           <TableCell><Skeleton className="h-4 w-16" /></TableCell>
           <TableCell><Skeleton className="h-4 w-16" /></TableCell>
@@ -150,7 +161,7 @@ export function CotacoesHistorico({ ativos }: CotacoesHistoricoProps) {
     if (historico.length === 0) {
       return (
         <TableRow>
-          <TableCell colSpan={6} className="h-24 text-center">
+          <TableCell colSpan={7} className="h-24 text-center">
             Nenhum histórico encontrado para este ativo.
           </TableCell>
         </TableRow>
@@ -158,13 +169,17 @@ export function CotacoesHistorico({ ativos }: CotacoesHistoricoProps) {
     }
 
     return historico.map((cotacao) => {
-      const variacao = cotacao.variacao_pct || 0;
+      const variacao = cotacao.variacao_pct ?? 0;
       const isPositive = variacao >= 0;
+      const hasVariacao = cotacao.variacao_pct !== null && cotacao.variacao_pct !== undefined;
 
       return (
         <TableRow key={cotacao.id}>
           <TableCell className="font-medium">
             {formatDate(cotacao.id)}
+          </TableCell>
+          <TableCell className="font-medium">
+            {cotacao.ativo}
           </TableCell>
           <TableCell className="text-right font-mono">
             <AnimatedNumber value={cotacao.abertura} currency={cotacao.moeda as 'BRL' | 'USD' | 'EUR'} />
@@ -179,13 +194,17 @@ export function CotacoesHistorico({ ativos }: CotacoesHistoricoProps) {
             <AnimatedNumber value={cotacao.ultimo} currency={cotacao.moeda as 'BRL' | 'USD' | 'EUR'} />
           </TableCell>
           <TableCell className="text-right">
-            <div className={cn(
-              "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold font-mono transition-colors",
-              isPositive ? "border-primary/50 text-primary" : "border-destructive/50 text-destructive"
-            )}>
-              {isPositive ? <TrendingUp className="mr-1 h-3 w-3" /> : <TrendingDown className="mr-1 h-3 w-3" />}
-              {variacao.toFixed(2)}%
-            </div>
+            {hasVariacao ? (
+              <div className={cn(
+                "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold font-mono transition-colors",
+                isPositive ? "border-primary/50 text-primary" : "border-destructive/50 text-destructive"
+              )}>
+                {isPositive ? <TrendingUp className="mr-1 h-3 w-3" /> : <TrendingDown className="mr-1 h-3 w-3" />}
+                {variacao.toFixed(2)}%
+              </div>
+            ) : (
+              <span className="text-muted-foreground text-xs">N/A</span>
+            )}
           </TableCell>
         </TableRow>
       );
@@ -224,6 +243,9 @@ export function CotacoesHistorico({ ativos }: CotacoesHistoricoProps) {
                 <SelectValue placeholder="Escolha um ativo" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="todos">
+                  Todos os Ativos
+                </SelectItem>
                 {ativos.map((ativo) => (
                   <SelectItem key={ativo} value={ativo}>
                     {ativo}
@@ -238,6 +260,7 @@ export function CotacoesHistorico({ ativos }: CotacoesHistoricoProps) {
               <TableHeader>
                 <TableRow>
                   <TableHead>Data</TableHead>
+                  <TableHead>Ativo</TableHead>
                   <TableHead className="text-right">Abertura</TableHead>
                   <TableHead className="text-right">Máxima</TableHead>
                   <TableHead className="text-right">Mínima</TableHead>

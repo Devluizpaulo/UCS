@@ -34,9 +34,11 @@ const getIconForCategory = (category: CommodityPriceData['category']) => {
 interface UnderlyingAssetsTableProps {
     data: CommodityPriceData[];
     loading?: boolean;
+    onManualUpdate?: (assetName: string) => void;
+    updatingAssets?: Set<string>;
 }
 
-export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTableProps) {
+export function UnderlyingAssetsTable({ data, loading, onManualUpdate, updatingAssets }: UnderlyingAssetsTableProps) {
   const [selectedAsset, setSelectedAsset] = useState<CommodityPriceData | null>(null);
 
   const handleRowClick = (asset: CommodityPriceData) => {
