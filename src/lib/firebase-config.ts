@@ -1,9 +1,7 @@
-// IMPORTANT: This file is not marked with 'use server' and should not be,
-// as it needs to be accessible on both the client and server for Firebase initialization.
-
-import { initializeApp, getApps, getApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
+// This file exports the plain Firebase config object.
+// It is NOT marked with 'use server' and is safe for both client and server use.
+// Components and services are responsible for initializing the app instance themselves
+// to prevent re-initialization errors in Next.js.
 
 // Your web app's Firebase configuration
 export const firebaseConfig = {
@@ -14,12 +12,3 @@ export const firebaseConfig = {
   messagingSenderId: "458013275204",
   appId: "1:458013275204:web:458c46ffb38940dd527811"
 };
-
-
-// Initialize Firebase
-const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
-
-
-export { app, db, auth };

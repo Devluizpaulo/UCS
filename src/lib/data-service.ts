@@ -268,3 +268,40 @@ export async function getUcsIndexValue(interval: HistoryInterval = '1d'): Promis
         history: history.reverse(),
     };
 }
+
+
+/**
+ * Saves a batch of commodity price data to Firestore. This is meant to be called by a trusted
+ * server-side process (like a Genkit flow or a dedicated API route) to populate the daily quotes.
+ *
+ * @param {Omit<FirestoreQuote, 'id' | 'timestamp'>[]} quotes - An array of quote data objects.
+ * @returns {Promise<void>}
+ */
+export async function saveLatestQuotes(quotes: Omit<FirestoreQuote, 'id' | 'timestamp'>[]): Promise<void> {
+  if (!quotes || quotes.length === 0) {
+    console.log('[DataService] No quote data provided to save.');
+    return;
+  }
+  console.log(`[DataService] Starting batched write for ${quotes.length} quotes.`);
+  const batch = db.batch();
+  const collectionRef = db.collection('cotacoes_do_dia');
+
+  quotes.forEach((quote) => {
+    const docRef = collectionRef.doc(); // Auto-generate ID
+    
+    const dataToSave = {
+        ...quote,
+        timestamp: admin.firestore.FieldValue.serverTimestamp(), // Add server-side timestamp
+    };
+
+    batch.set(docRef, dataToSave);
+  });
+
+  try {
+    await batch.commit();
+    console.log('[DataService] Batched quote write completed successfully.');
+  } catch (error) {
+    console.error('[DataService] Batched quote write failed:', error);
+    throw new Error('Failed to save latest quotes.');
+  }
+}

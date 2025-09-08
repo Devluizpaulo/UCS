@@ -17,6 +17,7 @@ import {
   FileText,
   Loader2,
   Database,
+  RefreshCcw,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -41,7 +42,8 @@ import {
   SheetTitle,
 } from '@/components/ui/sidebar';
 import { getAuth, signOut, onAuthStateChanged, User } from 'firebase/auth';
-import { app } from '@/lib/firebase-config';
+import { firebaseConfig } from '@/lib/firebase-config';
+import { initializeApp, getApps, getApp } from 'firebase/app';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from './ui/skeleton';
 
@@ -63,6 +65,7 @@ const navItems: NavItem[] = [
 function AuthProvider({ children }: { children: ReactNode }) {
     const router = useRouter();
     const pathname = usePathname();
+    const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const [loading, setLoading] = useState(true);
 
@@ -113,6 +116,7 @@ export function MainLayout({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const [user, setUser] = useState<User | null>(null);
   const [loadingUser, setLoadingUser] = useState(true);
+  const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
   const auth = getAuth(app);
 
   useEffect(() => {

@@ -10,7 +10,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { app } from '@/lib/firebase-config';
+import { firebaseConfig } from '@/lib/firebase-config';
+import { initializeApp, getApps, getApp } from 'firebase/app';
 import { FileSpreadsheet, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -27,6 +28,9 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+  
+  // Safe Firebase initialization
+  const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
   const auth = getAuth(app);
 
   const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>({
