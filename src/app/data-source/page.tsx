@@ -1,7 +1,4 @@
 
-'use client';
-
-import { useState, useEffect, useCallback } from 'react';
 import { MainLayout } from '@/components/main-layout';
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,88 +10,40 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useToast } from '@/hooks/use-toast';
 import { getCotacoesDoDia } from '@/lib/data-service';
 import type { FirestoreQuote } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Database } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
-export default function DataSourcePage() {
-  const [quotes, setQuotes] = useState<FirestoreQuote[]>([]);
-  const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
+// This is now a Server Component
+export const dynamic = 'force-dynamic'; // Ensures the data is fetched on every request
 
-  const loadQuotes = useCallback(async () => {
-    setLoading(true);
-    try {
-      // Fetch a large number of quotes to see everything in the collection
-      const data = await getCotacoesDoDia(undefined, 200);
-      setQuotes(data);
-    } catch (error) {
-      console.error('Erro ao carregar cotações do dia:', error);
-      toast({
-        variant: "destructive",
-        title: "Erro ao Carregar Cotações",
-        description: "Não foi possível buscar os dados da coleção cotacoes_do_dia.",
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [toast]);
+async function loadQuotes() {
+  try {
+    const data = await getCotacoesDoDia(undefined, 200);
+    return data;
+  } catch (error) {
+    console.error('Erro ao carregar cotações do dia:', error);
+    // In a server component, we can't use hooks like toast.
+    // We'll return an empty array and the error will be logged on the server.
+    return [];
+  }
+}
 
-  useEffect(() => {
-    loadQuotes();
-  }, [loadQuotes]);
-
-  const formatDate = (date: any) => {
+const formatDate = (date: any) => {
     if (!date) return 'N/A';
-    if (date.toDate) { // Check if it's a Firestore Timestamp
-      return date.toDate().toLocaleString('pt-BR');
+    // It's a server component, so we will get a Firestore Timestamp
+    if (date.toDate) { 
+      return date.toDate().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
     }
-    return new Date(date).toLocaleString('pt-BR');
+    // Fallback for other date types
+    return new Date(date).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
   };
 
-  const renderTableRows = () => {
-    if (loading) {
-      return Array.from({ length: 15 }).map((_, i) => (
-        <TableRow key={i}>
-          <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-          <TableCell><Skeleton className="h-4 w-40" /></TableCell>
-          <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-          <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-        </TableRow>
-      ));
-    }
 
-    if (quotes.length === 0) {
-      return (
-        <TableRow>
-          <TableCell colSpan={4} className="h-24 text-center">
-            Nenhuma cotação encontrada na coleção `cotacoes_do_dia`.
-          </TableCell>
-        </TableRow>
-      );
-    }
-
-    return quotes.map((quote) => (
-      <TableRow key={quote.id}>
-        <TableCell className="font-medium text-xs">
-          {formatDate(quote.timestamp)}
-        </TableCell>
-        <TableCell className="font-medium">
-          {quote.ativo}
-        </TableCell>
-        <TableCell className="font-mono text-sm">
-          {quote.ultimo?.toFixed(4) ?? 'N/A'}
-        </TableCell>
-        <TableCell className="font-mono text-xs text-muted-foreground">
-          {quote.id}
-        </TableCell>
-      </TableRow>
-    ));
-  };
+export default async function DataSourcePage() {
+  const quotes = await loadQuotes();
 
   return (
     <MainLayout>
@@ -111,9 +60,9 @@ export default function DataSourcePage() {
             <CardContent>
               <Alert>
                 <Database className="h-4 w-4" />
-                <AlertTitle>Visualização Direta</AlertTitle>
+                <AlertTitle>Visualização Direta do Servidor</AlertTitle>
                 <AlertDescription>
-                  Os dados abaixo são uma leitura direta do Firestore. Se a tabela estiver vazia, significa que o n8n não salvou nenhum dado na coleção `cotacoes_do_dia`.
+                  Os dados abaixo são uma leitura direta do Firestore feita pelo servidor. Se a tabela estiver vazia, significa que não há documentos na coleção `cotacoes_do_dia`.
                 </AlertDescription>
               </Alert>
               <ScrollArea className="h-[60vh] mt-4 w-full border rounded-md">
@@ -127,7 +76,30 @@ export default function DataSourcePage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {renderTableRows()}
+                    {quotes.length === 0 ? (
+                        <TableRow>
+                            <TableCell colSpan={4} className="h-24 text-center">
+                                Nenhuma cotação encontrada na coleção `cotacoes_do_dia`.
+                            </TableCell>
+                        </TableRow>
+                    ) : (
+                        quotes.map((quote: FirestoreQuote) => (
+                            <TableRow key={quote.id}>
+                                <TableCell className="font-medium text-xs">
+                                {formatDate(quote.timestamp)}
+                                </TableCell>
+                                <TableCell className="font-medium">
+                                {quote.ativo}
+                                </TableCell>
+                                <TableCell className="font-mono text-sm">
+                                {quote.ultimo?.toFixed(4) ?? 'N/A'}
+                                </TableCell>
+                                <TableCell className="font-mono text-xs text-muted-foreground">
+                                {quote.id}
+                                </TableCell>
+                            </TableRow>
+                        ))
+                    )}
                   </TableBody>
                 </Table>
               </ScrollArea>
