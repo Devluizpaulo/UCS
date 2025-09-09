@@ -21,6 +21,7 @@ import { CommoditySourcesTable } from '@/components/commodity-sources-table';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { EditCommodityModal } from '@/components/edit-commodity-modal';
 import { UserManagement } from '@/components/user-management';
+import { CurrencyConversionTable } from '@/components/currency-conversion-table';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -311,6 +312,11 @@ export default function SettingsPage() {
                 className={activeTab === 'formula' ? "font-semibold text-primary" : ""}>
                 Fórmula do Índice
               </a>
+              <a href="#" 
+                onClick={() => setActiveTab('currency')}
+                className={activeTab === 'currency' ? "font-semibold text-primary" : ""}>
+                Conversão de Moedas
+              </a>
             </nav>
             <div className="grid gap-6">
               {activeTab === 'users' && <UserManagement />}
@@ -328,6 +334,20 @@ export default function SettingsPage() {
                 </Card>
               )}
                {activeTab === 'sources' && renderSourcesTab()}
+              {activeTab === 'currency' && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Sistema de Conversão de Moedas</CardTitle>
+                    <CardDescription>
+                      Visualize e teste o sistema de conversão de moedas implementado no projeto. 
+                      Esta funcionalidade permite converter preços entre BRL, USD e EUR usando as taxas de câmbio atuais.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <CurrencyConversionTable />
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
         </main>
