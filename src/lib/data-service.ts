@@ -471,7 +471,7 @@ export async function autoReorganizeNewData(): Promise<{ success: boolean; messa
  * @param asset - Asset name (will be normalized)
  * @param date - Date in DD/MM/YYYY or DD-MM-YYYY format
  */
-export async function getOrganizedAssetData(asset: string, date?: string): Promise<any[] | undefined> {
+export async function getOrganizedAssetData(asset: string, date?: string): Promise<any[]> {
   try {
     const normalizedAsset = asset
       .toLowerCase()

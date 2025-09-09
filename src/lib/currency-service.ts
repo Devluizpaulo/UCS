@@ -1,5 +1,3 @@
-'use server';
-
 import { getCommodityPrices } from './data-service';
 import type { CommodityPriceData } from './types';
 
