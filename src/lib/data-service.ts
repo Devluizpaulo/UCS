@@ -177,10 +177,11 @@ export async function getCotacoesDoDia(ativo?: string, limit: number = 50): Prom
     } catch (error: any) {
         if (error.message && error.message.includes('Could not refresh access token')) {
             console.error(`[DataService] FIREBASE AUTHENTICATION ERROR while fetching 'cotacoes_do_dia': ${error.message}. This is likely an issue with Application Default Credentials in the server environment.`);
+            throw error; // Re-throw to be caught by the calling page
         } else {
             console.error(`[DataService] Error fetching 'cotacoes_do_dia' for ${ativo || 'all assets'}:`, error);
         }
-        return [];
+        return []; // Return empty on other errors
     }
 }
 
