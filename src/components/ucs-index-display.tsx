@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { UcsIndexChart } from '@/components/ucs-index-chart';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -15,7 +16,8 @@ import {
   AlertCircle,
   Leaf,
   DollarSign,
-  Calculator
+  Calculator,
+  BarChart3
 } from 'lucide-react';
 import {
   Dialog,
@@ -33,7 +35,7 @@ import {
   type UCSCalculationResult
 } from '@/lib/ucs-pricing-service';
 import { getFormulaParameters } from '@/lib/formula-service';
-import type { FormulaParameters } from '@/lib/types';
+import type { FormulaParameters, ChartData } from '@/lib/types';
 
 interface UCSIndexDisplayProps {
   className?: string;
@@ -47,6 +49,8 @@ export function UCSIndexDisplay({ className }: UCSIndexDisplayProps) {
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [trend, setTrend] = useState<'up' | 'down' | 'stable'>('stable');
   const [previousValue, setPreviousValue] = useState<number>(0);
+  const [chartData, setChartData] = useState<ChartData[]>([]);
+  const [showChart, setShowChart] = useState(false);
 
   const calculateUCSIndex = async () => {
     setLoading(true);
@@ -104,6 +108,20 @@ export function UCSIndexDisplay({ className }: UCSIndexDisplayProps) {
       setResultado(resultado);
       setLastUpdate(new Date());
       
+      // Adicionar ponto ao gráfico
+      const newDataPoint: ChartData = {
+        timestamp: new Date().toISOString(),
+        value: newValue,
+        date: new Date().toLocaleDateString('pt-BR'),
+        time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+      };
+      
+      setChartData(prev => {
+        const updated = [...prev, newDataPoint];
+        // Manter apenas os últimos 20 pontos
+        return updated.slice(-20);
+      });
+      
     } catch (error) {
       console.error('Erro ao calcular índice UCS:', error);
       setError(`Erro no cálculo: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
@@ -157,6 +175,13 @@ export function UCSIndexDisplay({ className }: UCSIndexDisplayProps) {
         </div>
         <div className="flex items-center gap-2">
           {getTrendIcon()}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowChart(!showChart)}
+          >
+            <BarChart3 className="h-4 w-4" />
+          </Button>
           <Button
             variant="ghost"
             size="sm"
@@ -337,6 +362,16 @@ export function UCSIndexDisplay({ className }: UCSIndexDisplayProps) {
                 </Dialog>
               )}
             </div>
+            
+            {/* Gráfico de Tendência */}
+            {showChart && chartData.length > 0 && (
+              <div className="mt-4">
+                <Separator className="mb-4" />
+                <div className="h-[200px]">
+                  <UcsIndexChart data={chartData} loading={false} />
+                </div>
+              </div>
+            )}
             
             {lastUpdate && (
               <div className="flex items-center justify-between text-xs text-muted-foreground">
