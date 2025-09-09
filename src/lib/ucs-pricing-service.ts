@@ -257,35 +257,78 @@ export function calcularUCSCompleto(inputs: UCSCalculationInputs): UCSCalculatio
 }
 
 /**
- * Obtém valores padrão baseados nas cotações atuais do sistema
+ * Obtém valores padrão das cotações e parâmetros
+ * Integra com as fontes de dados reais do sistema
  */
 export async function obterValoresPadrao(): Promise<Partial<UCSCalculationInputs>> {
   try {
-    const commodityPrices = await getCommodityPrices();
+    // Importar dinamicamente para evitar problemas de dependência circular
+    const { getCommodities } = await import('@/lib/commodity-config-service');
+    const { convertAllCommodityPrices } = await import('@/lib/currency-service');
     
-    // Buscar cotações das commodities
-    const milho = commodityPrices.find(c => c.name.toLowerCase().includes('milho'));
-    const soja = commodityPrices.find(c => c.name.toLowerCase().includes('soja'));
-    const boi = commodityPrices.find(c => c.name.toLowerCase().includes('boi') || c.name.toLowerCase().includes('pecuária'));
-    const creditoCarbono = commodityPrices.find(c => c.name.toLowerCase().includes('carbono'));
+    // Obter commodities configuradas
+    const commodities = await getCommodities();
     
-    return {
-      milhoCotacao: milho?.price || 0,
-      sojaCotacao: soja?.price || 0,
-      pecuariaCotacao: boi?.price || 0,
-      cotacaoCreditoCarbono: creditoCarbono?.price || 0,
-      // Valores padrão para outros campos
-      fm3: 150, // m³ por hectare (valor estimado)
-      pm3mad: 200, // R$ por m³ (valor estimado)
+    // Converter preços para BRL
+    const convertedPrices = await convertAllCommodityPrices('BRL');
+    
+    // Mapear cotações das commodities
+    const cotacoes: Partial<UCSCalculationInputs> = {
+      // Valores de produção padrão
       pecuariaProducao: 1.5, // cabeças por hectare
       milhoProducao: 8000, // kg por hectare
       sojaProducao: 3000, // kg por hectare
       pibPorHectare: 50000, // R$ PIB por hectare (estimativa)
-      carbonoEstocado: 100 // tCO2 eq por hectare (estimativa)
+      carbonoEstocado: 100, // tCO2 eq por hectare (estimativa)
+      fm3: 150, // m³ por hectare (valor estimado)
+      pm3mad: 200 // R$ por m³ de madeira (valor padrão)
     };
+    
+    // Buscar cotações específicas das commodities
+    for (const commodity of commodities) {
+      const convertedPrice = convertedPrices.find(p => p.symbol === commodity.symbol);
+      const price = convertedPrice?.convertedPrice || commodity.currentPrice || 0;
+      
+      // Mapear por nome/símbolo da commodity
+      const name = commodity.name.toLowerCase();
+      const symbol = commodity.symbol.toLowerCase();
+      
+      if (name.includes('boi') || name.includes('gado') || symbol.includes('cattle')) {
+        cotacoes.pecuariaCotacao = price;
+      } else if (name.includes('milho') || symbol.includes('corn')) {
+        cotacoes.milhoCotacao = price;
+      } else if (name.includes('soja') || symbol.includes('soy')) {
+        cotacoes.sojaCotacao = price;
+      } else if (name.includes('carbono') || name.includes('carbon') || symbol.includes('carbon')) {
+        cotacoes.cotacaoCreditoCarbono = price;
+      } else if (name.includes('madeira') || name.includes('wood') || symbol.includes('wood')) {
+        cotacoes.pm3mad = price;
+      }
+    }
+    
+    // Valores padrão caso não encontre nas commodities
+    if (!cotacoes.pecuariaCotacao) cotacoes.pecuariaCotacao = 2500;
+    if (!cotacoes.milhoCotacao) cotacoes.milhoCotacao = 0.85;
+    if (!cotacoes.sojaCotacao) cotacoes.sojaCotacao = 1.20;
+    if (!cotacoes.cotacaoCreditoCarbono) cotacoes.cotacaoCreditoCarbono = 45;
+    
+    return cotacoes;
   } catch (error) {
     console.error('[UCS Pricing Service] Erro ao obter valores padrão:', error);
-    return {};
+    // Retornar valores padrão em caso de erro
+    return {
+      pecuariaCotacao: 2500,
+      milhoCotacao: 0.85,
+      sojaCotacao: 1.20,
+      cotacaoCreditoCarbono: 45,
+      fm3: 150,
+      pm3mad: 200,
+      pecuariaProducao: 1.5,
+      milhoProducao: 8000,
+      sojaProducao: 3000,
+      pibPorHectare: 50000,
+      carbonoEstocado: 100
+    };
   }
 }
 
