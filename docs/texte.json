@@ -1,24 +1,15 @@
 {
-  "name": "Cotações - Integração Automática",
+  "name": "My workflow",
   "nodes": [
     {
-      "parameters": {
-        "rule": {
-          "interval": [
-            {
-              "field": "cronExpression",
-              "expression": "0 9,15 * * 1-5"
-            }
-          ]
-        }
-      },
-      "id": "scheduler-node",
+      "parameters": {},
+      "id": "5a88d5aa-484a-497a-bf0b-338bc5f5df4b",
       "name": "🕐 Agendador (9h e 15h)",
       "type": "n8n-nodes-base.cron",
       "typeVersion": 1,
       "position": [
-        -1200,
-        400
+        -2096,
+        -288
       ]
     },
     {
@@ -27,13 +18,13 @@
         "responseFormat": "string",
         "options": {}
       },
-      "id": "corn-fetch",
+      "id": "3daa70f6-8b1d-4991-be17-83b9516bccac",
       "name": "🌐 Buscar Milho",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 1,
       "position": [
-        -768,
-        128
+        -1248,
+        -800
       ]
     },
     {
@@ -48,26 +39,26 @@
         },
         "options": {}
       },
-      "id": "corn-extract",
+      "id": "5c4ddd0f-23ab-4c6c-9d6a-99adce8e0a06",
       "name": "🔍 Extrair Preço Milho",
       "type": "n8n-nodes-base.htmlExtract",
       "typeVersion": 1,
       "position": [
-        -576,
-        128
+        -1056,
+        -800
       ]
     },
     {
       "parameters": {
         "jsCode": "// Processamento otimizado para Milho\nif ($input.first() === undefined) {\n  return [{ json: { \n    erro: 'Nenhum dado recebido do nó anterior.', \n    timestamp: new Date().toISOString() \n  } }];\n}\n\nlet precoExtraido = $input.first().json.preco;\n\nif (precoExtraido === undefined || precoExtraido === null || precoExtraido === '') {\n  return [{ json: { \n    ativo: 'milho',\n    erro: 'Preço não encontrado',\n    timestamp: new Date().toISOString(),\n    status: 'erro'\n  } }];\n}\n\ntry {\n  let precoLimpo = precoExtraido\n    .replace(/\\s/g, '')\n    .replace(/[R$]/g, '')\n    .replace(/\\./g, '')\n    .replace(/,/g, '.');\n  \n  let precoNumerico = parseFloat(precoLimpo);\n  \n  if (isNaN(precoNumerico)) {\n    throw new Error('Conversão para número falhou: ' + precoExtraido);\n  }\n  \n  const currentDate = new Date().toISOString().split('T')[0];\n  const [year, month, day] = currentDate.split('-');\n  const brazilianDate = `${day}/${month}/${year}`;\n  \n  return [{ json: {\n    ativo: 'milho',\n    data: brazilianDate,\n    ultimo: precoNumerico,\n    abertura: precoNumerico,\n    maxima: precoNumerico,\n    minima: precoNumerico,\n    volume: null,\n    variacao_pct: null,\n    moeda: 'BRL',\n    fonte: 'Investing.com',\n    timestamp: new Date().toISOString(),\n    status: 'sucesso'\n  } }];\n} catch (error) {\n  return [{ json: {\n    ativo: 'milho',\n    erro: 'Erro na conversão: ' + error.message,\n    timestamp: new Date().toISOString(),\n    status: 'erro'\n  } }];\n}"
       },
-      "id": "corn-process",
+      "id": "e2882556-7d61-46cd-88b2-95a3a4a12c7d",
       "name": "⚙️ Processar Milho",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -368,
-        128
+        -848,
+        -800
       ]
     },
     {
@@ -79,18 +70,18 @@
         "updateKey": "timestamp",
         "columns": "ativo,data,ultimo,abertura,maxima,minima,volume,variacao_pct,moeda,fonte,timestamp,status"
       },
-      "id": "corn-save",
+      "id": "492fb0ae-9af1-491b-b060-a6efb4191a51",
       "name": "💾 Salvar Milho",
       "type": "n8n-nodes-base.googleFirebaseCloudFirestore",
       "typeVersion": 1,
       "position": [
-        -176,
-        128
+        -656,
+        -800
       ],
       "credentials": {
         "googleApi": {
-          "id": "7BpBqB87SWkOYvB1",
-          "name": "Google Firebase Cloud Firestore account 2"
+          "id": "BjVbz7Qc5N5XpI6B",
+          "name": "Google Firebase Cloud Firestore account"
         }
       }
     },
@@ -100,13 +91,13 @@
         "responseFormat": "string",
         "options": {}
       },
-      "id": "cattle-fetch",
+      "id": "5e2e6c42-f90a-43aa-a480-89301151f874",
       "name": "🌐 Buscar Boi Gordo",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 1,
       "position": [
-        -768,
-        288
+        -1248,
+        -640
       ]
     },
     {
@@ -121,26 +112,13 @@
         },
         "options": {}
       },
-      "id": "cattle-extract",
+      "id": "cbcb688c-ba9e-4b4f-b0a1-a879b4cbccb4",
       "name": "🔍 Extrair Preço Boi",
       "type": "n8n-nodes-base.htmlExtract",
       "typeVersion": 1,
       "position": [
-        -576,
-        288
-      ]
-    },
-    {
-      "parameters": {
-        "jsCode": "// Processamento otimizado para Boi Gordo\nif ($input.first() === undefined) {\n  return [{ json: { \n    erro: 'Nenhum dado recebido do nó anterior.', \n    timestamp: new Date().toISOString() \n  } }];\n}\n\nlet precoExtraido = $input.first().json.preco;\n\nif (precoExtraido === undefined || precoExtraido === null || precoExtraido === '') {\n  return [{ json: { \n    ativo: 'boi_gordo',\n    erro: 'Preço não encontrado',\n    timestamp: new Date().toISOString(),\n    status: 'erro'\n  } }];\n}\n\ntry {\n  let precoLimpo = precoExtraido\n    .replace(/\\s/g, '')\n    .replace(/[R$]/g, '')\n    .replace(/\\./g, '')\n    .replace(/,/g, '.');\n  \n  let precoNumerico = parseFloat(precoLimpo);\n  \n  if (isNaN(precoNumerico)) {\n    throw new Error('Conversão para número falhou: ' + precoExtraido);\n  }\n  \n  const currentDate = new Date().toISOString().split('T')[0];\n  const [year, month, day] = currentDate.split('-');\n  const brazilianDate = `${day}/${month}/${year}`;\n  \n  return [{ json: {\n    ativo: 'boi_gordo',\n    data: brazilianDate,\n    ultimo: precoNumerico,\n    abertura: precoNumerico,\n    maxima: precoNumerico,\n    minima: precoNumerico,\n    volume: null,\n    variacao_pct: null,\n    moeda: 'BRL',\n    fonte: 'Investing.com',\n    timestamp: new Date().toISOString(),\n    status: 'sucesso'\n  } }];\n} catch (error) {\n  return [{ json: {\n    ativo: 'boi_gordo',\n    erro: 'Erro na conversão: ' + error.message,\n    timestamp: new Date().toISOString(),\n    status: 'erro'\n  } }];\n}"
-      },
-      "id": "cattle-process",
-      "name": "⚙️ Processar Boi",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -368,
-        288
+        -1056,
+        -640
       ]
     },
     {
@@ -152,18 +130,18 @@
         "updateKey": "timestamp",
         "columns": "ativo,data,ultimo,abertura,maxima,minima,volume,variacao_pct,moeda,fonte,timestamp,status"
       },
-      "id": "cattle-save",
+      "id": "1087f4f1-203c-4e03-a48f-a8f936457657",
       "name": "💾 Salvar Boi",
       "type": "n8n-nodes-base.googleFirebaseCloudFirestore",
       "typeVersion": 1,
       "position": [
-        -176,
-        288
+        -656,
+        -640
       ],
       "credentials": {
         "googleApi": {
-          "id": "7BpBqB87SWkOYvB1",
-          "name": "Google Firebase Cloud Firestore account 2"
+          "id": "BjVbz7Qc5N5XpI6B",
+          "name": "Google Firebase Cloud Firestore account"
         }
       }
     },
@@ -173,13 +151,13 @@
         "responseFormat": "string",
         "options": {}
       },
-      "id": "soy-fetch",
+      "id": "bcef4ff3-3e2f-40f8-9c92-13fa11891837",
       "name": "🌐 Buscar Soja",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 1,
       "position": [
-        -768,
-        448
+        -1248,
+        -480
       ]
     },
     {
@@ -194,26 +172,26 @@
         },
         "options": {}
       },
-      "id": "soy-extract",
+      "id": "fc8112dc-6323-4876-a9f0-999c275775b3",
       "name": "🔍 Extrair Preço Soja",
       "type": "n8n-nodes-base.htmlExtract",
       "typeVersion": 1,
       "position": [
-        -576,
-        448
+        -1056,
+        -480
       ]
     },
     {
       "parameters": {
         "jsCode": "// Processamento otimizado para Soja\nif ($input.first() === undefined) {\n  return [{ json: { \n    erro: 'Nenhum dado recebido do nó anterior.', \n    timestamp: new Date().toISOString() \n  } }];\n}\n\nlet precoExtraido = $input.first().json.preco;\n\nif (precoExtraido === undefined || precoExtraido === null || precoExtraido === '') {\n  return [{ json: { \n    ativo: 'soja',\n    erro: 'Preço não encontrado',\n    timestamp: new Date().toISOString(),\n    status: 'erro'\n  } }];\n}\n\ntry {\n  let precoLimpo = precoExtraido\n    .replace(/\\s/g, '')\n    .replace(/[$]/g, '')\n    .replace(/\\./g, '')\n    .replace(/,/g, '.');\n  \n  let precoNumerico = parseFloat(precoLimpo);\n  \n  if (isNaN(precoNumerico)) {\n    throw new Error('Conversão para número falhou: ' + precoExtraido);\n  }\n  \n  const currentDate = new Date().toISOString().split('T')[0];\n  const [year, month, day] = currentDate.split('-');\n  const brazilianDate = `${day}/${month}/${year}`;\n  \n  return [{ json: {\n    ativo: 'soja',\n    data: brazilianDate,\n    ultimo: precoNumerico,\n    abertura: precoNumerico,\n    maxima: precoNumerico,\n    minima: precoNumerico,\n    volume: null,\n    variacao_pct: null,\n    moeda: 'USD',\n    fonte: 'Investing.com',\n    timestamp: new Date().toISOString(),\n    status: 'sucesso'\n  } }];\n} catch (error) {\n  return [{ json: {\n    ativo: 'soja',\n    erro: 'Erro na conversão: ' + error.message,\n    timestamp: new Date().toISOString(),\n    status: 'erro'\n  } }];\n}"
       },
-      "id": "soy-process",
+      "id": "735468fa-a910-4359-af83-07fc06037eaf",
       "name": "⚙️ Processar Soja",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -368,
-        448
+        -848,
+        -480
       ]
     },
     {
@@ -225,91 +203,18 @@
         "updateKey": "timestamp",
         "columns": "ativo,data,ultimo,abertura,maxima,minima,volume,variacao_pct,moeda,fonte,timestamp,status"
       },
-      "id": "soy-save",
+      "id": "28bb05dc-c3d4-4670-b11f-a0384e4136df",
       "name": "💾 Salvar Soja",
       "type": "n8n-nodes-base.googleFirebaseCloudFirestore",
       "typeVersion": 1,
       "position": [
-        -176,
-        448
+        -656,
+        -480
       ],
       "credentials": {
         "googleApi": {
-          "id": "7BpBqB87SWkOYvB1",
-          "name": "Google Firebase Cloud Firestore account 2"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "url": "https://br.investing.com/commodities/live-cattle-historical-data?cid=964528",
-        "responseFormat": "string",
-        "options": {}
-      },
-      "id": "cattle-fetch",
-      "name": "🌐 Buscar Boi Gordo",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 1,
-      "position": [
-        -768,
-        288
-      ]
-    },
-    {
-      "parameters": {
-        "extractionValues": {
-          "values": [
-            {
-              "key": "preco",
-              "cssSelector": "span[data-test='instrument-price-last'], .text-2xl, .instrument-price_instrument-price__*, [data-test*='price'], #last_last"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "id": "cattle-extract",
-      "name": "🔍 Extrair Preço Boi Gordo",
-      "type": "n8n-nodes-base.htmlExtract",
-      "typeVersion": 1,
-      "position": [
-        -576,
-        288
-      ]
-    },
-    {
-      "parameters": {
-        "jsCode": "// Processamento otimizado para Boi Gordo\nif ($input.first() === undefined) {\n  return [{ json: { \n    erro: 'Nenhum dado recebido do nó anterior.', \n    timestamp: new Date().toISOString() \n  } }];\n}\n\nlet precoExtraido = $input.first().json.preco;\n\nif (precoExtraido === undefined || precoExtraido === null || precoExtraido === '') {\n  return [{ json: { \n    ativo: 'boi_gordo',\n    erro: 'Preço não encontrado',\n    timestamp: new Date().toISOString(),\n    status: 'erro'\n  } }];\n}\n\ntry {\n  let precoLimpo = precoExtraido\n    .replace(/\\s/g, '')\n    .replace(/[R$]/g, '')\n    .replace(/\\./g, '')\n    .replace(/,/g, '.');\n  \n  let precoNumerico = parseFloat(precoLimpo);\n  \n  if (isNaN(precoNumerico)) {\n    throw new Error('Conversão para número falhou: ' + precoExtraido);\n  }\n  \n  const currentDate = new Date().toISOString().split('T')[0];\n  const [year, month, day] = currentDate.split('-');\n  const brazilianDate = `${day}/${month}/${year}`;\n  \n  return [{ json: {\n    ativo: 'boi_gordo',\n    data: brazilianDate,\n    ultimo: precoNumerico,\n    abertura: precoNumerico,\n    maxima: precoNumerico,\n    minima: precoNumerico,\n    volume: null,\n    variacao_pct: null,\n    moeda: 'BRL',\n    fonte: 'Investing.com',\n    timestamp: new Date().toISOString(),\n    status: 'sucesso'\n  } }];\n} catch (error) {\n  return [{ json: {\n    ativo: 'boi_gordo',\n    erro: 'Erro na conversão: ' + error.message,\n    timestamp: new Date().toISOString(),\n    status: 'erro'\n  } }];\n}"
-      },
-      "id": "cattle-process",
-      "name": "⚙️ Processar Boi Gordo",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -368,
-        288
-      ]
-    },
-    {
-      "parameters": {
-        "authentication": "serviceAccount",
-        "operation": "upsert",
-        "projectId": "ucs-index-tracker",
-        "collection": "cotacoes_do_dia",
-        "updateKey": "timestamp",
-        "columns": "ativo,data,ultimo,abertura,maxima,minima,volume,variacao_pct,moeda,fonte,timestamp,status"
-      },
-      "id": "cattle-save",
-      "name": "💾 Salvar Boi Gordo",
-      "type": "n8n-nodes-base.googleFirebaseCloudFirestore",
-      "typeVersion": 1,
-      "position": [
-        -176,
-        288
-      ],
-      "credentials": {
-        "googleApi": {
-          "id": "7BpBqB87SWkOYvB1",
-          "name": "Google Firebase Cloud Firestore account 2"
+          "id": "BjVbz7Qc5N5XpI6B",
+          "name": "Google Firebase Cloud Firestore account"
         }
       }
     },
@@ -319,13 +224,13 @@
         "responseFormat": "string",
         "options": {}
       },
-      "id": "lumber-fetch",
+      "id": "7f7466d8-9cc9-40d5-8892-343498923543",
       "name": "🌐 Buscar Madeira",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 1,
       "position": [
-        -768,
-        608
+        -1248,
+        -320
       ]
     },
     {
@@ -340,26 +245,26 @@
         },
         "options": {}
       },
-      "id": "lumber-extract",
+      "id": "d6e8c8bc-fd39-4ce4-974a-d4434f374e95",
       "name": "🔍 Extrair Preço Madeira",
       "type": "n8n-nodes-base.htmlExtract",
       "typeVersion": 1,
       "position": [
-        -576,
-        608
+        -1056,
+        -320
       ]
     },
     {
       "parameters": {
         "jsCode": "// Processamento otimizado para Madeira\nif ($input.first() === undefined) {\n  return [{ json: { \n    erro: 'Nenhum dado recebido do nó anterior.', \n    timestamp: new Date().toISOString() \n  } }];\n}\n\nlet precoExtraido = $input.first().json.preco;\n\nif (precoExtraido === undefined || precoExtraido === null || precoExtraido === '') {\n  return [{ json: { \n    ativo: 'madeira',\n    erro: 'Preço não encontrado',\n    timestamp: new Date().toISOString(),\n    status: 'erro'\n  } }];\n}\n\ntry {\n  let precoLimpo = precoExtraido\n    .replace(/\\s/g, '')\n    .replace(/[$]/g, '')\n    .replace(/\\./g, '')\n    .replace(/,/g, '.');\n  \n  let precoNumerico = parseFloat(precoLimpo);\n  \n  if (isNaN(precoNumerico)) {\n    throw new Error('Conversão para número falhou: ' + precoExtraido);\n  }\n  \n  const currentDate = new Date().toISOString().split('T')[0];\n  const [year, month, day] = currentDate.split('-');\n  const brazilianDate = `${day}/${month}/${year}`;\n  \n  return [{ json: {\n    ativo: 'madeira',\n    data: brazilianDate,\n    ultimo: precoNumerico,\n    abertura: precoNumerico,\n    maxima: precoNumerico,\n    minima: precoNumerico,\n    volume: null,\n    variacao_pct: null,\n    moeda: 'USD',\n    fonte: 'Investing.com',\n    timestamp: new Date().toISOString(),\n    status: 'sucesso'\n  } }];\n} catch (error) {\n  return [{ json: {\n    ativo: 'madeira',\n    erro: 'Erro na conversão: ' + error.message,\n    timestamp: new Date().toISOString(),\n    status: 'erro'\n  } }];\n}"
       },
-      "id": "lumber-process",
+      "id": "6cf11cf0-49f4-4b29-8b80-2c9b955af1ba",
       "name": "⚙️ Processar Madeira",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -368,
-        608
+        -848,
+        -320
       ]
     },
     {
@@ -371,18 +276,18 @@
         "updateKey": "timestamp",
         "columns": "ativo,data,ultimo,abertura,maxima,minima,volume,variacao_pct,moeda,fonte,timestamp,status"
       },
-      "id": "lumber-save",
+      "id": "c9980375-e82a-4168-bd48-f5b5a7515f9b",
       "name": "💾 Salvar Madeira",
       "type": "n8n-nodes-base.googleFirebaseCloudFirestore",
       "typeVersion": 1,
       "position": [
-        -176,
-        608
+        -656,
+        -320
       ],
       "credentials": {
         "googleApi": {
-          "id": "7BpBqB87SWkOYvB1",
-          "name": "Google Firebase Cloud Firestore account 2"
+          "id": "BjVbz7Qc5N5XpI6B",
+          "name": "Google Firebase Cloud Firestore account"
         }
       }
     },
@@ -392,13 +297,13 @@
         "responseFormat": "string",
         "options": {}
       },
-      "id": "carbon-fetch",
+      "id": "33ef275a-ef25-4884-94d9-4c4cd5f28016",
       "name": "🌐 Buscar Carbono",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 1,
       "position": [
-        -768,
-        768
+        -1248,
+        -160
       ]
     },
     {
@@ -413,26 +318,26 @@
         },
         "options": {}
       },
-      "id": "carbon-extract",
+      "id": "2cd31802-bbfa-42bd-b58a-9b78e23889eb",
       "name": "🔍 Extrair Preço Carbono",
       "type": "n8n-nodes-base.htmlExtract",
       "typeVersion": 1,
       "position": [
-        -576,
-        768
+        -1056,
+        -160
       ]
     },
     {
       "parameters": {
         "jsCode": "// Processamento otimizado para Carbono\nif ($input.first() === undefined) {\n  return [{ json: { \n    erro: 'Nenhum dado recebido do nó anterior.', \n    timestamp: new Date().toISOString() \n  } }];\n}\n\nlet precoExtraido = $input.first().json.preco;\n\nif (precoExtraido === undefined || precoExtraido === null || precoExtraido === '') {\n  return [{ json: { \n    ativo: 'carbono',\n    erro: 'Preço não encontrado',\n    timestamp: new Date().toISOString(),\n    status: 'erro'\n  } }];\n}\n\ntry {\n  let precoLimpo = precoExtraido\n    .replace(/\\s/g, '')\n    .replace(/[€]/g, '')\n    .replace(/\\./g, '')\n    .replace(/,/g, '.');\n  \n  let precoNumerico = parseFloat(precoLimpo);\n  \n  if (isNaN(precoNumerico)) {\n    throw new Error('Conversão para número falhou: ' + precoExtraido);\n  }\n  \n  const currentDate = new Date().toISOString().split('T')[0];\n  const [year, month, day] = currentDate.split('-');\n  const brazilianDate = `${day}/${month}/${year}`;\n  \n  return [{ json: {\n    ativo: 'carbono',\n    data: brazilianDate,\n    ultimo: precoNumerico,\n    abertura: precoNumerico,\n    maxima: precoNumerico,\n    minima: precoNumerico,\n    volume: null,\n    variacao_pct: null,\n    moeda: 'EUR',\n    fonte: 'Investing.com',\n    timestamp: new Date().toISOString(),\n    status: 'sucesso'\n  } }];\n} catch (error) {\n  return [{ json: {\n    ativo: 'carbono',\n    erro: 'Erro na conversão: ' + error.message,\n    timestamp: new Date().toISOString(),\n    status: 'erro'\n  } }];\n}"
       },
-      "id": "carbon-process",
+      "id": "c3c81265-908d-471b-adfa-b41a8347931d",
       "name": "⚙️ Processar Carbono",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -368,
-        768
+        -848,
+        -160
       ]
     },
     {
@@ -444,18 +349,18 @@
         "updateKey": "timestamp",
         "columns": "ativo,data,ultimo,abertura,maxima,minima,volume,variacao_pct,moeda,fonte,timestamp,status"
       },
-      "id": "carbon-save",
+      "id": "18be0fc5-1c1d-450b-b3c4-274d27d5b54c",
       "name": "💾 Salvar Carbono",
       "type": "n8n-nodes-base.googleFirebaseCloudFirestore",
       "typeVersion": 1,
       "position": [
-        -176,
-        768
+        -656,
+        -160
       ],
       "credentials": {
         "googleApi": {
-          "id": "7BpBqB87SWkOYvB1",
-          "name": "Google Firebase Cloud Firestore account 2"
+          "id": "BjVbz7Qc5N5XpI6B",
+          "name": "Google Firebase Cloud Firestore account"
         }
       }
     },
@@ -465,13 +370,13 @@
         "responseFormat": "string",
         "options": {}
       },
-      "id": "usd-fetch",
+      "id": "85753bc6-fbb0-4805-803f-2a0803198047",
       "name": "🌐 Buscar USD/BRL",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 1,
       "position": [
-        -768,
-        928
+        -1248,
+        16
       ]
     },
     {
@@ -486,26 +391,26 @@
         },
         "options": {}
       },
-      "id": "usd-extract",
+      "id": "7c4de851-bb37-43a6-afc5-5cc703f85f08",
       "name": "🔍 Extrair Preço USD/BRL",
       "type": "n8n-nodes-base.htmlExtract",
       "typeVersion": 1,
       "position": [
-        -576,
-        928
+        -1056,
+        16
       ]
     },
     {
       "parameters": {
         "jsCode": "// Processamento otimizado para USD/BRL\nif ($input.first() === undefined) {\n  return [{ json: { \n    erro: 'Nenhum dado recebido do nó anterior.', \n    timestamp: new Date().toISOString() \n  } }];\n}\n\nlet precoExtraido = $input.first().json.preco;\n\nif (precoExtraido === undefined || precoExtraido === null || precoExtraido === '') {\n  return [{ json: { \n    ativo: 'usd_brl',\n    erro: 'Preço não encontrado',\n    timestamp: new Date().toISOString(),\n    status: 'erro'\n  } }];\n}\n\ntry {\n  let precoLimpo = precoExtraido\n    .replace(/\\s/g, '')\n    .replace(/[R$]/g, '')\n    .replace(/\\./g, '')\n    .replace(/,/g, '.');\n  \n  let precoNumerico = parseFloat(precoLimpo);\n  \n  if (isNaN(precoNumerico)) {\n    throw new Error('Conversão para número falhou: ' + precoExtraido);\n  }\n  \n  const currentDate = new Date().toISOString().split('T')[0];\n  const [year, month, day] = currentDate.split('-');\n  const brazilianDate = `${day}/${month}/${year}`;\n  \n  return [{ json: {\n    ativo: 'usd_brl',\n    data: brazilianDate,\n    ultimo: precoNumerico,\n    abertura: precoNumerico,\n    maxima: precoNumerico,\n    minima: precoNumerico,\n    volume: null,\n    variacao_pct: null,\n    moeda: 'BRL',\n    fonte: 'Investing.com',\n    timestamp: new Date().toISOString(),\n    status: 'sucesso'\n  } }];\n} catch (error) {\n  return [{ json: {\n    ativo: 'usd_brl',\n    erro: 'Erro na conversão: ' + error.message,\n    timestamp: new Date().toISOString(),\n    status: 'erro'\n  } }];\n}"
       },
-      "id": "usd-process",
+      "id": "c2aaea24-59dd-462d-a015-56fe70466fd1",
       "name": "⚙️ Processar USD/BRL",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -368,
-        928
+        -848,
+        16
       ]
     },
     {
@@ -517,18 +422,18 @@
         "updateKey": "timestamp",
         "columns": "ativo,data,ultimo,abertura,maxima,minima,volume,variacao_pct,moeda,fonte,timestamp,status"
       },
-      "id": "usd-save",
+      "id": "76fe8d75-2b9f-4023-85e3-2c43fff685da",
       "name": "💾 Salvar USD/BRL",
       "type": "n8n-nodes-base.googleFirebaseCloudFirestore",
       "typeVersion": 1,
       "position": [
-        -176,
-        928
+        -656,
+        16
       ],
       "credentials": {
         "googleApi": {
-          "id": "7BpBqB87SWkOYvB1",
-          "name": "Google Firebase Cloud Firestore account 2"
+          "id": "BjVbz7Qc5N5XpI6B",
+          "name": "Google Firebase Cloud Firestore account"
         }
       }
     },
@@ -538,13 +443,13 @@
         "responseFormat": "string",
         "options": {}
       },
-      "id": "eur-fetch",
+      "id": "0dd52690-30cb-4b68-bc9f-986150afc3e9",
       "name": "🌐 Buscar EUR/BRL",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 1,
       "position": [
-        -768,
-        1088
+        -1248,
+        176
       ]
     },
     {
@@ -559,26 +464,26 @@
         },
         "options": {}
       },
-      "id": "eur-extract",
+      "id": "f8109728-614b-49c1-b8fc-ca1eee5cc390",
       "name": "🔍 Extrair Preço EUR/BRL",
       "type": "n8n-nodes-base.htmlExtract",
       "typeVersion": 1,
       "position": [
-        -576,
-        1088
+        -1056,
+        176
       ]
     },
     {
       "parameters": {
         "jsCode": "// Processamento otimizado para EUR/BRL\nif ($input.first() === undefined) {\n  return [{ json: { \n    erro: 'Nenhum dado recebido do nó anterior.', \n    timestamp: new Date().toISOString() \n  } }];\n}\n\nlet precoExtraido = $input.first().json.preco;\n\nif (precoExtraido === undefined || precoExtraido === null || precoExtraido === '') {\n  return [{ json: { \n    ativo: 'eur_brl',\n    erro: 'Preço não encontrado',\n    timestamp: new Date().toISOString(),\n    status: 'erro'\n  } }];\n}\n\ntry {\n  let precoLimpo = precoExtraido\n    .replace(/\\s/g, '')\n    .replace(/[R$]/g, '')\n    .replace(/\\./g, '')\n    .replace(/,/g, '.');\n  \n  let precoNumerico = parseFloat(precoLimpo);\n  \n  if (isNaN(precoNumerico)) {\n    throw new Error('Conversão para número falhou: ' + precoExtraido);\n  }\n  \n  const currentDate = new Date().toISOString().split('T')[0];\n  const [year, month, day] = currentDate.split('-');\n  const brazilianDate = `${day}/${month}/${year}`;\n  \n  return [{ json: {\n    ativo: 'eur_brl',\n    data: brazilianDate,\n    ultimo: precoNumerico,\n    abertura: precoNumerico,\n    maxima: precoNumerico,\n    minima: precoNumerico,\n    volume: null,\n    variacao_pct: null,\n    moeda: 'BRL',\n    fonte: 'Investing.com',\n    timestamp: new Date().toISOString(),\n    status: 'sucesso'\n  } }];\n} catch (error) {\n  return [{ json: {\n    ativo: 'eur_brl',\n    erro: 'Erro na conversão: ' + error.message,\n    timestamp: new Date().toISOString(),\n    status: 'erro'\n  } }];\n}"
       },
-      "id": "eur-process",
+      "id": "0c1804c7-61b4-4835-b720-858146ed5518",
       "name": "⚙️ Processar EUR/BRL",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -368,
-        1088
+        -848,
+        176
       ]
     },
     {
@@ -590,106 +495,93 @@
         "updateKey": "timestamp",
         "columns": "ativo,data,ultimo,abertura,maxima,minima,volume,variacao_pct,moeda,fonte,timestamp,status"
       },
-      "id": "eur-save",
+      "id": "84940adf-8d91-408c-9881-7a528f713c90",
       "name": "💾 Salvar EUR/BRL",
       "type": "n8n-nodes-base.googleFirebaseCloudFirestore",
       "typeVersion": 1,
       "position": [
-        -176,
-        1088
+        -656,
+        176
       ],
       "credentials": {
         "googleApi": {
-          "id": "7BpBqB87SWkOYvB1",
-          "name": "Google Firebase Cloud Firestore account 2"
+          "id": "BjVbz7Qc5N5XpI6B",
+          "name": "Google Firebase Cloud Firestore account"
         }
       }
     },
     {
       "parameters": {
-        "mode": "mergeByIndex"
+        "mode": "waitForAll",
+        "options": {}
       },
-      "id": "merge-results",
+      "id": "3f83175b-1804-4fdc-a377-5fa32cafd545",
       "name": "🔄 Consolidar Resultados",
       "type": "n8n-nodes-base.merge",
       "typeVersion": 2.1,
       "position": [
-        48,
-        688
+        224,
+        -320
       ]
     },
     {
       "parameters": {
-        "jsCode": "// Processamento consolidado de todos os resultados\nconst resultados = [];\n\n// Coletar dados de todos os nós de salvamento\nconst milhoData = $('💾 Salvar Milho').all();\nconst boiData = $('💾 Salvar Boi').all();\nconst sojaData = $('💾 Salvar Soja').all();\nconst boiGordoData = $('💾 Salvar Boi Gordo').all();\nconst madeiraData = $('💾 Salvar Madeira').all();\nconst carbonoData = $('💾 Salvar Carbono').all();\nconst usdData = $('💾 Salvar USD/BRL').all();\nconst eurData = $('💾 Salvar EUR/BRL').all();\n\n// Adicionar todos os resultados\nif (milhoData && milhoData.length > 0) {\n  resultados.push(...milhoData.map(item => item.json));\n}\n\nif (boiData && boiData.length > 0) {\n  resultados.push(...boiData.map(item => item.json));\n}\n\nif (sojaData && sojaData.length > 0) {\n  resultados.push(...sojaData.map(item => item.json));\n}\n\nif (boiGordoData && boiGordoData.length > 0) {\n  resultados.push(...boiGordoData.map(item => item.json));\n}\n\nif (madeiraData && madeiraData.length > 0) {\n  resultados.push(...madeiraData.map(item => item.json));\n}\n\nif (carbonoData && carbonoData.length > 0) {\n  resultados.push(...carbonoData.map(item => item.json));\n}\n\nif (usdData && usdData.length > 0) {\n  resultados.push(...usdData.map(item => item.json));\n}\n\nif (eurData && eurData.length > 0) {\n  resultados.push(...eurData.map(item => item.json));\n}\n\n// Retornar dados consolidados\nreturn [{\n  json: {\n    total_ativos: resultados.length,\n    ativos_processados: resultados.map(r => r.ativo).filter(Boolean),\n    timestamp_consolidacao: new Date().toISOString(),\n    dados: resultados\n  }\n}];"
+        "jsCode": "// Processamento consolidado de todos os resultados\nconst resultados = [];\n\n// Coletar dados de todos os 7 nós de salvamento\nconst milhoData = $('💾 Salvar Milho').all();\nconst boiData = $('💾 Salvar Boi').all();\nconst sojaData = $('💾 Salvar Soja').all();\nconst madeiraData = $('💾 Salvar Madeira').all();\nconst carbonoData = $('💾 Salvar Carbono').all();\nconst usdData = $('💾 Salvar USD/BRL').all();\nconst eurData = $('💾 Salvar EUR/BRL').all();\n\n// Adicionar todos os resultados\nif (milhoData && milhoData.length > 0) {\n  resultados.push(...milhoData.map(item => item.json));\n}\n\nif (boiData && boiData.length > 0) {\n  resultados.push(...boiData.map(item => item.json));\n}\n\nif (sojaData && sojaData.length > 0) {\n  resultados.push(...sojaData.map(item => item.json));\n}\n\nif (madeiraData && madeiraData.length > 0) {\n  resultados.push(...madeiraData.map(item => item.json));\n}\n\nif (carbonoData && carbonoData.length > 0) {\n  resultados.push(...carbonoData.map(item => item.json));\n}\n\nif (usdData && usdData.length > 0) {\n  resultados.push(...usdData.map(item => item.json));\n}\n\nif (eurData && eurData.length > 0) {\n  resultados.push(...eurData.map(item => item.json));\n}\n\n// Retornar dados consolidados\nreturn [{\n  json: {\n    total_ativos: resultados.length,\n    ativos_processados: resultados.map(r => r.ativo).filter(Boolean),\n    timestamp_consolidacao: new Date().toISOString(),\n    dados: resultados\n  }\n}];"
       },
-      "id": "process-consolidated",
+      "id": "97b4019d-3ce3-471d-914f-6a788157962b",
       "name": "⚙️ Processar Consolidado",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        160,
-        288
+        512,
+        -320
       ]
     },
     {
       "parameters": {
-        "url": "http://localhost:3000/api/webhook/reorganize",
         "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "httpMethod": "POST",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "Bearer sua_chave_secreta_aqui"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
-          ]
-        },
-        "sendBody": true,
-        "bodyParameters": {
-          "parameters": [
-            {
-              "name": "trigger",
-              "value": "n8n_data_saved"
-            },
-            {
-              "name": "timestamp",
-              "value": "={{ new Date().toISOString() }}"
-            }
-          ]
-        },
+        "url": "http://localhost:9002/api/webhook/reorganize",
         "options": {
           "timeout": 30000
         }
       },
-      "id": "trigger-reorganization",
+      "id": "770e3cbe-3d80-4230-8b5b-9cde8e96cec3",
       "name": "🚀 Trigger Reorganização",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 1,
       "position": [
-        384,
-        288
+        736,
+        -320
       ]
     },
     {
       "parameters": {
         "jsCode": "// Processa resposta da reorganização\nconst webhookResponse = $input.first().json;\n\nreturn [{\n  json: {\n    status: 'workflow_completed',\n    reorganization_triggered: webhookResponse.success || false,\n    message: webhookResponse.message || 'Reorganização automática executada',\n    timestamp: new Date().toISOString()\n  }\n}];"
       },
-      "id": "final-response",
+      "id": "8f0aa71f-8aba-4eff-b500-302de717e9c4",
       "name": "✅ Resposta Final",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        608,
-        288
+        960,
+        -320
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Processamento otimizado para Boi Gordo\nif ($input.first() === undefined) {\n  return [{ json: { \n    erro: 'Nenhum dado recebido do nó anterior.', \n    timestamp: new Date().toISOString() \n  } }];\n}\n\nlet precoExtraido = $input.first().json.preco;\n\nif (precoExtraido === undefined || precoExtraido === null || precoExtraido === '') {\n  return [{ json: { \n    ativo: 'boi_gordo',\n    erro: 'Preço não encontrado',\n    timestamp: new Date().toISOString(),\n    status: 'erro'\n  } }];\n}\n\ntry {\n  let precoLimpo = precoExtraido\n    .replace(/\\s/g, '')\n    .replace(/[R$]/g, '')\n    .replace(/\\./g, '')\n    .replace(/,/g, '.');\n  \n  let precoNumerico = parseFloat(precoLimpo);\n  \n  if (isNaN(precoNumerico)) {\n    throw new Error('Conversão para número falhou: ' + precoExtraido);\n  }\n  \n  const currentDate = new Date().toISOString().split('T')[0];\n  const [year, month, day] = currentDate.split('-');\n  const brazilianDate = `${day}/${month}/${year}`;\n  \n  return [{ json: {\n    ativo: 'boi_gordo',\n    data: brazilianDate,\n    ultimo: precoNumerico,\n    abertura: precoNumerico,\n    maxima: precoNumerico,\n    minima: precoNumerico,\n    volume: null,\n    variacao_pct: null,\n    moeda: 'BRL',\n    fonte: 'Investing.com',\n    timestamp: new Date().toISOString(),\n    status: 'sucesso'\n  } }];\n} catch (error) {\n  return [{ json: {\n    ativo: 'boi_gordo',\n    erro: 'Erro na conversão: ' + error.message,\n    timestamp: new Date().toISOString(),\n    status: 'erro'\n  } }];\n}"
+      },
+      "id": "0df61708-d3fa-4f30-a04c-5879043bf317",
+      "name": "⚙️ Processar Boi",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -848,
+        -640
       ]
     }
   ],
+  "pinData": {},
   "connections": {
     "🕐 Agendador (9h e 15h)": {
       "main": [
@@ -710,25 +602,25 @@
             "index": 0
           },
           {
-             "node": "lumber-fetch",
-             "type": "main",
-             "index": 0
-           },
-           {
-             "node": "carbon-fetch",
-             "type": "main",
-             "index": 0
-           },
-           {
-             "node": "usd-fetch",
-             "type": "main",
-             "index": 0
-           },
-           {
-             "node": "eur-fetch",
-             "type": "main",
-             "index": 0
-           }
+            "node": "🌐 Buscar Madeira",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "🌐 Buscar Carbono",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "🌐 Buscar USD/BRL",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "🌐 Buscar EUR/BRL",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     },
@@ -798,17 +690,6 @@
         ]
       ]
     },
-    "⚙️ Processar Boi": {
-      "main": [
-        [
-          {
-            "node": "💾 Salvar Boi",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "💾 Salvar Boi": {
       "main": [
         [
@@ -853,193 +734,6 @@
         ]
       ]
     },
-    "💾 Salvar Soja": {
-      "main": [
-        [
-          {
-            "node": "🔄 Consolidar Resultados",
-            "type": "main",
-            "index": 2
-          }
-        ]
-      ]
-    },
-    "lumber-fetch": {
-       "main": [
-         [
-           {
-             "node": "lumber-extract",
-             "type": "main",
-             "index": 0
-           }
-         ]
-       ]
-     },
-     "lumber-extract": {
-       "main": [
-         [
-           {
-             "node": "lumber-process",
-             "type": "main",
-             "index": 0
-           }
-         ]
-       ]
-     },
-     "lumber-process": {
-       "main": [
-         [
-           {
-             "node": "lumber-save",
-             "type": "main",
-             "index": 0
-           }
-         ]
-       ]
-     },
-     "lumber-save": {
-       "main": [
-         [
-           {
-             "node": "merge-results",
-             "type": "main",
-             "index": 3
-           }
-         ]
-       ]
-     },
-     "carbon-fetch": {
-       "main": [
-         [
-           {
-             "node": "carbon-extract",
-             "type": "main",
-             "index": 0
-           }
-         ]
-       ]
-     },
-     "carbon-extract": {
-       "main": [
-         [
-           {
-             "node": "carbon-process",
-             "type": "main",
-             "index": 0
-           }
-         ]
-       ]
-     },
-     "carbon-process": {
-       "main": [
-         [
-           {
-             "node": "carbon-save",
-             "type": "main",
-             "index": 0
-           }
-         ]
-       ]
-     },
-     "carbon-save": {
-       "main": [
-         [
-           {
-             "node": "merge-results",
-             "type": "main",
-             "index": 4
-           }
-         ]
-       ]
-     },
-     "usd-fetch": {
-       "main": [
-         [
-           {
-             "node": "usd-extract",
-             "type": "main",
-             "index": 0
-           }
-         ]
-       ]
-     },
-     "usd-extract": {
-       "main": [
-         [
-           {
-             "node": "usd-process",
-             "type": "main",
-             "index": 0
-           }
-         ]
-       ]
-     },
-     "usd-process": {
-       "main": [
-         [
-           {
-             "node": "usd-save",
-             "type": "main",
-             "index": 0
-           }
-         ]
-       ]
-     },
-     "usd-save": {
-       "main": [
-         [
-           {
-             "node": "merge-results",
-             "type": "main",
-             "index": 5
-           }
-         ]
-       ]
-     },
-     "eur-fetch": {
-       "main": [
-         [
-           {
-             "node": "eur-extract",
-             "type": "main",
-             "index": 0
-           }
-         ]
-       ]
-     },
-     "eur-extract": {
-       "main": [
-         [
-           {
-             "node": "eur-process",
-             "type": "main",
-             "index": 0
-           }
-         ]
-       ]
-     },
-     "eur-process": {
-       "main": [
-         [
-           {
-             "node": "eur-save",
-             "type": "main",
-             "index": 0
-           }
-         ]
-       ]
-     },
-     "eur-save": {
-       "main": [
-         [
-           {
-             "node": "merge-results",
-             "type": "main",
-             "index": 6
-           }
-         ]
-       ]
-     },
     "🔄 Consolidar Resultados": {
       "main": [
         [
@@ -1072,24 +766,237 @@
           }
         ]
       ]
+    },
+    "💾 Salvar Soja": {
+      "main": [
+        [
+          {
+            "node": "🔄 Consolidar Resultados",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "💾 Salvar Madeira": {
+      "main": [
+        [
+          {
+            "node": "🔄 Consolidar Resultados",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "💾 Salvar Carbono": {
+      "main": [
+        [
+          {
+            "node": "🔄 Consolidar Resultados",
+            "type": "main",
+            "index": 4
+          }
+        ]
+      ]
+    },
+    "🌐 Buscar Carbono": {
+      "main": [
+        [
+          {
+            "node": "🔍 Extrair Preço Carbono",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔍 Extrair Preço Carbono": {
+      "main": [
+        [
+          {
+            "node": "⚙️ Processar Carbono",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🌐 Buscar Madeira": {
+      "main": [
+        [
+          {
+            "node": "🔍 Extrair Preço Madeira",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⚙️ Processar Carbono": {
+      "main": [
+        [
+          {
+            "node": "💾 Salvar Carbono",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🌐 Buscar USD/BRL": {
+      "main": [
+        [
+          {
+            "node": "🔍 Extrair Preço USD/BRL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔍 Extrair Preço USD/BRL": {
+      "main": [
+        [
+          {
+            "node": "⚙️ Processar USD/BRL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔍 Extrair Preço EUR/BRL": {
+      "main": [
+        [
+          {
+            "node": "⚙️ Processar EUR/BRL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🌐 Buscar EUR/BRL": {
+      "main": [
+        [
+          {
+            "node": "🔍 Extrair Preço EUR/BRL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⚙️ Processar EUR/BRL": {
+      "main": [
+        [
+          {
+            "node": "💾 Salvar EUR/BRL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⚙️ Processar USD/BRL": {
+      "main": [
+        [
+          {
+            "node": "💾 Salvar USD/BRL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔍 Extrair Preço Madeira": {
+      "main": [
+        [
+          {
+            "node": "⚙️ Processar Madeira",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⚙️ Processar Madeira": {
+      "main": [
+        [
+          {
+            "node": "💾 Salvar Madeira",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⚙️ Processar Boi": {
+      "main": [
+        [
+          {
+            "node": "💾 Salvar Boi",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💾 Salvar EUR/BRL": {
+      "main": [
+        [
+          {
+            "node": "🔄 Consolidar Resultados",
+            "type": "main",
+            "index": 5
+          }
+        ]
+      ]
+    },
+    "💾 Salvar USD/BRL": {
+      "main": [
+        [
+          {
+            "node": "🔄 Consolidar Resultados",
+            "type": "main",
+            "index": 6
+          }
+        ]
+      ]
+    },
+    "✅ Resposta Final": {
+      "main": []
     }
   },
-  "active": true,
+  "active": false,
   "settings": {
     "executionOrder": "v1"
   },
+  "versionId": "28881e6e-5e8b-4f1c-94a1-b24d68b75c5e",
   "meta": {
-    "templateCredsSetupCompleted": true
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1251493b13fd80ac00a69313baa1980de5de2f519129b378ad0ae93377d8c920"
   },
+  "id": "yH808WbuQsKEFtJv",
   "tags": [
     {
-      "name": "automated-integration"
+      "name": "automated-integration",
+      "id": "zZqtGscOqnZ9yYLR",
+      "createdAt": "2025-09-08T21:09:53.146Z",
+      "updatedAt": "2025-09-08T21:09:53.146Z"
     },
     {
-      "name": "firebase-reorganization"
+      "name": "firebase-reorganization",
+      "id": "o5CyELMAqkiwl9xM",
+      "createdAt": "2025-09-08T21:09:52.503Z",
+      "updatedAt": "2025-09-08T21:09:52.503Z"
     },
     {
-      "name": "commodities-optimized"
+      "name": "commodities-optimized",
+      "id": "yPq3IGUmp2KkWLer",
+      "createdAt": "2025-09-08T21:09:52.755Z",
+      "updatedAt": "2025-09-08T21:09:52.755Z"
     }
   ]
 }

@@ -10,9 +10,47 @@ O sistema permite que o n8n continue salvando dados na coleção `cotacoes_do_di
 
 Use o arquivo `n8n-workflow-optimized.json` que inclui:
 - **Agendamento automático**: Executa às 9h e 15h nos dias úteis
-- **Processamento otimizado**: Nomes de ativos padronizados (milho, boi_gordo, soja)
+- **Processamento otimizado**: Nomes de ativos padronizados (milho, boi_gordo, soja, carbono, madeira, usd_brl, eur_brl)
 - **Integração automática**: Chama o webhook de reorganização após salvar os dados
 - **Tratamento de erros**: Melhor handling de erros e timeouts
+
+**Ativos Monitorados:**
+- Milho (Commodities)
+- Boi (Commodities)
+- Soja (Commodities)
+- Boi Gordo / Live Cattle (Commodities)
+- Madeira / Lumber (Commodities)
+- Carbono / Carbon Emissions (Commodities)
+- USD/BRL (Moedas)
+- EUR/BRL (Moedas)
+
+**Estrutura do Workflow:**
+1. **🕐 Agendador (9h e 15h)** - Cron que executa às 9h e 15h
+2. **🌐 Buscar [Ativo]** - Requisições HTTP para Investing.com (8 ativos)
+3. **🔍 Extrair Preço [Ativo]** - Extração HTML dos preços
+4. **⚙️ Processar [Ativo]** - Processamento e formatação dos dados
+5. **💾 Salvar [Ativo]** - Salvamento no Firestore
+6. **🔄 Consolidar Resultados** - Merge node que aguarda todos os salvamentos (8 inputs)
+7. **⚙️ Processar Consolidado** - Processa dados consolidados de todos os ativos
+8. **🚀 Trigger Reorganização** - Webhook para reorganização automática
+9. **✅ Resposta Final** - Confirmação de execução
+
+### Correções Implementadas
+
+**Problema Resolvido**: "Referenced node is unexecuted" no nó Consolidar Resultados
+
+**Solução Aplicada**:
+- **Merge Node**: Substituição do código que referenciava nós específicos por um merge node
+- **Aguarda Execução**: O merge node aguarda todos os nós paralelos terminarem
+- **Consolidação Segura**: Processa resultados apenas após todos os salvamentos
+- **Webhook Sequencial**: Chama reorganização somente após consolidação completa
+
+**Estrutura Corrigida**:
+1. **Processamento Paralelo** → Salva dados de múltiplos ativos simultaneamente
+2. **Merge Node** → Aguarda todos os salvamentos terminarem
+3. **Consolidar Resultados** → Processa dados consolidados de forma segura
+4. **Webhook Reorganização** → Chama endpoint de reorganização
+5. **Resposta Final** → Retorna status consolidado
 
 ## Fluxo de Trabalho
 
