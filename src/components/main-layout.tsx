@@ -18,6 +18,7 @@ import {
   Loader2,
   Database,
   RefreshCcw,
+  Calculator,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -59,6 +60,7 @@ const navItems: NavItem[] = [
   { href: '/analysis', icon: Library, label: 'Análise' },
   { href: '/reports', icon: FileText, label: 'Relatórios' },
   { href: '/data-source', icon: Database, label: 'Fonte de Dados' },
+  { href: '/ucs-calculator', icon: Calculator, label: 'Calculadora UCS' },
   { href: '/settings', icon: Settings, label: 'Configurações' },
   { href: '/alerts', icon: Bell, label: 'Alertas' },
 ];
