@@ -20,6 +20,7 @@ import { getCommodities, saveCommodity, deleteCommodity } from '@/lib/commodity-
 import { CommoditySourcesTable } from '@/components/commodity-sources-table';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { EditCommodityModal } from '@/components/edit-commodity-modal';
+import { UserManagement } from '@/components/user-management';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -52,7 +53,7 @@ const formulaSchema = z.object({
 
 
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState('sources');
+  const [activeTab, setActiveTab] = useState('users');
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [showFormulaAlert, setShowFormulaAlert] = useState(false);
@@ -188,7 +189,7 @@ export default function SettingsPage() {
             {/* VUS Section */}
             <div>
                 <h3 className="text-lg font-medium mb-4">1. Valor de Uso da Terra (VUS)</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mobile-form-grid sm:grid-cols-2 lg:grid-cols-3">
                      <div className="space-y-2">
                         <Label htmlFor="PROD_BOI">Produção Boi (@/ha/ano)</Label>
                         <Input id="PROD_BOI" type="number" step="any" {...formulaForm.register('PROD_BOI')} />
@@ -202,7 +203,7 @@ export default function SettingsPage() {
                         <Input id="PROD_MILHO" type="number" step="any" {...formulaForm.register('PROD_MILHO')} />
                     </div>
                 </div>
-                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
+                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-6 mobile-form-grid sm:grid-cols-2 lg:grid-cols-4">
                      <div className="space-y-2">
                         <Label htmlFor="PESO_PEC">Peso Pecuária (%)</Label>
                         <Input id="PESO_PEC" type="number" step="any" {...formulaForm.register('PESO_PEC')} placeholder="Ex: 0.35 para 35%" />
@@ -225,7 +226,7 @@ export default function SettingsPage() {
             {/* VMAD Section */}
             <div>
                 <h3 className="text-lg font-medium mb-4">2. Valor da Madeira (VMAD)</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mobile-form-grid md:grid-cols-2 lg:grid-cols-3">
                     <div className="space-y-2">
                         <Label htmlFor="VOLUME_MADEIRA_HA">Fator m³ (Volume Madeira/ha)</Label>
                         <Input id="VOLUME_MADEIRA_HA" type="number" step="any" {...formulaForm.register('VOLUME_MADEIRA_HA')} />
@@ -240,7 +241,7 @@ export default function SettingsPage() {
             {/* CRS Section */}
             <div>
                 <h3 className="text-lg font-medium mb-4">3. Custo da Responsabilidade Socioambiental (CRS)</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mobile-form-grid sm:grid-cols-2 lg:grid-cols-3">
                      <div className="space-y-2">
                         <Label htmlFor="FATOR_CARBONO">Fator Crédito de Carbono</Label>
                         <Input id="FATOR_CARBONO" type="number" step="any" {...formulaForm.register('FATOR_CARBONO')} />
@@ -293,8 +294,13 @@ export default function SettingsPage() {
       <div className="flex min-h-screen w-full flex-col">
         <PageHeader title="Configurações" />
         <main className="flex min-h-[calc(100vh_-_theme(spacing.16))] flex-1 flex-col gap-4 p-4 md:gap-8 md:p-10">
-          <div className="mx-auto grid w-full max-w-6xl items-start gap-6 md:grid-cols-[180px_1fr] lg:grid-cols-[250px_1fr]">
-            <nav className="grid gap-4 text-sm text-muted-foreground md:sticky md:top-20">
+          <div className="mx-auto grid w-full max-w-6xl items-start gap-6 grid-cols-1 md:grid-cols-[180px_1fr] lg:grid-cols-[250px_1fr]">
+            <nav className="grid gap-4 text-sm text-muted-foreground md:sticky md:top-20 mobile-nav md:grid">
+              <a href="#" 
+                 onClick={() => setActiveTab('users')}
+                 className={activeTab === 'users' ? "font-semibold text-primary" : ""}>
+                Usuários
+              </a>
               <a href="#" 
                  onClick={() => setActiveTab('sources')}
                  className={activeTab === 'sources' ? "font-semibold text-primary" : ""}>
@@ -307,6 +313,7 @@ export default function SettingsPage() {
               </a>
             </nav>
             <div className="grid gap-6">
+              {activeTab === 'users' && <UserManagement />}
               {activeTab === 'formula' && (
                 <Card>
                     <CardHeader>

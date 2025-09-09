@@ -63,7 +63,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="relative h-screen w-full overflow-hidden">
+    <div className="relative h-screen w-full overflow-hidden mobile-container">
         <div className="absolute inset-0 z-0">
             <Image
                 src="/image/login.jpg"
@@ -75,19 +75,19 @@ export default function LoginPage() {
             />
             <div className="absolute inset-0 bg-black/70"></div>
        </div>
-       <div className="relative z-10 flex min-h-screen w-full items-center justify-center">
-           <div className="w-full max-w-md rounded-2xl border border-border/20 bg-background/80 p-8 shadow-2xl backdrop-blur-sm">
+       <div className="relative z-10 flex min-h-screen w-full items-center justify-center px-4 sm:px-6 lg:px-8">
+           <div className="w-full max-w-md rounded-2xl border border-border/20 bg-background/80 p-4 sm:p-8 shadow-2xl backdrop-blur-sm mobile-card">
             <div className="mx-auto grid w-full max-w-sm gap-6">
                 <div className="grid gap-2 text-center">
                     <div className="flex justify-center items-center gap-2 mb-2">
-                        <FileSpreadsheet className="size-8 text-primary" />
-                        <h1 className="text-3xl font-bold">Índice UCS</h1>
+                        <FileSpreadsheet className="size-6 sm:size-8 text-primary" />
+                        <h1 className="text-2xl sm:text-3xl font-bold text-responsive">Índice UCS</h1>
                     </div>
                     <p className="text-balance text-muted-foreground">
                     Insira suas credenciais para acessar o painel.
                     </p>
                 </div>
-                <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4">
+                <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 mobile-form">
                     <div className="grid gap-2">
                     <Label htmlFor="email">E-mail</Label>
                     <Input
@@ -95,7 +95,7 @@ export default function LoginPage() {
                         type="email"
                         placeholder="seu@email.com"
                         {...register('email')}
-                        className="bg-background/80"
+                        className="bg-background/80 input-mobile"
                     />
                     {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
                     </div>
@@ -109,10 +109,10 @@ export default function LoginPage() {
                         Esqueceu a senha?
                         </Link>
                     </div>
-                    <Input id="password" type="password" placeholder="********" {...register('password')} className="bg-background/80"/>
+                    <Input id="password" type="password" placeholder="********" {...register('password')} className="bg-background/80 input-mobile"/>
                     {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
                     </div>
-                    <Button type="submit" className="w-full" disabled={isLoading}>
+                    <Button type="submit" className="w-full button-mobile" disabled={isLoading}>
                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Acessar
                     </Button>

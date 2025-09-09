@@ -46,6 +46,7 @@ import { firebaseConfig } from '@/lib/firebase-config';
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from './ui/skeleton';
+import { FirstLoginPasswordReset } from './first-login-password-reset';
 
 type NavItem = {
   href: string;
@@ -116,13 +117,40 @@ export function MainLayout({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const [user, setUser] = useState<User | null>(null);
   const [loadingUser, setLoadingUser] = useState(true);
+  const [isFirstLogin, setIsFirstLogin] = useState(false);
+  const [checkingFirstLogin, setCheckingFirstLogin] = useState(true);
   const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
   const auth = getAuth(app);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       setLoadingUser(false);
+      
+      if (currentUser) {
+        // Aqui você verificaria no Firestore se é o primeiro login
+        // Por enquanto, vamos simular a verificação
+        try {
+          // const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+          // const userData = userDoc.data();
+          // setIsFirstLogin(userData?.isFirstLogin || false);
+          
+          // Simulação: verificar se o usuário foi criado recentemente (últimas 24h)
+          const userCreationTime = new Date(currentUser.metadata.creationTime || '');
+          const now = new Date();
+          const hoursSinceCreation = (now.getTime() - userCreationTime.getTime()) / (1000 * 60 * 60);
+          
+          // Se foi criado nas últimas 24 horas, assumir que é primeiro login
+          setIsFirstLogin(hoursSinceCreation < 24);
+        } catch (error) {
+          console.error('Erro ao verificar primeiro login:', error);
+          setIsFirstLogin(false);
+        }
+      } else {
+        setIsFirstLogin(false);
+      }
+      
+      setCheckingFirstLogin(false);
     });
     return () => unsubscribe();
   }, [auth]);
@@ -160,12 +188,35 @@ export function MainLayout({ children }: { children: ReactNode }) {
     return name[0].toUpperCase();
   }
 
+  const handlePasswordChanged = () => {
+    setIsFirstLogin(false);
+  };
+
+  // Se ainda está verificando o primeiro login, mostrar loading
+  if (checkingFirstLogin) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Se é primeiro login, mostrar tela de alteração de senha
+  if (isFirstLogin && user) {
+    return (
+      <FirstLoginPasswordReset 
+        userEmail={user.email || ''} 
+        onPasswordChanged={handlePasswordChanged}
+      />
+    );
+  }
+
   return (
     <AuthProvider>
       <SidebarProvider>
-        <Sidebar>
+        <Sidebar className="sidebar-mobile">
           <SidebarHeader>
-            <div className="flex items-center gap-3 p-4 h-16 border-b">
+            <div className="flex items-center gap-3 p-4 h-16 border-b mobile-container">
               <FileSpreadsheet className="size-8 text-primary" />
               <div className="flex flex-col">
                 <h2 className="text-xl font-semibold tracking-tight text-foreground">
@@ -175,16 +226,17 @@ export function MainLayout({ children }: { children: ReactNode }) {
             </div>
           </SidebarHeader>
           <SidebarContent>
-            <SidebarMenu>
+            <SidebarMenu className="mobile-nav">
               {navItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
                     asChild
                     isActive={pathname === item.href}
                     tooltip={{ children: item.label }}
+                    className="button-mobile"
                   >
                     <Link href={item.href}>
-                      <item.icon />
+                      <item.icon className="h-3 w-3 sm:h-4 sm:w-4" />
                       <span>{item.label}</span>
                     </Link>
                   </SidebarMenuButton>
@@ -245,8 +297,8 @@ export function MainLayout({ children }: { children: ReactNode }) {
                   <span>Perfil</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={toggleTheme}>
-                  <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                  <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                  <Sun className="h-3 w-3 sm:h-[1.2rem] sm:w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                  <Moon className="absolute h-3 w-3 sm:h-[1.2rem] sm:w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
                   <span className="ml-2">Alternar Tema</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
