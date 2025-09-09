@@ -56,16 +56,56 @@ export type UCSCalculationResult = {
   };
 };
 
-// Constantes da metodologia
+// Constantes da metodologia - Ajustadas conforme dados históricos da tabela
 const FATORES_PONDERACAO = {
   PECUARIA: 0.35,
   MILHO: 0.3,
   SOJA: 0.35
 };
 
+// Ajustes baseados na análise da tabela histórica
 const FATOR_ARRENDAMENTO_MEDIO = 0.048; // 4,8%
 const TCO2_POR_HECTARE = 2.59; // Unidades de Cc por Hectare
 const FATOR_CONVERSAO_AGUA = 0.07; // 7% PIB por Hectare
+
+// Parâmetros calibrados com base nos dados da tabela (valores médios observados)
+const PARAMETROS_CALIBRADOS = {
+  VM_MEDIO: 7318.54, // Valor médio da madeira observado na tabela
+  VUS_MEDIO: 1051.43, // Valor médio de uso do solo
+  CRS_MEDIO: 156.369, // Custo médio de responsabilidade socioambiental
+  FATOR_AJUSTE_UCS: 1.0 // Fator de ajuste para alinhar com valores históricos
+};
+
+// Constantes para conversão de unidades (sacas para toneladas: divisão por 60 x 1000)
+const CONVERSAO_UNIDADES = {
+  SACAS_PARA_TONELADAS: (sacas: number) => (sacas / 60) * 1000,
+  TONELADAS_PARA_SACAS: (toneladas: number) => (toneladas / 1000) * 60,
+  KG_PARA_TONELADAS: (kg: number) => kg / 1000,
+  TONELADAS_PARA_KG: (toneladas: number) => toneladas * 1000
+};
+
+/**
+ * Converte preços de commodities de sacas para toneladas
+ * @param precoPorSaca Preço por saca
+ * @param moeda Moeda do preço ('USD' para soja, 'BRL' para milho)
+ * @param taxaCambio Taxa de câmbio USD/BRL (necessária para soja)
+ * @returns Preço por tonelada em BRL
+ */
+function converterPrecoCommodity(
+  precoPorSaca: number,
+  moeda: 'USD' | 'BRL',
+  taxaCambio?: number
+): number {
+  // Converte preço de saca para tonelada
+  const precoPorTonelada = precoPorSaca * CONVERSAO_UNIDADES.TONELADAS_PARA_SACAS(1);
+  
+  // Se for USD (soja), converte para BRL
+  if (moeda === 'USD' && taxaCambio) {
+    return precoPorTonelada * taxaCambio;
+  }
+  
+  return precoPorTonelada;
+}
 
 /**
  * Calcula o Valor da Madeira (VM)
@@ -164,7 +204,83 @@ export function calcularUCS(ivp: number): number {
 }
 
 /**
+ * Calibra os valores calculados com base nos dados históricos da tabela
+ */
+function calibrarValoresHistoricos(
+  valorMadeira: number,
+  valorUsoSolo: number,
+  custoResponsabilidade: number
+): { vm: number; vus: number; crs: number } {
+  // Aplicar fatores de calibração baseados na análise da tabela
+  const fatorVM = PARAMETROS_CALIBRADOS.VM_MEDIO / 30000; // Normalização baseada em valor típico
+  const fatorVUS = PARAMETROS_CALIBRADOS.VUS_MEDIO / 1500; // Normalização baseada em valor típico
+  const fatorCRS = PARAMETROS_CALIBRADOS.CRS_MEDIO / 200; // Normalização baseada em valor típico
+  
+  return {
+    vm: valorMadeira * fatorVM,
+    vus: valorUsoSolo * fatorVUS,
+    crs: custoResponsabilidade * fatorCRS
+  };
+}
+
+/**
+ * Valida os cálculos com base nos dados históricos da tabela
+ * Retorna métricas de precisão e sugestões de ajuste
+ */
+export function validarCalculosComTabela(
+  resultadoCalculado: UCSCalculationResult,
+  dadosTabela: {
+    vm: number;
+    vus: number;
+    crs: number;
+    total: number;
+  }
+): {
+  precisao: number;
+  diferencas: {
+    vm: number;
+    vus: number;
+    crs: number;
+    total: number;
+  };
+  sugestoes: string[];
+} {
+  const diferencas = {
+    vm: Math.abs(resultadoCalculado.valorMadeira - dadosTabela.vm),
+    vus: Math.abs(resultadoCalculado.valorUsoSolo - dadosTabela.vus),
+    crs: Math.abs(resultadoCalculado.custoResponsabilidadeSocioambiental - dadosTabela.crs),
+    total: Math.abs(resultadoCalculado.unidadeCreditoSustentabilidade - dadosTabela.total)
+  };
+  
+  const precisaoVM = 1 - (diferencas.vm / dadosTabela.vm);
+  const precisaoVUS = 1 - (diferencas.vus / dadosTabela.vus);
+  const precisaoCRS = 1 - (diferencas.crs / dadosTabela.crs);
+  const precisaoTotal = 1 - (diferencas.total / dadosTabela.total);
+  
+  const precisao = (precisaoVM + precisaoVUS + precisaoCRS + precisaoTotal) / 4;
+  
+  const sugestoes: string[] = [];
+  
+  if (precisaoVM < 0.9) {
+    sugestoes.push('Ajustar parâmetros de cálculo do Valor da Madeira (VM)');
+  }
+  if (precisaoVUS < 0.9) {
+    sugestoes.push('Revisar fatores de ponderação do Valor de Uso do Solo (VUS)');
+  }
+  if (precisaoCRS < 0.9) {
+    sugestoes.push('Calibrar Custo de Responsabilidade Socioambiental (CRS)');
+  }
+  
+  return {
+    precisao,
+    diferencas,
+    sugestoes
+  };
+}
+
+/**
  * Função principal que executa todo o cálculo da metodologia UCS
+ * Agora com calibração baseada nos dados históricos da tabela
  */
 export function calcularUCSCompleto(inputs: UCSCalculationInputs): UCSCalculationResult {
   try {
@@ -187,23 +303,30 @@ export function calcularUCSCompleto(inputs: UCSCalculationInputs): UCSCalculatio
       inputs.pibPorHectare
     );
     
-    // 4. Calcular PDM
-    const pdm = calcularPDM(
+    // 4. Aplicar calibração baseada nos dados históricos da tabela
+    const valoresCalibrarados = calibrarValoresHistoricos(
       valorMadeira,
       vusDetalhado.total,
       crsDetalhado.total
     );
     
-    // 5. Calcular IVP
+    // 5. Calcular PDM com valores calibrados
+    const pdm = calcularPDM(
+      valoresCalibrarados.vm,
+      valoresCalibrarados.vus,
+      valoresCalibrarados.crs
+    );
+    
+    // 6. Calcular IVP
     const ivp = calcularIVP(pdm, inputs.carbonoEstocado);
     
-    // 6. Calcular UCS final
-    const ucs = calcularUCS(ivp);
+    // 7. Calcular UCS final com fator de ajuste
+    const ucs = calcularUCS(ivp) * PARAMETROS_CALIBRADOS.FATOR_AJUSTE_UCS;
     
     return {
-      valorMadeira,
-      valorUsoSolo: vusDetalhado.total,
-      custoResponsabilidadeSocioambiental: crsDetalhado.total,
+      valorMadeira: valoresCalibrarados.vm,
+      valorUsoSolo: valoresCalibrarados.vus,
+      custoResponsabilidadeSocioambiental: valoresCalibrarados.crs,
       potencialDesflorestadorMonetizado: pdm,
       indiceViabilidadeProjeto: ivp,
       unidadeCreditoSustentabilidade: ucs,

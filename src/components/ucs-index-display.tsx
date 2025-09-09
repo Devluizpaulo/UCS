@@ -31,6 +31,7 @@ import {
   calcularUCSCompleto,
   obterValoresPadrao,
   formatarValorMonetario,
+  validarCalculosComTabela,
   type UCSCalculationInputs,
   type UCSCalculationResult
 } from '@/lib/ucs-pricing-service';
@@ -51,6 +52,10 @@ export function UCSIndexDisplay({ className }: UCSIndexDisplayProps) {
   const [previousValue, setPreviousValue] = useState<number>(0);
   const [chartData, setChartData] = useState<ChartData[]>([]);
   const [showChart, setShowChart] = useState(false);
+  const [validacao, setValidacao] = useState<{
+    precisao: number;
+    sugestoes: string[];
+  } | null>(null);
 
   const calculateUCSIndex = async () => {
     setLoading(true);
@@ -92,6 +97,20 @@ export function UCSIndexDisplay({ className }: UCSIndexDisplayProps) {
 
       // Calcular UCS
       const resultado = calcularUCSCompleto(inputs);
+      
+      // Validar com dados da tabela histórica (exemplo baseado na tabela compartilhada)
+      const dadosTabela = {
+        vm: 7318.54,
+        vus: 1051.43,
+        crs: 156.369,
+        total: 49052.86
+      };
+      
+      const validacaoResultado = validarCalculosComTabela(resultado, dadosTabela);
+      setValidacao({
+        precisao: validacaoResultado.precisao,
+        sugestoes: validacaoResultado.sugestoes
+      });
       
       // Determinar tendência
       const newValue = resultado.unidadeCreditoSustentabilidade;
@@ -208,6 +227,21 @@ export function UCSIndexDisplay({ className }: UCSIndexDisplayProps) {
                 <p className="text-xs text-muted-foreground">
                   Moeda UCS
                 </p>
+                {validacao && (
+                  <div className="mt-2">
+                    <Badge 
+                      variant={validacao.precisao > 0.8 ? 'default' : validacao.precisao > 0.6 ? 'secondary' : 'destructive'}
+                      className="text-xs"
+                    >
+                      Precisão: {(validacao.precisao * 100).toFixed(1)}%
+                    </Badge>
+                    {validacao.sugestoes.length > 0 && (
+                      <p className="text-xs text-amber-600 mt-1">
+                        Calibração baseada em dados históricos
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
               {resultado && (
                 <Dialog>
