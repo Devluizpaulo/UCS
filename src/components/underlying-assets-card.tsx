@@ -6,7 +6,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "./ui/
 import { UnderlyingAssetsTable } from "./underlying-assets-table";
 import { useToast } from "@/hooks/use-toast";
 import type { CommodityPriceData, ChartData } from "@/lib/types";
-import { getCommodityPrices } from "@/lib/data-service";
+// Removed direct import of server action
 import { IndexHistoryTable } from './index-history-table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 
@@ -24,7 +24,11 @@ export function UnderlyingAssetsCard({ indexHistory, loadingIndexHistory, isConf
     const fetchAssets = useCallback(async () => {
         setIsLoading(true);
         try {
-            const pricesResult = await getCommodityPrices();
+            const response = await fetch('/api/commodity-prices');
+            if (!response.ok) {
+                throw new Error('Failed to fetch commodity prices');
+            }
+            const pricesResult = await response.json();
             setCommodities(pricesResult);
         } catch (error) {
              toast({

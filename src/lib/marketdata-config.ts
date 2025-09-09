@@ -5,6 +5,17 @@ import type { CommodityMap } from "./types";
 
 // This file is intentionally not marked with 'use server' as it exports constant objects.
 
+// Mapeamento dos nomes dos ativos para suas respectivas coleções no Firestore
+export const ASSET_COLLECTION_MAP: Record<string, string> = {
+  'USD/BRL - Dólar Americano Real Brasileiro': 'usd',
+  'EUR/BRL - Euro Real Brasileiro': 'eur',
+  'Boi Gordo Futuros': 'boi_gordo',
+  'Soja Futuros': 'soja',
+  'Milho Futuros': 'milho',
+  'Madeira Serrada Futuros': 'madeira',
+  'Crédito Carbono Futuros': 'carbono',
+};
+
 // This map defines the INITIAL set of commodities to be seeded into the database
 // on the very first run. After that, the master list is managed in Firestore
 // via the Settings page. The keys here (e.g., 'USD-BRL-Cambio') will become the

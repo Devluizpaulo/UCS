@@ -76,10 +76,15 @@ export async function getCommodities(): Promise<CommodityConfig[]> {
             return commodities;
         }
 
-        const commodities = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-        } as CommodityConfig));
+        const commodities = snapshot.docs.map(doc => {
+             const data = doc.data();
+             // Extract only CommodityConfig properties, excluding Firestore metadata
+             const { timestamp, createdAt, updatedAt, ...commodityData } = data;
+             return {
+                 id: doc.id,
+                 ...commodityData,
+             } as CommodityConfig;
+         });
         
         return commodities.sort((a, b) => {
             if (a.category === 'exchange' && b.category !== 'exchange') return -1;
@@ -111,7 +116,12 @@ export async function getCommodity(id: string): Promise<CommodityConfig | null> 
         const docRef = db.collection(COMMODITIES_COLLECTION).doc(id);
         const docSnap = await docRef.get();
         if (docSnap.exists) {
-            return { id: docSnap.id, ...docSnap.data() } as CommodityConfig;
+            const data = docSnap.data();
+            if (data) {
+                // Extract only CommodityConfig properties, excluding Firestore metadata
+                const { timestamp, createdAt, updatedAt, ...commodityData } = data;
+                return { id: docSnap.id, ...commodityData } as CommodityConfig;
+            }
         }
         return null;
     } catch(error) {
@@ -153,7 +163,7 @@ export async function deleteCommodity(id: string): Promise<void> {
     try {
         const docRef = db.collection(COMMODITIES_COLLECTION).doc(id);
         await docRef.delete();
-        console.log(`[CommodotyConfigService] Successfully deleted commodity: ${id}`);
+        console.log(`[CommodityConfigService] Successfully deleted commodity: ${id}`);
     } catch (error) {
         console.error(`[CommodityConfigService] Error deleting commodity ${id}:`, error);
         throw new Error(`Failed to delete commodity ${id}.`);

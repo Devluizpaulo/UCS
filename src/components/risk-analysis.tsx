@@ -9,36 +9,49 @@ import type { RiskAnalysisData, FirestoreQuote } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { Skeleton } from './ui/skeleton';
 import { getCommodities } from '@/lib/commodity-config-service';
-import { getUcsIndexValue, getCotacoesHistorico } from '@/lib/data-service';
+// Removed direct import of server actions
 import { calculate_volatility, calculate_correlation } from '@/lib/statistics';
 import { getFormulaParameters } from '@/lib/formula-service';
 
 
 async function getRiskAnalysisData(): Promise<RiskAnalysisData> {
-    const [commodities, ucsHistoryData, formulaParams] = await Promise.all([
+    const [commodities, ucsHistoryDataResponse, formulaParams] = await Promise.all([
         getCommodities(),
-        getUcsIndexValue('1d'), // Use daily data for correlation
+        fetch('/api/ucs-index?interval=1d'), // Use daily data for correlation
         getFormulaParameters(),
     ]);
+    
+    if (!ucsHistoryDataResponse.ok) {
+        throw new Error('Failed to fetch UCS index data');
+    }
+    const ucsHistoryData = await ucsHistoryDataResponse.json();
 
     if (!formulaParams.isConfigured) {
         return { metrics: [] }; // Return empty if formula is not configured
     }
     
     // Calculate returns for the index. Filter out zero values to avoid division by zero.
-    const ucsPrices = ucsHistoryData.history.map(d => d.value).filter(v => v > 0);
+    const ucsPrices = ucsHistoryData.history.map((d: { time: string; value: number }) => d.value).filter((v: number) => v > 0);
     if (ucsPrices.length < 2) return { metrics: [] };
 
-    const ucsReturns = ucsPrices.slice(1).map((v, i) => (ucsPrices[i] === 0 ? 0 : (v / ucsPrices[i]) -1));
+    const ucsReturns = ucsPrices.slice(1).map((v: number, i: number) => (ucsPrices[i] === 0 ? 0 : (v / ucsPrices[i]) -1));
     
     const metricsPromises = commodities.map(async (asset) => {
         try {
             // Get historical data from our Firestore historical collection
-            const assetHistory: FirestoreQuote[] = await getCotacoesHistorico(asset.name, 30);
+            const response = await fetch(`/api/cotacoes-historico?ativo=${encodeURIComponent(asset.name)}&limit=30`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch historical data');
+            }
+            const assetHistory: FirestoreQuote[] = await response.json();
             if (assetHistory.length < 2) return null;
 
             // Sort by date ascending to calculate returns correctly
-            const sortedHistory = assetHistory.sort((a,b) => a.timestamp.toDate() - b.timestamp.toDate());
+            const sortedHistory = assetHistory.sort((a,b) => {
+                const aTime = a.timestamp instanceof Date ? a.timestamp.getTime() : new Date(a.timestamp).getTime();
+                const bTime = b.timestamp instanceof Date ? b.timestamp.getTime() : new Date(b.timestamp).getTime();
+                return aTime - bTime;
+            });
             
             const assetPrices = sortedHistory.map(d => d.ultimo).filter(v => v > 0);
             if (assetPrices.length < 2) return null;

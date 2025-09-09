@@ -11,11 +11,28 @@ if (!admin.apps.length) {
     try {
         console.log('[Firebase Admin] Initializing Firebase Admin SDK...');
         
+        // Validate required environment variables
+        const requiredEnvVars = {
+            FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID,
+            FIREBASE_PRIVATE_KEY_ID: process.env.FIREBASE_PRIVATE_KEY_ID,
+            FIREBASE_CLIENT_EMAIL: process.env.FIREBASE_CLIENT_EMAIL,
+            FIREBASE_SERVICE_ACCOUNT: process.env.FIREBASE_SERVICE_ACCOUNT
+        };
+
+        // Check for missing environment variables
+        const missingVars = Object.entries(requiredEnvVars)
+            .filter(([key, value]) => !value)
+            .map(([key]) => key);
+
+        if (missingVars.length > 0) {
+            throw new Error(`Missing required environment variables: ${missingVars.join(', ')}. Please check your .env.local file.`);
+        }
+
         // Use service account credentials from environment variables
         const serviceAccount = {
             type: "service_account",
             project_id: process.env.FIREBASE_PROJECT_ID,
-            private_key_id: process.env.FIREBASE_PRIVATE_KEY,
+            private_key_id: process.env.FIREBASE_PRIVATE_KEY_ID,
             private_key: process.env.FIREBASE_SERVICE_ACCOUNT?.replace(/\\n/g, '\n'),
             client_email: process.env.FIREBASE_CLIENT_EMAIL,
             client_id: "",

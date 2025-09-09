@@ -4,64 +4,92 @@
 
 import type { ChartData, CommodityPriceData, HistoryInterval, UcsData, FirestoreQuote } from './types';
 import { getCommodities } from './commodity-config-service';
+import { ASSET_COLLECTION_MAP } from './marketdata-config';
 import { db } from './firebase-admin-config';
 import admin from 'firebase-admin';
+import { Timestamp } from 'firebase-admin/firestore';
 
 
 // --- Functions to get data from FIRESTORE ---
 
 /**
+ * Busca dados de uma coleção específica por ativo
+ */
+export async function getAssetData(assetName: string, limit: number = 10): Promise<FirestoreQuote[]> {
+    try {
+        const collectionName = ASSET_COLLECTION_MAP[assetName];
+        if (!collectionName) {
+            console.warn(`[DataService] No collection mapping found for asset: ${assetName}`);
+            return [];
+        }
+
+        const query = db.collection(collectionName)
+            .orderBy('timestamp', 'desc')
+            .limit(limit);
+            
+        const querySnapshot = await query.get();
+        const data: FirestoreQuote[] = [];
+        
+        querySnapshot.forEach(doc => {
+            const docData = doc.data();
+            // Convert Firestore Timestamp to serializable format
+            const serializedData = {
+                ...docData,
+                timestamp: docData.timestamp?.toDate?.() || docData.timestamp,
+                data: docData.data?.toDate?.() || docData.data
+            };
+            data.push({
+                id: doc.id,
+                ...serializedData
+            } as FirestoreQuote);
+        });
+        
+        return data;
+    } catch (error) {
+        console.error(`[DataService] Error fetching data for asset ${assetName}:`, error);
+        return [];
+    }
+}
+
+/**
  * Retrieves the latest prices for all configured commodities.
- * This function is optimized to fetch all recent quotes in a single query
- * and then process them in memory, making it more efficient and resilient.
+ * This function now reads from individual asset collections.
  */
 export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
     try {
-        const [commodities, dailyQuotes] = await Promise.all([
-            getCommodities(),
-            getCotacoesDoDia(undefined, 200) // Fetch a larger batch of recent quotes
-        ]);
+        const commodities = await getCommodities();
 
         if (!commodities || commodities.length === 0) {
             console.warn('[DataService] No commodities configured.');
             return [];
         }
 
-        // Create a map for quick lookup of the latest two prices for each asset
-        const priceMap = new Map<string, { latest: FirestoreQuote, previous: FirestoreQuote | null }>();
-
-        // Sort quotes by timestamp descending to easily find latest and previous
-        dailyQuotes.sort((a, b) => b.timestamp.toMillis() - a.timestamp.toMillis());
-
-        for (const quote of dailyQuotes) {
-            if (!priceMap.has(quote.ativo)) {
-                // This is the first time we see this asset, so it's the latest
-                priceMap.set(quote.ativo, { latest: quote, previous: null });
-            } else {
-                const entry = priceMap.get(quote.ativo)!;
-                if (!entry.previous) {
-                    // This is the second time, so it's the previous price
-                    entry.previous = quote;
-                }
-            }
-        }
-        
-        // Build the final data structure
-        const result = commodities.map(commodity => {
-            const prices = priceMap.get(commodity.name);
+        // Fetch data for each commodity from its specific collection
+        const pricePromises = commodities.map(async (commodity) => {
+            const assetData = await getAssetData(commodity.name, 2); // Get latest 2 records for comparison
             
             let currentPrice = 0;
             let change = 0;
             let absoluteChange = 0;
             let lastUpdated = 'N/A';
 
-            if (prices?.latest) {
-                currentPrice = prices.latest.ultimo || 0;
-                const ts = prices.latest.timestamp as admin.firestore.Timestamp;
-                lastUpdated = ts ? ts.toDate().toLocaleString('pt-BR') : 'N/A';
+            if (assetData.length > 0) {
+                const latest = assetData[0];
+                currentPrice = latest.ultimo || 0;
+                const ts = latest.timestamp;
+                if (ts instanceof Timestamp) {
+                    lastUpdated = ts.toDate().toLocaleString('pt-BR');
+                } else if (ts instanceof Date) {
+                    lastUpdated = ts.toLocaleString('pt-BR');
+                } else if (ts) {
+                    lastUpdated = new Date(ts).toLocaleString('pt-BR');
+                } else {
+                    lastUpdated = 'N/A';
+                }
 
-                if (prices.previous) {
-                    const previousPrice = prices.previous.ultimo || 0;
+                if (assetData.length > 1) {
+                    const previous = assetData[1];
+                    const previousPrice = previous.ultimo || 0;
                     if (previousPrice !== 0) {
                         absoluteChange = currentPrice - previousPrice;
                         change = (absoluteChange / previousPrice) * 100;
@@ -78,6 +106,8 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
             };
         });
 
+        const result = await Promise.all(pricePromises);
+        
         return result.sort((a, b) => {
             if (a.category === 'exchange' && b.category !== 'exchange') return -1;
             if (a.category !== 'exchange' && b.category === 'exchange') return 1;
@@ -85,10 +115,33 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
         });
 
     } catch (error) {
-        console.error(`[DataService] CRITICAL: Failed to get commodity list or prices. Error: ${error}`);
+        console.error(`[DataService] CRITICAL: Failed to get commodity prices. Error: ${error}`);
         return [];
     }
 }
+
+/**
+ * Função legada mantida para compatibilidade - agora redireciona para getAssetData
+ */
+export async function getCotacoesDoDia(ativo?: string, limit: number = 50): Promise<FirestoreQuote[]> {
+    if (!ativo || ativo === 'todos') {
+        // Se não especificar ativo, retorna dados de todas as coleções
+        const allData: FirestoreQuote[] = [];
+        for (const [assetName] of Object.entries(ASSET_COLLECTION_MAP)) {
+            const data = await getAssetData(assetName, limit);
+            allData.push(...data);
+        }
+        return allData.sort((a, b) => {
+            const aTime = a.timestamp instanceof Date ? a.timestamp.getTime() : new Date(a.timestamp).getTime();
+            const bTime = b.timestamp instanceof Date ? b.timestamp.getTime() : new Date(b.timestamp).getTime();
+            return bTime - aTime;
+        }).slice(0, limit);
+    }
+    
+    return await getAssetData(ativo, limit);
+}
+
+
 export async function organizeCotacoesHistorico(): Promise<{ success: boolean; message: string; }> {
     try {
         const cotacoesDoDiaRef = db.collection('cotacoes_do_dia');
@@ -153,39 +206,21 @@ export async function organizeCotacoesHistorico(): Promise<{ success: boolean; m
     }
 }
 
-export async function getCotacoesDoDia(ativo?: string, limit: number = 50): Promise<FirestoreQuote[]> {
+
+export async function getCotacoesHistorico(ativo: string, limit: number = 30): Promise<FirestoreQuote[]> {
     try {
-        let query: admin.firestore.Query = db.collection('cotacoes_do_dia');
-        
-        // Only add the 'where' clause if 'ativo' is a valid, non-empty string
-        if (typeof ativo === 'string' && ativo.trim() !== '' && ativo !== 'todos') {
-            query = query.where('ativo', '==', ativo);
-        }
-        
-        query = query.orderBy('timestamp', 'desc').limit(limit);
-        const querySnapshot = await query.get();
-        const cotacoes: any[] = [];
-        
-        querySnapshot.forEach(doc => {
-            cotacoes.push({
-                id: doc.id,
-                ...doc.data()
-            });
-        });
-        
-        return cotacoes;
-    } catch (error: any) {
-        if (error.message && error.message.includes('Could not refresh access token')) {
-            console.error(`[DataService] FIREBASE AUTHENTICATION ERROR while fetching 'cotacoes_do_dia': ${error.message}. This is likely an issue with Application Default Credentials in the server environment.`);
-            throw error; // Re-throw to be caught by the calling page
-        } else {
-            console.error(`[DataService] Error fetching 'cotacoes_do_dia' for ${ativo || 'all assets'}:`, error);
-        }
-        return []; // Return empty on other errors
+        // Usa a nova função getAssetData para buscar dados históricos
+        return await getAssetData(ativo, limit);
+    } catch (error) {
+        console.error(`Erro ao buscar histórico para ${ativo}:`, error);
+        return [];
     }
 }
 
-export async function getCotacoesHistorico(ativo: string, limit: number = 30): Promise<FirestoreQuote[]> {
+/**
+ * Função legada para compatibilidade com a estrutura antiga de cotacoes_historico
+ */
+export async function getCotacoesHistoricoLegacy(ativo: string, limit: number = 30): Promise<FirestoreQuote[]> {
     try {
         const normalizedAtivoId = ativo.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
         
@@ -199,9 +234,16 @@ export async function getCotacoesHistorico(ativo: string, limit: number = 30): P
         const historico: any[] = [];
         
         querySnapshot.forEach(doc => {
+            const data = doc.data();
+            // Convert Firestore Timestamp to serializable format
+            const serializedData = {
+                ...data,
+                timestamp: data.timestamp?.toDate?.() || data.timestamp,
+                data: data.data?.toDate?.() || data.data
+            };
             historico.push({
                 id: doc.id,
-                ...doc.data()
+                ...serializedData
             });
         });
         
@@ -247,8 +289,8 @@ export async function getUcsIndexValue(interval: HistoryInterval = '1d'): Promis
 
         querySnapshot.forEach(doc => {
             const data = doc.data();
-            const timestamp = data.savedAt as admin.firestore.Timestamp;
-            const date = timestamp.toDate();
+            const timestamp = data.savedAt;
+            const date = timestamp?.toDate ? timestamp.toDate() : (timestamp ? new Date(timestamp) : new Date());
             let formattedDate = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
             history.push({
                 time: formattedDate,
@@ -429,7 +471,7 @@ export async function autoReorganizeNewData(): Promise<{ success: boolean; messa
  * @param asset - Asset name (will be normalized)
  * @param date - Date in DD/MM/YYYY or DD-MM-YYYY format
  */
-export async function getOrganizedAssetData(asset: string, date?: string): Promise<any[]> {
+export async function getOrganizedAssetData(asset: string, date?: string): Promise<any[] | undefined> {
   try {
     const normalizedAsset = asset
       .toLowerCase()
@@ -447,7 +489,16 @@ export async function getOrganizedAssetData(asset: string, date?: string): Promi
       const doc = await docRef.get();
       
       if (doc.exists) {
-        return [{ id: doc.id, ...doc.data() }];
+        const data = doc.data();
+        if (data) {
+            // Convert Firestore Timestamp to serializable format
+            const serializedData = {
+                ...data,
+                timestamp: data.timestamp?.toDate?.() || data.timestamp,
+                data: data.data?.toDate?.() || data.data
+            };
+            return [{ id: doc.id, ...serializedData }];
+         }
       } else {
         return [];
       }
@@ -457,7 +508,18 @@ export async function getOrganizedAssetData(asset: string, date?: string): Promi
       const results: any[] = [];
       
       snapshot.forEach(doc => {
-        results.push({ id: doc.id, ...doc.data() });
+            const data = doc.data();
+            if (!data) return;
+            // Convert Firestore Timestamp to serializable format
+            const serializedData = {
+              ...data,
+              timestamp: data.timestamp?.toDate?.() || data.timestamp,
+              data: data.data instanceof Date ? data.data : (data.data?.toDate?.() || data.data)
+            };
+        results.push({
+          id: doc.id,
+          ...serializedData
+        });
       });
       
       return results;

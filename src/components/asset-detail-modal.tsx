@@ -15,7 +15,7 @@ import { Loader2, ArrowDown, ArrowUp } from 'lucide-react';
 import { useEffect, useState, useCallback } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { ScrollArea } from './ui/scroll-area';
-import { getCotacoesHistorico } from '@/lib/data-service';
+// Removed direct import of server action
 import { cn } from '@/lib/utils';
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
 
@@ -48,10 +48,14 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
 
         try {
             const limit = intervalLimitMap[currentInterval];
-            const history = await getCotacoesHistorico(currentAsset.name, limit);
+            const response = await fetch(`/api/cotacoes-historico?ativo=${encodeURIComponent(currentAsset.name)}&interval=${currentInterval}&limit=${limit}`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch historical data');
+            }
+            const history = await response.json();
             setHistoricalData(history);
             
-            const chartPoints = history.map(d => ({ 
+            const chartPoints = history.map((d: FirestoreQuote) => ({ 
                 time: d.id, // Use the date ID 'YYYY-MM-DD'
                 value: d.ultimo 
             }));

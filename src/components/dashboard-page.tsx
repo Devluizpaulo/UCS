@@ -7,7 +7,7 @@ import { PageHeader } from '@/components/page-header';
 import { UcsIndexChart } from '@/components/ucs-index-chart';
 import type { ChartData, UcsData, HistoryInterval } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { getUcsIndexValue } from '@/lib/data-service';
+// Removed direct import of server action
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Skeleton } from './ui/skeleton';
 import { AnimatedNumber } from './ui/animated-number';
@@ -53,7 +53,11 @@ export function DashboardPage() {
 
   const fetchDashboardData = useCallback(async () => {
       try {
-        const ucsResult = await getUcsIndexValue();
+        const response = await fetch('/api/ucs-index');
+        if (!response.ok) {
+          throw new Error('Failed to fetch UCS index data');
+        }
+        const ucsResult = await response.json();
         setUcsData(ucsResult.latest);
         setIndexHistoryData(ucsResult.history); // Initial history (daily)
         return ucsResult.latest.isConfigured;
@@ -108,7 +112,11 @@ export function DashboardPage() {
     if(!ucsData?.isConfigured) return;
     setLoadingHistory(true);
     try {
-        const result = await getUcsIndexValue(interval);
+        const response = await fetch(`/api/ucs-index?interval=${interval}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch UCS index data');
+        }
+        const result = await response.json();
         setIndexHistoryData(result.history);
     } catch (error) {
         console.error(`Failed to fetch index history for interval ${interval}:`, error);
