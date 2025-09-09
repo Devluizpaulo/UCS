@@ -69,6 +69,8 @@ export function UserManagement() {
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [generatedPassword, setGeneratedPassword] = useState<string>('');
   const [showPassword, setShowPassword] = useState(false);
+  const [emailText, setEmailText] = useState<string>('');
+  const [showEmailModal, setShowEmailModal] = useState(false);
   const { toast } = useToast();
 
   const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
@@ -89,6 +91,56 @@ export function UserManagement() {
       password += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     return password;
+  };
+
+  const generateEmailText = (user: User, password: string) => {
+    return `Assunto: Bem-vindo ao Sistema Índice UCS - Suas credenciais de acesso
+
+Olá ${user.displayName},
+
+Sua conta foi criada no Sistema Índice UCS. Abaixo estão suas credenciais de acesso:
+
+📧 Email: ${user.email}
+🔑 Senha temporária: ${password}
+🌐 Link de acesso: ${window.location.origin}/login
+
+⚠️ IMPORTANTE - INSTRUÇÕES DE PRIMEIRO ACESSO:
+
+1. Acesse o sistema usando o link acima
+2. Faça login com o email e senha temporária fornecidos
+3. No primeiro acesso, você será obrigatoriamente direcionado para alterar sua senha
+4. Escolha uma senha segura com pelo menos 8 caracteres
+5. Após alterar a senha, você terá acesso completo ao sistema
+
+🔒 SEGURANÇA:
+- Esta senha é temporária e deve ser alterada no primeiro login
+- Não compartilhe suas credenciais com terceiros
+- Mantenha sua senha segura e confidencial
+
+📱 ACESSO MÓVEL:
+- O sistema é otimizado para dispositivos móveis
+- Você pode acessar de qualquer dispositivo com internet
+
+Se tiver dúvidas ou problemas de acesso, entre em contato com o administrador do sistema.
+
+Atenciosamente,
+Equipe Índice UCS`;
+  };
+
+  const copyEmailText = async () => {
+    try {
+      await navigator.clipboard.writeText(emailText);
+      toast({
+        title: "Texto copiado!",
+        description: "O texto do email foi copiado para a área de transferência.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro ao copiar",
+        description: "Não foi possível copiar o texto. Tente selecionar e copiar manualmente.",
+        variant: "destructive",
+      });
+    }
   };
 
   // Buscar usuários
@@ -146,9 +198,22 @@ export function UserManagement() {
       setGeneratedPassword(tempPassword);
       setShowPassword(true);
       
+      // Gerar texto do email para compartilhamento
+      const newUser: User = {
+        id: user.uid,
+        email: data.email,
+        displayName: data.displayName,
+        role: data.role,
+        isFirstLogin: true,
+        createdAt: new Date().toISOString()
+      };
+      const emailContent = generateEmailText(newUser, tempPassword);
+      setEmailText(emailContent);
+      setShowEmailModal(true);
+      
       toast({
         title: 'Usuário criado com sucesso',
-        description: `${data.displayName} foi adicionado ao sistema.`,
+        description: `${data.displayName} foi adicionado ao sistema. Texto do email gerado para compartilhamento.`,
       });
 
       form.reset();
@@ -426,6 +491,31 @@ export function UserManagement() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Modal para mostrar texto do email */}
+      <Dialog open={showEmailModal} onOpenChange={setShowEmailModal}>
+        <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Credenciais do Usuário - Email para Compartilhamento</DialogTitle>
+            <DialogDescription>
+              Copie o texto abaixo e envie por email para o novo usuário.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="p-4 bg-muted rounded-lg">
+              <pre className="whitespace-pre-wrap text-sm font-mono">{emailText}</pre>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEmailModal(false)}>
+              Fechar
+            </Button>
+            <Button onClick={copyEmailText}>
+              Copiar Texto
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
