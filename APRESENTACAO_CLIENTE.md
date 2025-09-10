@@ -1,4 +1,3 @@
-
 # Apresentação do Projeto: Monitor do Índice UCS
 
 ## 1. Visão Geral e Objetivo do Projeto
@@ -33,7 +32,7 @@ Uma seção dedicada a análises mais profundas, dividida em três ferramentas p
 - **Análise de Cenários:** Uma ferramenta de simulação que permite ao usuário projetar o impacto de mudanças no preço de um ativo sobre o valor final do índice. Por exemplo, é possível responder à pergunta: "O que aconteceria com o índice se o preço da soja subisse 10%?".
 
 ### c. Calculadora UCS
-Uma ferramenta transparente que permite ao usuário calcular manually o valor da Unidade de Crédito de Sustentabilidade (UCS), inserindo ou ajustando todos os parâmetros da fórmula oficial, desde cotações de commodities até produtividades e fatores de conversão.
+Uma ferramenta transparente que permite ao usuário calcular manualmente o valor da Unidade de Crédito de Sustentabilidade (UCS), inserindo ou ajustando todos os parâmetros da fórmula oficial, desde cotações de commodities até produtividades e fatores de conversão.
 
 ### d. Geração de Relatórios com IA
 Funcionalidade avançada para exportar os dados da plataforma em formatos profissionais, enriquecidos com análises geradas por Inteligência Artificial.

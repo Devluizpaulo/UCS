@@ -40,7 +40,7 @@ A aplicação é construída com uma arquitetura moderna baseada em componentes,
     - **Autenticação:** [Firebase Authentication](https://firebase.google.com/docs/auth)
 
 - **Fonte de Dados Externa:**
-    - **API de Cotações:** [MarketData.app](https://marketdata.app/) para buscar preços de commodities e taxas de câmbio.
+    - **API de Cotações:** Os dados são inseridos no Firestore via processos externos (ex: n8n).
 
 ## 4. Estrutura de Pastas do Projeto
 
@@ -105,14 +105,28 @@ A aplicação é construída com uma arquitetura moderna baseada em componentes,
 
 Para o funcionamento correto da aplicação, é necessário configurar as seguintes variáveis de ambiente no arquivo `.env` na raiz do projeto.
 
-**Configurações do Firebase:**
+**Configurações do Firebase (Admin SDK - Lado do Servidor):**
 
-O projeto utiliza Firebase Admin SDK para conectar com o banco de dados. As configurações são feitas através de variáveis de ambiente no arquivo `.env`.
-Você precisa gerar uma chave longa e aleatória. Pode usar um gerador de senhas online ou o seguinte comando no terminal (Linux/macOS):
+- `FIREBASE_PROJECT_ID`: O ID do seu projeto Firebase.
+- `FIREBASE_CLIENT_EMAIL`: O e-mail da conta de serviço do Firebase.
+- `FIREBASE_PRIVATE_KEY`: A chave privada da conta de serviço.
+
+**Configurações da IA (Gemini):**
+- `GEMINI_API_KEY`: Sua chave de API do Google AI Studio (ou Google Cloud).
+
+
 **Exemplo de arquivo `.env`:**
 
 ```
-FIREBASE_SERVICE_ACCOUNT=sua_chave_privada_do_firebase
+# Firebase Admin SDK
+FIREBASE_PROJECT_ID=seu-projeto-id
+FIREBASE_CLIENT_EMAIL=firebase-adminsdk-xxxxx@seu-projeto-id.iam.gserviceaccount.com
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nSUA_CHAVE_PRIVADA_AQUI\n-----END PRIVATE KEY-----\n"
+
+# Google AI
+GEMINI_API_KEY=sua_gemini_api_key
+
+# Indica o ambiente (não afeta o build, apenas para referência)
 NEXT_PUBLIC_APP_ENV=development
 ```
 
@@ -124,11 +138,10 @@ NEXT_PUBLIC_APP_ENV=development
     ```
 2.  **Configurar Variáveis de Ambiente:**
     - Crie um arquivo `.env` na raiz do projeto.
-    - Configure as variáveis do Firebase conforme necessário.
+    - Configure as variáveis do Firebase e Gemini conforme o exemplo acima.
 3.  **Executar o Servidor de Desenvolvimento:**
     ```bash
     npm run dev
     ```
 4.  **Acessar a Aplicação:**
     - Abra `http://localhost:9002` em seu navegador.
-```

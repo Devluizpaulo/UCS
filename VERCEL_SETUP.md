@@ -1,7 +1,7 @@
 # Configuração do Vercel para Firebase Admin SDK
 
 ## Problema
-O build no Vercel pode falhar com erros relacionados à inicialização do Firebase Admin SDK, como `Failed to parse FIREBASE_SERVICE_ACCOUNT` ou `Could not refresh access token`. Isso ocorre porque o Vercel não lida bem com variáveis de ambiente JSON de múltiplas linhas.
+O build no Vercel pode falhar com erros relacionados à inicialização do Firebase Admin SDK, como `Failed to parse FIREBASE_SERVICE_ACCOUNT`, `Could not refresh access token` ou `Invalid PEM formatted message`. Isso ocorre porque o Vercel não lida bem com variáveis de ambiente JSON de múltiplas linhas e, às vezes, formata mal as chaves.
 
 ## Solução (Método Recomendado)
 
@@ -26,7 +26,9 @@ No painel do seu projeto no Vercel, vá para **Settings > Environment Variables*
 
 
 **IMPORTANTE para `FIREBASE_PRIVATE_KEY`:**
-Copie o valor completo da chave privada, incluindo `-----BEGIN PRIVATE KEY-----` e `-----END PRIVATE KEY-----`. O Vercel irá formatar a string em uma única linha, substituindo as quebras de linha por `\n`. **Isso é esperado**, e o código da aplicação está preparado para lidar com isso. Não tente remover as quebras de linha manualmente.
+1.  **Copie o valor completo** da chave privada, incluindo `-----BEGIN PRIVATE KEY-----` e `-----END PRIVATE KEY-----`.
+2.  **Cole o valor no Vercel.** O Vercel pode formatar a string em uma única linha, substituindo as quebras de linha por `\n`. **Isso é esperado**, e o código da aplicação está preparado para lidar com isso.
+3.  **Verifique se não há aspas extras.** Ocasionalmente, ao colar, aspas (`"`) podem ser adicionadas no início e no fim do valor. Remova-as se aparecerem.
 
 ### 3. Verifique a Configuração
 1.  Após configurar as variáveis, acione um novo deploy no Vercel.

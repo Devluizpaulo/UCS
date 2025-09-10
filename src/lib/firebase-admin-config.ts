@@ -17,9 +17,10 @@ if (!admin.apps.length) {
     
     // Vercel's environment variable handling can be tricky. This logic robustly handles the private key.
     // 1. Start with the raw key.
-    // 2. Replace all occurrences of '\\n' (literal backslash-n) with an actual newline character.
+    // 2. Trim whitespace and remove quotes that Vercel might add.
+    // 3. Replace all occurrences of '\\n' (literal backslash-n) with an actual newline character.
     const rawPrivateKey = process.env.FIREBASE_PRIVATE_KEY || '';
-    const privateKey = rawPrivateKey.replace(/\\n/g, '\n');
+    const privateKey = rawPrivateKey.trim().replace(/^"|"$/g, '').replace(/\\n/g, '\n');
 
 
     if (!projectId || !clientEmail || !privateKey) {
