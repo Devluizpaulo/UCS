@@ -6,11 +6,11 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, PlusCircle, Trash2, Edit, Mail, MessageSquare } from 'lucide-react';
+import { Loader2, PlusCircle, Trash2, Edit, Mail, MessageSquare, MoreVertical, User as UserIcon, Phone, Calendar } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -19,6 +19,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   Dialog,
   DialogContent,
@@ -261,9 +267,21 @@ Equipe Índice UCS
     form.reset({ role: 'user', displayName: '', email: '', phoneNumber: '' });
     setIsDialogOpen(true);
   };
+  
+  const handleEditUser = (user: User) => {
+    setEditingUser(user);
+    form.reset({
+      email: user.email,
+      displayName: user.displayName,
+      phoneNumber: user.phoneNumber,
+      role: user.role,
+    });
+    setIsDialogOpen(true);
+  }
 
   return (
-    <Card className="mobile-card">
+    <>
+    <Card>
       <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-responsive">
         <div>
           <CardTitle className="text-responsive">Gerenciamento de Usuários</CardTitle>
@@ -276,17 +294,82 @@ Equipe Índice UCS
           Novo Usuário
         </Button>
       </CardHeader>
-      <CardContent className="p-responsive">
-        <div className="rounded-md border mobile-table-container">
-          <Table className="mobile-table table-mobile">
+      <CardContent className="p-0 sm:p-6 sm:pt-0">
+        
+        {/* Mobile View - Cards */}
+        <div className="grid gap-4 sm:hidden p-4">
+            {isFetching ? (
+                 [...Array(3)].map((_, i) => (
+                    <Card key={i} className="p-4 space-y-3 animate-pulse">
+                        <div className="flex justify-between items-start">
+                            <div className="w-3/4 h-5 bg-muted rounded"></div>
+                            <div className="w-6 h-6 bg-muted rounded"></div>
+                        </div>
+                        <div className="w-1/2 h-4 bg-muted rounded"></div>
+                        <div className="w-1/3 h-4 bg-muted rounded"></div>
+                    </Card>
+                 ))
+            ) : users.length === 0 ? (
+                 <div className="text-center py-10 col-span-full">
+                    <p className="text-sm text-muted-foreground">Nenhum usuário encontrado.</p>
+                 </div>
+            ) : (
+                users.map(user => (
+                     <Card key={user.id}>
+                        <CardHeader className="flex flex-row items-center justify-between p-4">
+                             <div className="font-semibold text-primary">{user.displayName}</div>
+                             <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                        <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => handleEditUser(user)}>
+                                        <Edit className="mr-2 h-4 w-4" /> Editar
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => setDeletingUserId(user.id)} className="text-destructive">
+                                        <Trash2 className="mr-2 h-4 w-4" /> Excluir
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                             </DropdownMenu>
+                        </CardHeader>
+                        <CardContent className="p-4 pt-0 space-y-2 text-sm text-muted-foreground">
+                            <div className="flex items-center gap-2">
+                                <Mail className="h-4 w-4" />
+                                <span>{user.email}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Phone className="h-4 w-4" />
+                                <span>{user.phoneNumber || 'N/A'}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <UserIcon className="h-4 w-4" />
+                                 <Badge variant={user.role === 'admin' ? 'default' : 'secondary'} className="capitalize">{user.role}</Badge>
+                                 <Badge variant={user.isFirstLogin ? 'outline' : 'default'}>{user.isFirstLogin ? 'Pendente' : 'Ativo'}</Badge>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Calendar className="h-4 w-4" />
+                                <span>Criado em {new Date(user.createdAt).toLocaleDateString('pt-BR')}</span>
+                            </div>
+                        </CardContent>
+                     </Card>
+                ))
+            )}
+        </div>
+
+
+        {/* Desktop View - Table */}
+        <div className="rounded-md border hidden sm:block">
+          <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="text-responsive">Nome</TableHead>
-                <TableHead className="text-responsive">Contato</TableHead>
-                <TableHead className="text-responsive">Função</TableHead>
-                <TableHead className="text-responsive">Status</TableHead>
-                <TableHead className="text-responsive hidden sm:table-cell">Criado em</TableHead>
-                <TableHead className="text-right text-responsive">Ações</TableHead>
+                <TableHead>Nome</TableHead>
+                <TableHead>Contato</TableHead>
+                <TableHead>Função</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Criado em</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -306,50 +389,38 @@ Equipe Índice UCS
               ) : (
                 users.map((user) => (
                   <TableRow key={user.id}>
-                    <TableCell className="font-medium text-responsive">{user.displayName}</TableCell>
-                    <TableCell className="text-responsive text-xs sm:text-sm">
+                    <TableCell className="font-medium">{user.displayName}</TableCell>
+                    <TableCell>
                       <div>{user.email}</div>
-                      <div className="text-muted-foreground">{user.phoneNumber || 'N/A'}</div>
+                      <div className="text-muted-foreground text-xs">{user.phoneNumber || 'N/A'}</div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={user.role === 'admin' ? 'default' : 'secondary'} className="text-xs">
-                        {user.role === 'admin' ? 'Administrador' : 'Usuário'}
+                      <Badge variant={user.role === 'admin' ? 'default' : 'secondary'} className="capitalize">
+                        {user.role}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={user.isFirstLogin ? 'outline' : 'default'} className="text-xs">
+                      <Badge variant={user.isFirstLogin ? 'outline' : 'default'}>
                         {user.isFirstLogin ? 'Primeiro Login' : 'Ativo'}
                       </Badge>
                     </TableCell>
-                    <TableCell className="hidden sm:table-cell text-responsive">{new Date(user.createdAt).toLocaleDateString('pt-BR')}</TableCell>
+                    <TableCell>{new Date(user.createdAt).toLocaleDateString('pt-BR')}</TableCell>
                     <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setEditingUser(user);
-                            form.reset({
-                              email: user.email,
-                              displayName: user.displayName,
-                              phoneNumber: user.phoneNumber,
-                              role: user.role,
-                            });
-                            setIsDialogOpen(true);
-                          }}
-                          className="p-2"
-                        >
-                          <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setDeletingUserId(user.id)}
-                          className="p-2"
-                        >
-                          <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
-                        </Button>
-                      </div>
+                       <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                                <MoreVertical className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleEditUser(user)}>
+                                <Edit className="mr-2 h-4 w-4" /> Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setDeletingUserId(user.id)} className="text-destructive">
+                                <Trash2 className="mr-2 h-4 w-4" /> Excluir
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                       </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))
@@ -358,6 +429,7 @@ Equipe Índice UCS
           </Table>
         </div>
       </CardContent>
+    </Card>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
@@ -495,6 +567,6 @@ Equipe Índice UCS
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </Card>
+    </>
   );
 }

@@ -152,7 +152,7 @@
   
   /* Ajustes para cards */
   .card {
-    @apply mx-2;
+    @apply mx-0;
   }
   
   /* Ajustes para grids */
