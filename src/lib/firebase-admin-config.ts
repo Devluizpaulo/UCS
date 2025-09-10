@@ -14,8 +14,14 @@ if (!admin.apps.length) {
 
     const projectId = process.env.FIREBASE_PROJECT_ID;
     const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-    // Vercel escapes newlines in environment variables. We need to un-escape them.
-    const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+    
+    // Robustly handle the private key, which can be malformed by Vercel's environment variable handling.
+    // 1. Start with the raw key.
+    // 2. Remove potential surrounding quotes.
+    // 3. Replace all occurrences of '\\n' with an actual newline character.
+    const rawPrivateKey = process.env.FIREBASE_PRIVATE_KEY || '';
+    const privateKey = rawPrivateKey.replace(/^"|"$/g, '').replace(/\\n/g, '\n');
+
 
     if (!projectId || !clientEmail || !privateKey) {
       throw new Error('Missing one or more required Firebase environment variables (FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY). Please check your Vercel project settings and refer to VERCEL_SETUP.md.');
