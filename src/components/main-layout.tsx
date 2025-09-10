@@ -19,6 +19,7 @@ import {
   Database,
   RefreshCcw,
   Calculator,
+  User,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -42,7 +43,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sidebar';
-import { getAuth, signOut, onAuthStateChanged, User } from 'firebase/auth';
+import { getAuth, signOut, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { firebaseConfig } from '@/lib/firebase-config';
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { useToast } from '@/hooks/use-toast';
@@ -53,17 +54,22 @@ type NavItem = {
   href: string;
   icon: React.ElementType;
   label: string;
+  exact?: boolean;
 };
 
 const navItems: NavItem[] = [
-  { href: '/', icon: LayoutDashboard, label: 'Painel' },
+  { href: '/', icon: LayoutDashboard, label: 'Painel', exact: true },
   { href: '/analysis', icon: Library, label: 'Análise' },
   { href: '/reports', icon: FileText, label: 'Relatórios' },
   { href: '/data-source', icon: Database, label: 'Fonte de Dados' },
   { href: '/ucs-calculator', icon: Calculator, label: 'Calculadora UCS' },
-  { href: '/settings', icon: Settings, label: 'Configurações' },
   { href: '/alerts', icon: Bell, label: 'Alertas' },
 ];
+
+const settingsNavItems: NavItem[] = [
+    { href: '/profile', icon: User, label: 'Meu Perfil' },
+    { href: '/settings', icon: Settings, label: 'Configurações' },
+]
 
 function AuthProvider({ children }: { children: ReactNode }) {
     const router = useRouter();
@@ -117,7 +123,7 @@ export function MainLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { toast } = useToast();
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<FirebaseUser | null>(null);
   const [loadingUser, setLoadingUser] = useState(true);
   const [isFirstLogin, setIsFirstLogin] = useState(false);
   const [checkingFirstLogin, setCheckingFirstLogin] = useState(true);
@@ -138,12 +144,15 @@ export function MainLayout({ children }: { children: ReactNode }) {
           // setIsFirstLogin(userData?.isFirstLogin || false);
           
           // Simulação: verificar se o usuário foi criado recentemente (últimas 24h)
+          // E se ele não tiver um displayName, é provável que seja o primeiro login
           const userCreationTime = new Date(currentUser.metadata.creationTime || '');
           const now = new Date();
           const hoursSinceCreation = (now.getTime() - userCreationTime.getTime()) / (1000 * 60 * 60);
           
           // Se foi criado nas últimas 24 horas, assumir que é primeiro login
-          setIsFirstLogin(hoursSinceCreation < 24);
+          const passwordProvider = currentUser.providerData.some(p => p.providerId === 'password');
+          setIsFirstLogin(passwordProvider && !currentUser.displayName);
+
         } catch (error) {
           console.error('Erro ao verificar primeiro login:', error);
           setIsFirstLogin(false);
@@ -233,7 +242,7 @@ export function MainLayout({ children }: { children: ReactNode }) {
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
                     asChild
-                    isActive={pathname === item.href}
+                    isActive={item.exact ? pathname === item.href : pathname.startsWith(item.href)}
                     tooltip={{ children: item.label }}
                     className="button-mobile"
                   >
@@ -245,6 +254,39 @@ export function MainLayout({ children }: { children: ReactNode }) {
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
+            
+            <div className="mt-auto">
+                 <SidebarMenu className="mobile-nav">
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={pathname.startsWith('/profile')}
+                        tooltip={{ children: 'Meu Perfil' }}
+                        className="button-mobile"
+                      >
+                        <Link href="/profile">
+                          <User className="h-3 w-3 sm:h-4 sm:w-4" />
+                          <span>Meu Perfil</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                     <SidebarMenuItem>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={pathname.startsWith('/settings')}
+                        tooltip={{ children: 'Configurações' }}
+                        className="button-mobile"
+                      >
+                        <Link href="/settings">
+                          <Settings className="h-3 w-3 sm:h-4 sm:w-4" />
+                          <span>Configurações</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                </SidebarMenu>
+            </div>
+
+
           </SidebarContent>
           <SidebarFooter>
             <DropdownMenu>
@@ -292,11 +334,16 @@ export function MainLayout({ children }: { children: ReactNode }) {
                 </div>
               </DropdownMenuTrigger>
               <DropdownMenuContent side="right" align="start" className="w-56">
-                <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
+                <DropdownMenuLabel className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    Minha Conta
+                </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Perfil</span>
+                <DropdownMenuItem asChild>
+                    <Link href="/profile">
+                        <Settings className="mr-2 h-4 w-4" />
+                        <span>Perfil</span>
+                    </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={toggleTheme}>
                   <Sun className="h-3 w-3 sm:h-[1.2rem] sm:w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
