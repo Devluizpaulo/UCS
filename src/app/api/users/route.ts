@@ -1,4 +1,6 @@
 
+'use server';
+
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/firebase-admin-config';
 
@@ -15,7 +17,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. If no users exist, proceed to create the first admin.
-    const { email, password, displayName } = await request.json();
+    const { email, password, displayName, phoneNumber } = await request.json();
 
     if (!email || !password || !displayName) {
       return NextResponse.json(
@@ -35,6 +37,7 @@ export async function POST(request: NextRequest) {
       email,
       password,
       displayName,
+      phoneNumber,
     });
 
     // 4. Set custom claim to make this user an admin and require password change.

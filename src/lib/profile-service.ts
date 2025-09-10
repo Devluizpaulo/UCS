@@ -1,3 +1,4 @@
+
 'use server';
 
 import { getAuth, updateProfile, reauthenticateWithCredential, EmailAuthProvider, updatePassword } from 'firebase/auth';
@@ -12,7 +13,7 @@ const getClientAuth = () => {
 };
 
 // ATUALIZAR PERFIL DO USUÁRIO
-export async function updateUserProfile(displayName: string): Promise<void> {
+export async function updateUserProfile(displayName: string, phoneNumber?: string | null): Promise<void> {
   const auth = getClientAuth();
   const user = auth.currentUser;
 
@@ -25,7 +26,7 @@ export async function updateUserProfile(displayName: string): Promise<void> {
     await updateProfile(user, { displayName });
 
     // Atualizar no Firebase Authentication (servidor via Admin SDK)
-    await adminAuth.updateUser(user.uid, { displayName });
+    await adminAuth.updateUser(user.uid, { displayName, phoneNumber });
     
   } catch (error: any) {
     console.error('Erro ao atualizar perfil:', error);
@@ -51,7 +52,9 @@ export async function changeUserPassword(currentPassword: string, newPassword: s
     await updatePassword(user, newPassword);
 
     // CRÍTICO: Atualiza a custom claim para remover o status de "primeiro login"
-    await adminAuth.setCustomUserClaims(user.uid, { isFirstLogin: false });
+    // Mantém as outras claims que o usuário possa ter.
+    const currentClaims = (await adminAuth.getUser(user.uid)).customClaims;
+    await adminAuth.setCustomUserClaims(user.uid, { ...currentClaims, isFirstLogin: false });
 
 
   } catch (error: any) {

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -47,6 +48,7 @@ interface User {
   id: string;
   email: string;
   displayName: string;
+  phoneNumber?: string;
   createdAt: string;
   isFirstLogin: boolean;
   role: 'admin' | 'user';
@@ -55,6 +57,7 @@ interface User {
 const userSchema = z.object({
   email: z.string().email('E-mail inválido'),
   displayName: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
+  phoneNumber: z.string().optional(),
   role: z.enum(['admin', 'user']),
 });
 
@@ -154,6 +157,7 @@ Equipe Índice UCS`;
           id: '1',
           email: 'admin@ucs.com',
           displayName: 'Administrador',
+          phoneNumber: '(11) 99999-9999',
           createdAt: '2024-01-15',
           isFirstLogin: false,
           role: 'admin',
@@ -189,6 +193,7 @@ Equipe Índice UCS`;
       // Atualizar perfil do usuário
       await updateProfile(user, {
         displayName: data.displayName,
+        // phoneNumber: data.phoneNumber
       });
 
       // Salvar dados adicionais no Firestore
@@ -203,6 +208,7 @@ Equipe Índice UCS`;
         id: user.uid,
         email: data.email,
         displayName: data.displayName,
+        phoneNumber: data.phoneNumber,
         role: data.role,
         isFirstLogin: true,
         createdAt: new Date().toISOString()
@@ -294,7 +300,7 @@ Equipe Índice UCS`;
             <TableHeader>
               <TableRow>
                 <TableHead className="text-responsive">Nome</TableHead>
-                <TableHead className="text-responsive">E-mail</TableHead>
+                <TableHead className="text-responsive">Contato</TableHead>
                 <TableHead className="text-responsive">Função</TableHead>
                 <TableHead className="text-responsive">Status</TableHead>
                 <TableHead className="text-responsive hidden sm:table-cell">Criado em</TableHead>
@@ -319,7 +325,10 @@ Equipe Índice UCS`;
                 users.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell className="font-medium text-responsive">{user.displayName}</TableCell>
-                    <TableCell className="text-responsive text-xs sm:text-sm">{user.email}</TableCell>
+                    <TableCell className="text-responsive text-xs sm:text-sm">
+                      <div>{user.email}</div>
+                      <div className="text-muted-foreground">{user.phoneNumber || 'N/A'}</div>
+                    </TableCell>
                     <TableCell>
                       <Badge variant={user.role === 'admin' ? 'default' : 'secondary'} className="text-xs">
                         {user.role === 'admin' ? 'Administrador' : 'Usuário'}
@@ -341,6 +350,7 @@ Equipe Índice UCS`;
                             form.reset({
                               email: user.email,
                               displayName: user.displayName,
+                              phoneNumber: user.phoneNumber,
                               role: user.role,
                             });
                             setIsDialogOpen(true);
@@ -406,6 +416,19 @@ Equipe Índice UCS`;
               {form.formState.errors.email && (
                 <p className="text-xs text-destructive">
                   {form.formState.errors.email.message}
+                </p>
+              )}
+            </div>
+             <div className="space-y-2">
+              <Label htmlFor="phoneNumber">Telefone Celular (WhatsApp)</Label>
+              <Input
+                id="phoneNumber"
+                {...form.register('phoneNumber')}
+                placeholder="(XX) XXXXX-XXXX"
+              />
+              {form.formState.errors.phoneNumber && (
+                <p className="text-xs text-destructive">
+                  {form.formState.errors.phoneNumber.message}
                 </p>
               )}
             </div>

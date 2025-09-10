@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -19,6 +20,7 @@ import { Skeleton } from './ui/skeleton';
 const profileSchema = z.object({
   displayName: z.string().min(2, 'O nome deve ter pelo menos 2 caracteres.'),
   email: z.string().email(),
+  phoneNumber: z.string().optional(),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
@@ -46,6 +48,7 @@ export function UpdateProfileForm() {
       reset({
         displayName: user.displayName || '',
         email: user.email || '',
+        phoneNumber: user.phoneNumber || '',
       });
       setIsFetching(false);
     }
@@ -54,11 +57,21 @@ export function UpdateProfileForm() {
   const onSubmit = async (data: ProfileFormData) => {
     setIsLoading(true);
     try {
-      await updateUserProfile(data.displayName);
+      await updateUserProfile(data.displayName, data.phoneNumber);
       toast({
         title: 'Sucesso!',
         description: 'Seu perfil foi atualizado.',
       });
+      // Force a reload of the user to get the latest data
+       if (auth.currentUser) {
+           await auth.currentUser.reload();
+            reset({
+                displayName: auth.currentUser.displayName || '',
+                email: auth.currentUser.email || '',
+                phoneNumber: auth.currentUser.phoneNumber || '',
+            });
+       }
+
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -115,6 +128,13 @@ export function UpdateProfileForm() {
           <div className="space-y-2">
             <Label htmlFor="email">E-mail</Label>
             <Input id="email" type="email" {...register('email')} disabled />
+          </div>
+           <div className="space-y-2">
+            <Label htmlFor="phoneNumber">Telefone Celular (WhatsApp)</Label>
+            <Input id="phoneNumber" {...register('phoneNumber')} placeholder="(XX) XXXXX-XXXX" />
+            {errors.phoneNumber && (
+              <p className="text-xs text-destructive">{errors.phoneNumber.message}</p>
+            )}
           </div>
           <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
             {isLoading ? (

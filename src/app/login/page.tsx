@@ -34,6 +34,7 @@ const adminSchema = z.object({
   displayName: z.string().min(2, 'O nome é obrigatório.'),
   email: z.string().email('Por favor, insira um e-mail válido.'),
   password: z.string().min(8, 'A senha deve ter pelo menos 8 caracteres.'),
+  phoneNumber: z.string().min(10, 'O telefone deve ter pelo menos 10 dígitos.'),
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
@@ -247,6 +248,11 @@ export default function LoginPage() {
                 <Label htmlFor="admin-email" className="text-right">Email</Label>
                 <Input id="admin-email" type="email" {...adminForm.register('email')} className="col-span-3" />
                 {adminForm.formState.errors.email && <p className="col-span-4 text-right text-xs text-destructive">{adminForm.formState.errors.email.message}</p>}
+              </div>
+               <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="phoneNumber" className="text-right">Telefone Celular</Label>
+                <Input id="phoneNumber" {...adminForm.register('phoneNumber')} className="col-span-3" placeholder="(XX) XXXXX-XXXX" />
+                {adminForm.formState.errors.phoneNumber && <p className="col-span-4 text-right text-xs text-destructive">{adminForm.formState.errors.phoneNumber.message}</p>}
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="admin-password" className="text-right">Senha</Label>
