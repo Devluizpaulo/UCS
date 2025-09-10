@@ -76,13 +76,13 @@ export function UCSIndexDisplay({ className }: UCSIndexDisplayProps) {
       // Preparar inputs para o cálculo UCS
       const inputs: UCSCalculationInputs = {
         // Valores da madeira
-        fm3: formulaParams.VOLUME_MADEIRA_HA || 150,
-        pm3mad: cotacoes.pm3mad || 200,
+        fm3: formulaParams.produtividade_madeira,
+        pm3mad: cotacoes.pm3mad || 0,
         
         // Produção (dos parâmetros configurados)
-        pecuariaProducao: formulaParams.PROD_BOI || 1.5,
-        milhoProducao: formulaParams.PROD_MILHO || 8000,
-        sojaProducao: formulaParams.PROD_SOJA || 3000,
+        pecuariaProducao: formulaParams.produtividade_boi,
+        milhoProducao: formulaParams.produtividade_milho,
+        sojaProducao: formulaParams.produtividade_soja,
         
         // Cotações (das fontes de dados)
         pecuariaCotacao: cotacoes.pecuariaCotacao || 0,
@@ -91,26 +91,13 @@ export function UCSIndexDisplay({ className }: UCSIndexDisplayProps) {
         cotacaoCreditoCarbono: cotacoes.cotacaoCreditoCarbono || 0,
         
         // Outros parâmetros
-        pibPorHectare: 50000, // Valor padrão
-        carbonoEstocado: 100   // Valor padrão
+        pibPorHectare: formulaParams.pib_por_hectare,
+        carbonoEstocado: formulaParams.produtividade_carbono,
+        areaTotal: formulaParams.area_total
       };
 
       // Calcular UCS
       const resultado = calcularUCSCompleto(inputs);
-      
-      // Validar com dados da tabela histórica (exemplo baseado na tabela compartilhada)
-      const dadosTabela = {
-        vm: 7318.54,
-        vus: 1051.43,
-        crs: 156.369,
-        total: 49052.86
-      };
-      
-      const validacaoResultado = validarCalculosComTabela(resultado, dadosTabela);
-      setValidacao({
-        precisao: validacaoResultado.precisao,
-        sugestoes: validacaoResultado.sugestoes
-      });
       
       // Determinar tendência
       const newValue = resultado.unidadeCreditoSustentabilidade;
@@ -129,10 +116,8 @@ export function UCSIndexDisplay({ className }: UCSIndexDisplayProps) {
       
       // Adicionar ponto ao gráfico
       const newDataPoint: ChartData = {
-        timestamp: new Date().toISOString(),
+        time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
         value: newValue,
-        date: new Date().toLocaleDateString('pt-BR'),
-        time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
       };
       
       setChartData(prev => {
@@ -227,21 +212,6 @@ export function UCSIndexDisplay({ className }: UCSIndexDisplayProps) {
                 <p className="text-xs text-muted-foreground">
                   Moeda UCS
                 </p>
-                {validacao && (
-                  <div className="mt-2">
-                    <Badge 
-                      variant={validacao.precisao > 0.8 ? 'default' : validacao.precisao > 0.6 ? 'secondary' : 'destructive'}
-                      className="text-xs"
-                    >
-                      Precisão: {(validacao.precisao * 100).toFixed(1)}%
-                    </Badge>
-                    {validacao.sugestoes.length > 0 && (
-                      <p className="text-xs text-amber-600 mt-1">
-                        Calibração baseada em dados históricos
-                      </p>
-                    )}
-                  </div>
-                )}
               </div>
               {resultado && (
                 <Dialog>
@@ -267,10 +237,10 @@ export function UCSIndexDisplay({ className }: UCSIndexDisplayProps) {
                       <Card className="border-green-200 bg-green-50">
                         <CardHeader>
                           <CardTitle className="text-xl text-green-800">
-                            UCS (CF) = {formatarValorMonetario(resultado.unidadeCreditoSustentabilidade)}
+                            UCS = {formatarValorMonetario(resultado.unidadeCreditoSustentabilidade)}
                           </CardTitle>
                           <CardDescription className="text-green-600">
-                            Fórmula: UCS(CF) = 2 × IVP
+                            Fórmula: UCS = 2 × IVP
                           </CardDescription>
                         </CardHeader>
                       </Card>
@@ -291,7 +261,7 @@ export function UCSIndexDisplay({ className }: UCSIndexDisplayProps) {
 
                         <Card>
                           <CardHeader>
-                            <CardTitle className="text-lg">PDM - Potencial Desflorestador</CardTitle>
+                            <CardTitle className="text-lg">PDM - Patrimônio Digital</CardTitle>
                             <CardDescription>PDM = VM + VUS + CRS</CardDescription>
                           </CardHeader>
                           <CardContent>
@@ -344,7 +314,7 @@ export function UCSIndexDisplay({ className }: UCSIndexDisplayProps) {
                                 {formatarValorMonetario(resultado.custoResponsabilidadeSocioambiental)}
                               </div>
                               <div className="text-sm text-muted-foreground">
-                                Custo Resp. Socioambiental
+                                Custo Socioambiental
                               </div>
                             </div>
                           </div>
@@ -357,35 +327,35 @@ export function UCSIndexDisplay({ className }: UCSIndexDisplayProps) {
                             <div className="grid grid-cols-3 gap-2 text-sm">
                               <div>
                                 <Badge variant="secondary">Pecuária (35%)</Badge>
-                                <div className="mt-1">{formatarValorMonetario(resultado.detalhes.vus.pecuaria.valor)}</div>
+                                <div className="mt-1">{formatarValorMonetario(resultado.detalhes.vus.vboi)}</div>
                               </div>
                               <div>
                                 <Badge variant="secondary">Milho (30%)</Badge>
-                                <div className="mt-1">{formatarValorMonetario(resultado.detalhes.vus.milho.valor)}</div>
+                                <div className="mt-1">{formatarValorMonetario(resultado.detalhes.vus.vmilho)}</div>
                               </div>
                               <div>
                                 <Badge variant="secondary">Soja (35%)</Badge>
-                                <div className="mt-1">{formatarValorMonetario(resultado.detalhes.vus.soja.valor)}</div>
+                                <div className="mt-1">{formatarValorMonetario(resultado.detalhes.vus.vsoja)}</div>
                               </div>
                             </div>
                             <div className="text-xs text-muted-foreground mt-2">
-                              * Aplicado fator de arrendamento de 4,8%
+                              * Total VUS = (Vboi + Vmilho + Vsoja) × Fator Arrend. (4,8%) × Área Total
                             </div>
                           </div>
 
                           {/* Detalhes CRS */}
                           <div>
-                            <h4 className="font-semibold mb-2">Detalhes CRS (Custo da Responsabilidade Socioambiental):</h4>
+                            <h4 className="font-semibold mb-2">Detalhes CRS (Custo Socioambiental):</h4>
                             <div className="grid grid-cols-2 gap-2 text-sm">
                               <div>
-                                <Badge variant="secondary">Crédito de Carbono</Badge>
-                                <div className="mt-1">{formatarValorMonetario(resultado.detalhes.crs.creditoCarbono.valor)}</div>
-                                <div className="text-xs text-muted-foreground">2,59 tCO2/ha</div>
+                                <Badge variant="secondary">Crédito de Carbono (CC)</Badge>
+                                <div className="mt-1">{formatarValorMonetario(resultado.detalhes.crs.cc)}</div>
+                                <div className="text-xs text-muted-foreground">Preço Carbono × 2.59 tCO2/ha × Área</div>
                               </div>
                               <div>
-                                <Badge variant="secondary">Custo da Água</Badge>
-                                <div className="mt-1">{formatarValorMonetario(resultado.detalhes.crs.custoAgua.valor)}</div>
-                                <div className="text-xs text-muted-foreground">7% do PIB/ha</div>
+                                <Badge variant="secondary">Custo da Água (CH2O)</Badge>
+                                <div className="mt-1">{formatarValorMonetario(resultado.detalhes.crs.ch2o)}</div>
+                                <div className="text-xs text-muted-foreground">PIB/ha × 7% × Área</div>
                               </div>
                             </div>
                           </div>

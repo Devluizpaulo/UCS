@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -36,20 +37,28 @@ import { useRouter } from 'next/navigation';
 
 
 const formulaSchema = z.object({
-    // VUS
-    PROD_BOI: z.coerce.number(),
-    PROD_MILHO: z.coerce.number(),
-    PROD_SOJA: z.coerce.number(),
-    PESO_PEC: z.coerce.number(),
-    PESO_MILHO: z.coerce.number(),
-    PESO_SOJA: z.coerce.number(),
-    FATOR_ARREND: z.coerce.number(),
-    // VMAD
-    VOLUME_MADEIRA_HA: z.coerce.number(),
-    FATOR_CONVERSAO_SERRADA_TORA: z.coerce.number(),
-    // CRS
-    FATOR_CARBONO: z.coerce.number(),
-    FATOR_AGUA: z.coerce.number(),
+    // Produtividades
+    produtividade_boi: z.coerce.number(),
+    produtividade_milho: z.coerce.number(),
+    produtividade_soja: z.coerce.number(),
+    produtividade_madeira: z.coerce.number(),
+    produtividade_carbono: z.coerce.number(),
+    
+    // Fatores de Ponderação
+    fator_pecuaria: z.coerce.number(),
+    fator_milho: z.coerce.number(),
+    fator_soja: z.coerce.number(),
+    
+    // Fatores de Conversão
+    fator_arrendamento: z.coerce.number(),
+    fator_agua: z.coerce.number(),
+    fator_ucs: z.coerce.number(),
+    
+    // Valores Econômicos
+    pib_por_hectare: z.coerce.number(),
+    
+    // Área
+    area_total: z.coerce.number(),
 });
 
 
@@ -111,8 +120,8 @@ export default function SettingsPage() {
     try {
       await saveFormulaParameters(data);
       toast({
-        title: 'Fórmula Atualizada',
-        description: 'Os parâmetros da fórmula foram salvos. O índice será recalculado na próxima atualização de dados.',
+        title: 'Parâmetros Salvos',
+        description: 'Os parâmetros da fórmula foram salvos. O índice será recalculado na próxima atualização.',
       });
       setShowFormulaAlert(true);
     } catch (error) {
@@ -182,74 +191,80 @@ export default function SettingsPage() {
                     <AlertTriangle className="h-4 w-4" />
                     <AlertTitle>Parâmetros Salvos!</AlertTitle>
                     <AlertDescription>
-                        Os parâmetros foram salvos. O índice será recalculado automaticamente na próxima vez que os dados do n8n forem recebidos.
+                        Os parâmetros foram salvos. O índice será recalculado automaticamente na próxima atualização de dados.
                     </AlertDescription>
                 </Alert>
             )}
 
-            {/* VUS Section */}
+            {/* Produtividade Section */}
             <div>
-                <h3 className="text-lg font-medium mb-4">1. Valor de Uso da Terra (VUS)</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mobile-form-grid sm:grid-cols-2 lg:grid-cols-3">
-                     <div className="space-y-2">
-                        <Label htmlFor="PROD_BOI">Produção Boi (@/ha/ano)</Label>
-                        <Input id="PROD_BOI" type="number" step="any" {...formulaForm.register('PROD_BOI')} />
+                <h3 className="text-lg font-medium mb-4">1. Produtividades</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="space-y-2">
+                        <Label htmlFor="produtividade_boi">Boi (@/ha)</Label>
+                        <Input id="produtividade_boi" type="number" step="any" {...formulaForm.register('produtividade_boi')} />
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="PROD_SOJA">Produção Soja (t/ha/ano)</Label>
-                        <Input id="PROD_SOJA" type="number" step="any" {...formulaForm.register('PROD_SOJA')} />
+                        <Label htmlFor="produtividade_milho">Milho (ton/ha)</Label>
+                        <Input id="produtividade_milho" type="number" step="any" {...formulaForm.register('produtividade_milho')} />
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="PROD_MILHO">Produção Milho (t/ha/ano)</Label>
-                        <Input id="PROD_MILHO" type="number" step="any" {...formulaForm.register('PROD_MILHO')} />
-                    </div>
-                </div>
-                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-6 mobile-form-grid sm:grid-cols-2 lg:grid-cols-4">
-                     <div className="space-y-2">
-                        <Label htmlFor="PESO_PEC">Peso Pecuária (%)</Label>
-                        <Input id="PESO_PEC" type="number" step="any" {...formulaForm.register('PESO_PEC')} placeholder="Ex: 0.35 para 35%" />
+                        <Label htmlFor="produtividade_soja">Soja (ton/ha)</Label>
+                        <Input id="produtividade_soja" type="number" step="any" {...formulaForm.register('produtividade_soja')} />
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="PESO_SOJA">Peso Soja (%)</Label>
-                        <Input id="PESO_SOJA" type="number" step="any" {...formulaForm.register('PESO_SOJA')} placeholder="Ex: 0.35 para 35%" />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="PESO_MILHO">Peso Milho (%)</Label>
-                        <Input id="PESO_MILHO" type="number" step="any" {...formulaForm.register('PESO_MILHO')} placeholder="Ex: 0.30 para 30%" />
+                        <Label htmlFor="produtividade_madeira">Madeira (m³/ha)</Label>
+                        <Input id="produtividade_madeira" type="number" step="any" {...formulaForm.register('produtividade_madeira')} />
                     </div>
                      <div className="space-y-2">
-                        <Label htmlFor="FATOR_ARREND">Fator de Arrendamento (%)</Label>
-                        <Input id="FATOR_ARREND" type="number" step="any" {...formulaForm.register('FATOR_ARREND')} placeholder="Ex: 0.048 para 4.8%" />
+                        <Label htmlFor="produtividade_carbono">Carbono (tCO₂e/ha)</Label>
+                        <Input id="produtividade_carbono" type="number" step="any" {...formulaForm.register('produtividade_carbono')} />
                     </div>
                 </div>
             </div>
 
-            {/* VMAD Section */}
+            {/* Fatores Section */}
             <div>
-                <h3 className="text-lg font-medium mb-4">2. Valor da Madeira (VMAD)</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mobile-form-grid md:grid-cols-2 lg:grid-cols-3">
+                <h3 className="text-lg font-medium mb-4">2. Fatores de Ponderação e Conversão</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     <div className="space-y-2">
-                        <Label htmlFor="VOLUME_MADEIRA_HA">Fator m³ (Volume Madeira/ha)</Label>
-                        <Input id="VOLUME_MADEIRA_HA" type="number" step="any" {...formulaForm.register('VOLUME_MADEIRA_HA')} />
+                        <Label htmlFor="fator_pecuaria">Ponderação Pecuária (%)</Label>
+                        <Input id="fator_pecuaria" type="number" step="any" {...formulaForm.register('fator_pecuaria')} placeholder="Ex: 0.35 para 35%" />
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="FATOR_CONVERSAO_SERRADA_TORA">Fator Conversão Madeira (%)</Label>
-                        <Input id="FATOR_CONVERSAO_SERRADA_TORA" type="number" step="any" {...formulaForm.register('FATOR_CONVERSAO_SERRADA_TORA')} placeholder="Ex: 0.10 para 10%" />
+                        <Label htmlFor="fator_milho">Ponderação Milho (%)</Label>
+                        <Input id="fator_milho" type="number" step="any" {...formulaForm.register('fator_milho')} placeholder="Ex: 0.30 para 30%" />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="fator_soja">Ponderação Soja (%)</Label>
+                        <Input id="fator_soja" type="number" step="any" {...formulaForm.register('fator_soja')} placeholder="Ex: 0.35 para 35%" />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="fator_arrendamento">Fator Arrendamento (%)</Label>
+                        <Input id="fator_arrendamento" type="number" step="any" {...formulaForm.register('fator_arrendamento')} placeholder="Ex: 0.048 para 4.8%" />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="fator_agua">Fator Conversão Água (%)</Label>
+                        <Input id="fator_agua" type="number" step="any" {...formulaForm.register('fator_agua')} placeholder="Ex: 0.07 para 7%" />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="fator_ucs">Fator UCS (Multiplicador)</Label>
+                        <Input id="fator_ucs" type="number" step="any" {...formulaForm.register('fator_ucs')} />
                     </div>
                 </div>
             </div>
             
-            {/* CRS Section */}
+            {/* Valores Econômicos e Área */}
             <div>
-                <h3 className="text-lg font-medium mb-4">3. Custo da Responsabilidade Socioambiental (CRS)</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mobile-form-grid sm:grid-cols-2 lg:grid-cols-3">
+                <h3 className="text-lg font-medium mb-4">3. Valores Econômicos e Área</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                      <div className="space-y-2">
-                        <Label htmlFor="FATOR_CARBONO">Fator Crédito de Carbono</Label>
-                        <Input id="FATOR_CARBONO" type="number" step="any" {...formulaForm.register('FATOR_CARBONO')} />
+                        <Label htmlFor="pib_por_hectare">PIB por Hectare (R$)</Label>
+                        <Input id="pib_por_hectare" type="number" step="any" {...formulaForm.register('pib_por_hectare')} />
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="FATOR_AGUA">Fator Água (% do VUS)</Label>
-                        <Input id="FATOR_AGUA" type="number" step="any" {...formulaForm.register('FATOR_AGUA')} placeholder="Ex: 0.07 para 7%" />
+                        <Label htmlFor="area_total">Área Total (ha)</Label>
+                        <Input id="area_total" type="number" step="any" {...formulaForm.register('area_total')} />
                     </div>
                 </div>
             </div>

@@ -99,25 +99,34 @@ export type RiskAnalysisData = {
     metrics: RiskMetric[];
 };
 
-// Based on the user's formula specification
+// Based on the official methodology
 export type FormulaParameters = {
-    // VUS
-    PROD_BOI: number;
-    PROD_MILHO: number;
-    PROD_SOJA: number;
-    PESO_PEC: number;
-    PESO_MILHO: number;
-    PESO_SOJA: number;
-    FATOR_ARREND: number;
-    // VMAD
-    VOLUME_MADEIRA_HA: number;
-    FATOR_CONVERSAO_SERRADA_TORA: number;
-    // CRS
-    FATOR_CARBONO: number;
-    FATOR_AGUA: number;
+    // Produtividades
+    produtividade_boi: number;
+    produtividade_milho: number;
+    produtividade_soja: number;
+    produtividade_madeira: number;
+    produtividade_carbono: number;
+    
+    // Fatores de Ponderação
+    fator_pecuaria: number;
+    fator_milho: number;
+    fator_soja: number;
+    
+    // Fatores de Conversão
+    fator_arrendamento: number;
+    fator_agua: number;
+    fator_ucs: number;
+    
+    // Valores Econômicos
+    pib_por_hectare: number;
+    
+    // Área
+    area_total: number;
+    
     // Status
     isConfigured: boolean;
-}
+};
 
 export type ReportPreviewData = {
     reportTitle: string;
@@ -144,4 +153,58 @@ export type GenerateReportOutput = {
   fileContent: string;
   mimeType: string;
   previewData: ReportPreviewData;
+};
+
+// TYPES FOR UCS-PRICING-SERVICE
+export type UCSCalculationInputs = {
+  // Cotações
+  pm3mad: number;
+  pecuariaCotacao: number;
+  milhoCotacao: number;
+  sojaCotacao: number;
+  cotacaoCreditoCarbono: number;
+  
+  // Produtividade
+  fm3: number;
+  pecuariaProducao: number;
+  milhoProducao: number;
+arameters
+  sojaProducao: number;
+  
+  // Econômico
+  pibPorHectare: number;
+  carbonoEstocado: number;
+  areaTotal: number;
+};
+
+export type UCSCalculationResult = {
+  // Componentes do PDM
+  valorMadeira: number; // VM
+  valorUsoSolo: number; // VUS
+  custoResponsabilidadeSocioambiental: number; // CRS
+  potencialDesflorestadorMonetizado: number; // PDM
+  
+  // Cálculos finais
+  indiceViabilidadeProjeto: number; // IVP
+  unidadeCreditoSustentabilidade: number; // UCS(CF)
+  
+  // Detalhamento dos cálculos
+  detalhes: {
+    vm: {
+      fm3: number;
+      pm3mad: number;
+    };
+    vus: {
+      vboi: number;
+      vmilho: number;
+      vsoja: number;
+    };
+    crs: {
+      cc: number;
+      ch2o: number;
+    };
+    ce: {
+      carbonoEstocadoTotal: number;
+    }
+  };
 };
