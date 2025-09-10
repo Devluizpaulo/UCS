@@ -5,26 +5,25 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import type { RiskAnalysisData, FirestoreQuote } from '@/lib/types';
+import type { RiskAnalysisData, FirestoreQuote, UcsData, ChartData } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { Skeleton } from './ui/skeleton';
 import { getCommodities } from '@/lib/commodity-config-service';
-// Removed direct import of server actions
 import { calculate_volatility, calculate_correlation } from '@/lib/statistics';
 import { getFormulaParameters } from '@/lib/formula-service';
 
 
 async function getRiskAnalysisData(): Promise<RiskAnalysisData> {
-    const [commodities, ucsHistoryDataResponse, formulaParams] = await Promise.all([
+    const [commodities, ucsHistoryResponse, formulaParams] = await Promise.all([
         getCommodities(),
         fetch('/api/ucs-index?interval=1d'), // Use daily data for correlation
         getFormulaParameters(),
     ]);
     
-    if (!ucsHistoryDataResponse.ok) {
+    if (!ucsHistoryResponse.ok) {
         throw new Error('Failed to fetch UCS index data');
     }
-    const ucsHistoryData = await ucsHistoryDataResponse.json();
+    const ucsHistoryData: { latest: UcsData, history: ChartData[] } = await ucsHistoryResponse.json();
 
     if (!formulaParams.isConfigured) {
         return { metrics: [] }; // Return empty if formula is not configured
@@ -47,9 +46,9 @@ async function getRiskAnalysisData(): Promise<RiskAnalysisData> {
             if (assetHistory.length < 2) return null;
 
             // Sort by date ascending to calculate returns correctly
-            const sortedHistory = assetHistory.sort((a,b) => {
-                const aTime = a.timestamp instanceof Date ? a.timestamp.getTime() : new Date(a.timestamp).getTime();
-                const bTime = b.timestamp instanceof Date ? b.timestamp.getTime() : new Date(b.timestamp).getTime();
+            const sortedHistory = [...assetHistory].sort((a,b) => {
+                const aTime = a.timestamp?.toDate ? a.timestamp.toDate().getTime() : new Date(a.timestamp).getTime();
+                const bTime = b.timestamp?.toDate ? b.timestamp.toDate().getTime() : new Date(b.timestamp).getTime();
                 return aTime - bTime;
             });
             
@@ -63,8 +62,7 @@ async function getRiskAnalysisData(): Promise<RiskAnalysisData> {
             const volatility = calculate_volatility(assetReturns);
             
             // Ensure array lengths match for correlation by taking the minimum length
-            const minLength = Math.min(ucsReturns.length, assetReturns.length);
-            const correlation = calculate_correlation(ucsReturns.slice(-minLength), assetReturns.slice(-minLength));
+            const correlation = calculate_correlation(ucsReturns, assetReturns);
             
             return { asset: asset.name, volatility, correlation };
         } catch (error) {

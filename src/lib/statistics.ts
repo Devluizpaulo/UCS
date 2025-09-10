@@ -18,14 +18,21 @@ export function calculate_volatility(returns: number[]): number {
 
 /**
  * Calculates the Pearson correlation coefficient between two series of returns.
+ * It handles arrays of different lengths by using the overlapping data points.
  * @param returns1 - An array of returns for the first asset.
  * @param returns2 - An array of returns for the second asset.
  * @returns The correlation coefficient (between -1 and 1).
  */
 export function calculate_correlation(returns1: number[], returns2: number[]): number {
-    if (returns1.length < 2 || returns1.length !== returns2.length) {
+    const minLength = Math.min(returns1.length, returns2.length);
+    if (minLength < 2) {
         return 0;
     }
-    const correlation = sampleCorrelation(returns1, returns2);
+    
+    // Use the most recent 'minLength' data points from both arrays
+    const slicedReturns1 = returns1.slice(-minLength);
+    const slicedReturns2 = returns2.slice(-minLength);
+    
+    const correlation = sampleCorrelation(slicedReturns1, slicedReturns2);
     return correlation;
 }
