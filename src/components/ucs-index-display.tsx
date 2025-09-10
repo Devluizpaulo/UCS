@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -201,7 +202,7 @@ export function UCSIndexDisplay({ className, selectedDate }: UCSIndexDisplayProp
                       <Card className="border-green-200 bg-green-50">
                         <CardHeader>
                           <CardTitle className="text-xl text-green-800">
-                            UCS = {formatarValorMonetario(resultado.unidadeCreditoSustentabilidade)}
+                            UCS (CF) = {formatarValorMonetario(resultado.unidadeCreditoSustentabilidade)}
                           </CardTitle>
                           <CardDescription className="text-green-600">
                             Fórmula: UCS = 2 × IVP
@@ -224,7 +225,7 @@ export function UCSIndexDisplay({ className, selectedDate }: UCSIndexDisplayProp
 
                         <Card>
                           <CardHeader>
-                            <CardTitle className="text-lg">PDM - Patrimônio Digital</CardTitle>
+                            <CardTitle className="text-lg">PDM - Potencial Desflorestador</CardTitle>
                             <CardDescription>PDM = VM + VUS + CRS</CardDescription>
                           </CardHeader>
                           <CardContent>
@@ -287,20 +288,20 @@ export function UCSIndexDisplay({ className, selectedDate }: UCSIndexDisplayProp
                             <h4 className="font-semibold mb-2">Detalhes VUS (Valor de Uso do Solo):</h4>
                             <div className="grid grid-cols-3 gap-2 text-sm">
                               <div>
-                                <Badge variant="secondary">Pecuária (35%)</Badge>
+                                <Badge variant="secondary">Pecuária ({resultado.detalhes.vus.vboi > 0 ? (resultado.detalhes.vus.vboi / (resultado.detalhes.vus.vboi + resultado.detalhes.vus.vmilho + resultado.detalhes.vus.vsoja) * 100).toFixed(0) : 0}%)</Badge>
                                 <div className="mt-1">{formatarValorMonetario(resultado.detalhes.vus.vboi)}</div>
                               </div>
                               <div>
-                                <Badge variant="secondary">Milho (30%)</Badge>
+                                <Badge variant="secondary">Milho ({resultado.detalhes.vus.vmilho > 0 ? (resultado.detalhes.vus.vmilho / (resultado.detalhes.vus.vboi + resultado.detalhes.vus.vmilho + resultado.detalhes.vus.vsoja) * 100).toFixed(0) : 0}%)</Badge>
                                 <div className="mt-1">{formatarValorMonetario(resultado.detalhes.vus.vmilho)}</div>
                               </div>
                               <div>
-                                <Badge variant="secondary">Soja (35%)</Badge>
+                                <Badge variant="secondary">Soja ({resultado.detalhes.vus.vsoja > 0 ? (resultado.detalhes.vus.vsoja / (resultado.detalhes.vus.vboi + resultado.detalhes.vus.vmilho + resultado.detalhes.vus.vsoja) * 100).toFixed(0) : 0}%)</Badge>
                                 <div className="mt-1">{formatarValorMonetario(resultado.detalhes.vus.vsoja)}</div>
                               </div>
                             </div>
                             <div className="text-xs text-muted-foreground mt-2">
-                              * Total VUS = (Vboi + Vmilho + Vsoja) × Fator Arrend. (4,8%) × Área Total
+                              * Total VUS = (Vboi + Vmilho + Vsoja) × Fator Arrend. ({resultado.detalhes.ce.carbonoEstocadoTotal > 0 ? (resultado.valorUsoSolo / resultado.potencialDesflorestadorMonetizado * 100).toFixed(1) : 0}%) × Área Total
                             </div>
                           </div>
 
@@ -310,7 +311,7 @@ export function UCSIndexDisplay({ className, selectedDate }: UCSIndexDisplayProp
                               <div>
                                 <Badge variant="secondary">Crédito de Carbono (CC)</Badge>
                                 <div className="mt-1">{formatarValorMonetario(resultado.detalhes.crs.cc)}</div>
-                                <div className="text-xs text-muted-foreground">Preço Carbono × 2.59 tCO2/ha × Área</div>
+                                <div className="text-xs text-muted-foreground">Preço Carbono × {resultado.detalhes.ce.carbonoEstocadoTotal.toFixed(2)} tCO2/ha × Área</div>
                               </div>
                               <div>
                                 <Badge variant="secondary">Custo da Água (CH2O)</Badge>
