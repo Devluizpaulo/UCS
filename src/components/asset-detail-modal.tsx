@@ -150,7 +150,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose, selectedD
             {/* Historical Data Table Section */}
             <div className="flex flex-col flex-1 min-h-0">
                 <h3 className="text-lg font-semibold mb-2">Cotações Históricas (Diário)</h3>
-                <div className="flex-1 relative border rounded-md">
+                <ScrollArea className="h-72 w-full rounded-md border">
                     <Table>
                         <TableHeader className="sticky top-0 bg-muted/95 backdrop-blur-sm z-10">
                             <TableRow>
@@ -163,7 +163,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose, selectedD
                         </TableHeader>
                         <TableBody>
                             {loading ? (
-                                Array.from({length: 10}).map((_, i) => (
+                                Array.from({length: 7}).map((_, i) => (
                                     <TableRow key={i}>
                                         <TableCell><Skeleton className="h-5 w-20"/></TableCell>
                                         <TableCell className="text-right"><Skeleton className="h-5 w-24 ml-auto"/></TableCell>
@@ -185,7 +185,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose, selectedD
                             )}
                         </TableBody>
                     </Table>
-                </div>
+                </ScrollArea>
             </div>
             </div>
         </ScrollArea>
