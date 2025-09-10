@@ -1,5 +1,6 @@
 
 
+
 'use client';
 
 import { useState } from 'react';
@@ -36,9 +37,10 @@ interface UnderlyingAssetsTableProps {
     loading?: boolean;
     onManualUpdate?: (assetName: string) => void;
     updatingAssets?: Set<string>;
+    selectedDate?: string;
 }
 
-export function UnderlyingAssetsTable({ data, loading, onManualUpdate, updatingAssets }: UnderlyingAssetsTableProps) {
+export function UnderlyingAssetsTable({ data, loading, onManualUpdate, updatingAssets, selectedDate }: UnderlyingAssetsTableProps) {
   const [selectedAsset, setSelectedAsset] = useState<CommodityPriceData | null>(null);
 
   const handleRowClick = (asset: CommodityPriceData) => {
@@ -143,6 +145,7 @@ export function UnderlyingAssetsTable({ data, loading, onManualUpdate, updatingA
           icon={getIconForCategory(selectedAsset.category)}
           isOpen={!!selectedAsset}
           onClose={() => setSelectedAsset(null)}
+          selectedDate={selectedDate}
         />
       )}
     </div>

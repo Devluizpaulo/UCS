@@ -8,8 +8,14 @@ import { useToast } from "@/hooks/use-toast";
 import type { CommodityPriceData, ChartData, UcsData } from "@/lib/types";
 import { IndexHistoryTable } from './index-history-table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { getCommodityPrices, getUcsIndexValue } from '@/lib/data-service';
 
-export function UnderlyingAssetsCard() {
+interface UnderlyingAssetsCardProps {
+    selectedDate?: string; // YYYY-MM-DD
+}
+
+
+export function UnderlyingAssetsCard({ selectedDate }: UnderlyingAssetsCardProps) {
     const [commodities, setCommodities] = useState<CommodityPriceData[]>([]);
     const [isLoadingCommodities, setIsLoadingCommodities] = useState(true);
     const [indexHistory, setIndexHistory] = useState<ChartData[]>([]);
@@ -17,21 +23,16 @@ export function UnderlyingAssetsCard() {
     const [isConfigured, setIsConfigured] = useState(false);
     const { toast } = useToast();
 
-    const fetchAssetsAndHistory = useCallback(async () => {
+    const fetchAssetsAndHistory = useCallback(async (date?: string) => {
         setIsLoadingCommodities(true);
         setLoadingIndexHistory(true);
         try {
-            const [assetsResponse, historyResponse] = await Promise.all([
-                fetch('/api/commodity-prices'),
-                fetch('/api/ucs-index?interval=1d')
+            const [pricesResult, historyResult] = await Promise.all([
+                getCommodityPrices(date),
+                getUcsIndexValue('1d', date)
             ]);
 
-            if (!assetsResponse.ok) throw new Error('Failed to fetch commodity prices');
-            const pricesResult = await assetsResponse.json();
             setCommodities(pricesResult);
-
-            if (!historyResponse.ok) throw new Error('Failed to fetch index history');
-            const historyResult: { latest: UcsData, history: ChartData[] } = await historyResponse.json();
             setIndexHistory(historyResult.history);
             setIsConfigured(historyResult.latest.isConfigured);
             
@@ -48,8 +49,8 @@ export function UnderlyingAssetsCard() {
     }, [toast]);
 
     useEffect(() => {
-        fetchAssetsAndHistory();
-    }, [fetchAssetsAndHistory]);
+        fetchAssetsAndHistory(selectedDate);
+    }, [selectedDate, fetchAssetsAndHistory]);
     
     return (
         <Card>

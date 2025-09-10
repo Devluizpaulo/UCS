@@ -1,6 +1,7 @@
+
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -37,12 +38,14 @@ import {
 } from '@/lib/ucs-pricing-service';
 import { getFormulaParameters } from '@/lib/formula-service';
 import type { FormulaParameters, ChartData } from '@/lib/types';
+import { getUcsIndexValue } from '@/lib/data-service';
 
 interface UCSIndexDisplayProps {
   className?: string;
+  selectedDate?: string; // YYYY-MM-DD
 }
 
-export function UCSIndexDisplay({ className }: UCSIndexDisplayProps) {
+export function UCSIndexDisplay({ className, selectedDate }: UCSIndexDisplayProps) {
   const [ucsValue, setUcsValue] = useState<number>(0);
   const [resultado, setResultado] = useState<UCSCalculationResult | null>(null);
   const [loading, setLoading] = useState(true);
@@ -57,65 +60,46 @@ export function UCSIndexDisplay({ className }: UCSIndexDisplayProps) {
     sugestoes: string[];
   } | null>(null);
 
-  const calculateUCSIndex = async () => {
+  const calculateUCSIndex = useCallback(async (date?: string) => {
     setLoading(true);
     setError(null);
     
     try {
-      // Obter parâmetros da fórmula configurados
       const formulaParams = await getFormulaParameters();
       
       if (!formulaParams.isConfigured) {
         setError('Parâmetros da fórmula não configurados. Configure em Configurações.');
+        setUcsValue(0);
+        setResultado(null);
         setLoading(false);
         return;
       }
 
-      // Obter cotações atuais
-      const cotacoes = await obterValoresPadrao();
+      const cotacoes = await obterValoresPadrao(date);
 
-      // Preparar inputs para o cálculo UCS
-      const inputs: UCSCalculationInputs = {
-        // Cotações
-        pm3mad: cotacoes.pm3mad || 0,
-        pecuariaCotacao: cotacoes.pecuariaCotacao || 0,
-        milhoCotacao: cotacoes.milhoCotacao || 0,
-        sojaCotacao: cotacoes.sojaCotacao || 0,
-        cotacaoCreditoCarbono: cotacoes.cotacaoCreditoCarbono || 0,
-        
-        // Parâmetros da fórmula
-        ...formulaParams
-      };
+      const inputs: UCSCalculationInputs = { ...cotacoes, ...formulaParams };
 
-      // Calcular UCS
       const resultadoCalculado = calcularUCSCompleto(inputs);
-      
-      // Determinar tendência
       const newValue = resultadoCalculado.unidadeCreditoSustentabilidade;
-      if (previousValue !== 0 && newValue > previousValue) {
-        setTrend('up');
-      } else if (previousValue !== 0 && newValue < previousValue) {
-        setTrend('down');
-      } else {
-        setTrend('stable');
-      }
-      
-      setPreviousValue(ucsValue);
+
       setUcsValue(newValue);
       setResultado(resultadoCalculado);
       setLastUpdate(new Date());
-      
-      // Adicionar ponto ao gráfico
+
+      const indexHistory = await getUcsIndexValue('1d', date);
+      if (indexHistory.history.length > 1) {
+          const latest = indexHistory.history[indexHistory.history.length - 1].value;
+          const prev = indexHistory.history[indexHistory.history.length - 2].value;
+          if (latest > prev) setTrend('up');
+          else if (latest < prev) setTrend('down');
+          else setTrend('stable');
+      }
+
       const newDataPoint: ChartData = {
-        time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+        time: date ? new Date(date).toLocaleDateString('pt-BR') : new Date().toLocaleTimeString('pt-BR'),
         value: newValue,
       };
-      
-      setChartData(prev => {
-        const updated = [...prev, newDataPoint];
-        // Manter apenas os últimos 20 pontos
-        return updated.slice(-20);
-      });
+       setChartData(prev => [...prev.slice(-19), newDataPoint]);
       
     } catch (error) {
       console.error('Erro ao calcular índice UCS:', error);
@@ -123,21 +107,11 @@ export function UCSIndexDisplay({ className }: UCSIndexDisplayProps) {
     } finally {
       setLoading(false);
     }
-  };
-
-  // Calcular automaticamente na inicialização
-  useEffect(() => {
-    calculateUCSIndex();
   }, []);
 
-  // Atualizar automaticamente a cada 5 minutos
   useEffect(() => {
-    const interval = setInterval(() => {
-      calculateUCSIndex();
-    }, 5 * 60 * 1000); // 5 minutos
-
-    return () => clearInterval(interval);
-  }, []);
+    calculateUCSIndex(selectedDate);
+  }, [selectedDate, calculateUCSIndex]);
 
   const getTrendIcon = () => {
     switch (trend) {
@@ -180,7 +154,7 @@ export function UCSIndexDisplay({ className }: UCSIndexDisplayProps) {
           <Button
             variant="ghost"
             size="sm"
-            onClick={calculateUCSIndex}
+            onClick={() => calculateUCSIndex(selectedDate)}
             disabled={loading}
           >
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
@@ -224,7 +198,6 @@ export function UCSIndexDisplay({ className }: UCSIndexDisplayProps) {
                     </DialogHeader>
                     
                     <div className="space-y-6">
-                      {/* Resultado Final */}
                       <Card className="border-green-200 bg-green-50">
                         <CardHeader>
                           <CardTitle className="text-xl text-green-800">
@@ -236,7 +209,6 @@ export function UCSIndexDisplay({ className }: UCSIndexDisplayProps) {
                         </CardHeader>
                       </Card>
 
-                      {/* Componentes Principais */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <Card>
                           <CardHeader>
@@ -263,7 +235,6 @@ export function UCSIndexDisplay({ className }: UCSIndexDisplayProps) {
                         </Card>
                       </div>
 
-                      {/* Detalhamento dos Componentes */}
                       <Card>
                         <CardHeader>
                           <CardTitle>Componentes do PDM</CardTitle>
@@ -312,7 +283,6 @@ export function UCSIndexDisplay({ className }: UCSIndexDisplayProps) {
 
                           <Separator />
 
-                          {/* Detalhes VUS */}
                           <div>
                             <h4 className="font-semibold mb-2">Detalhes VUS (Valor de Uso do Solo):</h4>
                             <div className="grid grid-cols-3 gap-2 text-sm">
@@ -334,7 +304,6 @@ export function UCSIndexDisplay({ className }: UCSIndexDisplayProps) {
                             </div>
                           </div>
 
-                          {/* Detalhes CRS */}
                           <div>
                             <h4 className="font-semibold mb-2">Detalhes CRS (Custo Socioambiental):</h4>
                             <div className="grid grid-cols-2 gap-2 text-sm">
@@ -358,7 +327,6 @@ export function UCSIndexDisplay({ className }: UCSIndexDisplayProps) {
               )}
             </div>
             
-            {/* Gráfico de Tendência */}
             {showChart && chartData.length > 0 && (
               <div className="mt-4">
                 <Separator className="mb-4" />

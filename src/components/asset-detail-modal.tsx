@@ -15,7 +15,7 @@ import { Loader2, ArrowDown, ArrowUp } from 'lucide-react';
 import { useEffect, useState, useCallback } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { ScrollArea } from './ui/scroll-area';
-// Removed direct import of server action
+import { getCotacoesHistorico } from '@/lib/data-service';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
 
@@ -25,6 +25,7 @@ interface AssetDetailModalProps {
   icon: React.ElementType;
   isOpen: boolean;
   onClose: () => void;
+  selectedDate?: string;
 }
 
 const intervalLimitMap: Record<HistoryInterval, number> = {
@@ -34,33 +35,29 @@ const intervalLimitMap: Record<HistoryInterval, number> = {
 }
 
 
-export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDetailModalProps) {
+export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose, selectedDate }: AssetDetailModalProps) {
     const [historicalData, setHistoricalData] = useState<FirestoreQuote[]>([]);
     const [chartData, setChartData] = useState<ChartData[]>([]);
     const [loading, setLoading] = useState(true);
     const [interval, setInterval] = useState<HistoryInterval>('1d');
 
 
-    const getDetails = useCallback(async (currentAsset: CommodityPriceData, currentInterval: HistoryInterval) => {
+    const getDetails = useCallback(async (currentAsset: CommodityPriceData, currentInterval: HistoryInterval, forDate?: string) => {
         setLoading(true);
         setHistoricalData([]);
         setChartData([]);
 
         try {
             const limit = intervalLimitMap[currentInterval];
-            const response = await fetch(`/api/cotacoes-historico?ativo=${encodeURIComponent(currentAsset.name)}&interval=${currentInterval}&limit=${limit}`);
-            if (!response.ok) {
-                throw new Error('Failed to fetch historical data');
-            }
-            const history = await response.json();
+            const history = await getCotacoesHistorico(currentAsset.name, limit, forDate);
             setHistoricalData(history);
             
             const chartPoints = history.map((d: FirestoreQuote) => ({ 
-                time: d.id, // Use the date ID 'YYYY-MM-DD'
+                time: new Date(d.timestamp).toLocaleDateString('pt-BR', {day:'2-digit', month: '2-digit'}),
                 value: d.ultimo 
             }));
             
-            setChartData(chartPoints.reverse()); // Reverse for correct chart direction
+            setChartData(chartPoints.reverse());
 
         } catch (error) {
             console.error("Failed to get asset details:", error);
@@ -71,9 +68,9 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
 
     useEffect(() => {
         if (isOpen) {
-            getDetails(asset, interval);
+            getDetails(asset, interval, selectedDate);
         }
-    }, [isOpen, asset, interval, getDetails]);
+    }, [isOpen, asset, interval, selectedDate, getDetails]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -167,7 +164,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                                 ) : (
                                     historicalData.map((dataPoint) => (
                                         <TableRow key={dataPoint.id}>
-                                            <TableCell className="font-medium text-xs">{dataPoint.data}</TableCell>
+                                            <TableCell className="font-medium text-xs">{new Date(dataPoint.timestamp).toLocaleDateString('pt-BR')}</TableCell>
                                             <TableCell className="text-right font-mono text-xs">{asset.currency} {dataPoint.ultimo.toFixed(4)}</TableCell>
                                             <TableCell className="text-right font-mono text-xs">{dataPoint.abertura.toFixed(4)}</TableCell>
                                             <TableCell className="text-right font-mono text-xs">{dataPoint.maxima.toFixed(4)}</TableCell>

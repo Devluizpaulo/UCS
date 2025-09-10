@@ -1,4 +1,5 @@
 
+
 import { getCommodityPrices } from './data-service';
 import type { CommodityPriceData, UCSCalculationInputs, UCSCalculationResult } from './types';
 
@@ -92,11 +93,11 @@ export function calcularUCSCompleto(inputs: UCSCalculationInputs): UCSCalculatio
 }
 
 /**
- * Obtém valores padrão das cotações para a calculadora
+ * Obtém valores padrão das cotações para a calculadora, para uma data específica ou a mais recente
  */
-export async function obterValoresPadrao(): Promise<Pick<UCSCalculationInputs, 'pm3mad' | 'pecuariaCotacao' | 'milhoCotacao' | 'sojaCotacao' | 'cotacaoCreditoCarbono'>> {
+export async function obterValoresPadrao(forDate?: string): Promise<Pick<UCSCalculationInputs, 'pm3mad' | 'pecuariaCotacao' | 'milhoCotacao' | 'sojaCotacao' | 'cotacaoCreditoCarbono'>> {
   try {
-    const prices = await getCommodityPrices();
+    const prices = await getCommodityPrices(forDate);
     
     return {
       pm3mad: findPrice(prices, 'vmad', 'madeira'),
