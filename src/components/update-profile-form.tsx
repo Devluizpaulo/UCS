@@ -12,8 +12,6 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, UserCircle } from 'lucide-react';
 import { getAuth } from 'firebase/auth';
-import { getApps, getApp } from 'firebase/app';
-import { firebaseConfig } from '@/lib/firebase-config';
 import { updateUserProfile } from '@/lib/profile-service';
 import { Skeleton } from './ui/skeleton';
 
@@ -29,9 +27,7 @@ export function UpdateProfileForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const { toast } = useToast();
-
-  const app = getApps().length ? getApp() : getApp(firebaseConfig.projectId);
-  const auth = getAuth(app);
+  const auth = getAuth();
   const user = auth.currentUser;
 
   const {
@@ -55,22 +51,27 @@ export function UpdateProfileForm() {
   }, [user, reset]);
 
   const onSubmit = async (data: ProfileFormData) => {
+    if (!user) {
+        toast({ variant: 'destructive', title: 'Erro', description: 'Usuário não autenticado.' });
+        return;
+    }
     setIsLoading(true);
     try {
-      await updateUserProfile(data.displayName, data.phoneNumber);
+      await updateUserProfile(user.uid, data.displayName, data.phoneNumber);
+      
+      // We need to reload the user object on the client to see the changes
+      await user.reload();
+      // Also update the form with the new data
+      reset({
+        displayName: user.displayName || data.displayName,
+        email: user.email || '',
+        phoneNumber: user.phoneNumber || data.phoneNumber,
+      });
+
       toast({
         title: 'Sucesso!',
-        description: 'Seu perfil foi atualizado.',
+        description: 'Seu perfil foi atualizado. Pode ser necessário recarregar a página para ver todas as alterações.',
       });
-      // Force a reload of the user to get the latest data
-       if (auth.currentUser) {
-           await auth.currentUser.reload();
-            reset({
-                displayName: auth.currentUser.displayName || '',
-                email: auth.currentUser.email || '',
-                phoneNumber: auth.currentUser.phoneNumber || '',
-            });
-       }
 
     } catch (error: any) {
       toast({

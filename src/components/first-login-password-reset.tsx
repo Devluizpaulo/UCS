@@ -11,19 +11,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Eye, EyeOff, CheckCircle } from 'lucide-react';
-import { getAuth } from 'firebase/auth';
-import { initializeApp, getApps, getApp } from 'firebase/app';
-import { firebaseConfig } from '@/lib/firebase-config';
-import { useRouter } from 'next/navigation';
-import { changeUserPassword } from '@/lib/profile-service';
-
+import { getAuth, EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
+import { completeFirstLogin } from '@/lib/profile-service';
 
 const passwordResetSchema = z.object({
   currentPassword: z.string().min(1, 'Senha atual é obrigatória'),
   newPassword: z.string()
-    .min(6, 'A nova senha deve ter pelo menos 6 caracteres.')
-    .max(8, 'A nova senha deve ter no máximo 8 caracteres.')
-    .regex(/^\d+$/, 'A senha deve conter apenas números.'),
+    .min(8, 'A nova senha deve ter pelo menos 8 caracteres.'),
   confirmPassword: z.string().min(1, 'Confirmação de senha é obrigatória'),
 }).refine((data) => data.newPassword === data.confirmPassword, {
   message: 'As senhas não coincidem',
@@ -44,10 +38,7 @@ export function FirstLoginPasswordReset({ userEmail, onPasswordChanged }: FirstL
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordChanged, setPasswordChanged] = useState(false);
   const { toast } = useToast();
-  const router = useRouter();
-
-  const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-  const auth = getAuth(app);
+  const auth = getAuth();
 
   const form = useForm<PasswordResetFormData>({
     resolver: zodResolver(passwordResetSchema),
@@ -57,17 +48,24 @@ export function FirstLoginPasswordReset({ userEmail, onPasswordChanged }: FirstL
     setIsLoading(true);
     
     const user = auth.currentUser;
-    if (!user) {
+    if (!user || !user.email) {
         toast({ variant: 'destructive', title: 'Erro', description: 'Usuário não autenticado.' });
         setIsLoading(false);
         return;
     }
 
     try {
-      // A função agora está no profile-service para incluir a lógica de backend
-      await changeUserPassword(data.currentPassword, data.newPassword);
+      // 1. Reautenticar no cliente para segurança
+      const credential = EmailAuthProvider.credential(user.email, data.currentPassword);
+      await reauthenticateWithCredential(user, credential);
+
+      // 2. Atualizar a senha no cliente
+      await updatePassword(user, data.newPassword);
       
-      // Força a atualização do token para obter as novas claims
+      // 3. Chamar a Server Action para atualizar a claim
+      await completeFirstLogin(user.uid);
+      
+      // 4. Forçar a atualização do token para obter as novas claims
       await user.getIdToken(true);
 
       setPasswordChanged(true);
@@ -77,18 +75,24 @@ export function FirstLoginPasswordReset({ userEmail, onPasswordChanged }: FirstL
         description: 'Sua senha foi atualizada. Você será redirecionado para o painel.',
       });
 
-      // Aguardar um pouco antes de redirecionar
+      // 5. Aguardar um pouco antes de redirecionar
       setTimeout(() => {
         onPasswordChanged(); // Isso vai atualizar o estado no main-layout
       }, 2000);
 
     } catch (error: any) {
       console.error('Erro ao alterar senha:', error);
+      let description = 'Ocorreu um erro inesperado. Verifique sua senha atual e tente novamente.';
+      if (error.code === 'auth/wrong-password') {
+          description = 'A senha atual fornecida está incorreta.';
+      } else if (error.code === 'auth/weak-password') {
+          description = 'A nova senha é muito fraca. Tente uma mais forte.';
+      }
       
       toast({
         variant: 'destructive',
         title: 'Erro ao alterar senha',
-        description: error.message || 'Ocorreu um erro inesperado.',
+        description,
       });
     } finally {
       setIsLoading(false);
@@ -189,7 +193,7 @@ export function FirstLoginPasswordReset({ userEmail, onPasswordChanged }: FirstL
                   </p>
                 )}
                 <div className="text-xs text-muted-foreground">
-                  <p>A nova senha deve conter de 6 a 8 caracteres numéricos.</p>
+                  <p>A nova senha deve ter pelo menos 8 caracteres.</p>
                 </div>
               </div>
 

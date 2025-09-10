@@ -11,14 +11,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, KeyRound } from 'lucide-react';
-import { changeUserPassword } from '@/lib/profile-service';
+import { getAuth, EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
 
 const passwordSchema = z.object({
   currentPassword: z.string().min(1, 'A senha atual é obrigatória.'),
   newPassword: z.string()
-    .min(6, 'A nova senha deve ter pelo menos 6 caracteres.')
-    .max(8, 'A nova senha deve ter no máximo 8 caracteres.')
-    .regex(/^\d+$/, 'A senha deve conter apenas números.'),
+    .min(8, 'A nova senha deve ter pelo menos 8 caracteres.'),
   confirmPassword: z.string(),
 }).refine((data) => data.newPassword === data.confirmPassword, {
   message: 'As senhas não coincidem.',
@@ -30,6 +28,7 @@ type PasswordFormData = z.infer<typeof passwordSchema>;
 export function ChangePasswordForm() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const auth = getAuth();
 
   const {
     register,
@@ -42,18 +41,41 @@ export function ChangePasswordForm() {
 
   const onSubmit = async (data: PasswordFormData) => {
     setIsLoading(true);
+    const user = auth.currentUser;
+
+    if (!user || !user.email) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro',
+        description: 'Usuário não autenticado ou sem e-mail associado.',
+      });
+      setIsLoading(false);
+      return;
+    }
+    
     try {
-      await changeUserPassword(data.currentPassword, data.newPassword);
+      const credential = EmailAuthProvider.credential(user.email, data.currentPassword);
+      await reauthenticateWithCredential(user, credential);
+      await updatePassword(user, data.newPassword);
+      
       toast({
         title: 'Sucesso!',
         description: 'Sua senha foi alterada com sucesso.',
       });
       reset();
+
     } catch (error: any) {
+      let description = 'Ocorreu um erro. Verifique sua senha atual e tente novamente.';
+      if (error.code === 'auth/wrong-password') {
+        description = 'A senha atual fornecida está incorreta.';
+      } else if (error.code === 'auth/weak-password') {
+        description = 'A nova senha é muito fraca. Tente uma senha mais forte.';
+      }
+      
       toast({
         variant: 'destructive',
         title: 'Erro ao alterar senha',
-        description: error.message || 'Ocorreu um erro. Verifique sua senha atual e tente novamente.',
+        description,
       });
     } finally {
       setIsLoading(false);
@@ -68,7 +90,7 @@ export function ChangePasswordForm() {
           Alterar Senha
         </CardTitle>
         <CardDescription>
-          A nova senha deve conter de 6 a 8 caracteres numéricos.
+          A nova senha deve ter no mínimo 8 caracteres.
         </CardDescription>
       </CardHeader>
       <CardContent>
