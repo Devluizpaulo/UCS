@@ -12,16 +12,21 @@ if (!admin.apps.length) {
   try {
     console.log('[Firebase Admin] Initializing Firebase Admin SDK...');
 
-    // Use a single Base64 encoded service account variable.
+    // Check if we have the Base64 encoded service account
     const serviceAccountBase64 = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64;
-
+    
     if (!serviceAccountBase64) {
-      throw new Error("Missing required Firebase environment variable: FIREBASE_SERVICE_ACCOUNT_BASE64. Please check your Vercel project settings and refer to VERCEL_SETUP.md.");
+        throw new Error('FIREBASE_SERVICE_ACCOUNT_BASE64 environment variable is required. Please check your .env.local file.');
     }
 
-    // Decode the service account from Base64
-    const serviceAccountJson = Buffer.from(serviceAccountBase64, 'base64').toString('utf-8');
-    const serviceAccount = JSON.parse(serviceAccountJson) as admin.ServiceAccount;
+    // Decode the Base64 service account
+    let serviceAccount;
+    try {
+        const serviceAccountJson = Buffer.from(serviceAccountBase64, 'base64').toString('utf-8');
+        serviceAccount = JSON.parse(serviceAccountJson);
+    } catch (error) {
+        throw new Error('Failed to decode FIREBASE_SERVICE_ACCOUNT_BASE64. Please ensure it is a valid Base64 encoded JSON.');
+    }
 
     if (!serviceAccount.project_id || !serviceAccount.client_email || !serviceAccount.private_key) {
         throw new Error('Decoded service account JSON is missing required fields (project_id, client_email, private_key).');
