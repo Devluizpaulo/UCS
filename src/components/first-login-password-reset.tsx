@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -18,9 +19,9 @@ import { useRouter } from 'next/navigation';
 const passwordResetSchema = z.object({
   currentPassword: z.string().min(1, 'Senha atual é obrigatória'),
   newPassword: z.string()
-    .min(8, 'A nova senha deve ter pelo menos 8 caracteres')
-    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/, 
-      'A senha deve conter pelo menos: 1 letra minúscula, 1 maiúscula, 1 número e 1 caractere especial'),
+    .min(6, 'A nova senha deve ter pelo menos 6 caracteres.')
+    .max(8, 'A nova senha deve ter no máximo 8 caracteres.')
+    .regex(/^\d+$/, 'A senha deve conter apenas números.'),
   confirmPassword: z.string().min(1, 'Confirmação de senha é obrigatória'),
 }).refine((data) => data.newPassword === data.confirmPassword, {
   message: 'As senhas não coincidem',
@@ -199,14 +200,7 @@ export function FirstLoginPasswordReset({ userEmail, onPasswordChanged }: FirstL
                   </p>
                 )}
                 <div className="text-xs text-muted-foreground">
-                  <p>A senha deve conter:</p>
-                  <ul className="list-disc list-inside mt-1 space-y-1">
-                    <li>Pelo menos 8 caracteres</li>
-                    <li>1 letra minúscula</li>
-                    <li>1 letra maiúscula</li>
-                    <li>1 número</li>
-                    <li>1 caractere especial (@$!%*?&)</li>
-                  </ul>
+                  <p>A nova senha deve conter de 6 a 8 caracteres numéricos.</p>
                 </div>
               </div>
 

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -14,7 +15,10 @@ import { changeUserPassword } from '@/lib/profile-service';
 
 const passwordSchema = z.object({
   currentPassword: z.string().min(1, 'A senha atual é obrigatória.'),
-  newPassword: z.string().min(8, 'A nova senha deve ter pelo menos 8 caracteres.'),
+  newPassword: z.string()
+    .min(6, 'A nova senha deve ter pelo menos 6 caracteres.')
+    .max(8, 'A nova senha deve ter no máximo 8 caracteres.')
+    .regex(/^\d+$/, 'A senha deve conter apenas números.'),
   confirmPassword: z.string(),
 }).refine((data) => data.newPassword === data.confirmPassword, {
   message: 'As senhas não coincidem.',
@@ -64,7 +68,7 @@ export function ChangePasswordForm() {
           Alterar Senha
         </CardTitle>
         <CardDescription>
-          Para sua segurança, recomendamos o uso de uma senha forte.
+          A nova senha deve conter de 6 a 8 caracteres numéricos.
         </CardDescription>
       </CardHeader>
       <CardContent>
