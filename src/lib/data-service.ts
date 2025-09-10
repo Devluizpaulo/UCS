@@ -12,6 +12,23 @@ import { format } from 'date-fns';
 
 
 // --- Functions to get data from FIRESTORE ---
+const serializeFirestoreTimestamp = (data: any): any => {
+    if (data && typeof data === 'object') {
+        if (data instanceof Timestamp) {
+            return data.toDate().toISOString();
+        }
+        if (Array.isArray(data)) {
+            return data.map(serializeFirestoreTimestamp);
+        }
+        const newObj: { [key: string]: any } = {};
+        for (const key in data) {
+            newObj[key] = serializeFirestoreTimestamp(data[key]);
+        }
+        return newObj;
+    }
+    return data;
+};
+
 
 /**
  * Busca dados de uma coleção específica por ativo
@@ -65,7 +82,7 @@ export async function getAssetData(assetName: string, limit: number = 10, forDat
                     timestamp: docData.timestamp?.toDate?.() || docData.timestamp,
                     data: docData.data?.toDate?.() || docData.data
                 };
-                data.push({ id: doc.id, ...serializedData } as FirestoreQuote);
+                data.push({ id: doc.id, ...serializeFirestoreTimestamp(serializedData) } as FirestoreQuote);
             });
             return data;
         }
@@ -83,7 +100,7 @@ export async function getAssetData(assetName: string, limit: number = 10, forDat
             };
             data.push({
                 id: doc.id,
-                ...serializedData
+                ...serializeFirestoreTimestamp(serializedData)
             } as FirestoreQuote);
         });
         
@@ -482,12 +499,7 @@ export async function getOrganizedAssetData(asset: string, date?: string): Promi
       if (doc.exists) {
         const data = doc.data();
         if (data) {
-            const serializedData = {
-                ...data,
-                timestamp: data.timestamp?.toDate?.() || data.timestamp,
-                data: data.data?.toDate?.() || data.data
-            };
-            return [{ id: doc.id, ...serializedData }];
+            return [{ id: doc.id, ...serializeFirestoreTimestamp(data) }];
          }
       } else {
         return [];
@@ -499,14 +511,9 @@ export async function getOrganizedAssetData(asset: string, date?: string): Promi
       snapshot.forEach(doc => {
             const data = doc.data();
             if (!data) return;
-            const serializedData = {
-              ...data,
-              timestamp: data.timestamp?.toDate?.() || data.timestamp,
-              data: data.data instanceof Date ? data.data : (data.data?.toDate?.() || data.data)
-            };
         results.push({
           id: doc.id,
-          ...serializedData
+          ...serializeFirestoreTimestamp(data)
         });
       });
       
