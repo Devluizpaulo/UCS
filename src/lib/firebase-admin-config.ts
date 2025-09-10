@@ -15,16 +15,19 @@ if (!admin.apps.length) {
     const projectId = process.env.FIREBASE_PROJECT_ID;
     const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
     
-    // Robustly handle the private key, which can be malformed by Vercel's environment variable handling.
+    // Vercel's environment variable handling can be tricky. This logic robustly handles the private key.
     // 1. Start with the raw key.
-    // 2. Remove potential surrounding quotes.
-    // 3. Replace all occurrences of '\\n' with an actual newline character.
+    // 2. Replace all occurrences of '\\n' (literal backslash-n) with an actual newline character.
     const rawPrivateKey = process.env.FIREBASE_PRIVATE_KEY || '';
-    const privateKey = rawPrivateKey.replace(/^"|"$/g, '').replace(/\\n/g, '\n');
+    const privateKey = rawPrivateKey.replace(/\\n/g, '\n');
 
 
     if (!projectId || !clientEmail || !privateKey) {
-      throw new Error('Missing one or more required Firebase environment variables (FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY). Please check your Vercel project settings and refer to VERCEL_SETUP.md.');
+      let missingVars = [];
+      if (!projectId) missingVars.push('FIREBASE_PROJECT_ID');
+      if (!clientEmail) missingVars.push('FIREBASE_CLIENT_EMAIL');
+      if (!privateKey) missingVars.push('FIREBASE_PRIVATE_KEY');
+      throw new Error(`Missing required Firebase environment variables: ${missingVars.join(', ')}. Please check your Vercel project settings and refer to VERCEL_SETUP.md.`);
     }
 
     const serviceAccount: admin.ServiceAccount = {
