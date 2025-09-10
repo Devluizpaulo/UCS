@@ -67,6 +67,7 @@ export function UCSIndexDisplay({ className }: UCSIndexDisplayProps) {
       
       if (!formulaParams.isConfigured) {
         setError('Parâmetros da fórmula não configurados. Configure em Configurações.');
+        setLoading(false);
         return;
       }
 
@@ -75,35 +76,25 @@ export function UCSIndexDisplay({ className }: UCSIndexDisplayProps) {
 
       // Preparar inputs para o cálculo UCS
       const inputs: UCSCalculationInputs = {
-        // Valores da madeira
-        fm3: formulaParams.produtividade_madeira,
+        // Cotações
         pm3mad: cotacoes.pm3mad || 0,
-        
-        // Produção (dos parâmetros configurados)
-        pecuariaProducao: formulaParams.produtividade_boi,
-        milhoProducao: formulaParams.produtividade_milho,
-        sojaProducao: formulaParams.produtividade_soja,
-        
-        // Cotações (das fontes de dados)
         pecuariaCotacao: cotacoes.pecuariaCotacao || 0,
         milhoCotacao: cotacoes.milhoCotacao || 0,
         sojaCotacao: cotacoes.sojaCotacao || 0,
         cotacaoCreditoCarbono: cotacoes.cotacaoCreditoCarbono || 0,
         
-        // Outros parâmetros
-        pibPorHectare: formulaParams.pib_por_hectare,
-        carbonoEstocado: formulaParams.produtividade_carbono,
-        areaTotal: formulaParams.area_total
+        // Parâmetros da fórmula
+        ...formulaParams
       };
 
       // Calcular UCS
-      const resultado = calcularUCSCompleto(inputs);
+      const resultadoCalculado = calcularUCSCompleto(inputs);
       
       // Determinar tendência
-      const newValue = resultado.unidadeCreditoSustentabilidade;
-      if (newValue > previousValue) {
+      const newValue = resultadoCalculado.unidadeCreditoSustentabilidade;
+      if (previousValue !== 0 && newValue > previousValue) {
         setTrend('up');
-      } else if (newValue < previousValue) {
+      } else if (previousValue !== 0 && newValue < previousValue) {
         setTrend('down');
       } else {
         setTrend('stable');
@@ -111,7 +102,7 @@ export function UCSIndexDisplay({ className }: UCSIndexDisplayProps) {
       
       setPreviousValue(ucsValue);
       setUcsValue(newValue);
-      setResultado(resultado);
+      setResultado(resultadoCalculado);
       setLastUpdate(new Date());
       
       // Adicionar ponto ao gráfico

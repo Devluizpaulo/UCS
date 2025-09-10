@@ -1,67 +1,6 @@
 
 import { getCommodityPrices } from './data-service';
-import type { CommodityPriceData } from './types';
-
-// Tipos para o sistema de precificação UCS
-export type UCSCalculationInputs = {
-  // Cotações
-  pm3mad: number;
-  pecuariaCotacao: number;
-  milhoCotacao: number;
-  sojaCotacao: number;
-  cotacaoCreditoCarbono: number;
-  
-  // Produtividade e Fatores do Documento de Settings
-  fm3: number; // produtividade_madeira
-  pecuariaProducao: number; // produtividade_boi
-  milhoProducao: number; // produtividade_milho
-  sojaProducao: number; // produtividade_soja
-  fatorPecuaria: number; // fator_pecuaria
-  fatorMilho: number; // fator_milho
-  fatorSoja: number; // fator_soja
-  fatorArrendamento: number; // fator_arrendamento
-  fatorAgua: number; // fator_agua
-  fatorUcs: number; // fator_ucs
-  carbonoEstocadoPorHectare: number; // produtividade_carbono
-  
-  // Econômico
-  pibPorHectare: number;
-  
-  // Área
-  areaTotal: number;
-};
-
-export type UCSCalculationResult = {
-  // Componentes do PDM
-  valorMadeira: number; // VM
-  valorUsoSolo: number; // VUS
-  custoResponsabilidadeSocioambiental: number; // CRS
-  potencialDesflorestadorMonetizado: number; // PDM
-  
-  // Cálculos finais
-  indiceViabilidadeProjeto: number; // IVP
-  unidadeCreditoSustentabilidade: number; // UCS
-  
-  // Detalhamento dos cálculos
-  detalhes: {
-    vm: {
-      fm3: number;
-      pm3mad: number;
-    };
-    vus: {
-      vboi: number;
-      vmilho: number;
-      vsoja: number;
-    };
-    crs: {
-      cc: number;
-      ch2o: number;
-    };
-    ce: {
-      carbonoEstocadoTotal: number;
-    }
-  };
-};
+import type { CommodityPriceData, UCSCalculationInputs, UCSCalculationResult } from './types';
 
 
 function findPrice(commodities: CommodityPriceData[], category: CommodityPriceData['category'], nameIncludes: string): number {
@@ -74,8 +13,8 @@ function findPrice(commodities: CommodityPriceData[], category: CommodityPriceDa
  * Calcula o Valor da Madeira (VM)
  * Fórmula: VM = Fm3 × Pm3mad × área_total
  */
-function calcularVM(fm3: number, pm3mad: number, areaTotal: number): number {
-  return fm3 * pm3mad * areaTotal;
+function calcularVM(produtividade_madeira: number, pm3mad: number, areaTotal: number): number {
+  return produtividade_madeira * pm3mad * areaTotal;
 }
 
 /**
@@ -83,13 +22,13 @@ function calcularVM(fm3: number, pm3mad: number, areaTotal: number): number {
  * Fórmula: VUS = (Vboi + Vmilho + Vsoja) × Famed × área_total
  */
 function calcularVUS(
-  inputs: Pick<UCSCalculationInputs, 'pecuariaCotacao' | 'milhoCotacao' | 'sojaCotacao' | 'pecuariaProducao' | 'milhoProducao' | 'sojaProducao' | 'fatorPecuaria' | 'fatorMilho' | 'fatorSoja' | 'fatorArrendamento' | 'areaTotal'>
+  inputs: Pick<UCSCalculationInputs, 'pecuariaCotacao' | 'milhoCotacao' | 'sojaCotacao' | 'produtividade_boi' | 'produtividade_milho' | 'produtividade_soja' | 'fator_pecuaria' | 'fator_milho' | 'fator_soja' | 'fator_arrendamento' | 'area_total'>
 ): { vusTotal: number, vboi: number, vmilho: number, vsoja: number } {
-  const vboi = inputs.pecuariaCotacao * inputs.pecuariaProducao * inputs.fatorPecuaria;
-  const vmilho = inputs.milhoCotacao * inputs.milhoProducao * inputs.fatorMilho;
-  const vsoja = inputs.sojaCotacao * inputs.sojaProducao * inputs.fatorSoja;
+  const vboi = inputs.pecuariaCotacao * inputs.produtividade_boi * inputs.fator_pecuaria;
+  const vmilho = inputs.milhoCotacao * inputs.produtividade_milho * inputs.fator_milho;
+  const vsoja = inputs.sojaCotacao * inputs.produtividade_soja * inputs.fator_soja;
 
-  const vusTotal = (vboi + vmilho + vsoja) * inputs.fatorArrendamento * inputs.areaTotal;
+  const vusTotal = (vboi + vmilho + vsoja) * inputs.fator_arrendamento * inputs.area_total;
   
   return { vusTotal, vboi, vmilho, vsoja };
 }
@@ -99,10 +38,10 @@ function calcularVUS(
  * Fórmula: CRS = CC + CH2O
  */
 function calcularCRS(
-  inputs: Pick<UCSCalculationInputs, 'cotacaoCreditoCarbono' | 'carbonoEstocadoPorHectare' | 'pibPorHectare' | 'fatorAgua' | 'areaTotal'>
+  inputs: Pick<UCSCalculationInputs, 'cotacaoCreditoCarbono' | 'produtividade_carbono' | 'pib_por_hectare' | 'fator_agua' | 'area_total'>
 ): { crsTotal: number, cc: number, ch2o: number } {
-  const cc = inputs.cotacaoCreditoCarbono * inputs.carbonoEstocadoPorHectare * inputs.areaTotal;
-  const ch2o = (inputs.pibPorHectare * inputs.fatorAgua) * inputs.areaTotal;
+  const cc = inputs.cotacaoCreditoCarbono * inputs.produtividade_carbono * inputs.area_total;
+  const ch2o = (inputs.pib_por_hectare * inputs.fator_agua) * inputs.area_total;
   const crsTotal = cc + ch2o;
   
   return { crsTotal, cc, ch2o };
@@ -112,10 +51,10 @@ function calcularCRS(
  * Função principal que executa todo o cálculo da metodologia UCS
  */
 export function calcularUCSCompleto(inputs: UCSCalculationInputs): UCSCalculationResult {
-  if (inputs.areaTotal <= 0) throw new Error("Área total deve ser maior que zero.");
+  if (inputs.area_total <= 0) throw new Error("Área total deve ser maior que zero.");
 
   // 1. VM
-  const vm = calcularVM(inputs.fm3, inputs.pm3mad, inputs.areaTotal);
+  const vm = calcularVM(inputs.produtividade_madeira, inputs.pm3mad, inputs.area_total);
   
   // 2. VUS
   const { vusTotal, vboi, vmilho, vsoja } = calcularVUS(inputs);
@@ -127,7 +66,7 @@ export function calcularUCSCompleto(inputs: UCSCalculationInputs): UCSCalculatio
   const pdm = vm + vusTotal + crsTotal;
   
   // 5. CE (Carbono Estocado Total)
-  const carbonoEstocadoTotal = inputs.carbonoEstocadoPorHectare * inputs.areaTotal;
+  const carbonoEstocadoTotal = inputs.produtividade_carbono * inputs.area_total;
   if (carbonoEstocadoTotal <= 0) throw new Error("Carbono estocado total (CE) deve ser maior que zero para evitar divisão por zero.");
 
   // 6. IVP
@@ -144,7 +83,7 @@ export function calcularUCSCompleto(inputs: UCSCalculationInputs): UCSCalculatio
     indiceViabilidadeProjeto: ivp,
     unidadeCreditoSustentabilidade: ucs,
     detalhes: {
-      vm: { fm3: inputs.fm3, pm3mad: inputs.pm3mad },
+      vm: { fm3: inputs.produtividade_madeira, pm3mad: inputs.pm3mad },
       vus: { vboi, vmilho, vsoja },
       crs: { cc, ch2o },
       ce: { carbonoEstocadoTotal }
@@ -155,7 +94,7 @@ export function calcularUCSCompleto(inputs: UCSCalculationInputs): UCSCalculatio
 /**
  * Obtém valores padrão das cotações para a calculadora
  */
-export async function obterValoresPadrao(): Promise<Partial<UCSCalculationInputs>> {
+export async function obterValoresPadrao(): Promise<Pick<UCSCalculationInputs, 'pm3mad' | 'pecuariaCotacao' | 'milhoCotacao' | 'sojaCotacao' | 'cotacaoCreditoCarbono'>> {
   try {
     const prices = await getCommodityPrices();
     
@@ -198,9 +137,9 @@ export function formatarValorMonetario(valor: number, moeda: string = 'BRL'): st
 export function validarInputsUCS(inputs: Partial<UCSCalculationInputs>): { valido: boolean; erros: string[] } {
   const erros: string[] = [];
   const requiredFields: (keyof UCSCalculationInputs)[] = [
-    'fm3', 'pm3mad', 'pecuariaProducao', 'milhoProducao', 'sojaProducao',
+    'produtividade_madeira', 'pm3mad', 'produtividade_boi', 'produtividade_milho', 'produtividade_soja',
     'pecuariaCotacao', 'milhoCotacao', 'sojaCotacao', 'cotacaoCreditoCarbono',
-    'pibPorHectare', 'carbonoEstocadoPorHectare', 'areaTotal'
+    'pib_por_hectare', 'produtividade_carbono', 'area_total'
   ];
 
   requiredFields.forEach(field => {

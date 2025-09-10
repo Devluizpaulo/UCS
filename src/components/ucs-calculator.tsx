@@ -18,36 +18,30 @@ import {
   type UCSCalculationInputs,
   type UCSCalculationResult
 } from '@/lib/ucs-pricing-service';
+import { getFormulaParameters } from '@/lib/formula-service';
+import type { FormulaParameters } from '@/lib/types';
+
 
 export function UCSCalculator() {
-  const [inputs, setInputs] = useState<UCSCalculationInputs>({
-    fm3: 150,
-    pm3mad: 200,
-    pecuariaProducao: 1.5,
-    milhoProducao: 8000,
-    sojaProducao: 3000,
-    pecuariaCotacao: 0,
-    milhoCotacao: 0,
-    sojaCotacao: 0,
-    cotacaoCreditoCarbono: 0,
-    pibPorHectare: 50000,
-    carbonoEstocado: 100
-  });
-
+  const [inputs, setInputs] = useState<Partial<UCSCalculationInputs>>({});
   const [resultado, setResultado] = useState<UCSCalculationResult | null>(null);
   const [erros, setErros] = useState<string[]>([]);
-  const [carregandoPadrao, setCarregandoPadrao] = useState(false);
+  const [carregando, setCarregando] = useState(true);
 
-  // Carregar valores padrão das cotações
+  // Carregar valores padrão das cotações e parâmetros
   const carregarValoresPadrao = async () => {
-    setCarregandoPadrao(true);
+    setCarregando(true);
     try {
-      const valoresPadrao = await obterValoresPadrao();
-      setInputs(prev => ({ ...prev, ...valoresPadrao }));
+      const [cotacoes, params] = await Promise.all([
+        obterValoresPadrao(),
+        getFormulaParameters(),
+      ]);
+      setInputs({ ...params, ...cotacoes });
     } catch (error) {
       console.error('Erro ao carregar valores padrão:', error);
+      setErros(['Falha ao carregar dados iniciais.']);
     } finally {
-      setCarregandoPadrao(false);
+      setCarregando(false);
     }
   };
 
@@ -71,7 +65,7 @@ export function UCSCalculator() {
     }
 
     try {
-      const resultado = calcularUCSCompleto(inputs);
+      const resultado = calcularUCSCompleto(inputs as UCSCalculationInputs);
       setResultado(resultado);
       setErros([]);
     } catch (error) {
@@ -79,6 +73,15 @@ export function UCSCalculator() {
       setResultado(null);
     }
   };
+
+  if (carregando) {
+    return (
+        <div className="flex items-center justify-center p-8">
+            <RefreshCw className="h-6 w-6 animate-spin mr-2" />
+            Carregando calculadora...
+        </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -89,7 +92,7 @@ export function UCSCalculator() {
             Calculadora UCS - Unidade de Crédito de Sustentabilidade
           </CardTitle>
           <CardDescription>
-            Calcule o valor da UCS baseado na metodologia de precificação oficial
+            Calcule o valor da UCS baseado na metodologia de precificação oficial, ajustando os parâmetros abaixo.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -98,14 +101,14 @@ export function UCSCalculator() {
               onClick={carregarValoresPadrao} 
               variant="outline" 
               size="sm"
-              disabled={carregandoPadrao}
+              disabled={carregando}
             >
-              {carregandoPadrao ? (
+              {carregando ? (
                 <RefreshCw className="h-4 w-4 animate-spin mr-2" />
               ) : (
                 <RefreshCw className="h-4 w-4 mr-2" />
               )}
-              Atualizar Cotações
+              Recarregar Padrões
             </Button>
           </div>
 
@@ -115,175 +118,73 @@ export function UCSCalculator() {
               <TabsTrigger value="results">Resultados</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="inputs" className="space-y-6">
-              {/* Valor da Madeira (VM) */}
+            <TabsContent value="inputs" className="space-y-6 mt-4">
+              
+              {/* Cotações */}
+              <Card>
+                <CardHeader>
+                    <CardTitle className="text-lg">Cotações das Commodities</CardTitle>
+                </CardHeader>
+                <CardContent className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                     <div>
+                        <Label htmlFor="pm3mad">Preço Madeira (R$/m³)</Label>
+                        <Input id="pm3mad" type="number" value={inputs.pm3mad || 0} onChange={(e) => handleInputChange('pm3mad', e.target.value)} />
+                    </div>
+                    <div>
+                        <Label htmlFor="pecuariaCotacao">Preço Boi (@)</Label>
+                        <Input id="pecuariaCotacao" type="number" value={inputs.pecuariaCotacao || 0} onChange={(e) => handleInputChange('pecuariaCotacao', e.target.value)} />
+                    </div>
+                     <div>
+                        <Label htmlFor="milhoCotacao">Preço Milho (ton)</Label>
+                        <Input id="milhoCotacao" type="number" value={inputs.milhoCotacao || 0} onChange={(e) => handleInputChange('milhoCotacao', e.target.value)} />
+                    </div>
+                    <div>
+                        <Label htmlFor="sojaCotacao">Preço Soja (ton)</Label>
+                        <Input id="sojaCotacao" type="number" value={inputs.sojaCotacao || 0} onChange={(e) => handleInputChange('sojaCotacao', e.target.value)} />
+                    </div>
+                    <div>
+                        <Label htmlFor="cotacaoCreditoCarbono">Preço Carbono (R$/tCO2)</Label>
+                        <Input id="cotacaoCreditoCarbono" type="number" value={inputs.cotacaoCreditoCarbono || 0} onChange={(e) => handleInputChange('cotacaoCreditoCarbono', e.target.value)} />
+                    </div>
+                </CardContent>
+              </Card>
+
+              {/* Parâmetros da Fórmula */}
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
                     <Leaf className="h-4 w-4" />
-                    Valor da Madeira (VM)
+                    Parâmetros da Fórmula
                   </CardTitle>
-                  <CardDescription>
-                    VM = Fm3 × Pm3mad
-                  </CardDescription>
                 </CardHeader>
-                <CardContent className="grid grid-cols-2 gap-4">
+                <CardContent className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                   <div>
-                    <Label htmlFor="fm3">Volume de Madeira (m³/ha)</Label>
-                    <Input
-                      id="fm3"
-                      type="number"
-                      value={inputs.fm3}
-                      onChange={(e) => handleInputChange('fm3', e.target.value)}
-                      placeholder="150"
-                    />
+                    <Label htmlFor="produtividade_madeira">Prod. Madeira (m³/ha)</Label>
+                    <Input id="produtividade_madeira" type="number" value={inputs.produtividade_madeira || 0} onChange={(e) => handleInputChange('produtividade_madeira', e.target.value)} />
                   </div>
                   <div>
-                    <Label htmlFor="pm3mad">Preço da Madeira (R$/m³)</Label>
-                    <Input
-                      id="pm3mad"
-                      type="number"
-                      value={inputs.pm3mad}
-                      onChange={(e) => handleInputChange('pm3mad', e.target.value)}
-                      placeholder="200"
-                    />
+                    <Label htmlFor="produtividade_boi">Prod. Boi (@/ha)</Label>
+                    <Input id="produtividade_boi" type="number" value={inputs.produtividade_boi || 0} onChange={(e) => handleInputChange('produtividade_boi', e.target.value)} />
                   </div>
-                </CardContent>
-              </Card>
-
-              {/* Valor de Uso do Solo (VUS) */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4" />
-                    Valor de Uso do Solo (VUS)
-                  </CardTitle>
-                  <CardDescription>
-                    Baseado na produção e cotação de commodities com fatores de ponderação
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>Pecuária - Produção (cabeças/ha)</Label>
-                      <Input
-                        type="number"
-                        value={inputs.pecuariaProducao}
-                        onChange={(e) => handleInputChange('pecuariaProducao', e.target.value)}
-                        placeholder="1.5"
-                      />
-                      <Badge variant="secondary" className="mt-1">Fator: 0,35</Badge>
-                    </div>
-                    <div>
-                      <Label>Pecuária - Cotação (R$/cabeça)</Label>
-                      <Input
-                        type="number"
-                        value={inputs.pecuariaCotacao}
-                        onChange={(e) => handleInputChange('pecuariaCotacao', e.target.value)}
-                        placeholder="0"
-                      />
-                    </div>
+                   <div>
+                    <Label htmlFor="produtividade_milho">Prod. Milho (ton/ha)</Label>
+                    <Input id="produtividade_milho" type="number" value={inputs.produtividade_milho || 0} onChange={(e) => handleInputChange('produtividade_milho', e.target.value)} />
                   </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>Milho - Produção (kg/ha)</Label>
-                      <Input
-                        type="number"
-                        value={inputs.milhoProducao}
-                        onChange={(e) => handleInputChange('milhoProducao', e.target.value)}
-                        placeholder="8000"
-                      />
-                      <Badge variant="secondary" className="mt-1">Fator: 0,30</Badge>
-                    </div>
-                    <div>
-                      <Label>Milho - Cotação (R$/kg)</Label>
-                      <Input
-                        type="number"
-                        value={inputs.milhoCotacao}
-                        onChange={(e) => handleInputChange('milhoCotacao', e.target.value)}
-                        placeholder="0"
-                      />
-                    </div>
+                   <div>
+                    <Label htmlFor="produtividade_soja">Prod. Soja (ton/ha)</Label>
+                    <Input id="produtividade_soja" type="number" value={inputs.produtividade_soja || 0} onChange={(e) => handleInputChange('produtividade_soja', e.target.value)} />
                   </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>Soja - Produção (kg/ha)</Label>
-                      <Input
-                        type="number"
-                        value={inputs.sojaProducao}
-                        onChange={(e) => handleInputChange('sojaProducao', e.target.value)}
-                        placeholder="3000"
-                      />
-                      <Badge variant="secondary" className="mt-1">Fator: 0,35</Badge>
-                    </div>
-                    <div>
-                      <Label>Soja - Cotação (R$/kg)</Label>
-                      <Input
-                        type="number"
-                        value={inputs.sojaCotacao}
-                        onChange={(e) => handleInputChange('sojaCotacao', e.target.value)}
-                        placeholder="0"
-                      />
-                    </div>
+                   <div>
+                    <Label htmlFor="produtividade_carbono">Prod. Carbono (tCO2e/ha)</Label>
+                    <Input id="produtividade_carbono" type="number" value={inputs.produtividade_carbono || 0} onChange={(e) => handleInputChange('produtividade_carbono', e.target.value)} />
                   </div>
-                  
-                  <div className="text-sm text-muted-foreground">
-                    <strong>Fator de Arrendamento Médio:</strong> 4,8%
+                   <div>
+                    <Label htmlFor="pib_por_hectare">PIB por Hectare (R$)</Label>
+                    <Input id="pib_por_hectare" type="number" value={inputs.pib_por_hectare || 0} onChange={(e) => handleInputChange('pib_por_hectare', e.target.value)} />
                   </div>
-                </CardContent>
-              </Card>
-
-              {/* Custo da Responsabilidade Socioambiental (CRS) */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <DollarSign className="h-4 w-4" />
-                    Custo da Responsabilidade Socioambiental (CRS)
-                  </CardTitle>
-                  <CardDescription>
-                    CRS = Cc + CH2O (Crédito de Carbono + Custo da Água)
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Cotação Crédito de Carbono (R$/tCO2)</Label>
-                    <Input
-                      type="number"
-                      value={inputs.cotacaoCreditoCarbono}
-                      onChange={(e) => handleInputChange('cotacaoCreditoCarbono', e.target.value)}
-                      placeholder="0"
-                    />
-                    <Badge variant="secondary" className="mt-1">2,59 tCO2/ha</Badge>
-                  </div>
-                  <div>
-                    <Label>PIB por Hectare (R$/ha)</Label>
-                    <Input
-                      type="number"
-                      value={inputs.pibPorHectare}
-                      onChange={(e) => handleInputChange('pibPorHectare', e.target.value)}
-                      placeholder="50000"
-                    />
-                    <Badge variant="secondary" className="mt-1">Fator água: 7%</Badge>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Carbono Estocado */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Carbono Estocado (CE)</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div>
-                    <Label>Carbono Estocado (tCO2 eq/ha)</Label>
-                    <Input
-                      type="number"
-                      value={inputs.carbonoEstocado}
-                      onChange={(e) => handleInputChange('carbonoEstocado', e.target.value)}
-                      placeholder="100"
-                    />
+                   <div>
+                    <Label htmlFor="area_total">Área Total (ha)</Label>
+                    <Input id="area_total" type="number" value={inputs.area_total || 0} onChange={(e) => handleInputChange('area_total', e.target.value)} />
                   </div>
                 </CardContent>
               </Card>
@@ -388,13 +289,13 @@ export function UCSCalculator() {
                         <Label className="font-semibold mb-2 block">Detalhes VUS:</Label>
                         <div className="grid grid-cols-3 gap-2 text-sm">
                           <div>
-                            <strong>Pecuária:</strong> {formatarValorMonetario(resultado.detalhes.vus.pecuaria.valor)}
+                            <strong>Pecuária:</strong> {formatarValorMonetario(resultado.detalhes.vus.vboi)}
                           </div>
                           <div>
-                            <strong>Milho:</strong> {formatarValorMonetario(resultado.detalhes.vus.milho.valor)}
+                            <strong>Milho:</strong> {formatarValorMonetario(resultado.detalhes.vus.vmilho)}
                           </div>
                           <div>
-                            <strong>Soja:</strong> {formatarValorMonetario(resultado.detalhes.vus.soja.valor)}
+                            <strong>Soja:</strong> {formatarValorMonetario(resultado.detalhes.vus.vsoja)}
                           </div>
                         </div>
                       </div>
@@ -404,10 +305,10 @@ export function UCSCalculator() {
                         <Label className="font-semibold mb-2 block">Detalhes CRS:</Label>
                         <div className="grid grid-cols-2 gap-2 text-sm">
                           <div>
-                            <strong>Crédito de Carbono:</strong> {formatarValorMonetario(resultado.detalhes.crs.creditoCarbono.valor)}
+                            <strong>Crédito de Carbono:</strong> {formatarValorMonetario(resultado.detalhes.crs.cc)}
                           </div>
                           <div>
-                            <strong>Custo da Água:</strong> {formatarValorMonetario(resultado.detalhes.crs.custoAgua.valor)}
+                            <strong>Custo da Água:</strong> {formatarValorMonetario(resultado.detalhes.crs.ch2o)}
                           </div>
                         </div>
                       </div>

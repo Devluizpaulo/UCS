@@ -156,25 +156,13 @@ export type GenerateReportOutput = {
 };
 
 // TYPES FOR UCS-PRICING-SERVICE
-export type UCSCalculationInputs = {
+export type UCSCalculationInputs = FormulaParameters & {
   // Cotações
   pm3mad: number;
   pecuariaCotacao: number;
   milhoCotacao: number;
   sojaCotacao: number;
   cotacaoCreditoCarbono: number;
-  
-  // Produtividade
-  fm3: number;
-  pecuariaProducao: number;
-  milhoProducao: number;
-arameters
-  sojaProducao: number;
-  
-  // Econômico
-  pibPorHectare: number;
-  carbonoEstocado: number;
-  areaTotal: number;
 };
 
 export type UCSCalculationResult = {
@@ -186,7 +174,7 @@ export type UCSCalculationResult = {
   
   // Cálculos finais
   indiceViabilidadeProjeto: number; // IVP
-  unidadeCreditoSustentabilidade: number; // UCS(CF)
+  unidadeCreditoSustentabilidade: number; // UCS
   
   // Detalhamento dos cálculos
   detalhes: {
