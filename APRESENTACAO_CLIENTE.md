@@ -3,6 +3,8 @@
 
 ## 1. Visão Geral e Objetivo do Projeto
 
+O objetivo é trazer modernidade a um sistema que era apoiado em planilhas e dar confiança a operadores e clientes com relação aos dados.
+
 O **Monitor do Índice UCS** é uma plataforma de software robusta e especializada, concebida como uma ferramenta de *business intelligence* para o setor agroambiental e financeiro. O seu principal objetivo é fornecer uma visão clara, unificada e em tempo real sobre a performance econômica de ativos ambientais e agrícolas, consolidada no "Índice de Unidade de Conservação Sustentável" (UCS).
 
 A plataforma foi projetada para atender a três públicos principais:
