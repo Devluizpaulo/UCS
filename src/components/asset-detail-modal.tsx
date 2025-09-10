@@ -50,14 +50,22 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose, selectedD
         try {
             const limit = intervalLimitMap[currentInterval];
             const history = await getCotacoesHistorico(currentAsset.name, limit, forDate);
-            setHistoricalData(history);
             
-            const chartPoints = history.map((d: FirestoreQuote) => ({ 
+            // Ensure history is sorted with most recent first for the table
+            const sortedHistory = [...history].sort((a,b) => {
+                const aTime = a.timestamp?.toDate ? a.timestamp.toDate().getTime() : new Date(a.timestamp).getTime();
+                const bTime = b.timestamp?.toDate ? b.timestamp.toDate().getTime() : new Date(b.timestamp).getTime();
+                return bTime - aTime;
+            });
+            setHistoricalData(sortedHistory);
+            
+            // Chart data needs to be sorted from oldest to newest for correct plotting
+            const chartPoints = sortedHistory.map((d: FirestoreQuote) => ({ 
                 time: new Date(d.timestamp).toLocaleDateString('pt-BR', {day:'2-digit', month: '2-digit'}),
                 value: d.ultimo 
-            }));
+            })).reverse();
             
-            setChartData(chartPoints.reverse());
+            setChartData(chartPoints);
 
         } catch (error) {
             console.error("Failed to get asset details:", error);
