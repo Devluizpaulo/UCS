@@ -10,41 +10,29 @@ import admin from 'firebase-admin';
 // Check if the app is already initialized to prevent errors.
 if (!admin.apps.length) {
   try {
-    console.log('[Firebase Admin] Initializing Firebase Admin SDK from individual environment variables...');
+    console.log('[Firebase Admin] Initializing Firebase Admin SDK...');
 
-    const projectId = process.env.FIREBASE_PROJECT_ID;
-    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-    
-    // Use Base64-encoded private key to avoid formatting issues in Vercel.
-    const privateKeyBase64 = process.env.FIREBASE_PRIVATE_KEY_BASE64;
+    // Use a single Base64 encoded service account variable.
+    const serviceAccountBase64 = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64;
 
-    if (!projectId || !clientEmail || !privateKeyBase64) {
-      let missingVars = [];
-      if (!projectId) missingVars.push('FIREBASE_PROJECT_ID');
-      if (!clientEmail) missingVars.push('FIREBASE_CLIENT_EMAIL');
-      if (!privateKeyBase64) missingVars.push('FIREBASE_PRIVATE_KEY_BASE64');
-      throw new Error(`Missing required Firebase environment variables: ${missingVars.join(', ')}. Please check your Vercel project settings and refer to VERCEL_SETUP.md.`);
+    if (!serviceAccountBase64) {
+      throw new Error("Missing required Firebase environment variable: FIREBASE_SERVICE_ACCOUNT_BASE64. Please check your Vercel project settings and refer to VERCEL_SETUP.md.");
     }
 
-    // Decode the private key from Base64
-    const privateKey = Buffer.from(privateKeyBase64, 'base64').toString('utf-8');
+    // Decode the service account from Base64
+    const serviceAccountJson = Buffer.from(serviceAccountBase64, 'base64').toString('utf-8');
+    const serviceAccount = JSON.parse(serviceAccountJson) as admin.ServiceAccount;
 
-    if (!privateKey.includes('-----BEGIN PRIVATE KEY-----')) {
-        throw new Error('Decoded private key is not in the correct PEM format.');
+    if (!serviceAccount.project_id || !serviceAccount.client_email || !serviceAccount.private_key) {
+        throw new Error('Decoded service account JSON is missing required fields (project_id, client_email, private_key).');
     }
-
-    const serviceAccount: admin.ServiceAccount = {
-      projectId,
-      clientEmail,
-      privateKey,
-    };
 
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
-      projectId: serviceAccount.projectId,
+      projectId: serviceAccount.project_id,
     });
 
-    console.log('[Firebase Admin] SDK initialized successfully from Base64 key.');
+    console.log('[Firebase Admin] SDK initialized successfully from Base64 encoded service account.');
 
   } catch (error: any) {
     console.error('[Firebase Admin] CRITICAL INITIALIZATION ERROR:', error.message);

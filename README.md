@@ -103,25 +103,20 @@ A aplicação é construída com uma arquitetura moderna baseada em componentes,
 
 ## 6. Configuração e Variáveis de Ambiente
 
-Para o funcionamento correto da aplicação, é necessário configurar as seguintes variáveis de ambiente no arquivo `.env` na raiz do projeto.
+Para o funcionamento correto da aplicação, é necessário configurar as seguintes variáveis de ambiente no arquivo `.env` na raiz do projeto. **Para deploy na Vercel, siga as instruções em `VERCEL_SETUP.md`**.
 
-**Configurações do Firebase (Admin SDK - Lado do Servidor):**
-
-- `FIREBASE_PROJECT_ID`: O ID do seu projeto Firebase.
-- `FIREBASE_CLIENT_EMAIL`: O e-mail da conta de serviço do Firebase.
-- `FIREBASE_PRIVATE_KEY`: A chave privada da conta de serviço.
+**Configurações do Firebase Admin SDK (Lado do Servidor):**
+- `FIREBASE_SERVICE_ACCOUNT_BASE64`: O conteúdo completo do seu arquivo JSON de conta de serviço Firebase, codificado em Base64.
 
 **Configurações da IA (Gemini):**
 - `GEMINI_API_KEY`: Sua chave de API do Google AI Studio (ou Google Cloud).
 
 
-**Exemplo de arquivo `.env`:**
+**Exemplo de arquivo `.env` para desenvolvimento local:**
 
 ```
-# Firebase Admin SDK
-FIREBASE_PROJECT_ID=seu-projeto-id
-FIREBASE_CLIENT_EMAIL=firebase-adminsdk-xxxxx@seu-projeto-id.iam.gserviceaccount.com
-FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nSUA_CHAVE_PRIVADA_AQUI\n-----END PRIVATE KEY-----\n"
+# Firebase Admin SDK - Instruções em VERCEL_SETUP.md
+FIREBASE_SERVICE_ACCOUNT_BASE64="COLE_SUA_STRING_BASE64_AQUI"
 
 # Google AI
 GEMINI_API_KEY=sua_gemini_api_key
@@ -138,10 +133,11 @@ NEXT_PUBLIC_APP_ENV=development
     ```
 2.  **Configurar Variáveis de Ambiente:**
     - Crie um arquivo `.env` na raiz do projeto.
-    - Configure as variáveis do Firebase e Gemini conforme o exemplo acima.
+    - Configure as variáveis do Firebase e Gemini conforme o exemplo acima e as instruções no arquivo `VERCEL_SETUP.md`.
 3.  **Executar o Servidor de Desenvolvimento:**
     ```bash
     npm run dev
     ```
 4.  **Acessar a Aplicação:**
     - Abra `http://localhost:9002` em seu navegador.
+```
