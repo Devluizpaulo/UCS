@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -97,25 +98,31 @@ export function UserManagement() {
   
   const generateWelcomeMessage = (user: User, password: string): {subject: string, body: string} => {
     const subject = "Bem-vindo ao Sistema Índice UCS - Suas credenciais de acesso";
-    const body = `Olá ${user.displayName},
+    const body = `
+Olá, ${user.displayName}!
 
-Sua conta foi criada no Sistema Índice UCS. Abaixo estão suas credenciais de acesso:
+Sua conta para acessar o Sistema Índice UCS foi criada com sucesso.
 
-- Email: ${user.email}
-- Senha temporária: ${password}
-- Link de acesso: https://ucsindex.vercel.app/
+==================================
+        CREDENCIAS DE ACESSO
+==================================
+*   **Email:** ${user.email}
+*   **Senha Temporária:** ${password}
+*   **Link de Acesso:** https://ucsindex.vercel.app/
 
-IMPORTANTE - INSTRUÇÕES DE PRIMEIRO ACESSO:
-1. Acesse o sistema usando o link acima.
-2. Faça login com o email e a senha temporária fornecidos.
-3. No primeiro acesso, você será obrigatoriamente direcionado para alterar sua senha.
-4. Escolha uma senha segura com pelo menos 8 caracteres.
+==================================
+     INSTRUÇÕES DE PRIMEIRO ACESSO
+==================================
+1.  **Acesse o sistema** através do link fornecido acima.
+2.  **Faça login** com seu email e a senha temporária.
+3.  **Altere sua senha:** O sistema exigirá que você crie uma nova senha pessoal e segura no primeiro acesso.
 
-Após alterar a senha, você terá acesso completo ao sistema.
+Após seguir estes passos, seu acesso estará completo.
 
 Atenciosamente,
-Equipe Índice UCS`;
-    return { subject, body };
+Equipe Índice UCS
+`;
+    return { subject, body: body.trim() };
   };
   
   const copyEmailText = async () => {
