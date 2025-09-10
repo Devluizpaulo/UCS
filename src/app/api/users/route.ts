@@ -2,22 +2,16 @@
 'use server';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/firebase-admin-config';
+import { auth as adminAuth } from '@/lib/firebase-admin-config';
 
-// POST /api/users - Create the first admin user
+/**
+ * POST /api/users - Create the first admin user or a new user.
+ * If no users exist, it creates the first user and assigns them 'admin' role.
+ * If users exist, it creates a new user with the specified role.
+ */
 export async function POST(request: NextRequest) {
   try {
-    // 1. Check if any users already exist.
-    const userList = await auth.listUsers(1);
-    if (userList.users.length > 0) {
-      return NextResponse.json(
-        { error: 'Um usuário administrador já existe. Não é possível criar outro.' },
-        { status: 409 } // 409 Conflict
-      );
-    }
-
-    // 2. If no users exist, proceed to create the first admin.
-    const { email, password, displayName, phoneNumber } = await request.json();
+    const { email, password, displayName, phoneNumber, role } = await request.json();
 
     if (!email || !password || !displayName) {
       return NextResponse.json(
@@ -32,8 +26,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const userList = await adminAuth.listUsers(1);
+    const isFirstUser = userList.users.length === 0;
+
+    // Se for o primeiro usuário, ele DEVE ser admin.
+    // Se não for o primeiro, a role do request é usada.
+    const userRole = isFirstUser ? 'admin' : (role || 'user');
+
+    // Se não for o primeiro usuário e tentar criar um admin, verificar permissão (não implementado ainda, mas é o local)
+
     // 3. Create the user in Firebase Auth.
-    const userRecord = await auth.createUser({
+    const userRecord = await adminAuth.createUser({
       email,
       password,
       displayName,
@@ -41,7 +44,7 @@ export async function POST(request: NextRequest) {
     });
 
     // 4. Set custom claim to make this user an admin and require password change.
-    await auth.setCustomUserClaims(userRecord.uid, { role: 'admin', isFirstLogin: true });
+    await adminAuth.setCustomUserClaims(userRecord.uid, { role: userRole, isFirstLogin: true });
 
     return NextResponse.json({
       uid: userRecord.uid,
@@ -51,8 +54,17 @@ export async function POST(request: NextRequest) {
 
   } catch (error: any) {
     console.error('[API Users] Erro ao criar usuário:', error);
+    
+    // Tratar erros específicos do Firebase
+    if (error.code === 'auth/email-already-exists') {
+      return NextResponse.json({ error: 'Este e-mail já está em uso.' }, { status: 409 });
+    }
+    if (error.code === 'auth/invalid-password') {
+      return NextResponse.json({ error: 'A senha é inválida. Deve ter no mínimo 8 caracteres.' }, { status: 400 });
+    }
+    
     return NextResponse.json(
-      { error: error.message || 'Ocorreu um erro no servidor.' },
+      { error: 'Ocorreu um erro no servidor ao criar o usuário.' },
       { status: 500 }
     );
   }

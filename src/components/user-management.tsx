@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, PlusCircle, Trash2, Edit, Eye, EyeOff, Mail, MessageSquare } from 'lucide-react';
+import { Loader2, PlusCircle, Trash2, Edit, Mail, MessageSquare } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -39,10 +39,6 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
-import { getAuth, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { initializeApp, getApps, getApp } from 'firebase/app';
-import { firebaseConfig } from '@/lib/firebase-config';
-import { db } from '@/lib/firebase-admin-config';
 
 interface User {
   id: string;
@@ -71,14 +67,10 @@ export function UserManagement() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [generatedPassword, setGeneratedPassword] = useState<string>('');
-  const [showPassword, setShowPassword] = useState(false);
   const [emailText, setEmailText] = useState<string>('');
   const [currentUserForSharing, setCurrentUserForSharing] = useState<User | null>(null);
   const [showEmailModal, setShowEmailModal] = useState(false);
   const { toast } = useToast();
-
-  const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-  const auth = getAuth(app);
 
   const form = useForm<UserFormData>({
     resolver: zodResolver(userSchema),
@@ -116,8 +108,6 @@ Sua conta para acessar o Sistema Índice UCS foi criada com sucesso.
 1.  **Acesse o sistema** através do link fornecido acima.
 2.  **Faça login** com seu email e a senha temporária.
 3.  **Altere sua senha:** O sistema exigirá que você crie uma nova senha pessoal e segura no primeiro acesso.
-
-Após seguir estes passos, seu acesso estará completo.
 
 Atenciosamente,
 Equipe Índice UCS
@@ -161,24 +151,15 @@ Equipe Índice UCS
     window.open(whatsappLink, '_blank');
   };
 
-
-  // Buscar usuários
   const fetchUsers = async () => {
     setIsFetching(true);
     try {
-      // Por enquanto, vamos simular com dados mock
-      const mockUsers: User[] = [
-        {
-          id: '1',
-          email: 'admin@ucs.com',
-          displayName: 'Administrador',
-          phoneNumber: '(11) 99999-9999',
-          createdAt: '2024-01-15',
-          isFirstLogin: false,
-          role: 'admin',
-        },
-      ];
-      setUsers(mockUsers);
+      const response = await fetch('/api/admin/users');
+      if (!response.ok) {
+        throw new Error('Falha ao buscar usuários');
+      }
+      const data = await response.json();
+      setUsers(data);
     } catch (error) {
       console.error('Erro ao buscar usuários:', error);
       toast({
@@ -200,18 +181,21 @@ Equipe Índice UCS
     const tempPassword = generateTemporaryPassword();
     
     try {
-      // Simulação de criação de usuário
-      const userCredential = await createUserWithEmailAndPassword(auth, data.email, tempPassword).catch((err) => {
-         // This is a temporary workaround for repeated user creation during dev
-         if (err.code === 'auth/email-already-in-use') {
-             console.warn("User already exists. Simulating creation...");
-             return { user: { uid: new Date().getTime().toString() }};
-         }
-         throw err;
+      const response = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...data, password: tempPassword }),
       });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Falha ao criar usuário no servidor');
+      }
+
+      const newUserResponse = await response.json();
 
       const newUser: User = {
-        id: userCredential.user.uid,
+        id: newUserResponse.uid,
         email: data.email,
         displayName: data.displayName,
         phoneNumber: data.phoneNumber,
@@ -250,6 +234,10 @@ Equipe Índice UCS
     if (!deletingUserId) return;
     setIsLoading(true);
     try {
+      // Implementar chamada à API para excluir usuário
+      // const response = await fetch(`/api/admin/users/${deletingUserId}`, { method: 'DELETE' });
+      // if (!response.ok) throw new Error('Falha ao excluir');
+      
       toast({
         title: 'Usuário excluído',
         description: 'O usuário foi removido do sistema.',
