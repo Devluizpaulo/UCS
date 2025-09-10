@@ -5,48 +5,52 @@ import { useState, useCallback, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "./ui/card";
 import { UnderlyingAssetsTable } from "./underlying-assets-table";
 import { useToast } from "@/hooks/use-toast";
-import type { CommodityPriceData, ChartData } from "@/lib/types";
-// Removed direct import of server action
+import type { CommodityPriceData, ChartData, UcsData } from "@/lib/types";
 import { IndexHistoryTable } from './index-history-table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 
-interface UnderlyingAssetsCardProps {
-    indexHistory: ChartData[];
-    loadingIndexHistory: boolean;
-    isConfigured: boolean;
-}
-
-export function UnderlyingAssetsCard({ indexHistory, loadingIndexHistory, isConfigured }: UnderlyingAssetsCardProps) {
+export function UnderlyingAssetsCard() {
     const [commodities, setCommodities] = useState<CommodityPriceData[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoadingCommodities, setIsLoadingCommodities] = useState(true);
+    const [indexHistory, setIndexHistory] = useState<ChartData[]>([]);
+    const [loadingIndexHistory, setLoadingIndexHistory] = useState(true);
+    const [isConfigured, setIsConfigured] = useState(false);
     const { toast } = useToast();
 
-    const fetchAssets = useCallback(async () => {
-        setIsLoading(true);
+    const fetchAssetsAndHistory = useCallback(async () => {
+        setIsLoadingCommodities(true);
+        setLoadingIndexHistory(true);
         try {
-            const response = await fetch('/api/commodity-prices');
-            if (!response.ok) {
-                throw new Error('Failed to fetch commodity prices');
-            }
-            const pricesResult = await response.json();
+            const [assetsResponse, historyResponse] = await Promise.all([
+                fetch('/api/commodity-prices'),
+                fetch('/api/ucs-index?interval=1d')
+            ]);
+
+            if (!assetsResponse.ok) throw new Error('Failed to fetch commodity prices');
+            const pricesResult = await assetsResponse.json();
             setCommodities(pricesResult);
+
+            if (!historyResponse.ok) throw new Error('Failed to fetch index history');
+            const historyResult: { latest: UcsData, history: ChartData[] } = await historyResponse.json();
+            setIndexHistory(historyResult.history);
+            setIsConfigured(historyResult.latest.isConfigured);
+            
         } catch (error) {
              toast({
                 variant: "destructive",
-                title: "Erro ao buscar ativos",
-                description: "Não foi possível carregar as cotações das commodities.",
+                title: "Erro ao buscar dados",
+                description: "Não foi possível carregar os dados do painel.",
             });
         } finally {
-            setIsLoading(false);
+            setIsLoadingCommodities(false);
+            setLoadingIndexHistory(false);
         }
     }, [toast]);
 
     useEffect(() => {
-        fetchAssets();
-    }, [fetchAssets]);
+        fetchAssetsAndHistory();
+    }, [fetchAssetsAndHistory]);
     
-    const availableAtivos = commodities.map(c => c.name);
-
     return (
         <Card>
             <CardHeader>
@@ -62,7 +66,7 @@ export function UnderlyingAssetsCard({ indexHistory, loadingIndexHistory, isConf
                     <TabsContent value="assets" className="px-6 pb-6">
                         <UnderlyingAssetsTable 
                             data={commodities} 
-                            loading={isLoading}
+                            loading={isLoadingCommodities}
                         />
                     </TabsContent>
                     <TabsContent value="index_history" className="px-6 pb-6">

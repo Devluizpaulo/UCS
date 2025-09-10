@@ -19,11 +19,7 @@ export function DashboardPage() {
           </div>
 
           <div className="lg:col-span-3">
-            <UnderlyingAssetsCard 
-              indexHistory={[]} 
-              loadingIndexHistory={false}
-              isConfigured={true}
-            />
+            <UnderlyingAssetsCard />
           </div>
         </div>
       </main>

@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -33,7 +32,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { useRouter } from 'next/navigation';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 
 const formulaSchema = z.object({
@@ -63,12 +62,10 @@ const formulaSchema = z.object({
 
 
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState('users');
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [showFormulaAlert, setShowFormulaAlert] = useState(false);
   const { toast } = useToast();
-  const router = useRouter();
   const [commodities, setCommodities] = useState<CommodityConfig[]>([]);
   const [editingCommodity, setEditingCommodity] = useState<CommodityConfig | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -309,33 +306,21 @@ export default function SettingsPage() {
     <MainLayout>
       <div className="flex min-h-screen w-full flex-col">
         <PageHeader title="Configurações" />
-        <main className="flex min-h-[calc(100vh_-_theme(spacing.16))] flex-1 flex-col gap-4 p-4 md:gap-8 md:p-10">
-          <div className="mx-auto grid w-full max-w-6xl items-start gap-6 grid-cols-1 md:grid-cols-[180px_1fr] lg:grid-cols-[250px_1fr]">
-            <nav className="grid gap-4 text-sm text-muted-foreground md:sticky md:top-20 mobile-nav md:grid">
-              <a href="#" 
-                 onClick={() => setActiveTab('users')}
-                 className={activeTab === 'users' ? "font-semibold text-primary" : ""}>
-                Usuários
-              </a>
-              <a href="#" 
-                 onClick={() => setActiveTab('sources')}
-                 className={activeTab === 'sources' ? "font-semibold text-primary" : ""}>
-                Fontes de Dados
-              </a>
-              <a href="#" 
-                onClick={() => setActiveTab('formula')}
-                className={activeTab === 'formula' ? "font-semibold text-primary" : ""}>
-                Fórmula do Índice
-              </a>
-              <a href="#" 
-                onClick={() => setActiveTab('currency')}
-                className={activeTab === 'currency' ? "font-semibold text-primary" : ""}>
-                Conversão de Moedas
-              </a>
-            </nav>
-            <div className="grid gap-6">
-              {activeTab === 'users' && <UserManagement />}
-              {activeTab === 'formula' && (
+        <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-10">
+          <Tabs defaultValue="users" className="w-full">
+            <TabsList className="grid w-full grid-cols-4 mb-6">
+              <TabsTrigger value="users">Usuários</TabsTrigger>
+              <TabsTrigger value="sources">Fontes de Dados</TabsTrigger>
+              <TabsTrigger value="formula">Fórmula do Índice</TabsTrigger>
+              <TabsTrigger value="currency">Conversão de Moedas</TabsTrigger>
+            </TabsList>
+            <TabsContent value="users">
+                <UserManagement />
+            </TabsContent>
+            <TabsContent value="sources">
+                 {renderSourcesTab()}
+            </TabsContent>
+            <TabsContent value="formula">
                 <Card>
                     <CardHeader>
                         <CardTitle>Parâmetros da Fórmula do Índice</CardTitle>
@@ -347,9 +332,8 @@ export default function SettingsPage() {
                         {renderFormulaForm()}
                     </CardContent>
                 </Card>
-              )}
-               {activeTab === 'sources' && renderSourcesTab()}
-              {activeTab === 'currency' && (
+            </TabsContent>
+             <TabsContent value="currency">
                 <Card>
                   <CardHeader>
                     <CardTitle>Sistema de Conversão de Moedas</CardTitle>
@@ -362,9 +346,8 @@ export default function SettingsPage() {
                     <CurrencyConversionTable />
                   </CardContent>
                 </Card>
-              )}
-            </div>
-          </div>
+            </TabsContent>
+          </Tabs>
         </main>
       </div>
 
