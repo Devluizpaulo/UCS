@@ -8,13 +8,13 @@ import type { CommodityMap } from "./types";
 // Mapeamento dos nomes dos ativos para suas respectivas coleções no Firestore
 // Os nomes das coleções DEVEM corresponder ao ID do ativo normalizado (lowercase, _ para espaços, sem caracteres especiais)
 export const ASSET_COLLECTION_MAP: Record<string, string> = {
-  'USD/BRL - Dólar Americano Real Brasileiro': 'usd_brl___dolar_americano_real_brasileiro',
-  'EUR/BRL - Euro Real Brasileiro': 'eur_brl___euro_real_brasileiro',
-  'Boi Gordo Futuros': 'boi_gordo_futuros',
-  'Soja Futuros': 'soja_futuros',
-  'Milho Futuros': 'milho_futuros',
-  'Madeira Serrada Futuros': 'madeira_serrada_futuros',
-  'Crédito Carbono Futuros': 'credito_carbono_futuros',
+  'USD/BRL - Dólar Americano Real Brasileiro': 'usd',
+  'EUR/BRL - Euro Real Brasileiro': 'eur',
+  'Boi Gordo Futuros': 'boi_gordo',
+  'Soja Futuros': 'soja',
+  'Milho Futuros': 'milho',
+  'Madeira Serrada Futuros': 'madeira',
+  'Crédito Carbono Futuros': 'carbono',
 };
 
 
