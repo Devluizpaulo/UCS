@@ -63,13 +63,13 @@ export function UnderlyingAssetsCard() {
                         <TabsTrigger value="assets">Visão Geral dos Ativos</TabsTrigger>
                         <TabsTrigger value="index_history">Histórico do Índice</TabsTrigger>
                     </TabsList>
-                    <TabsContent value="assets" className="px-6 pb-6">
+                    <TabsContent value="assets" className="mt-0">
                         <UnderlyingAssetsTable 
                             data={commodities} 
                             loading={isLoadingCommodities}
                         />
                     </TabsContent>
-                    <TabsContent value="index_history" className="px-6 pb-6">
+                    <TabsContent value="index_history" className="mt-0">
                          <IndexHistoryTable 
                             data={indexHistory} 
                             loading={loadingIndexHistory} 

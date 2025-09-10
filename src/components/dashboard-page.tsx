@@ -12,13 +12,13 @@ export function DashboardPage() {
     <div className="flex min-h-screen w-full flex-col">
       <PageHeader title="Painel" />
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
           {/* Componente UCS Index Display integrado */}
-          <div className="lg:col-span-4">
+          <div className="lg:col-span-3">
             <UCSIndexDisplay />
           </div>
 
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-2">
             <UnderlyingAssetsCard />
           </div>
         </div>
