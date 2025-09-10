@@ -96,13 +96,6 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose, selectedD
                     Análise detalhada do histórico de preços para {asset.name}. Fonte: n8n.
                 </DialogDescription>
             </div>
-            <Tabs defaultValue="1d" onValueChange={(value) => setInterval(value as HistoryInterval)} className="w-auto shrink-0">
-                <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="1d">Diário</TabsTrigger>
-                    <TabsTrigger value="1wk">Semanal</TabsTrigger>
-                    <TabsTrigger value="1mo">Mensal</TabsTrigger>
-                </TabsList>
-            </Tabs>
           </div>
         </DialogHeader>
         <div className="grid md:grid-cols-2 gap-x-8 gap-y-6 flex-1 min-h-0">
@@ -145,7 +138,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose, selectedD
                 </div>
              </div>
              <div className="flex flex-col min-h-0">
-                 <h3 className="text-lg font-semibold mb-4">Cotações Históricas ({interval === '1d' ? 'Diário' : interval === '1wk' ? 'Semanal' : 'Mensal'})</h3>
+                 <h3 className="text-lg font-semibold mb-4">Cotações Históricas (Diário)</h3>
                  <div className="flex-1 relative">
                     <ScrollArea className="absolute inset-0">
                         <Table>

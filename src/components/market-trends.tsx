@@ -62,15 +62,8 @@ export function MarketTrends() {
       <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-4">
         <div>
             <CardTitle>Tendências de Mercado</CardTitle>
-            <CardDescription>Análise da performance histórica do Índice UCS em diferentes períodos.</CardDescription>
+            <CardDescription>Análise da performance histórica do Índice UCS.</CardDescription>
         </div>
-         <Tabs defaultValue={historyInterval} onValueChange={(value) => handleIntervalChange(value as HistoryInterval)} className="w-full sm:w-auto">
-            <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="1d" disabled={!isConfigured}>Diário</TabsTrigger>
-                <TabsTrigger value="1wk" disabled={!isConfigured}>Semanal</TabsTrigger>
-                <TabsTrigger value="1mo" disabled={!isConfigured}>Anual</TabsTrigger>
-            </TabsList>
-        </Tabs>
       </CardHeader>
       <CardContent>
          <UcsIndexChart data={indexHistoryData} loading={loading || !isConfigured}/>
