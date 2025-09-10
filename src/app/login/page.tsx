@@ -12,20 +12,37 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { firebaseConfig } from '@/lib/firebase-config';
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { FileSpreadsheet, Loader2, TrendingUp } from 'lucide-react';
+import { Loader2, TrendingUp, UserPlus } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 
 const loginSchema = z.object({
   email: z.string().email('Por favor, insira um e-mail válido.'),
   password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres.'),
 });
 
+const adminSchema = z.object({
+  displayName: z.string().min(2, 'O nome é obrigatório.'),
+  email: z.string().email('Por favor, insira um e-mail válido.'),
+  password: z.string().min(8, 'A senha deve ter pelo menos 8 caracteres.'),
+});
+
 type LoginFormData = z.infer<typeof loginSchema>;
+type AdminFormData = z.infer<typeof adminSchema>;
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
+  const [isCreatingAdmin, setIsCreatingAdmin] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
   
@@ -33,12 +50,15 @@ export default function LoginPage() {
   const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
   const auth = getAuth(app);
 
-  const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>({
+  const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   });
 
+  const adminForm = useForm<AdminFormData>({
+    resolver: zodResolver(adminSchema),
+  });
 
-  const onSubmit = async (data: LoginFormData) => {
+  const onLoginSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     try {
       await signInWithEmailAndPassword(auth, data.email, data.password);
@@ -46,7 +66,6 @@ export default function LoginPage() {
         title: 'Login bem-sucedido',
         description: 'Carregando painel...',
       });
-      // Pequeno delay para mostrar o overlay de carregamento
       setTimeout(() => {
         router.push('/');
       }, 1000);
@@ -63,9 +82,41 @@ export default function LoginPage() {
     } 
   };
 
+  const onAdminSubmit = async (data: AdminFormData) => {
+    setIsCreatingAdmin(true);
+    try {
+      const response = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Falha ao criar administrador');
+      }
+
+      toast({
+        title: 'Administrador criado!',
+        description: 'Faça login com suas novas credenciais.',
+      });
+      setIsModalOpen(false);
+      adminForm.reset();
+      // Auto-fill login form
+      loginForm.setValue('email', data.email);
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao Criar Conta',
+        description: error.message || 'Não foi possível criar a conta. Pode ser que um administrador já exista.',
+      });
+    } finally {
+      setIsCreatingAdmin(false);
+    }
+  };
+
   return (
     <>
-      {/* Overlay de carregamento que sobrepõe tudo */}
       {isLoading && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm">
           <div className="flex flex-col items-center gap-4 text-white">
@@ -81,7 +132,6 @@ export default function LoginPage() {
         </div>
       )}
       
-      {/* Tela de login principal */}
       <div className="relative h-screen w-full overflow-hidden">
         <div className="absolute inset-0 z-0">
           <Image
@@ -98,7 +148,6 @@ export default function LoginPage() {
         <div className="relative z-10 flex min-h-screen w-full items-center justify-center px-4 sm:px-6 lg:px-8">
           <div className="w-full max-w-md rounded-2xl border border-border/20 bg-background/90 p-6 sm:p-8 shadow-2xl backdrop-blur-md">
             <div className="mx-auto grid w-full gap-6">
-              {/* Logo e título com destaque para mobile */}
               <div className="grid gap-4 text-center">
                 <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
                   <div className="relative">
@@ -119,19 +168,18 @@ export default function LoginPage() {
                 </p>
               </div>
               
-              {/* Formulário */}
-              <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4">
+              <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="grid gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="email" className="text-sm font-medium">E-mail</Label>
                   <Input
                     id="email"
                     type="email"
                     placeholder="seu@email.com"
-                    {...register('email')}
+                    {...loginForm.register('email')}
                     className="bg-background/90 border-border/50 focus:border-green-500 transition-colors h-11"
                     disabled={isLoading}
                   />
-                  {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
+                  {loginForm.formState.errors.email && <p className="text-xs text-destructive">{loginForm.formState.errors.email.message}</p>}
                 </div>
                 
                 <div className="grid gap-2">
@@ -148,11 +196,11 @@ export default function LoginPage() {
                     id="password" 
                     type="password" 
                     placeholder="********" 
-                    {...register('password')} 
+                    {...loginForm.register('password')} 
                     className="bg-background/90 border-border/50 focus:border-green-500 transition-colors h-11"
                     disabled={isLoading}
                   />
-                  {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
+                  {loginForm.formState.errors.password && <p className="text-xs text-destructive">{loginForm.formState.errors.password.message}</p>}
                 </div>
                 
                 <Button 
@@ -170,10 +218,52 @@ export default function LoginPage() {
                   )}
                 </Button>
               </form>
+              <div className="mt-4 text-center text-sm">
+                <Button variant="link" className="text-muted-foreground" onClick={() => setIsModalOpen(true)}>
+                  Criar Conta de Administrador
+                </Button>
+              </div>
             </div>
           </div>
         </div>
       </div>
+
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Criar Primeiro Administrador</DialogTitle>
+            <DialogDescription>
+              Esta opção é para o primeiro acesso ao sistema. Se já existem usuários, esta operação falhará.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={adminForm.handleSubmit(onAdminSubmit)}>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="admin-name" className="text-right">Nome</Label>
+                <Input id="admin-name" {...adminForm.register('displayName')} className="col-span-3" />
+                {adminForm.formState.errors.displayName && <p className="col-span-4 text-right text-xs text-destructive">{adminForm.formState.errors.displayName.message}</p>}
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="admin-email" className="text-right">Email</Label>
+                <Input id="admin-email" type="email" {...adminForm.register('email')} className="col-span-3" />
+                {adminForm.formState.errors.email && <p className="col-span-4 text-right text-xs text-destructive">{adminForm.formState.errors.email.message}</p>}
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="admin-password" className="text-right">Senha</Label>
+                <Input id="admin-password" type="password" {...adminForm.register('password')} className="col-span-3" />
+                {adminForm.formState.errors.password && <p className="col-span-4 text-right text-xs text-destructive">{adminForm.formState.errors.password.message}</p>}
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>Cancelar</Button>
+              <Button type="submit" disabled={isCreatingAdmin}>
+                {isCreatingAdmin && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Criar Conta
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
