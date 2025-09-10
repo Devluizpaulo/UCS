@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
-import type { CommodityPriceData, ChartData, HistoryInterval, FirestoreQuote } from '@/lib/types';
+import type { CommodityPriceData, ChartData, FirestoreQuote } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 import { useEffect, useState, useCallback } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
@@ -49,10 +49,10 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose, selectedD
             });
             setHistoricalData(sortedHistory);
             
-            const chartPoints = sortedHistory.map((d: FirestoreQuote) => ({ 
+            const chartPoints = [...sortedHistory].reverse().map((d: FirestoreQuote) => ({ 
                 time: new Date(d.timestamp).toLocaleDateString('pt-BR', {day:'2-digit', month: '2-digit'}),
                 value: d.ultimo 
-            })).reverse();
+            }));
             
             setChartData(chartPoints);
 
@@ -68,6 +68,13 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose, selectedD
             getDetails(asset, selectedDate);
         }
     }, [isOpen, asset, selectedDate, getDetails]);
+    
+    const chartConfig = {
+      value: {
+        label: asset.name,
+        color: 'hsl(var(--primary))',
+      },
+    };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -106,23 +113,25 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose, selectedD
                   </div>
               ) : (
                   <div className="h-[250px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={chartData} margin={{ left: 10, right: 10, top: 10, bottom: 0 }}>
-                            <CartesianGrid vertical={false} />
-                            <XAxis dataKey="time" tickLine={false} axisLine={false} tickMargin={8} fontSize={12} />
-                            <YAxis 
-                                domain={['dataMin - (dataMin * 0.05)', 'dataMax + (dataMax * 0.05)']}
-                                tickLine={false} 
-                                axisLine={false} 
-                                tickMargin={8} 
-                                fontSize={12} 
-                                width={80} 
-                                tickFormatter={(value) => formatCurrency(Number(value), asset.currency)}
-                            />
-                            <Tooltip cursor={false} content={<ChartTooltipContent indicator="dot" formatter={(value, name, props) => [formatCurrency(Number(value), asset.currency), 'Valor']}/>} />
-                            <Area dataKey="value" type="natural" fill="hsl(var(--primary))" fillOpacity={0.4} stroke="hsl(var(--primary))" />
-                        </AreaChart>
-                    </ResponsiveContainer>
+                    <ChartContainer config={chartConfig} className="w-full h-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart data={chartData} margin={{ left: 10, right: 10, top: 10, bottom: 0 }}>
+                              <CartesianGrid vertical={false} />
+                              <XAxis dataKey="time" tickLine={false} axisLine={false} tickMargin={8} fontSize={12} />
+                              <YAxis 
+                                  domain={['dataMin - (dataMin * 0.05)', 'dataMax + (dataMax * 0.05)']}
+                                  tickLine={false} 
+                                  axisLine={false} 
+                                  tickMargin={8} 
+                                  fontSize={12} 
+                                  width={80} 
+                                  tickFormatter={(value) => formatCurrency(Number(value), asset.currency)}
+                              />
+                              <Tooltip cursor={false} content={<ChartTooltipContent indicator="dot" formatter={(value) => [formatCurrency(Number(value), asset.currency), 'Valor']}/>} />
+                              <Area dataKey="value" type="natural" fill="hsl(var(--primary))" fillOpacity={0.4} stroke="hsl(var(--primary))" />
+                          </AreaChart>
+                      </ResponsiveContainer>
+                    </ChartContainer>
                    </div>
               )}
           </div>
