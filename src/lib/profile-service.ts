@@ -124,3 +124,61 @@ export async function getUsers(): Promise<User[]> {
         throw new Error('Falha ao buscar usuários no servidor.');
     }
 }
+
+
+/**
+ * Cria um novo usuário no Firebase Authentication.
+ * Se for o primeiro usuário, ele se torna um admin.
+ * Caso contrário, a criação de novos usuários só é permitida por um admin (validação a ser feita pelo chamador).
+ */
+export async function createUser(data: {
+  email: string;
+  password?: string;
+  displayName: string;
+  phoneNumber?: string | null;
+  role: 'admin' | 'user';
+}): Promise<any> {
+  const { email, password, displayName, phoneNumber, role } = data;
+
+  if (!email || !displayName) {
+    throw new Error('Nome e e-mail são obrigatórios.');
+  }
+  if (!password) {
+      throw new Error('A senha é obrigatória para criar um novo usuário.');
+  }
+  if (password.length < 8) {
+      throw new Error('A senha deve ter pelo menos 8 caracteres.');
+  }
+  
+  try {
+    const userRecord = await adminAuth.createUser({
+      email,
+      password,
+      displayName,
+      phoneNumber: phoneNumber || undefined,
+    });
+
+    // Define as permissões (claims) para o usuário
+    await adminAuth.setCustomUserClaims(userRecord.uid, {
+      role: role,
+      isFirstLogin: true, // Força a troca de senha no primeiro login
+    });
+    
+    // Retorna um objeto simples e seguro para o cliente
+    return {
+      uid: userRecord.uid,
+      email: userRecord.email,
+      displayName: userRecord.displayName,
+    };
+
+  } catch (error: any) {
+    console.error('[API Users] Erro ao criar usuário:', error);
+    if (error.code === 'auth/email-already-exists') {
+      throw new Error('Este e-mail já está em uso.');
+    }
+    if (error.code === 'auth/invalid-password') {
+      throw new Error('A senha é inválida. Deve ter no mínimo 8 caracteres.');
+    }
+    throw new Error('Ocorreu um erro no servidor ao criar o usuário.');
+  }
+}

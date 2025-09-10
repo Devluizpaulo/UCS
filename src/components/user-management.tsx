@@ -44,7 +44,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
-import { getUsers, deleteUser, updateUser } from '@/lib/profile-service';
+import { getUsers, deleteUser, updateUser, createUser } from '@/lib/profile-service';
 
 
 interface User {
@@ -189,19 +189,8 @@ Equipe Índice UCS
             });
         } else {
              const tempPassword = generateTemporaryPassword();
-             const response = await fetch('/api/users', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...data, password: tempPassword }),
-             });
+             const newUserResponse = await createUser({ ...data, password: tempPassword });
               
-              if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Falha ao criar usuário no servidor');
-              }
-
-              const newUserResponse = await response.json();
-
               const newUser: User = {
                 id: newUserResponse.uid,
                 email: data.email,
