@@ -61,7 +61,6 @@ const navItems: NavItem[] = [
   { href: '/', icon: LayoutDashboard, label: 'Painel', exact: true },
   { href: '/analysis', icon: Library, label: 'Análise' },
   { href: '/reports', icon: FileText, label: 'Relatórios' },
-  { href: '/data-source', icon: Database, label: 'Fonte de Dados' },
   { href: '/ucs-calculator', icon: Calculator, label: 'Calculadora UCS' },
   { href: '/alerts', icon: Bell, label: 'Alertas' },
 ];
