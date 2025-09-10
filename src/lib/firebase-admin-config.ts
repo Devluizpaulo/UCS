@@ -10,7 +10,7 @@ import admin from 'firebase-admin';
 // Check if the app is already initialized to prevent errors.
 if (!admin.apps.length) {
   try {
-    console.log('[Firebase Admin] Initializing Firebase Admin SDK from individual environment variables...');
+    console.log('[Firebase Admin] Initializing Firebase Admin SDK...');
 
     const projectId = process.env.FIREBASE_PROJECT_ID;
     const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
@@ -19,7 +19,7 @@ if (!admin.apps.length) {
     const privateKeyBase64 = process.env.FIREBASE_PRIVATE_KEY_BASE64;
 
     if (!projectId || !clientEmail || !privateKeyBase64) {
-      let missingVars = [];
+      const missingVars = [];
       if (!projectId) missingVars.push('FIREBASE_PROJECT_ID');
       if (!clientEmail) missingVars.push('FIREBASE_CLIENT_EMAIL');
       if (!privateKeyBase64) missingVars.push('FIREBASE_PRIVATE_KEY_BASE64');
@@ -27,10 +27,10 @@ if (!admin.apps.length) {
     }
 
     // Decode the private key from Base64
-    const privateKey = Buffer.from(privateKeyBase64, 'base64').toString('utf-8');
+    const privateKey = Buffer.from(privateKeyBase64, 'base64').toString('utf8');
 
     if (!privateKey.includes('-----BEGIN PRIVATE KEY-----')) {
-        throw new Error('Decoded private key is not in the correct PEM format.');
+        throw new Error('Decoded private key is not in the correct PEM format. Make sure you are encoding the full key value from your service account JSON file.');
     }
 
     const serviceAccount: admin.ServiceAccount = {
