@@ -84,15 +84,21 @@ export function MainLayout({ children }: { children: ReactNode }) {
   
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      setUser(currentUser);
       if (currentUser) {
-        // Assume first login if displayName is not set for a password-based account
-        const passwordProvider = currentUser.providerData.some(p => p.providerId === 'password');
-        const isNew = !currentUser.displayName; // A simple heuristic
-        setIsFirstLogin(passwordProvider && isNew);
+        setUser(currentUser);
+        // CRÍTICO: Força a atualização do token para obter as claims mais recentes
+        const idTokenResult = await currentUser.getIdTokenResult(true);
+        const claims = idTokenResult.claims;
+        
+        if (claims.isFirstLogin) {
+            setIsFirstLogin(true);
+        } else {
+            setIsFirstLogin(false);
+        }
       } else {
         setIsFirstLogin(false);
-        // If not on login page, redirect
+        setUser(null);
+        // Se não estiver na página de login, redireciona
         if (pathname !== '/login') {
             router.push('/login');
         }
@@ -137,8 +143,6 @@ export function MainLayout({ children }: { children: ReactNode }) {
 
   const handlePasswordChanged = () => {
     setIsFirstLogin(false);
-    // Force a reload of user state to reflect displayName change
-    auth.currentUser?.reload();
   };
 
   if (loading) {
@@ -154,11 +158,12 @@ export function MainLayout({ children }: { children: ReactNode }) {
       return <>{children}</>;
   }
 
-  // If there's no user, show a loading screen while redirecting
+  // Se não houver usuário, exibe uma tela de carregamento enquanto redireciona
   if (!user) {
     return (
        <div className="flex h-screen w-full items-center justify-center bg-background">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p>Redirecionando para login...</p>
+          <Loader2 className="ml-2 h-8 w-8 animate-spin text-primary" />
         </div>
     );
   }

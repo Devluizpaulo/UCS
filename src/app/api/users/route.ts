@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
       displayName,
     });
 
-    // 4. Set custom claim to make this user an admin.
+    // 4. Set custom claim to make this user an admin and require password change.
     await auth.setCustomUserClaims(userRecord.uid, { role: 'admin', isFirstLogin: true });
 
     return NextResponse.json({

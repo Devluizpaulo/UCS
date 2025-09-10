@@ -50,6 +50,10 @@ export async function changeUserPassword(currentPassword: string, newPassword: s
     // Se a reautenticação for bem-sucedida, atualizar a senha
     await updatePassword(user, newPassword);
 
+    // CRÍTICO: Atualiza a custom claim para remover o status de "primeiro login"
+    await adminAuth.setCustomUserClaims(user.uid, { isFirstLogin: false });
+
+
   } catch (error: any) {
     console.error('Erro ao alterar senha:', error);
     if (error.code === 'auth/wrong-password') {

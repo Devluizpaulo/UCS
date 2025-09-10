@@ -11,10 +11,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Eye, EyeOff, CheckCircle } from 'lucide-react';
-import { getAuth, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
+import { getAuth } from 'firebase/auth';
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { firebaseConfig } from '@/lib/firebase-config';
 import { useRouter } from 'next/navigation';
+import { changeUserPassword } from '@/lib/profile-service';
+
 
 const passwordResetSchema = z.object({
   currentPassword: z.string().min(1, 'Senha atual é obrigatória'),
@@ -54,21 +56,19 @@ export function FirstLoginPasswordReset({ userEmail, onPasswordChanged }: FirstL
   const onSubmit = async (data: PasswordResetFormData) => {
     setIsLoading(true);
     
+    const user = auth.currentUser;
+    if (!user) {
+        toast({ variant: 'destructive', title: 'Erro', description: 'Usuário não autenticado.' });
+        setIsLoading(false);
+        return;
+    }
+
     try {
-      const user = auth.currentUser;
-      if (!user) {
-        throw new Error('Usuário não autenticado');
-      }
-
-      // Reautenticar o usuário com a senha atual
-      const credential = EmailAuthProvider.credential(userEmail, data.currentPassword);
-      await reauthenticateWithCredential(user, credential);
-
-      // Atualizar a senha
-      await updatePassword(user, data.newPassword);
-
-      // Aqui você atualizaria o status isFirstLogin no Firestore
-      // await updateDoc(doc(db, 'users', user.uid), { isFirstLogin: false });
+      // A função agora está no profile-service para incluir a lógica de backend
+      await changeUserPassword(data.currentPassword, data.newPassword);
+      
+      // Força a atualização do token para obter as novas claims
+      await user.getIdToken(true);
 
       setPasswordChanged(true);
       
@@ -79,27 +79,16 @@ export function FirstLoginPasswordReset({ userEmail, onPasswordChanged }: FirstL
 
       // Aguardar um pouco antes de redirecionar
       setTimeout(() => {
-        onPasswordChanged();
-        router.push('/');
+        onPasswordChanged(); // Isso vai atualizar o estado no main-layout
       }, 2000);
 
     } catch (error: any) {
       console.error('Erro ao alterar senha:', error);
       
-      let errorMessage = 'Ocorreu um erro inesperado.';
-      
-      if (error.code === 'auth/wrong-password') {
-        errorMessage = 'Senha atual incorreta.';
-      } else if (error.code === 'auth/weak-password') {
-        errorMessage = 'A nova senha é muito fraca.';
-      } else if (error.code === 'auth/requires-recent-login') {
-        errorMessage = 'Por favor, faça login novamente antes de alterar a senha.';
-      }
-      
       toast({
         variant: 'destructive',
         title: 'Erro ao alterar senha',
-        description: errorMessage,
+        description: error.message || 'Ocorreu um erro inesperado.',
       });
     } finally {
       setIsLoading(false);
