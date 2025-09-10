@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -39,11 +38,13 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
+import { auth as adminAuth } from '@/lib/firebase-admin-config';
+
 
 interface User {
   id: string;
-  email: string;
-  displayName: string;
+  email?: string;
+  displayName?: string;
   phoneNumber?: string;
   createdAt: string;
   isFirstLogin: boolean;
@@ -58,6 +59,29 @@ const userSchema = z.object({
 });
 
 type UserFormData = z.infer<typeof userSchema>;
+
+// Server Action to fetch users securely
+async function getUsers(): Promise<User[]> {
+    'use server';
+    try {
+        const listUsersResult = await adminAuth.listUsers();
+        const users: User[] = listUsersResult.users.map(userRecord => ({
+            id: userRecord.uid,
+            email: userRecord.email,
+            displayName: userRecord.displayName,
+            phoneNumber: userRecord.phoneNumber,
+            createdAt: userRecord.metadata.creationTime,
+            isFirstLogin: userRecord.customClaims?.isFirstLogin === true,
+            role: userRecord.customClaims?.role === 'admin' ? 'admin' : 'user',
+        }));
+        return users;
+    } catch (error: any) {
+        console.error('Erro ao listar usuários (Server Action):', error);
+        // Do not throw the error to the client, just return an empty array or handle it.
+        return [];
+    }
+}
+
 
 export function UserManagement() {
   const [users, setUsers] = useState<User[]>([]);
@@ -93,21 +117,19 @@ export function UserManagement() {
     const body = `
 Olá, ${user.displayName}!
 
-Sua conta para acessar o Sistema Índice UCS foi criada com sucesso.
+Sua conta foi criada no Sistema Índice UCS. Abaixo estão suas credenciais de acesso:
 
-==================================
-        CREDENCIAS DE ACESSO
-==================================
-*   **Email:** ${user.email}
-*   **Senha Temporária:** ${password}
-*   **Link de Acesso:** https://ucsindex.vercel.app/
+- Email: ${user.email}
+- Senha temporária: ${password}
+- Link de acesso: https://ucsindex.vercel.app/
 
-==================================
-     INSTRUÇÕES DE PRIMEIRO ACESSO
-==================================
-1.  **Acesse o sistema** através do link fornecido acima.
-2.  **Faça login** com seu email e a senha temporária.
-3.  **Altere sua senha:** O sistema exigirá que você crie uma nova senha pessoal e segura no primeiro acesso.
+IMPORTANTE - INSTRUÇÕES DE PRIMEIRO ACESSO:
+1. Acesse o sistema usando o link acima.
+2. Faça login com o email e a senha temporária fornecidos.
+3. No primeiro acesso, você será obrigatoriamente direcionado para alterar sua senha.
+4. Escolha uma senha segura com pelo menos 8 caracteres.
+
+Após alterar a senha, você terá acesso completo ao sistema.
 
 Atenciosamente,
 Equipe Índice UCS
@@ -132,7 +154,7 @@ Equipe Índice UCS
   };
 
   const handleShareByEmail = (user: User | null, messageBody: string, subject: string) => {
-    if (!user) return;
+    if (!user || !user.email) return;
     const mailtoLink = `mailto:${user.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(messageBody)}`;
     window.open(mailtoLink, '_blank');
   };
@@ -154,11 +176,7 @@ Equipe Índice UCS
   const fetchUsers = async () => {
     setIsFetching(true);
     try {
-      const response = await fetch('/api/admin/users');
-      if (!response.ok) {
-        throw new Error('Falha ao buscar usuários');
-      }
-      const data = await response.json();
+      const data = await getUsers();
       setUsers(data);
     } catch (error) {
       console.error('Erro ao buscar usuários:', error);
