@@ -77,6 +77,17 @@ export function UCSIndexDisplay({ className, selectedDate }: UCSIndexDisplayProp
       }
 
       const cotacoes = await obterValoresPadrao(date);
+      
+      const hasMissingPrices = Object.values(cotacoes).some(price => price === 0);
+      if (hasMissingPrices) {
+        setError(`Não foram encontradas cotações para a data selecionada. Exibindo o último dado disponível.`);
+        const latestIndex = await getUcsIndexValue();
+        setUcsValue(latestIndex.latest.indexValue);
+        setChartData(latestIndex.history);
+        setLoading(false);
+        return;
+      }
+
 
       const inputs: UCSCalculationInputs = { ...cotacoes, ...formulaParams };
 
@@ -96,11 +107,7 @@ export function UCSIndexDisplay({ className, selectedDate }: UCSIndexDisplayProp
           else setTrend('stable');
       }
 
-      const newDataPoint: ChartData = {
-        time: date ? new Date(date).toLocaleDateString('pt-BR') : new Date().toLocaleTimeString('pt-BR'),
-        value: newValue,
-      };
-       setChartData(prev => [...prev.slice(-19), newDataPoint]);
+       setChartData(indexHistory.history);
       
     } catch (error) {
       console.error('Erro ao calcular índice UCS:', error);
@@ -163,7 +170,7 @@ export function UCSIndexDisplay({ className, selectedDate }: UCSIndexDisplayProp
         </div>
       </CardHeader>
       <CardContent>
-        {error ? (
+        {error && !loading ? (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>{error}</AlertDescription>
@@ -332,12 +339,12 @@ export function UCSIndexDisplay({ className, selectedDate }: UCSIndexDisplayProp
               <div className="mt-4">
                 <Separator className="mb-4" />
                 <div className="h-[200px]">
-                  <UcsIndexChart data={chartData} loading={false} />
+                  <UcsIndexChart data={chartData} loading={loading} />
                 </div>
               </div>
             )}
             
-            {lastUpdate && (
+            {lastUpdate && !loading && (
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <span>Última atualização:</span>
                 <span>{lastUpdate.toLocaleTimeString('pt-BR')}</span>

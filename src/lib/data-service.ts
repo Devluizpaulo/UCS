@@ -1,6 +1,5 @@
 
 
-
 'use server';
 
 import type { ChartData, CommodityPriceData, HistoryInterval, UcsData, FirestoreQuote } from './types';
@@ -30,10 +29,15 @@ export async function getAssetData(assetName: string, limit: number = 10, forDat
 
         if (forDate) {
             // Find data on or before the given date.
-            const targetDate = new Date(forDate);
-            targetDate.setUTCHours(23, 59, 59, 999); // End of the selected day in UTC
+            const targetDateStart = new Date(forDate);
+            targetDateStart.setUTCHours(0, 0, 0, 0);
+            
+            const targetDateEnd = new Date(forDate);
+            targetDateEnd.setUTCHours(23, 59, 59, 999);
+
             query = collectionRef
-                .where('timestamp', '<=', Timestamp.fromDate(targetDate))
+                .where('timestamp', '>=', Timestamp.fromDate(targetDateStart))
+                .where('timestamp', '<=', Timestamp.fromDate(targetDateEnd))
                 .orderBy('timestamp', 'desc')
                 .limit(limit);
         } else {
@@ -43,6 +47,30 @@ export async function getAssetData(assetName: string, limit: number = 10, forDat
         }
             
         const querySnapshot = await query.get();
+
+        // If no data for the specific date, try to get the most recent one before it.
+        if (querySnapshot.empty && forDate) {
+            const fallbackDate = new Date(forDate);
+            fallbackDate.setUTCHours(23, 59, 59, 999);
+             const fallbackQuery = collectionRef
+                .where('timestamp', '<=', Timestamp.fromDate(fallbackDate))
+                .orderBy('timestamp', 'desc')
+                .limit(limit);
+            const fallbackSnapshot = await fallbackQuery.get();
+            const data: FirestoreQuote[] = [];
+            fallbackSnapshot.forEach(doc => {
+                 const docData = doc.data();
+                const serializedData = {
+                    ...docData,
+                    timestamp: docData.timestamp?.toDate?.() || docData.timestamp,
+                    data: docData.data?.toDate?.() || docData.data
+                };
+                data.push({ id: doc.id, ...serializedData } as FirestoreQuote);
+            });
+            return data;
+        }
+
+
         const data: FirestoreQuote[] = [];
         
         querySnapshot.forEach(doc => {
@@ -91,17 +119,14 @@ export async function getCommodityPrices(forDate?: string): Promise<CommodityPri
                 const latest = assetData[0];
                 currentPrice = latest.ultimo || 0;
                 
-                if (!forDate) { // Only update timestamp if it's for the latest
-                    const ts = latest.timestamp;
-                     if (ts instanceof Timestamp) {
-                        lastUpdated = ts.toDate().toLocaleString('pt-BR');
-                    } else if (ts instanceof Date) {
-                        lastUpdated = ts.toLocaleString('pt-BR');
-                    } else if (ts) {
-                        lastUpdated = new Date(ts).toLocaleString('pt-BR');
-                    }
+                const ts = latest.timestamp;
+                 if (ts instanceof Timestamp) {
+                    lastUpdated = ts.toDate().toLocaleString('pt-BR');
+                } else if (ts instanceof Date) {
+                    lastUpdated = ts.toLocaleString('pt-BR');
+                } else if (ts) {
+                    lastUpdated = new Date(ts).toLocaleString('pt-BR');
                 }
-
 
                 if (assetData.length > 1) {
                     const previous = assetData[1];
