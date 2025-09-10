@@ -38,7 +38,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
-import { auth as adminAuth } from '@/lib/firebase-admin-config';
+import { getUsers } from '@/lib/profile-service';
 
 
 interface User {
@@ -59,29 +59,6 @@ const userSchema = z.object({
 });
 
 type UserFormData = z.infer<typeof userSchema>;
-
-// Server Action to fetch users securely
-async function getUsers(): Promise<User[]> {
-    'use server';
-    try {
-        const listUsersResult = await adminAuth.listUsers();
-        const users: User[] = listUsersResult.users.map(userRecord => ({
-            id: userRecord.uid,
-            email: userRecord.email,
-            displayName: userRecord.displayName,
-            phoneNumber: userRecord.phoneNumber,
-            createdAt: userRecord.metadata.creationTime,
-            isFirstLogin: userRecord.customClaims?.isFirstLogin === true,
-            role: userRecord.customClaims?.role === 'admin' ? 'admin' : 'user',
-        }));
-        return users;
-    } catch (error: any) {
-        console.error('Erro ao listar usuários (Server Action):', error);
-        // Do not throw the error to the client, just return an empty array or handle it.
-        return [];
-    }
-}
-
 
 export function UserManagement() {
   const [users, setUsers] = useState<User[]>([]);
@@ -147,7 +124,7 @@ Equipe Índice UCS
     } catch (error) {
       toast({
         title: "Erro ao copiar",
-        description: "Não foi possível copiar o texto. Tente selecionar e copiar manualmente.",
+        description: "Não foi possível copiar o texto. Tente selecionar e copiar manually.",
         variant: "destructive",
       });
     }
@@ -515,3 +492,5 @@ Equipe Índice UCS
     </Card>
   );
 }
+
+    
