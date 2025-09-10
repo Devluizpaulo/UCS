@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, UserCircle } from 'lucide-react';
-import { getAuth } from 'firebase/auth';
+import { getAuth } from 'firebase/auth'; // Only for getting the user object on the client
 import { updateUserProfile } from '@/lib/profile-service';
 import { Skeleton } from './ui/skeleton';
 
@@ -57,11 +57,13 @@ export function UpdateProfileForm() {
     }
     setIsLoading(true);
     try {
+      // Call the server action with the UID and new data
       await updateUserProfile(user.uid, data.displayName, data.phoneNumber);
       
       // We need to reload the user object on the client to see the changes
       await user.reload();
-      // Also update the form with the new data
+
+      // This is necessary to update the UI state, as `user.reload()` doesn't trigger a re-render
       reset({
         displayName: user.displayName || data.displayName,
         email: user.email || '',
@@ -77,7 +79,7 @@ export function UpdateProfileForm() {
       toast({
         variant: 'destructive',
         title: 'Erro ao atualizar perfil',
-        description: error.message || 'Ocorreu um erro. Tente novamente.',
+        description: 'Não foi possível atualizar o perfil. Tente novamente mais tarde.',
       });
     } finally {
       setIsLoading(false);
