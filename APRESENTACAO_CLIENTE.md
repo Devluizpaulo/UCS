@@ -7,10 +7,10 @@ O objetivo é trazer modernidade a um sistema que era apoiado em planilhas e dar
 
 O **Monitor do Índice UCS** é uma plataforma de software robusta e especializada, concebida como uma ferramenta de *business intelligence* para o setor agroambiental e financeiro. O seu principal objetivo é fornecer uma visão clara, unificada e em tempo real sobre a performance econômica de ativos ambientais e agrícolas, consolidada no "Índice de Unidade de Conservação Sustentável" (UCS).
 
-A plataforma foi projetada para atender a três públicos principais:
-- **Gestores e Diretores:** Para tomada de decisão estratégica baseada em dados consolidados e tendências de mercado.
+A plataforma foi projetada para atender a públicos estratégicos, como:
+- **Gestores e Diretores:** Para tomada de decisão baseada em dados consolidados e tendências de mercado.
 - **Analistas Financeiros:** Para análises aprofundadas de risco, correlação e projeção de cenários.
-- **Produtores Rurais e Investidores:** Para compreender o valor intrínseco de seus ativos e o impacto de variáveis de mercado sobre eles.
+- **Clientes e Parceiros da BMV:** Para dar transparência e confiança sobre o valor e a performance dos ativos.
 
 Em suma, o projeto transforma dados brutos de commodities e parâmetros complexos de sustentabilidade em inteligência acionável.
 
@@ -33,7 +33,7 @@ Uma seção dedicada a análises mais profundas, dividida em três ferramentas p
 - **Análise de Cenários:** Uma ferramenta de simulação que permite ao usuário projetar o impacto de mudanças no preço de um ativo sobre o valor final do índice. Por exemplo, é possível responder à pergunta: "O que aconteceria com o índice se o preço da soja subisse 10%?".
 
 ### c. Calculadora UCS
-Uma ferramenta transparente que permite ao usuário calcular manualmente o valor da Unidade de Crédito de Sustentabilidade (UCS), inserindo ou ajustando todos os parâmetros da fórmula oficial, desde cotações de commodities até produtividades e fatores de conversão.
+Uma ferramenta transparente que permite ao usuário calcular manually o valor da Unidade de Crédito de Sustentabilidade (UCS), inserindo ou ajustando todos os parâmetros da fórmula oficial, desde cotações de commodities até produtividades e fatores de conversão.
 
 ### d. Geração de Relatórios com IA
 Funcionalidade avançada para exportar os dados da plataforma em formatos profissionais, enriquecidos com análises geradas por Inteligência Artificial.
