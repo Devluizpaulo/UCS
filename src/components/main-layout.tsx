@@ -71,100 +71,36 @@ const settingsNavItems: NavItem[] = [
     { href: '/settings', icon: Settings, label: 'Configurações' },
 ]
 
-function AuthProvider({ children }: { children: ReactNode }) {
-    const router = useRouter();
-    const pathname = usePathname();
-    const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-            if (!user) {
-                // If not logged in, redirect to login page, except for the login page itself
-                if (pathname !== '/login') {
-                    router.push('/login');
-                } else {
-                   setLoading(false);
-                }
-            } else {
-                // If logged in and on the login page, redirect to home
-                if (pathname === '/login') {
-                    router.push('/');
-                } else {
-                    setLoading(false);
-                }
-            }
-        });
-
-        // Cleanup subscription on unmount
-        return () => unsubscribe();
-    }, [auth, router, pathname]);
-
-    if (loading) {
-      return (
-        <div className="flex h-screen w-full items-center justify-center bg-background">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      )
-    }
-
-    // Do not render the layout on the login page
-    if (pathname === '/login') {
-        return <>{children}</>;
-    }
-
-
-    return <>{children}</>;
-}
-
 
 export function MainLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { toast } = useToast();
   const [user, setUser] = useState<FirebaseUser | null>(null);
-  const [loadingUser, setLoadingUser] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [isFirstLogin, setIsFirstLogin] = useState(false);
-  const [checkingFirstLogin, setCheckingFirstLogin] = useState(true);
   const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
   const auth = getAuth(app);
-
+  
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
-      setLoadingUser(false);
-      
       if (currentUser) {
-        // Aqui você verificaria no Firestore se é o primeiro login
-        // Por enquanto, vamos simular a verificação
-        try {
-          // const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
-          // const userData = userDoc.data();
-          // setIsFirstLogin(userData?.isFirstLogin || false);
-          
-          // Simulação: verificar se o usuário foi criado recentemente (últimas 24h)
-          // E se ele não tiver um displayName, é provável que seja o primeiro login
-          const userCreationTime = new Date(currentUser.metadata.creationTime || '');
-          const now = new Date();
-          const hoursSinceCreation = (now.getTime() - userCreationTime.getTime()) / (1000 * 60 * 60);
-          
-          // Se foi criado nas últimas 24 horas, assumir que é primeiro login
-          const passwordProvider = currentUser.providerData.some(p => p.providerId === 'password');
-          setIsFirstLogin(passwordProvider && !currentUser.displayName);
-
-        } catch (error) {
-          console.error('Erro ao verificar primeiro login:', error);
-          setIsFirstLogin(false);
-        }
+        // Assume first login if displayName is not set for a password-based account
+        const passwordProvider = currentUser.providerData.some(p => p.providerId === 'password');
+        const isNew = !currentUser.displayName; // A simple heuristic
+        setIsFirstLogin(passwordProvider && isNew);
       } else {
         setIsFirstLogin(false);
+        // If not on login page, redirect
+        if (pathname !== '/login') {
+            router.push('/login');
+        }
       }
-      
-      setCheckingFirstLogin(false);
+      setLoading(false);
     });
     return () => unsubscribe();
-  }, [auth]);
+  }, [auth, router, pathname]);
 
   const toggleTheme = () => {
     const html = document.documentElement;
@@ -201,19 +137,33 @@ export function MainLayout({ children }: { children: ReactNode }) {
 
   const handlePasswordChanged = () => {
     setIsFirstLogin(false);
+    // Force a reload of user state to reflect displayName change
+    auth.currentUser?.reload();
   };
 
-  // Se ainda está verificando o primeiro login, mostrar loading
-  if (checkingFirstLogin) {
+  if (loading) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
+  
+  // Do not render layout on login page
+  if (pathname === '/login') {
+      return <>{children}</>;
+  }
 
-  // Se é primeiro login, mostrar tela de alteração de senha
-  if (isFirstLogin && user) {
+  // If there's no user, show a loading screen while redirecting
+  if (!user) {
+    return (
+       <div className="flex h-screen w-full items-center justify-center bg-background">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+    );
+  }
+
+  if (isFirstLogin) {
     return (
       <FirstLoginPasswordReset 
         userEmail={user.email || ''} 
@@ -223,7 +173,6 @@ export function MainLayout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthProvider>
       <SidebarProvider>
         <Sidebar className="sidebar-mobile">
           <SidebarHeader>
@@ -292,7 +241,7 @@ export function MainLayout({ children }: { children: ReactNode }) {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <div className="flex w-full cursor-pointer items-center gap-2 overflow-hidden p-2 text-left text-sm outline-none transition-colors hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-sidebar-ring">
-                  {loadingUser ? (
+                  {!user ? (
                       <>
                           <Skeleton className="h-9 w-9 rounded-full" />
                           <div className="flex flex-col gap-1.5 flex-1">
@@ -361,6 +310,5 @@ export function MainLayout({ children }: { children: ReactNode }) {
         </Sidebar>
         <SidebarInset>{children}</SidebarInset>
       </SidebarProvider>
-    </AuthProvider>
   );
 }
