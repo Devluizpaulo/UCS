@@ -120,7 +120,7 @@ export function UnderlyingAssetsTable({ data, loading, onManualUpdate, updatingA
 
   return (
     <div className="w-full">
-      <ScrollArea className="h-[450px] w-full">
+      <ScrollArea className="h-[calc(100vh-220px)] w-full">
         <Table>
           {!loading && !hasAnyPriceData && (
               <TableCaption className="py-4">

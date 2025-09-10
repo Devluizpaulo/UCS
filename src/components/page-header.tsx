@@ -11,7 +11,7 @@ type PageHeaderProps = {
 export function PageHeader({ title, description, icon: Icon, children }: PageHeaderProps) {
   return (
     <header className="flex h-auto min-h-16 items-start gap-4 border-b bg-background/95 px-4 sticky top-0 z-30 sm:px-6 py-4">
-      <SidebarTrigger className="md:hidden self-center" />
+      <SidebarTrigger className="md:hidden" />
       <div className="flex items-center gap-3">
         {Icon && <Icon className="h-6 w-6 text-muted-foreground" />}
         <div className="flex-1">

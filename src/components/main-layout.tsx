@@ -20,7 +20,9 @@ import {
   RefreshCcw,
   Calculator,
   User,
+  PanelLeft,
 } from 'lucide-react';
+import Image from 'next/image';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -42,6 +44,8 @@ import {
   SidebarInset,
   SheetHeader,
   SheetTitle,
+  SidebarTrigger,
+  SidebarRail,
 } from '@/components/ui/sidebar';
 import { getAuth, signOut, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { firebaseConfig } from '@/lib/firebase-config';
@@ -49,6 +53,8 @@ import { initializeApp, getApps, getApp } from 'firebase/app';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from './ui/skeleton';
 import { FirstLoginPasswordReset } from './first-login-password-reset';
+import { Button } from './ui/button';
+
 
 type NavItem = {
   href: string;
@@ -178,29 +184,27 @@ export function MainLayout({ children }: { children: ReactNode }) {
 
   return (
       <SidebarProvider>
-        <Sidebar className="sidebar-mobile">
+        <Sidebar collapsible="icon">
+          <SidebarRail />
           <SidebarHeader>
-            <div className="flex items-center gap-3 p-4 h-16 border-b mobile-container">
-              <FileSpreadsheet className="size-8 text-primary" />
-              <div className="flex flex-col">
-                <h2 className="text-xl font-semibold tracking-tight text-foreground">
+            <Link href="/" className="flex items-center gap-2 p-2">
+                <Image src="/image/logo.svg" alt="Índice UCS Logo" width={28} height={28} />
+                 <span className="text-lg font-semibold duration-200 group-data-[collapsible=icon]:-translate-x-8 group-data-[collapsible=icon]:opacity-0">
                   Índice UCS
-                </h2>
-              </div>
-            </div>
+                </span>
+            </Link>
           </SidebarHeader>
           <SidebarContent>
-            <SidebarMenu className="mobile-nav">
+            <SidebarMenu>
               {navItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
                     asChild
                     isActive={item.exact ? pathname === item.href : pathname.startsWith(item.href)}
                     tooltip={{ children: item.label }}
-                    className="button-mobile"
                   >
                     <Link href={item.href}>
-                      <item.icon className="h-3 w-3 sm:h-4 sm:w-4" />
+                      <item.icon />
                       <span>{item.label}</span>
                     </Link>
                   </SidebarMenuButton>
@@ -209,16 +213,15 @@ export function MainLayout({ children }: { children: ReactNode }) {
             </SidebarMenu>
             
             <div className="mt-auto">
-                 <SidebarMenu className="mobile-nav">
+                 <SidebarMenu>
                     <SidebarMenuItem>
                       <SidebarMenuButton
                         asChild
                         isActive={pathname.startsWith('/profile')}
                         tooltip={{ children: 'Meu Perfil' }}
-                        className="button-mobile"
                       >
                         <Link href="/profile">
-                          <User className="h-3 w-3 sm:h-4 sm:w-4" />
+                          <User />
                           <span>Meu Perfil</span>
                         </Link>
                       </SidebarMenuButton>
@@ -228,10 +231,9 @@ export function MainLayout({ children }: { children: ReactNode }) {
                         asChild
                         isActive={pathname.startsWith('/settings')}
                         tooltip={{ children: 'Configurações' }}
-                        className="button-mobile"
                       >
                         <Link href="/settings">
-                          <Settings className="h-3 w-3 sm:h-4 sm:w-4" />
+                          <Settings />
                           <span>Configurações</span>
                         </Link>
                       </SidebarMenuButton>
@@ -244,18 +246,21 @@ export function MainLayout({ children }: { children: ReactNode }) {
           <SidebarFooter>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <div className="flex w-full cursor-pointer items-center gap-2 overflow-hidden p-2 text-left text-sm outline-none transition-colors hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-sidebar-ring">
+                 <Button
+                  variant="ghost"
+                  className="flex w-full items-center gap-3 overflow-hidden p-2 text-left text-sm group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:w-10 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0"
+                >
                   {!user ? (
                       <>
                           <Skeleton className="h-9 w-9 rounded-full" />
-                          <div className="flex flex-col gap-1.5 flex-1">
+                          <div className="flex flex-col gap-1.5 flex-1 group-data-[collapsible=icon]:hidden">
                               <Skeleton className="h-4 w-3/4" />
                               <Skeleton className="h-3 w-full" />
                           </div>
                       </>
-                  ) : user ? (
+                  ) : (
                       <>
-                          <Avatar className="h-9 w-9">
+                          <Avatar className="h-8 w-8">
                               <AvatarImage
                                   src={user.photoURL ?? undefined}
                                   alt={user.displayName ?? 'Usuário'}
@@ -265,26 +270,15 @@ export function MainLayout({ children }: { children: ReactNode }) {
                                   {getInitials(user.displayName)}
                               </AvatarFallback>
                           </Avatar>
-                          <div className="flex flex-col truncate">
+                          <div className="flex flex-col truncate group-data-[collapsible=icon]:hidden">
                               <span className="truncate font-medium">{user.displayName ?? 'Usuário'}</span>
                               <span className="truncate text-xs text-muted-foreground">
                                   {user.email ?? 'Não foi possível carregar o e-mail'}
                               </span>
                           </div>
                       </>
-                  ) : (
-                      <>
-                          <Avatar className="h-9 w-9">
-                            <AvatarFallback>
-                                  <UserIcon className="h-5 w-5" />
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex flex-col truncate">
-                              <span className="truncate font-medium">Não conectado</span>
-                          </div>
-                      </>
                   )}
-                </div>
+                </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent side="right" align="start" className="w-56">
                 <DropdownMenuLabel className="flex items-center gap-2">
@@ -294,14 +288,20 @@ export function MainLayout({ children }: { children: ReactNode }) {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                     <Link href="/profile">
-                        <Settings className="mr-2 h-4 w-4" />
+                        <UserIcon className="mr-2 h-4 w-4" />
                         <span>Perfil</span>
                     </Link>
                 </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                    <Link href="/settings">
+                        <Settings className="mr-2 h-4 w-4" />
+                        <span>Configurações</span>
+                    </Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={toggleTheme}>
-                  <Sun className="h-3 w-3 sm:h-[1.2rem] sm:w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                  <Moon className="absolute h-3 w-3 sm:h-[1.2rem] sm:w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-                  <span className="ml-2">Alternar Tema</span>
+                  <Sun className="h-4 w-4 mr-2 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                  <Moon className="absolute h-4 w-4 mr-2 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                  <span>Alternar Tema</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout}>

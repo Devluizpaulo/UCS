@@ -1,0 +1,5 @@
+<svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="40" height="40" rx="8" fill="hsl(var(--primary))"/>
+<path d="M12 28V12H20V14H14V19H19V21H14V26H20V28H12Z" fill="hsl(var(--primary-foreground))"/>
+<path d="M22 28V12H30V14H24V28H22Z" fill="hsl(var(--primary-foreground))"/>
+</svg>
