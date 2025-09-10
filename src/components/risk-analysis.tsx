@@ -11,20 +11,16 @@ import { Skeleton } from './ui/skeleton';
 import { getCommodities } from '@/lib/commodity-config-service';
 import { calculate_volatility, calculate_correlation } from '@/lib/statistics';
 import { getFormulaParameters } from '@/lib/formula-service';
+import { getUcsIndexValue, getCotacoesHistorico } from '@/lib/data-service';
 
 
 async function getRiskAnalysisData(): Promise<RiskAnalysisData> {
-    const [commodities, ucsHistoryResponse, formulaParams] = await Promise.all([
+    const [commodities, ucsHistoryData, formulaParams] = await Promise.all([
         getCommodities(),
-        fetch('/api/ucs-index?interval=1d'), // Use daily data for correlation
+        getUcsIndexValue('1d'), // Use daily data for correlation
         getFormulaParameters(),
     ]);
     
-    if (!ucsHistoryResponse.ok) {
-        throw new Error('Failed to fetch UCS index data');
-    }
-    const ucsHistoryData: { latest: UcsData, history: ChartData[] } = await ucsHistoryResponse.json();
-
     if (!formulaParams.isConfigured) {
         return { metrics: [] }; // Return empty if formula is not configured
     }
@@ -38,11 +34,7 @@ async function getRiskAnalysisData(): Promise<RiskAnalysisData> {
     const metricsPromises = commodities.map(async (asset) => {
         try {
             // Get historical data from our Firestore historical collection
-            const response = await fetch(`/api/cotacoes-historico?ativo=${encodeURIComponent(asset.name)}&limit=30`);
-            if (!response.ok) {
-                throw new Error('Failed to fetch historical data');
-            }
-            const assetHistory: FirestoreQuote[] = await response.json();
+            const assetHistory: FirestoreQuote[] = await getCotacoesHistorico(asset.name, 30);
             if (assetHistory.length < 2) return null;
 
             // Sort by date ascending to calculate returns correctly

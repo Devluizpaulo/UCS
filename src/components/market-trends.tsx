@@ -5,10 +5,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { UcsIndexChart } from './ucs-index-chart';
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
-// Removed direct import of server action
-import type { ChartData, HistoryInterval } from '@/lib/types';
+import type { ChartData, HistoryInterval, UcsData } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from './ui/skeleton';
+import { getUcsIndexValue } from '@/lib/data-service';
 
 export function MarketTrends() {
   const [historyInterval, setHistoryInterval] = useState<HistoryInterval>('1d');
@@ -23,11 +23,7 @@ export function MarketTrends() {
 
     setLoading(true);
     try {
-        const response = await fetch(`/api/ucs-index?interval=${interval}`);
-        if (!response.ok) {
-            throw new Error('Failed to fetch UCS index data');
-        }
-        const result = await response.json();
+        const result = await getUcsIndexValue(interval);
         setIndexHistoryData(result.history);
     } catch (error) {
         console.error(`Failed to fetch index history for interval ${interval}:`, error);
@@ -45,11 +41,7 @@ export function MarketTrends() {
     const fetchInitialData = async () => {
         setLoading(true);
         try {
-            const response = await fetch('/api/ucs-index?interval=1d'); // Start with daily
-            if (!response.ok) {
-                throw new Error('Failed to fetch UCS index data');
-            }
-            const result = await response.json();
+            const result = await getUcsIndexValue('1d'); // Start with daily
             setIndexHistoryData(result.history);
             setIsConfigured(result.latest.isConfigured);
         } catch (error) {

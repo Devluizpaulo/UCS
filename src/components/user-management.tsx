@@ -98,7 +98,7 @@ Sua conta foi criada no Sistema Índice UCS. Abaixo estão suas credenciais de a
 
 - Email: ${user.email}
 - Senha temporária: ${password}
-- Link de acesso: https://ucsindex.vercel.app/
+- Link de acesso: https://ucs-index-tracker.vercel.app/
 
 IMPORTANTE - INSTRUÇÕES DE PRIMEIRO ACESSO:
 1. Acesse o sistema usando o link acima.
