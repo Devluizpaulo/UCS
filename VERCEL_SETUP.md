@@ -1,82 +1,39 @@
 # Configuração do Vercel para Firebase Admin SDK
 
 ## Problema
-O build no Vercel está falhando com o erro:
-```
-Missing required environment variables: FIREBASE_SERVICE_ACCOUNT
-```
+O build no Vercel pode falhar com erros relacionados à inicialização do Firebase Admin SDK, como `Failed to parse FIREBASE_SERVICE_ACCOUNT` ou `Could not refresh access token`. Isso ocorre porque o Vercel não lida bem com variáveis de ambiente JSON de múltiplas linhas.
 
-## Solução
+## Solução (Método Recomendado)
 
-### 1. Configurar Variáveis de Ambiente no Vercel
+A solução mais robusta é usar variáveis de ambiente individuais para cada parte da sua chave de serviço do Firebase.
 
-No painel do Vercel:
-1. Acesse seu projeto
-2. Vá em **Settings** > **Environment Variables**
-3. Adicione as seguintes variáveis:
+### 1. Obtenha sua Chave de Serviço Firebase
+1.  Vá para o **Firebase Console**.
+2.  Selecione seu projeto.
+3.  Clique no ícone de engrenagem ao lado de "Visão geral do projeto" e selecione **Configurações do projeto**.
+4.  Vá para a aba **Contas de serviço**.
+5.  Clique em **Gerar nova chave privada** e confirme. Um arquivo JSON será baixado.
 
-| Nome da Variável | Valor | Ambiente |
-|------------------|-------|----------|
-| `FIREBASE_PROJECT_ID` | `ucs-index-tracker` | Production, Preview, Development |
-| `FIREBASE_PRIVATE_KEY_ID` | `d2e2667336d2d393f352a172dce9c9087a796133` | Production, Preview, Development |
-| `FIREBASE_CLIENT_EMAIL` | `firebase-adminsdk-fbsvc@ucs-index-tracker.iam.gserviceaccount.com` | Production, Preview, Development |
-| `FIREBASE_SERVICE_ACCOUNT` | (ver abaixo) | Production, Preview, Development |
-| `GEMINI_API_KEY` | `AIzaSyB1X6iG_PZoXbdp7JlMawalLjteFq9RF90` | Production, Preview, Development |
+### 2. Configure as Variáveis de Ambiente no Vercel
+No painel do seu projeto no Vercel, vá para **Settings > Environment Variables**. Adicione as seguintes variáveis, copiando os valores do seu arquivo JSON:
 
-### 2. Configurar FIREBASE_SERVICE_ACCOUNT
+| Nome da Variável | Valor do JSON | Ambiente(s) |
+|---|---|---|
+| `FIREBASE_PROJECT_ID` | `project_id` | Todos |
+| `FIREBASE_CLIENT_EMAIL` | `client_email` | Todos |
+| `FIREBASE_PRIVATE_KEY` | `private_key` | Todos |
+| `GEMINI_API_KEY` | `Sua_API_Key_do_Gemini` | Todos |
 
-Para a variável `FIREBASE_SERVICE_ACCOUNT`, use o valor completo da chave privada:
 
-```
------BEGIN PRIVATE KEY-----
-MIIEvwIBADANBgkqhkiG9w0BAQEFAASCBKkwggSlAgEAAoIBAQDgC/C8bdOnygqO
-vvZLZDcia341ltxsl7aRvjbC5TgJo7JVhW9y8Q562MZtztr8zUiWpB1mJB7WFjfr
-pDk3KPdI5HSoZXtCAURE0PYRy1xOV7e+8jl/gzfINMN3dShqXbvZamQdNSqBzuBK
-8dhbpV5TgceJMfvW8kpTn8Vhe+qVdDRTMujkuQdb0KH/sPzOfeLxB44WN1b5m5Iv
-ca+YW2arU5YtPJv8TtYdXyYJlubi28kfGdqmWjTy3jUKd99LoOb6c+Z/j9+MQaHe
-7EUZJh9MpIWiTsBdHWG8lJRqF2r9GtvVSTJ4/7pLRCXj2jqbAm9nB5GFmrdOw1TH
-4GtGONVJAgMBAAECggEANf6irqKwROp0B2ldvZciE3VA9iTMrA4XFYI4O9mWmvoc
-vzAYhySxpukJz0pwK8dEdGuKW0Seut0hbnSGRnUkvWgzdib44NQh0gzjFLBEJ2xL
-7+R7929V+PXAWtB9JD9BR5k0lfZrb1u+YcltqU6OEEWBY17MsQV05LjnToJY61nh
-wPjJo8aOCpehS5YnSsouZ80PHPi/xtomKhZUoziUXOJxZxehBoxNPgg1ClNBHoOl
-XVC8ILaoXAW0zoIpeMcmI8XBz/Uz5B3Y/Q0oATX2eTGDOAC6GXdq4Uj0EUzIkRpc
-vEEMOFnev9KrQkeKyFojMGSfCCd7GI9vR2lQKLKq5QKBgQD5IFwB1L4n2WtKFnMl
-8zye5CBlNu1yyqu5Dlt3LIRLMHHI8qOzUshcJNiQX3w76SijcUysR+O+4yicLdYB
-9rq5pywSx5ko0eCQ5FcKlvZwQYHx5hCz8OZLwaMsfHtBXbclEZpxQerixwWMtdJ2
-t2YmGerizWsulz7LV5pzbXsWPQKBgQDmOm++Am49U06/IpFLXh04GuZHFpolvJiC
-PoJdCxnMtBz0KCv+j5xejIBcArPpUA3TxCSosNh22kgApigAduHXtrJX6TyzPwRZ
-LUfR+n1kYHf39LJ8/LR3+ijadPX+9Kzkv/dghXfNAZ9Cky+ynNVogYmIC7YpSPas
-2S9YFov3/QKBgQD2II5GENU9sYRaUgu5drJxmJiY5sd5HdrCnfinqQea8WW5Tl+F
-D0h8ILsFCBFJb3WC5LEHlI7hTLQWeQJyNj0MpqjYdPJQbeobvDxybetTxKSJRO9D
-l8EvH0QC84kib2A980JOmv1gx5goCIrCVzdIdVqmcKRwB2U2qHojiAqPUQKBgQC7
-n4nrHo36mkbFi4U/F57WV02tR2UuNclP82NIMkC/S1WBQK/B0AWOJBCDa4x1KlFq
-cCGz/BMcoP0m0kItRrT8mB41eJWIOmXvyvAJ1oqT3+5E+3zuUP89+3eJuOG0+m9g
-KHWQipS8VIMWvV6UwC1G8rJDVdAJSzYEXSaxMga1fQKBgQDzkggc2xtZLFKtxOk+
-zsvdQTv6Ok2TEZykZwwR4PkW6758ggTD1aIpAOVdi9jnGzuDNkRWflcEJJoyNLPJ
-myg1w9eHJ9yN0KKZ2w1DLSHGEG51d/hQnqDS+pDIELQf12Ui6S7TqpbXpBfY2bVV
-pBJAKS/KAIioJ7UboSUnE1wRTw==
------END PRIVATE KEY-----
-```
+**IMPORTANTE para `FIREBASE_PRIVATE_KEY`:**
+Copie o valor completo da chave privada, incluindo `-----BEGIN PRIVATE KEY-----` e `-----END PRIVATE KEY-----`. O Vercel irá formatar a string em uma única linha, substituindo as quebras de linha por `\n`. **Isso é esperado**, e o código da aplicação está preparado para lidar com isso. Não tente remover as quebras de linha manualmente.
 
-**IMPORTANTE:** No Vercel, cole o valor da chave privada SEM as aspas duplas e SEM os `\n`. O Vercel tratará as quebras de linha automaticamente.
+### 3. Verifique a Configuração
+1.  Após configurar as variáveis, acione um novo deploy no Vercel.
+2.  Verifique se o build é concluído sem erros relacionados ao Firebase.
+3.  Teste as funcionalidades da aplicação que dependem do acesso ao banco de dados ou autenticação no servidor.
 
-### 3. Verificar Configuração
-
-Após configurar as variáveis:
-1. Faça um novo deploy
-2. Verifique se o build passa sem erros
-3. Teste as funcionalidades que dependem do Firebase
-
-### 4. Troubleshooting
-
-Se o erro persistir:
-1. Verifique se todas as variáveis estão definidas para todos os ambientes (Production, Preview, Development)
-2. Certifique-se de que não há espaços extras nos valores
-3. Verifique se a chave privada está completa e correta
-4. Tente fazer um redeploy forçado
-
-### 5. Segurança
-
-- Nunca commite o arquivo `.env.local` no repositório
-- Use o arquivo `.env.example` como template
-- Mantenha as chaves seguras e rotacione-as periodicamente
+### 4. Segurança
+- Nunca commite seu arquivo de chave privada (o `.json`) ou seu arquivo `.env.local` no repositório Git.
+- Use um arquivo `.env.example` como template para outros desenvolvedores.
+- Mantenha suas chaves seguras e rotacione-as periodicamente.
