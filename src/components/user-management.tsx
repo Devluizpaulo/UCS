@@ -38,7 +38,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
-import { getUsers } from '@/lib/profile-service';
+import { getUsers, deleteUser, updateUser } from '@/lib/profile-service';
 
 
 interface User {
@@ -173,51 +173,60 @@ Equipe Índice UCS
 
   const onSubmit = async (data: UserFormData) => {
     setIsLoading(true);
-    const tempPassword = generateTemporaryPassword();
     
     try {
-      const response = await fetch('/api/users', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...data, password: tempPassword }),
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Falha ao criar usuário no servidor');
-      }
+        if(editingUser) {
+            await updateUser(editingUser.id, data);
+            toast({
+                title: 'Usuário atualizado',
+                description: 'Os dados do usuário foram atualizados com sucesso.',
+            });
+        } else {
+             const tempPassword = generateTemporaryPassword();
+             const response = await fetch('/api/users', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...data, password: tempPassword }),
+             });
+              
+              if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Falha ao criar usuário no servidor');
+              }
 
-      const newUserResponse = await response.json();
+              const newUserResponse = await response.json();
 
-      const newUser: User = {
-        id: newUserResponse.uid,
-        email: data.email,
-        displayName: data.displayName,
-        phoneNumber: data.phoneNumber,
-        role: data.role,
-        isFirstLogin: true,
-        createdAt: new Date().toISOString()
-      };
+              const newUser: User = {
+                id: newUserResponse.uid,
+                email: data.email,
+                displayName: data.displayName,
+                phoneNumber: data.phoneNumber,
+                role: data.role,
+                isFirstLogin: true,
+                createdAt: new Date().toISOString()
+              };
+              
+              setCurrentUserForSharing(newUser);
+              setGeneratedPassword(tempPassword);
+              const { body, subject } = generateWelcomeMessage(newUser, tempPassword);
+              setEmailText(body);
+              setShowEmailModal(true);
+              
+              toast({
+                title: 'Usuário criado com sucesso',
+                description: `${data.displayName} foi adicionado ao sistema.`,
+              });
+        }
       
-      setCurrentUserForSharing(newUser);
-      setGeneratedPassword(tempPassword);
-      const { body, subject } = generateWelcomeMessage(newUser, tempPassword);
-      setEmailText(body);
-      setShowEmailModal(true);
-      
-      toast({
-        title: 'Usuário criado com sucesso',
-        description: `${data.displayName} foi adicionado ao sistema.`,
-      });
-
       form.reset();
       setIsDialogOpen(false);
       await fetchUsers();
+
     } catch (error: any) {
-      console.error('Erro ao criar usuário:', error);
+      console.error('Erro ao salvar usuário:', error);
       toast({
         variant: 'destructive',
-        title: 'Erro ao criar usuário',
+        title: 'Erro ao salvar usuário',
         description: error.message || 'Ocorreu um erro inesperado.',
       });
     } finally {
@@ -229,10 +238,7 @@ Equipe Índice UCS
     if (!deletingUserId) return;
     setIsLoading(true);
     try {
-      // Implementar chamada à API para excluir usuário
-      // const response = await fetch(`/api/admin/users/${deletingUserId}`, { method: 'DELETE' });
-      // if (!response.ok) throw new Error('Falha ao excluir');
-      
+      await deleteUser(deletingUserId);
       toast({
         title: 'Usuário excluído',
         description: 'O usuário foi removido do sistema.',
@@ -252,7 +258,7 @@ Equipe Índice UCS
 
   const handleNewUser = () => {
     setEditingUser(null);
-    form.reset({ role: 'user' });
+    form.reset({ role: 'user', displayName: '', email: '', phoneNumber: '' });
     setIsDialogOpen(true);
   };
 
@@ -492,5 +498,3 @@ Equipe Índice UCS
     </Card>
   );
 }
-
-    

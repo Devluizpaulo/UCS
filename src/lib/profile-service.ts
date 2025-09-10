@@ -41,27 +41,47 @@ export async function updateUserProfile(uid: string, displayName: string, phoneN
 }
 
 /**
- * ALTERAR SENHA DO USUÁRIO (Lado do Servidor, se necessário - geralmente feito no cliente)
- * Esta função deve ser usada com cuidado, pois não reautentica o usuário.
- * É mais seguro fazer a alteração de senha no lado do cliente.
- * @param uid - O ID do usuário.
- * @param newPassword - A nova senha.
+ * ATUALIZA NOME, TELEFONE E FUNÇÃO DE UM USUÁRIO (ADMIN)
  */
-export async function changeUserPasswordAdmin(uid: string, newPassword: string): Promise<void> {
-   if (!uid) {
+export async function updateUser(uid: string, data: { displayName: string; phoneNumber?: string | null; role: 'admin' | 'user' }): Promise<void> {
+  if (!uid) {
     throw new Error('UID do usuário é obrigatório.');
-  }
-   if (!newPassword || newPassword.length < 8) {
-    throw new Error('A nova senha deve ter pelo menos 8 caracteres.');
   }
 
   try {
-    await adminAuth.updateUser(uid, { password: newPassword });
+    const { displayName, phoneNumber, role } = data;
+    const updatePayload: { displayName: string; phoneNumber?: string } = { displayName };
+    if (phoneNumber) {
+      updatePayload.phoneNumber = phoneNumber;
+    }
+
+    await adminAuth.updateUser(uid, updatePayload);
+    
+    const currentClaims = (await adminAuth.getUser(uid)).customClaims;
+    await adminAuth.setCustomUserClaims(uid, { ...currentClaims, role });
+    
   } catch (error: any) {
-    console.error('Erro ao alterar senha (admin):', error);
-    throw new Error('Não foi possível alterar a senha administrativamente.');
+    console.error('Erro ao atualizar usuário (admin):', error);
+    throw new Error('Não foi possível atualizar os dados do usuário.');
   }
 }
+
+
+/**
+ * DELETA UM USUÁRIO (ADMIN)
+ */
+export async function deleteUser(uid: string): Promise<void> {
+    if (!uid) {
+        throw new Error('UID do usuário é obrigatório.');
+    }
+    try {
+        await adminAuth.deleteUser(uid);
+    } catch (error: any) {
+        console.error('Erro ao deletar usuário (admin):', error);
+        throw new Error('Não foi possível deletar o usuário.');
+    }
+}
+
 
 /**
  * ATUALIZA A CLAIM de `isFirstLogin` PARA FALSE
@@ -104,5 +124,3 @@ export async function getUsers(): Promise<User[]> {
         throw new Error('Falha ao buscar usuários no servidor.');
     }
 }
-
-    
