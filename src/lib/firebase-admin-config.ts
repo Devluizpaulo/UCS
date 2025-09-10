@@ -15,20 +15,22 @@ if (!admin.apps.length) {
     const projectId = process.env.FIREBASE_PROJECT_ID;
     const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
     
-    // Vercel's environment variable handling can be tricky. This logic robustly handles the private key.
-    // 1. Start with the raw key.
-    // 2. Trim whitespace and remove quotes that Vercel might add.
-    // 3. Replace all occurrences of '\\n' (literal backslash-n) with an actual newline character.
-    const rawPrivateKey = process.env.FIREBASE_PRIVATE_KEY || '';
-    const privateKey = rawPrivateKey.trim().replace(/^"|"$/g, '').replace(/\\n/g, '\n');
+    // Use Base64-encoded private key to avoid formatting issues in Vercel.
+    const privateKeyBase64 = process.env.FIREBASE_PRIVATE_KEY_BASE64;
 
-
-    if (!projectId || !clientEmail || !privateKey) {
+    if (!projectId || !clientEmail || !privateKeyBase64) {
       let missingVars = [];
       if (!projectId) missingVars.push('FIREBASE_PROJECT_ID');
       if (!clientEmail) missingVars.push('FIREBASE_CLIENT_EMAIL');
-      if (!privateKey) missingVars.push('FIREBASE_PRIVATE_KEY');
+      if (!privateKeyBase64) missingVars.push('FIREBASE_PRIVATE_KEY_BASE64');
       throw new Error(`Missing required Firebase environment variables: ${missingVars.join(', ')}. Please check your Vercel project settings and refer to VERCEL_SETUP.md.`);
+    }
+
+    // Decode the private key from Base64
+    const privateKey = Buffer.from(privateKeyBase64, 'base64').toString('utf-8');
+
+    if (!privateKey.includes('-----BEGIN PRIVATE KEY-----')) {
+        throw new Error('Decoded private key is not in the correct PEM format.');
     }
 
     const serviceAccount: admin.ServiceAccount = {
@@ -42,7 +44,7 @@ if (!admin.apps.length) {
       projectId: serviceAccount.projectId,
     });
 
-    console.log('[Firebase Admin] SDK initialized successfully.');
+    console.log('[Firebase Admin] SDK initialized successfully from Base64 key.');
 
   } catch (error: any) {
     console.error('[Firebase Admin] CRITICAL INITIALIZATION ERROR:', error.message);
