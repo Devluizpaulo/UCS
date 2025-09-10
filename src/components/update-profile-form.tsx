@@ -57,7 +57,7 @@ export function UpdateProfileForm() {
     }
     setIsLoading(true);
     try {
-      // Call the server action with the UID and new data
+      // Call the server action with the UID and new data in the correct order
       await updateUserProfile(user.uid, data.displayName, data.phoneNumber);
       
       // We need to reload the user object on the client to see the changes
