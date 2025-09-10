@@ -8,7 +8,7 @@ O objetivo é trazer modernidade a um sistema que era apoiado em planilhas e dar
 O **Monitor do Índice UCS** é uma plataforma de software robusta e especializada, concebida como uma ferramenta de *business intelligence* para o setor agroambiental e financeiro. O seu principal objetivo é fornecer uma visão clara, unificada e em tempo real sobre a performance econômica de ativos ambientais e agrícolas, consolidada no "Índice de Unidade de Conservação Sustentável" (UCS).
 
 A plataforma foi projetada para atender a públicos estratégicos, como:
-- **Gestores e Diretores:** Para tomada de decisão baseada em dados consolidados e tendências de mercado.
+- **Gestores e Diretores da BMV:** Para tomada de decisão baseada em dados consolidados e tendências de mercado.
 - **Analistas Financeiros:** Para análises aprofundadas de risco, correlação e projeção de cenários.
 - **Clientes e Parceiros da BMV:** Para dar transparência e confiança sobre o valor e a performance dos ativos.
 
@@ -63,8 +63,10 @@ As funcionalidades abaixo foram contempladas na visão original do projeto, mas 
 ### a. Alertas de Preço por E-mail
 - **O que falta:** A interface para configurar os alertas está pronta e funcional, mas a lógica de backend para monitorar os preços e disparar os e-mails ainda precisa ser implementada. Atualmente, os alertas são apenas salvos no estado local do navegador.
 
-### b. Coleta de Dados Automatizada (Cron Job)
-- **O que falta:** A plataforma está estruturada para receber dados de preços de uma fonte externa (n8n). No entanto, o processo de automação que busca esses dados periodicamente (o "cron job") ainda não foi implementado. Atualmente, os dados são carregados a partir de um conjunto de teste ou dependem de uma inserção manual no banco de dados. A implementação do cron job garantirá que os preços estejam sempre atualizados sem intervenção humana.
+### b. Coleta de Dados Automatizada (n8n)
+- **Status:** Para garantir a disponibilidade de todas as cotações necessárias, a coleta de dados será realizada através de um processo de *web scraping* automatizado, orquestrado pela ferramenta n8n.
+- **Funcionamento:** O processo de raspagem de dados será executado diariamente às 7h da manhã em dias úteis. Ele buscará os preços de fechamento mais recentes para todas as commodities que compõem o índice e os salvará no banco de dados da plataforma.
+- **Próximo Passo:** O fluxo de trabalho no n8n está definido e pronto para ser ativado em produção, garantindo que os dados da plataforma permaneçam sempre atualizados sem intervenção humana.
 
 ### c. Edição e Exclusão de Usuários
 - **O que falta:** Na tela de "Gerenciamento de Usuários", a funcionalidade de criar e listar usuários está 100% funcional. No entanto, as ações de **editar** as informações de um usuário existente e **excluir** um usuário ainda não foram implementadas no backend.
