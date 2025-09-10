@@ -18,6 +18,7 @@ import { ScrollArea } from './ui/scroll-area';
 import { getCotacoesHistorico } from '@/lib/data-service';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/currency-service';
+import { Skeleton } from './ui/skeleton';
 
 
 interface AssetDetailModalProps {
