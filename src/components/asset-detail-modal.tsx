@@ -29,6 +29,14 @@ interface AssetDetailModalProps {
   selectedDate?: string;
 }
 
+// Helper to parse DD/MM/YYYY string to Date object
+const parseDateString = (dateStr: string): Date => {
+    const [day, month, year] = dateStr.split('/').map(Number);
+    // Month is 0-indexed in JavaScript Dates
+    return new Date(year, month - 1, day);
+};
+
+
 export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose, selectedDate }: AssetDetailModalProps) {
     const [historicalData, setHistoricalData] = useState<FirestoreQuote[]>([]);
     const [chartData, setChartData] = useState<ChartData[]>([]);
@@ -42,15 +50,17 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose, selectedD
         try {
             const history = await getCotacoesHistorico(currentAsset.name, 30, forDate);
             
+            // Sort by the 'data' field, most recent first for the table
             const sortedHistory = [...history].sort((a,b) => {
-                const aTime = a.timestamp?.toDate ? a.timestamp.toDate().getTime() : new Date(a.timestamp).getTime();
-                const bTime = b.timestamp?.toDate ? b.timestamp.toDate().getTime() : new Date(b.timestamp).getTime();
+                const aTime = a.data ? parseDateString(a.data).getTime() : 0;
+                const bTime = b.data ? parseDateString(b.data).getTime() : 0;
                 return bTime - aTime;
             });
             setHistoricalData(sortedHistory);
             
+            // For the chart, we need the oldest first, so we reverse the sorted array
             const chartPoints = [...sortedHistory].reverse().map((d: FirestoreQuote) => ({ 
-                time: new Date(d.timestamp).toLocaleDateString('pt-BR', {day:'2-digit', month: '2-digit'}),
+                time: d.data || new Date(d.timestamp).toLocaleDateString('pt-BR', {day:'2-digit', month: '2-digit'}),
                 value: d.ultimo 
             }));
             
@@ -165,7 +175,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose, selectedD
                             ) : (
                                 historicalData.map((dataPoint) => (
                                     <TableRow key={dataPoint.id}>
-                                        <TableCell className="font-medium text-xs">{new Date(dataPoint.timestamp).toLocaleDateString('pt-BR')}</TableCell>
+                                        <TableCell className="font-medium text-xs">{dataPoint.data || new Date(dataPoint.timestamp).toLocaleDateString('pt-BR')}</TableCell>
                                         <TableCell className="text-right font-mono text-xs">{formatCurrency(dataPoint.ultimo, asset.currency)}</TableCell>
                                         <TableCell className="text-right font-mono text-xs">{formatCurrency(dataPoint.abertura, asset.currency)}</TableCell>
                                         <TableCell className="text-right font-mono text-xs">{formatCurrency(dataPoint.maxima, asset.currency)}</TableCell>
