@@ -5,13 +5,10 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { firebaseConfig } from '@/lib/firebase-config';
-import { initializeApp, getApps, getApp } from 'firebase/app';
 import { Loader2, TrendingUp, UserPlus } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -47,9 +44,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   
-  // Safe Firebase initialization
-  const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-  const auth = getAuth(app);
+  // Usar sistema de autenticação customizado
 
   const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -62,24 +57,33 @@ export default function LoginPage() {
   const onLoginSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, data.email, data.password);
-      toast({
-        title: 'Login bem-sucedido',
-        description: 'Carregando painel...',
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
       });
-      setTimeout(() => {
-        router.push('/');
-      }, 1000);
+
+      const result = await response.json();
+
+      if (response.ok) {
+        toast({
+          title: 'Login bem-sucedido',
+          description: 'Carregando painel...',
+        });
+        setTimeout(() => {
+          router.push('/');
+        }, 1000);
+      } else {
+        throw new Error(result.error || 'Erro no login');
+      }
     } catch (error: any) {
       console.error('Login failed:', error);
       toast({
         variant: 'destructive',
         title: 'Falha no Login',
-        description: error.code === 'auth/invalid-credential' 
-            ? 'Credenciais inválidas. Verifique seu e-mail e senha.'
-            : 'Ocorreu um erro. Por favor, tente novamente.',
+        description: error.message || 'Ocorreu um erro. Por favor, tente novamente.',
       });
-       setIsLoading(false);
+      setIsLoading(false);
     } 
   };
 
@@ -89,7 +93,7 @@ export default function LoginPage() {
       const response = await fetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, useFirestore: true }),
       });
 
       if (!response.ok) {

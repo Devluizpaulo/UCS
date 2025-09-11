@@ -69,7 +69,7 @@ export async function simulateScenario(input: SimulateScenarioInput): Promise<Sc
         });
        
         // 4. Calculate the new index value
-        const simulatedCotacoes = await obterValoresPadrao(simulatedPricesData);
+        const simulatedCotacoes = await obterValoresPadrao();
         const newInputs: UCSCalculationInputs = { ...simulatedCotacoes, ...params };
         const newIndexResult = calcularUCSCompleto(newInputs);
         const newIndexValue = newIndexResult.unidadeCreditoSustentabilidade;

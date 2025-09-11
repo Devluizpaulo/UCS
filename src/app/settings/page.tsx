@@ -42,16 +42,26 @@ const formulaSchema = z.object({
     produtividade_soja: z.coerce.number(),
     produtividade_madeira: z.coerce.number(),
     produtividade_carbono: z.coerce.number(),
+    VOLUME_MADEIRA_HA: z.coerce.number(),
+    PROD_BOI: z.coerce.number(),
+    PROD_MILHO: z.coerce.number(),
+    PROD_SOJA: z.coerce.number(),
     
     // Fatores de Ponderação
     fator_pecuaria: z.coerce.number(),
     fator_milho: z.coerce.number(),
     fator_soja: z.coerce.number(),
+    PESO_PEC: z.coerce.number(),
+    PESO_MILHO: z.coerce.number(),
+    PESO_SOJA: z.coerce.number(),
     
     // Fatores de Conversão
     fator_arrendamento: z.coerce.number(),
+    FATOR_ARREND: z.coerce.number(),
     fator_agua: z.coerce.number(),
     fator_ucs: z.coerce.number(),
+    FATOR_CARBONO: z.coerce.number(),
+    FATOR_CONVERSAO_SERRADA_TORA: z.coerce.number(),
     
     // Valores Econômicos
     pib_por_hectare: z.coerce.number(),

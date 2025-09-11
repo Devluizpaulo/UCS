@@ -84,7 +84,7 @@ export function calculateIndex(commodities: CommodityPriceData[], params: Formul
       // According to user: CRS = (Crédito_Carbono × fator_CC) + (Custo_Água × fator_água)
       // Custo_Água is defined as 7% of VUS.
       const valor_carbono = preco_carbono_brl * params.FATOR_CARBONO;
-      const valor_agua = VUS * params.FATOR_AGUA;
+      const valor_agua = VUS * params.fator_agua;
       const CRS = valor_carbono + valor_agua;
       
       // --- 4. UCS INDEX (Final Value) ---

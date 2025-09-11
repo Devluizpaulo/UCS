@@ -53,7 +53,7 @@ export function UCSCalculator() {
 
   const handleInputChange = (field: keyof UCSCalculationInputs, value: string) => {
     const numericValue = parseFloat(value) || 0;
-    setInputs(prev => ({ ...prev, [field]: numericValue }));
+    setInputs((prev: Partial<UCSCalculationInputs>) => ({ ...prev, [field]: numericValue }));
   };
 
   const calcular = () => {

@@ -3,6 +3,9 @@
 import { getCommodityPrices } from './data-service';
 import type { CommodityPriceData, UCSCalculationInputs, UCSCalculationResult } from './types';
 
+// Re-export types for external use
+export type { UCSCalculationInputs, UCSCalculationResult } from './types';
+
 
 function findPrice(commodities: CommodityPriceData[], category: CommodityPriceData['category'], nameIncludes: string): number {
     const asset = commodities.find(c => c.category === category && c.name.toLowerCase().includes(nameIncludes.toLowerCase()));

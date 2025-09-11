@@ -19,17 +19,27 @@ const defaultParameters: FormulaParameters = {
     produtividade_milho: 7.2,
     produtividade_soja: 3.3,
     produtividade_madeira: 120,
-    produtividade_carbono: 2.59,
+    produtividade_carbono: 150,
+    VOLUME_MADEIRA_HA: 200,
+    PROD_BOI: 15,
+    PROD_MILHO: 6.5,
+    PROD_SOJA: 3.3,
     
     // Fatores de Ponderação
-    fator_pecuaria: 0.35,
-    fator_milho: 0.30,
+    fator_pecuaria: 0.30,
+    fator_milho: 0.35,
     fator_soja: 0.35,
+    PESO_PEC: 0.30,
+    PESO_MILHO: 0.35,
+    PESO_SOJA: 0.35,
     
     // Fatores de Conversão
     fator_arrendamento: 0.048,
+    FATOR_ARREND: 0.048,
     fator_agua: 0.07,
-    fator_ucs: 2,
+    fator_ucs: 1.0,
+    FATOR_CARBONO: 1.0,
+    FATOR_CONVERSAO_SERRADA_TORA: 0.5,
     
     // Valores Econômicos
     pib_por_hectare: 41194.67,

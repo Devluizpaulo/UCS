@@ -30,6 +30,14 @@ export type CommodityPriceData = CommodityConfig & {
     change: number; // Percentage change
     absoluteChange: number;
     lastUpdated: string;
+    convertedPrice?: {
+        originalPrice: number;
+        originalCurrency: string;
+        convertedPrice: number;
+        targetCurrency: string;
+        exchangeRate: number;
+        lastUpdated: string;
+    };
 };
 
 export type HistoryInterval = '1d' | '1wk' | '1mo';
@@ -107,16 +115,26 @@ export type FormulaParameters = {
     produtividade_soja: number;
     produtividade_madeira: number;
     produtividade_carbono: number;
+    VOLUME_MADEIRA_HA: number;
+    PROD_BOI: number;
+    PROD_MILHO: number;
+    PROD_SOJA: number;
     
     // Fatores de Ponderação
     fator_pecuaria: number;
     fator_milho: number;
     fator_soja: number;
+    PESO_PEC: number;
+    PESO_MILHO: number;
+    PESO_SOJA: number;
     
     // Fatores de Conversão
     fator_arrendamento: number;
+    FATOR_ARREND: number;
     fator_agua: number;
     fator_ucs: number;
+    FATOR_CARBONO: number;
+    FATOR_CONVERSAO_SERRADA_TORA: number;
     
     // Valores Econômicos
     pib_por_hectare: number;
