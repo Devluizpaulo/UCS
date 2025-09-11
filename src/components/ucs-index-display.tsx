@@ -146,9 +146,16 @@ export function UCSIndexDisplay({ className, selectedDate }: UCSIndexDisplayProp
   return (
     <Card className={className}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <div>
-          <CardTitle className="text-sm font-medium">Índice UCS</CardTitle>
-          <CardDescription>Unidade de Crédito de Sustentabilidade</CardDescription>
+        <div className="flex items-center gap-3">
+          <img 
+            src="/image/UCS.png" 
+            alt="UCS Coin" 
+            className="w-12 h-12"
+          />
+          <div>
+            <CardTitle className="text-sm font-medium">Índice UCS</CardTitle>
+            <CardDescription>Unidade de Crédito de Sustentabilidade</CardDescription>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           {getTrendIcon()}
@@ -179,10 +186,10 @@ export function UCSIndexDisplay({ className, selectedDate }: UCSIndexDisplayProp
           <div className="space-y-4">
             <div className="flex items-baseline justify-between">
               <div>
-                <div className={`text-2xl font-bold ${getTrendColor()}`}>
+                <div className="text-3xl font-bold text-green-600 bg-green-50 px-4 py-2 rounded-lg border border-green-200">
                   {loading ? '...' : formatarValorMonetario(ucsValue)}
                 </div>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground mt-2">
                   Moeda UCS
                 </p>
               </div>
