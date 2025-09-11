@@ -96,26 +96,30 @@ export function UserManagement() {
   };
   
   const generateWelcomeMessage = (user: User, password: string): {subject: string, body: string} => {
-    const subject = "Bem-vindo ao Sistema Índice UCS - Suas credenciais de acesso";
+    const subject = "🎉 Bem-vindo ao Sistema Índice UCS - Suas credenciais de acesso";
     const body = `
-Olá, ${user.displayName}!
+🎉 Olá, ${user.displayName}!
 
-Sua conta foi criada no Sistema Índice UCS. Abaixo estão suas credenciais de acesso:
+Sua conta foi criada com sucesso no Sistema Índice UCS. Abaixo estão suas credenciais de acesso:
 
-- Email: ${user.email}
-- Senha temporária: ${password}
-- Link de acesso: https://ucs-index-tracker.vercel.app/
+📧 Email: ${user.email}
+🔑 Senha temporária: ${password}
+🌐 Link de acesso: https://ucsindex.vercel.app/login
 
-IMPORTANTE - INSTRUÇÕES DE PRIMEIRO ACESSO:
-1. Acesse o sistema usando o link acima.
-2. Faça login com o email e a senha temporária fornecidos.
-3. No primeiro acesso, você será obrigatoriamente direcionado para alterar sua senha.
-4. Escolha uma senha segura com pelo menos 8 caracteres.
+⚠️ IMPORTANTE - INSTRUÇÕES DE PRIMEIRO ACESSO:
 
-Após alterar a senha, você terá acesso completo ao sistema.
+1️⃣ Acesse o sistema usando o link acima
+2️⃣ Faça login com o email e a senha temporária fornecidos
+3️⃣ No primeiro acesso, você será obrigatoriamente direcionado para alterar sua senha
+4️⃣ Escolha uma senha segura com pelo menos 8 caracteres alfanuméricos
 
+✅ Após alterar a senha, você terá acesso completo ao sistema.
+
+📧📞 Precisa de ajuda? Entre em contato: luizpaulo.jesus@bmv.global
+
+---
 Atenciosamente,
-Equipe Índice UCS
+👥 Equipe Índice UCS
 `;
     return { subject, body: body.trim() };
   };
@@ -564,7 +568,7 @@ Equipe Índice UCS
       </AlertDialog>
 
       <Dialog open={showEmailModal} onOpenChange={setShowEmailModal}>
-        <DialogContent className="sm:max-w-[600px] max-h-[80vh] flex flex-col">
+        <DialogContent className="sm:max-w-[800px] max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Credenciais do Usuário - Mensagem de Boas-Vindas</DialogTitle>
             <DialogDescription>
@@ -576,21 +580,34 @@ Equipe Índice UCS
               <pre className="whitespace-pre-wrap text-sm font-mono">{emailText}</pre>
             </div>
           </div>
-          <DialogFooter className="flex-col sm:flex-row sm:justify-between gap-2 pt-4 border-t">
-             <div className="flex gap-2">
-                <Button onClick={() => handleShareByEmail(currentUserForSharing, emailText, "Bem-vindo ao Sistema Índice UCS")}>
+          <DialogFooter className="flex flex-col gap-3 pt-4 border-t">
+             <div className="flex flex-col sm:flex-row gap-2 w-full">
+                <Button 
+                  onClick={() => handleShareByEmail(currentUserForSharing, emailText, "Bem-vindo ao Sistema Índice UCS")}
+                  className="w-full sm:w-auto flex-1"
+                >
                     <Mail className="mr-2 h-4 w-4" /> Enviar por Email
                 </Button>
-                 <Button onClick={() => handleShareByWhatsApp(currentUserForSharing, emailText)}>
+                <Button 
+                  onClick={() => handleShareByWhatsApp(currentUserForSharing, emailText)}
+                  className="w-full sm:w-auto flex-1"
+                >
                     <MessageSquare className="mr-2 h-4 w-4" /> Enviar por WhatsApp
                 </Button>
              </div>
-             <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setShowEmailModal(false)}>
-                Fechar
+             <div className="flex flex-col sm:flex-row gap-2 w-full">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowEmailModal(false)}
+                  className="w-full sm:w-auto flex-1"
+                >
+                  Fechar
                 </Button>
-                <Button onClick={copyEmailText}>
-                Copiar Texto
+                <Button 
+                  onClick={copyEmailText}
+                  className="w-full sm:w-auto flex-1"
+                >
+                  Copiar Texto
                 </Button>
              </div>
           </DialogFooter>
