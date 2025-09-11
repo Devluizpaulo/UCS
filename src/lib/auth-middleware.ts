@@ -7,6 +7,7 @@ interface JWTPayload {
   uid: string;
   email: string;
   role: string;
+  isFirstLogin?: boolean;
   iat: number;
   exp: number;
 }
@@ -53,6 +54,7 @@ export function getCurrentUser(request: NextRequest): {
   uid: string;
   email: string;
   role: string;
+  isFirstLogin?: boolean;
 } | null {
   const user = verifyAuth(request);
   
@@ -63,6 +65,7 @@ export function getCurrentUser(request: NextRequest): {
   return {
     uid: user.uid,
     email: user.email,
-    role: user.role
+    role: user.role,
+    isFirstLogin: user.isFirstLogin
   };
 }

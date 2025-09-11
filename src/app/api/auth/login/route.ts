@@ -32,7 +32,8 @@ export async function POST(request: NextRequest) {
       {
         uid: user.uid,
         email: user.email,
-        role: user.role
+        role: user.role,
+        isFirstLogin: user.isFirstLogin || false
       },
       JWT_SECRET,
       { expiresIn: '24h' }

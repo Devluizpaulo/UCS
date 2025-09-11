@@ -52,6 +52,7 @@ import { firebaseConfig } from '@/lib/firebase-config';
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from './ui/skeleton';
+import { FirstLoginPasswordReset } from './first-login-password-reset';
 
 import { Button } from './ui/button';
 
@@ -83,6 +84,7 @@ export function MainLayout({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isFirstLogin, setIsFirstLogin] = useState(false);
 
   const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
   const auth = getAuth(app);
@@ -106,6 +108,7 @@ export function MainLayout({ children }: { children: ReactNode }) {
             emailVerified: true
           } as FirebaseUser;
           setUser(mockUser);
+          setIsFirstLogin(userData.isFirstLogin || false);
         } else {
           setUser(null);
           // Se não estiver na página de login, redireciona
@@ -190,6 +193,19 @@ export function MainLayout({ children }: { children: ReactNode }) {
           <p>Redirecionando para login...</p>
           <Loader2 className="ml-2 h-8 w-8 animate-spin text-primary" />
         </div>
+    );
+  }
+
+  // Se for primeiro login, exibir componente de alteração de senha
+  if (isFirstLogin) {
+    return (
+      <FirstLoginPasswordReset 
+        onPasswordChanged={() => {
+          setIsFirstLogin(false);
+          // Recarregar dados do usuário para atualizar o token
+          window.location.reload();
+        }} 
+      />
     );
   }
 

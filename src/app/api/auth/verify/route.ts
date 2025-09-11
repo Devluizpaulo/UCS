@@ -18,7 +18,8 @@ export async function GET(request: NextRequest) {
       uid: user.uid,
       email: user.email,
       displayName: user.email, // Usar email como displayName por padrão
-      role: user.role
+      role: user.role,
+      isFirstLogin: user.isFirstLogin || false
     });
 
   } catch (error: any) {

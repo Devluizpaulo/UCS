@@ -223,11 +223,11 @@ export default function LoginPage() {
                   )}
                 </Button>
               </form>
-              <div className="mt-4 text-center text-sm">
+             {/* suspenso <div className="mt-4 text-center text-sm">
                 <Button variant="link" className="text-muted-foreground" onClick={() => setIsModalOpen(true)}>
                   Criar Conta de Administrador
                 </Button>
-              </div>
+              </div>*/}
             </div>
           </div>
         </div>
