@@ -26,11 +26,11 @@ const defaultParameters: FormulaParameters = {
     PROD_SOJA: 3.3,
     
     // Fatores de Ponderação
-    fator_pecuaria: 0.30,
-    fator_milho: 0.35,
+    fator_pecuaria: 0.35,
+    fator_milho: 0.30,
     fator_soja: 0.35,
-    PESO_PEC: 0.30,
-    PESO_MILHO: 0.35,
+    PESO_PEC: 0.35,
+    PESO_MILHO: 0.30,
     PESO_SOJA: 0.35,
     
     // Fatores de Conversão

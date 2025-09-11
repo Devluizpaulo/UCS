@@ -227,7 +227,7 @@ export function UCSIndexDisplay({ className, selectedDate }: UCSIndexDisplayProp
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <Card>
                           <CardHeader>
-                            <CardTitle className="text-lg">IVP - Índice de Viabilidade</CardTitle>
+                            <CardTitle className="text-lg">IVP - Índice de Viabilidade de Projeto</CardTitle>
                             <CardDescription>IVP = (PDM/CE)/2</CardDescription>
                           </CardHeader>
                           <CardContent>
@@ -239,8 +239,8 @@ export function UCSIndexDisplay({ className, selectedDate }: UCSIndexDisplayProp
 
                         <Card>
                           <CardHeader>
-                            <CardTitle className="text-lg">PDM - Potencial Desflorestador</CardTitle>
-                            <CardDescription>PDM = VM + VUS + CRS</CardDescription>
+                            <CardTitle className="text-lg">PDM - Potencial Desflorestador Monetizado</CardTitle>
+                            <CardDescription>PDM = vMAD + vUS + cRS</CardDescription>
                           </CardHeader>
                           <CardContent>
                             <div className="text-xl font-bold">
@@ -259,7 +259,7 @@ export function UCSIndexDisplay({ className, selectedDate }: UCSIndexDisplayProp
                             <div className="text-center">
                               <div className="flex items-center justify-center mb-2">
                                 <Leaf className="h-5 w-5 text-green-600 mr-2" />
-                                <span className="font-semibold">VM</span>
+                                <span className="font-semibold">vMAD</span>
                               </div>
                               <div className="text-lg font-bold">
                                 {formatarValorMonetario(resultado.valorMadeira)}
@@ -272,26 +272,26 @@ export function UCSIndexDisplay({ className, selectedDate }: UCSIndexDisplayProp
                             <div className="text-center">
                               <div className="flex items-center justify-center mb-2">
                                 <TrendingUp className="h-5 w-5 text-blue-600 mr-2" />
-                                <span className="font-semibold">VUS</span>
+                                <span className="font-semibold">vUS</span>
                               </div>
                               <div className="text-lg font-bold">
                                 {formatarValorMonetario(resultado.valorUsoSolo)}
                               </div>
                               <div className="text-sm text-muted-foreground">
-                                Valor Uso do Solo
+                                Valor de uso do solo
                               </div>
                             </div>
                             
                             <div className="text-center">
                               <div className="flex items-center justify-center mb-2">
                                 <DollarSign className="h-5 w-5 text-orange-600 mr-2" />
-                                <span className="font-semibold">CRS</span>
+                                <span className="font-semibold">cRS</span>
                               </div>
                               <div className="text-lg font-bold">
                                 {formatarValorMonetario(resultado.custoResponsabilidadeSocioambiental)}
                               </div>
                               <div className="text-sm text-muted-foreground">
-                                Custo Socioambiental
+                                custo da Responsabilidade socioambiental
                               </div>
                             </div>
                           </div>

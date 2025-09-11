@@ -39,13 +39,21 @@ function calcularVUS(
 
 /**
  * Calcula o Custo da Responsabilidade Socioambiental (CRS)
- * Fórmula: CRS = CC + CH2O
+ * Fórmula: CRS = CC + cH2O
+ * CC = CCc × tCo2(n) onde tCo2(n) = 2.59 unidades de Cc por hectare
+ * cH2O = FCH2O = 7% do PIB por hectare
  */
 function calcularCRS(
   inputs: Pick<UCSCalculationInputs, 'cotacaoCreditoCarbono' | 'produtividade_carbono' | 'pib_por_hectare' | 'fator_agua' | 'area_total'>
 ): { crsTotal: number, cc: number, ch2o: number } {
-  const cc = inputs.cotacaoCreditoCarbono * inputs.produtividade_carbono * inputs.area_total;
+  // CC = CCc × tCo2(n) × área_total
+  // tCo2(n) = 2.59 unidades de Cc por hectare
+  const tCo2_por_hectare = 2.59;
+  const cc = inputs.cotacaoCreditoCarbono * tCo2_por_hectare * inputs.area_total;
+  
+  // cH2O = FCH2O = 7% do PIB por hectare × área_total
   const ch2o = (inputs.pib_por_hectare * inputs.fator_agua) * inputs.area_total;
+  
   const crsTotal = cc + ch2o;
   
   return { crsTotal, cc, ch2o };

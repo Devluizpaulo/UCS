@@ -228,7 +228,7 @@ export function UCSCalculator() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <Card>
                       <CardHeader>
-                        <CardTitle className="text-lg">IVP - Índice de Viabilidade</CardTitle>
+                        <CardTitle className="text-lg">IVP - Índice de Viabilidade de Projeto</CardTitle>
                         <CardDescription>IVP = (PDM/CE)/2</CardDescription>
                       </CardHeader>
                       <CardContent>
@@ -240,8 +240,8 @@ export function UCSCalculator() {
 
                     <Card>
                       <CardHeader>
-                        <CardTitle className="text-lg">PDM - Potencial Desflorestador</CardTitle>
-                        <CardDescription>PDM = VM + VUS + CRS</CardDescription>
+                        <CardTitle className="text-lg">PDM - Potencial Desflorestador Monetizado</CardTitle>
+                        <CardDescription>PDM = vMAD + vUS + cRS</CardDescription>
                       </CardHeader>
                       <CardContent>
                         <div className="text-2xl font-bold">
@@ -259,7 +259,7 @@ export function UCSCalculator() {
                     <CardContent className="space-y-4">
                       <div className="grid grid-cols-3 gap-4">
                         <div>
-                          <Label className="font-semibold">Valor da Madeira (VM)</Label>
+                          <Label className="font-semibold">vMAD (Valor da Madeira)</Label>
                           <div className="text-lg">{formatarValorMonetario(resultado.valorMadeira)}</div>
                           <div className="text-sm text-muted-foreground">
                             {resultado.detalhes.vm.fm3} m³ × {formatarValorMonetario(resultado.detalhes.vm.pm3mad)}
@@ -267,7 +267,7 @@ export function UCSCalculator() {
                         </div>
                         
                         <div>
-                          <Label className="font-semibold">Valor Uso do Solo (VUS)</Label>
+                          <Label className="font-semibold">vUS (Valor de uso do solo)</Label>
                           <div className="text-lg">{formatarValorMonetario(resultado.valorUsoSolo)}</div>
                           <div className="text-sm text-muted-foreground">
                             Com fator arrendamento 4,8%
@@ -275,7 +275,7 @@ export function UCSCalculator() {
                         </div>
                         
                         <div>
-                          <Label className="font-semibold">Custo Resp. Socioambiental (CRS)</Label>
+                          <Label className="font-semibold">cRS (custo da Responsabilidade socioambiental)</Label>
                           <div className="text-lg">{formatarValorMonetario(resultado.custoResponsabilidadeSocioambiental)}</div>
                           <div className="text-sm text-muted-foreground">
                             Carbono + Água

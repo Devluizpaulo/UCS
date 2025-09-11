@@ -81,10 +81,12 @@ export function calculateIndex(commodities: CommodityPriceData[], params: Formul
       const VMAD = (params.VOLUME_MADEIRA_HA * (preco_madeira_usd * taxa_usd_brl)) * params.FATOR_CONVERSAO_SERRADA_TORA;
 
       // --- 3. CRS (Custo da Responsabilidade Socioambiental) ---
-      // According to user: CRS = (Crédito_Carbono × fator_CC) + (Custo_Água × fator_água)
-      // Custo_Água is defined as 7% of VUS.
-      const valor_carbono = preco_carbono_brl * params.FATOR_CARBONO;
-      const valor_agua = VUS * params.fator_agua;
+      // CRS = CC + cH2O
+      // CC = CCc × tCo2(n) onde tCo2(n) = 2.59 unidades de Cc por hectare
+      // cH2O = FCH2O = 7% do PIB por hectare
+      const tCo2_por_hectare = 2.59;
+      const valor_carbono = preco_carbono_brl * tCo2_por_hectare * params.area_total;
+      const valor_agua = params.pib_por_hectare * params.fator_agua * params.area_total;
       const CRS = valor_carbono + valor_agua;
       
       // --- 4. UCS INDEX (Final Value) ---
