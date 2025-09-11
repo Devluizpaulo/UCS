@@ -231,8 +231,8 @@ export async function updateFirestoreUserPassword(userId: string, newPassword: s
     if (newPassword.length < 6 || newPassword.length > 8) {
       throw new Error('A nova senha deve ter entre 6 e 8 caracteres.');
     }
-    if (!/^[a-zA-Z0-9]+$/.test(newPassword)) {
-      throw new Error('A senha deve conter apenas letras e números.');
+    if (!/^[a-zA-Z]+$|^[0-9]+$|^[a-zA-Z0-9]+$/.test(newPassword)) {
+      throw new Error('A senha deve conter apenas letras, apenas números, ou letras e números.');
     }
 
     // Verificar se o usuário existe

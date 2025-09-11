@@ -16,9 +16,9 @@ import { getAuth, EmailAuthProvider, reauthenticateWithCredential, updatePasswor
 const passwordSchema = z.object({
   currentPassword: z.string().min(1, 'A senha atual é obrigatória.'),
   newPassword: z.string()
-    .min(6, 'A nova senha deve ter entre 6 e 8 caracteres alfanuméricos.')
-    .max(8, 'A nova senha deve ter entre 6 e 8 caracteres alfanuméricos.')
-    .regex(/^[a-zA-Z0-9]+$/, 'A senha deve conter apenas letras e números.'),
+    .min(6, 'A nova senha deve ter entre 6 e 8 caracteres.')
+    .max(8, 'A nova senha deve ter entre 6 e 8 caracteres.')
+    .regex(/^[a-zA-Z]+$|^[0-9]+$|^[a-zA-Z0-9]+$/, 'A senha deve conter apenas letras, apenas números, ou letras e números.'),
   confirmPassword: z.string(),
 }).refine((data) => data.newPassword === data.confirmPassword, {
   message: 'As senhas não coincidem.',
@@ -92,7 +92,7 @@ export function ChangePasswordForm() {
           Alterar Senha
         </CardTitle>
         <CardDescription>
-          A nova senha deve ter no mínimo 8 caracteres.
+          A nova senha deve ter entre 6 e 8 caracteres (apenas letras, apenas números, ou letras e números).
         </CardDescription>
       </CardHeader>
       <CardContent>
