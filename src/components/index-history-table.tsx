@@ -17,9 +17,10 @@ interface IndexHistoryTableProps {
     data?: ChartData[];
     loading?: boolean;
     isConfigured: boolean;
+    selectedDate?: string;
 }
 
-export function IndexHistoryTable({ data, loading, isConfigured }: IndexHistoryTableProps) {
+export function IndexHistoryTable({ data, loading, isConfigured, selectedDate }: IndexHistoryTableProps) {
   
   const renderContent = () => {
     if (loading) {

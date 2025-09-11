@@ -52,7 +52,7 @@ export function IndexHistoryCard({ selectedDate }: IndexHistoryCardProps) {
             </div>
           </div>
         ) : (
-          <IndexHistoryTable selectedDate={selectedDate} />
+          <IndexHistoryTable selectedDate={selectedDate} isConfigured={true} />
         )}
       </CardContent>
     </Card>
