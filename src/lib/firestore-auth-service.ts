@@ -220,7 +220,54 @@ export async function getFirestoreUsers(): Promise<Array<{
 }
 
 /**
- * Atualiza a senha do usuário após primeiro login
+ * Atualiza a senha do usuário com verificação da senha atual
+ */
+export async function updateUserPassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
+  try {
+    // Verificar se o usuário existe
+    const userDoc = await db.collection('users').doc(userId).get();
+    if (!userDoc.exists) {
+      throw new Error('Usuário não encontrado.');
+    }
+
+    const userData = userDoc.data() as FirestoreUser;
+
+    // Verificar senha atual
+    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, userData.passwordHash);
+    if (!isCurrentPasswordValid) {
+      throw new Error('A senha atual incorreta.');
+    }
+
+    // Validar nova senha
+    if (!newPassword || typeof newPassword !== 'string') {
+      throw new Error('A nova senha é obrigatória.');
+    }
+    if (newPassword.length < 6 || newPassword.length > 8) {
+      throw new Error('A nova senha deve ter entre 6 e 8 caracteres.');
+    }
+    if (!/^[a-zA-Z]+$|^[0-9]+$|^[a-zA-Z0-9]+$/.test(newPassword)) {
+      throw new Error('A senha deve conter apenas letras, apenas números, ou letras e números.');
+    }
+
+    // Hash da nova senha
+    const saltRounds = 12;
+    const newPasswordHash = await bcrypt.hash(newPassword, saltRounds);
+
+    // Atualizar no Firestore
+    const now = new Date().toISOString();
+    await db.collection('users').doc(userId).update({
+      passwordHash: newPasswordHash,
+      isFirstLogin: false, // Marcar como não sendo mais primeiro login
+      updatedAt: now
+    });
+
+  } catch (error: any) {
+    throw error;
+  }
+}
+
+/**
+ * Atualiza a senha do usuário após primeiro login (sem verificação de senha atual)
  */
 export async function updateFirestoreUserPassword(userId: string, newPassword: string): Promise<void> {
   try {

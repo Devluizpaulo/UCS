@@ -29,11 +29,10 @@ const passwordResetSchema = z.object({
 type PasswordResetFormData = z.infer<typeof passwordResetSchema>;
 
 interface FirstLoginPasswordResetProps {
-  userEmail: string;
   onPasswordChanged: () => void;
 }
 
-export function FirstLoginPasswordReset({ userEmail, onPasswordChanged }: FirstLoginPasswordResetProps) {
+export function FirstLoginPasswordReset({ onPasswordChanged }: FirstLoginPasswordResetProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -49,26 +48,25 @@ export function FirstLoginPasswordReset({ userEmail, onPasswordChanged }: FirstL
   const onSubmit = async (data: PasswordResetFormData) => {
     setIsLoading(true);
     
-    const user = auth.currentUser;
-    if (!user || !user.email) {
-        toast({ variant: 'destructive', title: 'Erro', description: 'Usuário não autenticado.' });
-        setIsLoading(false);
-        return;
-    }
-
     try {
-      // 1. Reautenticar no cliente para segurança
-      const credential = EmailAuthProvider.credential(user.email, data.currentPassword);
-      await reauthenticateWithCredential(user, credential);
+      // Chamar API para alterar senha no primeiro login
+      const response = await fetch('/api/auth/change-first-login-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          currentPassword: data.currentPassword,
+          newPassword: data.newPassword
+        })
+      });
 
-      // 2. Atualizar a senha no cliente
-      await updatePassword(user, data.newPassword);
-      
-      // 3. Chamar a Server Action para atualizar a claim
-      await completeFirstLogin(user.uid);
-      
-      // 4. Forçar a atualização do token para obter as novas claims
-      await user.getIdToken(true);
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Erro ao alterar senha');
+      }
 
       setPasswordChanged(true);
       
@@ -77,7 +75,7 @@ export function FirstLoginPasswordReset({ userEmail, onPasswordChanged }: FirstL
         description: 'Sua senha foi atualizada. Você será redirecionado para o painel.',
       });
 
-      // 5. Aguardar um pouco antes de redirecionar
+      // Aguardar um pouco antes de redirecionar
       setTimeout(() => {
         onPasswordChanged(); // Isso vai atualizar o estado no main-layout
       }, 2000);
