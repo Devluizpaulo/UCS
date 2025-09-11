@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
     } catch (error: any) {
       console.error('Erro ao alterar senha:', error);
       
-      if (error.message?.includes('senha atual incorreta')) {
+      if (error.message?.includes('senha atual está incorreta')) {
         return NextResponse.json(
           { error: 'A senha atual fornecida está incorreta' },
           { status: 400 }

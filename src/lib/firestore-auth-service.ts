@@ -235,7 +235,7 @@ export async function updateUserPassword(userId: string, currentPassword: string
     // Verificar senha atual
     const isCurrentPasswordValid = await bcrypt.compare(currentPassword, userData.passwordHash);
     if (!isCurrentPasswordValid) {
-      throw new Error('A senha atual incorreta.');
+      throw new Error('A senha atual está incorreta.');
     }
 
     // Validar nova senha
