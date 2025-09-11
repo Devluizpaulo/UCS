@@ -230,8 +230,14 @@ export async function getFirestoreUsers(): Promise<Array<{
 export async function updateFirestoreUserPassword(userId: string, newPassword: string): Promise<void> {
   try {
     // Validar nova senha
-    if (!newPassword || typeof newPassword !== 'string' || newPassword.length < 8) {
-      throw new Error('A nova senha deve ter pelo menos 8 caracteres.');
+    if (!newPassword || typeof newPassword !== 'string') {
+      throw new Error('A nova senha é obrigatória.');
+    }
+    if (newPassword.length < 6 || newPassword.length > 8) {
+      throw new Error('A nova senha deve ter entre 6 e 8 caracteres.');
+    }
+    if (!/^[a-zA-Z0-9]+$/.test(newPassword)) {
+      throw new Error('A senha deve conter apenas letras e números.');
     }
 
     // Verificar se o usuário existe

@@ -52,7 +52,7 @@ import { firebaseConfig } from '@/lib/firebase-config';
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from './ui/skeleton';
-import { FirstLoginPasswordReset } from './first-login-password-reset';
+
 import { Button } from './ui/button';
 
 
@@ -83,35 +83,49 @@ export function MainLayout({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isFirstLogin, setIsFirstLogin] = useState(false);
+
   const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
   const auth = getAuth(app);
   
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (currentUser) {
-        setUser(currentUser);
-        // CRÍTICO: Força a atualização do token para obter as claims mais recentes
-        const idTokenResult = await currentUser.getIdTokenResult(true);
-        const claims = idTokenResult.claims;
+    const checkAuth = async () => {
+      try {
+        // Verificar se existe cookie de autenticação
+        const response = await fetch('/api/auth/verify', {
+          method: 'GET',
+          credentials: 'include'
+        });
         
-        if (claims.isFirstLogin) {
-            setIsFirstLogin(true);
+        if (response.ok) {
+          const userData = await response.json();
+          // Simular um objeto user para compatibilidade
+          const mockUser = {
+            uid: userData.uid,
+            email: userData.email,
+            displayName: userData.displayName || userData.email,
+            emailVerified: true
+          } as FirebaseUser;
+          setUser(mockUser);
         } else {
-            setIsFirstLogin(false);
-        }
-      } else {
-        setIsFirstLogin(false);
-        setUser(null);
-        // Se não estiver na página de login, redireciona
-        if (pathname !== '/login') {
+          setUser(null);
+          // Se não estiver na página de login, redireciona
+          if (pathname !== '/login') {
             router.push('/login');
+          }
         }
+      } catch (error) {
+        console.error('Erro ao verificar autenticação:', error);
+        setUser(null);
+        if (pathname !== '/login') {
+          router.push('/login');
+        }
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
-    });
-    return () => unsubscribe();
-  }, [auth, router, pathname]);
+    };
+    
+    checkAuth();
+  }, [router, pathname]);
 
   const toggleTheme = () => {
     const html = document.documentElement;
@@ -121,7 +135,15 @@ export function MainLayout({ children }: { children: ReactNode }) {
 
   const handleLogout = async () => {
     try {
-      await signOut(auth);
+      // Limpar cookie JWT
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include'
+      });
+      
+      // Limpar estado local
+      setUser(null);
+      
       toast({
         title: 'Logout realizado',
         description: 'Você foi desconectado com sucesso.',
@@ -146,9 +168,7 @@ export function MainLayout({ children }: { children: ReactNode }) {
     return name[0].toUpperCase();
   }
 
-  const handlePasswordChanged = () => {
-    setIsFirstLogin(false);
-  };
+
 
   if (loading) {
     return (
@@ -173,14 +193,7 @@ export function MainLayout({ children }: { children: ReactNode }) {
     );
   }
 
-  if (isFirstLogin) {
-    return (
-      <FirstLoginPasswordReset 
-        userEmail={user.email || ''} 
-        onPasswordChanged={handlePasswordChanged}
-      />
-    );
-  }
+
 
   return (
       <SidebarProvider>

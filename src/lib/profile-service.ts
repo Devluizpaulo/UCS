@@ -146,8 +146,11 @@ export async function createUser(data: {
   if (!password) {
       throw new Error('A senha é obrigatória para criar um novo usuário.');
   }
-  if (password.length < 8) {
-      throw new Error('A senha deve ter pelo menos 8 caracteres.');
+  if (password.length < 6 || password.length > 8) {
+      throw new Error('A senha deve ter entre 6 e 8 caracteres.');
+  }
+  if (!/^[a-zA-Z0-9]+$/.test(password)) {
+      throw new Error('A senha deve conter apenas letras e números.');
   }
   
   try {

@@ -17,7 +17,9 @@ import { completeFirstLogin } from '@/lib/profile-service';
 const passwordResetSchema = z.object({
   currentPassword: z.string().min(1, 'Senha atual é obrigatória'),
   newPassword: z.string()
-    .min(8, 'A nova senha deve ter pelo menos 8 caracteres.'),
+    .min(6, 'A nova senha deve ter entre 6 e 8 caracteres alfanuméricos.')
+    .max(8, 'A nova senha deve ter entre 6 e 8 caracteres alfanuméricos.')
+    .regex(/^[a-zA-Z0-9]+$/, 'A senha deve conter apenas letras e números.'),
   confirmPassword: z.string().min(1, 'Confirmação de senha é obrigatória'),
 }).refine((data) => data.newPassword === data.confirmPassword, {
   message: 'As senhas não coincidem',
@@ -193,7 +195,7 @@ export function FirstLoginPasswordReset({ userEmail, onPasswordChanged }: FirstL
                   </p>
                 )}
                 <div className="text-xs text-muted-foreground">
-                  <p>A nova senha deve ter pelo menos 8 caracteres.</p>
+                  <p>A nova senha deve ter entre 6 e 8 caracteres alfanuméricos (apenas letras e números).</p>
                 </div>
               </div>
 

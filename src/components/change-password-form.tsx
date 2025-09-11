@@ -16,7 +16,9 @@ import { getAuth, EmailAuthProvider, reauthenticateWithCredential, updatePasswor
 const passwordSchema = z.object({
   currentPassword: z.string().min(1, 'A senha atual é obrigatória.'),
   newPassword: z.string()
-    .min(8, 'A nova senha deve ter pelo menos 8 caracteres.'),
+    .min(6, 'A nova senha deve ter entre 6 e 8 caracteres alfanuméricos.')
+    .max(8, 'A nova senha deve ter entre 6 e 8 caracteres alfanuméricos.')
+    .regex(/^[a-zA-Z0-9]+$/, 'A senha deve conter apenas letras e números.'),
   confirmPassword: z.string(),
 }).refine((data) => data.newPassword === data.confirmPassword, {
   message: 'As senhas não coincidem.',
