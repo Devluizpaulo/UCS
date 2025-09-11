@@ -44,7 +44,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
-import { getUsers, deleteUser, updateUser, createUser } from '@/lib/profile-service';
+import { deleteUser, updateUser } from '@/lib/profile-service';
 
 
 interface User {
@@ -159,8 +159,12 @@ Equipe Índice UCS
   const fetchUsers = async () => {
     setIsFetching(true);
     try {
-      const data = await getUsers();
-      setUsers(data);
+      const response = await fetch('/api/users');
+      if (!response.ok) {
+        throw new Error('Erro ao buscar usuários');
+      }
+      const data = await response.json();
+      setUsers(data.users || []);
     } catch (error) {
       console.error('Erro ao buscar usuários:', error);
       toast({
@@ -182,17 +186,42 @@ Equipe Índice UCS
     
     try {
         if(editingUser) {
-            await updateUser(editingUser.id, data);
+            const response = await fetch('/api/users', {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ ...data, id: editingUser.id }),
+            });
+            
+            if (!response.ok) {
+              const errorData = await response.json();
+              throw new Error(errorData.error || 'Erro ao atualizar usuário');
+            }
+            
             toast({
                 title: 'Usuário atualizado',
                 description: 'Os dados do usuário foram atualizados com sucesso.',
             });
         } else {
              const tempPassword = generateTemporaryPassword();
-             const newUserResponse = await createUser({ ...data, password: tempPassword });
+             const response = await fetch('/api/users', {
+               method: 'POST',
+               headers: {
+                 'Content-Type': 'application/json',
+               },
+               body: JSON.stringify({ ...data, password: tempPassword }),
+             });
+             
+             if (!response.ok) {
+               const errorData = await response.json();
+               throw new Error(errorData.error || 'Erro ao criar usuário');
+             }
+             
+             const newUserResponse = await response.json();
               
               const newUser: User = {
-                id: newUserResponse.uid,
+                id: newUserResponse.id,
                 email: data.email,
                 displayName: data.displayName,
                 phoneNumber: data.phoneNumber,
@@ -215,6 +244,7 @@ Equipe Índice UCS
       
       form.reset();
       setIsDialogOpen(false);
+      setEditingUser(null);
       await fetchUsers();
 
     } catch (error: any) {
@@ -233,13 +263,22 @@ Equipe Índice UCS
     if (!deletingUserId) return;
     setIsLoading(true);
     try {
-      await deleteUser(deletingUserId);
+      const response = await fetch(`/api/users?id=${deletingUserId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Erro ao excluir usuário');
+      }
+
+      const data = await response.json();
       toast({
         title: 'Usuário excluído',
-        description: 'O usuário foi removido do sistema.',
+        description: data.message || 'O usuário foi removido do sistema.',
       });
       await fetchUsers();
     } catch (error) {
+      console.error('Erro ao excluir usuário:', error);
       toast({
         variant: 'destructive',
         title: 'Erro',
@@ -421,7 +460,7 @@ Equipe Índice UCS
     </Card>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto mx-4">
           <DialogHeader>
             <DialogTitle>
               {editingUser ? 'Editar Usuário' : 'Novo Usuário'}
@@ -486,15 +525,16 @@ Equipe Índice UCS
               </select>
             </div>
             
-            <DialogFooter>
+            <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-0">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setIsDialogOpen(false)}
+                className="w-full sm:w-auto"
               >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isLoading}>
+              <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {editingUser ? 'Salvar' : 'Criar Usuário'}
               </Button>

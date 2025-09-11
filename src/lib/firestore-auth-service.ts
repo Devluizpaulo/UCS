@@ -89,8 +89,6 @@ export async function createFirestoreUser(data: {
     // Salvar no Firestore
     await db.collection('users').doc(userId).set(userData);
 
-    console.log(`[Firestore Auth] Usuário criado com sucesso: ${email}`);
-
     // Retornar dados seguros
     return {
       uid: userId,
@@ -99,7 +97,6 @@ export async function createFirestoreUser(data: {
     };
 
   } catch (error: any) {
-    console.error('[Firestore Auth] Erro ao criar usuário:', error);
     
     if (error.message.includes('já está em uso') || 
         error.message.includes('inválido') || 
@@ -174,7 +171,6 @@ export async function authenticateFirestoreUser(email: string, password: string)
     };
 
   } catch (error: any) {
-    console.error('[Firestore Auth] Erro na autenticação:', error);
     
     // Re-propagar erros específicos (como conta desativada)
     if (error.message?.includes('desativada')) {
@@ -219,7 +215,6 @@ export async function getFirestoreUsers(): Promise<Array<{
       };
     });
   } catch (error: any) {
-    console.error('[Firestore Auth] Erro ao listar usuários:', error);
     throw new Error('Erro ao carregar lista de usuários.');
   }
 }
@@ -258,9 +253,9 @@ export async function updateFirestoreUserPassword(userId: string, newPassword: s
       updatedAt: now
     });
 
-    console.log(`[Firestore Auth] Senha atualizada para usuário: ${userId}`);
+
   } catch (error: any) {
-    console.error('[Firestore Auth] Erro ao atualizar senha:', error);
+
     throw error;
   }
 }
@@ -283,9 +278,9 @@ export async function toggleFirestoreUserStatus(userId: string, isActive: boolea
       updatedAt: now
     });
 
-    console.log(`[Firestore Auth] Status do usuário ${userId} alterado para: ${isActive ? 'ativo' : 'inativo'}`);
+
   } catch (error: any) {
-    console.error('[Firestore Auth] Erro ao alterar status do usuário:', error);
+
     throw error;
   }
 }
@@ -326,7 +321,6 @@ export async function getFirestoreUserById(userId: string): Promise<{
       updatedAt: data.updatedAt
     };
   } catch (error: any) {
-    console.error('[Firestore Auth] Erro ao buscar usuário:', error);
     return null;
   }
 }

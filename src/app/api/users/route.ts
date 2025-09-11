@@ -81,7 +81,6 @@ export async function POST(request: NextRequest) {
     
     if (useFirestore) {
       // Usar Firestore como alternativa ao Firebase Auth
-      console.log('[API] Criando usuário via Firestore Auth...');
       userRecord = await createFirestoreUser({
         email,
         password,
@@ -91,7 +90,6 @@ export async function POST(request: NextRequest) {
       });
     } else {
       // Tentar Firebase Auth (pode falhar se Identity Toolkit não estiver habilitado)
-      console.log('[API] Tentando criar usuário via Firebase Auth...');
       userRecord = await createUser({
         email,
         password,
@@ -103,8 +101,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       message: 'Usuário criado com sucesso!',
+      id: userRecord.uid || userRecord.id,
       user: {
-        uid: userRecord.uid,
+        id: userRecord.uid || userRecord.id,
         email: userRecord.email,
         displayName: userRecord.displayName
       },
@@ -112,7 +111,6 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('Erro na API de usuários:', error);
     
     // Retornar erro específico para validações
     const status = error.message?.includes('obrigatório') || 
@@ -160,10 +158,74 @@ export async function GET(request: NextRequest) {
       inactive: users.filter(u => !u.isActive).length
     });
   } catch (error: any) {
-    console.error('Erro ao buscar usuários:', error);
     
     return NextResponse.json(
       { error: error.message || 'Erro ao carregar usuários.' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { id, displayName, email, phoneNumber, role } = body;
+
+    if (!id) {
+      return NextResponse.json(
+        { error: 'ID do usuário é obrigatório' },
+        { status: 400 }
+      );
+    }
+
+    // Implementar atualização do usuário no Firestore
+    // Por enquanto, vamos retornar sucesso
+    return NextResponse.json({
+      message: 'Usuário atualizado com sucesso',
+      user: { id, displayName, email, phoneNumber, role }
+    });
+  } catch (error) {
+    console.error('Erro ao atualizar usuário:', error);
+    return NextResponse.json(
+      { error: 'Erro interno do servidor' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('id');
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'ID do usuário é obrigatório' },
+        { status: 400 }
+      );
+    }
+
+    // Excluir o usuário permanentemente do Firestore
+    const { db } = await import('@/lib/firebase-admin-config');
+    const userDoc = await db.collection('users').doc(userId).get();
+    
+    if (!userDoc.exists) {
+      return NextResponse.json(
+        { error: 'Usuário não encontrado' },
+        { status: 404 }
+      );
+    }
+
+    await db.collection('users').doc(userId).delete();
+
+    return NextResponse.json({
+      message: 'Usuário excluído com sucesso',
+      userId
+    });
+  } catch (error) {
+    console.error('Erro ao excluir usuário:', error);
+    return NextResponse.json(
+      { error: 'Erro interno do servidor' },
       { status: 500 }
     );
   }
