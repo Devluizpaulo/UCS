@@ -1,4 +1,5 @@
 
+
 /**
  * @fileOverview A pure, synchronous service for performing UCS Index calculations.
  * This file should NOT be marked with 'use server' as it contains only calculation logic
@@ -63,17 +64,19 @@ export function calculateIndex(commodities: CommodityPriceData[], params: Formul
   
       // --- Price Conversions ---
       const preco_soja_saca_brl = preco_soja_saca_usd * taxa_usd_brl;
-      const preco_milho_ton_brl = preco_milho_saca_brl * (1000 / 60);
-      const preco_soja_ton_brl = preco_soja_saca_brl * (1000 / 60);
+      // Convert price per 60kg saca to price per 1000kg (ton)
+      const preco_milho_ton_brl = (preco_milho_saca_brl / 60) * 1000;
+      const preco_soja_ton_brl = (preco_soja_saca_brl / 60) * 1000;
       const preco_carbono_brl = preco_carbono_eur * taxa_eur_brl;
 
       // --- 1. VUS (Valor de Uso do Solo) ---
+      // Renda = Produtividade (em @, ton, etc.) * Preço (na mesma unidade)
       const renda_pecuaria = params.PROD_BOI * preco_boi_arroba_brl;
       const renda_milho = params.PROD_MILHO * preco_milho_ton_brl;
       const renda_soja = params.PROD_SOJA * preco_soja_ton_brl;
       
       const renda_bruta_ponderada = (renda_pecuaria * params.PESO_PEC) + (renda_milho * params.PESO_MILHO) + (renda_soja * params.PESO_SOJA);
-      const VUS = renda_bruta_ponderada / params.FATOR_ARREND;
+      const VUS = renda_bruta_ponderada * params.FATOR_ARREND;
       
       // --- 2. VMAD (Valor da Madeira) ---
       // According to user: VMAD = (Fator_m3 × preço_madeira) × fator_conversão
@@ -90,7 +93,19 @@ export function calculateIndex(commodities: CommodityPriceData[], params: Formul
       const CRS = valor_carbono + valor_agua;
       
       // --- 4. UCS INDEX (Final Value) ---
-      const ucsValue = VUS + VMAD + CRS;
+      // Based on LOGICA_FORMULA_UCS.md
+      // PDM = Potencial Desflorestador Monetizado = vMAD + vUS + cRS
+      const PDM = VMAD + VUS + CRS;
+      // CE = Carbono Estocado em equivalência à tCO2 = produtividade_carbono × area_total
+      const CE = params.produtividade_carbono * params.area_total;
+      if (CE === 0) {
+        console.error('[LOG] Carbono Estocado (CE) is zero. Division by zero would occur. Aborting calculation.');
+        return { ...defaultResult, isConfigured: true };
+      }
+      // IVP = Índice de Viabilidade de Projeto = (PDM / CE) / 2
+      const IVP = (PDM / CE) / 2;
+      // UCS = FATOR_UCS × IVP
+      const ucsValue = params.fator_ucs * IVP;
   
       if (!isFinite(ucsValue)) {
           console.error('[LOG] UCS calculation resulted in a non-finite number. Returning default.');
@@ -98,7 +113,7 @@ export function calculateIndex(commodities: CommodityPriceData[], params: Formul
       }
   
       return { 
-          indexValue: parseFloat(ucsValue.toFixed(2)),
+          indexValue: parseFloat(ucsValue.toFixed(4)), // Increased precision
           isConfigured: params.isConfigured,
           components: {
               vm: parseFloat(VMAD.toFixed(2)),
@@ -106,9 +121,9 @@ export function calculateIndex(commodities: CommodityPriceData[], params: Formul
               crs: parseFloat(CRS.toFixed(2)),
           },
           vusDetails: {
-              pecuaria: parseFloat((renda_pecuaria / params.FATOR_ARREND).toFixed(2)),
-              milho: parseFloat((renda_milho / params.FATOR_ARREND).toFixed(2)),
-              soja: parseFloat((renda_soja / params.FATOR_ARREND).toFixed(2)),
+              pecuaria: parseFloat((renda_pecuaria * params.PESO_PEC * params.FATOR_ARREND).toFixed(2)),
+              milho: parseFloat((renda_milho * params.PESO_MILHO * params.FATOR_ARREND).toFixed(2)),
+              soja: parseFloat((renda_soja * params.PESO_SOJA * params.FATOR_ARREND).toFixed(2)),
           }
       };
 }
