@@ -8,17 +8,18 @@ import {
     DialogTitle,
     DialogDescription,
 } from '@/components/ui/dialog';
+import { AreaChart as AreaChartIcon, Table, Loader2 } from 'lucide-react';
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import type { CommodityPriceData, ChartData, FirestoreQuote } from '@/lib/types';
-import { Loader2 } from 'lucide-react';
 import { useEffect, useState, useCallback } from 'react';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
+import { Table as UiTable, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { ScrollArea } from './ui/scroll-area';
 import { getCotacoesHistorico } from '@/lib/data-service';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/currency-service';
 import { Skeleton } from './ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 
 
 interface AssetDetailModalProps {
@@ -88,175 +89,64 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose, selectedD
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-6xl max-h-[95vh] w-[95vw] flex flex-col">
-                <DialogHeader>
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                        <div className="flex-1">
-                            <DialogTitle className="flex items-center gap-3 text-lg sm:text-xl">
-                                <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-muted">
-                                    <Icon className="h-4 w-4 sm:h-6 sm:w-6 text-muted-foreground" />
-                                </div>
-                                <span className="truncate">{asset.name} ({asset.ticker})</span>
-                            </DialogTitle>
-                            <DialogDescription className="mt-2 text-sm">
-                                Análise detalhada do histórico de preços para {asset.name}. Fonte: n8n.
-                            </DialogDescription>
+            <DialogContent className="sm:max-w-4xl max-h-[90vh] w-[95vw] flex flex-col p-0">
+                <DialogHeader className="p-6 pb-4">
+                    <DialogTitle className="flex items-center gap-3 text-lg sm:text-xl">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+                            <Icon className="h-5 w-5 text-muted-foreground" />
                         </div>
-                    </div>
+                        <span className="truncate">{asset.name} ({asset.ticker})</span>
+                    </DialogTitle>
+                    <DialogDescription>
+                        Análise detalhada do histórico de preços para {asset.name}. Fonte: n8n.
+                    </DialogDescription>
                 </DialogHeader>
-
-                <ScrollArea className="flex-1 pr-6 -mr-6">
-                    <div className="flex flex-col gap-6 flex-1 min-h-0">
-                        {/* Price Section */}
-                        <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-                            <span className="text-3xl sm:text-4xl font-bold text-primary">{formatCurrency(asset.price, asset.currency)}</span>
-                            <div className={cn("flex items-baseline gap-2 text-base sm:text-lg font-semibold", asset.absoluteChange >= 0 ? "text-primary" : "text-destructive")}>
-                                <span>{asset.absoluteChange >= 0 ? '+' : ''}{asset.absoluteChange.toFixed(4)}</span>
-                                <span>({asset.change >= 0 ? '+' : ''}{asset.change.toFixed(2)}%)</span>
-                            </div>
-                            <span className="text-xs text-muted-foreground">{asset.lastUpdated}</span>
+                
+                <div className="px-6 pb-4 border-b">
+                     <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+                        <span className="text-3xl sm:text-4xl font-bold text-primary">{formatCurrency(asset.price, asset.currency)}</span>
+                        <div className={cn("flex items-baseline gap-2 text-base sm:text-lg font-semibold", asset.absoluteChange >= 0 ? "text-primary" : "text-destructive")}>
+                            <span>{asset.absoluteChange >= 0 ? '+' : ''}{asset.absoluteChange.toFixed(4)}</span>
+                            <span>({asset.change >= 0 ? '+' : ''}{asset.change.toFixed(2)}%)</span>
                         </div>
+                        <span className="text-xs text-muted-foreground">{asset.lastUpdated}</span>
+                    </div>
+                </div>
 
-                        {/* Mobile Layout - Cards */}
-                        <div className="block md:hidden space-y-4">
-                            {/* Chart Card */}
-                            <div className="rounded-lg border bg-gradient-to-br from-background to-muted/10 p-4">
-                                <h3 className="text-lg font-semibold mb-3 text-foreground">Gráfico de Preços</h3>
-                                {loading ? (
-                                    <div className="h-[200px] w-full flex items-center justify-center">
-                                        <div className="flex flex-col items-center gap-3">
-                                            <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                                            <p className="text-sm text-muted-foreground">Carregando...</p>
+                <div className="flex-1 min-h-0 overflow-hidden">
+                    <Tabs defaultValue="chart" className="flex flex-col md:flex-row h-full">
+                        <TabsList className="flex md:flex-col md:h-full md:w-48 bg-transparent p-4 border-r">
+                           <TabsTrigger value="chart" className="w-full justify-start gap-2">
+                               <AreaChartIcon className="h-4 w-4"/> Gráfico de Preços
+                           </TabsTrigger>
+                           <TabsTrigger value="history" className="w-full justify-start gap-2">
+                               <Table className="h-4 w-4"/> Cotações Históricas
+                           </TabsTrigger>
+                        </TabsList>
+                        
+                        <div className="flex-1 p-4 md:p-6 min-h-0">
+                            <TabsContent value="chart" className="h-full m-0">
+                                <div className="h-full w-full">
+                                    {loading ? (
+                                        <div className="h-full w-full flex items-center justify-center">
+                                             <Loader2 className="h-8 w-8 animate-spin text-primary" />
                                         </div>
-                                    </div>
-                                ) : chartData.length === 0 ? (
-                                    <div className="h-[200px] w-full flex items-center justify-center">
-                                        <div className="flex flex-col items-center gap-2 text-center">
-                                            <Icon className="h-8 w-8 text-muted-foreground" />
-                                            <p className="text-sm text-muted-foreground">Sem dados</p>
+                                    ) : chartData.length === 0 ? (
+                                        <div className="h-full w-full flex items-center justify-center text-muted-foreground text-sm">
+                                            Sem dados para exibir o gráfico.
                                         </div>
-                                    </div>
-                                ) : (
-                                    <div className="h-[200px] w-full">
+                                    ) : (
                                         <ChartContainer config={chartConfig} className="w-full h-full">
-                                            <ResponsiveContainer width="100%" height="100%">
-                                                <AreaChart data={chartData} margin={{ left: 10, right: 10, top: 10, bottom: 10 }}>
-                                                    <defs>
-                                                        <linearGradient id="colorValueMobile" x1="0" y1="0" x2="0" y2="1">
-                                                            <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8}/>
-                                                            <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.1}/>
-                                                        </linearGradient>
-                                                    </defs>
-                                                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted-foreground))" strokeOpacity={0.2} vertical={false} />
-                                                    <XAxis dataKey="time" hide />
-                                                    <YAxis hide />
-                                                    <Tooltip 
-                                                        cursor={{ stroke: 'hsl(var(--primary))', strokeWidth: 1 }} 
-                                                        content={<ChartTooltipContent 
-                                                            indicator="dot" 
-                                                            formatter={(value) => [formatCurrency(Number(value), asset.currency), 'Cotação']} 
-                                                            labelFormatter={(label) => `Data: ${label}`}
-                                                        />} 
-                                                    />
-                                                    <Area 
-                                                        dataKey="value" 
-                                                        type="monotone" 
-                                                        fill="url(#colorValueMobile)" 
-                                                        stroke="hsl(var(--primary))" 
-                                                        strokeWidth={2}
-                                                        dot={false}
-                                                        activeDot={{ r: 4, stroke: 'hsl(var(--primary))', strokeWidth: 2, fill: 'hsl(var(--background))' }}
-                                                    />
-                                                </AreaChart>
-                                            </ResponsiveContainer>
-                                        </ChartContainer>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Historical Data Card */}
-                            <div className="rounded-lg border bg-gradient-to-br from-background to-muted/5 overflow-hidden">
-                                <div className="p-4 border-b bg-gradient-to-r from-muted/95 to-muted/90">
-                                    <h3 className="text-lg font-semibold text-foreground">Cotações Históricas</h3>
-                                    <p className="text-xs text-muted-foreground mt-1">Últimos 30 dias</p>
-                                </div>
-                                <ScrollArea className="h-64">
-                                    <div className="p-2">
-                                        {loading ? (
-                                            Array.from({ length: 5 }).map((_, i) => (
-                                                <div key={i} className="flex justify-between items-center p-3 border-b border-border/30">
-                                                    <Skeleton className="h-4 w-16" />
-                                                    <Skeleton className="h-4 w-20" />
-                                                </div>
-                                            ))
-                                        ) : historicalData.length === 0 ? (
-                                            <div className="text-center py-8">
-                                                <Icon className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                                                <p className="text-sm text-muted-foreground">Nenhum dado disponível</p>
-                                            </div>
-                                        ) : (
-                                            historicalData.slice(0, 10).map((dataPoint, index) => (
-                                                <div key={dataPoint.id} className="flex justify-between items-center p-3 border-b border-border/30 hover:bg-muted/20">
-                                                    <div>
-                                                        <p className="text-sm font-medium text-foreground">
-                                                            {dataPoint.data || new Date(dataPoint.timestamp).toLocaleDateString('pt-BR')}
-                                                        </p>
-                                                        <p className="text-xs text-muted-foreground">Fechamento</p>
-                                                    </div>
-                                                    <div className="text-right">
-                                                        <p className="text-sm font-semibold text-primary">
-                                                            {formatCurrency(dataPoint.ultimo, asset.currency)}
-                                                        </p>
-                                                        <div className="flex gap-2 text-xs">
-                                                            <span className="text-green-600">↑{formatCurrency(dataPoint.maxima, asset.currency)}</span>
-                                                            <span className="text-red-600">↓{formatCurrency(dataPoint.minima, asset.currency)}</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ))
-                                        )}
-                                    </div>
-                                </ScrollArea>
-                            </div>
-                        </div>
-
-                        {/* Desktop/Tablet Layout - Two Columns */}
-                        <div className="hidden md:grid md:grid-cols-2 gap-6">
-                            {/* Chart Column */}
-                            <div className="space-y-4">
-                                <h3 className="text-lg font-semibold text-foreground">Gráfico de Preços</h3>
-                                {loading ? (
-                                    <div className="h-[250px] w-full flex items-center justify-center rounded-lg border bg-gradient-to-br from-background to-muted/20">
-                                        <div className="flex flex-col items-center gap-3">
-                                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                                            <p className="text-sm text-muted-foreground font-medium">Carregando dados históricos...</p>
-                                        </div>
-                                    </div>
-                                ) : chartData.length === 0 ? (
-                                    <div className="h-[250px] w-full flex items-center justify-center rounded-lg border bg-gradient-to-br from-background to-muted/20">
-                                        <div className="flex flex-col items-center gap-3 text-center">
-                                            <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
-                                                <Icon className="h-6 w-6 text-muted-foreground" />
-                                            </div>
-                                            <div>
-                                                <p className="text-sm font-medium text-foreground">Nenhum dado disponível</p>
-                                                <p className="text-xs text-muted-foreground mt-1">Não há dados históricos para exibir</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="h-[250px] w-full rounded-lg border bg-gradient-to-br from-background to-muted/10 p-4">
-                                        <ChartContainer config={chartConfig} className="w-full h-full">
-                                            <ResponsiveContainer width="100%" height="100%">
-                                                <AreaChart data={chartData} margin={{ left: 15, right: 15, top: 15, bottom: 15 }}>
+                                            <ResponsiveContainer>
+                                                <AreaChart data={chartData} margin={{ left: 5, right: 20, top: 10, bottom: 10 }}>
                                                     <defs>
                                                         <linearGradient id="colorValueDesktop" x1="0" y1="0" x2="0" y2="1">
-                                                            <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8}/>
-                                                            <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.1}/>
+                                                            <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.4}/>
+                                                            <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.05}/>
                                                         </linearGradient>
                                                     </defs>
                                                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted-foreground))" strokeOpacity={0.2} vertical={false} />
-                                                    <XAxis 
+                                                     <XAxis 
                                                         dataKey="time" 
                                                         tickLine={false} 
                                                         axisLine={false} 
@@ -275,7 +165,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose, selectedD
                                                         tickFormatter={(value) => formatCurrency(Number(value), asset.currency)}
                                                     />
                                                     <Tooltip 
-                                                        cursor={{ stroke: 'hsl(var(--primary))', strokeWidth: 1, strokeDasharray: '5 5' }} 
+                                                        cursor={{ stroke: 'hsl(var(--primary))', strokeWidth: 1, strokeDasharray: '3 3' }} 
                                                         content={<ChartTooltipContent 
                                                             indicator="dot" 
                                                             formatter={(value) => [formatCurrency(Number(value), asset.currency), 'Cotação']} 
@@ -288,96 +178,60 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose, selectedD
                                                         fill="url(#colorValueDesktop)" 
                                                         stroke="hsl(var(--primary))" 
                                                         strokeWidth={2}
-                                                        dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 3 }}
-                                                        activeDot={{ r: 5, stroke: 'hsl(var(--primary))', strokeWidth: 2, fill: 'hsl(var(--background))' }}
+                                                        dot={false}
+                                                        activeDot={{ r: 4, stroke: 'hsl(var(--primary))', strokeWidth: 2, fill: 'hsl(var(--background))' }}
                                                     />
                                                 </AreaChart>
                                             </ResponsiveContainer>
                                         </ChartContainer>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Historical Data Column */}
-                            <div className="flex flex-col">
-                                <div className="flex items-center justify-between mb-4">
-                                    <h3 className="text-lg font-semibold text-foreground">Cotações Históricas</h3>
-                                    <div className="text-xs text-muted-foreground bg-muted/50 px-3 py-1 rounded-full">
-                                        Últimos 30 dias
-                                    </div>
+                                    )}
                                 </div>
-                                <div className="rounded-lg border bg-gradient-to-br from-background to-muted/5 overflow-hidden shadow-sm">
-                                    <ScrollArea className="h-[250px] w-full">
-                                        <div className="min-w-[400px]">
-                                            <Table>
-                                                <TableHeader className="sticky top-0 bg-gradient-to-r from-muted/95 to-muted/90 backdrop-blur-sm z-10 border-b">
-                                                    <TableRow className="hover:bg-transparent">
-                                                        <TableHead className="w-[80px] text-xs font-semibold text-foreground">Data</TableHead>
-                                                        <TableHead className="text-right text-xs min-w-[80px] font-semibold text-foreground">Fechamento</TableHead>
-                                                        <TableHead className="text-right text-xs min-w-[70px] font-semibold text-foreground">Máx</TableHead>
-                                                        <TableHead className="text-right text-xs min-w-[70px] font-semibold text-foreground">Mín</TableHead>
+                            </TabsContent>
+                            <TabsContent value="history" className="h-full m-0">
+                                 <ScrollArea className="h-full w-full">
+                                    <UiTable>
+                                        <TableHeader className="sticky top-0 bg-background z-10">
+                                            <TableRow>
+                                                <TableHead className="w-[100px]">Data</TableHead>
+                                                <TableHead className="text-right">Fechamento</TableHead>
+                                                <TableHead className="text-right">Máxima</TableHead>
+                                                <TableHead className="text-right">Mínima</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {loading ? (
+                                                Array.from({ length: 10 }).map((_, i) => (
+                                                    <TableRow key={i}>
+                                                        <TableCell><Skeleton className="h-4 w-20"/></TableCell>
+                                                        <TableCell><Skeleton className="h-4 w-24 ml-auto"/></TableCell>
+                                                        <TableCell><Skeleton className="h-4 w-24 ml-auto"/></TableCell>
+                                                        <TableCell><Skeleton className="h-4 w-24 ml-auto"/></TableCell>
                                                     </TableRow>
-                                                </TableHeader>
-                                                <TableBody>
-                                                    {loading ? (
-                                                        Array.from({ length: 6 }).map((_, i) => (
-                                                            <TableRow key={i} className="hover:bg-muted/30">
-                                                                <TableCell className="py-2">
-                                                                    <Skeleton className="h-3 w-16 rounded" />
-                                                                </TableCell>
-                                                                <TableCell className="text-right py-2">
-                                                                    <Skeleton className="h-3 w-16 ml-auto rounded" />
-                                                                </TableCell>
-                                                                <TableCell className="text-right py-2">
-                                                                    <Skeleton className="h-3 w-14 ml-auto rounded" />
-                                                                </TableCell>
-                                                                <TableCell className="text-right py-2">
-                                                                    <Skeleton className="h-3 w-14 ml-auto rounded" />
-                                                                </TableCell>
-                                                            </TableRow>
-                                                        ))
-                                                    ) : historicalData.length === 0 ? (
-                                                        <TableRow>
-                                                            <TableCell colSpan={4} className="text-center py-8">
-                                                                <div className="flex flex-col items-center gap-2">
-                                                                    <Icon className="h-8 w-8 text-muted-foreground" />
-                                                                    <div>
-                                                                        <p className="text-sm font-medium text-foreground">Nenhum dado histórico</p>
-                                                                        <p className="text-xs text-muted-foreground mt-1">Não há cotações disponíveis</p>
-                                                                    </div>
-                                                                </div>
-                                                            </TableCell>
-                                                        </TableRow>
-                                                    ) : (
-                                                        historicalData.map((dataPoint, index) => (
-                                                            <TableRow key={dataPoint.id} className="hover:bg-muted/20 transition-colors border-b border-border/50">
-                                                                <TableCell className="font-medium text-xs py-2 text-foreground">
-                                                                    {dataPoint.data || new Date(dataPoint.timestamp).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
-                                                                </TableCell>
-                                                                <TableCell className="text-right font-mono text-xs py-2 font-semibold text-primary">
-                                                                    {formatCurrency(dataPoint.ultimo, asset.currency)}
-                                                                </TableCell>
-                                                                <TableCell className="text-right font-mono text-xs py-2 text-green-600 dark:text-green-400">
-                                                                    {formatCurrency(dataPoint.maxima, asset.currency)}
-                                                                </TableCell>
-                                                                <TableCell className="text-right font-mono text-xs py-2 text-red-600 dark:text-red-400">
-                                                                    {formatCurrency(dataPoint.minima, asset.currency)}
-                                                                </TableCell>
-                                                            </TableRow>
-                                                        ))
-                                                    )}
-                                                </TableBody>
-                                            </Table>
-                                        </div>
-                                    </ScrollArea>
-                                </div>
-                            </div>
+                                                ))
+                                            ) : historicalData.length > 0 ? (
+                                                historicalData.map((dataPoint) => (
+                                                    <TableRow key={dataPoint.id}>
+                                                        <TableCell className="font-medium">{dataPoint.data}</TableCell>
+                                                        <TableCell className="text-right font-mono text-primary">{formatCurrency(dataPoint.ultimo, asset.currency)}</TableCell>
+                                                        <TableCell className="text-right font-mono text-green-500">{formatCurrency(dataPoint.maxima, asset.currency)}</TableCell>
+                                                        <TableCell className="text-right font-mono text-destructive">{formatCurrency(dataPoint.minima, asset.currency)}</TableCell>
+                                                    </TableRow>
+                                                ))
+                                            ) : (
+                                                <TableRow>
+                                                    <TableCell colSpan={4} className="h-24 text-center">
+                                                        Nenhum dado histórico encontrado.
+                                                    </TableCell>
+                                                </TableRow>
+                                            )}
+                                        </TableBody>
+                                    </UiTable>
+                                </ScrollArea>
+                            </TabsContent>
                         </div>
-                    </div>
-                </ScrollArea>
+                    </Tabs>
+                </div>
             </DialogContent>
         </Dialog>
-
-
     );
 }
