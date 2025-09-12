@@ -21,10 +21,11 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { getAuth, signInWithCustomToken } from 'firebase/auth';
 
 const loginSchema = z.object({
   email: z.string().email('Por favor, insira um e-mail válido.'),
-  password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres.'),
+  password: z.string().min(8, 'A senha deve ter pelo menos 8 caracteres.'),
 });
 
 const adminSchema = z.object({
@@ -43,8 +44,6 @@ export default function LoginPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
-  
-  // Usar sistema de autenticação customizado
 
   const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -66,13 +65,18 @@ export default function LoginPage() {
       const result = await response.json();
 
       if (response.ok) {
+        // Use o firebaseToken para logar no Firebase SDK do cliente
+        const auth = getAuth();
+        await signInWithCustomToken(auth, result.firebaseToken);
+        
         toast({
           title: 'Login bem-sucedido',
           description: 'Carregando painel...',
         });
-        setTimeout(() => {
-          router.push('/');
-        }, 1000);
+
+        // O onAuthStateChanged no MainLayout irá redirecionar
+        router.push('/');
+
       } else {
         throw new Error(result.error || 'Erro no login');
       }
@@ -93,7 +97,7 @@ export default function LoginPage() {
       const response = await fetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...data, useFirestore: true }),
+        body: JSON.stringify({ ...data, role: 'admin' }),
       });
 
       if (!response.ok) {
@@ -107,7 +111,6 @@ export default function LoginPage() {
       });
       setIsModalOpen(false);
       adminForm.reset();
-      // Auto-fill login form
       loginForm.setValue('email', data.email);
     } catch (error: any) {
       toast({
@@ -223,11 +226,11 @@ export default function LoginPage() {
                   )}
                 </Button>
               </form>
-             {/* suspenso <div className="mt-4 text-center text-sm">
+             <div className="mt-4 text-center text-sm">
                 <Button variant="link" className="text-muted-foreground" onClick={() => setIsModalOpen(true)}>
                   Criar Conta de Administrador
                 </Button>
-              </div>*/}
+              </div>
             </div>
           </div>
         </div>
@@ -277,3 +280,5 @@ export default function LoginPage() {
     </>
   );
 }
+
+    

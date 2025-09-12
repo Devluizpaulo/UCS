@@ -18,7 +18,7 @@ const passwordSchema = z.object({
   newPassword: z.string()
     .min(6, 'A nova senha deve ter entre 6 e 8 caracteres.')
     .max(8, 'A nova senha deve ter entre 6 e 8 caracteres.')
-    .regex(/^[a-zA-Z]+$|^[0-9]+$|^[a-zA-Z0-9]+$/, 'A senha deve conter apenas letras, apenas números, ou letras e números.'),
+    .regex(/^[a-zA-Z0-9]+$/, 'A senha deve conter apenas letras e números.'),
   confirmPassword: z.string(),
 }).refine((data) => data.newPassword === data.confirmPassword, {
   message: 'As senhas não coincidem.',
@@ -92,7 +92,7 @@ export function ChangePasswordForm() {
           Alterar Senha
         </CardTitle>
         <CardDescription>
-          A nova senha deve ter entre 6 e 8 caracteres (apenas letras, apenas números, ou letras e números).
+          A nova senha deve ter entre 6 e 8 caracteres (letras e números).
         </CardDescription>
       </CardHeader>
       <CardContent>

@@ -1,6 +1,8 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticateFirestoreUser } from '@/lib/firestore-auth-service';
 import jwt from 'jsonwebtoken';
+import { auth } from '@/lib/firebase-admin-config';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
@@ -26,14 +28,20 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       );
     }
+    
+    // Criar um token customizado do Firebase
+    const additionalClaims = {
+        role: user.role,
+        isFirstLogin: user.isFirstLogin || false,
+    };
+    const firebaseToken = await auth.createCustomToken(user.uid, additionalClaims);
 
-    // Gerar JWT token
+    // Gerar JWT token que será usado para a sessão de cookie. O cliente irá usar o firebaseToken para logar no SDK.
     const token = jwt.sign(
       {
         uid: user.uid,
         email: user.email,
-        role: user.role,
-        isFirstLogin: user.isFirstLogin || false
+        ...additionalClaims
       },
       JWT_SECRET,
       { expiresIn: '24h' }
@@ -48,7 +56,8 @@ export async function POST(request: NextRequest) {
         displayName: user.displayName,
         role: user.role,
         isFirstLogin: user.isFirstLogin
-      }
+      },
+      firebaseToken: firebaseToken, // Enviar o token do Firebase para o cliente
     });
 
     // Definir cookie com o token
@@ -56,7 +65,8 @@ export async function POST(request: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 24 * 60 * 60 // 24 horas
+      maxAge: 24 * 60 * 60, // 24 horas
+      path: '/',
     });
 
     return response;
@@ -64,7 +74,6 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('Erro na API de login:', error);
     
-    // Retornar erro específico para conta desativada
     const status = error.message?.includes('desativada') ? 403 : 401;
     
     return NextResponse.json(

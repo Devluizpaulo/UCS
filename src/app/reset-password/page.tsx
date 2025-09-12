@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
@@ -17,7 +18,7 @@ const resetPasswordSchema = z.object({
   newPassword: z.string()
     .min(6, 'A nova senha deve ter entre 6 e 8 caracteres.')
     .max(8, 'A nova senha deve ter entre 6 e 8 caracteres.')
-    .regex(/^[a-zA-Z]+$|^[0-9]+$|^[a-zA-Z0-9]+$/, 'A senha deve conter apenas letras, apenas números, ou letras e números.'),
+    .regex(/^[a-zA-Z0-9]+$/, 'A senha deve conter apenas letras e números.'),
   confirmPassword: z.string().min(1, 'Confirmação de senha é obrigatória'),
 }).refine((data) => data.newPassword === data.confirmPassword, {
   message: 'As senhas não coincidem',
@@ -246,7 +247,7 @@ function ResetPasswordForm() {
                   </p>
                 )}
                 <div className="text-xs text-muted-foreground">
-                  <p>A senha deve ter entre 6 e 8 caracteres (apenas letras, apenas números, ou letras e números).</p>
+                  <p>A senha deve ter entre 6 e 8 caracteres e conter letras e números.</p>
                 </div>
               </div>
 

@@ -1,6 +1,7 @@
+
 'use server';
 
-import { db } from './firebase-admin-config';
+import { db, auth as adminAuth } from './firebase-admin-config';
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -30,84 +31,46 @@ export async function createFirestoreUser(data: {
 }): Promise<{ uid: string; email: string; displayName: string }> {
   const { email, password, displayName, phoneNumber, role } = data;
 
-  // Validações básicas aprimoradas
-  if (!email || typeof email !== 'string') {
-    throw new Error('Email é obrigatório.');
+  if (!email || !password || !displayName) {
+    throw new Error('Email, senha e nome são obrigatórios.');
   }
 
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email.trim())) {
-    throw new Error('Formato de email inválido.');
+  const existingUserQuery = await db.collection('users').where('email', '==', email.toLowerCase()).limit(1).get();
+  if (!existingUserQuery.empty) {
+    throw new Error('Este email já está em uso.');
   }
 
-  if (!password || typeof password !== 'string' || password.length < 8) {
-    throw new Error('A senha deve ter pelo menos 8 caracteres.');
-  }
+  const saltRounds = 12;
+  const passwordHash = await bcrypt.hash(password, saltRounds);
 
-  if (!displayName || typeof displayName !== 'string' || displayName.trim().length < 2) {
-    throw new Error('Nome deve ter pelo menos 2 caracteres.');
-  }
+  const userId = uuidv4();
+  const now = new Date().toISOString();
 
-  if (phoneNumber && typeof phoneNumber === 'string' && phoneNumber.trim().length > 0 && phoneNumber.trim().length < 10) {
-    throw new Error('Telefone deve ter pelo menos 10 dígitos.');
-  }
+  const userData: FirestoreUser = {
+    id: userId,
+    email: email.toLowerCase().trim(),
+    displayName: displayName.trim(),
+    phoneNumber: phoneNumber?.trim() || null,
+    passwordHash,
+    role,
+    isFirstLogin: true,
+    isActive: true,
+    lastLoginAt: null,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  await db.collection('users').doc(userId).set(userData);
 
   try {
-    // Verificar se o email já existe
-    const existingUserQuery = await db.collection('users')
-      .where('email', '==', email.toLowerCase())
-      .limit(1)
-      .get();
-
-    if (!existingUserQuery.empty) {
-      throw new Error('Este email já está em uso.');
-    }
-
-    // Gerar hash da senha
-    const saltRounds = 12;
-    const passwordHash = await bcrypt.hash(password, saltRounds);
-
-    // Criar ID único
-    const userId = uuidv4();
-    const now = new Date().toISOString();
-
-    // Dados do usuário
-    const userData: FirestoreUser = {
-      id: userId,
-      email: email.toLowerCase().trim(),
-      displayName: displayName.trim(),
-      phoneNumber: phoneNumber?.trim() || null,
-      passwordHash,
-      role,
-      isFirstLogin: true,
-      isActive: true,
-      lastLoginAt: null,
-      createdAt: now,
-      updatedAt: now
-    };
-
-    // Salvar no Firestore
-    await db.collection('users').doc(userId).set(userData);
-
-    // Retornar dados seguros
-    return {
-      uid: userId,
-      email: userData.email,
-      displayName: userData.displayName
-    };
-
-  } catch (error: any) {
-    
-    if (error.message.includes('já está em uso') || 
-        error.message.includes('inválido') || 
-        error.message.includes('obrigatório') ||
-        error.message.includes('caracteres')) {
-      throw error; // Re-throw validation errors
-    }
-    
-    throw new Error('Erro interno do servidor ao criar usuário.');
+      await adminAuth.setCustomUserClaims(userId, { role, isFirstLogin: true });
+  } catch (e) {
+      // Ignore if user does not exist in Firebase Auth yet, claims will be set on first real login.
   }
+
+  return { uid: userId, email: userData.email, displayName: userData.displayName };
 }
+
 
 /**
  * Autentica um usuário usando email e senha
@@ -120,63 +83,33 @@ export async function authenticateFirestoreUser(email: string, password: string)
   isFirstLogin: boolean;
 } | null> {
   try {
-    // Validações básicas
-    if (!email || typeof email !== 'string') {
-      return null;
-    }
+    if (!email || !password) return null;
 
-    if (!password || typeof password !== 'string') {
-      return null;
-    }
-
-    // Buscar usuário por email
-    const userQuery = await db.collection('users')
-      .where('email', '==', email.toLowerCase().trim())
-      .limit(1)
-      .get();
-
-    if (userQuery.empty) {
-      return null; // Usuário não encontrado
-    }
+    const userQuery = await db.collection('users').where('email', '==', email.toLowerCase().trim()).limit(1).get();
+    if (userQuery.empty) return null;
 
     const userDoc = userQuery.docs[0];
     const userData = userDoc.data() as FirestoreUser;
 
-    // Verificar se o usuário está ativo
     if (!userData.isActive) {
       throw new Error('Conta desativada. Entre em contato com o administrador.');
     }
 
-    // Verificar senha
     const isPasswordValid = await bcrypt.compare(password, userData.passwordHash);
-    
-    if (!isPasswordValid) {
-      return null; // Senha incorreta
-    }
+    if (!isPasswordValid) return null;
 
-    // Atualizar último login
     const now = new Date().toISOString();
-    await userDoc.ref.update({
-      lastLoginAt: now,
-      updatedAt: now
-    });
+    await userDoc.ref.update({ lastLoginAt: now, updatedAt: now });
 
-    // Retornar dados do usuário autenticado
     return {
       uid: userData.id,
       email: userData.email,
       displayName: userData.displayName,
       role: userData.role,
-      isFirstLogin: userData.isFirstLogin
+      isFirstLogin: userData.isFirstLogin,
     };
-
   } catch (error: any) {
-    
-    // Re-propagar erros específicos (como conta desativada)
-    if (error.message?.includes('desativada')) {
-      throw error;
-    }
-    
+    if (error.message?.includes('desativada')) throw error;
     return null;
   }
 }
@@ -184,126 +117,43 @@ export async function authenticateFirestoreUser(email: string, password: string)
 /**
  * Lista todos os usuários do Firestore
  */
-export async function getFirestoreUsers(): Promise<Array<{
-  id: string;
-  email: string;
-  displayName: string;
-  phoneNumber?: string | null;
-  role: string;
-  isFirstLogin: boolean;
-  isActive: boolean;
-  lastLoginAt?: string | null;
-  createdAt: string;
-  updatedAt: string;
-}>> {
-  try {
-    const usersSnapshot = await db.collection('users').orderBy('createdAt', 'desc').get();
-    
-    return usersSnapshot.docs.map(doc => {
-      const data = doc.data() as FirestoreUser;
-      return {
-        id: data.id,
-        email: data.email,
-        displayName: data.displayName,
-        phoneNumber: data.phoneNumber,
-        role: data.role,
-        isFirstLogin: data.isFirstLogin,
-        isActive: data.isActive,
-        lastLoginAt: data.lastLoginAt,
-        createdAt: data.createdAt,
-        updatedAt: data.updatedAt
-      };
-    });
-  } catch (error: any) {
-    throw new Error('Erro ao carregar lista de usuários.');
-  }
+export async function getFirestoreUsers(): Promise<Array<any>> {
+  const usersSnapshot = await db.collection('users').orderBy('createdAt', 'desc').get();
+  return usersSnapshot.docs.map(doc => {
+    const { passwordHash, ...userData } = doc.data(); // Exclude password hash
+    return { id: doc.id, ...userData };
+  });
 }
 
 /**
  * Atualiza a senha do usuário com verificação da senha atual
  */
 export async function updateUserPassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
+  const userDocRef = db.collection('users').doc(userId);
+  const userDoc = await userDocRef.get();
+  if (!userDoc.exists) throw new Error('Usuário não encontrado.');
+
+  const userData = userDoc.data() as FirestoreUser;
+  const isCurrentPasswordValid = await bcrypt.compare(currentPassword, userData.passwordHash);
+  if (!isCurrentPasswordValid) throw new Error('A senha atual está incorreta.');
+
+  if (!newPassword || newPassword.length < 6) throw new Error('A nova senha deve ter no mínimo 6 caracteres.');
+
+  const newPasswordHash = await bcrypt.hash(newPassword, 12);
+  const now = new Date().toISOString();
+
+  await userDocRef.update({
+    passwordHash: newPasswordHash,
+    isFirstLogin: false,
+    updatedAt: now,
+  });
+
+  // Also update claims in Firebase Auth if user exists there
   try {
-    // Verificar se o usuário existe
-    const userDoc = await db.collection('users').doc(userId).get();
-    if (!userDoc.exists) {
-      throw new Error('Usuário não encontrado.');
-    }
-
-    const userData = userDoc.data() as FirestoreUser;
-
-    // Verificar senha atual
-    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, userData.passwordHash);
-    if (!isCurrentPasswordValid) {
-      throw new Error('A senha atual está incorreta.');
-    }
-
-    // Validar nova senha
-    if (!newPassword || typeof newPassword !== 'string') {
-      throw new Error('A nova senha é obrigatória.');
-    }
-    if (newPassword.length < 6 || newPassword.length > 8) {
-      throw new Error('A nova senha deve ter entre 6 e 8 caracteres.');
-    }
-    if (!/^[a-zA-Z]+$|^[0-9]+$|^[a-zA-Z0-9]+$/.test(newPassword)) {
-      throw new Error('A senha deve conter apenas letras, apenas números, ou letras e números.');
-    }
-
-    // Hash da nova senha
-    const saltRounds = 12;
-    const newPasswordHash = await bcrypt.hash(newPassword, saltRounds);
-
-    // Atualizar no Firestore
-    const now = new Date().toISOString();
-    await db.collection('users').doc(userId).update({
-      passwordHash: newPasswordHash,
-      isFirstLogin: false, // Marcar como não sendo mais primeiro login
-      updatedAt: now
-    });
-
-  } catch (error: any) {
-    throw error;
-  }
-}
-
-/**
- * Atualiza a senha do usuário após primeiro login (sem verificação de senha atual)
- */
-export async function updateFirestoreUserPassword(userId: string, newPassword: string): Promise<void> {
-  try {
-    // Validar nova senha
-    if (!newPassword || typeof newPassword !== 'string') {
-      throw new Error('A nova senha é obrigatória.');
-    }
-    if (newPassword.length < 6 || newPassword.length > 8) {
-      throw new Error('A nova senha deve ter entre 6 e 8 caracteres.');
-    }
-    if (!/^[a-zA-Z]+$|^[0-9]+$|^[a-zA-Z0-9]+$/.test(newPassword)) {
-      throw new Error('A senha deve conter apenas letras, apenas números, ou letras e números.');
-    }
-
-    // Verificar se o usuário existe
-    const userDoc = await db.collection('users').doc(userId).get();
-    if (!userDoc.exists) {
-      throw new Error('Usuário não encontrado.');
-    }
-
-    // Hash da nova senha
-    const saltRounds = 12;
-    const newPasswordHash = await bcrypt.hash(newPassword, saltRounds);
-
-    // Atualizar no Firestore
-    const now = new Date().toISOString();
-    await db.collection('users').doc(userId).update({
-      passwordHash: newPasswordHash,
-      isFirstLogin: false, // Marcar como não sendo mais primeiro login
-      updatedAt: now
-    });
-
-
-  } catch (error: any) {
-
-    throw error;
+      const user = await adminAuth.getUser(userId);
+      await adminAuth.setCustomUserClaims(userId, { ...user.customClaims, isFirstLogin: false });
+  } catch(e) {
+      // User might not exist in Auth if created only in Firestore, which is fine.
   }
 }
 
@@ -311,63 +161,25 @@ export async function updateFirestoreUserPassword(userId: string, newPassword: s
  * Ativa ou desativa um usuário
  */
 export async function toggleFirestoreUserStatus(userId: string, isActive: boolean): Promise<void> {
-  try {
-    // Verificar se o usuário existe
-    const userDoc = await db.collection('users').doc(userId).get();
-    if (!userDoc.exists) {
-      throw new Error('Usuário não encontrado.');
-    }
-
-    // Atualizar status
-    const now = new Date().toISOString();
-    await db.collection('users').doc(userId).update({
-      isActive,
-      updatedAt: now
-    });
-
-
-  } catch (error: any) {
-
-    throw error;
-  }
+  const userDocRef = db.collection('users').doc(userId);
+  if (!(await userDocRef.get()).exists) throw new Error('Usuário não encontrado.');
+  await userDocRef.update({ isActive, updatedAt: new Date().toISOString() });
 }
 
 /**
  * Busca um usuário por ID
  */
-export async function getFirestoreUserById(userId: string): Promise<{
-  id: string;
-  email: string;
-  displayName: string;
-  phoneNumber?: string | null;
-  role: string;
-  isFirstLogin: boolean;
-  isActive: boolean;
-  lastLoginAt?: string | null;
-  createdAt: string;
-  updatedAt: string;
-} | null> {
-  try {
-    const userDoc = await db.collection('users').doc(userId).get();
-    
-    if (!userDoc.exists) {
-      return null;
-    }
+export async function getFirestoreUserById(userId: string): Promise<any | null> {
+  const userDoc = await db.collection('users').doc(userId).get();
+  if (!userDoc.exists) return null;
+  const { passwordHash, ...userData } = userDoc.data() as FirestoreUser;
+  return { id: userDoc.id, ...userData };
+}
 
-    const data = userDoc.data() as FirestoreUser;
-    return {
-      id: data.id,
-      email: data.email,
-      displayName: data.displayName,
-      phoneNumber: data.phoneNumber,
-      role: data.role,
-      isFirstLogin: data.isFirstLogin,
-      isActive: data.isActive,
-      lastLoginAt: data.lastLoginAt,
-      createdAt: data.createdAt,
-      updatedAt: data.updatedAt
-    };
-  } catch (error: any) {
-    return null;
-  }
+/**
+* Marca o primeiro login como concluído no Firestore.
+*/
+export async function completeFirstLoginInFirestore(uid: string): Promise<void> {
+    const userDocRef = db.collection('users').doc(uid);
+    await userDocRef.update({ isFirstLogin: false });
 }

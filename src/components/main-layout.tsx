@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { ReactNode } from 'react';
@@ -77,6 +78,10 @@ const settingsNavItems: NavItem[] = [
     { href: '/settings', icon: Settings, label: 'Configurações' },
 ]
 
+// Initialize Firebase only once
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+const auth = getAuth(app);
+
 
 export function MainLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -86,49 +91,27 @@ export function MainLayout({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [isFirstLogin, setIsFirstLogin] = useState(false);
 
-  const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-  const auth = getAuth(app);
   
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        // Verificar se existe cookie de autenticação
-        const response = await fetch('/api/auth/verify', {
-          method: 'GET',
-          credentials: 'include'
-        });
-        
-        if (response.ok) {
-          const userData = await response.json();
-          // Simular um objeto user para compatibilidade
-          const mockUser = {
-            uid: userData.uid,
-            email: userData.email,
-            displayName: userData.displayName || userData.email,
-            emailVerified: true
-          } as FirebaseUser;
-          setUser(mockUser);
-          setIsFirstLogin(userData.isFirstLogin || false);
-        } else {
-          setUser(null);
-          // Se não estiver na página de login, redireciona
-          if (pathname !== '/login') {
-            router.push('/login');
-          }
-        }
-      } catch (error) {
-        console.error('Erro ao verificar autenticação:', error);
+    // onAuthStateChanged is the recommended way to get the current user
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        // User is signed in.
+        setUser(user);
+        const tokenResult = await user.getIdTokenResult();
+        const firstLogin = tokenResult.claims.isFirstLogin === true;
+        setIsFirstLogin(firstLogin);
+      } else {
+        // User is signed out.
         setUser(null);
-        if (pathname !== '/login') {
-          router.push('/login');
-        }
-      } finally {
-        setLoading(false);
+        router.push('/login');
       }
-    };
-    
-    checkAuth();
-  }, [router, pathname]);
+      setLoading(false);
+    });
+
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
+  }, [router]);
 
   const toggleTheme = () => {
     const html = document.documentElement;
@@ -143,15 +126,18 @@ export function MainLayout({ children }: { children: ReactNode }) {
         method: 'POST',
         credentials: 'include'
       });
+
+      // Sign out from Firebase client-side SDK
+      await signOut(auth);
       
-      // Limpar estado local
+      // Clear local state
       setUser(null);
       
       toast({
         title: 'Logout realizado',
         description: 'Você foi desconectado com sucesso.',
       });
-      router.push('/login');
+      // The onAuthStateChanged listener will handle the redirect
     } catch (error) {
       console.error('Logout failed:', error);
       toast({
@@ -182,28 +168,29 @@ export function MainLayout({ children }: { children: ReactNode }) {
   }
   
   // Do not render layout on login page
-  if (pathname === '/login') {
+  if (pathname === '/login' || pathname === '/forgot-password' || pathname === '/reset-password') {
       return <>{children}</>;
   }
 
-  // Se não houver usuário, exibe uma tela de carregamento enquanto redireciona
+  // If no user, onAuthStateChanged will trigger redirect. Show loading meanwhile.
   if (!user) {
     return (
        <div className="flex h-screen w-full items-center justify-center bg-background">
-          <p>Redirecionando para login...</p>
           <Loader2 className="ml-2 h-8 w-8 animate-spin text-primary" />
         </div>
     );
   }
 
-  // Se for primeiro login, exibir componente de alteração de senha
+  // If it's the first login, show the password reset component.
   if (isFirstLogin) {
     return (
       <FirstLoginPasswordReset 
-        onPasswordChanged={() => {
+        onPasswordChanged={async () => {
+          if (auth.currentUser) {
+            // Force refresh the token to get the updated custom claims
+            await auth.currentUser.getIdToken(true);
+          }
           setIsFirstLogin(false);
-          // Recarregar dados do usuário para atualizar o token
-          window.location.reload();
         }} 
       />
     );
@@ -345,3 +332,5 @@ export function MainLayout({ children }: { children: ReactNode }) {
       </SidebarProvider>
   );
 }
+
+    

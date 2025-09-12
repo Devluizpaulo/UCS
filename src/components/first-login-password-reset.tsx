@@ -12,14 +12,13 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Eye, EyeOff, CheckCircle } from 'lucide-react';
 import { getAuth, EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
-import { completeFirstLogin } from '@/lib/profile-service';
 
 const passwordResetSchema = z.object({
   currentPassword: z.string().min(1, 'Senha atual é obrigatória'),
   newPassword: z.string()
     .min(6, 'A nova senha deve ter entre 6 e 8 caracteres.')
     .max(8, 'A nova senha deve ter entre 6 e 8 caracteres.')
-    .regex(/^[a-zA-Z]+$|^[0-9]+$|^[a-zA-Z0-9]+$/, 'A senha deve conter apenas letras, apenas números, ou letras e números.'),
+    .regex(/^[a-zA-Z0-9]+$/, 'A senha deve conter apenas letras e números.'),
   confirmPassword: z.string().min(1, 'Confirmação de senha é obrigatória'),
 }).refine((data) => data.newPassword === data.confirmPassword, {
   message: 'As senhas não coincidem',
@@ -49,12 +48,9 @@ export function FirstLoginPasswordReset({ onPasswordChanged }: FirstLoginPasswor
     setIsLoading(true);
     
     try {
-      // Chamar API para alterar senha no primeiro login
       const response = await fetch('/api/auth/change-first-login-password', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
           currentPassword: data.currentPassword,
@@ -63,36 +59,33 @@ export function FirstLoginPasswordReset({ onPasswordChanged }: FirstLoginPasswor
       });
 
       const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Erro ao alterar senha');
+      if (!response.ok) throw new Error(result.error || 'Erro ao alterar senha');
+      
+      // Also update the password on the client-side Firebase instance
+      const user = auth.currentUser;
+      if(user) {
+        const credential = EmailAuthProvider.credential(user.email!, data.currentPassword);
+        await reauthenticateWithCredential(user, credential);
+        await updatePassword(user, data.newPassword);
       }
 
+
       setPasswordChanged(true);
-      
       toast({
         title: 'Senha alterada com sucesso',
         description: 'Sua senha foi atualizada. Você será redirecionado para o painel.',
       });
 
-      // Aguardar um pouco antes de redirecionar
       setTimeout(() => {
-        onPasswordChanged(); // Isso vai atualizar o estado no main-layout
+        onPasswordChanged();
       }, 2000);
 
     } catch (error: any) {
       console.error('Erro ao alterar senha:', error);
-      let description = 'Ocorreu um erro inesperado. Verifique sua senha atual e tente novamente.';
-      if (error.code === 'auth/wrong-password') {
-          description = 'A senha atual fornecida está incorreta.';
-      } else if (error.code === 'auth/weak-password') {
-          description = 'A nova senha é muito fraca. Tente uma mais forte.';
-      }
-      
       toast({
         variant: 'destructive',
         title: 'Erro ao alterar senha',
-        description,
+        description: error.message || 'Ocorreu um erro inesperado. Verifique sua senha atual e tente novamente.',
       });
     } finally {
       setIsLoading(false);
@@ -193,7 +186,7 @@ export function FirstLoginPasswordReset({ onPasswordChanged }: FirstLoginPasswor
                   </p>
                 )}
                 <div className="text-xs text-muted-foreground">
-                  <p>A nova senha deve ter entre 6 e 8 caracteres (apenas letras, apenas números, ou letras e números).</p>
+                  <p>A nova senha deve ter entre 6 e 8 caracteres (apenas letras e números).</p>
                 </div>
               </div>
 

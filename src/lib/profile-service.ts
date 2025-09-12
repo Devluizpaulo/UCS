@@ -31,7 +31,6 @@ export async function updateUserProfile(uid: string, displayName: string, phoneN
       updatePayload.phoneNumber = phoneNumber;
     }
     
-    // Atualizar no Firebase Authentication (servidor via Admin SDK)
     await adminAuth.updateUser(uid, updatePayload);
     
   } catch (error: any) {
@@ -146,40 +145,28 @@ export async function createUser(data: {
   if (!password) {
       throw new Error('A senha é obrigatória para criar um novo usuário.');
   }
-  if (password.length < 6 || password.length > 8) {
-      throw new Error('A senha deve ter entre 6 e 8 caracteres.');
-  }
-  if (!/^[a-zA-Z0-9]+$/.test(password)) {
-      throw new Error('A senha deve conter apenas letras e números.');
+  if (password.length < 8) {
+      throw new Error('A senha deve ter no mínimo 8 caracteres.');
   }
   
   try {
-    // Prepare user creation data
     const userData: any = {
       email,
       password,
       displayName,
     };
 
-    // Only add phoneNumber if it's provided and not empty
     if (phoneNumber && phoneNumber.trim() !== '') {
-      // Basic validation for E.164 format (starts with + and contains only digits)
-      const cleanPhone = phoneNumber.trim();
-      if (cleanPhone.startsWith('+') && /^\+[1-9]\d{1,14}$/.test(cleanPhone)) {
-        userData.phoneNumber = cleanPhone;
-      }
-      // If phone number is provided but invalid, we'll skip it rather than error
+        userData.phoneNumber = phoneNumber.trim();
     }
 
     const userRecord = await adminAuth.createUser(userData);
 
-    // Define as permissões (claims) para o usuário
     await adminAuth.setCustomUserClaims(userRecord.uid, {
       role: role,
-      isFirstLogin: true, // Força a troca de senha no primeiro login
+      isFirstLogin: true,
     });
     
-    // Retorna um objeto simples e seguro para o cliente
     return {
       uid: userRecord.uid,
       email: userRecord.email,
@@ -187,27 +174,18 @@ export async function createUser(data: {
     };
 
   } catch (error: any) {
-    console.error('[Profile Service] Erro detalhado ao criar usuário:', {
-      code: error.code,
-      message: error.message,
-      errorInfo: error.errorInfo,
-      stack: error.stack
-    });
+    console.error('[Profile Service] Erro detalhado ao criar usuário:', error);
     
     if (error.code === 'auth/email-already-exists') {
       throw new Error('Este email já está em uso.');
     } else if (error.code === 'auth/invalid-email') {
       throw new Error('Email inválido.');
     } else if (error.code === 'auth/weak-password') {
-      throw new Error('A senha é inválida. Deve ter no mínimo 8 caracteres.');
-    } else if (error.message && error.message.includes('Identity Toolkit API')) {
-      throw new Error('Erro de configuração: A API Identity Toolkit não está habilitada no projeto Firebase. Entre em contato com o administrador do sistema.');
-    } else if (error.message && error.message.includes('PERMISSION_DENIED')) {
-      throw new Error('Erro de permissões: O service account não tem as permissões necessárias. Entre em contato com o administrador do sistema.');
+      throw new Error('A senha é inválida. Deve ter no mínimo 6 caracteres.');
+    } else if (error.message && (error.message.includes('Identity Toolkit API') || error.message.includes('PERMISSION_DENIED'))) {
+      throw new Error('Erro de configuração do Firebase. Contate o administrador.');
     }
     
-    // Log do erro completo para debug
-    console.error('[Profile Service] Erro completo:', JSON.stringify(error, null, 2));
     throw new Error(`Erro no servidor: ${error.message || 'Erro desconhecido ao criar usuário'}`);
   }
 }
