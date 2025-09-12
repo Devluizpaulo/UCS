@@ -148,7 +148,7 @@ export function UCSIndexDisplay({ className, selectedDate }: UCSIndexDisplayProp
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <div className="flex items-center gap-3">
           <img 
-            src="/image/UCS.png" 
+            src="/image/ucs.png" 
             alt="UCS Coin" 
             className="w-12 h-12"
           />
