@@ -5,7 +5,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { UcsIndexChart } from '@/components/ucs-index-chart';
@@ -16,30 +15,13 @@ import {
   Eye, 
   RefreshCw, 
   AlertCircle,
-  Leaf,
-  DollarSign,
-  Calculator,
   BarChart3
 } from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import {
-  calcularUCSCompleto,
-  obterValoresPadrao,
-  formatarValorMonetario,
-  validarCalculosComTabela,
-  type UCSCalculationInputs,
-  type UCSCalculationResult
-} from '@/lib/ucs-pricing-service';
+import { IndexCompositionModal } from './index-composition-modal';
 import { getFormulaParameters } from '@/lib/formula-service';
-import type { FormulaParameters, ChartData } from '@/lib/types';
+import type { ChartData, UcsData } from '@/lib/types';
 import { getUcsIndexValue } from '@/lib/data-service';
+import { Skeleton } from './ui/skeleton';
 
 interface UCSIndexDisplayProps {
   className?: string;
@@ -47,68 +29,41 @@ interface UCSIndexDisplayProps {
 }
 
 export function UCSIndexDisplay({ className, selectedDate }: UCSIndexDisplayProps) {
-  const [ucsValue, setUcsValue] = useState<number>(0);
-  const [resultado, setResultado] = useState<UCSCalculationResult | null>(null);
+  const [ucsData, setUcsData] = useState<UcsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [trend, setTrend] = useState<'up' | 'down' | 'stable'>('stable');
-  const [previousValue, setPreviousValue] = useState<number>(0);
   const [chartData, setChartData] = useState<ChartData[]>([]);
   const [showChart, setShowChart] = useState(false);
-  const [validacao, setValidacao] = useState<{
-    precisao: number;
-    sugestoes: string[];
-  } | null>(null);
+  const [isCompositionModalOpen, setIsCompositionModalOpen] = useState(false);
+
+  const formatCurrency = (value: number) =>
+    `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   const calculateUCSIndex = useCallback(async (date?: string) => {
     setLoading(true);
     setError(null);
     
     try {
-      const formulaParams = await getFormulaParameters();
+      const { latest, history } = await getUcsIndexValue('1d', date);
       
-      if (!formulaParams.isConfigured) {
-        setError('Parâmetros da fórmula não configurados. Configure em Configurações.');
-        setUcsValue(0);
-        setResultado(null);
-        setLoading(false);
-        return;
-      }
-
-      const cotacoes = await obterValoresPadrao(date);
-      
-      const hasMissingPrices = Object.values(cotacoes).some(price => price === 0);
-      if (hasMissingPrices) {
-        setError(`Não foram encontradas cotações para a data selecionada. Exibindo o último dado disponível.`);
-        const latestIndex = await getUcsIndexValue();
-        setUcsValue(latestIndex.latest.indexValue);
-        setChartData(latestIndex.history);
-        setLoading(false);
-        return;
-      }
-
-
-      const inputs: UCSCalculationInputs = { ...cotacoes, ...formulaParams };
-
-      const resultadoCalculado = calcularUCSCompleto(inputs);
-      const newValue = resultadoCalculado.unidadeCreditoSustentabilidade;
-
-      setUcsValue(newValue);
-      setResultado(resultadoCalculado);
+      setUcsData(latest);
+      setChartData(history);
       setLastUpdate(new Date());
 
-      const indexHistory = await getUcsIndexValue('1d', date);
-      if (indexHistory.history.length > 1) {
-          const latest = indexHistory.history[indexHistory.history.length - 1].value;
-          const prev = indexHistory.history[indexHistory.history.length - 2].value;
-          if (latest > prev) setTrend('up');
-          else if (latest < prev) setTrend('down');
+      if (history.length > 1) {
+          const current = history[history.length - 1].value;
+          const prev = history[history.length - 2].value;
+          if (current > prev) setTrend('up');
+          else if (current < prev) setTrend('down');
           else setTrend('stable');
       }
-
-       setChartData(indexHistory.history);
       
+      if (!latest.isConfigured) {
+          setError('Parâmetros da fórmula não configurados. Configure em Configurações.');
+      }
+
     } catch (error) {
       console.error('Erro ao calcular índice UCS:', error);
       setError(`Erro no cálculo: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
@@ -123,243 +78,143 @@ export function UCSIndexDisplay({ className, selectedDate }: UCSIndexDisplayProp
 
   const getTrendIcon = () => {
     switch (trend) {
-      case 'up':
-        return <TrendingUp className="h-4 w-4 text-green-600" />;
-      case 'down':
-        return <TrendingDown className="h-4 w-4 text-red-600" />;
-      default:
-        return <Minus className="h-4 w-4 text-gray-500" />;
+      case 'up': return <TrendingUp className="h-4 w-4 text-green-600" />;
+      case 'down': return <TrendingDown className="h-4 w-4 text-red-600" />;
+      default: return <Minus className="h-4 w-4 text-gray-500" />;
     }
   };
 
-  const getTrendColor = () => {
-    switch (trend) {
-      case 'up':
-        return 'text-green-600';
-      case 'down':
-        return 'text-red-600';
-      default:
-        return 'text-gray-600';
-    }
-  };
+  const renderLoadingSkeleton = () => (
+     <div className="space-y-4">
+        <div className="flex items-baseline justify-between">
+            <Skeleton className="h-14 w-48" />
+            <Skeleton className="h-9 w-32" />
+        </div>
+        <Separator />
+        <div className="grid grid-cols-3 gap-4 text-center">
+            <div>
+                <Skeleton className="h-5 w-20 mx-auto mb-2" />
+                <Skeleton className="h-4 w-16 mx-auto" />
+            </div>
+             <div>
+                <Skeleton className="h-5 w-20 mx-auto mb-2" />
+                <Skeleton className="h-4 w-16 mx-auto" />
+            </div>
+             <div>
+                <Skeleton className="h-5 w-20 mx-auto mb-2" />
+                <Skeleton className="h-4 w-16 mx-auto" />
+            </div>
+        </div>
+        <div className="flex justify-end">
+            <Skeleton className="h-4 w-40" />
+        </div>
+    </div>
+  );
 
   return (
-    <Card className={className}>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <div className="flex items-center gap-3">
-          <img 
-            src="/image/ucs.png" 
-            alt="UCS Coin" 
-            className="w-12 h-12"
-          />
-          <div>
-            <CardTitle className="text-sm font-medium">Índice UCS</CardTitle>
-            <CardDescription>Unidade de Crédito de Sustentabilidade</CardDescription>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          {getTrendIcon()}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowChart(!showChart)}
-          >
-            <BarChart3 className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => calculateUCSIndex(selectedDate)}
-            disabled={loading}
-          >
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {error && !loading ? (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        ) : (
-          <div className="space-y-4">
-            <div className="flex items-baseline justify-between">
-              <div>
-                <div className="text-3xl font-bold text-green-600 bg-green-50 px-4 py-2 rounded-lg border border-green-200">
-                  {loading ? '...' : formatarValorMonetario(ucsValue)}
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Moeda UCS
-                </p>
-              </div>
-              {resultado && (
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <Eye className="h-4 w-4 mr-2" />
-                      Ver Composição
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-                    <DialogHeader>
-                      <DialogTitle className="flex items-center gap-2">
-                        <Calculator className="h-5 w-5" />
-                        Composição do Índice UCS
-                      </DialogTitle>
-                      <DialogDescription>
-                        Detalhamento completo do cálculo da Unidade de Crédito de Sustentabilidade
-                      </DialogDescription>
-                    </DialogHeader>
-                    
-                    <div className="space-y-6">
-                      <Card className="border-green-200 bg-green-50">
-                        <CardHeader>
-                          <CardTitle className="text-xl text-green-800">
-                            UCS (CF) = {formatarValorMonetario(resultado.unidadeCreditoSustentabilidade)}
-                          </CardTitle>
-                          <CardDescription className="text-green-600">
-                            Fórmula: UCS = 2 × IVP
-                          </CardDescription>
-                        </CardHeader>
-                      </Card>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Card>
-                          <CardHeader>
-                            <CardTitle className="text-lg">IVP - Índice de Viabilidade de Projeto</CardTitle>
-                            <CardDescription>IVP = (PDM/CE)/2</CardDescription>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="text-xl font-bold">
-                              {formatarValorMonetario(resultado.indiceViabilidadeProjeto)}
-                            </div>
-                          </CardContent>
-                        </Card>
-
-                        <Card>
-                          <CardHeader>
-                            <CardTitle className="text-lg">PDM - Potencial Desflorestador Monetizado</CardTitle>
-                            <CardDescription>PDM = vMAD + vUS + cRS</CardDescription>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="text-xl font-bold">
-                              {formatarValorMonetario(resultado.potencialDesflorestadorMonetizado)}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </div>
-
-                      <Card>
-                        <CardHeader>
-                          <CardTitle>Componentes do PDM</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                          <div className="grid grid-cols-3 gap-4">
-                            <div className="text-center">
-                              <div className="flex items-center justify-center mb-2">
-                                <Leaf className="h-5 w-5 text-green-600 mr-2" />
-                                <span className="font-semibold">vMAD</span>
-                              </div>
-                              <div className="text-lg font-bold">
-                                {formatarValorMonetario(resultado.valorMadeira)}
-                              </div>
-                              <div className="text-sm text-muted-foreground">
-                                Valor da Madeira
-                              </div>
-                            </div>
-                            
-                            <div className="text-center">
-                              <div className="flex items-center justify-center mb-2">
-                                <TrendingUp className="h-5 w-5 text-blue-600 mr-2" />
-                                <span className="font-semibold">vUS</span>
-                              </div>
-                              <div className="text-lg font-bold">
-                                {formatarValorMonetario(resultado.valorUsoSolo)}
-                              </div>
-                              <div className="text-sm text-muted-foreground">
-                                Valor de uso do solo
-                              </div>
-                            </div>
-                            
-                            <div className="text-center">
-                              <div className="flex items-center justify-center mb-2">
-                                <DollarSign className="h-5 w-5 text-orange-600 mr-2" />
-                                <span className="font-semibold">cRS</span>
-                              </div>
-                              <div className="text-lg font-bold">
-                                {formatarValorMonetario(resultado.custoResponsabilidadeSocioambiental)}
-                              </div>
-                              <div className="text-sm text-muted-foreground">
-                                custo da Responsabilidade socioambiental
-                              </div>
-                            </div>
-                          </div>
-
-                          <Separator />
-
-                          <div>
-                            <h4 className="font-semibold mb-2">Detalhes VUS (Valor de Uso do Solo):</h4>
-                            <div className="grid grid-cols-3 gap-2 text-sm">
-                              <div>
-                                <Badge variant="secondary">Pecuária ({resultado.detalhes.vus.vboi > 0 ? (resultado.detalhes.vus.vboi / (resultado.detalhes.vus.vboi + resultado.detalhes.vus.vmilho + resultado.detalhes.vus.vsoja) * 100).toFixed(0) : 0}%)</Badge>
-                                <div className="mt-1">{formatarValorMonetario(resultado.detalhes.vus.vboi)}</div>
-                              </div>
-                              <div>
-                                <Badge variant="secondary">Milho ({resultado.detalhes.vus.vmilho > 0 ? (resultado.detalhes.vus.vmilho / (resultado.detalhes.vus.vboi + resultado.detalhes.vus.vmilho + resultado.detalhes.vus.vsoja) * 100).toFixed(0) : 0}%)</Badge>
-                                <div className="mt-1">{formatarValorMonetario(resultado.detalhes.vus.vmilho)}</div>
-                              </div>
-                              <div>
-                                <Badge variant="secondary">Soja ({resultado.detalhes.vus.vsoja > 0 ? (resultado.detalhes.vus.vsoja / (resultado.detalhes.vus.vboi + resultado.detalhes.vus.vmilho + resultado.detalhes.vus.vsoja) * 100).toFixed(0) : 0}%)</Badge>
-                                <div className="mt-1">{formatarValorMonetario(resultado.detalhes.vus.vsoja)}</div>
-                              </div>
-                            </div>
-                            <div className="text-xs text-muted-foreground mt-2">
-                              * Total VUS = (Vboi + Vmilho + Vsoja) × Fator Arrend. ({resultado.detalhes.ce.carbonoEstocadoTotal > 0 ? (resultado.valorUsoSolo / resultado.potencialDesflorestadorMonetizado * 100).toFixed(1) : 0}%) × Área Total
-                            </div>
-                          </div>
-
-                          <div>
-                            <h4 className="font-semibold mb-2">Detalhes CRS (Custo Socioambiental):</h4>
-                            <div className="grid grid-cols-2 gap-2 text-sm">
-                              <div>
-                                <Badge variant="secondary">Crédito de Carbono (CC)</Badge>
-                                <div className="mt-1">{formatarValorMonetario(resultado.detalhes.crs.cc)}</div>
-                                <div className="text-xs text-muted-foreground">Preço Carbono × {resultado.detalhes.ce.carbonoEstocadoTotal.toFixed(2)} tCO2/ha × Área</div>
-                              </div>
-                              <div>
-                                <Badge variant="secondary">Custo da Água (CH2O)</Badge>
-                                <div className="mt-1">{formatarValorMonetario(resultado.detalhes.crs.ch2o)}</div>
-                                <div className="text-xs text-muted-foreground">PIB/ha × 7% × Área</div>
-                              </div>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              )}
+    <>
+      <Card className={className}>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <div className="flex items-center gap-3">
+            <img 
+              src="/image/ucs.png" 
+              alt="UCS Coin" 
+              className="w-12 h-12"
+            />
+            <div>
+              <CardTitle className="text-sm font-medium">Índice UCS</CardTitle>
+              <CardDescription>Unidade de Crédito de Sustentabilidade</CardDescription>
             </div>
-            
-            {showChart && chartData.length > 0 && (
-              <div className="mt-4">
-                <Separator className="mb-4" />
-                <div className="h-[200px]">
-                  <UcsIndexChart data={chartData} loading={loading} />
-                </div>
-              </div>
-            )}
-            
-            {lastUpdate && !loading && (
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>Última atualização:</span>
-                <span>{lastUpdate.toLocaleTimeString('pt-BR')}</span>
-              </div>
-            )}
           </div>
-        )}
-      </CardContent>
-    </Card>
+          <div className="flex items-center gap-2">
+            {getTrendIcon()}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowChart(!showChart)}
+            >
+              <BarChart3 className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => calculateUCSIndex(selectedDate)}
+              disabled={loading}
+            >
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+             renderLoadingSkeleton()
+          ) : error && ucsData?.isConfigured === false ? (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          ) : (
+            ucsData && (
+              <div className="space-y-4">
+                <div className="flex items-baseline justify-between">
+                  <div>
+                    <div className="text-3xl font-bold text-green-600 bg-green-50 px-4 py-2 rounded-lg border border-green-200">
+                      {formatCurrency(ucsData.indexValue)}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Moeda UCS
+                    </p>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => setIsCompositionModalOpen(true)}>
+                    <Eye className="h-4 w-4 mr-2" />
+                    Ver Composição
+                  </Button>
+                </div>
+                
+                <Separator />
+                
+                <div className="grid grid-cols-3 gap-4 text-center">
+                    <div>
+                        <p className="text-lg font-semibold">{formatCurrency(ucsData.components.vm)}</p>
+                        <p className="text-xs text-muted-foreground">VMAD</p>
+                    </div>
+                    <div>
+                        <p className="text-lg font-semibold">{formatCurrency(ucsData.components.vus)}</p>
+                        <p className="text-xs text-muted-foreground">VUS</p>
+                    </div>
+                    <div>
+                        <p className="text-lg font-semibold">{formatCurrency(ucsData.components.crs)}</p>
+                        <p className="text-xs text-muted-foreground">CRS</p>
+                    </div>
+                </div>
+                
+                {showChart && chartData.length > 0 && (
+                  <div className="mt-4">
+                    <Separator className="my-4" />
+                    <div className="h-[200px]">
+                      <UcsIndexChart data={chartData} loading={loading} />
+                    </div>
+                  </div>
+                )}
+                
+                {lastUpdate && (
+                  <div className="flex items-center justify-end text-xs text-muted-foreground pt-2">
+                    <span>Última atualização: {lastUpdate.toLocaleTimeString('pt-BR')}</span>
+                  </div>
+                )}
+              </div>
+            )
+          )}
+        </CardContent>
+      </Card>
+      
+      {ucsData && (
+        <IndexCompositionModal 
+            isOpen={isCompositionModalOpen} 
+            onClose={() => setIsCompositionModalOpen(false)} 
+            data={ucsData}
+        />
+      )}
+    </>
   );
 }

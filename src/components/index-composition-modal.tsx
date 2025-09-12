@@ -22,7 +22,7 @@ const formatCurrency = (value: number) =>
   `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 const formatPercentage = (value: number, total: number) =>
-    `${((value / total) * 100).toFixed(2)}%`;
+    `${total > 0 ? ((value / total) * 100).toFixed(2) : '0.00'}%`;
 
 
 const COLORS = {
@@ -50,11 +50,12 @@ const CustomTooltip = ({ active, payload }: any) => {
 
 export function IndexCompositionModal({ data, isOpen, onClose }: IndexCompositionModalProps) {
     const { indexValue, components, vusDetails } = data;
+    const totalPdm = components.vm + components.vus + components.crs;
 
     const ucsCompositionData = [
-        { name: 'Valor da Madeira (VM)', value: components.vm, percent: formatPercentage(components.vm, indexValue), fill: COLORS.VM },
-        { name: 'Valor de Uso do Solo (VUS)', value: components.vus, percent: formatPercentage(components.vus, indexValue), fill: COLORS.VUS },
-        { name: 'Custo Socioambiental (CRS)', value: components.crs, percent: formatPercentage(components.crs, indexValue), fill: COLORS.CRS },
+        { name: 'Valor da Madeira (VMAD)', value: components.vm, percent: formatPercentage(components.vm, totalPdm), fill: COLORS.VM },
+        { name: 'Valor de Uso do Solo (VUS)', value: components.vus, percent: formatPercentage(components.vus, totalPdm), fill: COLORS.VUS },
+        { name: 'Custo Socioambiental (CRS)', value: components.crs, percent: formatPercentage(components.crs, totalPdm), fill: COLORS.CRS },
     ];
     
     const vusTotal = vusDetails.pecuaria + vusDetails.milho + vusDetails.soja;
@@ -78,12 +79,12 @@ export function IndexCompositionModal({ data, isOpen, onClose }: IndexCompositio
                 {/* Left Side: Details & Legend */}
                 <div className="flex flex-col space-y-6">
                     <div>
-                        <h3 className="text-sm font-medium text-muted-foreground">Valor Total do Índice</h3>
+                        <h3 className="text-sm font-medium text-muted-foreground">Valor Final do Índice UCS</h3>
                         <p className="text-3xl font-bold text-primary">{formatCurrency(indexValue)}</p>
                     </div>
                     <Separator />
                     <div className="space-y-4">
-                        <h4 className="font-semibold">Componentes Principais</h4>
+                        <h4 className="font-semibold">Componentes do PDM (Potencial Desflorestador Monetizado)</h4>
                         {ucsCompositionData.map(item => (
                             <div key={item.name} className="flex justify-between items-center text-sm">
                                 <div className="flex items-center gap-2">
@@ -99,7 +100,7 @@ export function IndexCompositionModal({ data, isOpen, onClose }: IndexCompositio
                     </div>
                     <Separator />
                     <div className="space-y-4">
-                        <h4 className="font-semibold">Detalhes do VUS</h4>
+                        <h4 className="font-semibold">Detalhes do VUS (Valor de Uso do Solo)</h4>
                         {vusCompositionData.map(item => (
                             <div key={item.name} className="flex justify-between items-center text-sm">
                                 <div className="flex items-center gap-2">
@@ -118,7 +119,7 @@ export function IndexCompositionModal({ data, isOpen, onClose }: IndexCompositio
                 {/* Right Side: Charts */}
                 <div className="flex flex-col space-y-2">
                     <div className="w-full h-[250px]">
-                        <h4 className="text-center font-semibold text-muted-foreground mb-2">Composição UCS</h4>
+                        <h4 className="text-center font-semibold text-muted-foreground mb-2">Composição PDM</h4>
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
                                 <Tooltip content={<CustomTooltip />} />

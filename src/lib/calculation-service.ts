@@ -1,7 +1,5 @@
 
 
-'use server';
-
 /**
  * @fileOverview A pure, synchronous service for performing UCS Index calculations.
  * This file should NOT be marked with 'use server' as it contains only calculation logic

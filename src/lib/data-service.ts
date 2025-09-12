@@ -8,7 +8,8 @@ import { ASSET_COLLECTION_MAP } from './marketdata-config';
 import { db } from './firebase-admin-config';
 import admin from 'firebase-admin';
 import { Timestamp } from 'firebase-admin/firestore';
-import { format } from 'date-fns';
+import { getFormulaParameters } from './formula-service';
+import { calculateIndex } from './calculation-service';
 
 
 // --- Functions to get data from FIRESTORE ---
@@ -276,41 +277,47 @@ export async function getCotacoesHistorico(ativo: string, limit: number = 30, fo
 
 
 export async function getUcsIndexValue(interval: HistoryInterval = '1d', forDate?: string): Promise<{ latest: UcsData, history: ChartData[] }> {
-    const historyCollectionRef = db.collection('ucs_index_history');
-    
-    const limitMap = { '1d': 30, '1wk': 26, '1mo': 60 };
-    const qLimit = limitMap[interval] || 30;
-
-    let latestData: UcsData = {
-        indexValue: 0, isConfigured: false,
-        components: { vm: 0, vus: 0, crs: 0 },
-        vusDetails: { pecuaria: 0, milho: 0, soja: 0 }
-    };
+    let latestData: UcsData;
     const history: ChartData[] = [];
 
     try {
-        let q;
-        if (forDate) {
-             const targetDate = new Date(forDate);
-             targetDate.setUTCHours(23, 59, 59, 999);
-             q = historyCollectionRef.where('savedAt', '<=', Timestamp.fromDate(targetDate)).orderBy('savedAt', 'desc').limit(qLimit);
-        } else {
-            q = historyCollectionRef.orderBy('savedAt', 'desc').limit(qLimit);
-        }
-       
-        const querySnapshot = await q.get();
-        
-        if (!querySnapshot.empty) {
-            const latestDoc = querySnapshot.docs[0];
-            const data = latestDoc.data();
-            latestData = {
-                indexValue: data.value,
-                isConfigured: data.isConfigured ?? false, 
-                components: data.components ?? { vm: 0, vus: 0, crs: 0 },
-                vusDetails: data.vusDetails ?? { pecuaria: 0, milho: 0, soja: 0 }
-            };
+        const [formulaParams, commodities] = await Promise.all([
+            getFormulaParameters(),
+            getCommodityPrices(forDate)
+        ]);
 
-             querySnapshot.forEach(doc => {
+        if (commodities.some(c => c.price === 0)) {
+            console.warn(`[DataService] Missing price data for date ${forDate}. Index will not be calculated for this date.`);
+        }
+
+        latestData = calculateIndex(commodities, formulaParams);
+        
+        // Save the newly calculated index to history
+        if (latestData.isConfigured && latestData.indexValue > 0) {
+            const historyCollectionRef = db.collection('ucs_index_history');
+            const dateToSave = forDate ? new Date(forDate) : new Date();
+            dateToSave.setUTCHours(12,0,0,0); // Normalize to midday UTC
+            const docId = dateToSave.toISOString().split('T')[0];
+
+            await historyCollectionRef.doc(docId).set({
+                value: latestData.indexValue,
+                isConfigured: latestData.isConfigured,
+                components: latestData.components,
+                vusDetails: latestData.vusDetails,
+                savedAt: Timestamp.fromDate(dateToSave)
+            }, { merge: true });
+        }
+
+
+        // Fetch historical data for chart
+        const limitMap = { '1d': 30, '1wk': 26, '1mo': 60 };
+        const qLimit = limitMap[interval] || 30;
+
+        const historyQuery = db.collection('ucs_index_history').orderBy('savedAt', 'desc').limit(qLimit);
+        const querySnapshot = await historyQuery.get();
+
+        if (!querySnapshot.empty) {
+             querySnapshot.docs.forEach(doc => {
                 const data = doc.data();
                 const timestamp = data.savedAt;
                 const date = timestamp?.toDate ? timestamp.toDate() : (timestamp ? new Date(timestamp) : new Date());
@@ -320,24 +327,16 @@ export async function getUcsIndexValue(interval: HistoryInterval = '1d', forDate
                     value: data.value,
                 });
             });
-
-        } else {
-            const formulaDoc = await db.collection('settings').doc('formula_parameters').get();
-            if (formulaDoc.exists) {
-                latestData.isConfigured = formulaDoc.data()?.isConfigured ?? false;
-            }
         }
     } catch (error) {
         console.error(`[DataService] Failed to get index history. Error: ${error}`);
-        try {
-            const formulaDoc = await db.collection('settings').doc('formula_parameters').get();
-             if (formulaDoc && formulaDoc.exists) {
-                latestData.isConfigured = formulaDoc.data()?.isConfigured ?? false;
-            }
-        } catch(e) {
-             console.error(`[DataService] CRITICAL: Could not even fetch formula status after initial failure. Error: ${e}`);
-             latestData.isConfigured = false;
-        }
+        const formulaDoc = await db.collection('settings').doc('formula_parameters').get();
+        const isConfigured = formulaDoc.exists ? (formulaDoc.data()?.isConfigured ?? false) : false;
+        latestData = {
+            indexValue: 0, isConfigured,
+            components: { vm: 0, vus: 0, crs: 0 },
+            vusDetails: { pecuaria: 0, milho: 0, soja: 0 }
+        };
     }
 
     return {
@@ -392,12 +391,12 @@ export async function migrateDataToOrganizedCollections(onlyRecent: boolean = fa
   try {
     console.log('[DataService] Starting data migration to organized collections...');
     
-    let cotacoesDoDiaRef = db.collection('cotacoes_do_dia');
+    let cotacoesDoDiaRef = db.collection('cotacoes_do_dia') as admin.firestore.CollectionReference | admin.firestore.Query;
     
     if (onlyRecent) {
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
-      cotacoesDoDiaRef = cotacoesDoDiaRef.where('timestamp', '>=', yesterday) as any;
+      cotacoesDoDiaRef = cotacoesDoDiaRef.where('timestamp', '>=', yesterday);
     }
     
     const snapshot = await cotacoesDoDiaRef.get();
