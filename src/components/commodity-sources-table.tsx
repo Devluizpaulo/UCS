@@ -40,24 +40,38 @@ const categoryLabels: Record<CommodityConfig['category'], string> = {
 export function CommoditySourcesTable({ data, loading, onEdit, onDelete }: CommoditySourcesTableProps) {
   if (loading) {
     return (
-      <div className="space-y-2">
-        {Array.from({ length: 7 }).map((_, i) => (
-          <div key={i} className="flex items-center space-x-4 p-2">
-            <Skeleton className="h-8 w-1/3" />
-            <Skeleton className="h-8 w-1/3" />
-            <Skeleton className="h-8 w-1/3" />
-            <Skeleton className="h-8 w-12" />
-          </div>
-        ))}
+      <div className="rounded-md border">
+        <Table>
+            <TableHeader>
+                <TableRow>
+                    <TableHead>Nome do Ativo</TableHead>
+                    <TableHead>Ticker</TableHead>
+                    <TableHead>Componente do Índice</TableHead>
+                    <TableHead>Fonte</TableHead>
+                    <TableHead className="text-right w-[50px]">Ações</TableHead>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+                 {[...Array(5)].map((_, i) => (
+                    <TableRow key={i}>
+                        <TableCell><Skeleton className="h-5 w-32"/></TableCell>
+                        <TableCell><Skeleton className="h-5 w-20"/></TableCell>
+                        <TableCell><Skeleton className="h-5 w-28"/></TableCell>
+                        <TableCell><Skeleton className="h-5 w-16"/></TableCell>
+                        <TableCell className="text-right"><Skeleton className="h-8 w-8 float-right"/></TableCell>
+                    </TableRow>
+                ))}
+            </TableBody>
+        </Table>
       </div>
     );
   }
   
   if (!data || data.length === 0) {
       return (
-        <div className="text-center py-10 border rounded-lg">
-            <p className="text-muted-foreground">Nenhum ativo configurado.</p>
-            <p className="text-sm text-muted-foreground mt-1">Adicione um novo ativo para começar a monitorar.</p>
+        <div className="text-center py-10 border rounded-lg bg-card text-muted-foreground">
+            <p className="font-semibold">Nenhum ativo configurado.</p>
+            <p className="text-sm mt-1">Adicione um novo ativo para começar a monitorar.</p>
         </div>
       )
   }
@@ -108,3 +122,5 @@ export function CommoditySourcesTable({ data, loading, onEdit, onDelete }: Commo
     </div>
   );
 }
+
+    

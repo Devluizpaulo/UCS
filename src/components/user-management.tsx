@@ -44,7 +44,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
-import { deleteUser, updateUser } from '@/lib/profile-service';
+import { deleteUser, updateUser, createUser as createNewUser } from '@/lib/profile-service';
+import { Skeleton } from '@/components/ui/skeleton';
 
 
 interface User {
@@ -190,42 +191,17 @@ Atenciosamente,
     
     try {
         if(editingUser) {
-            const response = await fetch('/api/users', {
-              method: 'PUT',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ ...data, id: editingUser.id }),
-            });
-            
-            if (!response.ok) {
-              const errorData = await response.json();
-              throw new Error(errorData.error || 'Erro ao atualizar usuário');
-            }
-            
+            await updateUser(editingUser.id, data);
             toast({
                 title: 'Usuário atualizado',
                 description: 'Os dados do usuário foram atualizados com sucesso.',
             });
         } else {
              const tempPassword = generateTemporaryPassword();
-             const response = await fetch('/api/users', {
-               method: 'POST',
-               headers: {
-                 'Content-Type': 'application/json',
-               },
-               body: JSON.stringify({ ...data, password: tempPassword }),
-             });
-             
-             if (!response.ok) {
-               const errorData = await response.json();
-               throw new Error(errorData.error || 'Erro ao criar usuário');
-             }
-             
-             const newUserResponse = await response.json();
+             const newUserResponse = await createNewUser({ ...data, password: tempPassword });
               
               const newUser: User = {
-                id: newUserResponse.id,
+                id: newUserResponse.uid,
                 email: data.email,
                 displayName: data.displayName,
                 phoneNumber: data.phoneNumber,
@@ -267,21 +243,13 @@ Atenciosamente,
     if (!deletingUserId) return;
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/users?id=${deletingUserId}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error('Erro ao excluir usuário');
-      }
-
-      const data = await response.json();
+      await deleteUser(deletingUserId);
       toast({
         title: 'Usuário excluído',
-        description: data.message || 'O usuário foi removido do sistema.',
+        description: 'O usuário foi removido do sistema.',
       });
       await fetchUsers();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao excluir usuário:', error);
       toast({
         variant: 'destructive',
@@ -334,11 +302,11 @@ Atenciosamente,
                  [...Array(3)].map((_, i) => (
                     <Card key={i} className="p-4 space-y-3 animate-pulse">
                         <div className="flex justify-between items-start">
-                            <div className="w-3/4 h-5 bg-muted rounded"></div>
-                            <div className="w-6 h-6 bg-muted rounded"></div>
+                            <Skeleton className="w-3/4 h-5 bg-muted rounded" />
+                            <Skeleton className="w-6 h-6 bg-muted rounded" />
                         </div>
-                        <div className="w-1/2 h-4 bg-muted rounded"></div>
-                        <div className="w-1/3 h-4 bg-muted rounded"></div>
+                        <Skeleton className="w-1/2 h-4 bg-muted rounded" />
+                        <Skeleton className="w-1/3 h-4 bg-muted rounded" />
                     </Card>
                  ))
             ) : users.length === 0 ? (
@@ -406,12 +374,16 @@ Atenciosamente,
             </TableHeader>
             <TableBody>
               {isFetching ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8">
-                    <Loader2 className="h-6 w-6 animate-spin mx-auto" />
-                    <p className="mt-2 text-sm text-muted-foreground">Carregando usuários...</p>
-                  </TableCell>
-                </TableRow>
+                [...Array(5)].map((_, i) => (
+                    <TableRow key={i}>
+                        <TableCell><Skeleton className="h-5 w-32"/></TableCell>
+                        <TableCell><Skeleton className="h-5 w-40"/></TableCell>
+                        <TableCell><Skeleton className="h-6 w-20"/></TableCell>
+                        <TableCell><Skeleton className="h-6 w-24"/></TableCell>
+                        <TableCell><Skeleton className="h-5 w-24"/></TableCell>
+                        <TableCell className="text-right"><Skeleton className="h-8 w-8 float-right"/></TableCell>
+                    </TableRow>
+                ))
               ) : users.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center py-8">
@@ -616,3 +588,5 @@ Atenciosamente,
     </>
   );
 }
+
+    
