@@ -118,28 +118,71 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose, selectedD
                                 <span className="text-xs text-muted-foreground">{asset.lastUpdated}</span>
                             </div>
                             {loading ? (
-                                <div className="h-[250px] w-full flex items-center justify-center rounded-md border">
-                                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                                    <p className="text-sm text-muted-foreground ml-2">Carregando gráfico...</p>
+                                <div className="h-[300px] w-full flex items-center justify-center rounded-lg border bg-gradient-to-br from-background to-muted/20">
+                                    <div className="flex flex-col items-center gap-3">
+                                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                                        <p className="text-sm text-muted-foreground font-medium">Carregando dados históricos...</p>
+                                    </div>
+                                </div>
+                            ) : chartData.length === 0 ? (
+                                <div className="h-[300px] w-full flex items-center justify-center rounded-lg border bg-gradient-to-br from-background to-muted/20">
+                                    <div className="flex flex-col items-center gap-3 text-center">
+                                        <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+                                            <Icon className="h-6 w-6 text-muted-foreground" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-medium text-foreground">Nenhum dado disponível</p>
+                                            <p className="text-xs text-muted-foreground mt-1">Não há dados históricos para exibir</p>
+                                        </div>
+                                    </div>
                                 </div>
                             ) : (
-                                <div className="h-[250px] w-full">
+                                <div className="h-[300px] w-full rounded-lg border bg-gradient-to-br from-background to-muted/10 p-4">
                                     <ChartContainer config={chartConfig} className="w-full h-full">
                                         <ResponsiveContainer width="100%" height="100%">
-                                            <AreaChart data={chartData} margin={{ left: 10, right: 10, top: 10, bottom: 0 }}>
-                                                <CartesianGrid vertical={false} />
-                                                <XAxis dataKey="time" tickLine={false} axisLine={false} tickMargin={8} fontSize={12} />
+                                            <AreaChart data={chartData} margin={{ left: 20, right: 20, top: 20, bottom: 20 }}>
+                                                <defs>
+                                                    <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                                                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8}/>
+                                                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.1}/>
+                                                    </linearGradient>
+                                                </defs>
+                                                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted-foreground))" strokeOpacity={0.2} vertical={false} />
+                                                <XAxis 
+                                                    dataKey="time" 
+                                                    tickLine={false} 
+                                                    axisLine={false} 
+                                                    tickMargin={12} 
+                                                    fontSize={11}
+                                                    tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                                                />
                                                 <YAxis
-                                                    domain={['dataMin - (dataMin * 0.05)', 'dataMax + (dataMax * 0.05)']}
+                                                    domain={['dataMin - (dataMin * 0.02)', 'dataMax + (dataMax * 0.02)']}
                                                     tickLine={false}
                                                     axisLine={false}
-                                                    tickMargin={8}
-                                                    fontSize={12}
-                                                    width={80}
+                                                    tickMargin={12}
+                                                    fontSize={11}
+                                                    width={90}
+                                                    tick={{ fill: 'hsl(var(--muted-foreground))' }}
                                                     tickFormatter={(value) => formatCurrency(Number(value), asset.currency)}
                                                 />
-                                                <Tooltip cursor={false} content={<ChartTooltipContent indicator="dot" formatter={(value) => [formatCurrency(Number(value), asset.currency), 'Valor']} />} />
-                                                <Area dataKey="value" type="natural" fill="hsl(var(--primary))" fillOpacity={0.4} stroke="hsl(var(--primary))" />
+                                                <Tooltip 
+                                                    cursor={{ stroke: 'hsl(var(--primary))', strokeWidth: 1, strokeDasharray: '5 5' }} 
+                                                    content={<ChartTooltipContent 
+                                                        indicator="dot" 
+                                                        formatter={(value) => [formatCurrency(Number(value), asset.currency), 'Cotação']} 
+                                                        labelFormatter={(label) => `Data: ${label}`}
+                                                    />} 
+                                                />
+                                                <Area 
+                                                    dataKey="value" 
+                                                    type="monotone" 
+                                                    fill="url(#colorValue)" 
+                                                    stroke="hsl(var(--primary))" 
+                                                    strokeWidth={2}
+                                                    dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4 }}
+                                                    activeDot={{ r: 6, stroke: 'hsl(var(--primary))', strokeWidth: 2, fill: 'hsl(var(--background))' }}
+                                                />
                                             </AreaChart>
                                         </ResponsiveContainer>
                                     </ChartContainer>
@@ -149,39 +192,78 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose, selectedD
 
                         {/* Historical Data Table Section */}
                         <div className="flex flex-col flex-1 min-h-0">
-                            <h3 className="text-base sm:text-lg font-semibold mb-2">Cotações Históricas (Diário)</h3>
-                            <div className="rounded-md border overflow-hidden">
-                                <ScrollArea className="h-72 w-full">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-lg sm:text-xl font-bold text-foreground">Cotações Históricas</h3>
+                                <div className="text-xs text-muted-foreground bg-muted/50 px-3 py-1 rounded-full">
+                                    Últimos 30 dias
+                                </div>
+                            </div>
+                            <div className="rounded-lg border bg-gradient-to-br from-background to-muted/5 overflow-hidden shadow-sm">
+                                <ScrollArea className="h-80 w-full">
                                     <div className="min-w-[600px]">
                                         <Table>
-                                            <TableHeader className="sticky top-0 bg-muted/95 backdrop-blur-sm z-10">
-                                                <TableRow>
-                                                    <TableHead className="w-[80px] sm:w-[100px] text-xs sm:text-sm">Data</TableHead>
-                                                    <TableHead className="text-right text-xs sm:text-sm min-w-[90px]">Fechamento</TableHead>
-                                                    <TableHead className="text-right text-xs sm:text-sm min-w-[90px]">Abertura</TableHead>
-                                                    <TableHead className="text-right text-xs sm:text-sm min-w-[90px]">Máxima</TableHead>
-                                                    <TableHead className="text-right text-xs sm:text-sm min-w-[90px]">Mínima</TableHead>
+                                            <TableHeader className="sticky top-0 bg-gradient-to-r from-muted/95 to-muted/90 backdrop-blur-sm z-10 border-b">
+                                                <TableRow className="hover:bg-transparent">
+                                                    <TableHead className="w-[80px] sm:w-[100px] text-xs sm:text-sm font-semibold text-foreground">Data</TableHead>
+                                                    <TableHead className="text-right text-xs sm:text-sm min-w-[90px] font-semibold text-foreground">Fechamento</TableHead>
+                                                    <TableHead className="text-right text-xs sm:text-sm min-w-[90px] font-semibold text-foreground">Abertura</TableHead>
+                                                    <TableHead className="text-right text-xs sm:text-sm min-w-[90px] font-semibold text-foreground">Máxima</TableHead>
+                                                    <TableHead className="text-right text-xs sm:text-sm min-w-[90px] font-semibold text-foreground">Mínima</TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
                                                 {loading ? (
-                                                    Array.from({ length: 5 }).map((_, i) => (
-                                                        <TableRow key={i}>
-                                                            <TableCell><Skeleton className="h-4 w-12 sm:w-16" /></TableCell>
-                                                            <TableCell className="text-right"><Skeleton className="h-4 w-12 sm:w-16" /></TableCell>
-                                                            <TableCell className="text-right"><Skeleton className="h-4 w-12 sm:w-16" /></TableCell>
-                                                            <TableCell className="text-right"><Skeleton className="h-4 w-12 sm:w-16" /></TableCell>
-                                                            <TableCell className="text-right"><Skeleton className="h-4 w-12 sm:w-16" /></TableCell>
+                                                    Array.from({ length: 8 }).map((_, i) => (
+                                                        <TableRow key={i} className="hover:bg-muted/30">
+                                                            <TableCell className="py-3">
+                                                                <Skeleton className="h-4 w-16 sm:w-20 rounded" />
+                                                            </TableCell>
+                                                            <TableCell className="text-right py-3">
+                                                                <Skeleton className="h-4 w-16 sm:w-20 ml-auto rounded" />
+                                                            </TableCell>
+                                                            <TableCell className="text-right py-3">
+                                                                <Skeleton className="h-4 w-16 sm:w-20 ml-auto rounded" />
+                                                            </TableCell>
+                                                            <TableCell className="text-right py-3">
+                                                                <Skeleton className="h-4 w-16 sm:w-20 ml-auto rounded" />
+                                                            </TableCell>
+                                                            <TableCell className="text-right py-3">
+                                                                <Skeleton className="h-4 w-16 sm:w-20 ml-auto rounded" />
+                                                            </TableCell>
                                                         </TableRow>
                                                     ))
+                                                ) : historicalData.length === 0 ? (
+                                                    <TableRow>
+                                                        <TableCell colSpan={5} className="text-center py-12">
+                                                            <div className="flex flex-col items-center gap-3">
+                                                                <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+                                                                    <Icon className="h-6 w-6 text-muted-foreground" />
+                                                                </div>
+                                                                <div>
+                                                                    <p className="text-sm font-medium text-foreground">Nenhum dado histórico</p>
+                                                                    <p className="text-xs text-muted-foreground mt-1">Não há cotações disponíveis para este período</p>
+                                                                </div>
+                                                            </div>
+                                                        </TableCell>
+                                                    </TableRow>
                                                 ) : (
-                                                    historicalData.map((dataPoint) => (
-                                                        <TableRow key={dataPoint.id}>
-                                                            <TableCell className="font-medium text-xs sm:text-sm">{dataPoint.data || new Date(dataPoint.timestamp).toLocaleDateString('pt-BR')}</TableCell>
-                                                            <TableCell className="text-right font-mono text-xs sm:text-sm">{formatCurrency(dataPoint.ultimo, asset.currency)}</TableCell>
-                                                            <TableCell className="text-right font-mono text-xs sm:text-sm">{formatCurrency(dataPoint.abertura, asset.currency)}</TableCell>
-                                                            <TableCell className="text-right font-mono text-xs sm:text-sm">{formatCurrency(dataPoint.maxima, asset.currency)}</TableCell>
-                                                            <TableCell className="text-right font-mono text-xs sm:text-sm">{formatCurrency(dataPoint.minima, asset.currency)}</TableCell>
+                                                    historicalData.map((dataPoint, index) => (
+                                                        <TableRow key={dataPoint.id} className="hover:bg-muted/20 transition-colors border-b border-border/50">
+                                                            <TableCell className="font-semibold text-xs sm:text-sm py-3 text-foreground">
+                                                                {dataPoint.data || new Date(dataPoint.timestamp).toLocaleDateString('pt-BR')}
+                                                            </TableCell>
+                                                            <TableCell className="text-right font-mono text-xs sm:text-sm py-3 font-semibold text-primary">
+                                                                {formatCurrency(dataPoint.ultimo, asset.currency)}
+                                                            </TableCell>
+                                                            <TableCell className="text-right font-mono text-xs sm:text-sm py-3 text-muted-foreground">
+                                                                {formatCurrency(dataPoint.abertura, asset.currency)}
+                                                            </TableCell>
+                                                            <TableCell className="text-right font-mono text-xs sm:text-sm py-3 text-green-600 dark:text-green-400">
+                                                                {formatCurrency(dataPoint.maxima, asset.currency)}
+                                                            </TableCell>
+                                                            <TableCell className="text-right font-mono text-xs sm:text-sm py-3 text-red-600 dark:text-red-400">
+                                                                {formatCurrency(dataPoint.minima, asset.currency)}
+                                                            </TableCell>
                                                         </TableRow>
                                                     ))
                                                 )}
