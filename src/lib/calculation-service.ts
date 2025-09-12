@@ -50,7 +50,7 @@ export function calculateIndex(commodities: CommodityPriceData[], params: Formul
       const preco_madeira_usd = findPrice(commodities, 'vmad'); // Lumber price from CME
       const preco_boi_arroba_brl = findPrice(commodities, 'vus', 'Boi');
       const preco_milho_saca_brl = findPrice(commodities, 'vus', 'Milho');
-      const preco_soja_saca_usd = findPrice(commodities, 'vus', 'Soja');
+      const preco_soja_saca_usd = findprice(commodities, 'vus', 'Soja');
       const preco_carbono_eur = findPrice(commodities, 'crs'); // Carbon credit price
   
       // --- Data Validation ---
@@ -63,6 +63,7 @@ export function calculateIndex(commodities: CommodityPriceData[], params: Formul
       }
   
       // --- Price Conversions ---
+      const preco_madeira_brl = preco_madeira_usd * taxa_usd_brl;
       const preco_soja_saca_brl = preco_soja_saca_usd * taxa_usd_brl;
       // Convert price per 60kg saca to price per 1000kg (ton)
       const preco_milho_ton_brl = (preco_milho_saca_brl / 60) * 1000;
@@ -71,17 +72,17 @@ export function calculateIndex(commodities: CommodityPriceData[], params: Formul
 
       // --- 1. VUS (Valor de Uso do Solo) ---
       // Renda = Produtividade (em @, ton, etc.) * Preço (na mesma unidade)
-      const renda_pecuaria = params.PROD_BOI * preco_boi_arroba_brl;
-      const renda_milho = params.PROD_MILHO * preco_milho_ton_brl;
-      const renda_soja = params.PROD_SOJA * preco_soja_ton_brl;
+      const renda_pecuaria_ha = params.PROD_BOI * preco_boi_arroba_brl;
+      const renda_milho_ha = params.PROD_MILHO * preco_milho_ton_brl;
+      const renda_soja_ha = params.PROD_SOJA * preco_soja_ton_brl;
       
-      const renda_bruta_ponderada = (renda_pecuaria * params.PESO_PEC) + (renda_milho * params.PESO_MILHO) + (renda_soja * params.PESO_SOJA);
-      const VUS = renda_bruta_ponderada * params.FATOR_ARREND;
+      const renda_bruta_ponderada_ha = (renda_pecuaria_ha * params.PESO_PEC) + (renda_milho_ha * params.PESO_MILHO) + (renda_soja_ha * params.PESO_SOJA);
+      const vus_por_ha = renda_bruta_ponderada_ha * params.FATOR_ARREND;
+      const VUS = vus_por_ha * params.area_total;
       
       // --- 2. VMAD (Valor da Madeira) ---
-      // According to user: VMAD = (Fator_m3 × preço_madeira) × fator_conversão
-      // Assuming Fator_m3 is volume, price is per unit, and conversion adjusts it.
-      const VMAD = (params.VOLUME_MADEIRA_HA * (preco_madeira_usd * taxa_usd_brl)) * params.FATOR_CONVERSAO_SERRADA_TORA;
+      // Based on LOGICA_FORMULA_UCS.md: vMAD = produtividade_madeira × preço_madeira_m3 × area_total
+      const VMAD = params.produtividade_madeira * preco_madeira_brl * params.area_total;
 
       // --- 3. CRS (Custo da Responsabilidade Socioambiental) ---
       // CRS = CC + cH2O
@@ -121,9 +122,12 @@ export function calculateIndex(commodities: CommodityPriceData[], params: Formul
               crs: parseFloat(CRS.toFixed(2)),
           },
           vusDetails: {
-              pecuaria: parseFloat((renda_pecuaria * params.PESO_PEC * params.FATOR_ARREND).toFixed(2)),
-              milho: parseFloat((renda_milho * params.PESO_MILHO * params.FATOR_ARREND).toFixed(2)),
-              soja: parseFloat((renda_soja * params.PESO_SOJA * params.FATOR_ARREND).toFixed(2)),
+              pecuaria: parseFloat((renda_pecuaria_ha * params.PESO_PEC * params.FATOR_ARREND * params.area_total).toFixed(2)),
+              milho: parseFloat((renda_milho_ha * params.PESO_MILHO * params.FATOR_ARREND * params.area_total).toFixed(2)),
+              soja: parseFloat((renda_soja_ha * params.PESO_SOJA * params.FATOR_ARREND * params.area_total).toFixed(2)),
           }
       };
 }
+
+
+    
