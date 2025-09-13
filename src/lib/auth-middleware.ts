@@ -1,9 +1,10 @@
 
-import jwt from 'jsonwebtoken';
-import { NextRequest } from 'next/server';
-import { auth } from './firebase-admin-config';
+'use server';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+import { jwtVerify } from 'jose';
+import type { NextRequest } from 'next/server';
+
+const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'your-secret-key-change-in-production');
 
 interface JWTPayload {
   uid: string;
@@ -16,7 +17,7 @@ interface JWTPayload {
 
 /**
  * Verifica se o usuário está autenticado através do JWT token.
- * Esta função agora também valida o token com o Firebase Admin SDK para maior segurança.
+ * Esta função é otimizada para o Edge Runtime e não usa o Firebase Admin SDK.
  */
 export async function verifyAuth(request: NextRequest): Promise<JWTPayload | null> {
   try {
@@ -26,28 +27,19 @@ export async function verifyAuth(request: NextRequest): Promise<JWTPayload | nul
       return null;
     }
 
-    // 1. Verificar a assinatura JWT localmente
-    const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
+    // Verifica a assinatura JWT localmente com 'jose'
+    const { payload } = await jwtVerify(token, JWT_SECRET, {
+      algorithms: ['HS256'],
+    });
     
-    // 2. Verificar o token com o Firebase Admin para garantir que a sessão não foi revogada
-    // Isso previne que tokens JWT válidos, mas de sessões expiradas no Firebase, sejam aceitos.
-    const decodedFirebaseToken = await auth.verifyIdToken(token, true);
+    return payload as JWTPayload;
 
-    // 3. Garantir que o UID do token JWT corresponda ao do token Firebase
-    if (decoded.uid !== decodedFirebaseToken.uid) {
-        console.warn('Inconsistência de UID entre JWT e Firebase Token.');
-        return null;
-    }
-
-    return decoded;
   } catch (error: any) {
     // Log do erro para depuração no servidor
-    if (error.name === 'TokenExpiredError') {
-      console.log('Token JWT expirado.');
-    } else if (error.code === 'auth/id-token-revoked' || error.code === 'auth/id-token-expired') {
-      console.log('Token do Firebase expirado ou revogado.');
+    if (error.code === 'ERR_JWT_EXPIRED') {
+      console.log('Middleware: Token JWT expirado.');
     } else {
-      console.error('Erro na verificação do token:', error.name, error.message);
+      console.error('Middleware: Erro na verificação do token:', error.code, error.message);
     }
     return null;
   }

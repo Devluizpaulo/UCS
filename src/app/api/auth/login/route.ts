@@ -1,10 +1,10 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticateFirestoreUser } from '@/lib/firestore-auth-service';
-import jwt from 'jsonwebtoken';
+import { SignJWT } from 'jose';
 import { auth } from '@/lib/firebase-admin-config';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'your-secret-key-change-in-production');
 
 export async function POST(request: NextRequest) {
   try {
@@ -37,15 +37,15 @@ export async function POST(request: NextRequest) {
     const firebaseToken = await auth.createCustomToken(user.uid, additionalClaims);
 
     // Gerar JWT token que será usado para a sessão de cookie. O cliente irá usar o firebaseToken para logar no SDK.
-    const token = jwt.sign(
-      {
+    const token = await new SignJWT({
         uid: user.uid,
         email: user.email,
         ...additionalClaims
-      },
-      JWT_SECRET,
-      { expiresIn: '24h' }
-    );
+      })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setIssuedAt()
+      .setExpirationTime('24h')
+      .sign(JWT_SECRET);
 
     // Criar resposta com cookie seguro
     const response = NextResponse.json({
