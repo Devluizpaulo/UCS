@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, UserCircle } from 'lucide-react';
-import { getAuth } from 'firebase/auth'; // Only for getting the user object on the client
+import { auth } from '@/lib/firebase-config'; // Only for getting the user object on the client
 import { updateUserProfile } from '@/lib/profile-service';
 import { Skeleton } from './ui/skeleton';
 
@@ -27,7 +27,6 @@ export function UpdateProfileForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const { toast } = useToast();
-  const auth = getAuth();
   const user = auth.currentUser;
 
   const {

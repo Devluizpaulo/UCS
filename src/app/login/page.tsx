@@ -21,11 +21,12 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { getAuth, signInWithCustomToken } from 'firebase/auth';
+import { signInWithCustomToken } from 'firebase/auth';
+import { auth } from '@/lib/firebase-config'; // Importar a instância de auth
 
 const loginSchema = z.object({
   email: z.string().email('Por favor, insira um e-mail válido.'),
-  password: z.string().min(8, 'A senha deve ter pelo menos 8 caracteres.'),
+  password: z.string().min(1, 'A senha é obrigatória.'),
 });
 
 const adminSchema = z.object({
@@ -66,7 +67,6 @@ export default function LoginPage() {
 
       if (response.ok) {
         // Use o firebaseToken para logar no Firebase SDK do cliente
-        const auth = getAuth();
         await signInWithCustomToken(auth, result.firebaseToken);
         
         toast({
@@ -280,5 +280,3 @@ export default function LoginPage() {
     </>
   );
 }
-
-    

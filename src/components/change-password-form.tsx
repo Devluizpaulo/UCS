@@ -11,7 +11,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, KeyRound } from 'lucide-react';
-import { getAuth, EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
+import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
+import { auth } from '@/lib/firebase-config'; // Importar a instância de auth
 
 const passwordSchema = z.object({
   currentPassword: z.string().min(1, 'A senha atual é obrigatória.'),
@@ -30,7 +31,6 @@ type PasswordFormData = z.infer<typeof passwordSchema>;
 export function ChangePasswordForm() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const auth = getAuth();
 
   const {
     register,

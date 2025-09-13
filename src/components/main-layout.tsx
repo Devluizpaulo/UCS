@@ -48,9 +48,8 @@ import {
   SidebarTrigger,
   SidebarRail,
 } from '@/components/ui/sidebar';
-import { getAuth, signOut, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { firebaseConfig } from '@/lib/firebase-config';
-import { initializeApp, getApps, getApp } from 'firebase/app';
+import { signOut, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
+import { auth } from '@/lib/firebase-config'; // Importar auth
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from './ui/skeleton';
 import { FirstLoginPasswordReset } from './first-login-password-reset';
@@ -77,10 +76,6 @@ const settingsNavItems: NavItem[] = [
     { href: '/profile', icon: User, label: 'Meu Perfil' },
     { href: '/settings', icon: Settings, label: 'Configurações' },
 ]
-
-// Initialize Firebase only once
-const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-const auth = getAuth(app);
 
 
 export function MainLayout({ children }: { children: ReactNode }) {
@@ -167,10 +162,12 @@ export function MainLayout({ children }: { children: ReactNode }) {
     );
   }
   
-  // Do not render layout on login page
-  if (pathname === '/login' || pathname === '/forgot-password' || pathname === '/reset-password') {
+  // Do not render layout on public pages
+  const publicPaths = ['/login', '/forgot-password', '/reset-password'];
+  if (publicPaths.includes(pathname)) {
       return <>{children}</>;
   }
+
 
   // If no user, onAuthStateChanged will trigger redirect. Show loading meanwhile.
   if (!user) {
@@ -332,5 +329,3 @@ export function MainLayout({ children }: { children: ReactNode }) {
       </SidebarProvider>
   );
 }
-
-    
