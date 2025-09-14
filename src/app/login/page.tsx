@@ -130,21 +130,6 @@ export default function LoginPage() {
 
   return (
     <>
-      {isLoading && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm">
-          <div className="flex flex-col items-center gap-4 text-white">
-            <div className="flex items-center gap-3">
-              <TrendingUp className="h-12 w-12 text-green-400 animate-pulse" />
-              <div className="text-2xl font-bold">UCS Index</div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Loader2 className="h-6 w-6 animate-spin" />
-              <span className="text-lg">Carregando painel...</span>
-            </div>
-          </div>
-        </div>
-      )}
-      
       <div className="relative h-screen w-full overflow-hidden">
         <div className="absolute inset-0 z-0">
           <Image
@@ -164,7 +149,7 @@ export default function LoginPage() {
               <div className="grid gap-4 text-center">
                 <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
                   <div className="relative">
-                    <TrendingUp className="h-16 w-16 sm:h-12 sm:w-12 text-green-500 drop-shadow-lg" />
+                    <TrendingUp className="h-16 w-16 sm:h-12 sm:w-12 text-green-500 drop-shadow-lg animate-pulse" />
                     <div className="absolute -inset-2 rounded-full bg-green-500/20 blur-xl"></div>
                   </div>
                   <div className="flex flex-col items-center sm:items-start">
