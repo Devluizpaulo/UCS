@@ -6,26 +6,40 @@ import { verifyAuth } from '@/lib/auth-middleware';
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
-  // Lista de rotas públicas
+  // Lista de rotas públicas que não exigem autenticação
   const publicPaths = ['/login', '/forgot-password', '/reset-password'];
 
-  // Permitir acesso a rotas públicas e APIs
+  // Permitir acesso a rotas públicas e APIs sem verificação
   if (publicPaths.includes(pathname) || pathname.startsWith('/api/')) {
     return NextResponse.next();
   }
   
-  // Verificar autenticação JWT para outras rotas
+  // Verificar autenticação JWT para todas as outras rotas
   const user = await verifyAuth(request);
   
   if (!user) {
-    // Se não autenticado, redirecionar para login
+    // Se não autenticado, redirecionar para a página de login
     const url = request.nextUrl.clone();
     url.pathname = '/login';
-    url.search = ''; // Limpa query params
+    url.search = ''; // Limpar quaisquer query params
     return NextResponse.redirect(url);
   }
   
-  // Se autenticado, permitir acesso
+  // Lógica para o primeiro login
+  const isFirstLogin = user.isFirstLogin === true;
+  const isFirstLoginPage = pathname === '/first-login-password-reset';
+
+  if (isFirstLogin && !isFirstLoginPage) {
+    // Se for o primeiro login e o usuário não estiver na página correta, redireciona para lá
+    return NextResponse.redirect(new URL('/first-login-password-reset', request.url));
+  }
+  
+  if (!isFirstLogin && isFirstLoginPage) {
+    // Se não for o primeiro login e o usuário tentar acessar a página de troca, redireciona para o painel
+    return NextResponse.redirect(new URL('/', request.url));
+  }
+  
+  // Se autenticado e não for o primeiro login (ou já estiver na página correta), permitir acesso
   return NextResponse.next();
 }
 

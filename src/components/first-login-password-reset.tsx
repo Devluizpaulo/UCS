@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Eye, EyeOff, CheckCircle } from 'lucide-react';
 import { auth } from '@/lib/firebase-config';
 import { updatePassword } from 'firebase/auth';
+import { useRouter } from 'next/navigation';
 
 const passwordResetSchema = z.object({
   newPassword: z.string()
@@ -27,16 +28,13 @@ const passwordResetSchema = z.object({
 
 type PasswordResetFormData = z.infer<typeof passwordResetSchema>;
 
-interface FirstLoginPasswordResetProps {
-  onPasswordChanged: () => void;
-}
-
-export function FirstLoginPasswordReset({ onPasswordChanged }: FirstLoginPasswordResetProps) {
+export function FirstLoginPasswordReset() {
   const [isLoading, setIsLoading] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordChanged, setPasswordChanged] = useState(false);
   const { toast } = useToast();
+  const router = useRouter();
 
   const form = useForm<PasswordResetFormData>({
     resolver: zodResolver(passwordResetSchema),
@@ -60,7 +58,6 @@ export function FirstLoginPasswordReset({ onPasswordChanged }: FirstLoginPasswor
       const response = await fetch('/api/auth/change-first-login-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ newPassword: data.newPassword }) // A senha é necessária para validação de re-autenticação no backend
       });
 
       if (!response.ok) {
@@ -78,7 +75,7 @@ export function FirstLoginPasswordReset({ onPasswordChanged }: FirstLoginPasswor
       await user.getIdToken(true);
 
       setTimeout(() => {
-        onPasswordChanged();
+        router.push('/'); // Redireciona para o painel
       }, 2000);
 
     } catch (error: any) {
@@ -200,7 +197,7 @@ export function FirstLoginPasswordReset({ onPasswordChanged }: FirstLoginPasswor
 
               <Button type="submit" className="w-full button-mobile" disabled={isLoading}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Alterar Senha
+                Alterar Senha e Acessar
               </Button>
             </form>
           </CardContent>

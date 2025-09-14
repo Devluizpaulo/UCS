@@ -6,8 +6,6 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import {
-  Bell,
-  FileSpreadsheet,
   LayoutDashboard,
   Library,
   Settings,
@@ -17,11 +15,8 @@ import {
   User as UserIcon,
   FileText,
   Loader2,
-  Database,
-  RefreshCcw,
   Calculator,
   User,
-  PanelLeft,
 } from 'lucide-react';
 import Image from 'next/image';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -43,8 +38,6 @@ import {
   SidebarMenuButton,
   SidebarFooter,
   SidebarInset,
-  SheetHeader,
-  SheetTitle,
   SidebarTrigger,
   SidebarRail,
 } from '@/components/ui/sidebar';
@@ -52,8 +45,6 @@ import { signOut, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth
 import { auth } from '@/lib/firebase-config'; // Importar auth
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from './ui/skeleton';
-import { FirstLoginPasswordReset } from './first-login-password-reset';
-
 import { Button } from './ui/button';
 
 
@@ -71,19 +62,12 @@ const navItems: NavItem[] = [
   { href: '/ucs-calculator', icon: Calculator, label: 'Calculadora UCS' },
 ];
 
-const settingsNavItems: NavItem[] = [
-    { href: '/profile', icon: User, label: 'Meu Perfil' },
-    { href: '/settings', icon: Settings, label: 'Configurações' },
-]
-
-
 export function MainLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { toast } = useToast();
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isFirstLogin, setIsFirstLogin] = useState(false);
 
   
   useEffect(() => {
@@ -92,11 +76,17 @@ export function MainLayout({ children }: { children: ReactNode }) {
       if (user) {
         // User is signed in.
         setUser(user);
-        const tokenResult = await user.getIdTokenResult();
-        const firstLogin = tokenResult.claims.isFirstLogin === true;
-        setIsFirstLogin(firstLogin);
+        const tokenResult = await user.getIdTokenResult(true); // Force refresh token
+        const isFirstLogin = tokenResult.claims.isFirstLogin === true;
+        
+        // Middleware will handle redirection, but we can also log for debugging
+        if(isFirstLogin && pathname !== '/first-login-password-reset'){
+             console.log("Redirecting to first login password reset...");
+             router.push('/first-login-password-reset');
+        }
+
       } else {
-        // User is signed out.
+        // User is signed out. Middleware will handle the redirect.
         setUser(null);
         router.push('/login');
       }
@@ -105,7 +95,7 @@ export function MainLayout({ children }: { children: ReactNode }) {
 
     // Cleanup subscription on unmount
     return () => unsubscribe();
-  }, [router]);
+  }, [router, pathname]);
 
   const toggleTheme = () => {
     const html = document.documentElement;
@@ -131,7 +121,7 @@ export function MainLayout({ children }: { children: ReactNode }) {
         title: 'Logout realizado',
         description: 'Você foi desconectado com sucesso.',
       });
-      // The onAuthStateChanged listener will handle the redirect
+      // The onAuthStateChanged listener and middleware will handle the redirect
     } catch (error) {
       console.error('Logout failed:', error);
       toast({
@@ -151,9 +141,9 @@ export function MainLayout({ children }: { children: ReactNode }) {
     return name[0].toUpperCase();
   }
 
-
-
-  if (loading) {
+  // If loading or no user, show a full-screen loader.
+  // The middleware/auth listener will handle redirection logic.
+  if (loading || !user) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -161,37 +151,11 @@ export function MainLayout({ children }: { children: ReactNode }) {
     );
   }
   
-  // Do not render layout on public pages
-  const publicPaths = ['/login', '/forgot-password', '/reset-password'];
-  if (publicPaths.includes(pathname)) {
+  // Public pages (like the first-login page itself) should not render the main layout
+  const noLayoutPaths = ['/first-login-password-reset'];
+  if (noLayoutPaths.includes(pathname)) {
       return <>{children}</>;
   }
-
-
-  // If no user, onAuthStateChanged will trigger redirect. Show loading meanwhile.
-  if (!user) {
-    return (
-       <div className="flex h-screen w-full items-center justify-center bg-background">
-          <Loader2 className="ml-2 h-8 w-8 animate-spin text-primary" />
-        </div>
-    );
-  }
-
-  // If it's the first login, show the password reset component.
-  if (isFirstLogin) {
-    return (
-      <FirstLoginPasswordReset 
-        onPasswordChanged={async () => {
-          if (auth.currentUser) {
-            // Force refresh the token to get the updated custom claims
-            await auth.currentUser.getIdToken(true);
-          }
-          setIsFirstLogin(false);
-        }} 
-      />
-    );
-  }
-
 
 
   return (
