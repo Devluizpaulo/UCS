@@ -6,6 +6,7 @@ import { getCommodityPrices } from '@/lib/data-service';
 import type { CommodityPriceData } from '@/lib/types';
 import { CurrenciesTable } from './currencies-table';
 import { Skeleton } from './ui/skeleton';
+import { ScrollArea } from './ui/scroll-area';
 
 interface CurrenciesCardProps {
   selectedDate?: string;
@@ -61,7 +62,9 @@ export function CurrenciesCard({ selectedDate }: CurrenciesCardProps) {
             ))}
           </div>
         ) : (
-          <CurrenciesTable data={currencyData} selectedDate={selectedDate} />
+          <ScrollArea className="h-[250px] w-full">
+            <CurrenciesTable data={currencyData} selectedDate={selectedDate} />
+          </ScrollArea>
         )}
       </CardContent>
     </Card>
