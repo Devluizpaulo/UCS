@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getCommodityPrices } from '@/lib/data-service';
 import type { CommodityPriceData } from '@/lib/types';
-import { CommoditiesTable } from './commodities-table';
+import { UnderlyingAssetsTable } from './underlying-assets-table';
 import { Skeleton } from './ui/skeleton';
 import { ScrollArea } from './ui/scroll-area';
 
@@ -63,7 +63,7 @@ export function CommoditiesCard({ selectedDate }: CommoditiesCardProps) {
           </div>
         ) : (
           <ScrollArea className="h-[250px] w-full">
-            <CommoditiesTable data={commodityData} selectedDate={selectedDate} />
+            <UnderlyingAssetsTable data={commodityData} selectedDate={selectedDate} />
           </ScrollArea>
         )}
       </CardContent>

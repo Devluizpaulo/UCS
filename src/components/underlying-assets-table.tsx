@@ -1,6 +1,3 @@
-
-
-
 'use client';
 
 import { useState } from 'react';
@@ -50,7 +47,7 @@ export function UnderlyingAssetsTable({ data, loading, onManualUpdate, updatingA
   
   const renderTableRows = () => {
     if (loading) {
-        return Array.from({length: 7}).map((_, i) => (
+        return Array.from({length: 5}).map((_, i) => (
              <TableRow key={i} className="cursor-wait">
                 <TableCell>
                     <div className="flex items-center gap-3">
@@ -77,7 +74,7 @@ export function UnderlyingAssetsTable({ data, loading, onManualUpdate, updatingA
         return (
             <TableRow>
                 <TableCell colSpan={3} className="h-24 text-center">
-                    Nenhum ativo configurado. Adicione ativos na página de Configurações.
+                    Nenhum ativo configurado.
                 </TableCell>
             </TableRow>
         );
@@ -87,7 +84,7 @@ export function UnderlyingAssetsTable({ data, loading, onManualUpdate, updatingA
         const Icon = getIconForCategory(asset.category);
 
         return (
-            <TableRow key={asset.name} onClick={() => handleRowClick(asset)} className="cursor-pointer">
+            <TableRow key={asset.name} onClick={() => handleRowClick(asset)} className="cursor-pointer hover:bg-muted/50">
               <TableCell>
                 <div className="flex items-center gap-3">
                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
@@ -116,17 +113,9 @@ export function UnderlyingAssetsTable({ data, loading, onManualUpdate, updatingA
     });
   };
 
-  const hasAnyPriceData = data.some(asset => asset.price > 0);
-
   return (
     <div className="w-full">
-      <ScrollArea className="h-[calc(100vh-220px)] w-full">
         <Table>
-          {!loading && !hasAnyPriceData && (
-              <TableCaption className="py-4">
-                  Os preços ainda não foram carregados. Aguardando dados do n8n.
-              </TableCaption>
-          )}
           <TableHeader>
             <TableRow>
               <TableHead>Ativo</TableHead>
@@ -138,7 +127,6 @@ export function UnderlyingAssetsTable({ data, loading, onManualUpdate, updatingA
               {renderTableRows()}
           </TableBody>
         </Table>
-      </ScrollArea>
       {selectedAsset && (
         <AssetDetailModal
           asset={selectedAsset}
