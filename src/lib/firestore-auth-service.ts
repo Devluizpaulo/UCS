@@ -183,3 +183,41 @@ export async function completeFirstLoginInFirestore(uid: string): Promise<void> 
     const userDocRef = db.collection('users').doc(uid);
     await userDocRef.update({ isFirstLogin: false });
 }
+
+
+/**
+ * Atualiza um usuário no Firestore
+ */
+export async function updateFirestoreUser(userId: string, data: {
+    displayName: string;
+    phoneNumber?: string | null;
+    role: 'admin' | 'user';
+}): Promise<any> {
+    const userDocRef = db.collection('users').doc(userId);
+    const userDoc = await userDocRef.get();
+    if (!userDoc.exists) throw new Error('Usuário não encontrado.');
+
+    const updateData = {
+        displayName: data.displayName,
+        phoneNumber: data.phoneNumber || null,
+        role: data.role,
+        updatedAt: new Date().toISOString()
+    };
+
+    await userDocRef.update(updateData);
+    
+    const updatedDoc = await userDocRef.get();
+    const { passwordHash, ...userData } = updatedDoc.data() as FirestoreUser;
+    return { id: updatedDoc.id, ...userData };
+}
+
+/**
+ * Exclui um usuário do Firestore
+ */
+export async function deleteFirestoreUser(userId: string): Promise<void> {
+    const userDocRef = db.collection('users').doc(userId);
+    const userDoc = await userDocRef.get();
+    if (!userDoc.exists) throw new Error('Usuário não encontrado.');
+
+    await userDocRef.delete();
+}

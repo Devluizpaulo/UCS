@@ -44,7 +44,6 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
-import { deleteUser, updateUser, createUser as createNewUser } from '@/lib/profile-service';
 import { Skeleton } from '@/components/ui/skeleton';
 
 
@@ -96,7 +95,7 @@ export function UserManagement() {
     return password;
   };
   
-  const generateWelcomeMessage = (user: User, password: string): {subject: string, body: string} => {
+  const generateWelcomeMessage = (user: {displayName?: string, email?:string}, password: string): {subject: string, body: string} => {
     const subject = "🎉 Bem-vindo ao Sistema Índice UCS - Suas credenciais de acesso";
     const body = `
 🎉 Olá, ${user.displayName}!
@@ -191,21 +190,34 @@ Atenciosamente,
     
     try {
         if(editingUser) {
-            await updateUser(editingUser.id, data);
+            await fetch('/api/users', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: editingUser.id, ...data }),
+            });
+
             toast({
                 title: 'Usuário atualizado',
                 description: 'Os dados do usuário foram atualizados com sucesso.',
             });
         } else {
              const tempPassword = generateTemporaryPassword();
-             const newUserResponse = await createNewUser({ ...data, password: tempPassword });
+             const response = await fetch('/api/users', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...data, password: tempPassword }),
+             });
               
+             if(!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || "Falha ao criar usuário");
+             }
+
+             const newUserResponse = await response.json();
+
               const newUser: User = {
-                id: newUserResponse.uid,
-                email: data.email,
-                displayName: data.displayName,
-                phoneNumber: data.phoneNumber,
-                role: data.role,
+                id: newUserResponse.id,
+                ...data,
                 isFirstLogin: true,
                 createdAt: new Date().toISOString()
               };
@@ -243,7 +255,12 @@ Atenciosamente,
     if (!deletingUserId) return;
     setIsLoading(true);
     try {
-      await deleteUser(deletingUserId);
+      const response = await fetch(`/api/users?id=${deletingUserId}`, { method: 'DELETE' });
+       if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Falha ao excluir usuário");
+      }
+
       toast({
         title: 'Usuário excluído',
         description: 'O usuário foi removido do sistema.',
@@ -588,5 +605,3 @@ Atenciosamente,
     </>
   );
 }
-
-    

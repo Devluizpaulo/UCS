@@ -20,7 +20,6 @@ O objetivo é fornecer a gestores, analistas financeiros e produtores rurais uma
     - Criação de relatórios em formato PDF e Excel (XLSX).
     - Análise executiva gerada por IA com base nos dados do período selecionado e em observações do usuário.
     - Funcionalidade de pré-visualização, download e compartilhamento nativo.
-- **Alertas de Preço:** Sistema para configurar notificações por e-mail quando o índice atinge um determinado valor (acima ou abaixo de um limiar).
 - **Autenticação e Gestão de Usuários:** Sistema de login seguro e painel de administração para criar, editar e gerenciar usuários e suas permissões.
 
 ## 3. Arquitetura e Stack Tecnológica

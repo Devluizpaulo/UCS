@@ -43,7 +43,7 @@ Funcionalidade avançada para exportar os dados da plataforma em formatos profis
 ### e. Gestão de Usuários e Perfis
 Sistema completo para administração da plataforma e personalização da experiência do usuário.
 - **Autenticação Segura:** Sistema de login robusto com e-mail e senha.
-- **Gerenciamento de Usuários (Painel Admin):** Uma área restrita para administradores, onde é possível criar, visualizar e (futuramente) editar/remover usuários do sistema, além de atribuir funções (Admin/Usuário).
+- **Gerenciamento de Usuários (Painel Admin):** Uma área restrita para administradores, onde é possível criar, visualizar, editar e excluir usuários do sistema, além de atribuir funções (Admin/Usuário).
 - **Fluxo de Primeiro Login:** Um novo usuário recebe uma senha temporária e é obrigado a criar uma senha definitiva e segura no primeiro acesso, garantindo a segurança da conta.
 - **Gestão de Perfil:** Cada usuário pode atualizar suas informações pessoais, como nome, telefone, e alterar sua própria senha.
 
@@ -59,13 +59,7 @@ Sistema completo para administração da plataforma e personalização da experi
 
 As funcionalidades abaixo foram contempladas na visão original do projeto, mas sua implementação ainda não foi concluída.
 
-### a. Alertas de Preço por E-mail
-- **O que falta:** A interface para configurar os alertas está pronta e funcional, mas a lógica de backend para monitorar os preços e disparar os e-mails ainda precisa ser implementada. Atualmente, os alertas são apenas salvos no estado local do navegador.
-
-### b. Coleta de Dados Automatizada (n8n)
+### a. Coleta de Dados Automatizada (n8n)
 - **Status:** Para garantir a disponibilidade de todas as cotações necessárias, a coleta de dados será realizada através de um processo de *web scraping* automatizado, orquestrado pela ferramenta n8n.
 - **Funcionamento:** O processo de raspagem de dados será executado diariamente às 7h da manhã em dias úteis. Ele buscará os preços de fechamento mais recentes para todas as commodities que compõem o índice e os salvará no banco de dados da plataforma.
 - **Próximo Passo:** O fluxo de trabalho no n8n está definido e pronto para ser ativado em produção, garantindo que os dados da plataforma permaneçam sempre atualizados sem intervenção humana.
-
-### c. Edição e Exclusão de Usuários
-- **O que falta:** Na tela de "Gerenciamento de Usuários", a funcionalidade de criar e listar usuários está 100% funcional. No entanto, as ações de **editar** as informações de um usuário existente e **excluir** um usuário ainda não foram implementadas no backend.
