@@ -1,46 +1,42 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { authenticateFirestoreUser } from '@/lib/firestore-auth-service';
-import { SignJWT } from 'jose';
 import { auth } from '@/lib/firebase-admin-config';
+import { SignJWT } from 'jose';
+import { db } from '@/lib/firebase-admin-config';
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'your-secret-key-change-in-production');
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { email, password } = body;
+    const { token: idToken } = await request.json();
 
-    // Validações básicas
-    if (!email || !password) {
-      return NextResponse.json(
-        { error: 'Email e senha são obrigatórios.' },
-        { status: 400 }
-      );
+    if (!idToken) {
+      return NextResponse.json({ error: 'Token de autenticação não fornecido.' }, { status: 400 });
     }
 
-    // Autenticar usuário
-    const user = await authenticateFirestoreUser(email, password);
+    // Verificar o ID Token do Firebase
+    const decodedToken = await auth.verifyIdToken(idToken);
+    const { uid, email, role, isFirstLogin } = decodedToken;
+
+    // Obter dados adicionais do Firestore se necessário
+    const userDoc = await db.collection('users').doc(uid).get();
+    if (!userDoc.exists) {
+        // Isso pode acontecer se o usuário foi criado no Auth mas não no Firestore.
+        // É um caso de borda que pode ser tratado criando o perfil aqui.
+        throw new Error('Perfil de usuário não encontrado no banco de dados.');
+    }
+    const userData = userDoc.data();
     
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Email ou senha incorretos.' },
-        { status: 401 }
-      );
+    if (!userData?.isActive) {
+      throw new Error('Conta desativada. Entre em contato com o administrador.');
     }
     
-    // Criar um token customizado do Firebase
-    const additionalClaims = {
-        role: user.role,
-        isFirstLogin: user.isFirstLogin || false,
-    };
-    const firebaseToken = await auth.createCustomToken(user.uid, additionalClaims);
-
-    // Gerar JWT token que será usado para a sessão de cookie. O cliente irá usar o firebaseToken para logar no SDK.
-    const token = await new SignJWT({
-        uid: user.uid,
-        email: user.email,
-        ...additionalClaims
+    // Gerar JWT token que será usado para a sessão de cookie
+    const sessionToken = await new SignJWT({
+        uid,
+        email,
+        role: userData.role, // Usar a role do Firestore como fonte da verdade
+        isFirstLogin: userData.isFirstLogin,
       })
       .setProtectedHeader({ alg: 'HS256' })
       .setIssuedAt()
@@ -51,17 +47,15 @@ export async function POST(request: NextRequest) {
     const response = NextResponse.json({
       message: 'Login realizado com sucesso!',
       user: {
-        uid: user.uid,
-        email: user.email,
-        displayName: user.displayName,
-        role: user.role,
-        isFirstLogin: user.isFirstLogin
+        uid: uid,
+        email: email,
+        displayName: userData.displayName,
+        role: userData.role,
+        isFirstLogin: userData.isFirstLogin
       },
-      firebaseToken: firebaseToken, // Enviar o token do Firebase para o cliente
     });
 
-    // Definir cookie com o token
-    response.cookies.set('auth-token', token, {
+    response.cookies.set('auth-token', sessionToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
@@ -74,11 +68,15 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('Erro na API de login:', error);
     
-    const status = error.message?.includes('desativada') ? 403 : 401;
+    let errorMessage = 'Erro interno do servidor.';
+    if (error.code === 'auth/id-token-expired') {
+        errorMessage = 'Sessão expirada, por favor, faça login novamente.';
+    } else if (error.code === 'auth/id-token-revoked') {
+        errorMessage = 'Sessão revogada. Faça login novamente.';
+    } else if (error.message?.includes('desativada')) {
+        errorMessage = error.message;
+    }
     
-    return NextResponse.json(
-      { error: error.message || 'Erro interno do servidor.' },
-      { status }
-    );
+    return NextResponse.json({ error: errorMessage }, { status: 401 });
   }
 }

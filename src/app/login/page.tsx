@@ -21,8 +21,8 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { signInWithCustomToken } from 'firebase/auth';
-import { auth } from '@/lib/firebase-config'; // Importar a instância de auth
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '@/lib/firebase-config';
 
 const loginSchema = z.object({
   email: z.string().email('Por favor, insira um e-mail válido.'),
@@ -57,35 +57,40 @@ export default function LoginPage() {
   const onLoginSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     try {
+      const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
+      const idToken = await userCredential.user.getIdToken();
+
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ token: idToken }),
       });
 
-      const result = await response.json();
-
-      if (response.ok) {
-        // Use o firebaseToken para logar no Firebase SDK do cliente
-        await signInWithCustomToken(auth, result.firebaseToken);
-        
-        toast({
-          title: 'Login bem-sucedido',
-          description: 'Carregando painel...',
-        });
-
-        // O onAuthStateChanged no MainLayout irá redirecionar
-        router.push('/');
-
-      } else {
+      if (!response.ok) {
+        const result = await response.json();
         throw new Error(result.error || 'Erro no login');
       }
+      
+      toast({
+        title: 'Login bem-sucedido',
+        description: 'Carregando painel...',
+      });
+
+      router.push('/');
+
     } catch (error: any) {
       console.error('Login failed:', error);
+      let description = 'Ocorreu um erro. Por favor, tente novamente.';
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+          description = 'Email ou senha incorretos.';
+      } else if (error.message.includes('Conta desativada')) {
+          description = error.message;
+      }
+      
       toast({
         variant: 'destructive',
         title: 'Falha no Login',
-        description: error.message || 'Ocorreu um erro. Por favor, tente novamente.',
+        description,
       });
       setIsLoading(false);
     } 

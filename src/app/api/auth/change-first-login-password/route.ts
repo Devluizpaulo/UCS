@@ -1,10 +1,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth-middleware';
-import { updateUserPassword, completeFirstLoginInFirestore } from '@/lib/firestore-auth-service';
-import jwt from 'jsonwebtoken';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+import { completeFirstLogin, updateUserPasswordInAuth } from '@/lib/profile-service';
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,10 +16,10 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { currentPassword, newPassword } = body;
+    const { newPassword } = body;
 
-    if (!currentPassword || !newPassword) {
-      return NextResponse.json({ error: 'Senha atual e nova senha são obrigatórias' }, { status: 400 });
+    if (!newPassword) {
+      return NextResponse.json({ error: 'Nova senha é obrigatória' }, { status: 400 });
     }
     
     if (newPassword.length < 6 || newPassword.length > 8) {
@@ -34,37 +31,20 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      await updateUserPassword(user.uid, currentPassword, newPassword);
+      // Atualiza a senha no Firebase Auth
+      await updateUserPasswordInAuth(user.uid, newPassword);
+      // Atualiza a claim 'isFirstLogin' para false
+      await completeFirstLogin(user.uid);
       
-      const newToken = jwt.sign(
-        { uid: user.uid, email: user.email, role: user.role, isFirstLogin: false },
-        JWT_SECRET,
-        { expiresIn: '24h' }
-      );
-
-      const response = NextResponse.json({ message: 'Senha alterada com sucesso' });
-
-      response.cookies.set('auth-token', newToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: 24 * 60 * 60,
-        path: '/',
-      });
-
-      return response;
+      // O cliente fará o refresh do token para obter as novas claims
+      return NextResponse.json({ message: 'Senha alterada com sucesso. Faça login novamente para continuar.' });
 
     } catch (error: any) {
       console.error('Erro ao alterar senha:', error);
-      
-      if (error.message?.includes('senha atual está incorreta')) {
-        return NextResponse.json({ error: 'A senha atual fornecida está incorreta' }, { status: 400 });
-      }
-      
-      return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
+      return NextResponse.json({ error: 'Erro interno do servidor ao alterar a senha.' }, { status: 500 });
     }
 
-  } catch (error: any) {
+  } catch (error: any) => {
     console.error('Erro na API de alteração de senha:', error);
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
   }

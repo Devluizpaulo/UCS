@@ -11,6 +11,8 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, ArrowLeft, Mail, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
+import { auth } from '@/lib/firebase-config';
+import { sendPasswordResetEmail } from 'firebase/auth';
 
 const forgotPasswordSchema = z.object({
   email: z.string().email('Digite um email válido'),
@@ -32,36 +34,28 @@ export default function ForgotPasswordPage() {
     setIsLoading(true);
     
     try {
-      const response = await fetch('/api/auth/forgot-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: data.email }),
+      await sendPasswordResetEmail(auth, data.email);
+      setSubmittedEmail(data.email);
+      setEmailSent(true);
+      toast({
+        title: 'Email enviado!',
+        description: 'Verifique sua caixa de entrada para as instruções de recuperação.',
       });
-
-      const result = await response.json();
-
-      if (response.ok) {
-        setSubmittedEmail(data.email);
-        setEmailSent(true);
-        toast({
-          title: 'Email enviado!',
-          description: 'Verifique sua caixa de entrada para as instruções de recuperação.',
-        });
-      } else {
-        toast({
-          variant: 'destructive',
-          title: 'Erro',
-          description: result.error || 'Erro ao enviar email de recuperação.',
-        });
-      }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao solicitar recuperação:', error);
+      let description = 'Ocorreu um erro. Tente novamente mais tarde.';
+      if (error.code === 'auth/user-not-found') {
+          // Por segurança, não informamos que o usuário não existe, mas podemos logar isso.
+          console.log(`Tentativa de recuperação para email não cadastrado: ${data.email}`);
+          // Para o usuário, a mensagem é a mesma, para não vazar informação.
+          setSubmittedEmail(data.email);
+          setEmailSent(true); // Finge que o email foi enviado
+          return;
+      }
       toast({
         variant: 'destructive',
         title: 'Erro',
-        description: 'Erro de conexão. Tente novamente mais tarde.',
+        description,
       });
     } finally {
       setIsLoading(false);
@@ -76,15 +70,13 @@ export default function ForgotPasswordPage() {
           <Card className="w-full max-w-md mobile-card">
             <CardContent className="flex flex-col items-center justify-center p-8 text-center">
               <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
-              <h2 className="text-2xl font-bold mb-2">Email Enviado!</h2>
+              <h2 className="text-2xl font-bold mb-2">Verifique seu Email</h2>
               <p className="text-muted-foreground mb-4">
-                Enviamos as instruções de recuperação para:
+                Se uma conta existir para <span className="font-semibold text-primary">{submittedEmail}</span>, você receberá as instruções de recuperação.
               </p>
-              <p className="font-semibold text-primary mb-6">{submittedEmail}</p>
               <div className="space-y-3 text-sm text-muted-foreground">
-                <p>• Verifique sua caixa de entrada</p>
-                <p>• Não esqueça de verificar o spam</p>
-                <p>• O link expira em 30 minutos</p>
+                <p>• Verifique sua caixa de entrada e spam.</p>
+                <p>• O link de recuperação é válido por um tempo limitado.</p>
               </div>
               <div className="mt-6 space-y-3 w-full">
                 <Button 
@@ -95,7 +87,7 @@ export default function ForgotPasswordPage() {
                   variant="outline" 
                   className="w-full"
                 >
-                  Enviar para outro email
+                  Tentar com outro email
                 </Button>
                 <Link href="/login" className="block">
                   <Button variant="ghost" className="w-full">

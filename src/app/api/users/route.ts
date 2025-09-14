@@ -1,13 +1,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { 
-  createFirestoreUser, 
-  getFirestoreUsers, 
-  getFirestoreUserById,
-  toggleFirestoreUserStatus,
-  updateFirestoreUser,
-  deleteFirestoreUser,
-} from '@/lib/firestore-auth-service';
+import { createUser, getUsers, getUserById, updateUser, deleteUser } from '@/lib/profile-service';
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,28 +10,15 @@ export async function POST(request: NextRequest) {
       password, 
       displayName, 
       phoneNumber, 
-      role = 'admin',
+      role = 'user',
     } = body;
 
-    if (!email || !password || !displayName) {
-      return NextResponse.json(
-        { error: 'Email, senha e nome são obrigatórios.' },
-        { status: 400 }
-      );
-    }
-    if (role && !['admin', 'user'].includes(role)) {
-      return NextResponse.json(
-        { error: 'Role deve ser "admin" ou "user".' },
-        { status: 400 }
-      );
-    }
-
-    const userRecord = await createFirestoreUser({
+    const userRecord = await createUser({
       email,
       password,
       displayName,
-      phoneNumber: phoneNumber || null,
-      role: role as 'admin' | 'user'
+      phoneNumber,
+      role
     });
 
     return NextResponse.json({
@@ -52,6 +32,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
+    console.error('[API /users POST] Error:', error);
     const status = error.message?.includes('obrigatório') || 
                    error.message?.includes('inválido') || 
                    error.message?.includes('caracteres') ||
@@ -70,14 +51,14 @@ export async function GET(request: NextRequest) {
     const userId = searchParams.get('id');
 
     if (userId) {
-      const user = await getFirestoreUserById(userId);
+      const user = await getUserById(userId);
       if (!user) {
         return NextResponse.json({ error: 'Usuário não encontrado.' }, { status: 404 });
       }
       return NextResponse.json({ message: 'Usuário encontrado com sucesso!', user });
     }
 
-    const users = await getFirestoreUsers();
+    const users = await getUsers();
     return NextResponse.json({
       message: 'Lista de usuários carregada com sucesso!',
       users,
@@ -93,13 +74,13 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { id, displayName, phoneNumber, role } = body;
+    const { id, displayName, phoneNumber, role, isActive } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'ID do usuário é obrigatório' }, { status: 400 });
     }
 
-    const updatedUser = await updateFirestoreUser(id, { displayName, phoneNumber, role });
+    const updatedUser = await updateUser(id, { displayName, phoneNumber, role, isActive });
 
     return NextResponse.json({
       message: 'Usuário atualizado com sucesso',
@@ -120,7 +101,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'ID do usuário é obrigatório' }, { status: 400 });
     }
 
-    await deleteFirestoreUser(userId);
+    await deleteUser(userId);
 
     return NextResponse.json({
       message: 'Usuário excluído com sucesso',

@@ -11,10 +11,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Eye, EyeOff, CheckCircle } from 'lucide-react';
-import { getAuth, EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
+import { auth } from '@/lib/firebase-config';
+import { updatePassword } from 'firebase/auth';
 
 const passwordResetSchema = z.object({
-  currentPassword: z.string().min(1, 'Senha atual é obrigatória'),
   newPassword: z.string()
     .min(6, 'A nova senha deve ter entre 6 e 8 caracteres.')
     .max(8, 'A nova senha deve ter entre 6 e 8 caracteres.')
@@ -33,12 +33,10 @@ interface FirstLoginPasswordResetProps {
 
 export function FirstLoginPasswordReset({ onPasswordChanged }: FirstLoginPasswordResetProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordChanged, setPasswordChanged] = useState(false);
   const { toast } = useToast();
-  const auth = getAuth();
 
   const form = useForm<PasswordResetFormData>({
     resolver: zodResolver(passwordResetSchema),
@@ -46,35 +44,38 @@ export function FirstLoginPasswordReset({ onPasswordChanged }: FirstLoginPasswor
 
   const onSubmit = async (data: PasswordResetFormData) => {
     setIsLoading(true);
+    const user = auth.currentUser;
+
+    if (!user) {
+      toast({ variant: 'destructive', title: 'Erro', description: 'Usuário não autenticado.' });
+      setIsLoading(false);
+      return;
+    }
     
     try {
+      // 1. Atualiza a senha no Firebase Auth (cliente)
+      await updatePassword(user, data.newPassword);
+
+      // 2. Notifica o backend para atualizar a claim
       const response = await fetch('/api/auth/change-first-login-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          currentPassword: data.currentPassword,
-          newPassword: data.newPassword
-        })
+        body: JSON.stringify({ newPassword: data.newPassword }) // A senha é necessária para validação de re-autenticação no backend
       });
 
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || 'Erro ao alterar senha');
-      
-      // Also update the password on the client-side Firebase instance
-      const user = auth.currentUser;
-      if(user) {
-        const credential = EmailAuthProvider.credential(user.email!, data.currentPassword);
-        await reauthenticateWithCredential(user, credential);
-        await updatePassword(user, data.newPassword);
+      if (!response.ok) {
+        const result = await response.json();
+        throw new Error(result.error || 'Erro ao finalizar o processo de primeiro login.');
       }
-
-
+      
       setPasswordChanged(true);
       toast({
         title: 'Senha alterada com sucesso',
         description: 'Sua senha foi atualizada. Você será redirecionado para o painel.',
       });
+
+      // Força o refresh do token para obter a claim 'isFirstLogin: false'
+      await user.getIdToken(true);
 
       setTimeout(() => {
         onPasswordChanged();
@@ -82,10 +83,16 @@ export function FirstLoginPasswordReset({ onPasswordChanged }: FirstLoginPasswor
 
     } catch (error: any) {
       console.error('Erro ao alterar senha:', error);
+      let description = 'Ocorreu um erro inesperado.';
+      if (error.code === 'auth/requires-recent-login') {
+        description = 'Sua sessão expirou por segurança. Por favor, faça login novamente para alterar sua senha.';
+      } else if (error.code === 'auth/weak-password') {
+        description = 'A nova senha é muito fraca. Tente uma senha mais forte.';
+      }
       toast({
         variant: 'destructive',
         title: 'Erro ao alterar senha',
-        description: error.message || 'Ocorreu um erro inesperado. Verifique sua senha atual e tente novamente.',
+        description,
       });
     } finally {
       setIsLoading(false);
@@ -120,42 +127,12 @@ export function FirstLoginPasswordReset({ onPasswordChanged }: FirstLoginPasswor
           <CardHeader className="text-center p-responsive">
             <CardTitle className="text-2xl text-responsive">Alterar Senha</CardTitle>
             <CardDescription className="text-responsive">
-              Como este é seu primeiro login, você deve alterar sua senha temporária por uma senha segura.
+              Como este é seu primeiro login, você deve criar uma senha segura.
             </CardDescription>
           </CardHeader>
           <CardContent className="p-responsive">
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mobile-form">
-              <div className="space-y-2">
-                <Label htmlFor="currentPassword" className="text-responsive">Senha Atual (Temporária)</Label>
-                <div className="relative">
-                  <Input
-                    id="currentPassword"
-                    type={showCurrentPassword ? 'text' : 'password'}
-                    {...form.register('currentPassword')}
-                    placeholder="Digite sua senha temporária"
-                    className="pr-10 input-mobile"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                  >
-                    {showCurrentPassword ? (
-                      <EyeOff className="h-3 w-3 sm:h-4 sm:w-4" />
-                    ) : (
-                      <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
-                    )}
-                  </Button>
-                </div>
-                {form.formState.errors.currentPassword && (
-                  <p className="text-xs text-destructive">
-                    {form.formState.errors.currentPassword.message}
-                  </p>
-                )}
-              </div>
-
+              
               <div className="space-y-2">
                 <Label htmlFor="newPassword" className="text-responsive">Nova Senha</Label>
                 <div className="relative">
