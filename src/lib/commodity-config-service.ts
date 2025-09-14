@@ -163,7 +163,7 @@ export async function deleteCommodity(id: string): Promise<void> {
     try {
         const docRef = db.collection(COMMODITIES_COLLECTION).doc(id);
         await docRef.delete();
-        console.log(`[CommodityConfigService] Successfully deleted commodity: ${id}`);
+        console.log(`[CommododyConfigService] Successfully deleted commodity: ${id}`);
     } catch (error) {
         console.error(`[CommodityConfigService] Error deleting commodity ${id}:`, error);
         throw new Error(`Failed to delete commodity ${id}.`);
