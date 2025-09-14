@@ -299,14 +299,14 @@ Atenciosamente,
   return (
     <>
     <Card>
-      <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-responsive">
+      <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 md:p-6">
         <div>
-          <CardTitle className="text-responsive">Gerenciamento de Usuários</CardTitle>
-          <CardDescription className="text-responsive">
+          <CardTitle>Gerenciamento de Usuários</CardTitle>
+          <CardDescription>
             Gerencie os usuários que têm acesso ao sistema.
           </CardDescription>
         </div>
-        <Button onClick={handleNewUser} className="button-mobile sm:w-auto">
+        <Button onClick={handleNewUser} className="w-full sm:w-auto">
           <PlusCircle className="mr-2 h-4 w-4" />
           Novo Usuário
         </Button>
@@ -518,7 +518,7 @@ Atenciosamente,
               </select>
             </div>
             
-            <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-0">
+            <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-0 pt-4">
               <Button
                 type="button"
                 variant="outline"
