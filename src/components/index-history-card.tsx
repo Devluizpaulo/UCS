@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { IndexHistoryTable } from './index-history-table';
-import { getUcsIndexValue } from '@/lib/data-service';
+import { getUcsIndexHistory, getUcsIndexValue } from '@/lib/data-service';
 import type { ChartData } from '@/lib/types';
 import { Skeleton } from './ui/skeleton';
 
@@ -21,9 +21,13 @@ export function IndexHistoryCard({ selectedDate }: IndexHistoryCardProps) {
     const fetchIndexData = async () => {
       try {
         setLoading(true);
-        const { latest, history } = await getUcsIndexValue('1d', selectedDate);
+        // We only need the history for the table/chart, and a check if it's configured
+        const [history, latestValue] = await Promise.all([
+          getUcsIndexHistory('1d'),
+          getUcsIndexValue(selectedDate),
+        ]);
         setHistoryData(history);
-        setIsConfigured(latest.isConfigured);
+        setIsConfigured(latestValue.isConfigured);
       } catch (error) {
         console.error('Erro ao carregar dados do índice:', error);
       } finally {

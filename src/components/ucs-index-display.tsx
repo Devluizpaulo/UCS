@@ -20,7 +20,7 @@ import {
 import { IndexCompositionModal } from './index-composition-modal';
 import { getFormulaParameters } from '@/lib/formula-service';
 import type { ChartData, UcsData } from '@/lib/types';
-import { getUcsIndexValue } from '@/lib/data-service';
+import { getUcsIndexValue, getUcsIndexHistory } from '@/lib/data-service';
 import { Skeleton } from './ui/skeleton';
 
 interface UCSIndexDisplayProps {
@@ -46,9 +46,17 @@ export function UCSIndexDisplay({ className, selectedDate }: UCSIndexDisplayProp
     setError(null);
     
     try {
-      const { latest, history } = await getUcsIndexValue('1d', date);
+      // The API route now handles the calculation and saving.
+      const url = date ? `/api/ucs-index?date=${date}` : '/api/ucs-index';
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error('Failed to fetch UCS Index data from API');
+      }
+      const latestData: UcsData = await response.json();
+
+      const history = await getUcsIndexHistory('1d');
       
-      setUcsData(latest);
+      setUcsData(latestData);
       setChartData(history);
       setLastUpdate(new Date());
 
@@ -60,7 +68,7 @@ export function UCSIndexDisplay({ className, selectedDate }: UCSIndexDisplayProp
           else setTrend('stable');
       }
       
-      if (!latest.isConfigured) {
+      if (!latestData.isConfigured) {
           setError('Parâmetros da fórmula não configurados. Configure em Configurações.');
       }
 

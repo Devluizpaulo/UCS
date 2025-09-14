@@ -13,7 +13,7 @@ import { z } from 'genkit';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
-import { getUcsIndexValue, getCommodityPrices } from '@/lib/data-service';
+import { getUcsIndexHistory, getCommodityPrices } from '@/lib/data-service';
 import type { ChartData, CommodityPriceData } from '@/lib/types';
 import type { GenerateReportInput, GenerateReportOutput, ReportPreviewData } from '@/lib/types';
 
@@ -242,10 +242,10 @@ export async function generateReport(input: GenerateReportInput): Promise<Genera
 
       // Fetch data
       const [ucsData, assets] = await Promise.all([
-          getUcsIndexValue(interval),
+          getUcsIndexHistory(interval),
           getCommodityPrices()
       ]);
-      const ucsHistory = ucsData.history.slice(-limit);
+      const ucsHistory = ucsData.slice(-limit);
       
       const assetsForAnalysis = assets.map(a => ({ name: a.name, price: a.price, change: a.change }));
 

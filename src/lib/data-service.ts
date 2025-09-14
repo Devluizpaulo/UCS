@@ -276,40 +276,72 @@ export async function getCotacoesHistorico(ativo: string, limit: number = 30, fo
 }
 
 
-export async function getUcsIndexValue(interval: HistoryInterval = '1d', forDate?: string): Promise<{ latest: UcsData, history: ChartData[] }> {
-    let latestData: UcsData;
+/**
+ * Fetches the latest calculated UCS Index value from the history collection.
+ * This function ONLY reads data.
+ * @param forDate - Optional date to fetch the index for.
+ * @returns The latest UcsData object or a default if not found/configured.
+ */
+export async function getUcsIndexValue(forDate?: string): Promise<UcsData> {
+  try {
+    let query: admin.firestore.Query;
+    const collectionRef = db.collection('ucs_index_history');
+
+    if (forDate) {
+      // Get the document for the specific date if it exists
+      const docId = new Date(forDate).toISOString().split('T')[0];
+      const docSnap = await collectionRef.doc(docId).get();
+      if (docSnap.exists) {
+        return docSnap.data() as UcsData;
+      } else {
+        // If not found for the specific day, find the latest one before it
+        query = collectionRef
+            .where('savedAt', '<=', Timestamp.fromDate(new Date(forDate)))
+            .orderBy('savedAt', 'desc')
+            .limit(1);
+      }
+    } else {
+      // Get the most recent value if no date is specified
+      query = collectionRef.orderBy('savedAt', 'desc').limit(1);
+    }
+    
+    const snapshot = await query.get();
+
+    if (snapshot.empty) {
+      console.warn('[DataService] No UCS index history found.');
+      const params = await getFormulaParameters();
+      return {
+        indexValue: 0,
+        isConfigured: params.isConfigured,
+        components: { vm: 0, vus: 0, crs: 0 },
+        vusDetails: { pecuaria: 0, milho: 0, soja: 0 },
+      };
+    }
+
+    return snapshot.docs[0].data() as UcsData;
+
+  } catch (error) {
+    console.error(`[DataService] Failed to get latest index value. Error: ${error}`);
+    const params = await getFormulaParameters();
+    return {
+      indexValue: 0,
+      isConfigured: params.isConfigured,
+      components: { vm: 0, vus: 0, crs: 0 },
+      vusDetails: { pecuaria: 0, milho: 0, soja: 0 },
+    };
+  }
+}
+
+
+/**
+ * Fetches the historical data for the UCS Index chart.
+ * This function ONLY reads data.
+ * @param interval The time interval for the history.
+ * @returns An array of ChartData points.
+ */
+export async function getUcsIndexHistory(interval: HistoryInterval = '1d'): Promise<ChartData[]> {
     const history: ChartData[] = [];
-
     try {
-        const [formulaParams, commodities] = await Promise.all([
-            getFormulaParameters(),
-            getCommodityPrices(forDate)
-        ]);
-
-        if (commodities.some(c => c.price === 0)) {
-            console.warn(`[DataService] Missing price data for date ${forDate}. Index will not be calculated for this date.`);
-        }
-
-        latestData = calculateIndex(commodities, formulaParams);
-        
-        // Save the newly calculated index to history
-        if (latestData.isConfigured && latestData.indexValue > 0) {
-            const historyCollectionRef = db.collection('ucs_index_history');
-            const dateToSave = forDate ? new Date(forDate) : new Date();
-            dateToSave.setUTCHours(12,0,0,0); // Normalize to midday UTC
-            const docId = dateToSave.toISOString().split('T')[0];
-
-            await historyCollectionRef.doc(docId).set({
-                value: latestData.indexValue,
-                isConfigured: latestData.isConfigured,
-                components: latestData.components,
-                vusDetails: latestData.vusDetails,
-                savedAt: Timestamp.fromDate(dateToSave)
-            }, { merge: true });
-        }
-
-
-        // Fetch historical data for chart
         const limitMap = { '1d': 30, '1wk': 26, '1mo': 60 };
         const qLimit = limitMap[interval] || 30;
 
@@ -330,21 +362,9 @@ export async function getUcsIndexValue(interval: HistoryInterval = '1d', forDate
         }
     } catch (error) {
         console.error(`[DataService] Failed to get index history. Error: ${error}`);
-        const formulaDoc = await db.collection('settings').doc('formula_parameters').get();
-        const isConfigured = formulaDoc.exists ? (formulaDoc.data()?.isConfigured ?? false) : false;
-        latestData = {
-            indexValue: 0, isConfigured,
-            components: { vm: 0, vus: 0, crs: 0 },
-            vusDetails: { pecuaria: 0, milho: 0, soja: 0 }
-        };
     }
-
-    return {
-        latest: latestData,
-        history: history.reverse(),
-    };
+    return history.reverse();
 }
-
 
 /**
  * Saves a batch of commodity price data to Firestore. This is meant to be called by a trusted

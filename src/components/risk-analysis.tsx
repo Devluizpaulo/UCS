@@ -11,13 +11,13 @@ import { Skeleton } from './ui/skeleton';
 import { getCommodities } from '@/lib/commodity-config-service';
 import { calculate_volatility, calculate_correlation } from '@/lib/statistics';
 import { getFormulaParameters } from '@/lib/formula-service';
-import { getUcsIndexValue, getCotacoesHistorico } from '@/lib/data-service';
+import { getUcsIndexHistory, getCotacoesHistorico } from '@/lib/data-service';
 
 
 async function getRiskAnalysisData(): Promise<RiskAnalysisData> {
     const [commodities, ucsHistoryData, formulaParams] = await Promise.all([
         getCommodities(),
-        getUcsIndexValue('1d'), // Use daily data for correlation
+        getUcsIndexHistory('1d'), // Use daily data for correlation
         getFormulaParameters(),
     ]);
     
@@ -26,7 +26,7 @@ async function getRiskAnalysisData(): Promise<RiskAnalysisData> {
     }
     
     // Calculate returns for the index. Filter out zero values to avoid division by zero.
-    const ucsPrices = ucsHistoryData.history.map((d: { time: string; value: number }) => d.value).filter((v: number) => v > 0);
+    const ucsPrices = ucsHistoryData.map((d: { time: string; value: number }) => d.value).filter((v: number) => v > 0);
     if (ucsPrices.length < 2) return { metrics: [] };
 
     const ucsReturns = ucsPrices.slice(1).map((v: number, i: number) => (ucsPrices[i] === 0 ? 0 : (v / ucsPrices[i]) -1));

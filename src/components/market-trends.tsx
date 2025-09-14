@@ -8,7 +8,7 @@ import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
 import type { ChartData, HistoryInterval, UcsData } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from './ui/skeleton';
-import { getUcsIndexValue } from '@/lib/data-service';
+import { getUcsIndexHistory, getUcsIndexValue } from '@/lib/data-service';
 
 export function MarketTrends() {
   const [historyInterval, setHistoryInterval] = useState<HistoryInterval>('1d');
@@ -23,8 +23,8 @@ export function MarketTrends() {
 
     setLoading(true);
     try {
-        const result = await getUcsIndexValue(interval);
-        setIndexHistoryData(result.history);
+        const result = await getUcsIndexHistory(interval);
+        setIndexHistoryData(result);
     } catch (error) {
         console.error(`Failed to fetch index history for interval ${interval}:`, error);
         toast({
@@ -41,9 +41,12 @@ export function MarketTrends() {
     const fetchInitialData = async () => {
         setLoading(true);
         try {
-            const result = await getUcsIndexValue('1d'); // Start with daily
-            setIndexHistoryData(result.history);
-            setIsConfigured(result.latest.isConfigured);
+            const [history, latestValue] = await Promise.all([
+              getUcsIndexHistory('1d'),
+              getUcsIndexValue(),
+            ]);
+            setIndexHistoryData(history);
+            setIsConfigured(latestValue.isConfigured);
         } catch (error) {
             toast({
                 variant: "destructive",
