@@ -13,6 +13,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Eye, EyeOff, CheckCircle, AlertTriangle, KeyRound } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { auth } from '@/lib/firebase-config';
+import { confirmPasswordReset, verifyPasswordResetCode } from 'firebase/auth';
 
 const resetPasswordSchema = z.object({
   newPassword: z.string()
@@ -27,7 +29,6 @@ const resetPasswordSchema = z.object({
 
 type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
 
-// Componente que usa useSearchParams
 function ResetPasswordForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [isValidating, setIsValidating] = useState(true);
@@ -40,91 +41,63 @@ function ResetPasswordForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { toast } = useToast();
-  const token = searchParams.get('token');
+  const actionCode = searchParams.get('oobCode');
 
   const form = useForm<ResetPasswordFormData>({
     resolver: zodResolver(resetPasswordSchema),
   });
 
-  // Validar token ao carregar a página
   useEffect(() => {
     const validateToken = async () => {
-      if (!token) {
-        setTokenError('Token não fornecido.');
+      if (!actionCode) {
+        setTokenError('Link de recuperação inválido ou ausente.');
         setIsValidating(false);
         return;
       }
 
       try {
-        const response = await fetch(`/api/auth/reset-password?token=${encodeURIComponent(token)}`);
-        const result = await response.json();
-
-        if (response.ok && result.valid) {
-          setTokenValid(true);
-        } else {
-          setTokenError(result.error || 'Token inválido.');
-        }
-      } catch (error) {
-        console.error('Erro ao validar token:', error);
-        setTokenError('Erro ao validar token. Tente novamente.');
+        await verifyPasswordResetCode(auth, actionCode);
+        setTokenValid(true);
+      } catch (error: any) {
+        console.error('Erro ao validar o código de recuperação:', error);
+        setTokenError('Link inválido ou expirado. Por favor, solicite uma nova recuperação de senha.');
       } finally {
         setIsValidating(false);
       }
     };
 
     validateToken();
-  }, [token]);
+  }, [actionCode]);
 
   const onSubmit = async (data: ResetPasswordFormData) => {
-    if (!token) return;
+    if (!actionCode) return;
     
     setIsLoading(true);
     
     try {
-      const response = await fetch('/api/auth/reset-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          token,
-          newPassword: data.newPassword,
-        }),
+      await confirmPasswordReset(auth, actionCode, data.newPassword);
+      setPasswordReset(true);
+      toast({
+        title: 'Senha redefinida!',
+        description: 'Sua senha foi alterada com sucesso.',
       });
-
-      const result = await response.json();
-
-      if (response.ok) {
-        setPasswordReset(true);
-        toast({
-          title: 'Senha redefinida!',
-          description: 'Sua senha foi alterada com sucesso.',
-        });
         
-        // Redirecionar para login após 3 segundos
-        setTimeout(() => {
-          router.push('/login');
-        }, 3000);
-      } else {
-        toast({
-          variant: 'destructive',
-          title: 'Erro',
-          description: result.error || 'Erro ao redefinir senha.',
-        });
-      }
-    } catch (error) {
+      setTimeout(() => {
+        router.push('/login');
+      }, 3000);
+
+    } catch (error: any) {
       console.error('Erro ao redefinir senha:', error);
       toast({
         variant: 'destructive',
         title: 'Erro',
-        description: 'Erro de conexão. Tente novamente mais tarde.',
+        description: 'Não foi possível redefinir a senha. O link pode ter expirado.',
       });
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Loading state durante validação do token
   if (isValidating) {
     return (
       <div className="relative h-screen w-full overflow-hidden">
@@ -133,7 +106,7 @@ function ResetPasswordForm() {
           <Card className="w-full max-w-md">
             <CardContent className="flex flex-col items-center justify-center p-8 text-center">
               <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-              <h2 className="text-xl font-semibold mb-2">Validando token...</h2>
+              <h2 className="text-xl font-semibold mb-2">Validando link...</h2>
               <p className="text-muted-foreground">Aguarde enquanto verificamos seu link de recuperação.</p>
             </CardContent>
           </Card>
@@ -142,7 +115,6 @@ function ResetPasswordForm() {
     );
   }
 
-  // Token inválido ou erro
   if (!tokenValid) {
     return (
       <div className="relative h-screen w-full overflow-hidden">
@@ -172,7 +144,6 @@ function ResetPasswordForm() {
     );
   }
 
-  // Sucesso - senha redefinida
   if (passwordReset) {
     return (
       <div className="relative h-screen w-full overflow-hidden">
@@ -200,7 +171,6 @@ function ResetPasswordForm() {
     );
   }
 
-  // Formulário de redefinição de senha
   return (
     <div className="relative h-screen w-full overflow-hidden">
       <div className="absolute inset-0 z-0 bg-gradient-to-br from-primary/20 to-secondary/20"></div>
@@ -300,7 +270,6 @@ function ResetPasswordForm() {
   );
 }
 
-// Componente de loading para o Suspense
 function ResetPasswordLoading() {
   return (
     <div className="relative h-screen w-full overflow-hidden">
@@ -318,7 +287,6 @@ function ResetPasswordLoading() {
   );
 }
 
-// Componente principal que usa Suspense
 export default function ResetPasswordPage() {
   return (
     <Suspense fallback={<ResetPasswordLoading />}>
