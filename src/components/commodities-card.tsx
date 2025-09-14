@@ -1,39 +1,18 @@
+
 'use client';
 
-import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { getCommodityPrices } from '@/lib/data-service';
 import type { CommodityPriceData } from '@/lib/types';
 import { UnderlyingAssetsTable } from './underlying-assets-table';
 import { Skeleton } from './ui/skeleton';
 import { ScrollArea } from './ui/scroll-area';
 
 interface CommoditiesCardProps {
-  selectedDate?: string;
+  data: CommodityPriceData[];
+  loading: boolean;
 }
 
-export function CommoditiesCard({ selectedDate }: CommoditiesCardProps) {
-  const [commodityData, setCommodityData] = useState<CommodityPriceData[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchCommodities = async () => {
-      try {
-        setLoading(true);
-        const allData = await getCommodityPrices();
-        // Filtrar commodities (todas as categorias exceto 'exchange')
-        const commodities = allData.filter(item => item.category !== 'exchange');
-        setCommodityData(commodities);
-      } catch (error) {
-        console.error('Erro ao carregar dados de commodities:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCommodities();
-  }, [selectedDate]);
-
+export function CommoditiesCard({ data, loading }: CommoditiesCardProps) {
   return (
     <Card className="col-span-1">
       <CardHeader>
@@ -44,9 +23,9 @@ export function CommoditiesCard({ selectedDate }: CommoditiesCardProps) {
       </CardHeader>
       <CardContent className="pl-2">
         {loading ? (
-          <div className="space-y-3">
+          <div className="space-y-3 px-2">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="flex items-center justify-between">
+              <div key={i} className="flex items-center justify-between p-2">
                 <div className="flex items-center gap-3">
                   <Skeleton className="h-8 w-8 rounded-full" />
                   <div>
@@ -62,8 +41,8 @@ export function CommoditiesCard({ selectedDate }: CommoditiesCardProps) {
             ))}
           </div>
         ) : (
-          <ScrollArea className="h-[250px] w-full">
-            <UnderlyingAssetsTable data={commodityData} selectedDate={selectedDate} />
+          <ScrollArea className="h-[150px] w-full">
+            <UnderlyingAssetsTable data={data} />
           </ScrollArea>
         )}
       </CardContent>
