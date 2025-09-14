@@ -9,8 +9,10 @@
 import { db } from './firebase-admin-config';
 import type { CommodityConfig, InitialCommodityConfig } from './types';
 import { COMMODITY_TICKER_MAP } from './marketdata-config';
+import { getCache, setCache, clearCache } from './cache-service';
 
 const COMMODITIES_COLLECTION = 'commodities';
+const CACHE_KEY_COMMODITIES = 'commodities_list';
 
 /**
  * Seeds the database with a default set of commodities if the collection is empty.
@@ -40,6 +42,7 @@ async function seedDefaultCommodities() {
         });
         
         await batch.commit();
+        clearCache(CACHE_KEY_COMMODITIES); // Clear cache after seeding
         console.log('[CommodityConfigService] Default commodities seeding process completed.');
     } catch (error) {
         console.error('[CommodityConfigService] Error during seeding, this might be expected if the database is new. The process will continue, but the database might not be seeded.', error);
@@ -47,11 +50,16 @@ async function seedDefaultCommodities() {
 }
 
 /**
- * Retrieves all commodities. It first attempts to fetch from Firestore. If that fails,
- * it falls back to the hardcoded list from the config to ensure app stability.
- * @returns {Promise<CommodityConfig[]>} A promise that resolves to an array of commodities.
+ * Retrieves all commodities. It first attempts to fetch from the cache, then Firestore.
+ * If Firestore fails, it falls back to the hardcoded list.
+ * @returns {Promise<CommododyConfig[]>} A promise that resolves to an array of commodities.
  */
 export async function getCommodities(): Promise<CommodityConfig[]> {
+    const cachedCommodities = getCache<CommodityConfig[]>(CACHE_KEY_COMMODITIES);
+    if (cachedCommodities) {
+        return cachedCommodities;
+    }
+    
     try {
         const collectionRef = db.collection(COMMODITIES_COLLECTION);
         const snapshot = await collectionRef.get();
@@ -62,7 +70,6 @@ export async function getCommodities(): Promise<CommodityConfig[]> {
             const seededSnapshot = await collectionRef.get();
             if (seededSnapshot.empty) {
                  console.error('[CommodityConfigService] FATAL: Firestore is still empty after seeding. Falling back to hardcoded config.');
-                 // Fallback to hardcoded list if firestore is still empty
                  return Object.entries(COMMODITY_TICKER_MAP).map(([id, config]) => ({
                     id: id,
                     ...config,
@@ -73,24 +80,25 @@ export async function getCommodities(): Promise<CommodityConfig[]> {
                 id: doc.id,
                 ...doc.data(),
             } as CommodityConfig));
+             setCache(CACHE_KEY_COMMODITIES, commodities);
             return commodities;
         }
 
         const commodities = snapshot.docs.map(doc => {
              const data = doc.data();
-             // Extract only CommodityConfig properties, excluding Firestore metadata
-             const { timestamp, createdAt, updatedAt, ...commodityData } = data;
+             const { ...commodityData } = data;
              return {
                  id: doc.id,
                  ...commodityData,
              } as CommodityConfig;
-         });
-        
-        return commodities.sort((a, b) => {
+         }).sort((a, b) => {
             if (a.category === 'exchange' && b.category !== 'exchange') return -1;
             if (a.category !== 'exchange' && b.category === 'exchange') return 1;
             return a.name.localeCompare(b.name);
         });
+        
+        setCache(CACHE_KEY_COMMODITIES, commodities);
+        return commodities;
 
     } catch (error) {
         console.error('[CommodityConfigService] Error fetching commodities from DB, falling back to hardcoded list:', error);
@@ -106,33 +114,9 @@ export async function getCommodities(): Promise<CommodityConfig[]> {
     }
 }
 
-/**
- * Retrieves a single commodity by its ID.
- * @param {string} id - The ID of the commodity to retrieve.
- * @returns {Promise<CommodityConfig | null>} A promise that resolves to the commodity or null if not found.
- */
-export async function getCommodity(id: string): Promise<CommodityConfig | null> {
-    try {
-        const docRef = db.collection(COMMODITIES_COLLECTION).doc(id);
-        const docSnap = await docRef.get();
-        if (docSnap.exists) {
-            const data = docSnap.data();
-            if (data) {
-                // Extract only CommodityConfig properties, excluding Firestore metadata
-                const { timestamp, createdAt, updatedAt, ...commodityData } = data;
-                return { id: docSnap.id, ...commodityData } as CommodityConfig;
-            }
-        }
-        return null;
-    } catch(error) {
-        console.error(`[CommodityConfigService] Error fetching single commodity ${id}:`, error);
-        return null;
-    }
-}
 
 /**
  * Saves (creates or updates) a commodity in Firestore.
- * The document ID is taken from the 'id' field of the commodity object.
  * @param {CommodityConfig} commodity - The commodity data to save.
  * @returns {Promise<void>} A promise that resolves when the save is complete.
  */
@@ -143,7 +127,8 @@ export async function saveCommodity(commodity: CommodityConfig): Promise<void> {
     try {
         const { id, ...dataToSave } = commodity;
         const docRef = db.collection(COMMODITIES_COLLECTION).doc(id);
-        await docRef.set(dataToSave, { merge: true }); // Use merge to avoid overwriting fields on update
+        await docRef.set(dataToSave, { merge: true });
+        clearCache(CACHE_KEY_COMMODITIES); // Invalidate cache on save
         console.log(`[CommodityConfigService] Successfully saved commodity: ${id}`);
     } catch (error) {
         console.error(`[CommodityConfigService] Error saving commodity ${commodity.id}:`, error);
@@ -163,9 +148,35 @@ export async function deleteCommodity(id: string): Promise<void> {
     try {
         const docRef = db.collection(COMMODITIES_COLLECTION).doc(id);
         await docRef.delete();
+        clearCache(CACHE_KEY_COMMODITIES); // Invalidate cache on delete
         console.log(`[CommododyConfigService] Successfully deleted commodity: ${id}`);
     } catch (error) {
         console.error(`[CommodityConfigService] Error deleting commodity ${id}:`, error);
         throw new Error(`Failed to delete commodity ${id}.`);
+    }
+}
+
+// These functions do not need caching as they are for admin purposes and not on hot paths.
+
+/**
+ * Retrieves a single commodity by its ID.
+ * @param {string} id - The ID of the commodity to retrieve.
+ * @returns {Promise<CommodityConfig | null>} A promise that resolves to the commodity or null if not found.
+ */
+export async function getCommodity(id: string): Promise<CommodityConfig | null> {
+    try {
+        const docRef = db.collection(COMMODITIES_COLLECTION).doc(id);
+        const docSnap = await docRef.get();
+        if (docSnap.exists) {
+            const data = docSnap.data();
+            if (data) {
+                const { ...commodityData } = data;
+                return { id: docSnap.id, ...commodityData } as CommodityConfig;
+            }
+        }
+        return null;
+    } catch(error) {
+        console.error(`[CommodityConfigService] Error fetching single commodity ${id}:`, error);
+        return null;
     }
 }

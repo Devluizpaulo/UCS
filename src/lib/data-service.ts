@@ -10,6 +10,7 @@ import admin from 'firebase-admin';
 import { Timestamp } from 'firebase-admin/firestore';
 import { getFormulaParameters } from './formula-service';
 import { calculateIndex } from './calculation-service';
+import { getCache, setCache } from './cache-service';
 
 
 // --- Functions to get data from FIRESTORE ---
@@ -35,6 +36,10 @@ const serializeFirestoreTimestamp = (data: any): any => {
  * Busca dados de uma coleção específica por ativo
  */
 export async function getAssetData(assetName: string, limit: number = 10, forDate?: string): Promise<FirestoreQuote[]> {
+    const cacheKey = `assetData_${assetName}_${limit}_${forDate || 'latest'}`;
+    const cachedData = getCache<FirestoreQuote[]>(cacheKey);
+    if (cachedData) return cachedData;
+    
     try {
         const collectionName = ASSET_COLLECTION_MAP[assetName];
         if (!collectionName) {
@@ -65,6 +70,7 @@ export async function getAssetData(assetName: string, limit: number = 10, forDat
         }
             
         const querySnapshot = await query.get();
+        let data: FirestoreQuote[] = [];
 
         // If no data for the specific date, try to get the most recent one before it.
         if (querySnapshot.empty && forDate) {
@@ -75,36 +81,18 @@ export async function getAssetData(assetName: string, limit: number = 10, forDat
                 .orderBy('timestamp', 'desc')
                 .limit(limit);
             const fallbackSnapshot = await fallbackQuery.get();
-            const data: FirestoreQuote[] = [];
             fallbackSnapshot.forEach(doc => {
                  const docData = doc.data();
-                const serializedData = {
-                    ...docData,
-                    timestamp: docData.timestamp?.toDate?.() || docData.timestamp,
-                    data: docData.data?.toDate?.() || docData.data
-                };
-                data.push({ id: doc.id, ...serializeFirestoreTimestamp(serializedData) } as FirestoreQuote);
+                data.push({ id: doc.id, ...serializeFirestoreTimestamp(docData) } as FirestoreQuote);
             });
-            return data;
+        } else {
+            querySnapshot.forEach(doc => {
+                const docData = doc.data();
+                data.push({ id: doc.id, ...serializeFirestoreTimestamp(docData) } as FirestoreQuote);
+            });
         }
-
-
-        const data: FirestoreQuote[] = [];
         
-        querySnapshot.forEach(doc => {
-            const docData = doc.data();
-            // Convert Firestore Timestamp to serializable format
-            const serializedData = {
-                ...docData,
-                timestamp: docData.timestamp?.toDate?.() || docData.timestamp,
-                data: docData.data?.toDate?.() || docData.data
-            };
-            data.push({
-                id: doc.id,
-                ...serializeFirestoreTimestamp(serializedData)
-            } as FirestoreQuote);
-        });
-        
+        setCache(cacheKey, data);
         return data;
     } catch (error) {
         console.error(`[DataService] Error fetching data for asset ${assetName}:`, error);
@@ -117,6 +105,10 @@ export async function getAssetData(assetName: string, limit: number = 10, forDat
  * If no date is provided, it gets the latest prices.
  */
 export async function getCommodityPrices(forDate?: string): Promise<CommodityPriceData[]> {
+    const cacheKey = `commodityPrices_${forDate || 'latest'}`;
+    const cachedData = getCache<CommodityPriceData[]>(cacheKey);
+    if (cachedData) return cachedData;
+    
     try {
         const commodities = await getCommodities();
 
@@ -138,13 +130,9 @@ export async function getCommodityPrices(forDate?: string): Promise<CommodityPri
                 currentPrice = latest.ultimo || 0;
                 
                 const ts = latest.timestamp;
-                 if (ts instanceof Timestamp) {
-                    lastUpdated = ts.toDate().toLocaleString('pt-BR');
-                } else if (ts instanceof Date) {
-                    lastUpdated = ts.toLocaleString('pt-BR');
-                } else if (ts) {
+                 if (ts) {
                     lastUpdated = new Date(ts).toLocaleString('pt-BR');
-                }
+                 }
 
                 if (assetData.length > 1) {
                     const previous = assetData[1];
@@ -165,13 +153,14 @@ export async function getCommodityPrices(forDate?: string): Promise<CommodityPri
             };
         });
 
-        const result = await Promise.all(pricePromises);
-        
-        return result.sort((a, b) => {
+        const result = (await Promise.all(pricePromises)).sort((a, b) => {
             if (a.category === 'exchange' && b.category !== 'exchange') return -1;
             if (a.category !== 'exchange' && b.category === 'exchange') return 1;
             return a.name.localeCompare(b.name);
         });
+        
+        setCache(cacheKey, result);
+        return result;
 
     } catch (error) {
         console.error(`[DataService] CRITICAL: Failed to get commodity prices. Error: ${error}`);
@@ -196,25 +185,28 @@ export async function getCotacoesHistorico(ativo: string, limit: number = 30, fo
  * @returns The latest UcsData object or a default if not found/configured.
  */
 export async function getUcsIndexValue(forDate?: string): Promise<UcsData> {
+  const cacheKey = `ucsIndexValue_${forDate || 'latest'}`;
+  const cachedData = getCache<UcsData>(cacheKey);
+  if (cachedData) return cachedData;
+  
   try {
     let query: admin.firestore.Query;
     const collectionRef = db.collection('ucs_index_history');
 
     if (forDate) {
-      // Get the document for the specific date if it exists
       const docId = new Date(forDate).toISOString().split('T')[0];
       const docSnap = await collectionRef.doc(docId).get();
       if (docSnap.exists) {
-        return docSnap.data() as UcsData;
+        const data = docSnap.data() as UcsData;
+        setCache(cacheKey, data);
+        return data;
       } else {
-        // If not found for the specific day, find the latest one before it
         query = collectionRef
             .where('savedAt', '<=', Timestamp.fromDate(new Date(forDate)))
             .orderBy('savedAt', 'desc')
             .limit(1);
       }
     } else {
-      // Get the most recent value if no date is specified
       query = collectionRef.orderBy('savedAt', 'desc').limit(1);
     }
     
@@ -223,15 +215,19 @@ export async function getUcsIndexValue(forDate?: string): Promise<UcsData> {
     if (snapshot.empty) {
       console.warn('[DataService] No UCS index history found.');
       const params = await getFormulaParameters();
-      return {
+      const defaultData = {
         indexValue: 0,
         isConfigured: params.isConfigured,
         components: { vm: 0, vus: 0, crs: 0 },
         vusDetails: { pecuaria: 0, milho: 0, soja: 0 },
       };
+      setCache(cacheKey, defaultData);
+      return defaultData;
     }
 
-    return snapshot.docs[0].data() as UcsData;
+    const data = snapshot.docs[0].data() as UcsData;
+    setCache(cacheKey, data);
+    return data;
 
   } catch (error) {
     console.error(`[DataService] Failed to get latest index value. Error: ${error}`);
@@ -253,6 +249,10 @@ export async function getUcsIndexValue(forDate?: string): Promise<UcsData> {
  * @returns An array of ChartData points.
  */
 export async function getUcsIndexHistory(interval: HistoryInterval = '1d'): Promise<ChartData[]> {
+    const cacheKey = `ucsIndexHistory_${interval}`;
+    const cachedData = getCache<ChartData[]>(cacheKey);
+    if (cachedData) return cachedData;
+    
     const history: ChartData[] = [];
     try {
         const limitMap = { '1d': 30, '1wk': 26, '1mo': 60 };
@@ -276,7 +276,9 @@ export async function getUcsIndexHistory(interval: HistoryInterval = '1d'): Prom
     } catch (error) {
         console.error(`[DataService] Failed to get index history. Error: ${error}`);
     }
-    return history.reverse();
+    const result = history.reverse();
+    setCache(cacheKey, result);
+    return result;
 }
 
 /**
