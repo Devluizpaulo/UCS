@@ -7,47 +7,34 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { RefreshCw, TrendingUp, TrendingDown } from 'lucide-react';
-import { convertAllPricesToCurrency, getExchangeRates, formatCurrency, clearExchangeRateCache } from '@/lib/currency-service';
-import type { CurrencyRate, ConvertedPrice } from '@/lib/currency-service';
-import type { CommodityPriceData } from '@/lib/types';
+import { useCurrencyConversion, currencyUtils } from '@/hooks/use-currency-conversion';
 import { useToast } from '@/hooks/use-toast';
+import type { CommodityPriceData, ConvertedPrice } from '@/lib/types';
+
 
 type CommodityWithConversion = CommodityPriceData & { convertedPrice?: ConvertedPrice };
 
 export function CurrencyConversionTable() {
   const [commodities, setCommodities] = useState<CommodityWithConversion[]>([]);
-  const [exchangeRates, setExchangeRates] = useState<CurrencyRate[]>([]);
   const [targetCurrency, setTargetCurrency] = useState<'BRL' | 'USD' | 'EUR'>('BRL');
-  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  
+  const { 
+    loading, 
+    exchangeRates, 
+    error,
+    convertAllPrices,
+    refreshRates,
+  } = useCurrencyConversion();
 
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      
-      // Carrega as taxas de câmbio
-      const rates = await getExchangeRates();
-      setExchangeRates(rates);
-      
-      // Carrega os preços convertidos
-      const convertedPrices = await convertAllPricesToCurrency(targetCurrency);
-      setCommodities(convertedPrices);
-      
-    } catch (error) {
-      console.error('Erro ao carregar dados:', error);
-      toast({
-        title: "Erro",
-        description: "Falha ao carregar dados de conversão de moeda",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
+  const loadData = async (currency: 'BRL' | 'USD' | 'EUR') => {
+    const convertedPrices = await convertAllPrices(currency);
+    setCommodities(convertedPrices);
   };
-
+  
   const handleRefresh = async () => {
-    clearExchangeRateCache();
-    await loadData();
+    await refreshRates();
+    await loadData(targetCurrency);
     toast({
       title: "Atualizado",
       description: "Dados de conversão atualizados com sucesso"
@@ -56,45 +43,42 @@ export function CurrencyConversionTable() {
 
   const handleCurrencyChange = async (currency: 'BRL' | 'USD' | 'EUR') => {
     setTargetCurrency(currency);
-    setLoading(true);
-    
-    try {
-      const convertedPrices = await convertAllPricesToCurrency(currency);
-      setCommodities(convertedPrices);
-    } catch (error) {
-      console.error('Erro ao converter moeda:', error);
-      toast({
-        title: "Erro",
-        description: "Falha ao converter para a moeda selecionada",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
+    await loadData(currency);
   };
 
   useEffect(() => {
-    loadData();
-  }, []);
+    loadData(targetCurrency);
+  }, []); // Only on initial load
+  
+  useEffect(() => {
+    if (error) {
+      toast({
+        title: "Erro",
+        description: error,
+        variant: "destructive"
+      });
+    }
+  }, [error, toast]);
+
 
   const getCategoryLabel = (category: string) => {
-    const labels = {
+    const labels: Record<string, string> = {
       'exchange': 'Câmbio',
       'vus': 'VUS (Pecuária/Grãos)',
       'vmad': 'VMAD (Madeira)',
       'crs': 'CRS (Carbono)'
     };
-    return labels[category as keyof typeof labels] || category;
+    return labels[category] || category;
   };
 
   const getCategoryColor = (category: string) => {
-    const colors = {
-      'exchange': 'bg-blue-100 text-blue-800',
-      'vus': 'bg-green-100 text-green-800',
-      'vmad': 'bg-yellow-100 text-yellow-800',
-      'crs': 'bg-purple-100 text-purple-800'
+    const colors: Record<string, string> = {
+      'exchange': 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300',
+      'vus': 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300',
+      'vmad': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300',
+      'crs': 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300'
     };
-    return colors[category as keyof typeof colors] || 'bg-gray-100 text-gray-800';
+    return colors[category] || 'bg-gray-100 text-gray-800';
   };
 
   return (
@@ -117,16 +101,16 @@ export function CurrencyConversionTable() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {exchangeRates.map((rate, index) => (
+            {exchangeRates.filter(r => r.to === 'BRL').map((rate, index) => (
               <div key={index} className="p-4 border rounded-lg">
                 <div className="flex items-center justify-between">
                   <span className="font-medium">{rate.from}/{rate.to}</span>
-                  <span className="text-lg font-bold">
+                  <span className="text-lg font-bold text-primary">
                     {rate.rate.toFixed(4)}
                   </span>
                 </div>
-                <div className="text-sm text-gray-500 mt-1">
-                  Atualizado: {rate.lastUpdated.toLocaleString('pt-BR')}
+                <div className="text-sm text-muted-foreground mt-1">
+                  Atualizado: {rate.lastUpdated ? new Date(rate.lastUpdated).toLocaleString('pt-BR') : 'N/A'}
                 </div>
               </div>
             ))}
@@ -144,7 +128,7 @@ export function CurrencyConversionTable() {
                 Visualize todos os preços convertidos para uma moeda específica
               </CardDescription>
             </div>
-            <Select value={targetCurrency} onValueChange={handleCurrencyChange}>
+            <Select value={targetCurrency} onValueChange={handleCurrencyChange} disabled={loading}>
               <SelectTrigger className="w-32">
                 <SelectValue />
               </SelectTrigger>
@@ -157,89 +141,91 @@ export function CurrencyConversionTable() {
           </div>
         </CardHeader>
         <CardContent>
-          {loading ? (
+          {loading && commodities.length === 0 ? (
             <div className="flex items-center justify-center py-8">
               <RefreshCw className="h-6 w-6 animate-spin mr-2" />
               Carregando conversões...
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Commodity</TableHead>
-                  <TableHead>Categoria</TableHead>
-                  <TableHead>Preço Original</TableHead>
-                  <TableHead>Preço Convertido</TableHead>
-                  <TableHead>Taxa de Câmbio</TableHead>
-                  <TableHead>Variação</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {commodities.map((commodity) => (
-                  <TableRow key={commodity.id}>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{commodity.name}</div>
-                        <div className="text-sm text-gray-500">{commodity.ticker}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={getCategoryColor(commodity.category)}>
-                        {getCategoryLabel(commodity.category)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">
-                          {formatCurrency(commodity.price, commodity.currency)}
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Commodity</TableHead>
+                    <TableHead>Categoria</TableHead>
+                    <TableHead>Preço Original</TableHead>
+                    <TableHead>Preço Convertido</TableHead>
+                    <TableHead>Taxa de Câmbio</TableHead>
+                    <TableHead>Variação</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {commodities.map((commodity) => (
+                    <TableRow key={commodity.id}>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{commodity.name}</div>
+                          <div className="text-sm text-muted-foreground">{commodity.ticker}</div>
                         </div>
-                        <div className="text-sm text-gray-500">{commodity.unit}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {commodity.convertedPrice ? (
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={getCategoryColor(commodity.category)}>
+                          {getCategoryLabel(commodity.category)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
                         <div>
                           <div className="font-medium">
-                            {formatCurrency(commodity.convertedPrice.convertedPrice, targetCurrency)}
+                            {currencyUtils.format(commodity.price, commodity.currency)}
                           </div>
-                          {commodity.convertedPrice.originalCurrency !== targetCurrency && (
-                            <div className="text-sm text-gray-500">
-                              Taxa: {commodity.convertedPrice.exchangeRate.toFixed(4)}
-                            </div>
-                          )}
+                          <div className="text-sm text-muted-foreground">{commodity.unit}</div>
                         </div>
-                      ) : (
-                        <span className="text-gray-400">N/A</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {commodity.convertedPrice && commodity.convertedPrice.originalCurrency !== targetCurrency ? (
-                        <span className="font-mono">
-                          {commodity.convertedPrice.exchangeRate.toFixed(4)}
-                        </span>
-                      ) : (
-                        <span className="text-gray-400">1.0000</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center">
-                        {commodity.change > 0 ? (
-                          <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
-                        ) : commodity.change < 0 ? (
-                          <TrendingDown className="h-4 w-4 text-red-500 mr-1" />
-                        ) : null}
-                        <span className={`font-medium ${
-                          commodity.change > 0 ? 'text-green-600' : 
-                          commodity.change < 0 ? 'text-red-600' : 'text-gray-600'
-                        }`}>
-                          {commodity.change > 0 ? '+' : ''}{commodity.change.toFixed(2)}%
-                        </span>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                      </TableCell>
+                      <TableCell>
+                        {commodity.convertedPrice ? (
+                          <div>
+                            <div className="font-medium">
+                              {currencyUtils.format(commodity.convertedPrice.convertedPrice, targetCurrency)}
+                            </div>
+                            {commodity.convertedPrice.originalCurrency !== targetCurrency && (
+                              <div className="text-sm text-muted-foreground">
+                                Taxa: {commodity.convertedPrice.exchangeRate.toFixed(4)}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">N/A</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {commodity.convertedPrice && commodity.convertedPrice.originalCurrency !== targetCurrency ? (
+                          <span className="font-mono">
+                            {commodity.convertedPrice.exchangeRate.toFixed(4)}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">1.0000</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center">
+                          {commodity.change > 0 ? (
+                            <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
+                          ) : commodity.change < 0 ? (
+                            <TrendingDown className="h-4 w-4 text-red-500 mr-1" />
+                          ) : null}
+                          <span className={`font-medium ${
+                            commodity.change > 0 ? 'text-green-600' : 
+                            commodity.change < 0 ? 'text-red-600' : 'text-gray-600'
+                          }`}>
+                            {commodity.change > 0 ? '+' : ''}{commodity.change.toFixed(2)}%
+                          </span>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -247,32 +233,34 @@ export function CurrencyConversionTable() {
       {/* Seção de Exemplo de Implementação */}
       <Card>
         <CardHeader>
-          <CardTitle>Como Implementar a Conversão</CardTitle>
+          <CardTitle>Como Usar o Hook de Conversão</CardTitle>
           <CardDescription>
-            Exemplo de código para aplicar a lógica de conversão de moedas
+            Exemplo de código para aplicar a lógica de conversão em outros componentes.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="bg-gray-50 p-4 rounded-lg">
+          <div className="bg-muted p-4 rounded-lg">
             <pre className="text-sm overflow-x-auto">
-{`// Exemplo de uso do serviço de conversão
-import { convertPrice, convertAllPricesToCurrency, formatCurrency } from '@/lib/currency-service';
+{`// Em um componente React
+import { useCurrencyConversion, currencyUtils } from '@/hooks/use-currency-conversion';
 
-// Converter um preço específico
-const converted = await convertPrice(100, 'USD', 'BRL');
-if (converted) {
-  console.log(\`Preço original: \${formatCurrency(converted.originalPrice, 'USD')}\`);
-  console.log(\`Preço convertido: \${formatCurrency(converted.convertedPrice, 'BRL')}\`);
-  console.log(\`Taxa de câmbio: \${converted.exchangeRate}\`);
-}
+function PriceDisplay({ price, currency }) {
+  const { convertSinglePrice, loading } = useCurrencyConversion();
+  const [converted, setConverted] = useState(null);
 
-// Converter todos os preços para BRL
-const allPricesInBRL = await convertAllPricesToCurrency('BRL');
-allPricesInBRL.forEach(commodity => {
-  if (commodity.convertedPrice) {
-    console.log(\`\${commodity.name}: \${formatCurrency(commodity.convertedPrice.convertedPrice, 'BRL')}\`);
-  }
-});`}
+  useEffect(() => {
+    convertSinglePrice(price, currency, 'BRL').then(setConverted);
+  }, [price, currency]);
+
+  if (loading) return <p>Convertendo...</p>;
+
+  return (
+    <div>
+      <p>Original: {currencyUtils.format(price, currency)}</p>
+      {converted && <p>Em BRL: {currencyUtils.format(converted.convertedPrice, 'BRL')}</p>}
+    </div>
+  );
+}`}
             </pre>
           </div>
         </CardContent>

@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { convertPrice, convertAllPricesToCurrency, getExchangeRates, clearExchangeRateCache } from '@/lib/currency-service';
-import type { CurrencyRate, ConvertedPrice } from '@/lib/currency-service';
-import type { CommodityPriceData } from '@/lib/types';
+import type { CurrencyRate, ConvertedPrice, CommodityPriceData } from '@/lib/types';
 
 type CommodityWithConversion = CommodityPriceData & { convertedPrice?: ConvertedPrice };
 
@@ -34,12 +33,15 @@ export function useCurrencyConversion() {
     toCurrency: string
   ): Promise<ConvertedPrice | null> => {
     try {
+      setLoading(true);
       setError(null);
       return await convertPrice(price, fromCurrency, toCurrency);
     } catch (err) {
       setError('Erro ao converter preço');
       console.error('Erro ao converter preço:', err);
       return null;
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -144,7 +146,7 @@ export function useRealTimeConversion(
 export const currencyUtils = {
   // Formata um valor monetário
   format: (value: number, currency: string): string => {
-    const formatters = {
+    const formatters: Record<string, Intl.NumberFormat> = {
       BRL: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }),
       USD: new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }),
       EUR: new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' })
@@ -156,7 +158,7 @@ export const currencyUtils = {
 
   // Obtém o símbolo da moeda
   getSymbol: (currency: string): string => {
-    const symbols = {
+    const symbols: Record<string, string> = {
       BRL: 'R$',
       USD: '$',
       EUR: '€'
@@ -166,7 +168,7 @@ export const currencyUtils = {
 
   // Obtém o nome completo da moeda
   getName: (currency: string): string => {
-    const names = {
+    const names: Record<string, string> = {
       BRL: 'Real Brasileiro',
       USD: 'Dólar Americano',
       EUR: 'Euro'
@@ -174,30 +176,3 @@ export const currencyUtils = {
     return names[currency as keyof typeof names] || currency;
   }
 };
-
-// Exemplo de uso:
-/*
-// Em um componente React
-function PriceDisplay({ price, currency }: { price: number; currency: string }) {
-  const { convertSinglePrice, loading, error } = useCurrencyConversion();
-  const [targetCurrency, setTargetCurrency] = useState('BRL');
-  const [convertedPrice, setConvertedPrice] = useState<ConvertedPrice | null>(null);
-
-  useEffect(() => {
-    const convert = async () => {
-      const result = await convertSinglePrice(price, currency, targetCurrency);
-      setConvertedPrice(result);
-    };
-    convert();
-  }, [price, currency, targetCurrency, convertSinglePrice]);
-
-  return (
-    <div>
-      <p>Preço original: {currencyUtils.format(price, currency)}</p>
-      {convertedPrice && (
-        <p>Preço convertido: {currencyUtils.format(convertedPrice.convertedPrice, targetCurrency)}</p>
-      )}
-    </div>
-  );
-}
-*/

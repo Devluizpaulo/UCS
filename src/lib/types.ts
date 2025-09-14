@@ -23,6 +23,14 @@ export type CommodityMap = {
   [key: string]: InitialCommodityConfig;
 };
 
+export type ConvertedPrice = {
+  originalPrice: number;
+  originalCurrency: string;
+  convertedPrice: number;
+  targetCurrency: string;
+  exchangeRate: number;
+  lastUpdated: string;
+};
 
 // Represents commodity data combined with real-time pricing information
 export type CommodityPriceData = CommodityConfig & {
@@ -30,14 +38,7 @@ export type CommodityPriceData = CommodityConfig & {
     change: number; // Percentage change
     absoluteChange: number;
     lastUpdated: string;
-    convertedPrice?: {
-        originalPrice: number;
-        originalCurrency: string;
-        convertedPrice: number;
-        targetCurrency: string;
-        exchangeRate: number;
-        lastUpdated: string;
-    };
+    convertedPrice?: ConvertedPrice;
 };
 
 export type HistoryInterval = '1d' | '1wk' | '1mo';

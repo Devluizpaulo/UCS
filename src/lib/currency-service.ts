@@ -1,5 +1,7 @@
+'use server';
+
 import { getCommodityPrices } from './data-service';
-import type { CommodityPriceData } from './types';
+import type { CommodityPriceData, ConvertedPrice } from './types';
 
 // Tipos para o sistema de conversão de moedas
 export type CurrencyRate = {
@@ -7,15 +9,6 @@ export type CurrencyRate = {
   to: string;
   rate: number;
   lastUpdated: Date;
-};
-
-export type ConvertedPrice = {
-  originalPrice: number;
-  originalCurrency: string;
-  convertedPrice: number;
-  targetCurrency: string;
-  exchangeRate: number;
-  lastUpdated: string;
 };
 
 // Cache das taxas de câmbio para evitar múltiplas consultas
@@ -134,12 +127,11 @@ export async function convertPrice(
         convertedPrice: price,
         targetCurrency: toCurrency,
         exchangeRate: 1,
-        lastUpdated: new Date().toLocaleString('pt-BR')
+        lastUpdated: new Date().toISOString()
       };
     }
 
     const rates = await getExchangeRates();
-    const rateKey = `${fromCurrency}-${toCurrency}`;
     const rate = rates.find(r => r.from === fromCurrency && r.to === toCurrency);
 
     if (!rate) {
@@ -155,7 +147,7 @@ export async function convertPrice(
       convertedPrice: convertedPrice,
       targetCurrency: toCurrency,
       exchangeRate: rate.rate,
-      lastUpdated: rate.lastUpdated.toLocaleString('pt-BR')
+      lastUpdated: rate.lastUpdated.toISOString()
     };
   } catch (error) {
     console.error('[CurrencyService] Erro ao converter preço:', error);
@@ -174,7 +166,7 @@ export async function convertAllPricesToCurrency(
     const results = [];
 
     for (const commodity of commodityPrices) {
-      const result = { ...commodity };
+      let result: CommodityPriceData & { convertedPrice?: ConvertedPrice } = { ...commodity };
       
       // Se a moeda já é a desejada, não precisa converter
       if (commodity.currency === targetCurrency) {
@@ -208,7 +200,7 @@ export async function convertAllPricesToCurrency(
  * Formata um valor monetário de acordo com a moeda
  */
 export function formatCurrency(value: number, currency: string): string {
-  const formatters = {
+  const formatters: Record<string, Intl.NumberFormat> = {
     BRL: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }),
     USD: new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }),
     EUR: new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' })
