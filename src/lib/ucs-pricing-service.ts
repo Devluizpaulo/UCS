@@ -1,7 +1,9 @@
 
 
 import { getCommodityPrices } from './data-service';
-import type { CommodityPriceData, UCSCalculationInputs, UCSCalculationResult } from './types';
+import { getFormulaParameters } from './formula-service';
+import { calculateIndex } from './calculation-service';
+import type { CommodityPriceData, UCSCalculationInputs, UCSCalculationResult, CalculateUcsIndexOutput } from './types';
 
 // Re-export types for external use
 export type { UCSCalculationInputs, UCSCalculationResult } from './types';
@@ -65,40 +67,32 @@ function calcularCRS(
 export function calcularUCSCompleto(inputs: UCSCalculationInputs): UCSCalculationResult {
   if (inputs.area_total <= 0) throw new Error("Área total deve ser maior que zero.");
 
-  // 1. VM
-  const vm = calcularVM(inputs.produtividade_madeira, inputs.pm3mad, inputs.area_total);
-  
-  // 2. VUS
-  const { vusTotal, vboi, vmilho, vsoja } = calcularVUS(inputs);
-  
-  // 3. CRS
-  const { crsTotal, cc, ch2o } = calcularCRS(inputs);
-  
-  // 4. PDM
-  const pdm = vm + vusTotal + crsTotal;
-  
-  // 5. CE (Carbono Estocado Total)
-  const carbonoEstocadoTotal = inputs.produtividade_carbono * inputs.area_total;
-  if (carbonoEstocadoTotal <= 0) throw new Error("Carbono estocado total (CE) deve ser maior que zero para evitar divisão por zero.");
+  const commodities: CommodityPriceData[] = [
+      { name: 'Madeira', price: inputs.pm3mad, category: 'vmad' } as CommodityPriceData,
+      { name: 'Boi', price: inputs.pecuariaCotacao, category: 'vus' } as CommodityPriceData,
+      { name: 'Milho', price: inputs.milhoCotacao, category: 'vus' } as CommodityPriceData,
+      { name: 'Soja', price: inputs.sojaCotacao, category: 'vus' } as CommodityPriceData,
+      { name: 'Carbono', price: inputs.cotacaoCreditoCarbono, category: 'crs' } as CommodityPriceData,
+  ];
 
-  // 6. IVP
-  const ivp = (pdm / carbonoEstocadoTotal) / 2;
-  
-  // 7. UCS
-  const ucs = inputs.fator_ucs * ivp;
+  // A conversão de moeda e saca/tonelada é tratada no calculation-service
+  const result: CalculateUcsIndexOutput = calculateIndex(commodities, inputs);
 
   return {
-    valorMadeira: vm,
-    valorUsoSolo: vusTotal,
-    custoResponsabilidadeSocioambiental: crsTotal,
-    potencialDesflorestadorMonetizado: pdm,
-    indiceViabilidadeProjeto: ivp,
-    unidadeCreditoSustentabilidade: ucs,
+    valorMadeira: result.components.vm,
+    valorUsoSolo: result.components.vus,
+    custoResponsabilidadeSocioambiental: result.components.crs,
+    potencialDesflorestadorMonetizado: result.components.vm + result.components.vus + result.components.crs,
+    indiceViabilidadeProjeto: result.isConfigured && inputs.produtividade_carbono * inputs.area_total > 0 ? ((result.components.vm + result.components.vus + result.components.crs) / (inputs.produtividade_carbono * inputs.area_total)) / 2 : 0,
+    unidadeCreditoSustentabilidade: result.indexValue,
     detalhes: {
       vm: { fm3: inputs.produtividade_madeira, pm3mad: inputs.pm3mad },
-      vus: { vboi, vmilho, vsoja },
-      crs: { cc, ch2o },
-      ce: { carbonoEstocadoTotal }
+      vus: result.vusDetails,
+      crs: {
+        cc: calcularCRS(inputs).cc,
+        ch2o: calcularCRS(inputs).ch2o,
+      },
+      ce: { carbonoEstocadoTotal: inputs.produtividade_carbono * inputs.area_total }
     }
   };
 }
@@ -110,6 +104,9 @@ export async function obterValoresPadrao(forDate?: string): Promise<Pick<UCSCalc
   try {
     const prices = await getCommodityPrices(forDate);
     
+    // As cotações já vêm na moeda e unidade corretas do data-service,
+    // então aqui apenas mapeamos para os campos da calculadora.
+    // O `calculation-service` fará as conversões necessárias (saca -> ton, USD -> BRL etc.)
     return {
       pm3mad: findPrice(prices, 'vmad', 'madeira'),
       pecuariaCotacao: findPrice(prices, 'vus', 'boi'),

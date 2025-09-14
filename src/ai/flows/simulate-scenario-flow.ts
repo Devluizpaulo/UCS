@@ -12,9 +12,9 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { getCommodityPrices } from '@/lib/data-service';
-import type { ScenarioResult, SimulateScenarioInput, UCSCalculationInputs } from '@/lib/types';
+import type { ScenarioResult, SimulateScenarioInput, CommodityPriceData } from '@/lib/types';
 import { getFormulaParameters } from '@/lib/formula-service';
-import { calcularUCSCompleto, obterValoresPadrao } from '@/lib/ucs-pricing-service';
+import { calculateIndex } from '@/lib/calculation-service';
 
 
 const SimulateScenarioInputSchema = z.object({
@@ -49,16 +49,18 @@ export async function simulateScenario(input: SimulateScenarioInput): Promise<Sc
             throw new Error("Cannot run simulation because the index formula has not been configured.");
         }
         
-        const originalAssetPrice = pricesData.find(p => p.name === asset)?.price || 0;
+        const originalAsset = pricesData.find(p => p.name === asset);
+        if (!originalAsset) {
+             throw new Error(`Asset ${asset} not found for simulation.`);
+        }
+        const originalAssetPrice = originalAsset.price;
 
-        // 2. Calculate the original index value
-        const originalCotacoes = await obterValoresPadrao();
-        const originalInputs: UCSCalculationInputs = { ...originalCotacoes, ...params };
-        const originalIndexResult = calcularUCSCompleto(originalInputs);
-        const originalIndexValue = originalIndexResult.unidadeCreditoSustentabilidade;
+        // 2. Calculate the original index value using the pure calculation service
+        const originalIndexResult = calculateIndex(pricesData, params);
+        const originalIndexValue = originalIndexResult.indexValue;
 
         // 3. Create the new set of prices for the simulation
-        const simulatedPricesData = pricesData.map(p => {
+        const simulatedPricesData: CommodityPriceData[] = pricesData.map(p => {
             if (p.name === asset) {
                 const newPrice = changeType === 'percentage' 
                     ? p.price * (1 + value / 100)
@@ -68,11 +70,9 @@ export async function simulateScenario(input: SimulateScenarioInput): Promise<Sc
             return p;
         });
        
-        // 4. Calculate the new index value
-        const simulatedCotacoes = await obterValoresPadrao();
-        const newInputs: UCSCalculationInputs = { ...simulatedCotacoes, ...params };
-        const newIndexResult = calcularUCSCompleto(newInputs);
-        const newIndexValue = newIndexResult.unidadeCreditoSustentabilidade;
+        // 4. Calculate the new index value with the simulated prices
+        const newIndexResult = calculateIndex(simulatedPricesData, params);
+        const newIndexValue = newIndexResult.indexValue;
         
         // 5. Calculate the percentage change
         const changePercentage = originalIndexValue === 0 ? 0 : ((newIndexValue - originalIndexValue) / originalIndexValue) * 100;
