@@ -1,4 +1,6 @@
 
+'use server';
+
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth-middleware';
 import { completeFirstLogin, updateUserPasswordInAuth } from '@/lib/profile-service';
