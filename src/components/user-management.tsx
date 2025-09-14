@@ -314,9 +314,9 @@ Atenciosamente,
       <CardContent className="p-0 sm:p-6 sm:pt-0">
         
         {/* Mobile View - Cards */}
-        <div className="grid gap-4 sm:hidden p-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:hidden p-4">
             {isFetching ? (
-                 [...Array(3)].map((_, i) => (
+                 [...Array(4)].map((_, i) => (
                     <Card key={i} className="p-4 space-y-3 animate-pulse">
                         <div className="flex justify-between items-start">
                             <Skeleton className="w-3/4 h-5 bg-muted rounded" />

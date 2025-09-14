@@ -35,39 +35,30 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 
+// Schema simplificado para corresponder aos campos REALMENTE utilizados
 const formulaSchema = z.object({
     // Produtividades
-    produtividade_boi: z.coerce.number(),
-    produtividade_milho: z.coerce.number(),
-    produtividade_soja: z.coerce.number(),
-    produtividade_madeira: z.coerce.number(),
-    produtividade_carbono: z.coerce.number(),
-    VOLUME_MADEIRA_HA: z.coerce.number(),
-    PROD_BOI: z.coerce.number(),
-    PROD_MILHO: z.coerce.number(),
-    PROD_SOJA: z.coerce.number(),
+    produtividade_boi: z.coerce.number().min(0, "Valor não pode ser negativo"),
+    produtividade_milho: z.coerce.number().min(0, "Valor não pode ser negativo"),
+    produtividade_soja: z.coerce.number().min(0, "Valor não pode ser negativo"),
+    produtividade_madeira: z.coerce.number().min(0, "Valor não pode ser negativo"),
+    produtividade_carbono: z.coerce.number().min(0, "Valor não pode ser negativo"),
     
     // Fatores de Ponderação
-    fator_pecuaria: z.coerce.number(),
-    fator_milho: z.coerce.number(),
-    fator_soja: z.coerce.number(),
-    PESO_PEC: z.coerce.number(),
-    PESO_MILHO: z.coerce.number(),
-    PESO_SOJA: z.coerce.number(),
+    fator_pecuaria: z.coerce.number().min(0).max(1, "Deve ser entre 0 e 1"),
+    fator_milho: z.coerce.number().min(0).max(1, "Deve ser entre 0 e 1"),
+    fator_soja: z.coerce.number().min(0).max(1, "Deve ser entre 0 e 1"),
     
     // Fatores de Conversão
-    fator_arrendamento: z.coerce.number(),
-    FATOR_ARREND: z.coerce.number(),
-    fator_agua: z.coerce.number(),
-    fator_ucs: z.coerce.number(),
-    FATOR_CARBONO: z.coerce.number(),
-    FATOR_CONVERSAO_SERRADA_TORA: z.coerce.number(),
+    fator_arrendamento: z.coerce.number().min(0).max(1, "Deve ser entre 0 e 1"),
+    fator_agua: z.coerce.number().min(0).max(1, "Deve ser entre 0 e 1"),
+    fator_ucs: z.coerce.number().min(0, "Valor não pode ser negativo"),
     
     // Valores Econômicos
-    pib_por_hectare: z.coerce.number(),
+    pib_por_hectare: z.coerce.number().min(0, "Valor não pode ser negativo"),
     
     // Área
-    area_total: z.coerce.number(),
+    area_total: z.coerce.number().min(0, "Valor não pode ser negativo"),
 });
 
 
@@ -81,7 +72,8 @@ export default function SettingsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [deletingCommodityId, setDeletingCommodityId] = useState<string | null>(null);
 
-  const formulaForm = useForm<Omit<FormulaParameters, 'isConfigured'>>({
+  // Usar um tipo mais simples para o formulário
+  const formulaForm = useForm<z.infer<typeof formulaSchema>>({
       resolver: zodResolver(formulaSchema),
   });
 
@@ -121,11 +113,17 @@ export default function SettingsPage() {
     setIsModalOpen(true);
   };
 
-  const onFormulaSubmit = async (data: Omit<FormulaParameters, 'isConfigured'>) => {
+  const onFormulaSubmit = async (data: z.infer<typeof formulaSchema>) => {
     setIsLoading(true);
     setShowFormulaAlert(false);
     try {
-      await saveFormulaParameters(data);
+      // Garantir que todos os campos do FormulaParameters estejam presentes
+      const fullParams: Omit<FormulaParameters, 'isConfigured'> = {
+          ...defaultParameters, // Começa com todos os padrões
+          ...data, // Sobrescreve com os dados do formulário
+      };
+      
+      await saveFormulaParameters(fullParams);
       toast({
         title: 'Parâmetros Salvos',
         description: 'Os parâmetros da fórmula foram salvos. O índice será recalculado na próxima atualização.',
@@ -410,3 +408,29 @@ function SettingsSkeleton() {
         </div>
     );
 }
+
+const defaultParameters: Omit<FormulaParameters, 'isConfigured'> = {
+    produtividade_boi: 0,
+    produtividade_milho: 0,
+    produtividade_soja: 0,
+    produtividade_madeira: 0,
+    produtividade_carbono: 0,
+    VOLUME_MADEIRA_HA: 0,
+    PROD_BOI: 0,
+    PROD_MILHO: 0,
+    PROD_SOJA: 0,
+    fator_pecuaria: 0,
+    fator_milho: 0,
+    fator_soja: 0,
+    PESO_PEC: 0,
+    PESO_MILHO: 0,
+    PESO_SOJA: 0,
+    fator_arrendamento: 0,
+    FATOR_ARREND: 0,
+    fator_agua: 0,
+    fator_ucs: 0,
+    FATOR_CARBONO: 0,
+    FATOR_CONVERSAO_SERRADA_TORA: 0,
+    pib_por_hectare: 0,
+    area_total: 0,
+};

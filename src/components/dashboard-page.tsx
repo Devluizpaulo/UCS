@@ -1,15 +1,13 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { PageHeader } from '@/components/page-header';
 import { UCSIndexDisplay } from '@/components/ucs-index-display';
 import { CurrenciesCard } from '@/components/currencies-card';
 import { CommoditiesCard } from '@/components/commodities-card';
 import { IndexHistoryCard } from '@/components/index-history-card';
 import { DatePicker } from './ui/date-picker';
-import { Button } from './ui/button';
-import { Calendar as CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 
 export function DashboardPage() {
