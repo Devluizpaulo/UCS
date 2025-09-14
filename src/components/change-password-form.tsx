@@ -17,9 +17,7 @@ import { auth } from '@/lib/firebase-config'; // Importar a instância de auth
 const passwordSchema = z.object({
   currentPassword: z.string().min(1, 'A senha atual é obrigatória.'),
   newPassword: z.string()
-    .min(6, 'A nova senha deve ter entre 6 e 8 caracteres.')
-    .max(8, 'A nova senha deve ter entre 6 e 8 caracteres.')
-    .regex(/^[a-zA-Z0-9]+$/, 'A senha deve conter apenas letras e números.'),
+    .min(6, 'A nova senha deve ter no mínimo 6 caracteres.'),
   confirmPassword: z.string(),
 }).refine((data) => data.newPassword === data.confirmPassword, {
   message: 'As senhas não coincidem.',
@@ -68,7 +66,7 @@ export function ChangePasswordForm() {
 
     } catch (error: any) {
       let description = 'Ocorreu um erro. Verifique sua senha atual e tente novamente.';
-      if (error.code === 'auth/wrong-password') {
+      if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
         description = 'A senha atual fornecida está incorreta.';
       } else if (error.code === 'auth/weak-password') {
         description = 'A nova senha é muito fraca. Tente uma senha mais forte.';
@@ -92,7 +90,7 @@ export function ChangePasswordForm() {
           Alterar Senha
         </CardTitle>
         <CardDescription>
-          A nova senha deve ter entre 6 e 8 caracteres (letras e números).
+          A nova senha deve ter no mínimo 6 caracteres.
         </CardDescription>
       </CardHeader>
       <CardContent>

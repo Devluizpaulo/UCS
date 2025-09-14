@@ -18,9 +18,7 @@ import { confirmPasswordReset, verifyPasswordResetCode } from 'firebase/auth';
 
 const resetPasswordSchema = z.object({
   newPassword: z.string()
-    .min(6, 'A nova senha deve ter entre 6 e 8 caracteres.')
-    .max(8, 'A nova senha deve ter entre 6 e 8 caracteres.')
-    .regex(/^[a-zA-Z0-9]+$/, 'A senha deve conter apenas letras e números.'),
+    .min(6, 'A nova senha deve ter no mínimo 6 caracteres.'),
   confirmPassword: z.string().min(1, 'Confirmação de senha é obrigatória'),
 }).refine((data) => data.newPassword === data.confirmPassword, {
   message: 'As senhas não coincidem',
@@ -182,7 +180,7 @@ function ResetPasswordForm() {
             </div>
             <CardTitle className="text-2xl text-responsive">Nova Senha</CardTitle>
             <CardDescription className="text-responsive">
-              Digite sua nova senha. Ela deve ter entre 6 e 8 caracteres.
+              Digite sua nova senha. Ela deve ter no mínimo 6 caracteres.
             </CardDescription>
           </CardHeader>
           <CardContent className="p-responsive">
@@ -217,7 +215,7 @@ function ResetPasswordForm() {
                   </p>
                 )}
                 <div className="text-xs text-muted-foreground">
-                  <p>A senha deve ter entre 6 e 8 caracteres e conter letras e números.</p>
+                  <p>A nova senha deve ter no mínimo 6 caracteres.</p>
                 </div>
               </div>
 

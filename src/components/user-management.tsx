@@ -55,6 +55,7 @@ interface User {
   createdAt: string;
   isFirstLogin: boolean;
   role: 'admin' | 'user';
+  isActive: boolean;
 }
 
 const userSchema = z.object({
@@ -62,6 +63,7 @@ const userSchema = z.object({
   displayName: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
   phoneNumber: z.string().optional(),
   role: z.enum(['admin', 'user']),
+  isActive: z.boolean(),
 });
 
 type UserFormData = z.infer<typeof userSchema>;
@@ -83,6 +85,7 @@ export function UserManagement() {
     resolver: zodResolver(userSchema),
     defaultValues: {
       role: 'user',
+      isActive: true,
     },
   });
 
@@ -111,7 +114,7 @@ Sua conta foi criada com sucesso no Sistema Índice UCS. Abaixo estão suas cred
 1️⃣ Acesse o sistema usando o link acima
 2️⃣ Faça login com o email e a senha temporária fornecidos
 3️⃣ No primeiro acesso, você será obrigatoriamente direcionado para alterar sua senha
-4️⃣ Escolha uma senha segura com pelo menos 8 caracteres alfanuméricos
+4️⃣ Escolha uma senha segura com no mínimo 6 caracteres
 
 ✅ Após alterar a senha, você terá acesso completo ao sistema.
 
@@ -134,7 +137,7 @@ Atenciosamente,
     } catch (error) {
       toast({
         title: "Erro ao copiar",
-        description: "Não foi possível copiar o texto. Tente selecionar e copiar manually.",
+        description: "Não foi possível copiar o texto. Tente selecionar e copiar manualmente.",
         variant: "destructive",
       });
     }
@@ -234,7 +237,7 @@ Atenciosamente,
               });
         }
       
-      form.reset();
+      form.reset({ role: 'user', displayName: '', email: '', phoneNumber: '', isActive: true });
       setIsDialogOpen(false);
       setEditingUser(null);
       await fetchUsers();
@@ -281,7 +284,7 @@ Atenciosamente,
 
   const handleNewUser = () => {
     setEditingUser(null);
-    form.reset({ role: 'user', displayName: '', email: '', phoneNumber: '' });
+    form.reset({ role: 'user', displayName: '', email: '', phoneNumber: '', isActive: true });
     setIsDialogOpen(true);
   };
   
@@ -292,6 +295,7 @@ Atenciosamente,
       displayName: user.displayName,
       phoneNumber: user.phoneNumber,
       role: user.role,
+      isActive: user.isActive,
     });
     setIsDialogOpen(true);
   }
@@ -363,7 +367,7 @@ Atenciosamente,
                             <div className="flex items-center gap-2">
                                 <UserIcon className="h-4 w-4" />
                                  <Badge variant={user.role === 'admin' ? 'default' : 'secondary'} className="capitalize">{user.role}</Badge>
-                                 <Badge variant={user.isFirstLogin ? 'outline' : 'default'}>{user.isFirstLogin ? 'Pendente' : 'Ativo'}</Badge>
+                                 <Badge variant={user.isActive ? 'default' : 'destructive'}>{user.isActive ? 'Ativo' : 'Inativo'}</Badge>
                             </div>
                             <div className="flex items-center gap-2">
                                 <Calendar className="h-4 w-4" />
@@ -420,9 +424,9 @@ Atenciosamente,
                         {user.role}
                       </Badge>
                     </TableCell>
-                    <TableCell>
-                      <Badge variant={user.isFirstLogin ? 'outline' : 'default'}>
-                        {user.isFirstLogin ? 'Primeiro Login' : 'Ativo'}
+                     <TableCell>
+                      <Badge variant={user.isActive ? 'default' : 'destructive'} className="capitalize">
+                        {user.isActive ? 'Ativo' : 'Inativo'}
                       </Badge>
                     </TableCell>
                     <TableCell>{new Date(user.createdAt).toLocaleDateString('pt-BR')}</TableCell>
@@ -517,6 +521,20 @@ Atenciosamente,
                 <option value="admin">Administrador</option>
               </select>
             </div>
+
+            {editingUser && (
+                <div className="space-y-2">
+                    <Label htmlFor="isActive">Status</Label>
+                     <select
+                        id="isActive"
+                        {...form.register('isActive')}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                     >
+                        <option value="true">Ativo</option>
+                        <option value="false">Inativo</option>
+                    </select>
+                </div>
+            )}
             
             <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-0 pt-4">
               <Button
@@ -529,7 +547,7 @@ Atenciosamente,
               </Button>
               <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {editingUser ? 'Salvar' : 'Criar Usuário'}
+                {editingUser ? 'Salvar Alterações' : 'Criar Usuário'}
               </Button>
             </DialogFooter>
           </form>
