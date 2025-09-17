@@ -1,5 +1,4 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { auth } from '@/lib/firebase-admin-config';
 
 // Define as rotas públicas que não exigem autenticação
 const PUBLIC_ROUTES = ['/login', '/forgot-password', '/reset-password'];
@@ -7,45 +6,23 @@ const PUBLIC_ROUTES = ['/login', '/forgot-password', '/reset-password'];
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const authToken = request.cookies.get('auth-token')?.value;
-
   const isPublicRoute = PUBLIC_ROUTES.some(route => pathname.startsWith(route));
 
-  // 1. Se não houver token e a rota não for pública, redirecione para o login
+  // Se não houver token e a rota não for pública, redirecione para o login
   if (!authToken && !isPublicRoute) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  // 2. Se houver token, verifique-o
-  if (authToken) {
-    try {
-      const decodedToken = await auth.verifySessionCookie(authToken, true);
-      const { isFirstLogin } = decodedToken;
-
-      // 2a. Se for o primeiro login, force o redirecionamento para a troca de senha
-      if (isFirstLogin && pathname !== '/first-login-password-reset') {
-        return NextResponse.redirect(new URL('/first-login-password-reset', request.url));
-      }
-
-      // 2b. Se NÃO for o primeiro login, impeça o acesso à página de troca de senha
-      if (!isFirstLogin && pathname === '/first-login-password-reset') {
-        return NextResponse.redirect(new URL('/', request.url));
-      }
-
-      // 2c. Se o usuário estiver logado e tentar acessar uma rota pública, redirecione-o para o painel
-      if (isPublicRoute) {
-        return NextResponse.redirect(new URL('/', request.url));
-      }
-
-    } catch (error) {
-      // 2d. Se o token for inválido, limpe o cookie e redirecione para o login
-      console.log('Middleware: Invalid auth token. Redirecting to login.');
-      const response = NextResponse.redirect(new URL('/login', request.url));
-      response.cookies.delete('auth-token');
-      return response;
-    }
+  // Se houver token e o usuário tentar acessar uma rota pública, redirecione para o painel
+  if (authToken && isPublicRoute) {
+    return NextResponse.redirect(new URL('/', request.url));
   }
+  
+  // Para o fluxo de primeiro login, o redirecionamento já é tratado no MainLayout
+  // que tem acesso ao estado de autenticação do usuário no lado do cliente.
+  // Manter essa lógica no middleware é complexo e propenso a erros sem verificar o token.
 
-  // 3. Se nenhuma das condições acima for atendida, permita o acesso
+  // Se nenhuma das condições acima for atendida, permita o acesso
   return NextResponse.next();
 }
 
