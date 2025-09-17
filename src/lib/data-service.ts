@@ -33,7 +33,8 @@ const serializeFirestoreTimestamp = (data: any): any => {
 function getCollectionNameFromAssetId(assetId: string): string {
     const normalizedId = assetId.toLowerCase();
     
-    if (normalizedId.includes('boi_gordo')) return 'boi_gordo';
+    // Ordered by specificity to avoid incorrect matches
+    if (normalizedId.includes('boi')) return 'boi_gordo';
     if (normalizedId.includes('carbono')) return 'carbono';
     if (normalizedId.includes('eur')) return 'eur';
     if (normalizedId.includes('madeira')) return 'madeira';
