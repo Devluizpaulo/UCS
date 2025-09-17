@@ -73,14 +73,17 @@ export function MainLayout({ children }: { children: ReactNode }) {
   useEffect(() => {
     // onAuthStateChanged is the recommended way to get the current user
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      setLoading(false);
       if (user) {
         // User is signed in.
         setUser(user);
       } else {
         // User is signed out. Middleware will handle the redirect.
         setUser(null);
+        if (pathname !== '/login' && pathname !== '/forgot-password' && pathname !== '/reset-password') {
+            router.push('/login');
+        }
       }
-      setLoading(false);
     });
 
     // Cleanup subscription on unmount
@@ -95,7 +98,7 @@ export function MainLayout({ children }: { children: ReactNode }) {
 
   const handleLogout = async () => {
     try {
-      // Limpar cookie JWT
+      // Clear cookie JWT by calling the logout API
       await fetch('/api/auth/logout', {
         method: 'POST',
       });
@@ -141,7 +144,7 @@ export function MainLayout({ children }: { children: ReactNode }) {
   
   // Public pages (like the first-login page itself) should not render the main layout
   const noLayoutPaths = ['/first-login-password-reset', '/login', '/forgot-password', '/reset-password'];
-  if (noLayoutPaths.includes(pathname)) {
+  if (noLayoutPaths.includes(pathname) || !user) {
       return <>{children}</>;
   }
 

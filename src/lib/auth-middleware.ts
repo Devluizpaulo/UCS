@@ -42,39 +42,3 @@ export async function verifyAuth(request: NextRequest): Promise<JWTPayload | nul
     return null;
   }
 }
-
-/**
- * Verifica se o usuário tem permissão de administrador
- */
-export async function verifyAdminAuth(request: NextRequest): Promise<JWTPayload | null> {
-  const user = await verifyAuth(request);
-  
-  if (!user || user.role !== 'admin') {
-    return null;
-  }
-  
-  return user;
-}
-
-/**
- * Extrai informações do usuário do token JWT
- */
-export async function getCurrentUser(request: NextRequest): Promise<{
-  uid: string;
-  email: string;
-  role: string;
-  isFirstLogin?: boolean;
-} | null> {
-  const user = await verifyAuth(request);
-  
-  if (!user) {
-    return null;
-  }
-  
-  return {
-    uid: user.uid,
-    email: user.email,
-    role: user.role,
-    isFirstLogin: user.isFirstLogin
-  };
-}

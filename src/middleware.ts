@@ -19,27 +19,22 @@ export async function middleware(request: NextRequest) {
   
   if (!user) {
     // Se não autenticado, redirecionar para a página de login
-    // Evitar redirecionamento infinito se a página de login já for a destino
-    if (pathname !== '/login') {
-        const url = request.nextUrl.clone();
-        url.pathname = '/login';
-        url.search = ''; // Limpar quaisquer query params
-        return NextResponse.redirect(url);
-    }
-    return NextResponse.next();
+    const url = request.nextUrl.clone();
+    url.pathname = '/login';
+    url.search = ''; // Limpar quaisquer query params
+    return NextResponse.redirect(url);
   }
   
-  // Lógica para o primeiro login
   const isFirstLogin = user.isFirstLogin === true;
   const isFirstLoginPage = pathname === '/first-login-password-reset';
 
+  // Se for o primeiro login e o usuário não estiver na página correta, redireciona para lá
   if (isFirstLogin && !isFirstLoginPage) {
-    // Se for o primeiro login e o usuário não estiver na página correta, redireciona para lá
     return NextResponse.redirect(new URL('/first-login-password-reset', request.url));
   }
   
+  // Se não for o primeiro login e o usuário tentar acessar a página de troca, redireciona para o painel
   if (!isFirstLogin && isFirstLoginPage) {
-    // Se não for o primeiro login e o usuário tentar acessar a página de troca, redireciona para o painel
     return NextResponse.redirect(new URL('/', request.url));
   }
   
@@ -54,7 +49,6 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * - image/ (image files in public folder) - This was missing and caused image load failures
      */
     '/((?!_next/static|_next/image|favicon.ico|image/).*)',
   ],
