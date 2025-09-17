@@ -20,6 +20,8 @@ function findPrice(commodities: CommodityPriceData[], category: CommodityPriceDa
         (nameIncludes ? c.name.toLowerCase().includes(nameIncludes.toLowerCase()) : true)
     );
     if (!asset || asset.price === undefined || asset.price === null) {
+        // Log a warning if a price is not found, which helps in debugging.
+        // console.warn(`[CalculationService] Price not found for category '${category}' ${nameIncludes ? `with name including '${nameIncludes}'` : ''}. Defaulting to 0.`);
         return 0;
     }
     return asset.price;
@@ -47,11 +49,11 @@ export function calculateIndex(commodities: CommodityPriceData[], params: Formul
       const taxa_usd_brl = findPrice(commodities, 'exchange', 'dólar');
       const taxa_eur_brl = findPrice(commodities, 'exchange', 'euro');
 
-      const preco_madeira_serrada_usd = findPrice(commodities, 'vmad', 'madeira');
+      const preco_madeira_serrada_usd = findPrice(commodities, 'vmad');
       const preco_boi_arroba_brl = findPrice(commodities, 'vus', 'boi');
       const preco_milho_saca_brl = findPrice(commodities, 'vus', 'milho');
       const preco_soja_saca_usd = findPrice(commodities, 'vus', 'soja');
-      const preco_carbono_eur = findPrice(commodities, 'crs', 'carbono');
+      const preco_carbono_eur = findPrice(commodities, 'crs');
       
       // Conversões de Preço
       const preco_madeira_tora_usd = preco_madeira_serrada_usd * params.FATOR_CONVERSAO_SERRADA_TORA;
@@ -114,9 +116,9 @@ export function calculateIndex(commodities: CommodityPriceData[], params: Formul
       }
   
       // Detalhamento do VUS para o modal (proporcional ao VUS total)
-      const vus_pecuaria = (renda_pecuaria_ha * params.fator_pecuaria / renda_bruta_ponderada_ha_vus) * VUS;
-      const vus_milho = (renda_milho_ha * params.fator_milho / renda_bruta_ponderada_ha_vus) * VUS;
-      const vus_soja = (renda_soja_ha * params.fator_soja / renda_bruta_ponderada_ha_vus) * VUS;
+      const vus_pecuaria = renda_bruta_ponderada_ha_vus > 0 ? (renda_pecuaria_ha * params.fator_pecuaria / renda_bruta_ponderada_ha_vus) * VUS : 0;
+      const vus_milho = renda_bruta_ponderada_ha_vus > 0 ? (renda_milho_ha * params.fator_milho / renda_bruta_ponderada_ha_vus) * VUS : 0;
+      const vus_soja = renda_bruta_ponderada_ha_vus > 0 ? (renda_soja_ha * params.fator_soja / renda_bruta_ponderada_ha_vus) * VUS : 0;
 
       return { 
           indexValue: parseFloat(ucsValue.toFixed(4)),
