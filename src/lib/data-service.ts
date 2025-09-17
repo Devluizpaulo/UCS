@@ -46,16 +46,30 @@ function getCollectionNameFromAssetId(assetId: string): string {
     return normalizedId.replace(/_futuros$/, '').replace(/__/g, '_');
 }
 
-// Helper to parse DD/MM/YYYY string to Date object
+// Helper to parse DD/MM/YYYY or DD/MM/YY string to Date object
 const parseDateString = (dateStr: string): Date => {
-    if (!/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
-        // Fallback for unexpected formats or invalid strings
-        return new Date(1970, 0, 1);
+    if (typeof dateStr !== 'string') return new Date(1970, 0, 1);
+
+    // Regex for DD/MM/YY
+    if (/^\d{2}\/\d{2}\/\d{2}$/.test(dateStr)) {
+        let [day, month, year] = dateStr.split('/').map(Number);
+        // Convert 2-digit year to 4-digit year
+        // Assumes years > 50 are 19xx and years <= 50 are 20xx
+        year += (year > 50 ? 1900 : 2000);
+        return new Date(year, month - 1, day);
     }
-    const [day, month, year] = dateStr.split('/').map(Number);
-    // Month is 0-indexed in JavaScript Dates
-    return new Date(year, month - 1, day);
+    
+    // Regex for DD/MM/YYYY
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
+        const [day, month, year] = dateStr.split('/').map(Number);
+        return new Date(year, month - 1, day);
+    }
+    
+    // Fallback for other formats (like ISO strings) or invalid strings
+    const parsedDate = new Date(dateStr);
+    return isNaN(parsedDate.getTime()) ? new Date(1970, 0, 1) : parsedDate;
 };
+
 
 async function getAssetData(assetId: string, limit: number = 1): Promise<FirestoreQuote[]> {
     if (!assetId) return [];
@@ -65,7 +79,7 @@ async function getAssetData(assetId: string, limit: number = 1): Promise<Firesto
     try {
         // Fetch more documents than needed to ensure we have enough data for correct sorting
         const queryLimit = Math.max(limit, 100); 
-        const query = db.collection(collectionName).orderBy('created_at', 'desc').limit(queryLimit);
+        const query = db.collection(collectionName).limit(queryLimit);
         const snapshot = await query.get();
         
         if (snapshot.empty) return [];
