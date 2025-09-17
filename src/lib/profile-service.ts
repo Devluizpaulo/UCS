@@ -15,33 +15,105 @@ interface User {
 }
 
 /**
+ * Cria um novo usuário no Firebase Authentication e um perfil correspondente no Firestore.
+ */
+export async function createUser(data: {
+  email: string;
+  password?: string;
+  displayName: string;
+  phoneNumber?: string | null;
+  role: 'admin' | 'user';
+}): Promise<any> {
+  const { email, password, displayName, phoneNumber, role } = data;
+
+  if (!email || !displayName) throw new Error('Nome e e-mail são obrigatórios.');
+  if (!password) throw new Error('A senha é obrigatória para criar um novo usuário.');
+  if (password.length < 6) throw new Error('A senha deve ter no mínimo 6 caracteres.');
+  
+  try {
+    // 1. Criar usuário no Firebase Auth
+    const userRecord = await adminAuth.createUser({
+      email,
+      password,
+      displayName,
+      phoneNumber: phoneNumber || undefined,
+      disabled: false,
+    });
+
+    // 2. Definir claims customizadas (role, isFirstLogin)
+    await adminAuth.setCustomUserClaims(userRecord.uid, {
+      role: role,
+      isFirstLogin: true,
+    });
+    
+    // 3. Criar perfil de usuário no Firestore
+    const now = new Date().toISOString();
+    const userProfile = {
+      email: userRecord.email,
+      displayName: userRecord.displayName,
+      phoneNumber: userRecord.phoneNumber || null,
+      role: role,
+      isFirstLogin: true,
+      isActive: true,
+      createdAt: now,
+      updatedAt: now,
+    };
+    
+    await db.collection('users').doc(userRecord.uid).set(userProfile);
+    
+    return {
+      uid: userRecord.uid,
+      email: userRecord.email,
+      displayName: userRecord.displayName,
+    };
+
+  } catch (error: any) {
+    console.error('[Profile Service] Erro detalhado ao criar usuário:', error);
+    
+    if (error.code === 'auth/email-already-exists') {
+      throw new Error('Este email já está em uso.');
+    } else if (error.code === 'auth/invalid-email') {
+      throw new Error('Email inválido.');
+    } else if (error.code === 'auth/weak-password') {
+      throw new Error('A senha é inválida. Deve ter no mínimo 6 caracteres.');
+    }
+    
+    throw new Error(`Erro no servidor: ${error.message || 'Erro desconhecido ao criar usuário'}`);
+  }
+}
+
+
+/**
  * ATUALIZA DADOS COMPLETOS DE UM USUÁRIO (ADMIN)
  */
-export async function updateUser(uid: string, data: { displayName: string; phoneNumber?: string | null; role: 'admin' | 'user', isActive: boolean }): Promise<any> {
+export async function updateUser(uid: string, data: { displayName?: string; phoneNumber?: string | null; role?: 'admin' | 'user', isActive?: boolean }): Promise<any> {
   if (!uid) {
     throw new Error('UID do usuário é obrigatório.');
   }
 
   try {
     const { displayName, phoneNumber, role, isActive } = data;
-    const updatePayload: { displayName: string; phoneNumber?: string, disabled: boolean } = { 
-        displayName,
-        disabled: !isActive
-    };
-    if (phoneNumber) {
-      updatePayload.phoneNumber = phoneNumber;
-    }
+    
+    const authUpdatePayload: { displayName?: string; phoneNumber?: string, disabled?: boolean } = {};
+    if (displayName !== undefined) authUpdatePayload.displayName = displayName;
+    if (phoneNumber !== undefined) authUpdatePayload.phoneNumber = phoneNumber;
+    if (isActive !== undefined) authUpdatePayload.disabled = !isActive;
 
     // 1. Atualiza dados no Firebase Auth
-    await adminAuth.updateUser(uid, updatePayload);
+    if (Object.keys(authUpdatePayload).length > 0) {
+        await adminAuth.updateUser(uid, authUpdatePayload);
+    }
     
     // 2. Atualiza a 'role' como uma custom claim no Firebase Auth
-    const currentClaims = (await adminAuth.getUser(uid)).customClaims;
-    await adminAuth.setCustomUserClaims(uid, { ...currentClaims, role });
+    if(role) {
+        const currentClaims = (await adminAuth.getUser(uid)).customClaims;
+        await adminAuth.setCustomUserClaims(uid, { ...currentClaims, role });
+    }
 
     // 3. Atualiza dados no Firestore
+    const firestoreUpdatePayload: any = { ...data, updatedAt: new Date().toISOString() };
     const userDocRef = db.collection('users').doc(uid);
-    await userDocRef.update({ displayName, phoneNumber, role, isActive });
+    await userDocRef.update(firestoreUpdatePayload);
     
     const updatedUserDoc = await userDocRef.get();
     const userData = updatedUserDoc.data();
@@ -93,22 +165,6 @@ export async function completeFirstLogin(uid: string): Promise<void> {
 }
 
 /**
- * Atualiza apenas a senha no Firebase Auth
- */
-export async function updateUserPasswordInAuth(uid: string, newPassword: string): Promise<void> {
-    if (!uid) throw new Error('UID do usuário é obrigatório.');
-    if (!newPassword) throw new Error('A nova senha é obrigatória.');
-    
-    try {
-        await adminAuth.updateUser(uid, { password: newPassword });
-    } catch (error: any) {
-        console.error('Erro ao atualizar a senha no Firebase Auth:', error);
-        throw new Error('Falha ao atualizar a senha.');
-    }
-}
-
-
-/**
  * Server Action para buscar todos os usuários de forma segura.
  */
 export async function getUsers(): Promise<User[]> {
@@ -124,15 +180,16 @@ export async function getUsers(): Promise<User[]> {
                 displayName: data.displayName,
                 phoneNumber: data.phoneNumber,
                 createdAt: data.createdAt,
-                isActive: data.isActive,
-                isFirstLogin: data.isFirstLogin,
-                role: data.role,
+                isActive: data.isActive === undefined ? true : data.isActive,
+                isFirstLogin: data.isFirstLogin === undefined ? true : data.isFirstLogin,
+                role: data.role || 'user',
             };
         });
         return users;
     } catch (error: any) {
         console.error('Erro ao listar usuários (Server Action):', error);
-        throw new Error('Falha ao buscar usuários no servidor.');
+        // Retorna um array vazio em caso de erro para não quebrar a UI
+        return [];
     }
 }
 
@@ -156,74 +213,4 @@ export async function getUserById(uid: string): Promise<User | null> {
         console.error('Erro ao buscar usuário por ID:', error);
         throw new Error('Falha ao buscar usuário.');
     }
-}
-
-
-/**
- * Cria um novo usuário no Firebase Authentication e um perfil correspondente no Firestore.
- */
-export async function createUser(data: {
-  email: string;
-  password?: string;
-  displayName: string;
-  phoneNumber?: string | null;
-  role: 'admin' | 'user';
-}): Promise<any> {
-  const { email, password, displayName, phoneNumber, role } = data;
-
-  if (!email || !displayName) throw new Error('Nome e e-mail são obrigatórios.');
-  if (!password) throw new Error('A senha é obrigatória para criar um novo usuário.');
-  if (password.length < 6) throw new Error('A senha deve ter no mínimo 6 caracteres.');
-  
-  try {
-    // 1. Criar usuário no Firebase Auth
-    const userRecord = await adminAuth.createUser({
-      email,
-      password,
-      displayName,
-      phoneNumber: phoneNumber || undefined,
-      disabled: false,
-    });
-
-    // 2. Definir claims customizadas (role, isFirstLogin)
-    await adminAuth.setCustomUserClaims(userRecord.uid, {
-      role: role,
-      isFirstLogin: true,
-    });
-    
-    // 3. Criar perfil de usuário no Firestore
-    const now = new Date().toISOString();
-    const userProfile = {
-      email: userRecord.email,
-      displayName: userRecord.displayName,
-      phoneNumber: userRecord.phoneNumber || null,
-      role: role,
-      isFirstLogin: true,
-      isActive: true,
-      createdAt: now,
-      updatedAt: now,
-      lastLoginAt: null
-    };
-    
-    await db.collection('users').doc(userRecord.uid).set(userProfile);
-    
-    return {
-      uid: userRecord.uid,
-      email: userRecord.email,
-      displayName: userRecord.displayName,
-    };
-
-  } catch (error: any) {
-    console.error('[Profile Service] Erro detalhado ao criar usuário:', error);
-    
-    if (error.code === 'auth/email-already-exists') {
-      throw new Error('Este email já está em uso.');
-    } else if (error.code === 'auth/invalid-email') {
-      throw new Error('Email inválido.');
-    } else if (error.code === 'auth/weak-password') {
-      throw new Error('A senha é inválida. Deve ter no mínimo 6 caracteres.');
-    }
-    
-    throw new Error(`Erro no servidor: ${error.message || 'Erro desconhecido ao criar usuário'}`);
-  }
 }

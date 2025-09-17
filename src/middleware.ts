@@ -1,59 +1,63 @@
+import { NextResponse, type NextRequest } from 'next/server';
+import { auth } from '@/lib/firebase-admin-config';
 
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
-import { auth } from '@/lib/firebase-admin-config'; // Using admin to check claims in the future if needed
+// Define as rotas públicas que não exigem autenticação
+const PUBLIC_ROUTES = ['/login', '/forgot-password', '/reset-password'];
 
-// This middleware is now simplified. Its primary role is to handle public vs. private routes
-// and the special case of the first login. The actual token validation for API routes
-// should be handled within each API route or a dedicated API middleware.
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const authToken = request.cookies.get('auth-token')?.value;
 
-  // If there's no token, redirect any protected route to the login page.
-  if (!authToken) {
-      if (pathname.startsWith('/login') || pathname.startsWith('/forgot-password') || pathname.startsWith('/reset-password')) {
-          return NextResponse.next();
-      }
-      return NextResponse.redirect(new URL('/login', request.url));
+  const isPublicRoute = PUBLIC_ROUTES.some(route => pathname.startsWith(route));
+
+  // 1. Se não houver token e a rota não for pública, redirecione para o login
+  if (!authToken && !isPublicRoute) {
+    return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  // If there is a token, try to verify it to check claims.
-  try {
+  // 2. Se houver token, verifique-o
+  if (authToken) {
+    try {
       const decodedToken = await auth.verifySessionCookie(authToken, true);
       const { isFirstLogin } = decodedToken;
 
-      // If it's the user's first login, force them to the password reset page.
+      // 2a. Se for o primeiro login, force o redirecionamento para a troca de senha
       if (isFirstLogin && pathname !== '/first-login-password-reset') {
-          return NextResponse.redirect(new URL('/first-login-password-reset', request.url));
-      }
-      
-      // If the user has already completed the first login but tries to access that page, redirect them.
-      if (!isFirstLogin && pathname === '/first-login-password-reset') {
-          return NextResponse.redirect(new URL('/', request.url));
+        return NextResponse.redirect(new URL('/first-login-password-reset', request.url));
       }
 
-  } catch (error) {
-      // If the token is invalid (expired, etc.), clear the cookie and redirect to login.
+      // 2b. Se NÃO for o primeiro login, impeça o acesso à página de troca de senha
+      if (!isFirstLogin && pathname === '/first-login-password-reset') {
+        return NextResponse.redirect(new URL('/', request.url));
+      }
+
+      // 2c. Se o usuário estiver logado e tentar acessar uma rota pública, redirecione-o para o painel
+      if (isPublicRoute) {
+        return NextResponse.redirect(new URL('/', request.url));
+      }
+
+    } catch (error) {
+      // 2d. Se o token for inválido, limpe o cookie e redirecione para o login
       console.log('Middleware: Invalid auth token. Redirecting to login.');
       const response = NextResponse.redirect(new URL('/login', request.url));
       response.cookies.delete('auth-token');
       return response;
+    }
   }
-  
-  // If the user is authenticated and not on a special page, let them proceed.
+
+  // 3. Se nenhuma das condições acima for atendida, permita o acesso
   return NextResponse.next();
 }
 
 export const config = {
   matcher: [
     /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes are handled separately)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - image (public images folder)
+     * Corresponde a todos os caminhos de solicitação, exceto aqueles que começam com:
+     * - api (rotas de API)
+     * - _next/static (arquivos estáticos)
+     * - _next/image (arquivos de otimização de imagem)
+     * - favicon.ico (arquivo de favicon)
+     * - image (pasta de imagens públicas)
      */
     '/((?!api|_next/static|_next/image|favicon.ico|image).*)',
   ],

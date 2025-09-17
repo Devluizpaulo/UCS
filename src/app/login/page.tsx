@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/dialog';
 import { auth } from '@/lib/firebase-config';
 import { signInWithEmailAndPassword } from 'firebase/auth';
+import { getUsers } from '@/lib/profile-service';
 
 const loginSchema = z.object({
   email: z.string().email('Por favor, insira um e-mail válido.'),
@@ -43,8 +44,23 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isCreatingAdmin, setIsCreatingAdmin] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [canCreateFirstAdmin, setCanCreateFirstAdmin] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+
+  useEffect(() => {
+    // Verifica se já existem usuários para habilitar ou não a criação do primeiro admin
+    const checkUsers = async () => {
+        try {
+            const users = await getUsers();
+            setCanCreateFirstAdmin(users.length === 0);
+        } catch {
+            // Se houver erro, assume que pode ser a primeira vez
+            setCanCreateFirstAdmin(true);
+        }
+    }
+    checkUsers();
+  }, []);
 
   const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -106,7 +122,7 @@ export default function LoginPage() {
   const onAdminSubmit = async (data: AdminFormData) => {
     setIsCreatingAdmin(true);
     try {
-      const response = await fetch('/api/users?firstAdmin=true', {
+      const response = await fetch('/api/users', {
          method: 'POST',
          headers: { 'Content-Type': 'application/json' },
          body: JSON.stringify({ ...data, role: 'admin' }),
@@ -123,6 +139,7 @@ export default function LoginPage() {
       });
       setIsModalOpen(false);
       adminForm.reset();
+      setCanCreateFirstAdmin(false); // Desabilita o botão após sucesso
 
     } catch (error: any) {
        toast({
@@ -225,11 +242,13 @@ export default function LoginPage() {
                   )}
                 </Button>
               </form>
-             <div className="mt-4 text-center text-sm">
-                <Button variant="link" className="text-muted-foreground" onClick={() => setIsModalOpen(true)}>
-                  Criar Conta de Administrador
-                </Button>
-              </div>
+             {canCreateFirstAdmin && (
+                <div className="mt-4 text-center text-sm">
+                    <Button variant="link" className="text-muted-foreground" onClick={() => setIsModalOpen(true)}>
+                    Criar Conta de Administrador
+                    </Button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -240,7 +259,7 @@ export default function LoginPage() {
           <DialogHeader>
             <DialogTitle>Criar Primeiro Administrador</DialogTitle>
             <DialogDescription>
-              Esta opção é para o primeiro acesso ao sistema. Se já existem usuários, esta operação falhará.
+              Esta opção só está disponível se não houver outros usuários no sistema.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={adminForm.handleSubmit(onAdminSubmit)}>

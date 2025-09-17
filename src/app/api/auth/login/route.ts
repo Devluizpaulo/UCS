@@ -1,10 +1,5 @@
-
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/firebase-admin-config';
-import { SignJWT } from 'jose';
-import { db } from '@/lib/firebase-admin-config';
-
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'your-secret-key-change-in-production');
+import { auth as adminAuth, db } from '@/lib/firebase-admin-config';
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,11 +9,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Token de autenticação não fornecido.' }, { status: 400 });
     }
 
-    // Verificar o ID Token do Firebase
-    const decodedToken = await auth.verifyIdToken(idToken);
+    // Verificar o ID Token do Firebase para autenticar o usuário
+    const decodedToken = await adminAuth.verifyIdToken(idToken);
     const { uid, email } = decodedToken;
 
-    // Obter dados adicionais do Firestore se necessário
+    // Obter dados adicionais do Firestore (role, isFirstLogin)
     const userDoc = await db.collection('users').doc(uid).get();
     if (!userDoc.exists) {
         throw new Error('Perfil de usuário não encontrado no banco de dados.');
@@ -29,19 +24,11 @@ export async function POST(request: NextRequest) {
       throw new Error('Conta desativada. Entre em contato com o administrador.');
     }
     
-    // Gerar JWT token que será usado para a sessão de cookie
-    const sessionToken = await new SignJWT({
-        uid,
-        email,
-        role: userData.role,
-        isFirstLogin: userData.isFirstLogin,
-      })
-      .setProtectedHeader({ alg: 'HS256' })
-      .setIssuedAt()
-      .setExpirationTime('24h')
-      .sign(JWT_SECRET);
+    // Criar o cookie de sessão usando o Firebase Admin SDK
+    const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 dias
+    const sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn });
 
-    // Criar resposta com cookie seguro
+    // Retornar a resposta com o cookie seguro
     const response = NextResponse.json({
       message: 'Login realizado com sucesso!',
       user: {
@@ -53,11 +40,11 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    response.cookies.set('auth-token', sessionToken, {
+    response.cookies.set('auth-token', sessionCookie, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 24 * 60 * 60, // 24 horas
+      maxAge: expiresIn / 1000, // maxAge é em segundos
       path: '/',
     });
 
