@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils';
 import { Progress } from './ui/progress';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { getFormulaParameters } from '@/lib/formula-service'; 
+import { Separator } from '@/components/ui/separator';
 
 interface IndexCompositionModalProps {
   data: UcsData;
@@ -115,7 +116,7 @@ export function IndexCompositionModal({ data, isOpen, onClose }: IndexCompositio
     );
     
     const KpiCard = ({ title, value, icon: Icon, subtext }: { title:string; value: string; icon: React.ElementType; subtext?: string }) => (
-        <div className="flex items-start gap-3 rounded-lg bg-muted/30 p-3 flex-1">
+        <div className="flex items-start gap-3 rounded-lg bg-muted/30 p-3 flex-1 min-w-[150px]">
             <Icon className="h-5 w-5 text-muted-foreground mt-1" />
             <div>
                 <p className="text-xs text-muted-foreground">{title}</p>
@@ -179,6 +180,8 @@ export function IndexCompositionModal({ data, isOpen, onClose }: IndexCompositio
                                 </div>
                             </div>
                             
+                            <Separator className="my-6"/>
+
                             <div>
                                 <h4 className="text-sm font-semibold text-muted-foreground mb-3">Detalhes do VUS</h4>
                                 <div className="space-y-4">
