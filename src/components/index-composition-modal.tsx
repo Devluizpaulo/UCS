@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import type { UcsData, FormulaParameters } from '@/lib/types';
@@ -135,6 +136,7 @@ export function IndexCompositionModal({ data, isOpen, onClose }: IndexCompositio
                 Análise detalhada dos componentes e KPIs que formam o valor do índice.
             </DialogDescription>
         </DialogHeader>
+        
         <ScrollArea className="flex-1 min-h-0">
             <div className="p-4 sm:p-6 space-y-6">
                 
@@ -222,8 +224,10 @@ export function IndexCompositionModal({ data, isOpen, onClose }: IndexCompositio
                 </div>
             </div>
         </ScrollArea>
+        <DialogFooter className="p-6 pt-4 border-t">
+          {/* Footer content can go here if needed */}
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
-
