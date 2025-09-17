@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import type { ChartData, CommodityPriceData, HistoryInterval, UcsData, FirestoreQuote, CommodityConfig } from './types';
@@ -110,9 +111,14 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
     try {
         const commodities = await getCommodities();
         if (!commodities || commodities.length === 0) return [];
+        
+        const allAssetPromises = commodities.map(c => getAssetData(c.id, 2));
+        const allAssetHistories = await Promise.all(allAssetPromises);
 
-        const pricePromises = commodities.map(async (commodity) => {
-            const assetHistory = await getAssetData(commodity.id, 2);
+        const priceDataMap = new Map<string, CommodityPriceData>();
+
+        commodities.forEach((commodity, index) => {
+            const assetHistory = allAssetHistories[index];
             let currentPrice = 0, change = 0, absoluteChange = 0, lastUpdated = 'N/A';
 
             if (assetHistory.length > 0) {
@@ -129,10 +135,26 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
                     }
                 }
             }
-            return { ...commodity, price: currentPrice, change, absoluteChange, lastUpdated };
+             priceDataMap.set(commodity.id, { ...commodity, price: currentPrice, change, absoluteChange, lastUpdated });
         });
+        
+        const usdRate = priceDataMap.get('usd_brl___dolar_americano_real_brasileiro')?.price || 0;
+        const eurRate = priceDataMap.get('eur_brl___euro_real_brasileiro')?.price || 0;
+        
+        const finalPrices: CommodityPriceData[] = [];
+        for (const commodity of commodities) {
+            const data = priceDataMap.get(commodity.id);
+            if (data) {
+                if (data.currency === 'USD' && usdRate > 0) {
+                    data.convertedPriceBRL = data.price * usdRate;
+                } else if (data.currency === 'EUR' && eurRate > 0) {
+                    data.convertedPriceBRL = data.price * eurRate;
+                }
+                finalPrices.push(data);
+            }
+        }
 
-        return Promise.all(pricePromises);
+        return finalPrices;
     } catch (error) {
         console.error(`Failed to get commodity prices: ${error}`);
         return [];

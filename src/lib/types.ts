@@ -1,5 +1,6 @@
 
 
+
 export type ChartData = {
   time: string;
   value: number;
@@ -47,6 +48,7 @@ export type CommodityPriceData = CommodityConfig & {
     absoluteChange: number;
     lastUpdated: string;
     convertedPrice?: ConvertedPrice;
+    convertedPriceBRL?: number;
 };
 
 export type HistoryInterval = '1d' | '1wk' | '1mo';

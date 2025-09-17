@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState } from 'react';
@@ -16,6 +17,7 @@ import type { CommodityPriceData } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { AssetDetailModal } from './asset-detail-modal';
 import { Skeleton } from './ui/skeleton';
+import { formatCurrency } from '@/lib/ucs-pricing-service';
 
 
 const getIconForCategory = (category: CommodityPriceData['category']) => {
@@ -96,7 +98,14 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
               </TableCell>
               <TableCell className="text-right font-mono">
                  {asset.price > 0 ? (
-                    <AnimatedNumber value={asset.price} currency={asset.currency} />
+                    <div>
+                      <AnimatedNumber value={asset.price} currency={asset.currency} />
+                      {asset.convertedPriceBRL && (
+                        <div className="text-xs text-muted-foreground">
+                            {formatCurrency(asset.convertedPriceBRL, 'BRL')}
+                        </div>
+                      )}
+                    </div>
                  ) : (
                     <span className="text-muted-foreground">R$ 0,00</span>
                  )}
