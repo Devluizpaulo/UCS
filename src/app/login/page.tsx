@@ -21,8 +21,6 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { auth } from '@/lib/firebase-config';
-import { signInWithEmailAndPassword } from 'firebase/auth';
 import { getUsers } from '@/lib/profile-service';
 
 const loginSchema = z.object({
@@ -49,13 +47,11 @@ export default function LoginPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Verifica se já existem usuários para habilitar ou não a criação do primeiro admin
     const checkUsers = async () => {
         try {
             const users = await getUsers();
             setCanCreateFirstAdmin(users.length === 0);
         } catch {
-            // Se houver erro, assume que pode ser a primeira vez
             setCanCreateFirstAdmin(true);
         }
     }
@@ -72,51 +68,25 @@ export default function LoginPage() {
 
   const onLoginSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
-    try {
-      // 1. Autenticar com Firebase no cliente
-      const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
-      const idToken = await userCredential.user.getIdToken();
-
-      // 2. Enviar ID Token para a API de sessão
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: idToken }),
-      });
-
-      const sessionData = await response.json();
-
-      if (!response.ok) {
-        throw new Error(sessionData.error || 'Falha ao iniciar sessão.');
-      }
-      
-      toast({
-        title: 'Login bem-sucedido!',
-        description: `Bem-vindo, ${sessionData.user.displayName}!`,
-      });
-
-      if (sessionData.user.isFirstLogin) {
-        router.push('/first-login-password-reset');
-      } else {
+    // Simulação de login
+    setTimeout(() => {
+      if (data.email === 'admin@example.com' && data.password === 'password') {
+        toast({
+          title: 'Login bem-sucedido!',
+          description: 'Bem-vindo, Administrador!',
+        });
+        // Simulando a criação de uma sessão
+        document.cookie = "auth-token=mock-token; path=/; max-age=3600";
         router.push('/');
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Erro de Autenticação',
+          description: 'Credenciais inválidas.',
+        });
+        setIsLoading(false);
       }
-
-    } catch (error: any) {
-      console.error("Erro de login:", error);
-      let description = "Credenciais inválidas ou erro de conexão. Verifique seus dados e tente novamente.";
-      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-        description = "Email ou senha incorretos.";
-      } else if (error.message) {
-        description = error.message;
-      }
-      toast({
-        variant: 'destructive',
-        title: 'Erro de Autenticação',
-        description,
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    }, 1000);
   };
 
   const onAdminSubmit = async (data: AdminFormData) => {
@@ -139,7 +109,7 @@ export default function LoginPage() {
       });
       setIsModalOpen(false);
       adminForm.reset();
-      setCanCreateFirstAdmin(false); // Desabilita o botão após sucesso
+      setCanCreateFirstAdmin(false);
 
     } catch (error: any) {
        toast({
@@ -196,7 +166,7 @@ export default function LoginPage() {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="seu@email.com"
+                    placeholder="admin@example.com"
                     {...loginForm.register('email')}
                     className="bg-background/90 border-border/50 focus:border-green-500 transition-colors h-11"
                     disabled={isLoading}
@@ -218,7 +188,7 @@ export default function LoginPage() {
                   <Input 
                     id="password" 
                     type="password" 
-                    placeholder="********" 
+                    placeholder="password" 
                     {...loginForm.register('password')} 
                     className="bg-background/90 border-border/50 focus:border-green-500 transition-colors h-11"
                     disabled={isLoading}

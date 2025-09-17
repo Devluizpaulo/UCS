@@ -43,8 +43,6 @@ import {
 } from '@/components/ui/sidebar';
 import { Button } from './ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { auth } from '@/lib/firebase-config';
-import type { User as FirebaseUser } from 'firebase/auth';
 
 type NavItem = {
   href: string;
@@ -64,28 +62,21 @@ export function MainLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { toast } = useToast();
-  const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [user, setUser] = useState<{ displayName: string, email: string } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
-      if (firebaseUser) {
-        const idTokenResult = await firebaseUser.getIdTokenResult();
-        const isFirstLogin = idTokenResult.claims.isFirstLogin;
-
-        if (isFirstLogin && pathname !== '/first-login-password-reset') {
-          router.replace('/first-login-password-reset');
-        } else {
-          setUser(firebaseUser);
-        }
-      } else {
-        // Se não houver usuário, redirecione para o login
+    const checkAuth = () => {
+      const token = document.cookie.split('; ').find(row => row.startsWith('auth-token='));
+      if (token) {
+        // Mock user data since we are in a mock environment
+        setUser({ displayName: 'Admin', email: 'admin@example.com' });
+      } else if (pathname !== '/login') {
         router.replace('/login');
       }
       setLoading(false);
-    });
-
-    return () => unsubscribe();
+    };
+    checkAuth();
   }, [pathname, router]);
 
   const toggleTheme = () => {
@@ -95,29 +86,17 @@ export function MainLayout({ children }: { children: ReactNode }) {
   };
 
   const handleLogout = async () => {
-    try {
-      await auth.signOut();
-      const response = await fetch('/api/auth/logout', { method: 'POST' });
-      if (response.ok) {
-        toast({
-          title: 'Logout bem-sucedido',
-          description: 'Você foi desconectado com segurança.',
-        });
-        router.push('/login');
-      } else {
-        throw new Error('Falha ao limpar a sessão do servidor.');
-      }
-    } catch (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Erro ao Sair',
-        description: 'Não foi possível fazer logout. Tente novamente.',
-      });
-    }
+    // Clear the mock token cookie
+    document.cookie = "auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    toast({
+      title: 'Logout bem-sucedido',
+      description: 'Você foi desconectado com segurança.',
+    });
+    router.push('/login');
   };
 
   const getInitials = (name?: string | null) => {
-    if (!name) return 'DB';
+    if (!name) return 'A';
     const names = name.split(' ');
     if (names.length > 1) {
       return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
@@ -133,11 +112,10 @@ export function MainLayout({ children }: { children: ReactNode }) {
     );
   }
 
-  if (!user && pathname !== '/login' && pathname !== '/first-login-password-reset') {
+  if (!user && pathname !== '/login') {
       return null;
   }
   
-  // Renderiza o layout apenas se o usuário estiver autenticado ou na página de primeiro login
   return (
       <SidebarProvider>
         <Sidebar collapsible="icon">
