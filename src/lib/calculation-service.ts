@@ -45,17 +45,21 @@ export function calculateIndex(commodities: CommodityPriceData[], params: Formul
           return defaultResult;
       }
       
-      // --- Price Lookups & Conversions ---
+      // --- 1. Price Lookups & Conversions (Camada de Conversão) ---
+      // Garante que todas as cotações mais recentes sejam usadas e convertidas primeiro.
+      
+      // Taxas de Câmbio
       const taxa_usd_brl = findPrice(commodities, 'exchange', 'dólar');
       const taxa_eur_brl = findPrice(commodities, 'exchange', 'euro');
 
+      // Cotações Brutas
       const preco_madeira_serrada_usd = findPrice(commodities, 'vmad');
       const preco_boi_arroba_brl = findPrice(commodities, 'vus', 'boi');
       const preco_milho_saca_brl = findPrice(commodities, 'vus', 'milho');
       const preco_soja_saca_usd = findPrice(commodities, 'vus', 'soja');
       const preco_carbono_eur = findPrice(commodities, 'crs', 'carbono');
       
-      // --- Price Conversions to match formula units ---
+      // --- Conversões de Unidade e Moeda para BRL ---
       // Madeira: Serrada (USD) -> Tora (USD) -> Tora (BRL)
       const preco_madeira_tora_usd = preco_madeira_serrada_usd * params.FATOR_CONVERSAO_SERRADA_TORA;
       const preco_madeira_tora_brl = preco_madeira_tora_usd * taxa_usd_brl;
@@ -70,43 +74,45 @@ export function calculateIndex(commodities: CommodityPriceData[], params: Formul
       // Carbono: EUR -> BRL
       const preco_carbono_brl = preco_carbono_eur * taxa_eur_brl;
 
-      // --- Gross Revenue per Hectare (R$/ha) for each component ---
+
+      // --- 2. Cálculo das Rendas Brutas por Hectare (R$/ha) ---
       const renda_pecuaria_ha = params.produtividade_boi * preco_boi_arroba_brl;
       const renda_milho_ha = params.produtividade_milho * preco_milho_ton_brl;
       const renda_soja_ha = params.produtividade_soja * preco_soja_ton_brl;
       const renda_madeira_ha = params.produtividade_madeira * preco_madeira_tora_brl;
-      const renda_carbono_ha = params.FATOR_CARBONO * preco_carbono_brl; // FATOR_CARBONO is 2.59
+      const renda_carbono_ha = params.FATOR_CARBONO * preco_carbono_brl; // FATOR_CARBONO é 2.59
 
-      // --- 1. vMAD (Valor da Madeira) ---
+      // --- 3. Componentes do Índice ---
+
+      // --- vMAD (Valor da Madeira) ---
       const VMAD = renda_madeira_ha * params.area_total;
 
-      // --- 2. vUS (Valor de Uso do Solo) ---
-      // Weighted average revenue for VUS components
+      // --- vUS (Valor de Uso do Solo) ---
+      // Renda ponderada por hectare das culturas do VUS
       const renda_bruta_ponderada_ha_vus = 
           (renda_pecuaria_ha * params.fator_pecuaria) + 
           (renda_milho_ha * params.fator_milho) + 
           (renda_soja_ha * params.fator_soja);
-      // VUS per hectare is based on the lease factor
+      // VUS por hectare é a renda ponderada vezes o fator de arrendamento
       const vus_por_ha = renda_bruta_ponderada_ha_vus * params.fator_arrendamento;
       const VUS = vus_por_ha * params.area_total;
 
-      // --- 3. cRS (Custo da Responsabilidade Socioambiental) ---
-      // 3.a Carbon Credit (CC) value
+      // --- cRS (Custo da Responsabilidade Socioambiental) ---
+      // 3.a Crédito de Carbono (CC)
       const valor_carbono_total = renda_carbono_ha * params.area_total;
       
-      // 3.b Water Cost (cH2O) - based on the spreadsheet formula:
-      // (Renda Ponderada VUS/ha + Renda Bruta Madeira/ha + Renda Bruta Carbono/ha) * 7%
+      // 3.b Custo da Água (cH2O) - Exatamente como na fórmula do Excel
       const base_calculo_agua_ha = renda_bruta_ponderada_ha_vus + renda_madeira_ha + renda_carbono_ha;
       const valor_agua_total = (base_calculo_agua_ha * params.fator_agua) * params.area_total;
       
       const CRS = valor_carbono_total + valor_agua_total;
       
-      // --- 4. UCS INDEX (Final Value) ---
+      // --- 4. Finalização do Cálculo do Índice UCS ---
       const PDM = VMAD + VUS + CRS;
       const CE = params.produtividade_carbono * params.area_total;
       
       if (CE === 0) {
-        console.error('[CalculationService] Carbono Estocado (CE) is zero. Division by zero would occur. Aborting calculation.');
+        console.error('[CalculationService] Carbono Estocado (CE) é zero. Divisão por zero ocorreria. Abortando cálculo.');
         return { ...defaultResult, isConfigured: true };
       }
       
@@ -114,11 +120,11 @@ export function calculateIndex(commodities: CommodityPriceData[], params: Formul
       const ucsValue = params.fator_ucs * IVP;
   
       if (!isFinite(ucsValue)) {
-          console.error('[CalculationService] UCS calculation resulted in a non-finite number. Returning default.');
+          console.error('[CalculationService] Cálculo do UCS resultou em um número não finito. Retornando valor padrão.');
           return { ...defaultResult, isConfigured: true };
       }
   
-      // VUS details for the modal, proportional to the final VUS value.
+      // VUS details para o modal, proporcional ao valor final do VUS.
       const vus_pecuaria_detalhe = renda_bruta_ponderada_ha_vus > 0 ? (renda_pecuaria_ha * params.fator_pecuaria / renda_bruta_ponderada_ha_vus) * VUS : 0;
       const vus_milho_detalhe = renda_bruta_ponderada_ha_vus > 0 ? (renda_milho_ha * params.fator_milho / renda_bruta_ponderada_ha_vus) * VUS : 0;
       const vus_soja_detalhe = renda_bruta_ponderada_ha_vus > 0 ? (renda_soja_ha * params.fator_soja / renda_bruta_ponderada_ha_vus) * VUS : 0;
