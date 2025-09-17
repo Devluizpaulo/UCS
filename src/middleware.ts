@@ -1,31 +1,47 @@
 
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { verifyAuth } from '@/lib/auth-middleware';
+import { auth } from '@/lib/firebase-admin-config'; // Using admin to check claims in the future if needed
 
+// This middleware is now simplified. Its primary role is to handle public vs. private routes
+// and the special case of the first login. The actual token validation for API routes
+// should be handled within each API route or a dedicated API middleware.
 export async function middleware(request: NextRequest) {
-  const user = await verifyAuth(request);
   const { pathname } = request.nextUrl;
+  const authToken = request.cookies.get('auth-token')?.value;
 
-  // Se o usuário não estiver autenticado, redirecione para o login
-  if (!user) {
-    return NextResponse.redirect(new URL('/login', request.url));
+  // If there's no token, redirect any protected route to the login page.
+  if (!authToken) {
+      if (pathname.startsWith('/login') || pathname.startsWith('/forgot-password') || pathname.startsWith('/reset-password')) {
+          return NextResponse.next();
+      }
+      return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  const { isFirstLogin } = user;
+  // If there is a token, try to verify it to check claims.
+  try {
+      const decodedToken = await auth.verifySessionCookie(authToken, true);
+      const { isFirstLogin } = decodedToken;
 
-  // Se for o primeiro login, force o usuário a ir para a página de redefinição de senha
-  if (isFirstLogin && pathname !== '/first-login-password-reset') {
-    return NextResponse.redirect(new URL('/first-login-password-reset', request.url));
+      // If it's the user's first login, force them to the password reset page.
+      if (isFirstLogin && pathname !== '/first-login-password-reset') {
+          return NextResponse.redirect(new URL('/first-login-password-reset', request.url));
+      }
+      
+      // If the user has already completed the first login but tries to access that page, redirect them.
+      if (!isFirstLogin && pathname === '/first-login-password-reset') {
+          return NextResponse.redirect(new URL('/', request.url));
+      }
+
+  } catch (error) {
+      // If the token is invalid (expired, etc.), clear the cookie and redirect to login.
+      console.log('Middleware: Invalid auth token. Redirecting to login.');
+      const response = NextResponse.redirect(new URL('/login', request.url));
+      response.cookies.delete('auth-token');
+      return response;
   }
   
-  // Se o usuário já passou do primeiro login, mas tenta acessar a página de redefinição,
-  // redirecione-o para o painel principal.
-  if (!isFirstLogin && pathname === '/first-login-password-reset') {
-    return NextResponse.redirect(new URL('/', request.url));
-  }
-
-  // Se estiver tudo certo, permita que a requisição continue
+  // If the user is authenticated and not on a special page, let them proceed.
   return NextResponse.next();
 }
 
@@ -33,13 +49,12 @@ export const config = {
   matcher: [
     /*
      * Match all request paths except for the ones starting with:
-     * - api (API routes)
+     * - api (API routes are handled separately)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - image (public images folder)
-     * - login, forgot-password, reset-password (public auth pages)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|image|login|forgot-password|reset-password).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|image).*)',
   ],
 };

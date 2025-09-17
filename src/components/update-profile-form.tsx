@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, UserCircle } from 'lucide-react';
 import { auth } from '@/lib/firebase-config'; // Only for getting the user object on the client
-import { updateUserProfile } from '@/lib/profile-service';
+import { updateUser } from '@/lib/profile-service';
 import { Skeleton } from './ui/skeleton';
 
 const profileSchema = z.object({
@@ -56,8 +56,14 @@ export function UpdateProfileForm() {
     }
     setIsLoading(true);
     try {
-      // Call the server action with the UID and new data in the correct order
-      await updateUserProfile(user.uid, data.displayName, data.phoneNumber);
+      // Call the server action with the UID and new data
+      await updateUser(user.uid, { 
+          displayName: data.displayName,
+          phoneNumber: data.phoneNumber,
+          // Pass existing user data for fields not in the form to avoid overwriting them
+          role: 'user', // Assuming this form is for non-admin users, or fetch role if needed
+          isActive: true, // Assuming user is active
+      });
       
       // We need to reload the user object on the client to see the changes
       await user.reload();

@@ -15,37 +15,6 @@ interface User {
 }
 
 /**
- * ATUALIZAR PERFIL DO USUÁRIO NO AUTH E NO FIRESTORE
- * Esta função é executada exclusivamente no servidor usando o Firebase Admin SDK.
- * @param uid - O ID do usuário a ser atualizado.
- * @param displayName - O novo nome de exibição.
- * @param phoneNumber - O novo número de telefone.
- */
-export async function updateUserProfile(uid: string, displayName: string, phoneNumber?: string | null): Promise<void> {
-  if (!uid) {
-    throw new Error('UID do usuário é obrigatório.');
-  }
-
-  try {
-    const updatePayload: { displayName: string; phoneNumber?: string } = { displayName };
-    if (phoneNumber) {
-      updatePayload.phoneNumber = phoneNumber;
-    }
-    
-    // Atualiza no Firebase Auth
-    await adminAuth.updateUser(uid, updatePayload);
-    
-    // Atualiza no Firestore
-    const userDocRef = db.collection('users').doc(uid);
-    await userDocRef.update({ displayName, phoneNumber });
-    
-  } catch (error: any) {
-    console.error('Erro ao atualizar perfil no servidor:', error);
-    throw new Error('Não foi possível atualizar o perfil. Tente novamente mais tarde.');
-  }
-}
-
-/**
  * ATUALIZA DADOS COMPLETOS DE UM USUÁRIO (ADMIN)
  */
 export async function updateUser(uid: string, data: { displayName: string; phoneNumber?: string | null; role: 'admin' | 'user', isActive: boolean }): Promise<any> {

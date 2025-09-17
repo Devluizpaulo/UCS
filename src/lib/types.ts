@@ -67,7 +67,7 @@ export type FirestoreQuote = {
   [key: string]: any; // Allow other properties
 }
 
-export type UcsIndexComponents = {
+export type UcsData = {
   indexValue: number;
   isConfigured: boolean;
   components: {
@@ -82,8 +82,7 @@ export type UcsIndexComponents = {
   };
 };
 
-export type UcsData = UcsIndexComponents;
-export type CalculateUcsIndexOutput = UcsIndexComponents;
+export type CalculateUcsIndexOutput = UcsData;
 
 
 export type ScenarioResult = {
