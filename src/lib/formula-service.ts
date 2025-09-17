@@ -42,8 +42,8 @@ const defaultParameters: FormulaParameters = {
     FATOR_ARREND: 0.048,
     fator_agua: 0.07,
     fator_ucs: 1.0,
-    FATOR_CARBONO: 1.0,
-    FATOR_CONVERSAO_SERRADA_TORA: 0.5,
+    FATOR_CARBONO: 2.59, // From user's logic
+    FATOR_CONVERSAO_SERRADA_TORA: 0.3756, // From user's logic
     
     // Valores Econômicos
     pib_por_hectare: 41194.67,
@@ -62,7 +62,7 @@ const defaultParameters: FormulaParameters = {
  * @returns {Promise<FormulaParameters>} A promise that resolves to the formula parameters.
  */
 export async function getFormulaParameters(): Promise<FormulaParameters> {
-  const cachedParams = getCache<FormulaParameters>(CACHE_KEY_FORMULA);
+  const cachedParams = await getCache<FormulaParameters>(CACHE_KEY_FORMULA);
   if (cachedParams) {
     return cachedParams;
   }
@@ -81,7 +81,7 @@ export async function getFormulaParameters(): Promise<FormulaParameters> {
       await docRef.set(params);
     }
     
-    setCache(CACHE_KEY_FORMULA, params); // Save to cache
+    await setCache(CACHE_KEY_FORMULA, params); // Save to cache
     return params;
 
   } catch (error) {
@@ -102,7 +102,7 @@ export async function saveFormulaParameters(params: Omit<FormulaParameters, 'isC
   
   try {
     await docRef.set(dataToSave, { merge: true });
-    clearCache(CACHE_KEY_FORMULA); // Invalidate the cache
+    await clearCache(CACHE_KEY_FORMULA); // Invalidate the cache
     console.log('[FormulaService] Successfully saved formula parameters and cleared cache.');
   } catch (error) {
     console.error("[FormulaService] Error saving formula parameters: ", error);
