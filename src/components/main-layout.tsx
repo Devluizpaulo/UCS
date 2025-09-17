@@ -41,10 +41,6 @@ import {
   SidebarTrigger,
   SidebarRail,
 } from '@/components/ui/sidebar';
-import { signOut, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { auth } from '@/lib/firebase-config'; // Importar auth
-import { useToast } from '@/hooks/use-toast';
-import { Skeleton } from './ui/skeleton';
 import { Button } from './ui/button';
 
 
@@ -64,31 +60,6 @@ const navItems: NavItem[] = [
 
 export function MainLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const router = useRouter();
-  const { toast } = useToast();
-  const [user, setUser] = useState<FirebaseUser | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  
-  useEffect(() => {
-    // onAuthStateChanged is the recommended way to get the current user
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setLoading(false);
-      if (user) {
-        // User is signed in.
-        setUser(user);
-      } else {
-        // User is signed out. Middleware will handle the redirect.
-        setUser(null);
-        if (pathname !== '/login' && pathname !== '/forgot-password' && pathname !== '/reset-password') {
-            router.push('/login');
-        }
-      }
-    });
-
-    // Cleanup subscription on unmount
-    return () => unsubscribe();
-  }, [router, pathname]);
 
   const toggleTheme = () => {
     const html = document.documentElement;
@@ -96,33 +67,6 @@ export function MainLayout({ children }: { children: ReactNode }) {
     html.classList.toggle('light');
   };
 
-  const handleLogout = async () => {
-    try {
-      // Clear cookie JWT by calling the logout API
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-      });
-
-      // Sign out from Firebase client-side SDK
-      await signOut(auth);
-      
-      toast({
-        title: 'Logout realizado',
-        description: 'Você foi desconectado com sucesso.',
-      });
-
-      router.push('/login');
-      
-    } catch (error) {
-      console.error('Logout failed:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Erro no Logout',
-        description: 'Não foi possível desconectar. Tente novamente.',
-      });
-    }
-  };
-  
   const getInitials = (name?: string | null) => {
     if (!name) return 'U';
     const names = name.split(' ');
@@ -131,23 +75,6 @@ export function MainLayout({ children }: { children: ReactNode }) {
     }
     return name[0].toUpperCase();
   }
-
-  // If loading, show a full-screen loader.
-  // The middleware/auth listener will handle redirection logic.
-  if (loading) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-  
-  // Public pages (like the first-login page itself) should not render the main layout
-  const noLayoutPaths = ['/first-login-password-reset', '/login', '/forgot-password', '/reset-password'];
-  if (noLayoutPaths.includes(pathname) || !user) {
-      return <>{children}</>;
-  }
-
 
   return (
       <SidebarProvider>
@@ -217,34 +144,23 @@ export function MainLayout({ children }: { children: ReactNode }) {
                   variant="ghost"
                   className="flex w-full items-center gap-3 overflow-hidden p-2 text-left text-sm group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:w-10 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0"
                 >
-                  {!user ? (
-                      <>
-                          <Skeleton className="h-9 w-9 rounded-full" />
-                          <div className="flex flex-col gap-1.5 flex-1 group-data-[collapsible=icon]:hidden">
-                              <Skeleton className="h-4 w-3/4" />
-                              <Skeleton className="h-3 w-full" />
-                          </div>
-                      </>
-                  ) : (
-                      <>
-                          <Avatar className="h-8 w-8">
-                              <AvatarImage
-                                  src={user.photoURL ?? undefined}
-                                  alt={user.displayName ?? 'Usuário'}
-                                  data-ai-hint="profile picture"
-                              />
-                              <AvatarFallback>
-                                  {getInitials(user.displayName)}
-                              </AvatarFallback>
-                          </Avatar>
-                          <div className="flex flex-col truncate group-data-[collapsible=icon]:hidden">
-                              <span className="truncate font-medium">{user.displayName ?? 'Usuário'}</span>
-                              <span className="truncate text-xs text-muted-foreground">
-                                  {user.email ?? 'Não foi possível carregar o e-mail'}
-                              </span>
-                          </div>
-                      </>
-                  )}
+                  
+                  <Avatar className="h-8 w-8">
+                      <AvatarImage
+                          src={undefined}
+                          alt={'Usuário'}
+                          data-ai-hint="profile picture"
+                      />
+                      <AvatarFallback>
+                          DB
+                      </AvatarFallback>
+                  </Avatar>
+                  <div className="flex flex-col truncate group-data-[collapsible=icon]:hidden">
+                      <span className="truncate font-medium">Usuário Debug</span>
+                      <span className="truncate text-xs text-muted-foreground">
+                          debug@user.com
+                      </span>
+                  </div>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent side="right" align="start" className="w-56">
@@ -271,7 +187,7 @@ export function MainLayout({ children }: { children: ReactNode }) {
                   <span>Alternar Tema</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout}>
+                <DropdownMenuItem>
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Sair</span>
                 </DropdownMenuItem>
