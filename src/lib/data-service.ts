@@ -10,12 +10,8 @@ import admin from 'firebase-admin';
 import { Timestamp } from 'firebase-admin/firestore';
 import { getFormulaParameters } from './formula-service';
 import { calculateIndex } from './calculation-service';
-import { getCache, setCache, clearCache } from './cache-service';
 
 // --- Funções para get data from FIRESTORE ---
-
-const CACHE_TTL_COMMODITY_PRICES = 60 * 1000; // 1 minute
-const CACHE_TTL_INDEX_HISTORY = 5 * 60 * 1000; // 5 minutes
 
 const serializeFirestoreTimestamp = (data: any): any => {
     if (data && typeof data === 'object') {
@@ -94,10 +90,6 @@ export async function getAssetData(assetName: string, limit: number = 1): Promis
  * @returns A promise resolving to an array of CommodityPriceData.
  */
 export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
-    const cacheKey = 'commodityPrices_latest';
-    const cachedData = await getCache<CommodityPriceData[]>(cacheKey, CACHE_TTL_COMMODITY_PRICES);
-    if (cachedData) return cachedData;
-
     try {
         const commodities = await getCommodities();
         if (!commodities || commodities.length === 0) {
@@ -140,7 +132,6 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
 
         const result = await Promise.all(pricePromises);
         
-        await setCache(cacheKey, result);
         return result;
 
     } catch (error) {
@@ -216,10 +207,6 @@ export async function getCotacoesHistorico(assetName: string, limit: number = 30
  * @returns The latest UcsData object or a default if not found/configured.
  */
 export async function getUcsIndexValue(): Promise<UcsData> {
-  const cacheKey = `ucsIndexValue_latest`;
-  const cachedData = await getCache<UcsData>(cacheKey, CACHE_TTL_COMMODITY_PRICES);
-  if (cachedData) return cachedData;
-  
   try {
     const collectionRef = db.collection('ucs_index_history');
     const query = collectionRef.orderBy('savedAt', 'desc').limit(1);
@@ -227,7 +214,6 @@ export async function getUcsIndexValue(): Promise<UcsData> {
 
     if (!snapshot.empty) {
         const data = snapshot.docs[0].data() as UcsData;
-        await setCache(cacheKey, data);
         return data;
     }
 
@@ -243,7 +229,6 @@ export async function getUcsIndexValue(): Promise<UcsData> {
         };
     }
     const result = calculateIndex(prices, params);
-    await setCache(cacheKey, result);
     return result;
 
   } catch (error) {
@@ -265,10 +250,6 @@ export async function getUcsIndexValue(): Promise<UcsData> {
  * @returns An array of ChartData points.
  */
 export async function getUcsIndexHistory(interval: HistoryInterval = '1d'): Promise<ChartData[]> {
-    const cacheKey = `ucsIndexHistory_${interval}`;
-    const cachedData = await getCache<ChartData[]>(cacheKey, CACHE_TTL_INDEX_HISTORY);
-    if (cachedData) return cachedData;
-    
     const history: ChartData[] = [];
     try {
         const limitMap = { '1d': 30, '1wk': 26, '1mo': 60 };
@@ -293,7 +274,6 @@ export async function getUcsIndexHistory(interval: HistoryInterval = '1d'): Prom
         console.error(`[DataService] Failed to get index history. Error: ${error}`);
     }
     const result = history.reverse();
-    await setCache(cacheKey, result);
     return result;
 }
 
@@ -329,9 +309,6 @@ export async function saveLatestQuotes(quotes: Omit<FirestoreQuote, 'id' | 'crea
   try {
     await batch.commit();
     console.log('[DataService] Batched quote write completed successfully.');
-    // Clear relevant caches
-    await clearCache('commodityPrices_latest');
-    await clearCache('ucsIndexValue_latest');
   } catch (error) {
     console.error('[DataService] Batched quote write failed:', error);
     throw new Error('Failed to save latest quotes.');

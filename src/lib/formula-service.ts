@@ -7,13 +7,11 @@
 
 import { db } from './firebase-admin-config'; // Use server-side admin SDK
 import type { FormulaParameters } from './types';
-import { getCache, setCache, clearCache } from './cache-service';
 
 
 // The document ID for the formula parameters in Firestore
 const FORMULA_DOC_ID = 'parametros_oficiais';
 const SETTINGS_COLLECTION = 'settings';
-const CACHE_KEY_FORMULA = 'formula_parameters';
 
 
 // Default values aligned with the user-provided formula specification.
@@ -57,16 +55,10 @@ const defaultParameters: FormulaParameters = {
 
 /**
  * Retrieves the current formula parameters from Firestore.
- * It uses a cache to avoid frequent database reads.
  * If the parameters don't exist in Firestore, it creates them with default values.
  * @returns {Promise<FormulaParameters>} A promise that resolves to the formula parameters.
  */
 export async function getFormulaParameters(): Promise<FormulaParameters> {
-  const cachedParams = await getCache<FormulaParameters>(CACHE_KEY_FORMULA);
-  if (cachedParams) {
-    return cachedParams;
-  }
-  
   const docRef = db.collection(SETTINGS_COLLECTION).doc(FORMULA_DOC_ID);
   try {
     const docSnap = await docRef.get();
@@ -81,7 +73,6 @@ export async function getFormulaParameters(): Promise<FormulaParameters> {
       await docRef.set(params);
     }
     
-    await setCache(CACHE_KEY_FORMULA, params); // Save to cache
     return params;
 
   } catch (error) {
@@ -92,7 +83,7 @@ export async function getFormulaParameters(): Promise<FormulaParameters> {
 }
 
 /**
- * Saves the updated formula parameters to Firestore and clears the cache.
+ * Saves the updated formula parameters to Firestore.
  * @param {Omit<FormulaParameters, 'isConfigured'>} params - The new formula parameters to save.
  * @returns {Promise<void>} A promise that resolves when the save is complete.
  */
@@ -102,8 +93,7 @@ export async function saveFormulaParameters(params: Omit<FormulaParameters, 'isC
   
   try {
     await docRef.set(dataToSave, { merge: true });
-    await clearCache(CACHE_KEY_FORMULA); // Invalidate the cache
-    console.log('[FormulaService] Successfully saved formula parameters and cleared cache.');
+    console.log('[FormulaService] Successfully saved formula parameters.');
   } catch (error) {
     console.error("[FormulaService] Error saving formula parameters: ", error);
     throw new Error("Failed to save formula parameters to the database.");

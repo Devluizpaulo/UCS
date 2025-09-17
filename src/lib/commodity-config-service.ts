@@ -9,10 +9,8 @@
 import { db } from './firebase-admin-config';
 import type { CommodityConfig, InitialCommodityConfig } from './types';
 import { COMMODITY_TICKER_MAP } from './marketdata-config';
-import { getCache, setCache, clearCache } from './cache-service';
 
 const COMMODITIES_COLLECTION = 'commodities';
-const CACHE_KEY_COMMODITIES = 'commodities_list';
 
 /**
  * Seeds the database with a default set of commodities if the collection is empty.
@@ -42,7 +40,6 @@ async function seedDefaultCommodities() {
         });
         
         await batch.commit();
-        clearCache(CACHE_KEY_COMMODITIES); // Clear cache after seeding
         console.log('[CommodityConfigService] Default commodities seeding process completed.');
     } catch (error) {
         console.error('[CommodityConfigService] Error during seeding, this might be expected if the database is new. The process will continue, but the database might not be seeded.', error);
@@ -50,16 +47,11 @@ async function seedDefaultCommodities() {
 }
 
 /**
- * Retrieves all commodities. It first attempts to fetch from the cache, then Firestore.
+ * Retrieves all commodities from Firestore.
  * If Firestore fails, it falls back to the hardcoded list.
  * @returns {Promise<CommodityConfig[]>} A promise that resolves to an array of commodities.
  */
 export async function getCommodities(): Promise<CommodityConfig[]> {
-    const cachedCommodities = await getCache<CommodityConfig[]>(CACHE_KEY_COMMODITIES);
-    if (cachedCommodities) {
-        return cachedCommodities;
-    }
-    
     try {
         const collectionRef = db.collection(COMMODITIES_COLLECTION);
         const snapshot = await collectionRef.get();
@@ -80,7 +72,6 @@ export async function getCommodities(): Promise<CommodityConfig[]> {
                 id: doc.id,
                 ...doc.data(),
             } as CommodityConfig));
-             await setCache(CACHE_KEY_COMMODITIES, commodities);
             return commodities;
         }
 
@@ -97,7 +88,6 @@ export async function getCommodities(): Promise<CommodityConfig[]> {
             return a.name.localeCompare(b.name);
         });
         
-        await setCache(CACHE_KEY_COMMODITIES, commodities);
         return commodities;
 
     } catch (error) {
@@ -128,7 +118,6 @@ export async function saveCommodity(commodity: CommodityConfig): Promise<void> {
         const { id, ...dataToSave } = commodity;
         const docRef = db.collection(COMMODITIES_COLLECTION).doc(id);
         await docRef.set(dataToSave, { merge: true });
-        await clearCache(CACHE_KEY_COMMODITIES); // Invalidate cache on save
         console.log(`[CommodityConfigService] Successfully saved commodity: ${id}`);
     } catch (error) {
         console.error(`[CommodityConfigService] Error saving commodity ${commodity.id}:`, error);
@@ -148,7 +137,6 @@ export async function deleteCommodity(id: string): Promise<void> {
     try {
         const docRef = db.collection(COMMODITIES_COLLECTION).doc(id);
         await docRef.delete();
-        await clearCache(CACHE_KEY_COMMODITIES); // Invalidate cache on delete
         console.log(`[CommododyConfigService] Successfully deleted commodity: ${id}`);
     } catch (error) {
         console.error(`[CommodityConfigService] Error deleting commodity ${id}:`, error);

@@ -16,7 +16,7 @@ if (!admin.apps.length) {
     const serviceAccountBase64 = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64;
     
     if (!serviceAccountBase64) {
-        throw new Error('FIREBASE_SERVICE_ACCOUNT_BASE64 environment variable is required. Please check your .env.local file.');
+        throw new Error('FIREBASE_SERVICE_ACCOUNT_BASE64 environment variable is not set. This is required for server-side operations. Please check your Vercel/server environment variables.');
     }
 
     // Decode the Base64 service account
@@ -24,8 +24,8 @@ if (!admin.apps.length) {
     try {
         const serviceAccountJson = Buffer.from(serviceAccountBase64, 'base64').toString('utf-8');
         serviceAccount = JSON.parse(serviceAccountJson);
-    } catch (error) {
-        throw new Error('Failed to decode FIREBASE_SERVICE_ACCOUNT_BASE64. Please ensure it is a valid Base64 encoded JSON.');
+    } catch (error: any) {
+        throw new Error(`Failed to decode or parse FIREBASE_SERVICE_ACCOUNT_BASE64. Make sure it is a valid Base64 encoded JSON string. Error: ${error.message}`);
     }
 
     if (!serviceAccount.project_id || !serviceAccount.client_email || !serviceAccount.private_key) {
@@ -37,13 +37,13 @@ if (!admin.apps.length) {
       projectId: serviceAccount.project_id,
     });
 
-    console.log('[Firebase Admin] SDK initialized successfully from Base64 encoded service account.');
+    console.log('[Firebase Admin] SDK initialized successfully.');
 
   } catch (error: any) {
     console.error('[Firebase Admin] CRITICAL INITIALIZATION ERROR:', error.message);
     // We throw the error to fail fast if initialization is impossible.
     // This prevents the app from running in a broken state.
-    throw new Error(`Failed to initialize Firebase Admin SDK. Please check your server environment variables. Details: ${error.message}`);
+    throw new Error(`Failed to initialize Firebase Admin SDK. Details: ${error.message}`);
   }
 }
 

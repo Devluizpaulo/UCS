@@ -1,9 +1,11 @@
 
+
 'use server';
 
 /**
  * @fileOverview A simple in-memory caching service for server-side data.
- * This helps reduce redundant database reads for frequently accessed data.
+ * THIS FILE IS CURRENTLY NOT USED. The cache has been temporarily disabled
+ * to ensure data consistency and resolve loading issues.
  */
 
 interface CacheEntry<T> {
@@ -22,12 +24,7 @@ const DEFAULT_TTL = 5 * 60 * 1000; // 5 minutes
  * @param data The data to be cached.
  */
 export async function setCache<T>(key: string, data: T) {
-  const entry: CacheEntry<T> = {
-    data,
-    timestamp: Date.now(),
-  };
-  cache.set(key, entry);
-  console.log(`[CacheService] Set cache for key: ${key}`);
+  // Cache is disabled
 }
 
 /**
@@ -37,20 +34,8 @@ export async function setCache<T>(key: string, data: T) {
  * @returns The cached data or null if not found or expired.
  */
 export async function getCache<T>(key: string, ttl: number = DEFAULT_TTL): Promise<T | null> {
-  const entry = cache.get(key);
-  if (!entry) {
-    return null;
-  }
-
-  const isExpired = Date.now() - entry.timestamp > ttl;
-  if (isExpired) {
-    cache.delete(key);
-    console.log(`[CacheService] Expired cache for key: ${key}`);
-    return null;
-  }
-
-  console.log(`[CacheService] Hit cache for key: ${key}`);
-  return entry.data as T;
+  // Cache is disabled
+  return null;
 }
 
 /**
@@ -58,14 +43,12 @@ export async function getCache<T>(key: string, ttl: number = DEFAULT_TTL): Promi
  * @param key The key of the cache entry to clear.
  */
 export async function clearCache(key: string) {
-  cache.delete(key);
-  console.log(`[CacheService] Cleared cache for key: ${key}`);
+  // Cache is disabled
 }
 
 /**
  * Clears the entire cache.
  */
 export async function clearAllCache() {
-  cache.clear();
-  console.log('[CacheService] Cleared all cache.');
+  // Cache is disabled
 }
