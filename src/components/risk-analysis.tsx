@@ -33,8 +33,8 @@ async function getRiskAnalysisData(): Promise<RiskAnalysisData> {
     
     const metricsPromises = commodities.map(async (asset: CommodityConfig) => {
         try {
-            // Get historical data from our Firestore historical collection using the asset's ticker
-            const assetHistory: FirestoreQuote[] = await getCotacoesHistorico(asset.ticker, 30);
+            // Get historical data from our Firestore historical collection using the asset's ID
+            const assetHistory: FirestoreQuote[] = await getCotacoesHistorico(asset.id, 30);
             if (assetHistory.length < 2) return null;
 
             // Sort by date ascending to calculate returns correctly

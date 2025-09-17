@@ -49,8 +49,8 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
         setChartData([]);
 
         try {
-            // Use the asset's ticker to fetch historical data
-            const history = await getCotacoesHistorico(currentAsset.ticker, 30);
+            // Use the asset's ID to fetch historical data
+            const history = await getCotacoesHistorico(currentAsset.id, 30);
             const formatted = formatCurrency(asset.price, asset.currency);
             setFormattedPrice(formatted);
             

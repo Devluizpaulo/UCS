@@ -25,13 +25,16 @@ const serializeFirestoreTimestamp = (data: any): any => {
     return data;
 };
 
-function getCollectionNameFromTicker(ticker: string): string {
-    return ticker.toLowerCase().replace(/[^a-z0-9]/g, '_');
+// Derives the collection name from the asset's ID, which is more reliable.
+// e.g., "boi_gordo_futuros" becomes "boi_gordo"
+function getCollectionNameFromAssetId(assetId: string): string {
+    return assetId.replace(/_futuros$/, '').toLowerCase();
 }
 
-async function getAssetData(ticker: string, limit: number = 1): Promise<FirestoreQuote[]> {
-    if (!ticker) return [];
-    const collectionName = getCollectionNameFromTicker(ticker);
+
+async function getAssetData(assetId: string, limit: number = 1): Promise<FirestoreQuote[]> {
+    if (!assetId) return [];
+    const collectionName = getCollectionNameFromAssetId(assetId);
     
     try {
         const query = db.collection(collectionName).orderBy('created_at', 'desc').limit(limit);
@@ -42,7 +45,7 @@ async function getAssetData(ticker: string, limit: number = 1): Promise<Firestor
             ...serializeFirestoreTimestamp(doc.data())
         } as FirestoreQuote));
     } catch (error) {
-        console.error(`Error fetching data for ticker ${ticker}:`, error);
+        console.error(`Error fetching data for asset ID ${assetId} (collection: ${collectionName}):`, error);
         return [];
     }
 }
@@ -53,7 +56,8 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
         if (!commodities || commodities.length === 0) return [];
 
         const pricePromises = commodities.map(async (commodity) => {
-            const assetHistory = await getAssetData(commodity.ticker, 2);
+            // Pass the commodity.id, not the ticker, to getAssetData
+            const assetHistory = await getAssetData(commodity.id, 2);
             let currentPrice = 0, change = 0, absoluteChange = 0, lastUpdated = 'N/A';
 
             if (assetHistory.length > 0) {
@@ -80,9 +84,10 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
     }
 }
 
-export async function getCotacoesHistorico(ticker: string, limit: number = 30): Promise<FirestoreQuote[]> {
-    return getAssetData(ticker, limit);
+export async function getCotacoesHistorico(assetId: string, limit: number = 30): Promise<FirestoreQuote[]> {
+     return getAssetData(assetId, limit);
 }
+
 
 export async function getUcsIndexValue(): Promise<UcsData> {
     try {
