@@ -101,18 +101,18 @@ export function IndexCompositionModal({ data, isOpen, onClose }: IndexCompositio
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col p-0">
+      <DialogContent className="sm:max-w-4xl max-h-[90vh] w-[95vw] flex flex-col p-0">
         <DialogHeader className="p-6 pb-4 border-b">
             <DialogTitle className="text-xl sm:text-2xl">Composição do Índice UCS</DialogTitle>
             <DialogDescription>
                 Análise detalhada dos componentes que formam o valor do índice.
             </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="flex-1">
-            <div className="p-6 grid grid-cols-1 lg:grid-cols-5 gap-6">
+        <ScrollArea className="flex-1 min-h-0">
+            <div className="p-6 flex flex-col lg:flex-row gap-8">
                 
                 {/* Coluna de Detalhes (Esquerda) */}
-                <div className="lg:col-span-3 flex flex-col gap-6">
+                <div className="flex-1 flex flex-col gap-6">
                     <div className="p-4 rounded-lg bg-muted/50 text-center">
                         <h3 className="text-sm font-medium text-muted-foreground">Valor Final do Índice UCS</h3>
                         <p className="text-4xl font-bold text-primary tracking-tight">{formattedIndex}</p>
@@ -153,8 +153,8 @@ export function IndexCompositionModal({ data, isOpen, onClose }: IndexCompositio
                 </div>
                 
                 {/* Coluna de Gráficos (Direita) */}
-                <div className="lg:col-span-2 flex flex-col gap-4 min-h-[250px] lg:min-h-0">
-                    <div className="flex-1 w-full h-full">
+                <div className="lg:w-1/3 flex flex-col gap-6 min-h-[250px] lg:min-h-0">
+                    <div className="flex-1 w-full h-full border-t lg:border-t-0 lg:border-l lg:pl-8 pt-6 lg:pt-0">
                         <h4 className="text-center font-semibold text-muted-foreground mb-2 text-sm">Composição PDM</h4>
                          <ResponsiveContainer width="100%" height={200}>
                             <PieChart>
@@ -165,7 +165,7 @@ export function IndexCompositionModal({ data, isOpen, onClose }: IndexCompositio
                             </PieChart>
                         </ResponsiveContainer>
                     </div>
-                     <div className="flex-1 w-full h-full pt-4 border-t">
+                     <div className="flex-1 w-full h-full border-t pt-6">
                         <h4 className="text-center font-semibold text-muted-foreground mb-2 text-sm">Composição VUS</h4>
                         <ResponsiveContainer width="100%" height={200}>
                             <PieChart>
