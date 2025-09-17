@@ -4,8 +4,8 @@
 
 /**
  * @fileOverview A simple in-memory caching service for server-side data.
- * THIS FILE IS CURRENTLY NOT USED. The cache has been temporarily disabled
- * to ensure data consistency and resolve loading issues.
+ * This cache is intentionally simple and used sparingly to avoid complexity issues.
+ * Currently, it is ONLY used for caching exchange rates in `currency-service.ts`.
  */
 
 interface CacheEntry<T> {
@@ -24,7 +24,7 @@ const DEFAULT_TTL = 5 * 60 * 1000; // 5 minutes
  * @param data The data to be cached.
  */
 export async function setCache<T>(key: string, data: T) {
-  // Cache is disabled
+  cache.set(key, { data, timestamp: Date.now() });
 }
 
 /**
@@ -34,8 +34,16 @@ export async function setCache<T>(key: string, data: T) {
  * @returns The cached data or null if not found or expired.
  */
 export async function getCache<T>(key: string, ttl: number = DEFAULT_TTL): Promise<T | null> {
-  // Cache is disabled
-  return null;
+  const entry = cache.get(key);
+  if (!entry) {
+    return null;
+  }
+  const isExpired = (Date.now() - entry.timestamp) > ttl;
+  if (isExpired) {
+    cache.delete(key);
+    return null;
+  }
+  return entry.data as T;
 }
 
 /**
@@ -43,12 +51,12 @@ export async function getCache<T>(key: string, ttl: number = DEFAULT_TTL): Promi
  * @param key The key of the cache entry to clear.
  */
 export async function clearCache(key: string) {
-  // Cache is disabled
+  cache.delete(key);
 }
 
 /**
  * Clears the entire cache.
  */
 export async function clearAllCache() {
-  // Cache is disabled
+  cache.clear();
 }

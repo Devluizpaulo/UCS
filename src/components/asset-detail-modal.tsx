@@ -27,7 +27,6 @@ interface AssetDetailModalProps {
     icon: React.ElementType;
     isOpen: boolean;
     onClose: () => void;
-    selectedDate?: string;
 }
 
 // Helper to parse DD/MM/YYYY string to Date object
@@ -38,20 +37,20 @@ const parseDateString = (dateStr: string): Date => {
 };
 
 
-export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose, selectedDate }: AssetDetailModalProps) {
+export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDetailModalProps) {
     const [historicalData, setHistoricalData] = useState<FirestoreQuote[]>([]);
     const [chartData, setChartData] = useState<ChartData[]>([]);
     const [loading, setLoading] = useState(true);
     const [formattedPrice, setFormattedPrice] = useState('');
 
-    const getDetails = useCallback(async (currentAsset: CommodityPriceData, forDate?: string) => {
+    const getDetails = useCallback(async (currentAsset: CommodityPriceData) => {
         setLoading(true);
         setHistoricalData([]);
         setChartData([]);
 
         try {
             // Use the asset's ticker to fetch historical data
-            const history = await getCotacoesHistorico(currentAsset.ticker, 30, forDate);
+            const history = await getCotacoesHistorico(currentAsset.ticker, 30);
             const formatted = formatCurrency(asset.price, asset.currency);
             setFormattedPrice(formatted);
             
@@ -80,9 +79,9 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose, selectedD
 
     useEffect(() => {
         if (isOpen) {
-            getDetails(asset, selectedDate);
+            getDetails(asset);
         }
-    }, [isOpen, asset, selectedDate, getDetails]);
+    }, [isOpen, asset, getDetails]);
 
     const chartConfig = {
         value: {
