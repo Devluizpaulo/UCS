@@ -11,9 +11,8 @@ import {
 } from '@/components/ui/dialog';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import type { UcsData, FormulaParameters } from '@/lib/types';
-import { ScrollArea } from './ui/scroll-area';
 import { formatCurrency } from '@/lib/ucs-pricing-service';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { TreePine, LandPlot, Droplets, Divide, Target, Wand } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Progress } from './ui/progress';
@@ -102,22 +101,22 @@ export function IndexCompositionModal({ data, isOpen, onClose }: IndexCompositio
 
     const DetailItem = ({ label, value, percent, icon: Icon, colorClass }: { label: string; value: number; percent: number; icon?: React.ElementType; colorClass?: string }) => (
         <div>
-            <div className="flex justify-between items-center mb-1.5 text-xs">
+            <div className="flex justify-between items-center mb-1 text-xs">
                 <div className="flex items-center gap-2 font-medium text-muted-foreground">
                     {Icon && <Icon className={cn("h-4 w-4", colorClass)} />}
                     <span>{label}</span>
                 </div>
                 <div className="font-semibold text-foreground">{formatCurrency(value, 'BRL')}</div>
             </div>
-            <div className="flex items-center gap-3">
-                <Progress value={percent} className="h-1.5 flex-1" indicatorClassName={colorClass} />
-                <span className="text-xs font-mono text-muted-foreground w-12 text-right">{percent.toFixed(1)}%</span>
+            <div className="flex items-center gap-2">
+                <Progress value={percent} className="h-1 flex-1" indicatorClassName={colorClass} />
+                <span className="text-xs font-mono text-muted-foreground w-10 text-right">{percent.toFixed(0)}%</span>
             </div>
         </div>
     );
     
-    const KpiCard = ({ title, value, icon: Icon, subtext }: { title: string; value: string; icon: React.ElementType; subtext?: string }) => (
-        <div className="flex items-start gap-3 rounded-lg bg-muted/30 p-3">
+    const KpiCard = ({ title, value, icon: Icon, subtext }: { title:string; value: string; icon: React.ElementType; subtext?: string }) => (
+        <div className="flex items-start gap-3 rounded-lg bg-muted/30 p-3 flex-1">
             <Icon className="h-5 w-5 text-muted-foreground mt-1" />
             <div>
                 <p className="text-xs text-muted-foreground">{title}</p>
@@ -130,29 +129,33 @@ export function IndexCompositionModal({ data, isOpen, onClose }: IndexCompositio
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-4xl max-h-[90vh] w-[95vw] flex flex-col p-0">
-        <DialogHeader className="p-6 pb-4 border-b">
+        <DialogHeader className="p-6 pb-4 border-b sticky top-0 bg-background z-10">
             <DialogTitle className="text-xl sm:text-2xl">Composição do Índice UCS</DialogTitle>
             <DialogDescription>
                 Análise detalhada dos componentes e KPIs que formam o valor do índice.
             </DialogDescription>
         </DialogHeader>
         
-        <ScrollArea className="flex-1 min-h-0">
-            <div className="p-4 sm:p-6 space-y-6">
-                
-                <div className="text-center">
-                    <p className="text-sm font-medium text-muted-foreground">Valor Final do Índice UCS</p>
-                    <p className="text-4xl font-bold text-primary tracking-tight">{formattedIndex}</p>
-                </div>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+            <div className="space-y-6">
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="text-sm font-medium text-muted-foreground text-center">
+                            Valor Final do Índice UCS
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="text-center -mt-4">
+                        <p className="text-4xl font-bold text-primary tracking-tight">{formattedIndex}</p>
+                    </CardContent>
+                </Card>
+
+                <div className="flex flex-col sm:flex-row gap-3">
                     <KpiCard title="PDM / Carbono" value={`${formatCurrency(pdmPorCarbono, 'BRL')}/tCO₂`} icon={Divide} subtext="Relação desmatamento/estoque" />
                     <KpiCard title="IVP" value={formatCurrency(ivp, 'BRL')} icon={Target} subtext="Índice de Viabilidade" />
                     <KpiCard title="Fator Multiplicador" value={`${params.fator_ucs?.toFixed(2) || '1.00'}x`} icon={Wand} subtext="Ajuste final do índice"/>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-                    
                     <Card className="w-full">
                          <CardHeader>
                             <CardTitle>Análise de Componentes</CardTitle>
@@ -192,13 +195,13 @@ export function IndexCompositionModal({ data, isOpen, onClose }: IndexCompositio
                     <div className="flex flex-col gap-6 min-h-[250px]">
                         <Card className="flex-1 flex flex-col">
                            <CardHeader className="py-3">
-                               <CardTitle className="text-center text-sm">Composição PDM</CardTitle>
+                               <CardTitle className="text-center text-sm font-medium">Composição PDM</CardTitle>
                            </CardHeader>
                            <CardContent className="flex-1 flex items-center justify-center -mt-4">
-                                <ResponsiveContainer width="100%" height={180}>
+                                <ResponsiveContainer width="100%" height={150}>
                                     <PieChart>
                                         <Tooltip content={<CustomTooltip />} />
-                                        <Pie data={ucsCompositionData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={45} outerRadius={65} paddingAngle={2} stroke="hsl(var(--background))" strokeWidth={2}>
+                                        <Pie data={ucsCompositionData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={40} outerRadius={60} paddingAngle={2} stroke="hsl(var(--background))" strokeWidth={2}>
                                             {ucsCompositionData.map((entry) => <Cell key={entry.name} fill={entry.fill} />)}
                                         </Pie>
                                     </PieChart>
@@ -207,13 +210,13 @@ export function IndexCompositionModal({ data, isOpen, onClose }: IndexCompositio
                         </Card>
                         <Card className="flex-1 flex flex-col">
                            <CardHeader className="py-3">
-                               <CardTitle className="text-center text-sm">Composição VUS</CardTitle>
+                               <CardTitle className="text-center text-sm font-medium">Composição VUS</CardTitle>
                            </CardHeader>
                            <CardContent className="flex-1 flex items-center justify-center -mt-4">
-                               <ResponsiveContainer width="100%" height={180}>
+                               <ResponsiveContainer width="100%" height={150}>
                                     <PieChart>
                                         <Tooltip content={<CustomTooltip />} />
-                                        <Pie data={vusCompositionData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={45} outerRadius={65} paddingAngle={2} stroke="hsl(var(--background))" strokeWidth={2}>
+                                        <Pie data={vusCompositionData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={40} outerRadius={60} paddingAngle={2} stroke="hsl(var(--background))" strokeWidth={2}>
                                             {vusCompositionData.map((entry) => <Cell key={entry.name} fill={entry.fill} />)}
                                         </Pie>
                                     </PieChart>
@@ -223,11 +226,12 @@ export function IndexCompositionModal({ data, isOpen, onClose }: IndexCompositio
                     </div>
                 </div>
             </div>
-        </ScrollArea>
-        <DialogFooter className="p-6 pt-4 border-t">
+        </div>
+        <DialogFooter className="p-6 pt-4 border-t sticky bottom-0 bg-background z-10">
           {/* Footer content can go here if needed */}
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
+
