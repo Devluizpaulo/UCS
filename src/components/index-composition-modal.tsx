@@ -9,13 +9,17 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
-import type { UcsData } from '@/lib/types';
+import type { UcsData, FormulaParameters } from '@/lib/types';
 import { ScrollArea } from './ui/scroll-area';
 import { formatCurrency } from '@/lib/ucs-pricing-service';
-import { useEffect, useState } from 'react';
-import { TreePine, LandPlot, Droplets } from 'lucide-react';
+import { useEffect, useState, useCallback } from 'react';
+import { TreePine, LandPlot, Droplets, Divide, Target, Wand } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Progress } from './ui/progress';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from './ui/separator';
+import { getFormulaParameters } from '@/lib/formula-service'; // Importando a função
+
 
 interface IndexCompositionModalProps {
   data: UcsData;
@@ -60,16 +64,29 @@ const CustomTooltip = ({ active, payload }: any) => {
 
 export function IndexCompositionModal({ data, isOpen, onClose }: IndexCompositionModalProps) {
     const { indexValue, components, vusDetails } = data;
+    const [params, setParams] = useState<Partial<FormulaParameters>>({});
+    
     const totalPdm = components.vm + components.vus + components.crs;
+    const carbonoEstocado = (params.produtividade_carbono || 0) * (params.area_total || 0);
+    const ivp = carbonoEstocado > 0 ? (totalPdm / carbonoEstocado) / 2 : 0;
+    const pdmPorCarbono = carbonoEstocado > 0 ? totalPdm / carbonoEstocado : 0;
+
     const vusTotal = vusDetails.pecuaria + vusDetails.milho + vusDetails.soja;
 
     const [formattedIndex, setFormattedIndex] = useState('');
 
     useEffect(() => {
+      if (isOpen) {
+        const fetchParams = async () => {
+          const fetchedParams = await getFormulaParameters();
+          setParams(fetchedParams);
+        }
+        fetchParams();
+      }
       if (data) {
         setFormattedIndex(formatCurrency(indexValue, 'BRL'));
       }
-    }, [data, indexValue]);
+    }, [data, indexValue, isOpen]);
 
     const ucsCompositionData = [
         { name: 'Valor da Madeira (VMAD)', value: components.vm, percent: formatPercentage(components.vm, totalPdm), fill: COLORS_PDM.VMAD, icon: TreePine },
@@ -98,6 +115,17 @@ export function IndexCompositionModal({ data, isOpen, onClose }: IndexCompositio
             </div>
         </div>
     );
+    
+    const KpiCard = ({ title, value, icon: Icon, subtext }: { title: string; value: string; icon: React.ElementType; subtext?: string }) => (
+        <div className="flex items-center gap-4 rounded-lg bg-muted/40 p-3">
+            <Icon className="h-6 w-6 text-muted-foreground" />
+            <div>
+                <p className="text-sm text-muted-foreground">{title}</p>
+                <p className="text-lg font-bold text-foreground">{value}</p>
+                {subtext && <p className="text-xs text-muted-foreground">{subtext}</p>}
+            </div>
+        </div>
+    );
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -105,79 +133,111 @@ export function IndexCompositionModal({ data, isOpen, onClose }: IndexCompositio
         <DialogHeader className="p-6 pb-4 border-b">
             <DialogTitle className="text-xl sm:text-2xl">Composição do Índice UCS</DialogTitle>
             <DialogDescription>
-                Análise detalhada dos componentes que formam o valor do índice.
+                Análise detalhada dos componentes e KPIs que formam o valor do índice.
             </DialogDescription>
         </DialogHeader>
         <ScrollArea className="flex-1 min-h-0">
-            <div className="p-6 flex flex-col lg:flex-row gap-8">
+            <div className="p-4 sm:p-6 space-y-6">
+                <Card>
+                    <CardHeader className="pb-4">
+                        <CardTitle>Resultado Final</CardTitle>
+                    </CardHeader>
+                    <CardContent className="text-center">
+                        <p className="text-sm font-medium text-muted-foreground">Valor do Índice UCS</p>
+                        <p className="text-5xl font-bold text-primary tracking-tight">{formattedIndex}</p>
+                    </CardContent>
+                </Card>
                 
-                {/* Coluna de Detalhes (Esquerda) */}
-                <div className="flex-1 flex flex-col gap-6">
-                    <div className="p-4 rounded-lg bg-muted/50 text-center">
-                        <h3 className="text-sm font-medium text-muted-foreground">Valor Final do Índice UCS</h3>
-                        <p className="text-4xl font-bold text-primary tracking-tight">{formattedIndex}</p>
-                    </div>
+                 <Card>
+                    <CardHeader>
+                        <CardTitle>KPIs Estratégicos</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <KpiCard title="PDM / Carbono" value={`${formatCurrency(pdmPorCarbono, 'BRL')}/tCO₂`} icon={Divide} subtext="Relação desmatamento/estoque" />
+                        <KpiCard title="IVP" value={formatCurrency(ivp, 'BRL')} icon={Target} subtext="Índice de Viabilidade" />
+                        <KpiCard title="Fator Multiplicador" value={`${params.fator_ucs?.toFixed(2) || '1.00'}x`} icon={Wand} subtext="Ajuste final do índice"/>
+                    </CardContent>
+                </Card>
 
-                    <div className="space-y-4">
-                        <h4 className="font-semibold">Componentes do PDM</h4>
-                        {ucsCompositionData.map(item => (
-                            <DetailItem
-                                key={item.name}
-                                label={item.name}
-                                value={item.value}
-                                percent={item.percent}
-                                icon={item.icon}
-                                colorClass={
-                                    item.name.includes('VMAD') ? 'bg-chart-1' :
-                                    item.name.includes('VUS') ? 'bg-chart-2' : 'bg-chart-3'
-                                }
-                            />
-                        ))}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Coluna de Detalhes (Esquerda) */}
+                    <div className="flex flex-col gap-6">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Componentes do PDM</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                {ucsCompositionData.map(item => (
+                                    <DetailItem
+                                        key={item.name}
+                                        label={item.name}
+                                        value={item.value}
+                                        percent={item.percent}
+                                        icon={item.icon}
+                                        colorClass={
+                                            item.name.includes('VMAD') ? 'bg-chart-1' :
+                                            item.name.includes('VUS') ? 'bg-chart-2' : 'bg-chart-3'
+                                        }
+                                    />
+                                ))}
+                            </CardContent>
+                        </Card>
+                        
+                        <Card>
+                             <CardHeader>
+                                <CardTitle>Detalhes do VUS</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                {vusCompositionData.map(item => (
+                                <DetailItem
+                                        key={item.name}
+                                        label={item.name}
+                                        value={item.value}
+                                        percent={item.percent}
+                                        colorClass={
+                                            item.name.includes('Pecuária') ? 'bg-chart-4' :
+                                            item.name.includes('Milho') ? 'bg-chart-5' : 'bg-chart-1'
+                                        }
+                                    />
+                                ))}
+                            </CardContent>
+                        </Card>
                     </div>
                     
-                    <div className="space-y-4 pt-4 border-t">
-                        <h4 className="font-semibold">Detalhes do VUS (Valor de Uso do Solo)</h4>
-                        {vusCompositionData.map(item => (
-                           <DetailItem
-                                key={item.name}
-                                label={item.name}
-                                value={item.value}
-                                percent={item.percent}
-                                colorClass={
-                                    item.name.includes('Pecuária') ? 'bg-chart-4' :
-                                    item.name.includes('Milho') ? 'bg-chart-5' : 'bg-chart-1'
-                                }
-                            />
-                        ))}
+                    {/* Coluna de Gráficos (Direita) */}
+                    <div className="flex flex-col gap-6 min-h-[250px] lg:min-h-0">
+                        <Card className="flex-1 flex flex-col">
+                           <CardHeader>
+                               <CardTitle className="text-center text-base">Composição PDM</CardTitle>
+                           </CardHeader>
+                           <CardContent className="flex-1 flex items-center justify-center">
+                                <ResponsiveContainer width="100%" height={200}>
+                                    <PieChart>
+                                        <Tooltip content={<CustomTooltip />} />
+                                        <Pie data={ucsCompositionData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={50} outerRadius={70} paddingAngle={2} stroke="hsl(var(--background))" strokeWidth={2}>
+                                            {ucsCompositionData.map((entry) => <Cell key={entry.name} fill={entry.fill} />)}
+                                        </Pie>
+                                    </PieChart>
+                                </ResponsiveContainer>
+                           </CardContent>
+                        </Card>
+                        <Card className="flex-1 flex flex-col">
+                           <CardHeader>
+                               <CardTitle className="text-center text-base">Composição VUS</CardTitle>
+                           </CardHeader>
+                           <CardContent className="flex-1 flex items-center justify-center">
+                               <ResponsiveContainer width="100%" height={200}>
+                                    <PieChart>
+                                        <Tooltip content={<CustomTooltip />} />
+                                        <Pie data={vusCompositionData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={50} outerRadius={70} paddingAngle={2} stroke="hsl(var(--background))" strokeWidth={2}>
+                                            {vusCompositionData.map((entry) => <Cell key={entry.name} fill={entry.fill} />)}
+                                        </Pie>
+                                    </PieChart>
+                                </ResponsiveContainer>
+                           </CardContent>
+                        </Card>
                     </div>
                 </div>
-                
-                {/* Coluna de Gráficos (Direita) */}
-                <div className="lg:w-1/3 flex flex-col gap-6 min-h-[250px] lg:min-h-0">
-                    <div className="flex-1 w-full h-full border-t lg:border-t-0 lg:border-l lg:pl-8 pt-6 lg:pt-0">
-                        <h4 className="text-center font-semibold text-muted-foreground mb-2 text-sm">Composição PDM</h4>
-                         <ResponsiveContainer width="100%" height={200}>
-                            <PieChart>
-                                <Tooltip content={<CustomTooltip />} />
-                                <Pie data={ucsCompositionData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={50} outerRadius={70} paddingAngle={2} stroke="hsl(var(--background))" strokeWidth={2}>
-                                    {ucsCompositionData.map((entry) => <Cell key={entry.name} fill={entry.fill} />)}
-                                </Pie>
-                            </PieChart>
-                        </ResponsiveContainer>
-                    </div>
-                     <div className="flex-1 w-full h-full border-t pt-6">
-                        <h4 className="text-center font-semibold text-muted-foreground mb-2 text-sm">Composição VUS</h4>
-                        <ResponsiveContainer width="100%" height={200}>
-                            <PieChart>
-                                <Tooltip content={<CustomTooltip />} />
-                                <Pie data={vusCompositionData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={50} outerRadius={70} paddingAngle={2} stroke="hsl(var(--background))" strokeWidth={2}>
-                                    {vusCompositionData.map((entry) => <Cell key={entry.name} fill={entry.fill} />)}
-                                </Pie>
-                            </PieChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-
             </div>
         </ScrollArea>
       </DialogContent>
