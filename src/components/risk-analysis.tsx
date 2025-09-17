@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import type { RiskAnalysisData, FirestoreQuote, UcsData, ChartData } from '@/lib/types';
+import type { RiskAnalysisData, FirestoreQuote, UcsData, ChartData, CommodityConfig } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { Skeleton } from './ui/skeleton';
 import { getCommodities } from '@/lib/commodity-config-service';
@@ -31,7 +31,7 @@ async function getRiskAnalysisData(): Promise<RiskAnalysisData> {
 
     const ucsReturns = ucsPrices.slice(1).map((v: number, i: number) => (ucsPrices[i] === 0 ? 0 : (v / ucsPrices[i]) -1));
     
-    const metricsPromises = commodities.map(async (asset) => {
+    const metricsPromises = commodities.map(async (asset: CommodityConfig) => {
         try {
             // Get historical data from our Firestore historical collection
             const assetHistory: FirestoreQuote[] = await getCotacoesHistorico(asset.name, 30);
