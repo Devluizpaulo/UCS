@@ -4,6 +4,11 @@ import { NextResponse, type NextRequest } from 'next/server';
 const PUBLIC_ROUTES = ['/login', '/forgot-password', '/reset-password'];
 
 export async function middleware(request: NextRequest) {
+  // --- LOGIN TEMPORARIAMENTE DESATIVADO ---
+  // A lógica abaixo foi comentada para permitir acesso direto ao sistema
+  // sem a necessidade de autenticação. Para reativar, basta descomentar.
+
+  /*
   const { pathname } = request.nextUrl;
   const authToken = request.cookies.get('auth-token')?.value;
   const isPublicRoute = PUBLIC_ROUTES.some(route => pathname.startsWith(route));
@@ -19,6 +24,7 @@ export async function middleware(request: NextRequest) {
     url.pathname = '/';
     return NextResponse.redirect(url);
   }
+  */
   
   return NextResponse.next();
 }
