@@ -25,15 +25,31 @@ const serializeFirestoreTimestamp = (data: any): any => {
     return data;
 };
 
-// Derives the collection name from the asset's ID, which is more reliable.
-// e.g., "boi_gordo_futuros" becomes "boi_gordo"
+/**
+ * Maps the asset document ID from 'commodities' collection to the correct price history collection name.
+ * This is the ground truth for data fetching.
+ * @param assetId The document ID from the 'commodities' collection (e.g., 'boi_gordo_futuros').
+ * @returns The name of the collection holding price data (e.g., 'boi_gordo').
+ */
 function getCollectionNameFromAssetId(assetId: string): string {
-    return assetId.replace(/_futuros$/, '').toLowerCase();
+    const normalizedId = assetId.toLowerCase();
+    
+    if (normalizedId.includes('boi_gordo')) return 'boi_gordo';
+    if (normalizedId.includes('carbono')) return 'carbono';
+    if (normalizedId.includes('eur')) return 'eur';
+    if (normalizedId.includes('madeira')) return 'madeira';
+    if (normalizedId.includes('milho')) return 'milho';
+    if (normalizedId.includes('soja')) return 'soja';
+    if (normalizedId.includes('usd') || normalizedId.includes('dolar')) return 'usd';
+
+    // Fallback if no specific rule matches, though it should not be reached with proper config.
+    return normalizedId.split('_')[0];
 }
 
 
 async function getAssetData(assetId: string, limit: number = 1): Promise<FirestoreQuote[]> {
     if (!assetId) return [];
+    // Use the definitive mapping function to get the correct collection name.
     const collectionName = getCollectionNameFromAssetId(assetId);
     
     try {
