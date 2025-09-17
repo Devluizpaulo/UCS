@@ -86,6 +86,9 @@ export function UserManagement() {
     defaultValues: {
       role: 'user',
       isActive: true,
+      displayName: '',
+      email: '',
+      phoneNumber: ''
     },
   });
 
@@ -514,6 +517,7 @@ Atenciosamente,
               <Label htmlFor="role">Função</Label>
               <select
                 id="role"
+                defaultValue={editingUser?.role || 'user'}
                 {...form.register('role')}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               >
@@ -527,7 +531,8 @@ Atenciosamente,
                     <Label htmlFor="isActive">Status</Label>
                      <select
                         id="isActive"
-                        {...form.register('isActive')}
+                        defaultValue={editingUser?.isActive ? "true" : "false"}
+                        {...form.register('isActive', { valueAsBoolean: true })}
                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                      >
                         <option value="true">Ativo</option>

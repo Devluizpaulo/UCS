@@ -78,11 +78,10 @@ export default function LoginPage() {
         description: 'Carregando painel...',
       });
       
-      if (user.isFirstLogin) {
-          router.push('/first-login-password-reset');
-      } else {
-          router.push('/');
-      }
+      // O redirecionamento agora é responsabilidade do main-layout,
+      // mas fazemos um push inicial para o painel.
+      router.push('/');
+
 
     } catch (error: any) {
       console.error('Login failed:', error);

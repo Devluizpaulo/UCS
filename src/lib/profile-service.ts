@@ -75,7 +75,8 @@ export async function updateUser(uid: string, data: { displayName: string; phone
     await userDocRef.update({ displayName, phoneNumber, role, isActive });
     
     const updatedUserDoc = await userDocRef.get();
-    return { id: updatedUserDoc.id, ...updatedUserDoc.data() };
+    const userData = updatedUserDoc.data();
+    return { id: updatedUserDoc.id, ...userData };
 
   } catch (error: any) {
     console.error('Erro ao atualizar usuário (admin):', error);
