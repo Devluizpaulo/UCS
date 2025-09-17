@@ -1,8 +1,7 @@
 
-
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -19,40 +18,60 @@ import {
 } from 'lucide-react';
 import { IndexCompositionModal } from './index-composition-modal';
 import type { ChartData, UcsData } from '@/lib/types';
-import { getUcsIndexValue, getUcsIndexHistory } from '@/lib/data-service';
+import { getUcsIndexValue, getUcsIndexHistory } from '@/lib/data-service'; // Keep for refresh
 import { Skeleton } from './ui/skeleton';
 
 interface UCSIndexDisplayProps {
   className?: string;
+  initialData: UcsData | null;
+  chartData: ChartData[];
+  loading: boolean;
 }
 
-export function UCSIndexDisplay({ className }: UCSIndexDisplayProps) {
-  const [ucsData, setUcsData] = useState<UcsData | null>(null);
-  const [loading, setLoading] = useState(true);
+export function UCSIndexDisplay({ className, initialData, chartData: initialChartData, loading: initialLoading }: UCSIndexDisplayProps) {
+  const [ucsData, setUcsData] = useState<UcsData | null>(initialData);
+  const [loading, setLoading] = useState(initialLoading);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [trend, setTrend] = useState<'up' | 'down' | 'stable'>('stable');
-  const [chartData, setChartData] = useState<ChartData[]>([]);
+  const [chartData, setChartData] = useState<ChartData[]>(initialChartData);
   const [showChart, setShowChart] = useState(false);
   const [isCompositionModalOpen, setIsCompositionModalOpen] = useState(false);
+
+  useEffect(() => {
+    setUcsData(initialData);
+    setChartData(initialChartData);
+    setLoading(initialLoading);
+
+    if (!initialLoading && initialData) {
+      if (!initialData.isConfigured) {
+          setError('Parâmetros da fórmula não configurados. Configure em Configurações.');
+      }
+      setLastUpdate(new Date());
+
+       if (initialChartData.length > 1) {
+          const current = initialChartData[initialChartData.length - 1].value;
+          const prev = initialChartData[initialChartData.length - 2].value;
+          if (current > prev) setTrend('up');
+          else if (current < prev) setTrend('down');
+          else setTrend('stable');
+      }
+    }
+  }, [initialData, initialChartData, initialLoading]);
+
 
   const formatCurrency = (value: number) =>
     `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-  const calculateUCSIndex = useCallback(async () => {
+  const handleRefresh = async () => {
     setLoading(true);
     setError(null);
-    
     try {
-      // The API route now handles the calculation and saving.
-      const response = await fetch('/api/ucs-index');
-      if (!response.ok) {
-        throw new Error('Failed to fetch UCS Index data from API');
-      }
-      const latestData: UcsData = await response.json();
+      const [latestData, history] = await Promise.all([
+          getUcsIndexValue(),
+          getUcsIndexHistory('1d')
+      ]);
 
-      const history = await getUcsIndexHistory('1d');
-      
       setUcsData(latestData);
       setChartData(history);
       setLastUpdate(new Date());
@@ -70,16 +89,12 @@ export function UCSIndexDisplay({ className }: UCSIndexDisplayProps) {
       }
 
     } catch (error) {
-      console.error('Erro ao calcular índice UCS:', error);
+      console.error('Erro ao atualizar índice UCS:', error);
       setError(`Erro no cálculo: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
     } finally {
       setLoading(false);
     }
-  }, []);
-
-  useEffect(() => {
-    calculateUCSIndex();
-  }, [calculateUCSIndex]);
+  };
 
   const getTrendIcon = () => {
     switch (trend) {
@@ -118,7 +133,7 @@ export function UCSIndexDisplay({ className }: UCSIndexDisplayProps) {
 
   return (
     <>
-      <Card className={cn("shadow-sm", className)}>
+      <Card className={className}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Índice UCS (Unidade de Crédito de Sustentabilidade)</CardTitle>
           <div className="flex items-center gap-1">
@@ -135,7 +150,7 @@ export function UCSIndexDisplay({ className }: UCSIndexDisplayProps) {
               variant="ghost"
               size="icon"
               className="h-8 w-8"
-              onClick={() => calculateUCSIndex()}
+              onClick={handleRefresh}
               disabled={loading}
             >
               <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
