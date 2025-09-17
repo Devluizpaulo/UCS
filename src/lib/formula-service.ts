@@ -35,7 +35,7 @@ const defaultParameters: FormulaParameters = {
     PESO_MILHO: 0, // Legacy, kept for compatibility, not used in new formula
     PESO_SOJA: 0, // Legacy, kept for compatibility, not used in new formula
     
-    // Fatores de Conversão/Custo
+    // Fatores de Conversão e Custo
     fator_arrendamento: 0.048,
     FATOR_ARREND: 0, // Legacy, kept for compatibility, not used in new formula
     fator_agua: 0.07, // Custo da água
@@ -99,4 +99,5 @@ export async function saveFormulaParameters(params: Omit<FormulaParameters, 'isC
     throw new Error("Failed to save formula parameters to the database.");
   }
 }
+
 

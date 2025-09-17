@@ -71,10 +71,10 @@ export function calculateIndex(commodities: CommodityPriceData[], params: Formul
       const renda_madeira_ha = params.produtividade_madeira * preco_madeira_tora_brl;
       const renda_carbono_ha = params.FATOR_CARBONO * preco_carbono_brl; // FATOR_CARBONO is 2.59
 
-      // --- 1. VMAD (Valor da Madeira) ---
+      // --- 1. vMAD (Valor da Madeira) ---
       const VMAD = renda_madeira_ha * params.area_total;
 
-      // --- 2. VUS (Valor de Uso do Solo) ---
+      // --- 2. vUS (Valor de Uso do Solo) ---
       const renda_bruta_ponderada_ha_vus = 
           (renda_pecuaria_ha * params.fator_pecuaria) + 
           (renda_milho_ha * params.fator_milho) + 
@@ -82,7 +82,7 @@ export function calculateIndex(commodities: CommodityPriceData[], params: Formul
       const vus_por_ha = renda_bruta_ponderada_ha_vus * params.fator_arrendamento;
       const VUS = vus_por_ha * params.area_total;
 
-      // --- 3. CRS (Custo da Responsabilidade Socioambiental) ---
+      // --- 3. cRS (Custo da Responsabilidade Socioambiental) ---
       // 3.a Crédito de Carbono (CC)
       const valor_carbono_total = renda_carbono_ha * params.area_total;
       
