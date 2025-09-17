@@ -6,18 +6,16 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
-  DialogFooter,
+  DialogDescription as ModalDescription,
 } from '@/components/ui/dialog';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import type { UcsData, FormulaParameters } from '@/lib/types';
 import { formatCurrency } from '@/lib/ucs-pricing-service';
 import { useEffect, useState } from 'react';
-import { TreePine, LandPlot, Droplets, Target, Divide, Leaf, Package } from 'lucide-react';
+import { Package, Leaf, Target } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { getFormulaParameters } from '@/lib/formula-service';
-import { Separator } from '@/components/ui/separator';
 
 interface IndexCompositionModalProps {
   data: UcsData;
@@ -26,15 +24,15 @@ interface IndexCompositionModalProps {
 }
 
 const COLORS_PDM = {
-    VMAD: 'hsl(var(--chart-1))', // Green
-    VUS: 'hsl(var(--chart-3))',  // Lighter Green
-    CRS: 'hsl(var(--chart-2))',  // Muted/Gray
+    VMAD: 'hsl(var(--chart-1))',
+    VUS: 'hsl(var(--chart-3))',
+    CRS: 'hsl(var(--chart-2))',
 };
 
 const COLORS_VUS = {
-    Pecuaria: 'hsl(var(--chart-4))', // Light gray/accent
-    Milho: 'hsl(var(--chart-5))',    // Darker gray
-    Soja: 'hsl(var(--chart-1))',     // Green
+    Pecuaria: 'hsl(var(--chart-4))',
+    Milho: 'hsl(var(--chart-5))',
+    Soja: 'hsl(var(--chart-1))',
 };
 
 const CustomTooltip = ({ active, payload }: any) => {
@@ -111,9 +109,9 @@ export function IndexCompositionModal({ data, isOpen, onClose }: IndexCompositio
       <DialogContent className="sm:max-w-5xl w-[95vw] h-[90vh] flex flex-col p-0">
         <DialogHeader className="p-6 pb-4 border-b sticky top-0 bg-background z-10">
             <DialogTitle className="text-xl sm:text-2xl">Relatório Analítico da Composição do Índice UCS</DialogTitle>
-            <DialogDescription>
+            <ModalDescription>
                 Análise detalhada dos componentes e KPIs que formam o valor final do índice.
-            </DialogDescription>
+            </ModalDescription>
         </DialogHeader>
         
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
@@ -148,7 +146,7 @@ export function IndexCompositionModal({ data, isOpen, onClose }: IndexCompositio
                         <div className="order-2 md:order-1">
                             <DetailListItem label="Valor da Madeira (VMAD)" value={formatCurrency(components.vm, 'BRL')} colorClass="bg-chart-1" />
                             <DetailListItem label="Uso do Solo (VUS)" value={formatCurrency(components.vus, 'BRL')} colorClass="bg-chart-3" />
-                            <DetailListItem label="Custo Socioambiental (CRS)" value={formatcurrency(components.crs, 'BRL')} colorClass="bg-chart-2" />
+                            <DetailListItem label="Custo Socioambiental (CRS)" value={formatCurrency(components.crs, 'BRL')} colorClass="bg-chart-2" />
                         </div>
                         <div className="h-48 w-full order-1 md:order-2">
                              <ResponsiveContainer>
