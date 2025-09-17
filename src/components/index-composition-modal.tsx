@@ -12,7 +12,7 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import type { UcsData } from '@/lib/types';
 import { Separator } from './ui/separator';
 import { ScrollArea } from './ui/scroll-area';
-import { formatCurrency } from '@/lib/currency-service';
+import { formatCurrency } from '@/lib/ucs-pricing-service';
 import { useEffect, useState } from 'react';
 
 interface IndexCompositionModalProps {
@@ -35,16 +35,9 @@ const COLORS = {
 };
 
 const CustomTooltip = ({ active, payload }: any) => {
-    const [formattedValue, setFormattedValue] = useState('');
-    
-    useEffect(() => {
-        if (active && payload && payload.length) {
-            formatCurrency(payload[0].value, 'BRL').then(setFormattedValue);
-        }
-    }, [active, payload]);
-
     if (active && payload && payload.length) {
       const data = payload[0].payload;
+      const formattedValue = formatCurrency(payload[0].value, 'BRL');
       return (
         <div className="rounded-lg border bg-background p-2 text-sm shadow-sm">
           <p className="font-bold">{`${data.name}`}</p>
@@ -63,13 +56,10 @@ export function IndexCompositionModal({ data, isOpen, onClose }: IndexCompositio
     const [formattedPdm, setFormattedPdm] = useState('');
 
     useEffect(() => {
-      async function formatData() {
-        if (data) {
-          setFormattedIndex(await formatCurrency(indexValue, 'BRL'));
-          setFormattedPdm(await formatCurrency(totalPdm, 'BRL'));
-        }
+      if (data) {
+        setFormattedIndex(formatCurrency(indexValue, 'BRL'));
+        setFormattedPdm(formatCurrency(totalPdm, 'BRL'));
       }
-      formatData();
     }, [data, indexValue, totalPdm]);
 
     const ucsCompositionData = [
@@ -86,10 +76,7 @@ export function IndexCompositionModal({ data, isOpen, onClose }: IndexCompositio
     ];
 
     const FormattedItem = ({label, value}: {label: string, value: number}) => {
-        const [formatted, setFormatted] = useState('');
-        useEffect(() => {
-            formatCurrency(value, 'BRL').then(setFormatted);
-        }, [value]);
+        const formatted = formatCurrency(value, 'BRL');
         return (
             <p className="font-medium">{formatted}</p>
         )

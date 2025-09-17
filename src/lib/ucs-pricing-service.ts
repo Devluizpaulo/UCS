@@ -4,10 +4,27 @@ import { getCommodityPrices } from './data-service';
 import { getFormulaParameters } from './formula-service';
 import { calculateIndex } from './calculation-service';
 import type { CommodityPriceData, UCSCalculationInputs, UCSCalculationResult, CalculateUcsIndexOutput } from './types';
-import { formatCurrency } from './currency-service';
 
 // Re-export types for external use
 export type { UCSCalculationInputs, UCSCalculationResult } from './types';
+
+
+/**
+ * Formata um valor monetário de acordo com a moeda.
+ * Esta é uma função utilitária síncrona segura para ser usada no cliente.
+ */
+export function formatCurrency(value: number, currency: string): string {
+  if (typeof value !== 'number' || isNaN(value)) return '';
+  
+  const formatters: Record<string, Intl.NumberFormat> = {
+    BRL: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }),
+    USD: new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }),
+    EUR: new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' })
+  };
+
+  const formatter = formatters[currency as keyof typeof formatters];
+  return formatter ? formatter.format(value) : `${value.toFixed(2)} ${currency}`;
+}
 
 
 function findPrice(commodities: CommodityPriceData[], category: CommodityPriceData['category'], nameIncludes: string): number {

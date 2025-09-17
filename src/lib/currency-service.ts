@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { getCommodityPrices } from './data-service';
@@ -188,20 +189,6 @@ export async function convertAllPricesToCurrency(
     console.error('[CurrencyService] Erro ao converter todos os preços:', error);
     return [];
   }
-}
-
-/**
- * Formata um valor monetário de acordo com a moeda
- */
-export async function formatCurrency(value: number, currency: string): Promise<string> {
-  const formatters: Record<string, Intl.NumberFormat> = {
-    BRL: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }),
-    USD: new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }),
-    EUR: new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' })
-  };
-
-  const formatter = formatters[currency as keyof typeof formatters];
-  return formatter ? formatter.format(value) : `${value.toFixed(2)} ${currency}`;
 }
 
 /**

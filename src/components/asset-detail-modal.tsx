@@ -17,7 +17,7 @@ import { Table as UiTable, TableBody, TableCell, TableHead, TableHeader, TableRo
 import { ScrollArea } from './ui/scroll-area';
 import { getCotacoesHistorico } from '@/lib/data-service';
 import { cn } from '@/lib/utils';
-import { formatCurrency } from '@/lib/currency-service';
+import { formatCurrency } from '@/lib/ucs-pricing-service';
 import { Skeleton } from './ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 
@@ -51,7 +51,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose, selectedD
 
         try {
             const history = await getCotacoesHistorico(currentAsset.name, 30, forDate);
-            const formatted = await formatCurrency(asset.price, asset.currency);
+            const formatted = formatCurrency(asset.price, asset.currency);
             setFormattedPrice(formatted);
             // Sort by the 'data' field, most recent first for the table
             const sortedHistory = [...history].sort((a, b) => {
@@ -170,7 +170,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose, selectedD
                                                         cursor={{ stroke: 'hsl(var(--primary))', strokeWidth: 1, strokeDasharray: '3 3' }} 
                                                         content={<ChartTooltipContent 
                                                             indicator="dot" 
-                                                            formatter={async (value) => [await formatCurrency(Number(value), asset.currency), 'Cotação']} 
+                                                            formatter={(value) => [formatCurrency(Number(value), asset.currency), 'Cotação']} 
                                                             labelFormatter={(label) => `Data: ${label}`}
                                                         />} 
                                                     />

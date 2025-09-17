@@ -20,7 +20,7 @@ import { IndexCompositionModal } from './index-composition-modal';
 import type { ChartData, UcsData } from '@/lib/types';
 import { getUcsIndexValue, getUcsIndexHistory } from '@/lib/data-service'; // Keep for refresh
 import { Skeleton } from './ui/skeleton';
-import { formatCurrency } from '@/lib/currency-service';
+import { formatCurrency } from '@/lib/ucs-pricing-service';
 
 interface UCSIndexDisplayProps {
   className?: string;
@@ -44,31 +44,28 @@ export function UCSIndexDisplay({ className, initialData, chartData: initialChar
   const [formattedCrs, setFormattedCrs] = useState('');
 
   useEffect(() => {
-    async function formatInitialData() {
-        setUcsData(initialData);
-        setChartData(initialChartData);
-        setLoading(initialLoading);
+    setUcsData(initialData);
+    setChartData(initialChartData);
+    setLoading(initialLoading);
 
-        if (!initialLoading && initialData) {
-          if (!initialData.isConfigured) {
-              setError('Parâmetros da fórmula não configurados. Configure em Configurações.');
-          }
-          setLastUpdate(new Date());
+    if (!initialLoading && initialData) {
+      if (!initialData.isConfigured) {
+          setError('Parâmetros da fórmula não configurados. Configure em Configurações.');
+      }
+      setLastUpdate(new Date());
 
-           if (initialChartData.length > 1) {
-              const current = initialChartData[initialChartData.length - 1].value;
-              const prev = initialChartData[initialChartData.length - 2].value;
-              if (current > prev) setTrend('up');
-              else if (current < prev) setTrend('down');
-              else setTrend('stable');
-          }
-           setFormattedIndex(await formatCurrency(initialData.indexValue, 'BRL'));
-           setFormattedVm(await formatCurrency(initialData.components.vm, 'BRL'));
-           setFormattedVus(await formatCurrency(initialData.components.vus, 'BRL'));
-           setFormattedCrs(await formatCurrency(initialData.components.crs, 'BRL'));
-        }
+       if (initialChartData.length > 1) {
+          const current = initialChartData[initialChartData.length - 1].value;
+          const prev = initialChartData[initialChartData.length - 2].value;
+          if (current > prev) setTrend('up');
+          else if (current < prev) setTrend('down');
+          else setTrend('stable');
+      }
+       setFormattedIndex(formatCurrency(initialData.indexValue, 'BRL'));
+       setFormattedVm(formatCurrency(initialData.components.vm, 'BRL'));
+       setFormattedVus(formatCurrency(initialData.components.vus, 'BRL'));
+       setFormattedCrs(formatCurrency(initialData.components.crs, 'BRL'));
     }
-    formatInitialData();
   }, [initialData, initialChartData, initialLoading]);
 
 
@@ -85,10 +82,10 @@ export function UCSIndexDisplay({ className, initialData, chartData: initialChar
       setChartData(history);
       setLastUpdate(new Date());
 
-       setFormattedIndex(await formatCurrency(latestData.indexValue, 'BRL'));
-       setFormattedVm(await formatCurrency(latestData.components.vm, 'BRL'));
-       setFormattedVus(await formatCurrency(latestData.components.vus, 'BRL'));
-       setFormattedCrs(await formatCurrency(latestData.components.crs, 'BRL'));
+       setFormattedIndex(formatCurrency(latestData.indexValue, 'BRL'));
+       setFormattedVm(formatCurrency(latestData.components.vm, 'BRL'));
+       setFormattedVus(formatCurrency(latestData.components.vus, 'BRL'));
+       setFormattedCrs(formatCurrency(latestData.components.crs, 'BRL'));
 
       if (history.length > 1) {
           const current = history[history.length - 1].value;

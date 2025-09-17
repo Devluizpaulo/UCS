@@ -16,7 +16,8 @@ import {
   formatarValorMonetario,
   validarInputsUCS,
   type UCSCalculationInputs,
-  type UCSCalculationResult
+  type UCSCalculationResult,
+  formatCurrency
 } from '@/lib/ucs-pricing-service';
 import { Skeleton } from './ui/skeleton';
 
@@ -46,6 +47,18 @@ export function UCSCalculator() {
     carregarValoresPadrao();
   }, [carregarValoresPadrao]);
 
+  const formatResults = useCallback(async (result: UCSCalculationResult) => {
+    const formatted = {
+      ucs: formatCurrency(result.unidadeCreditoSustentabilidade, 'BRL'),
+      ivp: formatCurrency(result.indiceViabilidadeProjeto, 'BRL'),
+      pdm: formatCurrency(result.potencialDesflorestadorMonetizado, 'BRL'),
+      vmad: formatCurrency(result.valorMadeira, 'BRL'),
+      vus: formatCurrency(result.valorUsoSolo, 'BRL'),
+      crs: formatCurrency(result.custoResponsabilidadeSocioambiental, 'BRL'),
+    };
+    setFormattedResult(formatted);
+  }, []);
+
   const calcular = useCallback(async () => {
     const validacao = validarInputsUCS(inputs);
     
@@ -58,23 +71,13 @@ export function UCSCalculator() {
     try {
       const resultadoCalc = calcularUCSCompleto(inputs as UCSCalculationInputs);
       setResultado(resultadoCalc);
-      
-      const formatted = {
-        ucs: await formatarValorMonetario(resultadoCalc.unidadeCreditoSustentabilidade),
-        ivp: await formatarValorMonetario(resultadoCalc.indiceViabilidadeProjeto),
-        pdm: await formatarValorMonetario(resultadoCalc.potencialDesflorestadorMonetizado),
-        vmad: await formatarValorMonetario(resultadoCalc.valorMadeira),
-        vus: await formatarValorMonetario(resultadoCalc.valorUsoSolo),
-        crs: await formatarValorMonetario(resultadoCalc.custoResponsabilidadeSocioambiental),
-      }
-      setFormattedResult(formatted);
-
+      await formatResults(resultadoCalc);
       setErros([]);
     } catch (error) {
       setErros([`Erro no cálculo: ${error instanceof Error ? error.message : 'Erro desconhecido'}`]);
       setResultado(null);
     }
-  }, [inputs]);
+  }, [inputs, formatResults]);
 
   useEffect(() => {
     if (!carregando) {
@@ -93,7 +96,7 @@ export function UCSCalculator() {
       <Input
         id={id}
         type="number"
-        value={String(inputs[id] ?? '')}
+        value={inputs[id] ?? ''}
         onChange={(e) => handleInputChange(id, e.target.value)}
         className="text-right"
         placeholder="0.00"
