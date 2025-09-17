@@ -443,3 +443,5 @@ const defaultParameters: Omit<FormulaParameters, 'isConfigured'> = {
     pib_por_hectare: 0,
     area_total: 0,
 };
+
+    
