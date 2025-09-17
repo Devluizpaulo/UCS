@@ -62,22 +62,9 @@ export function MainLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { toast } = useToast();
-  const [user, setUser] = useState<{ displayName: string, email: string } | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const checkAuth = () => {
-      const token = document.cookie.split('; ').find(row => row.startsWith('auth-token='));
-      if (token) {
-        // Mock user data since we are in a mock environment
-        setUser({ displayName: 'Admin', email: 'admin@example.com' });
-      } else if (pathname !== '/login') {
-        router.replace('/login');
-      }
-      setLoading(false);
-    };
-    checkAuth();
-  }, [pathname, router]);
+  // Mock user data for display purposes
+  const [user, setUser] = useState<{ displayName: string, email: string }>({ displayName: 'Admin', email: 'admin@example.com' });
+  const [loading, setLoading] = useState(false); // No longer checking auth here
 
   const toggleTheme = () => {
     const html = document.documentElement;
@@ -110,10 +97,6 @@ export function MainLayout({ children }: { children: ReactNode }) {
             <Loader2 className="h-10 w-10 animate-spin text-primary" />
         </div>
     );
-  }
-
-  if (!user && pathname !== '/login') {
-      return null;
   }
   
   return (
