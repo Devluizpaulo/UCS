@@ -42,6 +42,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose, selectedD
     const [historicalData, setHistoricalData] = useState<FirestoreQuote[]>([]);
     const [chartData, setChartData] = useState<ChartData[]>([]);
     const [loading, setLoading] = useState(true);
+    const [formattedPrice, setFormattedPrice] = useState('');
 
     const getDetails = useCallback(async (currentAsset: CommodityPriceData, forDate?: string) => {
         setLoading(true);
@@ -50,7 +51,8 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose, selectedD
 
         try {
             const history = await getCotacoesHistorico(currentAsset.name, 30, forDate);
-
+            const formatted = await formatCurrency(asset.price, asset.currency);
+            setFormattedPrice(formatted);
             // Sort by the 'data' field, most recent first for the table
             const sortedHistory = [...history].sort((a, b) => {
                 const aTime = a.data ? parseDateString(a.data).getTime() : 0;
@@ -72,7 +74,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose, selectedD
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [asset.price, asset.currency]);
 
     useEffect(() => {
         if (isOpen) {
@@ -104,7 +106,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose, selectedD
                 
                 <div className="px-6 pb-4 border-b">
                      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-                        <span className="text-3xl sm:text-4xl font-bold text-primary">{formatCurrency(asset.price, asset.currency)}</span>
+                        <span className="text-3xl sm:text-4xl font-bold text-primary">{formattedPrice}</span>
                         <div className={cn("flex items-baseline gap-2 text-base sm:text-lg font-semibold", asset.absoluteChange >= 0 ? "text-primary" : "text-destructive")}>
                             <span>{asset.absoluteChange >= 0 ? '+' : ''}{asset.absoluteChange.toFixed(4)}</span>
                             <span>({asset.change >= 0 ? '+' : ''}{asset.change.toFixed(2)}%)</span>
@@ -168,7 +170,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose, selectedD
                                                         cursor={{ stroke: 'hsl(var(--primary))', strokeWidth: 1, strokeDasharray: '3 3' }} 
                                                         content={<ChartTooltipContent 
                                                             indicator="dot" 
-                                                            formatter={(value) => [formatCurrency(Number(value), asset.currency), 'Cotação']} 
+                                                            formatter={async (value) => [await formatCurrency(Number(value), asset.currency), 'Cotação']} 
                                                             labelFormatter={(label) => `Data: ${label}`}
                                                         />} 
                                                     />
@@ -212,9 +214,9 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose, selectedD
                                                 historicalData.map((dataPoint) => (
                                                     <TableRow key={dataPoint.id}>
                                                         <TableCell className="font-medium">{dataPoint.data}</TableCell>
-                                                        <TableCell className="text-right font-mono text-primary">{formatCurrency(dataPoint.ultimo, asset.currency)}</TableCell>
-                                                        <TableCell className="text-right font-mono text-green-500">{formatCurrency(dataPoint.maxima, asset.currency)}</TableCell>
-                                                        <TableCell className="text-right font-mono text-destructive">{formatCurrency(dataPoint.minima, asset.currency)}</TableCell>
+                                                        <TableCell className="text-right font-mono text-primary">{formattedPrice}</TableCell>
+                                                        <TableCell className="text-right font-mono text-green-500">{formattedPrice}</TableCell>
+                                                        <TableCell className="text-right font-mono text-destructive">{formattedPrice}</TableCell>
                                                     </TableRow>
                                                 ))
                                             ) : (

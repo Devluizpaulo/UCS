@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -11,15 +12,14 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import type { UcsData } from '@/lib/types';
 import { Separator } from './ui/separator';
 import { ScrollArea } from './ui/scroll-area';
+import { formatCurrency } from '@/lib/currency-service';
+import { useEffect, useState } from 'react';
 
 interface IndexCompositionModalProps {
   data: UcsData;
   isOpen: boolean;
   onClose: () => void;
 }
-
-const formatCurrency = (value: number) =>
-  `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 const formatPercentage = (value: number, total: number) =>
     `${total > 0 ? ((value / total) * 100).toFixed(2) : '0.00'}%`;
@@ -35,12 +35,20 @@ const COLORS = {
 };
 
 const CustomTooltip = ({ active, payload }: any) => {
+    const [formattedValue, setFormattedValue] = useState('');
+    
+    useEffect(() => {
+        if (active && payload && payload.length) {
+            formatCurrency(payload[0].value, 'BRL').then(setFormattedValue);
+        }
+    }, [active, payload]);
+
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
         <div className="rounded-lg border bg-background p-2 text-sm shadow-sm">
           <p className="font-bold">{`${data.name}`}</p>
-          <p className="text-muted-foreground">{`${formatCurrency(data.value)} (${data.percent})`}</p>
+          <p className="text-muted-foreground">{`${formattedValue} (${data.percent})`}</p>
         </div>
       );
     }
@@ -51,6 +59,18 @@ const CustomTooltip = ({ active, payload }: any) => {
 export function IndexCompositionModal({ data, isOpen, onClose }: IndexCompositionModalProps) {
     const { indexValue, components, vusDetails } = data;
     const totalPdm = components.vm + components.vus + components.crs;
+    const [formattedIndex, setFormattedIndex] = useState('');
+    const [formattedPdm, setFormattedPdm] = useState('');
+
+    useEffect(() => {
+      async function formatData() {
+        if (data) {
+          setFormattedIndex(await formatCurrency(indexValue, 'BRL'));
+          setFormattedPdm(await formatCurrency(totalPdm, 'BRL'));
+        }
+      }
+      formatData();
+    }, [data, indexValue, totalPdm]);
 
     const ucsCompositionData = [
         { name: 'Valor da Madeira (VMAD)', value: components.vm, percent: formatPercentage(components.vm, totalPdm), fill: COLORS.VM },
@@ -64,6 +84,16 @@ export function IndexCompositionModal({ data, isOpen, onClose }: IndexCompositio
         { name: 'Milho', value: vusDetails.milho, percent: formatPercentage(vusDetails.milho, vusTotal), fill: COLORS.Milho },
         { name: 'Soja', value: vusDetails.soja, percent: formatPercentage(vusDetails.soja, vusTotal), fill: COLORS.Soja },
     ];
+
+    const FormattedItem = ({label, value}: {label: string, value: number}) => {
+        const [formatted, setFormatted] = useState('');
+        useEffect(() => {
+            formatCurrency(value, 'BRL').then(setFormatted);
+        }, [value]);
+        return (
+            <p className="font-medium">{formatted}</p>
+        )
+    }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -80,7 +110,7 @@ export function IndexCompositionModal({ data, isOpen, onClose }: IndexCompositio
                 <div className="flex flex-col space-y-6">
                     <div>
                         <h3 className="text-sm font-medium text-muted-foreground">Valor Final do Índice UCS</h3>
-                        <p className="text-3xl font-bold text-primary">{formatCurrency(indexValue)}</p>
+                        <p className="text-3xl font-bold text-primary">{formattedIndex}</p>
                     </div>
                     <Separator />
                     <div className="space-y-4">
@@ -92,7 +122,7 @@ export function IndexCompositionModal({ data, isOpen, onClose }: IndexCompositio
                                     <span>{item.name}</span>
                                 </div>
                                 <div className="text-right">
-                                    <p className="font-medium">{formatCurrency(item.value)}</p>
+                                    <FormattedItem label={item.name} value={item.value} />
                                     <p className="text-xs text-muted-foreground">{item.percent}</p>
                                 </div>
                             </div>
@@ -108,7 +138,7 @@ export function IndexCompositionModal({ data, isOpen, onClose }: IndexCompositio
                                     <span>{item.name}</span>
                                 </div>
                                 <div className="text-right">
-                                    <p className="font-medium">{formatCurrency(item.value)}</p>
+                                     <FormattedItem label={item.name} value={item.value} />
                                     <p className="text-xs text-muted-foreground">{item.percent}</p>
                                 </div>
                             </div>

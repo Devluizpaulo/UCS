@@ -21,8 +21,6 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/lib/firebase-config';
 
 const loginSchema = z.object({
   email: z.string().email('Por favor, insira um e-mail válido.'),
@@ -54,84 +52,31 @@ export default function LoginPage() {
     resolver: zodResolver(adminSchema),
   });
 
+  // MOCK LOGIN: Redirects directly to the dashboard
   const onLoginSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
-    try {
-      const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
-      const idToken = await userCredential.user.getIdToken();
+    toast({
+      title: 'Login Simulado',
+      description: 'Redirecionando para o painel...',
+    });
 
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: idToken }),
-      });
-
-      if (!response.ok) {
-        const result = await response.json();
-        throw new Error(result.error || 'Erro no login');
-      }
-      
-      const { user } = await response.json();
-
-      toast({
-        title: 'Login bem-sucedido',
-        description: 'Carregando painel...',
-      });
-      
-      // O redirecionamento agora é responsabilidade do main-layout,
-      // mas fazemos um push inicial para o painel.
-      router.push('/');
-
-
-    } catch (error: any) {
-      console.error('Login failed:', error);
-      let description = 'Ocorreu um erro. Por favor, tente novamente.';
-      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-          description = 'Email ou senha incorretos.';
-      } else if (error.message.includes('Conta desativada')) {
-          description = error.message;
-      }
-      
-      toast({
-        variant: 'destructive',
-        title: 'Falha no Login',
-        description,
-      });
-    } finally {
-        setIsLoading(false);
-    }
+    // Simulate a network request
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    router.push('/');
+    
+    setIsLoading(false);
   };
 
   const onAdminSubmit = async (data: AdminFormData) => {
     setIsCreatingAdmin(true);
-    try {
-      const response = await fetch('/api/users', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...data, role: 'admin' }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Falha ao criar administrador');
-      }
-
-      toast({
-        title: 'Administrador criado!',
-        description: 'Faça login com suas novas credenciais.',
-      });
-      setIsModalOpen(false);
-      adminForm.reset();
-      loginForm.setValue('email', data.email);
-    } catch (error: any) {
-      toast({
+    toast({
+        title: 'Função Desativada',
+        description: 'A criação de administrador está temporariamente desativada no modo de login mockado.',
         variant: 'destructive',
-        title: 'Erro ao Criar Conta',
-        description: error.message || 'Não foi possível criar a conta. Pode ser que um administrador já exista.',
-      });
-    } finally {
-      setIsCreatingAdmin(false);
-    }
+    });
+    setIsCreatingAdmin(false);
+    setIsModalOpen(false);
   };
 
   return (
@@ -182,6 +127,7 @@ export default function LoginPage() {
                     {...loginForm.register('email')}
                     className="bg-background/90 border-border/50 focus:border-green-500 transition-colors h-11"
                     disabled={isLoading}
+                    defaultValue="debug@user.com"
                   />
                   {loginForm.formState.errors.email && <p className="text-xs text-destructive">{loginForm.formState.errors.email.message}</p>}
                 </div>
@@ -203,6 +149,7 @@ export default function LoginPage() {
                     {...loginForm.register('password')} 
                     className="bg-background/90 border-border/50 focus:border-green-500 transition-colors h-11"
                     disabled={isLoading}
+                    defaultValue="password"
                   />
                   {loginForm.formState.errors.password && <p className="text-xs text-destructive">{loginForm.formState.errors.password.message}</p>}
                 </div>

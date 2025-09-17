@@ -25,6 +25,8 @@ export function UCSCalculator() {
   const [resultado, setResultado] = useState<UCSCalculationResult | null>(null);
   const [erros, setErros] = useState<string[]>([]);
   const [carregando, setCarregando] = useState(true);
+  const [formattedResult, setFormattedResult] = useState<any>({});
+
 
   const carregarValoresPadrao = useCallback(async () => {
     setCarregando(true);
@@ -44,7 +46,7 @@ export function UCSCalculator() {
     carregarValoresPadrao();
   }, [carregarValoresPadrao]);
 
-  const calcular = useCallback(() => {
+  const calcular = useCallback(async () => {
     const validacao = validarInputsUCS(inputs);
     
     if (!validacao.valido) {
@@ -56,6 +58,17 @@ export function UCSCalculator() {
     try {
       const resultadoCalc = calcularUCSCompleto(inputs as UCSCalculationInputs);
       setResultado(resultadoCalc);
+      
+      const formatted = {
+        ucs: await formatarValorMonetario(resultadoCalc.unidadeCreditoSustentabilidade),
+        ivp: await formatarValorMonetario(resultadoCalc.indiceViabilidadeProjeto),
+        pdm: await formatarValorMonetario(resultadoCalc.potencialDesflorestadorMonetizado),
+        vmad: await formatarValorMonetario(resultadoCalc.valorMadeira),
+        vus: await formatarValorMonetario(resultadoCalc.valorUsoSolo),
+        crs: await formatarValorMonetario(resultadoCalc.custoResponsabilidadeSocioambiental),
+      }
+      setFormattedResult(formatted);
+
       setErros([]);
     } catch (error) {
       setErros([`Erro no cálculo: ${error instanceof Error ? error.message : 'Erro desconhecido'}`]);
@@ -116,7 +129,7 @@ export function UCSCalculator() {
         <div className="space-y-6">
             <div>
                 <Label className="text-sm text-muted-foreground">Valor Final da Unidade de Crédito</Label>
-                <p className="text-4xl font-bold text-primary">{formatarValorMonetario(resultado.unidadeCreditoSustentabilidade)}</p>
+                <p className="text-4xl font-bold text-primary">{formattedResult.ucs}</p>
                 <p className="text-xs text-muted-foreground">UCS (CF) - Crédito de Floresta</p>
             </div>
 
@@ -125,11 +138,11 @@ export function UCSCalculator() {
             <div className="grid grid-cols-2 gap-4">
                  <div>
                     <Label className="text-sm">Índice de Viabilidade (IVP)</Label>
-                    <p className="text-lg font-semibold">{formatarValorMonetario(resultado.indiceViabilidadeProjeto)}</p>
+                    <p className="text-lg font-semibold">{formattedResult.ivp}</p>
                 </div>
                 <div>
                     <Label className="text-sm">Potencial Desflorestador (PDM)</Label>
-                    <p className="text-lg font-semibold">{formatarValorMonetario(resultado.potencialDesflorestadorMonetizado)}</p>
+                    <p className="text-lg font-semibold">{formattedResult.pdm}</p>
                 </div>
             </div>
 
@@ -140,15 +153,15 @@ export function UCSCalculator() {
                 <CardContent className="space-y-3 text-sm">
                     <div className="flex justify-between items-center">
                         <span className="text-muted-foreground">Valor da Madeira (VMAD)</span>
-                        <span className="font-medium">{formatarValorMonetario(resultado.valorMadeira)}</span>
+                        <span className="font-medium">{formattedResult.vmad}</span>
                     </div>
                      <div className="flex justify-between items-center">
                         <span className="text-muted-foreground">Valor de Uso do Solo (VUS)</span>
-                        <span className="font-medium">{formatarValorMonetario(resultado.valorUsoSolo)}</span>
+                        <span className="font-medium">{formattedResult.vus}</span>
                     </div>
                      <div className="flex justify-between items-center">
                         <span className="text-muted-foreground">Custo Socioambiental (CRS)</span>
-                        <span className="font-medium">{formatarValorMonetario(resultado.custoResponsabilidadeSocioambiental)}</span>
+                        <span className="font-medium">{formattedResult.crs}</span>
                     </div>
                 </CardContent>
             </Card>
@@ -252,5 +265,3 @@ export function UCSCalculator() {
     </div>
   );
 }
-
-    

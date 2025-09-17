@@ -4,6 +4,7 @@ import { getCommodityPrices } from './data-service';
 import { getFormulaParameters } from './formula-service';
 import { calculateIndex } from './calculation-service';
 import type { CommodityPriceData, UCSCalculationInputs, UCSCalculationResult, CalculateUcsIndexOutput } from './types';
+import { formatCurrency } from './currency-service';
 
 // Re-export types for external use
 export type { UCSCalculationInputs, UCSCalculationResult } from './types';
@@ -142,15 +143,8 @@ export async function obterValoresPadrao(): Promise<Partial<UCSCalculationInputs
 /**
  * Formata valores monetários para exibição
  */
-export function formatarValorMonetario(valor: number, moeda: string = 'BRL'): string {
-  const formatters = {
-    BRL: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }),
-    USD: new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }),
-    EUR: new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' })
-  };
-  
-  const formatter = formatters[moeda as keyof typeof formatters] || formatters.BRL;
-  return formatter.format(valor);
+export async function formatarValorMonetario(valor: number, moeda: string = 'BRL'): Promise<string> {
+    return formatCurrency(valor, moeda);
 }
 
 /**

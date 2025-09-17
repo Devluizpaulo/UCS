@@ -1,15 +1,9 @@
+
 'use server';
 
 import { getCommodityPrices } from './data-service';
-import type { CommodityPriceData, ConvertedPrice } from './types';
+import type { CommodityPriceData, ConvertedPrice, CurrencyRate } from './types';
 
-// Tipos para o sistema de conversão de moedas
-export type CurrencyRate = {
-  from: string;
-  to: string;
-  rate: number;
-  lastUpdated: Date;
-};
 
 // Cache das taxas de câmbio para evitar múltiplas consultas
 let exchangeRatesCache: Map<string, CurrencyRate> = new Map();
@@ -199,7 +193,7 @@ export async function convertAllPricesToCurrency(
 /**
  * Formata um valor monetário de acordo com a moeda
  */
-export function formatCurrency(value: number, currency: string): string {
+export async function formatCurrency(value: number, currency: string): Promise<string> {
   const formatters: Record<string, Intl.NumberFormat> = {
     BRL: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }),
     USD: new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }),
@@ -213,7 +207,7 @@ export function formatCurrency(value: number, currency: string): string {
 /**
  * Limpa o cache de taxas de câmbio (útil para forçar atualização)
  */
-export function clearExchangeRateCache(): void {
+export async function clearExchangeRateCache(): Promise<void> {
   exchangeRatesCache.clear();
   cacheLastUpdate = null;
 }

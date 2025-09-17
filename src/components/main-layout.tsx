@@ -42,6 +42,7 @@ import {
   SidebarRail,
 } from '@/components/ui/sidebar';
 import { Button } from './ui/button';
+import { useToast } from '@/hooks/use-toast';
 
 
 type NavItem = {
@@ -60,6 +61,8 @@ const navItems: NavItem[] = [
 
 export function MainLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { toast } = useToast();
 
   const toggleTheme = () => {
     const html = document.documentElement;
@@ -67,14 +70,27 @@ export function MainLayout({ children }: { children: ReactNode }) {
     html.classList.toggle('light');
   };
 
+  const handleLogout = () => {
+    toast({
+      title: 'Logout Simulado',
+      description: 'Redirecionando para a página de login.',
+    });
+    router.push('/login');
+  };
+
   const getInitials = (name?: string | null) => {
-    if (!name) return 'U';
+    if (!name) return 'DB';
     const names = name.split(' ');
     if (names.length > 1) {
         return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
     }
     return name[0].toUpperCase();
-  }
+  };
+
+  const mockUser = {
+    displayName: 'Usuário Debug',
+    email: 'debug@user.com',
+  };
 
   return (
       <SidebarProvider>
@@ -148,17 +164,17 @@ export function MainLayout({ children }: { children: ReactNode }) {
                   <Avatar className="h-8 w-8">
                       <AvatarImage
                           src={undefined}
-                          alt={'Usuário'}
+                          alt={mockUser.displayName}
                           data-ai-hint="profile picture"
                       />
                       <AvatarFallback>
-                          DB
+                          {getInitials(mockUser.displayName)}
                       </AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col truncate group-data-[collapsible=icon]:hidden">
-                      <span className="truncate font-medium">Usuário Debug</span>
+                      <span className="truncate font-medium">{mockUser.displayName}</span>
                       <span className="truncate text-xs text-muted-foreground">
-                          debug@user.com
+                          {mockUser.email}
                       </span>
                   </div>
                 </Button>
@@ -187,7 +203,7 @@ export function MainLayout({ children }: { children: ReactNode }) {
                   <span>Alternar Tema</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Sair</span>
                 </DropdownMenuItem>

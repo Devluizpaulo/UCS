@@ -20,6 +20,7 @@ import { IndexCompositionModal } from './index-composition-modal';
 import type { ChartData, UcsData } from '@/lib/types';
 import { getUcsIndexValue, getUcsIndexHistory } from '@/lib/data-service'; // Keep for refresh
 import { Skeleton } from './ui/skeleton';
+import { formatCurrency } from '@/lib/currency-service';
 
 interface UCSIndexDisplayProps {
   className?: string;
@@ -37,31 +38,39 @@ export function UCSIndexDisplay({ className, initialData, chartData: initialChar
   const [chartData, setChartData] = useState<ChartData[]>(initialChartData);
   const [showChart, setShowChart] = useState(false);
   const [isCompositionModalOpen, setIsCompositionModalOpen] = useState(false);
+  const [formattedIndex, setFormattedIndex] = useState('');
+  const [formattedVm, setFormattedVm] = useState('');
+  const [formattedVus, setFormattedVus] = useState('');
+  const [formattedCrs, setFormattedCrs] = useState('');
 
   useEffect(() => {
-    setUcsData(initialData);
-    setChartData(initialChartData);
-    setLoading(initialLoading);
+    async function formatInitialData() {
+        setUcsData(initialData);
+        setChartData(initialChartData);
+        setLoading(initialLoading);
 
-    if (!initialLoading && initialData) {
-      if (!initialData.isConfigured) {
-          setError('Parâmetros da fórmula não configurados. Configure em Configurações.');
-      }
-      setLastUpdate(new Date());
+        if (!initialLoading && initialData) {
+          if (!initialData.isConfigured) {
+              setError('Parâmetros da fórmula não configurados. Configure em Configurações.');
+          }
+          setLastUpdate(new Date());
 
-       if (initialChartData.length > 1) {
-          const current = initialChartData[initialChartData.length - 1].value;
-          const prev = initialChartData[initialChartData.length - 2].value;
-          if (current > prev) setTrend('up');
-          else if (current < prev) setTrend('down');
-          else setTrend('stable');
-      }
+           if (initialChartData.length > 1) {
+              const current = initialChartData[initialChartData.length - 1].value;
+              const prev = initialChartData[initialChartData.length - 2].value;
+              if (current > prev) setTrend('up');
+              else if (current < prev) setTrend('down');
+              else setTrend('stable');
+          }
+           setFormattedIndex(await formatCurrency(initialData.indexValue, 'BRL'));
+           setFormattedVm(await formatCurrency(initialData.components.vm, 'BRL'));
+           setFormattedVus(await formatCurrency(initialData.components.vus, 'BRL'));
+           setFormattedCrs(await formatCurrency(initialData.components.crs, 'BRL'));
+        }
     }
+    formatInitialData();
   }, [initialData, initialChartData, initialLoading]);
 
-
-  const formatCurrency = (value: number) =>
-    `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   const handleRefresh = async () => {
     setLoading(true);
@@ -75,6 +84,11 @@ export function UCSIndexDisplay({ className, initialData, chartData: initialChar
       setUcsData(latestData);
       setChartData(history);
       setLastUpdate(new Date());
+
+       setFormattedIndex(await formatCurrency(latestData.indexValue, 'BRL'));
+       setFormattedVm(await formatCurrency(latestData.components.vm, 'BRL'));
+       setFormattedVus(await formatCurrency(latestData.components.vus, 'BRL'));
+       setFormattedCrs(await formatCurrency(latestData.components.crs, 'BRL'));
 
       if (history.length > 1) {
           const current = history[history.length - 1].value;
@@ -171,7 +185,7 @@ export function UCSIndexDisplay({ className, initialData, chartData: initialChar
                 <div className="flex items-baseline justify-between">
                   <div>
                     <div className="text-3xl font-bold text-primary">
-                      {formatCurrency(ucsData.indexValue)}
+                      {formattedIndex}
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
                       Valor atual do índice
@@ -187,15 +201,15 @@ export function UCSIndexDisplay({ className, initialData, chartData: initialChar
                 
                 <div className="grid grid-cols-3 gap-4 text-center">
                     <div>
-                        <p className="text-lg font-semibold">{formatCurrency(ucsData.components.vm)}</p>
+                        <p className="text-lg font-semibold">{formattedVm}</p>
                         <p className="text-xs text-muted-foreground">VMAD</p>
                     </div>
                     <div>
-                        <p className="text-lg font-semibold">{formatCurrency(ucsData.components.vus)}</p>
+                        <p className="text-lg font-semibold">{formattedVus}</p>
                         <p className="text-xs text-muted-foreground">VUS</p>
                     </div>
                     <div>
-                        <p className="text-lg font-semibold">{formatCurrency(ucsData.components.crs)}</p>
+                        <p className="text-lg font-semibold">{formattedCrs}</p>
                         <p className="text-xs text-muted-foreground">CRS</p>
                     </div>
                 </div>
