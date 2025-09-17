@@ -140,7 +140,7 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
 
         const result = await Promise.all(pricePromises);
         
-        await setCache(cacheKey, result, CACHE_TTL_COMMODITY_PRICES);
+        await setCache(cacheKey, result);
         return result;
 
     } catch (error) {
@@ -227,7 +227,7 @@ export async function getUcsIndexValue(): Promise<UcsData> {
 
     if (!snapshot.empty) {
         const data = snapshot.docs[0].data() as UcsData;
-        await setCache(cacheKey, data, CACHE_TTL_COMMODITY_PRICES);
+        await setCache(cacheKey, data);
         return data;
     }
 
@@ -243,7 +243,7 @@ export async function getUcsIndexValue(): Promise<UcsData> {
         };
     }
     const result = calculateIndex(prices, params);
-    await setCache(cacheKey, result, CACHE_TTL_COMMODITY_PRICES);
+    await setCache(cacheKey, result);
     return result;
 
   } catch (error) {
@@ -293,7 +293,7 @@ export async function getUcsIndexHistory(interval: HistoryInterval = '1d'): Prom
         console.error(`[DataService] Failed to get index history. Error: ${error}`);
     }
     const result = history.reverse();
-    await setCache(cacheKey, result, CACHE_TTL_INDEX_HISTORY);
+    await setCache(cacheKey, result);
     return result;
 }
 

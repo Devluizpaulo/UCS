@@ -6,26 +6,37 @@ import { PageHeader } from '@/components/page-header';
 import { UCSIndexDisplay } from '@/components/ucs-index-display';
 import { CommodityPrices } from '@/components/commodity-prices';
 import { IndexHistoryCard } from '@/components/index-history-card';
-import type { CommodityPriceData } from '@/lib/types';
-import { getCommodityPrices } from '@/lib/data-service';
+import type { CommodityPriceData, ChartData, UcsData } from '@/lib/types';
+import { getCommodityPrices, getUcsIndexValue, getUcsIndexHistory } from '@/lib/data-service';
 
 export function DashboardPage() {
   const [allCommodities, setAllCommodities] = useState<CommodityPriceData[]>([]);
+  const [ucsData, setUcsData] = useState<UcsData | null>(null);
+  const [historyData, setHistoryData] = useState<ChartData[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchPrices = async () => {
+    const fetchDashboardData = async () => {
       setLoading(true);
       try {
-        const data = await getCommodityPrices();
-        setAllCommodities(data);
+        // Use Promise.all to fetch all data in parallel
+        const [commodities, ucsValue, history] = await Promise.all([
+          getCommodityPrices(),
+          getUcsIndexValue(),
+          getUcsIndexHistory('1d'),
+        ]);
+        
+        setAllCommodities(commodities);
+        setUcsData(ucsValue);
+        setHistoryData(history);
+
       } catch (error) {
-        console.error('Failed to fetch commodity prices:', error);
+        console.error('Failed to fetch dashboard data:', error);
       } finally {
         setLoading(false);
       }
     };
-    fetchPrices();
+    fetchDashboardData();
   }, []);
 
   return (
@@ -33,12 +44,15 @@ export function DashboardPage() {
       <PageHeader title="Painel" />
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
         <div className="w-full">
-          <UCSIndexDisplay />
+          {/* Pass fetched data as props, removing the component's internal fetching logic */}
+          <UCSIndexDisplay initialData={ucsData} chartData={historyData} loading={loading} />
         </div>
         
         <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-2">
+           {/* Pass fetched data as props */}
            <CommodityPrices data={allCommodities} loading={loading} />
-           <IndexHistoryCard />
+           {/* Pass fetched data as props */}
+           <IndexHistoryCard initialData={historyData} isConfigured={ucsData?.isConfigured ?? false} loading={loading} />
         </div>
       </main>
     </div>

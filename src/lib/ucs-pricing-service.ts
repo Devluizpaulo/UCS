@@ -77,6 +77,9 @@ export function calcularUCSCompleto(inputs: UCSCalculationInputs): UCSCalculatio
 
   // A conversão de moeda e saca/tonelada é tratada no calculation-service
   const result: CalculateUcsIndexOutput = calculateIndex(commodities, inputs);
+  
+  const vusBreakdown = calcularVUS(inputs);
+  const crsBreakdown = calcularCRS(inputs);
 
   return {
     valorMadeira: result.components.vm,
@@ -87,10 +90,14 @@ export function calcularUCSCompleto(inputs: UCSCalculationInputs): UCSCalculatio
     unidadeCreditoSustentabilidade: result.indexValue,
     detalhes: {
       vm: { fm3: inputs.produtividade_madeira, pm3mad: inputs.pm3mad },
-      vus: result.vusDetails,
+      vus: {
+          vboi: vusBreakdown.vboi,
+          vmilho: vusBreakdown.vmilho,
+          vsoja: vusBreakdown.vsoja,
+      },
       crs: {
-        cc: calcularCRS(inputs).cc,
-        ch2o: calcularCRS(inputs).ch2o,
+        cc: crsBreakdown.cc,
+        ch2o: crsBreakdown.ch2o,
       },
       ce: { carbonoEstocadoTotal: inputs.produtividade_carbono * inputs.area_total }
     }

@@ -80,7 +80,7 @@ export function UCSCalculator() {
       <Input
         id={id}
         type="number"
-        value={inputs[id] || ''}
+        value={String(inputs[id] ?? '')}
         onChange={(e) => handleInputChange(id, e.target.value)}
         className="text-right"
         placeholder="0.00"

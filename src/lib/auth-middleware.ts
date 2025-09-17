@@ -1,18 +1,16 @@
 
 'use server';
 
-import { jwtVerify } from 'jose';
+import { jwtVerify, JWTPayload as JoseJWTPayload } from 'jose';
 import type { NextRequest } from 'next/server';
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'your-secret-key-change-in-production');
 
-interface JWTPayload {
+interface JWTPayload extends JoseJWTPayload {
   uid: string;
   email: string;
   role: string;
   isFirstLogin?: boolean;
-  iat: number;
-  exp: number;
 }
 
 /**

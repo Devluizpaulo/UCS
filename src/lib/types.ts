@@ -23,6 +23,14 @@ export type CommodityMap = {
   [key: string]: InitialCommodityConfig;
 };
 
+// Tipos para o sistema de conversão de moedas
+export type CurrencyRate = {
+  from: string;
+  to: string;
+  rate: number;
+  lastUpdated: Date;
+};
+
 export type ConvertedPrice = {
   originalPrice: number;
   originalCurrency: string;

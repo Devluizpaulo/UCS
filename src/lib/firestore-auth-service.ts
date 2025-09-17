@@ -172,7 +172,7 @@ export async function toggleFirestoreUserStatus(userId: string, isActive: boolea
 export async function getFirestoreUserById(userId: string): Promise<any | null> {
   const userDoc = await db.collection('users').doc(userId).get();
   if (!userDoc.exists) return null;
-  const { passwordHash, ...userData } = userDoc.data() as FirestoreUser;
+  const { passwordHash, id, ...userData } = userDoc.data() as FirestoreUser;
   return { id: userDoc.id, ...userData };
 }
 
@@ -207,7 +207,7 @@ export async function updateFirestoreUser(userId: string, data: {
     await userDocRef.update(updateData);
     
     const updatedDoc = await userDocRef.get();
-    const { passwordHash, ...userData } = updatedDoc.data() as FirestoreUser;
+    const { passwordHash, id, ...userData } = updatedDoc.data() as FirestoreUser;
     return { id: updatedDoc.id, ...userData };
 }
 
