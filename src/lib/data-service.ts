@@ -213,8 +213,8 @@ export async function getUcsIndexValue(): Promise<UcsData> {
     const snapshot = await query.get();
 
     if (!snapshot.empty) {
-        const data = snapshot.docs[0].data() as UcsData;
-        return data;
+        const data = snapshot.docs[0].data();
+        return serializeFirestoreTimestamp(data) as UcsData;
     }
 
     // If history is empty, calculate on the fly
