@@ -31,6 +31,9 @@ interface AssetDetailModalProps {
 
 // Helper to parse DD/MM/YYYY string to Date object
 const parseDateString = (dateStr: string): Date => {
+    if (!/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
+        return new Date(dateStr); // Fallback for ISO strings or other formats
+    }
     const [day, month, year] = dateStr.split('/').map(Number);
     // Month is 0-indexed in JavaScript Dates
     return new Date(year, month - 1, day);
@@ -49,21 +52,15 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
         setChartData([]);
 
         try {
-            // Use the asset's ID to fetch historical data
             const history = await getCotacoesHistorico(currentAsset.id, 30);
             const formatted = formatCurrency(asset.price, asset.currency);
             setFormattedPrice(formatted);
             
-            // Sort by the 'created_at' field, most recent first for the table
-            const sortedHistory = [...history].sort((a, b) => {
-                const aTime = a.created_at ? new Date(a.created_at).getTime() : 0;
-                const bTime = b.created_at ? new Date(b.created_at).getTime() : 0;
-                return bTime - aTime;
-            });
-            setHistoricalData(sortedHistory);
+            // The data is already sorted by the service, so we can use it directly
+            setHistoricalData(history);
 
             // For the chart, we need the oldest first, so we reverse the sorted array
-            const chartPoints = [...sortedHistory].reverse().map((d: FirestoreQuote) => ({
+            const chartPoints = [...history].reverse().map((d: FirestoreQuote) => ({
                 time: d.data || new Date(d.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
                 value: d.ultimo
             }));

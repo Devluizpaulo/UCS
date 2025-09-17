@@ -46,20 +46,45 @@ function getCollectionNameFromAssetId(assetId: string): string {
     return normalizedId.replace(/_futuros$/, '').replace(/__/g, '_');
 }
 
+// Helper to parse DD/MM/YYYY string to Date object
+const parseDateString = (dateStr: string): Date => {
+    if (!/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
+        // Fallback for unexpected formats or invalid strings
+        return new Date(1970, 0, 1);
+    }
+    const [day, month, year] = dateStr.split('/').map(Number);
+    // Month is 0-indexed in JavaScript Dates
+    return new Date(year, month - 1, day);
+};
 
 async function getAssetData(assetId: string, limit: number = 1): Promise<FirestoreQuote[]> {
     if (!assetId) return [];
-    // Use the definitive mapping function to get the correct collection name.
+    
     const collectionName = getCollectionNameFromAssetId(assetId);
     
     try {
-        const query = db.collection(collectionName).orderBy('created_at', 'desc').limit(limit);
+        // Fetch more documents than needed to ensure we have enough data for correct sorting
+        const queryLimit = Math.max(limit, 100); 
+        const query = db.collection(collectionName).orderBy('created_at', 'desc').limit(queryLimit);
         const snapshot = await query.get();
+        
         if (snapshot.empty) return [];
-        return snapshot.docs.map(doc => ({
+
+        const allDocs = snapshot.docs.map(doc => ({
             id: doc.id,
             ...serializeFirestoreTimestamp(doc.data())
         } as FirestoreQuote));
+
+        // Sort in memory to handle date strings correctly
+        const sortedDocs = allDocs.sort((a, b) => {
+            const dateA = a.data ? parseDateString(a.data).getTime() : new Date(a.created_at).getTime();
+            const dateB = b.data ? parseDateString(b.data).getTime() : new Date(b.created_at).getTime();
+            return dateB - dateA; // Sort descending (most recent first)
+        });
+
+        // Return the requested number of documents after sorting
+        return sortedDocs.slice(0, limit);
+
     } catch (error) {
         console.error(`Error fetching data for asset ID ${assetId} (collection: ${collectionName}):`, error);
         return [];
@@ -72,14 +97,13 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
         if (!commodities || commodities.length === 0) return [];
 
         const pricePromises = commodities.map(async (commodity) => {
-            // Pass the commodity.id, not the ticker, to getAssetData
             const assetHistory = await getAssetData(commodity.id, 2);
             let currentPrice = 0, change = 0, absoluteChange = 0, lastUpdated = 'N/A';
 
             if (assetHistory.length > 0) {
                 const latest = assetHistory[0];
                 currentPrice = latest.ultimo > 0 ? latest.ultimo : latest.abertura || 0;
-                lastUpdated = latest.created_at ? new Date(latest.created_at).toLocaleString('pt-BR') : 'N/A';
+                lastUpdated = latest.data ? latest.data : (latest.created_at ? new Date(latest.created_at).toLocaleString('pt-BR') : 'N/A');
                 
                 if (assetHistory.length > 1) {
                     const previous = assetHistory[1];

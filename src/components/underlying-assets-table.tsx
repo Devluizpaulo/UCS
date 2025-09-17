@@ -90,7 +90,7 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
                   </div>
                   <div>
                     <div className="font-medium">{asset.name}</div>
-                    <div className="text-xs text-muted-foreground">Fonte: {asset.source || 'n/a'}</div>
+                    <div className="text-xs text-muted-foreground">{asset.lastUpdated}</div>
                   </div>
                 </div>
               </TableCell>
