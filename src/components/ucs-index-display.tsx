@@ -18,17 +18,15 @@ import {
   BarChart3
 } from 'lucide-react';
 import { IndexCompositionModal } from './index-composition-modal';
-import { getFormulaParameters } from '@/lib/formula-service';
 import type { ChartData, UcsData } from '@/lib/types';
 import { getUcsIndexValue, getUcsIndexHistory } from '@/lib/data-service';
 import { Skeleton } from './ui/skeleton';
 
 interface UCSIndexDisplayProps {
   className?: string;
-  selectedDate?: string; // YYYY-MM-DD
 }
 
-export function UCSIndexDisplay({ className, selectedDate }: UCSIndexDisplayProps) {
+export function UCSIndexDisplay({ className }: UCSIndexDisplayProps) {
   const [ucsData, setUcsData] = useState<UcsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -41,14 +39,13 @@ export function UCSIndexDisplay({ className, selectedDate }: UCSIndexDisplayProp
   const formatCurrency = (value: number) =>
     `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-  const calculateUCSIndex = useCallback(async (date?: string) => {
+  const calculateUCSIndex = useCallback(async () => {
     setLoading(true);
     setError(null);
     
     try {
       // The API route now handles the calculation and saving.
-      const url = date ? `/api/ucs-index?date=${date}` : '/api/ucs-index';
-      const response = await fetch(url);
+      const response = await fetch('/api/ucs-index');
       if (!response.ok) {
         throw new Error('Failed to fetch UCS Index data from API');
       }
@@ -81,14 +78,14 @@ export function UCSIndexDisplay({ className, selectedDate }: UCSIndexDisplayProp
   }, []);
 
   useEffect(() => {
-    calculateUCSIndex(selectedDate);
-  }, [selectedDate, calculateUCSIndex]);
+    calculateUCSIndex();
+  }, [calculateUCSIndex]);
 
   const getTrendIcon = () => {
     switch (trend) {
-      case 'up': return <TrendingUp className="h-4 w-4 text-green-600" />;
-      case 'down': return <TrendingDown className="h-4 w-4 text-red-600" />;
-      default: return <Minus className="h-4 w-4 text-gray-500" />;
+      case 'up': return <TrendingUp className="h-4 w-4 text-primary" />;
+      case 'down': return <TrendingDown className="h-4 w-4 text-destructive" />;
+      default: return <Minus className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
@@ -121,32 +118,24 @@ export function UCSIndexDisplay({ className, selectedDate }: UCSIndexDisplayProp
 
   return (
     <>
-      <Card className={className}>
+      <Card className={cn("shadow-sm", className)}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <div className="flex items-center gap-3">
-            <img 
-              src="/image/ucs.png" 
-              alt="UCS Coin" 
-              className="w-12 h-12"
-            />
-            <div>
-              <CardTitle className="text-sm font-medium">Índice UCS</CardTitle>
-              <CardDescription>Unidade de Crédito de Sustentabilidade</CardDescription>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
+          <CardTitle className="text-sm font-medium">Índice UCS (Unidade de Crédito de Sustentabilidade)</CardTitle>
+          <div className="flex items-center gap-1">
             {getTrendIcon()}
             <Button
               variant="ghost"
-              size="sm"
+              size="icon"
+              className="h-8 w-8"
               onClick={() => setShowChart(!showChart)}
             >
               <BarChart3 className="h-4 w-4" />
             </Button>
             <Button
               variant="ghost"
-              size="sm"
-              onClick={() => calculateUCSIndex(selectedDate)}
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => calculateUCSIndex()}
               disabled={loading}
             >
               <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
@@ -166,11 +155,11 @@ export function UCSIndexDisplay({ className, selectedDate }: UCSIndexDisplayProp
               <div className="space-y-4">
                 <div className="flex items-baseline justify-between">
                   <div>
-                    <div className="text-3xl font-bold text-green-600 bg-green-50 px-4 py-2 rounded-lg border border-green-200">
+                    <div className="text-3xl font-bold text-primary">
                       {formatCurrency(ucsData.indexValue)}
                     </div>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Moeda UCS
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Valor atual do índice
                     </p>
                   </div>
                   <Button variant="outline" size="sm" onClick={() => setIsCompositionModalOpen(true)}>

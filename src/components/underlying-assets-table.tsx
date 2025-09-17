@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -8,15 +9,13 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-  TableCaption,
 } from '@/components/ui/table';
 import { AnimatedNumber } from '@/components/ui/animated-number';
-import { ArrowDown, ArrowUp, DollarSign, LandPlot, TreePine, Droplets } from 'lucide-react';
+import { ArrowDown, ArrowUp, DollarSign, LandPlot, TreePine, Droplets, HelpCircle } from 'lucide-react';
 import type { CommodityPriceData } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { AssetDetailModal } from './asset-detail-modal';
 import { Skeleton } from './ui/skeleton';
-import { ScrollArea } from './ui/scroll-area';
 
 
 const getIconForCategory = (category: CommodityPriceData['category']) => {
@@ -25,7 +24,7 @@ const getIconForCategory = (category: CommodityPriceData['category']) => {
         case 'vus': return LandPlot;
         case 'vmad': return TreePine;
         case 'crs': return Droplets;
-        default: return DollarSign;
+        default: return HelpCircle;
     }
 };
 
@@ -34,10 +33,9 @@ interface UnderlyingAssetsTableProps {
     loading?: boolean;
     onManualUpdate?: (assetName: string) => void;
     updatingAssets?: Set<string>;
-    selectedDate?: string;
 }
 
-export function UnderlyingAssetsTable({ data, loading, onManualUpdate, updatingAssets, selectedDate }: UnderlyingAssetsTableProps) {
+export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTableProps) {
   const [selectedAsset, setSelectedAsset] = useState<CommodityPriceData | null>(null);
 
   const handleRowClick = (asset: CommodityPriceData) => {
@@ -47,7 +45,7 @@ export function UnderlyingAssetsTable({ data, loading, onManualUpdate, updatingA
   
   const renderTableRows = () => {
     if (loading) {
-        return Array.from({length: 5}).map((_, i) => (
+        return Array.from({length: 7}).map((_, i) => (
              <TableRow key={i} className="cursor-wait">
                 <TableCell>
                     <div className="flex items-center gap-3">
@@ -74,7 +72,7 @@ export function UnderlyingAssetsTable({ data, loading, onManualUpdate, updatingA
         return (
             <TableRow>
                 <TableCell colSpan={3} className="h-24 text-center">
-                    Nenhum ativo configurado.
+                    Nenhum ativo configurado ou dados disponíveis.
                 </TableCell>
             </TableRow>
         );
@@ -84,7 +82,7 @@ export function UnderlyingAssetsTable({ data, loading, onManualUpdate, updatingA
         const Icon = getIconForCategory(asset.category);
 
         return (
-            <TableRow key={asset.name} onClick={() => handleRowClick(asset)} className="cursor-pointer hover:bg-muted/50">
+            <TableRow key={asset.id} onClick={() => handleRowClick(asset)} className="cursor-pointer hover:bg-muted/50">
               <TableCell>
                 <div className="flex items-center gap-3">
                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
@@ -97,7 +95,11 @@ export function UnderlyingAssetsTable({ data, loading, onManualUpdate, updatingA
                 </div>
               </TableCell>
               <TableCell className="text-right font-mono">
-                <AnimatedNumber value={asset.price} currency={asset.currency} />
+                 {asset.price > 0 ? (
+                    <AnimatedNumber value={asset.price} currency={asset.currency} />
+                 ) : (
+                    <span className="text-muted-foreground">R$ 0,00</span>
+                 )}
               </TableCell>
               <TableCell className="text-right">
                   <div className={cn(
@@ -119,7 +121,7 @@ export function UnderlyingAssetsTable({ data, loading, onManualUpdate, updatingA
           <TableHeader>
             <TableRow>
               <TableHead>Ativo</TableHead>
-              <TableHead className="text-right">Preço</TableHead>
+              <TableHead className="text-right">Último Preço</TableHead>
               <TableHead className="text-right">Variação (24h)</TableHead>
             </TableRow>
           </TableHeader>
@@ -133,7 +135,6 @@ export function UnderlyingAssetsTable({ data, loading, onManualUpdate, updatingA
           icon={getIconForCategory(selectedAsset.category)}
           isOpen={!!selectedAsset}
           onClose={() => setSelectedAsset(null)}
-          selectedDate={selectedDate}
         />
       )}
     </div>

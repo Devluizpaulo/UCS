@@ -10,10 +10,13 @@ import admin from 'firebase-admin';
 import { Timestamp } from 'firebase-admin/firestore';
 import { getFormulaParameters } from './formula-service';
 import { calculateIndex } from './calculation-service';
-import { getCache, setCache } from './cache-service';
+import { getCache, setCache, clearCache } from './cache-service';
 
+// --- Funções para get data from FIRESTORE ---
 
-// --- Functions to get data from FIRESTORE ---
+const CACHE_TTL_COMMODITY_PRICES = 60 * 1000; // 1 minute
+const CACHE_TTL_INDEX_HISTORY = 5 * 60 * 1000; // 5 minutes
+
 const serializeFirestoreTimestamp = (data: any): any => {
     if (data && typeof data === 'object') {
         if (data instanceof Timestamp) {
@@ -33,110 +36,78 @@ const serializeFirestoreTimestamp = (data: any): any => {
 
 
 /**
- * Busca dados de uma coleção específica por ativo
+ * Fetches the most recent asset data from Firestore.
+ * This is the core data retrieval function.
+ * @param assetName The canonical name of the asset (e.g., 'USD/BRL...').
+ * @param limit The number of recent documents to fetch.
+ * @returns A promise that resolves to an array of FirestoreQuote documents.
  */
-export async function getAssetData(assetName: string, limit: number = 10, forDate?: string): Promise<FirestoreQuote[]> {
-    const cacheKey = `assetData_${assetName}_${limit}_${forDate || 'latest'}`;
-    const cachedData = getCache<FirestoreQuote[]>(cacheKey);
-    if (cachedData) return cachedData;
-    
+export async function getAssetData(assetName: string, limit: number = 1): Promise<FirestoreQuote[]> {
+    const collectionName = ASSET_COLLECTION_MAP[assetName];
+    if (!collectionName) {
+        console.warn(`[DataService] No collection mapping for asset: ${assetName}`);
+        return [];
+    }
+
     try {
-        const collectionName = ASSET_COLLECTION_MAP[assetName];
-        if (!collectionName) {
-            console.warn(`[DataService] No collection mapping found for asset: ${assetName}`);
+        const collectionRef = db.collection(collectionName);
+        const query = collectionRef.orderBy('created_at', 'desc').limit(limit);
+        const snapshot = await query.get();
+
+        if (snapshot.empty) {
             return [];
         }
 
-        const collectionRef = db.collection(collectionName);
-        let query;
+        return snapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                ...serializeFirestoreTimestamp(data)
+            } as FirestoreQuote;
+        });
 
-        if (forDate) {
-            // Find data on or before the given date.
-            const targetDateStart = new Date(forDate);
-            targetDateStart.setUTCHours(0, 0, 0, 0);
-            
-            const targetDateEnd = new Date(forDate);
-            targetDateEnd.setUTCHours(23, 59, 59, 999);
-
-            query = collectionRef
-                .where('timestamp', '>=', Timestamp.fromDate(targetDateStart))
-                .where('timestamp', '<=', Timestamp.fromDate(targetDateEnd))
-                .orderBy('timestamp', 'desc')
-                .limit(limit);
-        } else {
-             query = collectionRef
-                .orderBy('timestamp', 'desc')
-                .limit(limit);
-        }
-            
-        const querySnapshot = await query.get();
-        let data: FirestoreQuote[] = [];
-
-        // If no data for the specific date, try to get the most recent one before it.
-        if (querySnapshot.empty && forDate) {
-            const fallbackDate = new Date(forDate);
-            fallbackDate.setUTCHours(23, 59, 59, 999);
-             const fallbackQuery = collectionRef
-                .where('timestamp', '<=', Timestamp.fromDate(fallbackDate))
-                .orderBy('timestamp', 'desc')
-                .limit(limit);
-            const fallbackSnapshot = await fallbackQuery.get();
-            fallbackSnapshot.forEach(doc => {
-                 const docData = doc.data();
-                data.push({ id: doc.id, ...serializeFirestoreTimestamp(docData) } as FirestoreQuote);
-            });
-        } else {
-            querySnapshot.forEach(doc => {
-                const docData = doc.data();
-                data.push({ id: doc.id, ...serializeFirestoreTimestamp(docData) } as FirestoreQuote);
-            });
-        }
-        
-        setCache(cacheKey, data);
-        return data;
     } catch (error) {
-        console.error(`[DataService] Error fetching data for asset ${assetName}:`, error);
+        console.error(`[DataService] Error fetching data for ${assetName} in collection ${collectionName}:`, error);
         return [];
     }
 }
 
+
 /**
- * Retrieves the prices for all configured commodities for a specific date.
- * If no date is provided, it gets the latest prices.
+ * Retrieves the latest prices for all configured commodities.
+ * It uses the 'abertura' field first, falling back to 'ultimo'.
+ * It also calculates the daily change.
+ * @returns A promise resolving to an array of CommodityPriceData.
  */
-export async function getCommodityPrices(forDate?: string): Promise<CommodityPriceData[]> {
-    const cacheKey = `commodityPrices_${forDate || 'latest'}`;
-    const cachedData = getCache<CommodityPriceData[]>(cacheKey);
+export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
+    const cacheKey = 'commodityPrices_latest';
+    const cachedData = getCache<CommodityPriceData[]>(cacheKey, CACHE_TTL_COMMODITY_PRICES);
     if (cachedData) return cachedData;
-    
+
     try {
         const commodities = await getCommodities();
-
         if (!commodities || commodities.length === 0) {
             console.warn('[DataService] No commodities configured.');
             return [];
         }
 
         const pricePromises = commodities.map(async (commodity) => {
-            const assetData = await getAssetData(commodity.name, 2, forDate);
-            
+            const assetHistory = await getAssetData(commodity.name, 2);
+
             let currentPrice = 0;
             let change = 0;
             let absoluteChange = 0;
-            let lastUpdated = forDate ? new Date(forDate).toLocaleDateString('pt-BR') : 'N/A';
+            let lastUpdated = 'N/A';
 
-            if (assetData.length > 0) {
-                const latest = assetData[0];
-                currentPrice = latest.ultimo || 0;
+            if (assetHistory.length > 0) {
+                const latest = assetHistory[0];
+                // Prioritize 'abertura', then 'ultimo'
+                currentPrice = latest.abertura > 0 ? latest.abertura : latest.ultimo || 0;
+                lastUpdated = latest.created_at ? new Date(latest.created_at).toLocaleString('pt-BR') : 'N/A';
                 
-                const ts = latest.timestamp;
-                 if (ts) {
-                    lastUpdated = new Date(ts).toLocaleString('pt-BR');
-                 }
-
-                if (assetData.length > 1) {
-                    const previous = assetData[1];
-                    const previousPrice = previous.ultimo || 0;
+                if (assetHistory.length > 1) {
+                    const previous = assetHistory[1];
+                    const previousPrice = previous.abertura > 0 ? previous.abertura : previous.ultimo || 0;
                     if (previousPrice !== 0) {
                         absoluteChange = currentPrice - previousPrice;
                         change = (absoluteChange / previousPrice) * 100;
@@ -153,13 +124,9 @@ export async function getCommodityPrices(forDate?: string): Promise<CommodityPri
             };
         });
 
-        const result = (await Promise.all(pricePromises)).sort((a, b) => {
-            if (a.category === 'exchange' && b.category !== 'exchange') return -1;
-            if (a.category !== 'exchange' && b.category === 'exchange') return 1;
-            return a.name.localeCompare(b.name);
-        });
+        const result = await Promise.all(pricePromises);
         
-        setCache(cacheKey, result);
+        setCache(cacheKey, result, CACHE_TTL_COMMODITY_PRICES);
         return result;
 
     } catch (error) {
@@ -168,9 +135,16 @@ export async function getCommodityPrices(forDate?: string): Promise<CommodityPri
     }
 }
 
-export async function getCotacoesHistorico(ativo: string, limit: number = 30, forDate?: string): Promise<FirestoreQuote[]> {
+
+/**
+ * Fetches historical quotes for a specific asset.
+ * @param ativo The canonical name of the asset.
+ * @param limit The number of historical points to fetch.
+ * @returns An array of FirestoreQuote objects.
+ */
+export async function getCotacoesHistorico(ativo: string, limit: number = 30): Promise<FirestoreQuote[]> {
     try {
-        return await getAssetData(ativo, limit, forDate);
+        return await getAssetData(ativo, limit);
     } catch (error) {
         console.error(`Erro ao buscar histórico para ${ativo}:`, error);
         return [];
@@ -179,62 +153,46 @@ export async function getCotacoesHistorico(ativo: string, limit: number = 30, fo
 
 
 /**
- * Fetches the latest calculated UCS Index value from the history collection.
- * This function ONLY reads data.
- * @param forDate - Optional date to fetch the index for.
+ * Fetches the latest calculated UCS Index value.
+ * If no value is found in history, it attempts to calculate a new one.
  * @returns The latest UcsData object or a default if not found/configured.
  */
-export async function getUcsIndexValue(forDate?: string): Promise<UcsData> {
-  const cacheKey = `ucsIndexValue_${forDate || 'latest'}`;
-  const cachedData = getCache<UcsData>(cacheKey);
+export async function getUcsIndexValue(): Promise<UcsData> {
+  const cacheKey = `ucsIndexValue_latest`;
+  const cachedData = getCache<UcsData>(cacheKey, CACHE_TTL_COMMODITY_PRICES);
   if (cachedData) return cachedData;
   
   try {
-    let query: admin.firestore.Query;
     const collectionRef = db.collection('ucs_index_history');
-
-    if (forDate) {
-      const docId = new Date(forDate).toISOString().split('T')[0];
-      const docSnap = await collectionRef.doc(docId).get();
-      if (docSnap.exists) {
-        const data = docSnap.data() as UcsData;
-        setCache(cacheKey, data);
-        return data;
-      } else {
-        query = collectionRef
-            .where('savedAt', '<=', Timestamp.fromDate(new Date(forDate)))
-            .orderBy('savedAt', 'desc')
-            .limit(1);
-      }
-    } else {
-      query = collectionRef.orderBy('savedAt', 'desc').limit(1);
-    }
-    
+    const query = collectionRef.orderBy('savedAt', 'desc').limit(1);
     const snapshot = await query.get();
 
-    if (snapshot.empty) {
-      console.warn('[DataService] No UCS index history found.');
-      const params = await getFormulaParameters();
-      const defaultData = {
-        indexValue: 0,
-        isConfigured: params.isConfigured,
-        components: { vm: 0, vus: 0, crs: 0 },
-        vusDetails: { pecuaria: 0, milho: 0, soja: 0 },
-      };
-      setCache(cacheKey, defaultData);
-      return defaultData;
+    if (!snapshot.empty) {
+        const data = snapshot.docs[0].data() as UcsData;
+        setCache(cacheKey, data, CACHE_TTL_COMMODITY_PRICES);
+        return data;
     }
 
-    const data = snapshot.docs[0].data() as UcsData;
-    setCache(cacheKey, data);
-    return data;
+    // If history is empty, calculate on the fly
+    console.warn('[DataService] No UCS index history found. Calculating a new value.');
+    const [params, prices] = await Promise.all([getFormulaParameters(), getCommodityPrices()]);
+    if (!params.isConfigured || prices.length === 0) {
+        return {
+            indexValue: 0,
+            isConfigured: false,
+            components: { vm: 0, vus: 0, crs: 0 },
+            vusDetails: { pecuaria: 0, milho: 0, soja: 0 },
+        };
+    }
+    const result = calculateIndex(prices, params);
+    setCache(cacheKey, result, CACHE_TTL_COMMODITY_PRICES);
+    return result;
 
   } catch (error) {
     console.error(`[DataService] Failed to get latest index value. Error: ${error}`);
-    const params = await getFormulaParameters();
     return {
       indexValue: 0,
-      isConfigured: params.isConfigured,
+      isConfigured: false,
       components: { vm: 0, vus: 0, crs: 0 },
       vusDetails: { pecuaria: 0, milho: 0, soja: 0 },
     };
@@ -244,13 +202,13 @@ export async function getUcsIndexValue(forDate?: string): Promise<UcsData> {
 
 /**
  * Fetches the historical data for the UCS Index chart.
- * This function ONLY reads data.
+ * This function ONLY reads data from the history collection.
  * @param interval The time interval for the history.
  * @returns An array of ChartData points.
  */
 export async function getUcsIndexHistory(interval: HistoryInterval = '1d'): Promise<ChartData[]> {
     const cacheKey = `ucsIndexHistory_${interval}`;
-    const cachedData = getCache<ChartData[]>(cacheKey);
+    const cachedData = getCache<ChartData[]>(cacheKey, CACHE_TTL_INDEX_HISTORY);
     if (cachedData) return cachedData;
     
     const history: ChartData[] = [];
@@ -265,7 +223,7 @@ export async function getUcsIndexHistory(interval: HistoryInterval = '1d'): Prom
              querySnapshot.docs.forEach(doc => {
                 const data = doc.data();
                 const timestamp = data.savedAt;
-                const date = timestamp?.toDate ? timestamp.toDate() : (timestamp ? new Date(timestamp) : new Date());
+                const date = timestamp?.toDate ? timestamp.toDate() : new Date();
                 let formattedDate = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
                 history.push({
                     time: formattedDate,
@@ -277,32 +235,34 @@ export async function getUcsIndexHistory(interval: HistoryInterval = '1d'): Prom
         console.error(`[DataService] Failed to get index history. Error: ${error}`);
     }
     const result = history.reverse();
-    setCache(cacheKey, result);
+    setCache(cacheKey, result, CACHE_TTL_INDEX_HISTORY);
     return result;
 }
 
 /**
- * Saves a batch of commodity price data to Firestore. This is meant to be called by a trusted
- * server-side process (like a Genkit flow or a dedicated API route) to populate the daily quotes.
- *
+ * Saves a batch of commodity price data to Firestore.
  * @param {Omit<FirestoreQuote, 'id' | 'timestamp'>[]} quotes - An array of quote data objects.
  * @returns {Promise<void>}
  */
-export async function saveLatestQuotes(quotes: Omit<FirestoreQuote, 'id' | 'timestamp'>[]): Promise<void> {
+export async function saveLatestQuotes(quotes: Omit<FirestoreQuote, 'id' | 'created_at'>[]): Promise<void> {
   if (!quotes || quotes.length === 0) {
     console.log('[DataService] No quote data provided to save.');
     return;
   }
   console.log(`[DataService] Starting batched write for ${quotes.length} quotes.`);
   const batch = db.batch();
-  const collectionRef = db.collection('cotacoes_do_dia');
 
   quotes.forEach((quote) => {
-    const docRef = collectionRef.doc(); // Auto-generate ID
+    const collectionName = ASSET_COLLECTION_MAP[quote.ativo];
+    if (!collectionName) {
+        console.warn(`[DataService] No collection mapping for asset to save: ${quote.ativo}`);
+        return;
+    }
+    const docRef = db.collection(collectionName).doc(); // Auto-generate ID
     
     const dataToSave = {
         ...quote,
-        timestamp: admin.firestore.FieldValue.serverTimestamp(), // Add server-side timestamp
+        created_at: admin.firestore.FieldValue.serverTimestamp(), // Add server-side timestamp
     };
 
     batch.set(docRef, dataToSave);
@@ -311,6 +271,9 @@ export async function saveLatestQuotes(quotes: Omit<FirestoreQuote, 'id' | 'time
   try {
     await batch.commit();
     console.log('[DataService] Batched quote write completed successfully.');
+    // Clear relevant caches
+    clearCache('commodityPrices_latest');
+    clearCache('ucsIndexValue_latest');
   } catch (error) {
     console.error('[DataService] Batched quote write failed:', error);
     throw new Error('Failed to save latest quotes.');

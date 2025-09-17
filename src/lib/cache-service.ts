@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -20,7 +21,7 @@ const DEFAULT_TTL = 5 * 60 * 1000; // 5 minutes
  * @param key The unique key for the cache entry.
  * @param data The data to be cached.
  */
-export function setCache<T>(key: string, data: T) {
+export async function setCache<T>(key: string, data: T) {
   const entry: CacheEntry<T> = {
     data,
     timestamp: Date.now(),
@@ -35,7 +36,7 @@ export function setCache<T>(key: string, data: T) {
  * @param ttl The maximum age of the cache entry in milliseconds.
  * @returns The cached data or null if not found or expired.
  */
-export function getCache<T>(key: string, ttl: number = DEFAULT_TTL): T | null {
+export async function getCache<T>(key: string, ttl: number = DEFAULT_TTL): Promise<T | null> {
   const entry = cache.get(key);
   if (!entry) {
     return null;
@@ -56,7 +57,7 @@ export function getCache<T>(key: string, ttl: number = DEFAULT_TTL): T | null {
  * Clears a specific entry from the cache.
  * @param key The key of the cache entry to clear.
  */
-export function clearCache(key: string) {
+export async function clearCache(key: string) {
   cache.delete(key);
   console.log(`[CacheService] Cleared cache for key: ${key}`);
 }
@@ -64,7 +65,7 @@ export function clearCache(key: string) {
 /**
  * Clears the entire cache.
  */
-export function clearAllCache() {
+export async function clearAllCache() {
   cache.clear();
   console.log('[CacheService] Cleared all cache.');
 }
