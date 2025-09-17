@@ -4,7 +4,7 @@
  * @fileOverview A pure, synchronous service for performing UCS Index calculations.
  * This file should NOT be marked with 'use server' as it contains only calculation logic
  * and is designed to be imported by server-side modules without causing build conflicts.
- * This version is refactored to perfectly match the logic from the user-provided Excel sheet.
+ * This version is refactored to perfectly match the logic from the user-provided detailed breakdown.
  */
 
 import type { FormulaParameters, CalculateUcsIndexOutput, CommodityPriceData } from './types';
@@ -53,11 +53,13 @@ export function calculateIndex(commodities: CommodityPriceData[], params: Formul
       const preco_soja_saca_usd = findPrice(commodities, 'vus', 'soja');
       const preco_carbono_eur = findPrice(commodities, 'crs', 'carbono');
       
+      // Conversões de Preço
       const preco_madeira_tora_usd = preco_madeira_serrada_usd * params.FATOR_CONVERSAO_SERRADA_TORA;
       const preco_madeira_tora_brl = preco_madeira_tora_usd * taxa_usd_brl;
 
       const preco_milho_ton_brl = (preco_milho_saca_brl / 60) * 1000;
-      const preco_soja_ton_brl = (preco_soja_saca_usd * taxa_usd_brl / 60) * 1000;
+      const preco_soja_saca_brl = preco_soja_saca_usd * taxa_usd_brl;
+      const preco_soja_ton_brl = (preco_soja_saca_brl / 60) * 1000;
       const preco_carbono_brl = preco_carbono_eur * taxa_eur_brl;
 
       // --- Rentabilidade por Hectare (R$/ha) ---
@@ -71,26 +73,26 @@ export function calculateIndex(commodities: CommodityPriceData[], params: Formul
       const VMAD = renda_madeira_ha * params.area_total;
 
       // --- 2. VUS (Valor de Uso do Solo) ---
-      const renda_bruta_ponderada_ha = 
+      const renda_bruta_ponderada_ha_vus = 
           (renda_pecuaria_ha * params.fator_pecuaria) + 
           (renda_milho_ha * params.fator_milho) + 
           (renda_soja_ha * params.fator_soja);
-      const vus_por_ha = renda_bruta_ponderada_ha * params.fator_arrendamento;
+      const vus_por_ha = renda_bruta_ponderada_ha_vus * params.fator_arrendamento;
       const VUS = vus_por_ha * params.area_total;
 
       // --- 3. CRS (Custo da Responsabilidade Socioambiental) ---
-      const tCo2_por_hectare = 2.59;
-      const valor_carbono_total = preco_carbono_brl * tCo2_por_hectare * params.area_total;
+      // 3.a Crédito de Carbono (CC)
+      const valor_carbono_total = renda_carbono_ha * params.area_total;
       
-      // According to the user's logic, a base de cálculo para a água é a soma das rentabilidades
-      const base_calculo_agua = 
+      // 3.b Custo da Água (cH2O)
+      const base_calculo_agua_ha = 
           (renda_pecuaria_ha * params.fator_pecuaria) + 
           (renda_milho_ha * params.fator_milho) + 
           (renda_soja_ha * params.fator_soja) + 
           renda_madeira_ha + 
-          (preco_carbono_brl * tCo2_por_hectare);
-
-      const valor_agua_total = (base_calculo_agua * params.fator_agua) * params.area_total;
+          renda_carbono_ha;
+          
+      const valor_agua_total = (base_calculo_agua_ha * params.fator_agua) * params.area_total;
       
       const CRS = valor_carbono_total + valor_agua_total;
       
@@ -111,10 +113,10 @@ export function calculateIndex(commodities: CommodityPriceData[], params: Formul
           return { ...defaultResult, isConfigured: true };
       }
   
-      // Detalhamento do VUS para o modal
-      const vus_pecuaria = (renda_pecuaria_ha * params.fator_pecuaria * params.fator_arrendamento) * params.area_total;
-      const vus_milho = (renda_milho_ha * params.fator_milho * params.fator_arrendamento) * params.area_total;
-      const vus_soja = (renda_soja_ha * params.fator_soja * params.fator_arrendamento) * params.area_total;
+      // Detalhamento do VUS para o modal (proporcional ao VUS total)
+      const vus_pecuaria = (renda_pecuaria_ha * params.fator_pecuaria / renda_bruta_ponderada_ha_vus) * VUS;
+      const vus_milho = (renda_milho_ha * params.fator_milho / renda_bruta_ponderada_ha_vus) * VUS;
+      const vus_soja = (renda_soja_ha * params.fator_soja / renda_bruta_ponderada_ha_vus) * VUS;
 
       return { 
           indexValue: parseFloat(ucsValue.toFixed(4)),
@@ -125,9 +127,9 @@ export function calculateIndex(commodities: CommodityPriceData[], params: Formul
               crs: parseFloat(CRS.toFixed(2)),
           },
           vusDetails: {
-              pecuaria: parseFloat(vus_pecuaria.toFixed(2)),
-              milho: parseFloat(vus_milho.toFixed(2)),
-              soja: parseFloat(vus_soja.toFixed(2)),
+              pecuaria: isFinite(vus_pecuaria) ? parseFloat(vus_pecuaria.toFixed(2)) : 0,
+              milho: isFinite(vus_milho) ? parseFloat(vus_milho.toFixed(2)) : 0,
+              soja: isFinite(vus_soja) ? parseFloat(vus_soja.toFixed(2)) : 0,
           }
       };
 }

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -41,7 +42,7 @@ import {
 } from "@/components/ui/accordion"
 
 
-// Schema simplificado para corresponder aos campos REALMENTE utilizados
+// Schema for the form fields, matching the core parameters
 const formulaSchema = z.object({
     // Produtividades
     produtividade_boi: z.coerce.number().min(0, "Valor não pode ser negativo"),
@@ -59,9 +60,8 @@ const formulaSchema = z.object({
     fator_arrendamento: z.coerce.number().min(0).max(1, "Deve ser entre 0 e 1"),
     fator_agua: z.coerce.number().min(0).max(1, "Deve ser entre 0 e 1"),
     fator_ucs: z.coerce.number().min(0, "Valor não pode ser negativo"),
-    
-    // Valores Econômicos
-    pib_por_hectare: z.coerce.number().min(0, "Valor não pode ser negativo"),
+    FATOR_CONVERSAO_SERRADA_TORA: z.coerce.number().min(0).max(1, "Deve ser entre 0 e 1"),
+    FATOR_CARBONO: z.coerce.number().min(0, "Valor não pode ser negativo"),
     
     // Área
     area_total: z.coerce.number().min(0, "Valor não pode ser negativo"),
@@ -78,7 +78,6 @@ export default function SettingsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [deletingCommodityId, setDeletingCommodityId] = useState<string | null>(null);
 
-  // Usar um tipo mais simples para o formulário
   const formulaForm = useForm<z.infer<typeof formulaSchema>>({
       resolver: zodResolver(formulaSchema),
   });
@@ -123,10 +122,10 @@ export default function SettingsPage() {
     setIsLoading(true);
     setShowFormulaAlert(false);
     try {
-      // Garantir que todos os campos do FormulaParameters estejam presentes
+      const currentParams = await getFormulaParameters();
       const fullParams: Omit<FormulaParameters, 'isConfigured'> = {
-          ...defaultParameters, // Começa com todos os padrões
-          ...data, // Sobrescreve com os dados do formulário
+          ...currentParams, // Start with all existing params
+          ...data, // Overwrite with form data
       };
       
       await saveFormulaParameters(fullParams);
@@ -209,7 +208,7 @@ export default function SettingsPage() {
 
             <Accordion type="multiple" defaultValue={['item-1']} className="w-full">
               <AccordionItem value="item-1">
-                <AccordionTrigger className="text-lg font-medium">1. Produtividades</AccordionTrigger>
+                <AccordionTrigger className="text-lg font-medium">1. Produtividades (/ha)</AccordionTrigger>
                 <AccordionContent>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pt-4">
                       <div className="space-y-2">
@@ -229,51 +228,55 @@ export default function SettingsPage() {
                           <Input id="produtividade_madeira" type="number" step="any" {...formulaForm.register('produtividade_madeira')} />
                       </div>
                        <div className="space-y-2">
-                          <Label htmlFor="produtividade_carbono">Carbono (tCO₂e/ha)</Label>
+                          <Label htmlFor="produtividade_carbono">Carbono Estocado (tCO₂e/ha)</Label>
                           <Input id="produtividade_carbono" type="number" step="any" {...formulaForm.register('produtividade_carbono')} />
                       </div>
                   </div>
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem value="item-2">
-                <AccordionTrigger className="text-lg font-medium">2. Fatores de Ponderação e Conversão</AccordionTrigger>
+                <AccordionTrigger className="text-lg font-medium">2. Fatores (%) e Multiplicadores</AccordionTrigger>
                 <AccordionContent>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pt-4">
                       <div className="space-y-2">
-                          <Label htmlFor="fator_pecuaria">Ponderação Pecuária (%)</Label>
+                          <Label htmlFor="fator_pecuaria">Ponderação Pecuária (VUS)</Label>
                           <Input id="fator_pecuaria" type="number" step="any" {...formulaForm.register('fator_pecuaria')} placeholder="Ex: 0.35 para 35%" />
                       </div>
                       <div className="space-y-2">
-                          <Label htmlFor="fator_milho">Ponderação Milho (%)</Label>
+                          <Label htmlFor="fator_milho">Ponderação Milho (VUS)</Label>
                           <Input id="fator_milho" type="number" step="any" {...formulaForm.register('fator_milho')} placeholder="Ex: 0.30 para 30%" />
                       </div>
                       <div className="space-y-2">
-                          <Label htmlFor="fator_soja">Ponderação Soja (%)</Label>
+                          <Label htmlFor="fator_soja">Ponderação Soja (VUS)</Label>
                           <Input id="fator_soja" type="number" step="any" {...formulaForm.register('fator_soja')} placeholder="Ex: 0.35 para 35%" />
                       </div>
                       <div className="space-y-2">
-                          <Label htmlFor="fator_arrendamento">Fator Arrendamento (%)</Label>
+                          <Label htmlFor="fator_arrendamento">Fator Arrendamento</Label>
                           <Input id="fator_arrendamento" type="number" step="any" {...formulaForm.register('fator_arrendamento')} placeholder="Ex: 0.048 para 4.8%" />
                       </div>
                       <div className="space-y-2">
-                          <Label htmlFor="fator_agua">Fator Conversão Água (%)</Label>
+                          <Label htmlFor="fator_agua">Custo da Água (CRS)</Label>
                           <Input id="fator_agua" type="number" step="any" {...formulaForm.register('fator_agua')} placeholder="Ex: 0.07 para 7%" />
                       </div>
+                      <div className="space-y-2">
+                          <Label htmlFor="FATOR_CONVERSAO_SERRADA_TORA">Conversão Madeira Serrada/Tora</Label>
+                          <Input id="FATOR_CONVERSAO_SERRADA_TORA" type="number" step="any" {...formulaForm.register('FATOR_CONVERSAO_SERRADA_TORA')} placeholder="Ex: 0.3756 para 37.56%" />
+                      </div>
                        <div className="space-y-2">
-                          <Label htmlFor="fator_ucs">Fator UCS (Multiplicador)</Label>
+                          <Label htmlFor="fator_ucs">Fator Multiplicador UCS</Label>
                           <Input id="fator_ucs" type="number" step="any" {...formulaForm.register('fator_ucs')} />
+                      </div>
+                      <div className="space-y-2">
+                          <Label htmlFor="FATOR_CARBONO">Unidades de Carbono (CRS)</Label>
+                          <Input id="FATOR_CARBONO" type="number" step="any" {...formulaForm.register('FATOR_CARBONO')} placeholder="Ex: 2.59" />
                       </div>
                   </div>
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem value="item-3">
-                <AccordionTrigger className="text-lg font-medium">3. Valores Econômicos e Área</AccordionTrigger>
+                <AccordionTrigger className="text-lg font-medium">3. Área Total</AccordionTrigger>
                 <AccordionContent>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pt-4">
-                       <div className="space-y-2">
-                          <Label htmlFor="pib_por_hectare">PIB por Hectare (R$)</Label>
-                          <Input id="pib_por_hectare" type="number" step="any" {...formulaForm.register('pib_por_hectare')} />
-                      </div>
                       <div className="space-y-2">
                           <Label htmlFor="area_total">Área Total (ha)</Label>
                           <Input id="area_total" type="number" step="any" {...formulaForm.register('area_total')} />
@@ -324,19 +327,14 @@ export default function SettingsPage() {
       <div className="flex min-h-screen w-full flex-col">
         <PageHeader title="Configurações" />
         <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-10">
-          <Tabs defaultValue="users" className="w-full">
+          <Tabs defaultValue="formula" className="w-full">
             <TabsList className="grid w-full grid-cols-4 mb-6">
-              <TabsTrigger value="users">Usuários</TabsTrigger>
-              <TabsTrigger value="sources">Fontes de Dados</TabsTrigger>
               <TabsTrigger value="formula">Fórmula do Índice</TabsTrigger>
+              <TabsTrigger value="sources">Fontes de Dados</TabsTrigger>
+              <TabsTrigger value="users">Usuários</TabsTrigger>
               <TabsTrigger value="currency">Conversão de Moedas</TabsTrigger>
             </TabsList>
-            <TabsContent value="users">
-                <UserManagement />
-            </TabsContent>
-            <TabsContent value="sources">
-                 {renderSourcesTab()}
-            </TabsContent>
+            
             <TabsContent value="formula">
                 <Card>
                     <CardHeader>
@@ -350,6 +348,15 @@ export default function SettingsPage() {
                     </CardContent>
                 </Card>
             </TabsContent>
+
+             <TabsContent value="sources">
+                 {renderSourcesTab()}
+            </TabsContent>
+
+            <TabsContent value="users">
+                <UserManagement />
+            </TabsContent>
+            
              <TabsContent value="currency">
                 <Card>
                   <CardHeader>

@@ -2,22 +2,21 @@
 
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
-import { Calculator, Leaf, DollarSign, TrendingUp, AlertCircle, RefreshCw, Loader2 } from 'lucide-react';
+import { Calculator, AlertCircle, RefreshCw, Loader2 } from 'lucide-react';
 import {
   calcularUCSCompleto,
   obterValoresPadrao,
-  formatarValorMonetario,
+  formatCurrency,
   validarInputsUCS,
   type UCSCalculationInputs,
   type UCSCalculationResult,
-  formatCurrency
 } from '@/lib/ucs-pricing-service';
 import { Skeleton } from './ui/skeleton';
 
@@ -47,7 +46,7 @@ export function UCSCalculator() {
     carregarValoresPadrao();
   }, [carregarValoresPadrao]);
 
-  const formatResults = useCallback(async (result: UCSCalculationResult) => {
+  const formatResults = useCallback((result: UCSCalculationResult) => {
     const formatted = {
       ucs: formatCurrency(result.unidadeCreditoSustentabilidade, 'BRL'),
       ivp: formatCurrency(result.indiceViabilidadeProjeto, 'BRL'),
@@ -71,7 +70,7 @@ export function UCSCalculator() {
     try {
       const resultadoCalc = calcularUCSCompleto(inputs as UCSCalculationInputs);
       setResultado(resultadoCalc);
-      await formatResults(resultadoCalc);
+      formatResults(resultadoCalc);
       setErros([]);
     } catch (error) {
       setErros([`Erro no cálculo: ${error instanceof Error ? error.message : 'Erro desconhecido'}`]);
@@ -80,7 +79,7 @@ export function UCSCalculator() {
   }, [inputs, formatResults]);
 
   useEffect(() => {
-    if (!carregando) {
+    if (!carregando && Object.keys(inputs).length > 0) {
       calcular();
     }
   }, [inputs, carregando, calcular]);
@@ -90,18 +89,21 @@ export function UCSCalculator() {
     setInputs((prev) => ({ ...prev, [field]: numericValue }));
   };
 
-  const renderInputField = (id: keyof UCSCalculationInputs, label: string) => (
+  const renderInputField = (id: keyof UCSCalculationInputs, label: string, isCurrency = false) => (
     <div className="space-y-1.5">
       <Label htmlFor={id}>{label}</Label>
-      <Input
-        id={id}
-        type="number"
-        value={inputs[id] ?? ''}
-        onChange={(e) => handleInputChange(id, e.target.value)}
-        className="text-right"
-        placeholder="0.00"
-        disabled={carregando}
-      />
+      <div className="relative">
+        {isCurrency && <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">R$</span>}
+        <Input
+          id={id}
+          type="number"
+          value={inputs[id] ?? ''}
+          onChange={(e) => handleInputChange(id, e.target.value)}
+          className={`text-right ${isCurrency ? 'pl-8' : ''}`}
+          placeholder="0.00"
+          disabled={carregando}
+        />
+      </div>
     </div>
   );
 
@@ -195,18 +197,20 @@ export function UCSCalculator() {
         <Card>
           <CardHeader>
             <CardTitle>Parâmetros de Cotação</CardTitle>
-            <CardDescription>Preços atuais dos ativos que compõem o índice.</CardDescription>
+            <CardDescription>Preços atuais dos ativos que compõem o índice. Altere-os para simular cenários.</CardDescription>
           </CardHeader>
           <CardContent>
             {carregando ? (
                 renderInputSkeleton()
             ) : (
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {renderInputField('pm3mad', 'Preço Madeira (R$/m³)')}
-                    {renderInputField('pecuariaCotacao', 'Preço Boi (@)')}
-                    {renderInputField('milhoCotacao', 'Preço Milho (ton)')}
-                    {renderInputField('sojaCotacao', 'Preço Soja (ton)')}
-                    {renderInputField('cotacaoCreditoCarbono', 'Preço Carbono (R$/tCO2)')}
+                    {renderInputField('pecuariaCotacao', 'Preço Boi (@)', true)}
+                    {renderInputField('milhoCotacao', 'Preço Milho (Saca)', true)}
+                    {renderInputField('sojaCotacao_usd', 'Preço Soja (Saca $)', false)}
+                    {renderInputField('pm3mad_usd', 'Preço Madeira (m³ $)', false)}
+                    {renderInputField('cotacaoCreditoCarbono_eur', 'Preço Carbono (€)', false)}
+                    {renderInputField('taxa_usd_brl', 'Taxa de Câmbio USD/BRL', false)}
+                    {renderInputField('taxa_eur_brl', 'Taxa de Câmbio EUR/BRL', false)}
                 </div>
             )}
           </CardContent>
@@ -230,7 +234,6 @@ export function UCSCalculator() {
                   {renderInputField('produtividade_milho', 'Prod. Milho (ton/ha)')}
                   {renderInputField('produtividade_soja', 'Prod. Soja (ton/ha)')}
                   {renderInputField('produtividade_carbono', 'Prod. Carbono (tCO2e/ha)')}
-                  {renderInputField('pib_por_hectare', 'PIB por Hectare (R$)')}
                   {renderInputField('area_total', 'Área Total (ha)')}
               </div>
             )}
@@ -268,3 +271,4 @@ export function UCSCalculator() {
     </div>
   );
 }
+

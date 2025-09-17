@@ -119,40 +119,40 @@ export type RiskAnalysisData = {
 // Based on the official methodology
 export type FormulaParameters = {
     // Produtividades
-    produtividade_boi: number;
-    produtividade_milho: number;
-    produtividade_soja: number;
-    produtividade_madeira: number;
-    produtividade_carbono: number;
+    produtividade_boi: number; // @/ha
+    produtividade_milho: number; // ton/ha
+    produtividade_soja: number; // ton/ha
+    produtividade_madeira: number; // m³/ha
+    produtividade_carbono: number; // tCO2e/ha
+    
+    // Fatores de Ponderação VUS
+    fator_pecuaria: number; // 0-1
+    fator_milho: number; // 0-1
+    fator_soja: number; // 0-1
+    
+    // Fatores de Conversão e Custo
+    fator_arrendamento: number; // 0-1
+    fator_agua: number; // 0-1
+    fator_ucs: number; // Multiplicador
+    FATOR_CARBONO: number; // Unidades tCO2/ha (e.g., 2.59)
+    FATOR_CONVERSAO_SERRADA_TORA: number; // 0-1
+    
+    // Área
+    area_total: number; // ha
+    
+    // Status
+    isConfigured: boolean;
+
+    // Legacy fields for compatibility
     VOLUME_MADEIRA_HA: number;
     PROD_BOI: number;
     PROD_MILHO: number;
     PROD_SOJA: number;
-    
-    // Fatores de Ponderação
-    fator_pecuaria: number;
-    fator_milho: number;
-    fator_soja: number;
     PESO_PEC: number;
     PESO_MILHO: number;
     PESO_SOJA: number;
-    
-    // Fatores de Conversão
-    fator_arrendamento: number;
     FATOR_ARREND: number;
-    fator_agua: number;
-    fator_ucs: number;
-    FATOR_CARBONO: number;
-    FATOR_CONVERSAO_SERRADA_TORA: number;
-    
-    // Valores Econômicos
     pib_por_hectare: number;
-    
-    // Área
-    area_total: number;
-    
-    // Status
-    isConfigured: boolean;
 };
 
 export type ReportPreviewData = {
@@ -183,13 +183,15 @@ export type GenerateReportOutput = {
 };
 
 // TYPES FOR UCS-PRICING-SERVICE
-export type UCSCalculationInputs = FormulaParameters & {
-  // Cotações
-  pm3mad: number;
-  pecuariaCotacao: number;
-  milhoCotacao: number;
-  sojaCotacao: number;
-  cotacaoCreditoCarbono: number;
+export type UCSCalculationInputs = Partial<FormulaParameters> & {
+  // Cotações (preços brutos, conversão acontece no motor de cálculo)
+  taxa_usd_brl: number;
+  taxa_eur_brl: number;
+  pm3mad_usd: number; // Preço Madeira Serrada em USD
+  pecuariaCotacao: number; // Preço Boi Arroba em BRL
+  milhoCotacao: number; // Preço Milho Saca em BRL
+  sojaCotacao_usd: number; // Preço Soja Saca em USD
+  cotacaoCreditoCarbono_eur: number; // Preço Carbono em EUR
 };
 
 export type UCSCalculationResult = {
@@ -210,9 +212,9 @@ export type UCSCalculationResult = {
       pm3mad: number;
     };
     vus: {
-      vboi: number;
-      vmilho: number;
-      vsoja: number;
+      pecuaria: number;
+      milho: number;
+      soja: number;
     };
     crs: {
       cc: number;
@@ -223,3 +225,4 @@ export type UCSCalculationResult = {
     }
   };
 };
+
