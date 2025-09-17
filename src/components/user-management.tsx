@@ -110,7 +110,7 @@ Sua conta foi criada com sucesso no Sistema Índice UCS. Abaixo estão suas cred
 
 📧 Email: ${user.email}
 🔑 Senha temporária: ${password}
-🌐 Link de acesso: https://ucsindex.vercel.app/login
+🌐 Link de acesso: ${window.location.origin}/login
 
 ⚠️ IMPORTANTE - INSTRUÇÕES DE PRIMEIRO ACESSO:
 
@@ -319,72 +319,7 @@ Atenciosamente,
         </Button>
       </CardHeader>
       <CardContent className="p-0 sm:p-6 sm:pt-0">
-        
-        {/* Mobile View - Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:hidden p-4">
-            {isFetching ? (
-                 [...Array(4)].map((_, i) => (
-                    <Card key={i} className="p-4 space-y-3 animate-pulse">
-                        <div className="flex justify-between items-start">
-                            <Skeleton className="w-3/4 h-5 bg-muted rounded" />
-                            <Skeleton className="w-6 h-6 bg-muted rounded" />
-                        </div>
-                        <Skeleton className="w-1/2 h-4 bg-muted rounded" />
-                        <Skeleton className="w-1/3 h-4 bg-muted rounded" />
-                    </Card>
-                 ))
-            ) : users.length === 0 ? (
-                 <div className="text-center py-10 col-span-full">
-                    <p className="text-sm text-muted-foreground">Nenhum usuário encontrado.</p>
-                 </div>
-            ) : (
-                users.map(user => (
-                     <Card key={user.id}>
-                        <CardHeader className="flex flex-row items-center justify-between p-4">
-                             <div className="font-semibold text-primary">{user.displayName}</div>
-                             <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                                        <MoreVertical className="h-4 w-4" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onClick={() => handleEditUser(user)}>
-                                        <Edit className="mr-2 h-4 w-4" /> Editar
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => setDeletingUserId(user.id)} className="text-destructive">
-                                        <Trash2 className="mr-2 h-4 w-4" /> Excluir
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                             </DropdownMenu>
-                        </CardHeader>
-                        <CardContent className="p-4 pt-0 space-y-2 text-sm text-muted-foreground">
-                            <div className="flex items-center gap-2">
-                                <Mail className="h-4 w-4" />
-                                <span>{user.email}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <Phone className="h-4 w-4" />
-                                <span>{user.phoneNumber || 'N/A'}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <UserIcon className="h-4 w-4" />
-                                 <Badge variant={user.role === 'admin' ? 'default' : 'secondary'} className="capitalize">{user.role}</Badge>
-                                 <Badge variant={user.isActive ? 'default' : 'destructive'}>{user.isActive ? 'Ativo' : 'Inativo'}</Badge>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <Calendar className="h-4 w-4" />
-                                <span>Criado em {new Date(user.createdAt).toLocaleDateString('pt-BR')}</span>
-                            </div>
-                        </CardContent>
-                     </Card>
-                ))
-            )}
-        </div>
-
-
-        {/* Desktop View - Table */}
-        <div className="rounded-md border hidden sm:block">
+        <div className="rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>

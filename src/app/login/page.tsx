@@ -21,6 +21,8 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { auth } from '@/lib/firebase-config';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 
 const loginSchema = z.object({
   email: z.string().email('Por favor, insira um e-mail válido.'),
@@ -52,31 +54,85 @@ export default function LoginPage() {
     resolver: zodResolver(adminSchema),
   });
 
-  // MOCK LOGIN: Redirects directly to the dashboard
   const onLoginSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
-    toast({
-      title: 'Login Simulado',
-      description: 'Redirecionando para o painel...',
-    });
+    try {
+      // 1. Autenticar com Firebase no cliente
+      const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
+      const idToken = await userCredential.user.getIdToken();
 
-    // Simulate a network request
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    router.push('/');
-    
-    setIsLoading(false);
+      // 2. Enviar ID Token para a API de sessão
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: idToken }),
+      });
+
+      const sessionData = await response.json();
+
+      if (!response.ok) {
+        throw new Error(sessionData.error || 'Falha ao iniciar sessão.');
+      }
+      
+      toast({
+        title: 'Login bem-sucedido!',
+        description: `Bem-vindo, ${sessionData.user.displayName}!`,
+      });
+
+      if (sessionData.user.isFirstLogin) {
+        router.push('/first-login-password-reset');
+      } else {
+        router.push('/');
+      }
+
+    } catch (error: any) {
+      console.error("Erro de login:", error);
+      let description = "Credenciais inválidas ou erro de conexão. Verifique seus dados e tente novamente.";
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+        description = "Email ou senha incorretos.";
+      } else if (error.message) {
+        description = error.message;
+      }
+      toast({
+        variant: 'destructive',
+        title: 'Erro de Autenticação',
+        description,
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const onAdminSubmit = async (data: AdminFormData) => {
     setIsCreatingAdmin(true);
-    toast({
-        title: 'Função Desativada',
-        description: 'A criação de administrador está temporariamente desativada no modo de login mockado.',
+    try {
+      const response = await fetch('/api/users?firstAdmin=true', {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify({ ...data, role: 'admin' }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Falha ao criar administrador.');
+      }
+
+      toast({
+        title: 'Administrador Criado!',
+        description: 'A conta de administrador foi criada com sucesso. Você já pode fazer login.',
+      });
+      setIsModalOpen(false);
+      adminForm.reset();
+
+    } catch (error: any) {
+       toast({
         variant: 'destructive',
-    });
-    setIsCreatingAdmin(false);
-    setIsModalOpen(false);
+        title: 'Erro ao Criar Administrador',
+        description: error.message,
+      });
+    } finally {
+      setIsCreatingAdmin(false);
+    }
   };
 
   return (
@@ -127,7 +183,7 @@ export default function LoginPage() {
                     {...loginForm.register('email')}
                     className="bg-background/90 border-border/50 focus:border-green-500 transition-colors h-11"
                     disabled={isLoading}
-                    defaultValue="debug@user.com"
+                    autoComplete="email"
                   />
                   {loginForm.formState.errors.email && <p className="text-xs text-destructive">{loginForm.formState.errors.email.message}</p>}
                 </div>
@@ -149,7 +205,7 @@ export default function LoginPage() {
                     {...loginForm.register('password')} 
                     className="bg-background/90 border-border/50 focus:border-green-500 transition-colors h-11"
                     disabled={isLoading}
-                    defaultValue="password"
+                    autoComplete="current-password"
                   />
                   {loginForm.formState.errors.password && <p className="text-xs text-destructive">{loginForm.formState.errors.password.message}</p>}
                 </div>

@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
-    // Criar resposta de logout
     const response = NextResponse.json({
       message: 'Logout realizado com sucesso!'
     });
@@ -12,7 +11,8 @@ export async function POST(request: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 0 // Expira imediatamente
+      maxAge: 0, // Expira imediatamente
+      path: '/',
     });
 
     return response;

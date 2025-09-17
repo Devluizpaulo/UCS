@@ -16,13 +16,11 @@ export async function POST(request: NextRequest) {
 
     // Verificar o ID Token do Firebase
     const decodedToken = await auth.verifyIdToken(idToken);
-    const { uid, email, role, isFirstLogin } = decodedToken;
+    const { uid, email } = decodedToken;
 
     // Obter dados adicionais do Firestore se necessário
     const userDoc = await db.collection('users').doc(uid).get();
     if (!userDoc.exists) {
-        // Isso pode acontecer se o usuário foi criado no Auth mas não no Firestore.
-        // É um caso de borda que pode ser tratado criando o perfil aqui.
         throw new Error('Perfil de usuário não encontrado no banco de dados.');
     }
     const userData = userDoc.data();
@@ -35,7 +33,7 @@ export async function POST(request: NextRequest) {
     const sessionToken = await new SignJWT({
         uid,
         email,
-        role: userData.role, // Usar a role do Firestore como fonte da verdade
+        role: userData.role,
         isFirstLogin: userData.isFirstLogin,
       })
       .setProtectedHeader({ alg: 'HS256' })

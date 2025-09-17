@@ -43,7 +43,8 @@ import {
 } from '@/components/ui/sidebar';
 import { Button } from './ui/button';
 import { useToast } from '@/hooks/use-toast';
-
+import { auth } from '@/lib/firebase-config';
+import type { User as FirebaseUser } from 'firebase/auth';
 
 type NavItem = {
   href: string;
@@ -63,6 +64,29 @@ export function MainLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { toast } = useToast();
+  const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
+      if (firebaseUser) {
+        const idTokenResult = await firebaseUser.getIdTokenResult();
+        const isFirstLogin = idTokenResult.claims.isFirstLogin;
+
+        if (isFirstLogin && pathname !== '/first-login-password-reset') {
+          router.replace('/first-login-password-reset');
+        } else {
+          setUser(firebaseUser);
+        }
+      } else {
+        // Se não houver usuário, redirecione para o login
+        router.replace('/login');
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [pathname, router]);
 
   const toggleTheme = () => {
     const html = document.documentElement;
@@ -70,28 +94,50 @@ export function MainLayout({ children }: { children: ReactNode }) {
     html.classList.toggle('light');
   };
 
-  const handleLogout = () => {
-    toast({
-      title: 'Logout Simulado',
-      description: 'Redirecionando para a página de login.',
-    });
-    router.push('/login');
+  const handleLogout = async () => {
+    try {
+      await auth.signOut();
+      const response = await fetch('/api/auth/logout', { method: 'POST' });
+      if (response.ok) {
+        toast({
+          title: 'Logout bem-sucedido',
+          description: 'Você foi desconectado com segurança.',
+        });
+        router.push('/login');
+      } else {
+        throw new Error('Falha ao limpar a sessão do servidor.');
+      }
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao Sair',
+        description: 'Não foi possível fazer logout. Tente novamente.',
+      });
+    }
   };
 
   const getInitials = (name?: string | null) => {
     if (!name) return 'DB';
     const names = name.split(' ');
     if (names.length > 1) {
-        return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
+      return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
     }
-    return name[0].toUpperCase();
+    return name.length > 0 ? name[0].toUpperCase() : 'U';
   };
 
-  const mockUser = {
-    displayName: 'Usuário Debug',
-    email: 'debug@user.com',
-  };
+  if (loading) {
+    return (
+        <div className="flex h-screen w-full items-center justify-center bg-background">
+            <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        </div>
+    );
+  }
 
+  if (!user && pathname !== '/login' && pathname !== '/first-login-password-reset') {
+      return null;
+  }
+  
+  // Renderiza o layout apenas se o usuário estiver autenticado ou na página de primeiro login
   return (
       <SidebarProvider>
         <Sidebar collapsible="icon">
@@ -150,8 +196,6 @@ export function MainLayout({ children }: { children: ReactNode }) {
                     </SidebarMenuItem>
                 </SidebarMenu>
             </div>
-
-
           </SidebarContent>
           <SidebarFooter>
             <DropdownMenu>
@@ -164,17 +208,17 @@ export function MainLayout({ children }: { children: ReactNode }) {
                   <Avatar className="h-8 w-8">
                       <AvatarImage
                           src={undefined}
-                          alt={mockUser.displayName}
+                          alt={user?.displayName || ''}
                           data-ai-hint="profile picture"
                       />
                       <AvatarFallback>
-                          {getInitials(mockUser.displayName)}
+                          {getInitials(user?.displayName)}
                       </AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col truncate group-data-[collapsible=icon]:hidden">
-                      <span className="truncate font-medium">{mockUser.displayName}</span>
+                      <span className="truncate font-medium">{user?.displayName}</span>
                       <span className="truncate text-xs text-muted-foreground">
-                          {mockUser.email}
+                          {user?.email}
                       </span>
                   </div>
                 </Button>

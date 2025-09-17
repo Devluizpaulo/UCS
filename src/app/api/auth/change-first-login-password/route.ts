@@ -6,9 +6,8 @@ import { verifyAuth } from '@/lib/auth-middleware';
 import { completeFirstLogin } from '@/lib/profile-service';
 
 /**
- * Esta API agora tem uma única responsabilidade:
+ * Esta API tem uma única responsabilidade:
  * Marcar o primeiro login como concluído após o cliente ter alterado a senha.
- * Ela não lida mais com senhas.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -22,7 +21,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Esta operação só é permitida no primeiro login' }, { status: 403 });
     }
     
-    // A única ação agora é atualizar as claims e o Firestore.
     await completeFirstLogin(user.uid);
       
     // O cliente fará o refresh do token para obter as novas claims
