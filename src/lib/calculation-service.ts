@@ -94,8 +94,9 @@ export function calculateIndex(commodities: CommodityPriceData[], params: Formul
       // 3.a Carbon Credit (CC) value
       const valor_carbono_total = renda_carbono_ha * params.area_total;
       
-      // 3.b Water Cost (cH2O) - based on the sum of ALL gross revenues
-      const base_calculo_agua_ha = renda_pecuaria_ha + renda_milho_ha + renda_soja_ha + renda_madeira_ha + renda_carbono_ha;
+      // 3.b Water Cost (cH2O) - based on the spreadsheet formula:
+      // (Renda Ponderada VUS/ha + Renda Bruta Madeira/ha + Renda Bruta Carbono/ha) * 7%
+      const base_calculo_agua_ha = renda_bruta_ponderada_ha_vus + renda_madeira_ha + renda_carbono_ha;
       const valor_agua_total = (base_calculo_agua_ha * params.fator_agua) * params.area_total;
       
       const CRS = valor_carbono_total + valor_agua_total;
@@ -137,4 +138,6 @@ export function calculateIndex(commodities: CommodityPriceData[], params: Formul
           }
       };
 }
+    
+
     
