@@ -1,5 +1,3 @@
-
-
 import { getCommodityPrices } from './data-service';
 import { getFormulaParameters } from './formula-service';
 import { calculateIndex } from './calculation-service';
