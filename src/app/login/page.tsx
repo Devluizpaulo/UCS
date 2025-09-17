@@ -71,12 +71,18 @@ export default function LoginPage() {
         throw new Error(result.error || 'Erro no login');
       }
       
+      const { user } = await response.json();
+
       toast({
         title: 'Login bem-sucedido',
         description: 'Carregando painel...',
       });
-
-      router.push('/');
+      
+      if (user.isFirstLogin) {
+          router.push('/first-login-password-reset');
+      } else {
+          router.push('/');
+      }
 
     } catch (error: any) {
       console.error('Login failed:', error);
@@ -92,8 +98,9 @@ export default function LoginPage() {
         title: 'Falha no Login',
         description,
       });
-      setIsLoading(false);
-    } 
+    } finally {
+        setIsLoading(false);
+    }
   };
 
   const onAdminSubmit = async (data: AdminFormData) => {

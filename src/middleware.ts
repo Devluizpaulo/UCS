@@ -9,8 +9,8 @@ export async function middleware(request: NextRequest) {
   // Lista de rotas públicas que não exigem autenticação
   const publicPaths = ['/login', '/forgot-password', '/reset-password'];
 
-  // Permitir acesso a rotas públicas e APIs sem verificação
-  if (publicPaths.includes(pathname) || pathname.startsWith('/api/')) {
+  // Permitir acesso a rotas públicas e APIs sem verificação de token
+  if (publicPaths.includes(pathname) || pathname.startsWith('/api/') || pathname.startsWith('/image/')) {
     return NextResponse.next();
   }
   
@@ -19,10 +19,14 @@ export async function middleware(request: NextRequest) {
   
   if (!user) {
     // Se não autenticado, redirecionar para a página de login
-    const url = request.nextUrl.clone();
-    url.pathname = '/login';
-    url.search = ''; // Limpar quaisquer query params
-    return NextResponse.redirect(url);
+    // Evitar redirecionamento infinito se a página de login já for a destino
+    if (pathname !== '/login') {
+        const url = request.nextUrl.clone();
+        url.pathname = '/login';
+        url.search = ''; // Limpar quaisquer query params
+        return NextResponse.redirect(url);
+    }
+    return NextResponse.next();
   }
   
   // Lógica para o primeiro login
@@ -50,7 +54,7 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * - image/ (image files in public folder)
+     * - image/ (image files in public folder) - This was missing and caused image load failures
      */
     '/((?!_next/static|_next/image|favicon.ico|image/).*)',
   ],

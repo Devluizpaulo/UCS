@@ -76,19 +76,9 @@ export function MainLayout({ children }: { children: ReactNode }) {
       if (user) {
         // User is signed in.
         setUser(user);
-        const tokenResult = await user.getIdTokenResult(true); // Force refresh token
-        const isFirstLogin = tokenResult.claims.isFirstLogin === true;
-        
-        // Middleware will handle redirection, but we can also log for debugging
-        if(isFirstLogin && pathname !== '/first-login-password-reset'){
-             console.log("Redirecting to first login password reset...");
-             router.push('/first-login-password-reset');
-        }
-
       } else {
         // User is signed out. Middleware will handle the redirect.
         setUser(null);
-        router.push('/login');
       }
       setLoading(false);
     });
@@ -108,20 +98,18 @@ export function MainLayout({ children }: { children: ReactNode }) {
       // Limpar cookie JWT
       await fetch('/api/auth/logout', {
         method: 'POST',
-        credentials: 'include'
       });
 
       // Sign out from Firebase client-side SDK
       await signOut(auth);
       
-      // Clear local state
-      setUser(null);
-      
       toast({
         title: 'Logout realizado',
         description: 'Você foi desconectado com sucesso.',
       });
-      // The onAuthStateChanged listener and middleware will handle the redirect
+
+      router.push('/login');
+      
     } catch (error) {
       console.error('Logout failed:', error);
       toast({
@@ -141,9 +129,9 @@ export function MainLayout({ children }: { children: ReactNode }) {
     return name[0].toUpperCase();
   }
 
-  // If loading or no user, show a full-screen loader.
+  // If loading, show a full-screen loader.
   // The middleware/auth listener will handle redirection logic.
-  if (loading || !user) {
+  if (loading) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -152,7 +140,7 @@ export function MainLayout({ children }: { children: ReactNode }) {
   }
   
   // Public pages (like the first-login page itself) should not render the main layout
-  const noLayoutPaths = ['/first-login-password-reset'];
+  const noLayoutPaths = ['/first-login-password-reset', '/login', '/forgot-password', '/reset-password'];
   if (noLayoutPaths.includes(pathname)) {
       return <>{children}</>;
   }
