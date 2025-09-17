@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
@@ -29,10 +30,8 @@ export function UCSCalculator() {
     setCarregando(true);
     setErros([]);
     try {
-      const [cotacoes] = await Promise.all([
-        obterValoresPadrao(),
-      ]);
-      setInputs({ ...cotacoes });
+      const valoresIniciais = await obterValoresPadrao();
+      setInputs(valoresIniciais);
     } catch (error) {
       console.error('Erro ao carregar valores padrão:', error);
       setErros(['Falha ao carregar dados iniciais.']);

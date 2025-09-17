@@ -100,20 +100,26 @@ export function calcularUCSCompleto(inputs: UCSCalculationInputs): UCSCalculatio
 /**
  * Obtém valores padrão das cotações para a calculadora, para uma data específica ou a mais recente
  */
-export async function obterValoresPadrao(forDate?: string): Promise<Pick<UCSCalculationInputs, 'pm3mad' | 'pecuariaCotacao' | 'milhoCotacao' | 'sojaCotacao' | 'cotacaoCreditoCarbono'>> {
+export async function obterValoresPadrao(): Promise<Partial<UCSCalculationInputs>> {
   try {
-    const prices = await getCommodityPrices(forDate);
+    const [prices, params] = await Promise.all([
+      getCommodityPrices(),
+      getFormulaParameters()
+    ]);
     
     // As cotações já vêm na moeda e unidade corretas do data-service,
     // então aqui apenas mapeamos para os campos da calculadora.
     // O `calculation-service` fará as conversões necessárias (saca -> ton, USD -> BRL etc.)
-    return {
+    const cotacoes = {
       pm3mad: findPrice(prices, 'vmad', 'madeira'),
       pecuariaCotacao: findPrice(prices, 'vus', 'boi'),
       milhoCotacao: findPrice(prices, 'vus', 'milho'),
       sojaCotacao: findPrice(prices, 'vus', 'soja'),
       cotacaoCreditoCarbono: findPrice(prices, 'crs', 'carbono'),
     };
+
+    return { ...params, ...cotacoes };
+
   } catch (error) {
     console.error('[UCS Pricing Service] Erro ao obter valores padrão de cotações:', error);
     return {
