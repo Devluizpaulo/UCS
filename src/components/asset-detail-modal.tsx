@@ -54,17 +54,17 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
             const formatted = formatCurrency(asset.price, asset.currency);
             setFormattedPrice(formatted);
             
-            // Sort by the 'data' field, most recent first for the table
+            // Sort by the 'created_at' field, most recent first for the table
             const sortedHistory = [...history].sort((a, b) => {
-                const aTime = a.data ? parseDateString(a.data).getTime() : 0;
-                const bTime = b.data ? parseDateString(b.data).getTime() : 0;
+                const aTime = a.created_at ? new Date(a.created_at).getTime() : 0;
+                const bTime = b.created_at ? new Date(b.created_at).getTime() : 0;
                 return bTime - aTime;
             });
             setHistoricalData(sortedHistory);
 
             // For the chart, we need the oldest first, so we reverse the sorted array
             const chartPoints = [...sortedHistory].reverse().map((d: FirestoreQuote) => ({
-                time: d.data || new Date(d.timestamp).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+                time: d.data || new Date(d.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
                 value: d.ultimo
             }));
 

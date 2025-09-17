@@ -39,8 +39,8 @@ async function getRiskAnalysisData(): Promise<RiskAnalysisData> {
 
             // Sort by date ascending to calculate returns correctly
             const sortedHistory = [...assetHistory].sort((a,b) => {
-                const aTime = a.timestamp?.toDate ? a.timestamp.toDate().getTime() : new Date(a.timestamp).getTime();
-                const bTime = b.timestamp?.toDate ? b.timestamp.toDate().getTime() : new Date(b.timestamp).getTime();
+                const aTime = a.created_at ? new Date(a.created_at).getTime() : 0;
+                const bTime = b.created_at ? new Date(b.created_at).getTime() : 0;
                 return aTime - bTime;
             });
             

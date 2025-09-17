@@ -51,26 +51,19 @@ export type CommodityPriceData = CommodityConfig & {
 
 export type HistoryInterval = '1d' | '1wk' | '1mo';
 
-export type HistoricalQuote = {
-  date: string;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-  volume: string;
-  change: number;
-};
-
 export type FirestoreQuote = {
   id: string;
-  ativo: string;
+  ativo?: string;
   data: string; // "DD/MM/YYYY"
   abertura: number;
   maxima: number;
   minima: number;
   ultimo: number;
   moeda: string;
-  timestamp: any; // Firestore Timestamp
+  created_at: string; // ISO string from Firestore Timestamp
+  variacao?: string | null;
+  variacao_pct?: number | null;
+  volume?: string | null;
   [key: string]: any; // Allow other properties
 }
 
@@ -225,4 +218,3 @@ export type UCSCalculationResult = {
     }
   };
 };
-

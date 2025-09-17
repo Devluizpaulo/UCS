@@ -27,7 +27,6 @@ const serializeFirestoreTimestamp = (data: any): any => {
 
 /**
  * Maps the asset document ID from 'commodities' collection to the correct price history collection name.
- * This is the ground truth for data fetching.
  * @param assetId The document ID from the 'commodities' collection (e.g., 'boi_gordo_futuros').
  * @returns The name of the collection holding price data (e.g., 'boi_gordo').
  */
@@ -43,7 +42,8 @@ function getCollectionNameFromAssetId(assetId: string): string {
     if (normalizedId.includes('usd') || normalizedId.includes('dolar')) return 'usd';
 
     // Fallback if no specific rule matches, though it should not be reached with proper config.
-    return normalizedId.split('_')[0];
+    // This is a safe fallback for custom assets.
+    return normalizedId.replace(/_futuros$/, '').replace(/__/g, '_');
 }
 
 
@@ -78,12 +78,12 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
 
             if (assetHistory.length > 0) {
                 const latest = assetHistory[0];
-                currentPrice = latest.abertura > 0 ? latest.abertura : latest.ultimo || 0;
+                currentPrice = latest.ultimo > 0 ? latest.ultimo : latest.abertura || 0;
                 lastUpdated = latest.created_at ? new Date(latest.created_at).toLocaleString('pt-BR') : 'N/A';
                 
                 if (assetHistory.length > 1) {
                     const previous = assetHistory[1];
-                    const previousPrice = previous.abertura > 0 ? previous.abertura : previous.ultimo || 0;
+                    const previousPrice = previous.ultimo > 0 ? previous.ultimo : previous.abertura || 0;
                     if (previousPrice !== 0) {
                         absoluteChange = currentPrice - previousPrice;
                         change = (absoluteChange / previousPrice) * 100;
