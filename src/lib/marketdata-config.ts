@@ -7,6 +7,8 @@ import type { CommodityMap } from "./types";
 
 // Mapeamento dos nomes dos ativos para suas respectivas coleções no Firestore
 // Os nomes das coleções DEVEM corresponder ao ID do ativo normalizado (lowercase, _ para espaços, sem caracteres especiais)
+// DEPRECATED: This map is no longer the source of truth and will be removed.
+// The collection name is now derived from the asset's ticker.
 export const ASSET_COLLECTION_MAP: Record<string, string> = {
   'USD/BRL - Dólar Americano Real Brasileiro': 'usd',
   'EUR/BRL - Euro Real Brasileiro': 'eur',

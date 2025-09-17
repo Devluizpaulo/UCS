@@ -50,9 +50,11 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose, selectedD
         setChartData([]);
 
         try {
-            const history = await getCotacoesHistorico(currentAsset.name, 30, forDate);
+            // Use the asset's ticker to fetch historical data
+            const history = await getCotacoesHistorico(currentAsset.ticker, 30, forDate);
             const formatted = formatCurrency(asset.price, asset.currency);
             setFormattedPrice(formatted);
+            
             // Sort by the 'data' field, most recent first for the table
             const sortedHistory = [...history].sort((a, b) => {
                 const aTime = a.data ? parseDateString(a.data).getTime() : 0;
@@ -214,9 +216,9 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose, selectedD
                                                 historicalData.map((dataPoint) => (
                                                     <TableRow key={dataPoint.id}>
                                                         <TableCell className="font-medium">{dataPoint.data}</TableCell>
-                                                        <TableCell className="text-right font-mono text-primary">{formattedPrice}</TableCell>
-                                                        <TableCell className="text-right font-mono text-green-500">{formattedPrice}</TableCell>
-                                                        <TableCell className="text-right font-mono text-destructive">{formattedPrice}</TableCell>
+                                                        <TableCell className="text-right font-mono text-primary">{formatCurrency(dataPoint.ultimo, asset.currency)}</TableCell>
+                                                        <TableCell className="text-right font-mono text-green-500">{formatCurrency(dataPoint.maxima, asset.currency)}</TableCell>
+                                                        <TableCell className="text-right font-mono text-destructive">{formatCurrency(dataPoint.minima, asset.currency)}</TableCell>
                                                     </TableRow>
                                                 ))
                                             ) : (

@@ -2,9 +2,8 @@
 
 'use server';
 
-import type { ChartData, CommodityPriceData, HistoryInterval, UcsData, FirestoreQuote } from './types';
+import type { ChartData, CommodityPriceData, HistoryInterval, UcsData, FirestoreQuote, CommodityConfig } from './types';
 import { getCommodities } from './commodity-config-service';
-import { ASSET_COLLECTION_MAP } from './marketdata-config';
 import { db } from './firebase-admin-config';
 import admin from 'firebase-admin';
 import { Timestamp } from 'firebase-admin/firestore';
@@ -44,20 +43,28 @@ function parseDateString(dateStr: string): Date | null {
   return new Date(parseInt(parts[2], 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
 }
 
+/**
+ * Normalizes a ticker into a Firestore-safe collection name.
+ * Example: 'BRL=X' becomes 'brl_x'
+ * @param ticker The asset ticker.
+ * @returns A normalized string for use as a collection name.
+ */
+const getCollectionNameFromTicker = (ticker: string): string => {
+    return ticker.toLowerCase().replace(/[^a-z0-9]/g, '_');
+}
 
 /**
  * Fetches the most recent asset data from Firestore for a specific date or the latest available.
- * @param assetName The canonical name of the asset (e.g., 'USD/BRL...').
+ * @param ticker The asset's ticker (e.g., 'LBS=F').
  * @param limit The number of recent documents to fetch.
- * @param forDate Optional date string in "YYYY-MM-DD" format.
  * @returns A promise that resolves to an array of FirestoreQuote documents.
  */
-export async function getAssetData(assetName: string, limit: number = 1): Promise<FirestoreQuote[]> {
-    const collectionName = ASSET_COLLECTION_MAP[assetName];
-    if (!collectionName) {
-        console.warn(`[DataService] No collection mapping for asset: ${assetName}`);
+export async function getAssetData(ticker: string, limit: number = 1): Promise<FirestoreQuote[]> {
+    if (!ticker) {
+        console.warn(`[DataService] Ticker is missing, cannot fetch asset data.`);
         return [];
     }
+    const collectionName = getCollectionNameFromTicker(ticker);
     
     try {
         const collectionRef = db.collection(collectionName);
@@ -77,7 +84,7 @@ export async function getAssetData(assetName: string, limit: number = 1): Promis
         });
 
     } catch (error) {
-        console.error(`[DataService] Error fetching data for ${assetName} in collection ${collectionName}:`, error);
+        console.error(`[DataService] Error fetching data for ticker ${ticker} in collection ${collectionName}:`, error);
         return [];
     }
 }
@@ -98,7 +105,8 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
         }
 
         const pricePromises = commodities.map(async (commodity) => {
-            const assetHistory = await getAssetData(commodity.name, 2);
+            // Use the commodity's ticker to fetch its history
+            const assetHistory = await getAssetData(commodity.ticker, 2);
 
             let currentPrice = 0;
             let change = 0;
@@ -107,7 +115,6 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
 
             if (assetHistory.length > 0) {
                 const latest = assetHistory[0];
-                // Prioritize 'abertura', then 'ultimo'
                 currentPrice = latest.abertura > 0 ? latest.abertura : latest.ultimo || 0;
                 lastUpdated = latest.created_at ? new Date(latest.created_at).toLocaleString('pt-BR') : 'N/A';
                 
@@ -142,17 +149,17 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
 
 
 /**
- * Fetches historical quotes for a specific asset.
- * @param assetName The canonical name of the asset.
+ * Fetches historical quotes for a specific asset using its ticker.
+ * @param ticker The asset's ticker.
  * @param limit The number of historical points to fetch.
  * @returns An array of FirestoreQuote objects.
  */
-export async function getCotacoesHistorico(assetName: string, limit: number = 30, forDate?: string): Promise<FirestoreQuote[]> {
-  const collectionName = ASSET_COLLECTION_MAP[assetName];
-  if (!collectionName) {
-    console.warn(`[DataService] No collection mapping for asset: ${assetName}`);
+export async function getCotacoesHistorico(ticker: string, limit: number = 30, forDate?: string): Promise<FirestoreQuote[]> {
+  if (!ticker) {
+    console.warn(`[DataService] Ticker is missing, cannot fetch historical quotes.`);
     return [];
   }
+  const collectionName = getCollectionNameFromTicker(ticker);
 
   try {
     const collectionRef = db.collection(collectionName);
@@ -168,7 +175,6 @@ export async function getCotacoesHistorico(assetName: string, limit: number = 30
         
         const targetDate = new Date(forDate);
         
-        // Find the index of the document for the target date
         const targetIndex = allDocs.findIndex(doc => {
             if (!doc.data) return false;
             const docDate = parseDateString(doc.data);
@@ -195,7 +201,7 @@ export async function getCotacoesHistorico(assetName: string, limit: number = 30
     }
 
   } catch (error) {
-    console.error(`[DataService] Error fetching history for ${assetName}:`, error);
+    console.error(`[DataService] Error fetching history for ticker ${ticker}:`, error);
     return [];
   }
 }
@@ -279,10 +285,10 @@ export async function getUcsIndexHistory(interval: HistoryInterval = '1d'): Prom
 
 /**
  * Saves a batch of commodity price data to Firestore.
- * @param {Omit<FirestoreQuote, 'id' | 'timestamp'>[]} quotes - An array of quote data objects.
+ * @param {Omit<FirestoreQuote, 'id' | 'created_at'>[]} quotes - An array of quote data objects.
  * @returns {Promise<void>}
  */
-export async function saveLatestQuotes(quotes: Omit<FirestoreQuote, 'id' | 'created_at'>[]): Promise<void> {
+export async function saveLatestQuotes(quotes: (Omit<FirestoreQuote, 'id' | 'created_at'> & { ticker: string })[]): Promise<void> {
   if (!quotes || quotes.length === 0) {
     console.log('[DataService] No quote data provided to save.');
     return;
@@ -291,19 +297,22 @@ export async function saveLatestQuotes(quotes: Omit<FirestoreQuote, 'id' | 'crea
   const batch = db.batch();
 
   quotes.forEach((quote) => {
-    const collectionName = ASSET_COLLECTION_MAP[quote.ativo];
+    const collectionName = getCollectionNameFromTicker(quote.ticker);
     if (!collectionName) {
-        console.warn(`[DataService] No collection mapping for asset to save: ${quote.ativo}`);
+        console.warn(`[DataService] Could not derive collection name for ticker: ${quote.ticker}`);
         return;
     }
     const docRef = db.collection(collectionName).doc(); // Auto-generate ID
     
-    const dataToSave = {
-        ...quote,
+    // Remove ticker from the data being saved to the document
+    const { ticker, ...dataToSave } = quote;
+
+    const finalData = {
+        ...dataToSave,
         created_at: admin.firestore.FieldValue.serverTimestamp(), // Add server-side timestamp
     };
 
-    batch.set(docRef, dataToSave);
+    batch.set(docRef, finalData);
   });
 
   try {
