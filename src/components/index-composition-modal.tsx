@@ -17,7 +17,6 @@ import { TreePine, LandPlot, Droplets, Divide, Target, Wand } from 'lucide-react
 import { cn } from '@/lib/utils';
 import { Progress } from './ui/progress';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from './ui/separator';
 import { getFormulaParameters } from '@/lib/formula-service'; 
 
 interface IndexCompositionModalProps {
@@ -158,37 +157,45 @@ export function IndexCompositionModal({ data, isOpen, onClose }: IndexCompositio
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
                     <Card className="w-full">
                          <CardHeader>
-                            <CardTitle>Análise de Componentes</CardTitle>
+                            <CardTitle>Detalhes da Composição</CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-4">
-                            <h4 className="text-sm font-semibold text-muted-foreground">Composição do PDM</h4>
-                            {ucsCompositionData.map(item => (
-                                <DetailItem
-                                    key={item.name}
-                                    label={item.name}
-                                    value={item.value}
-                                    percent={item.percent}
-                                    icon={item.icon}
-                                    colorClass={
-                                        item.name.includes('VMAD') ? 'bg-chart-1' :
-                                        item.name.includes('VUS') ? 'bg-chart-2' : 'bg-chart-3'
-                                    }
-                                />
-                            ))}
-                            <Separator className="my-4"/>
-                            <h4 className="text-sm font-semibold text-muted-foreground">Detalhes do VUS</h4>
-                             {vusCompositionData.map(item => (
-                                <DetailItem
+                        <CardContent className="space-y-6">
+                            <div>
+                                <h4 className="text-sm font-semibold text-muted-foreground mb-3">Composição do PDM</h4>
+                                <div className="space-y-4">
+                                {ucsCompositionData.map(item => (
+                                    <DetailItem
                                         key={item.name}
                                         label={item.name}
                                         value={item.value}
                                         percent={item.percent}
+                                        icon={item.icon}
                                         colorClass={
-                                            item.name.includes('Pecuária') ? 'bg-chart-4' :
-                                            item.name.includes('Milho') ? 'bg-chart-5' : 'bg-chart-1'
+                                            item.name.includes('VMAD') ? 'bg-chart-1' :
+                                            item.name.includes('VUS') ? 'bg-chart-2' : 'bg-chart-3'
                                         }
                                     />
-                            ))}
+                                ))}
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <h4 className="text-sm font-semibold text-muted-foreground mb-3">Detalhes do VUS</h4>
+                                <div className="space-y-4">
+                                {vusCompositionData.map(item => (
+                                    <DetailItem
+                                            key={item.name}
+                                            label={item.name}
+                                            value={item.value}
+                                            percent={item.percent}
+                                            colorClass={
+                                                item.name.includes('Pecuária') ? 'bg-chart-4' :
+                                                item.name.includes('Milho') ? 'bg-chart-5' : 'bg-chart-1'
+                                            }
+                                        />
+                                ))}
+                                </div>
+                            </div>
                         </CardContent>
                     </Card>
                     
@@ -228,10 +235,8 @@ export function IndexCompositionModal({ data, isOpen, onClose }: IndexCompositio
             </div>
         </div>
         <DialogFooter className="p-6 pt-4 border-t sticky bottom-0 bg-background z-10">
-          {/* Footer content can go here if needed */}
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
-
