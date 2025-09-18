@@ -14,11 +14,12 @@ import {
   Eye, 
   RefreshCw, 
   AlertCircle,
-  BarChart3
+  BarChart3,
+  HelpCircle
 } from 'lucide-react';
 import { IndexCompositionModal } from './index-composition-modal';
 import type { ChartData, UcsData } from '@/lib/types';
-import { getUcsIndexValue, getUcsIndexHistory } from '@/lib/data-service'; // Keep for refresh
+import { getUcsIndexValue, getUcsIndexHistory } from '@/lib/data-service';
 import { Skeleton } from './ui/skeleton';
 import { formatCurrency } from '@/lib/ucs-pricing-service';
 
@@ -38,14 +39,13 @@ export function UCSIndexDisplay({ className, initialData, chartData: initialChar
   const [chartData, setChartData] = useState<ChartData[]>(initialChartData);
   const [showChart, setShowChart] = useState(false);
   const [isCompositionModalOpen, setIsCompositionModalOpen] = useState(false);
-  const [formattedVm, setFormattedVm] = useState('');
-  const [formattedVus, setFormattedVus] = useState('');
-  const [formattedCrs, setFormattedCrs] = useState('');
 
-  const [formattedUcsCF, setFormattedUcsCF] = useState('');
-  const [formattedUcsASE, setFormattedUcsASE] = useState('');
-  const [formattedIvp, setFormattedIvp] = useState('');
-
+  const formatValue = (value: number, currency = 'BRL') => {
+    if (currency === 'BRL') return formatCurrency(value, 'BRL');
+    if (currency === 'USD') return formatCurrency(value, 'USD');
+    if (currency === 'EUR') return formatCurrency(value, 'EUR');
+    return value.toFixed(2);
+  };
 
   useEffect(() => {
     setUcsData(initialData);
@@ -65,13 +65,6 @@ export function UCSIndexDisplay({ className, initialData, chartData: initialChar
           else if (current < prev) setTrend('down');
           else setTrend('stable');
       }
-       setFormattedUcsCF(formatCurrency(initialData.ucsCF, 'BRL'));
-       setFormattedUcsASE(formatCurrency(initialData.ucsASE, 'BRL'));
-       setFormattedIvp(initialData.ivp.toFixed(4));
-
-       setFormattedVm(formatCurrency(initialData.components.vm, 'BRL'));
-       setFormattedVus(formatCurrency(initialData.components.vus, 'BRL'));
-       setFormattedCrs(formatCurrency(initialData.components.crs, 'BRL'));
     }
   }, [initialData, initialChartData, initialLoading]);
 
@@ -88,13 +81,6 @@ export function UCSIndexDisplay({ className, initialData, chartData: initialChar
       setUcsData(latestData);
       setChartData(history);
       setLastUpdate(new Date());
-
-       setFormattedUcsCF(formatCurrency(latestData.ucsCF, 'BRL'));
-       setFormattedUcsASE(formatCurrency(latestData.ucsASE, 'BRL'));
-       setFormattedIvp(latestData.ivp.toFixed(4));
-       setFormattedVm(formatCurrency(latestData.components.vm, 'BRL'));
-       setFormattedVus(formatCurrency(latestData.components.vus, 'BRL'));
-       setFormattedCrs(formatCurrency(latestData.components.crs, 'BRL'));
 
       if (history.length > 1) {
           const current = history[history.length - 1].value;
@@ -191,19 +177,19 @@ export function UCSIndexDisplay({ className, initialData, chartData: initialChar
                 <div className="flex flex-wrap items-baseline justify-between gap-4">
                     <div className="flex items-baseline gap-x-6 gap-y-2">
                          <div>
-                            <p className="text-3xl font-bold text-primary">{formattedUcsCF}</p>
-                            <p className="text-xs text-muted-foreground mt-1">UCS (Crédito de Floresta)</p>
+                            <p className="text-3xl font-bold text-primary">{formatValue(ucsData.ucs)}</p>
+                            <p className="text-xs text-muted-foreground mt-1">UCS (BRL)</p>
                         </div>
                         <div>
-                            <p className="text-2xl font-semibold text-foreground/80">{formattedUcsASE}</p>
-                            <p className="text-xs text-muted-foreground mt-1">UCS ASE</p>
+                            <p className="text-2xl font-semibold text-foreground/80">{formatValue(ucsData.ucs_usd, 'USD')}</p>
+                            <p className="text-xs text-muted-foreground mt-1">UCS (USD)</p>
                         </div>
                         <div>
-                            <p className="text-xl font-medium text-muted-foreground">{formattedIvp}</p>
-                            <p className="text-xs text-muted-foreground mt-1">IVP (Insumo)</p>
+                            <p className="text-xl font-medium text-muted-foreground">{formatValue(ucsData.ucs_eur, 'EUR')}</p>
+                            <p className="text-xs text-muted-foreground mt-1">UCS (EUR)</p>
                         </div>
                     </div>
-                  <Button variant="outline" size="sm" onClick={() => setIsCompositionModalOpen(true)}>
+                  <Button variant="outline" size="sm" onClick={() => setIsCompositionModalOpen(true)} disabled={!ucsData.isConfigured}>
                     <Eye className="h-4 w-4 mr-2" />
                     Ver Composição
                   </Button>
@@ -213,16 +199,16 @@ export function UCSIndexDisplay({ className, initialData, chartData: initialChar
                 
                 <div className="grid grid-cols-3 gap-4 text-center">
                     <div>
-                        <p className="text-lg font-semibold">{formattedVus}</p>
-                        <p className="text-xs text-muted-foreground">VUS</p>
+                        <p className="text-lg font-semibold">{formatValue(ucsData.components.vus)}</p>
+                        <p className="text-xs text-muted-foreground">vUS</p>
                     </div>
                     <div>
-                        <p className="text-lg font-semibold">{formattedVm}</p>
-                        <p className="text-xs text-muted-foreground">VMAD</p>
+                        <p className="text-lg font-semibold">{formatValue(ucsData.components.vmad)}</p>
+                        <p className="text-xs text-muted-foreground">vMAD</p>
                     </div>
                     <div>
-                        <p className="text-lg font-semibold">{formattedCrs}</p>
-                        <p className="text-xs text-muted-foreground">CRS</p>
+                        <p className="text-lg font-semibold">{formatValue(ucsData.components.crs)}</p>
+                        <p className="text-xs text-muted-foreground">cRS</p>
                     </div>
                 </div>
                 
@@ -246,7 +232,7 @@ export function UCSIndexDisplay({ className, initialData, chartData: initialChar
         </CardContent>
       </Card>
       
-      {ucsData && (
+      {ucsData && ucsData.isConfigured && (
         <IndexCompositionModal 
             isOpen={isCompositionModalOpen} 
             onClose={() => setIsCompositionModalOpen(false)} 

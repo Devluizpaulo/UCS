@@ -25,15 +25,9 @@ interface IndexCompositionModalProps {
 }
 
 const COLORS_PDM = {
-    VMAD: 'hsl(var(--chart-1))',
-    VUS: 'hsl(var(--chart-3))',
+    VUS: 'hsl(var(--chart-1))',
+    VMAD: 'hsl(var(--chart-3))',
     CRS: 'hsl(var(--chart-2))',
-};
-
-const COLORS_VUS = {
-    Pecuaria: 'hsl(var(--chart-4))',
-    Milho: 'hsl(var(--chart-5))',
-    Soja: 'hsl(var(--chart-1))',
 };
 
 const CustomTooltip = ({ active, payload }: any) => {
@@ -101,36 +95,18 @@ const DetailListItem = ({ label, value, colorClass, tooltipText }: { label: stri
 
 
 export function IndexCompositionModal({ data, isOpen, onClose }: IndexCompositionModalProps) {
-    const { ucsCF, ucsASE, ivp, components, vusDetails } = data;
-    const [params, setParams] = useState<Partial<FormulaParameters>>({});
+    const { ucs, pdm, ivp, components } = data;
     
-    useEffect(() => {
-      if (isOpen) {
-        getFormulaParameters().then(setParams);
-      }
-    }, [isOpen]);
-    
-    const totalPdm = components.vm + components.vus + components.crs;
-    const vusTotal = vusDetails.pecuaria + vusDetails.milho + vusDetails.soja;
-
-    const carbonoEstocado = (params.produtividade_carbono || 0) * (params.area_total || 0);
-
     const pdmCompositionData = [
-        { name: 'VMAD', value: components.vm, percent: totalPdm > 0 ? (components.vm / totalPdm) * 100 : 0, fill: COLORS_PDM.VMAD },
-        { name: 'VUS', value: components.vus, percent: totalPdm > 0 ? (components.vus / totalPdm) * 100 : 0, fill: COLORS_PDM.VUS },
-        { name: 'CRS', value: components.crs, percent: totalPdm > 0 ? (components.crs / totalPdm) * 100 : 0, fill: COLORS_PDM.CRS },
-    ].filter(item => item.value > 0);
-    
-    const vusCompositionData = [
-        { name: 'Pecuária', value: vusDetails.pecuaria, percent: vusTotal > 0 ? (vusDetails.pecuaria / vusTotal) * 100 : 0, fill: COLORS_VUS.Pecuaria },
-        { name: 'Milho', value: vusDetails.milho, percent: vusTotal > 0 ? (vusDetails.milho / vusTotal) * 100 : 0, fill: COLORS_VUS.Milho },
-        { name: 'Soja', value: vusDetails.soja, percent: vusTotal > 0 ? (vusDetails.soja / vusTotal) * 100 : 0, fill: COLORS_VUS.Soja },
+        { name: 'vUS', value: components.vus, percent: pdm > 0 ? (components.vus / pdm) * 100 : 0, fill: COLORS_PDM.VUS },
+        { name: 'vMAD', value: components.vmad, percent: pdm > 0 ? (components.vmad / pdm) * 100 : 0, fill: COLORS_PDM.VMAD },
+        { name: 'cRS', value: components.crs, percent: pdm > 0 ? (components.crs / pdm) * 100 : 0, fill: COLORS_PDM.CRS },
     ].filter(item => item.value > 0);
 
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-5xl w-[95vw] h-[90vh] flex flex-col p-0">
+      <DialogContent className="sm:max-w-4xl w-[95vw] h-[90vh] flex flex-col p-0">
         <DialogHeader className="p-6 pb-4 border-b sticky top-0 bg-background z-10">
             <DialogTitle className="text-xl sm:text-2xl">Relatório Analítico da Composição do Índice UCS</DialogTitle>
             <ModalDescription>
@@ -146,31 +122,29 @@ export function IndexCompositionModal({ data, isOpen, onClose }: IndexCompositio
                       <UiTooltip>
                           <TooltipTrigger>
                             <CardTitle className="text-sm font-medium text-muted-foreground cursor-help underline decoration-dashed">
-                                Valor Final (UCS)
+                                Unidade de Crédito de Sustentabilidade (UCS)
                             </CardTitle>
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p className="font-mono text-xs">UCS = IVP</p>
+                            <p className="font-mono text-xs">UCS = IVP * Fator_UCS (7%)</p>
                           </TooltipContent>
                       </UiTooltip>
                     </TooltipProvider>
                 </CardHeader>
                 <CardContent className="-mt-4">
-                    <p className="text-4xl sm:text-5xl font-bold text-primary tracking-tight">{formatCurrency(ucsCF, 'BRL')}</p>
+                    <p className="text-4xl sm:text-5xl font-bold text-primary tracking-tight">{formatCurrency(ucs, 'BRL')}</p>
                 </CardContent>
             </Card>
 
             <div>
                 <h3 className="text-lg font-semibold mb-3">KPIs da Fórmula</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <StatCard title="UCS ASE" value={formatCurrency(ucsASE, 'BRL')} icon={TrendingUp} tooltipText="UCS ASE = UCS * Fator UCS"/>
-                    <StatCard title="Insumo UCS (IVP)" value={ivp.toFixed(4)} icon={Target} tooltipText="IVP = PDM / CE"/>
-                    <StatCard title="PDM Total" value={formatCurrency(totalPdm, 'BRL')} icon={Package} tooltipText="PDM = VMAD + VUS + CRS"/>
-                    <StatCard title="Carbono Estocado (CE)" value={`${carbonoEstocado.toLocaleString('pt-BR')} tCO₂e`} icon={Leaf} tooltipText="CE = Prod. Carbono/ha * Área Total"/>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">
+                    <StatCard title="Índice de Viabilidade (IVP)" value={ivp.toFixed(4)} icon={Target} tooltipText="IVP = PDM / Preço_Carbono"/>
+                    <StatCard title="PDM Total" value={formatCurrency(pdm, 'BRL')} icon={Package} tooltipText="PDM = vUS + vMAD + cRS"/>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+            <div className="grid grid-cols-1 lg:grid-cols-1 gap-6 items-start">
                 <Card>
                     <CardHeader>
                         <CardTitle>Detalhamento do PDM</CardTitle>
@@ -178,9 +152,9 @@ export function IndexCompositionModal({ data, isOpen, onClose }: IndexCompositio
                     </CardHeader>
                     <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
                         <div className="order-2 md:order-1">
-                            <DetailListItem label="Uso do Solo (VUS)" value={formatCurrency(components.vus, 'BRL')} colorClass="bg-chart-3" tooltipText="(Renda Ponderada/ha * Fator Arrend.) * Área"/>
-                            <DetailListItem label="Valor da Madeira (VMAD)" value={formatCurrency(components.vm, 'BRL')} colorClass="bg-chart-1" tooltipText="(Preço Madeira BRL * Fator Conv. * FM3) * Área"/>
-                            <DetailListItem label="Custo Socioambiental (CRS)" value={formatCurrency(components.crs, 'BRL')} colorClass="bg-chart-2" tooltipText="Custo Carbono + Custo Água"/>
+                            <DetailListItem label="Valor de Uso da Terra (vUS)" value={formatCurrency(components.vus, 'BRL')} colorClass="bg-chart-1" tooltipText="((Preço_Boi*18) + (Preço_Milho*7.2) + (Preço_Soja*3.3)) * 35%"/>
+                            <DetailListItem label="Valor da Madeira (vMAD)" value={formatCurrency(components.vmad, 'BRL')} colorClass="bg-chart-3" tooltipText="Preço_Madeira_m³ * 120"/>
+                            <DetailListItem label="Custo Socioambiental (cRS)" value={formatCurrency(components.crs, 'BRL')} colorClass="bg-chart-2" tooltipText="(Preço_Carbono * Param) + (Preço_Água * Param)"/>
                         </div>
                         <div className="h-48 w-full order-1 md:order-2">
                              <ResponsiveContainer>
@@ -188,30 +162,6 @@ export function IndexCompositionModal({ data, isOpen, onClose }: IndexCompositio
                                     <Tooltip content={<CustomTooltip />} cursor={{ fill: 'hsl(var(--muted))' }}/>
                                     <Pie data={pdmCompositionData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={40} outerRadius={70} paddingAngle={2} stroke="hsl(var(--background))" strokeWidth={3}>
                                         {pdmCompositionData.map((entry) => <Cell key={entry.name} fill={entry.fill} />)}
-                                    </Pie>
-                                </PieChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </CardContent>
-                </Card>
-                
-                 <Card>
-                    <CardHeader>
-                        <CardTitle>Detalhamento do VUS</CardTitle>
-                        <CardDescription>Distribuição da renda ponderada pelo uso do solo.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-                         <div className="order-2 md:order-1">
-                            <DetailListItem label="Pecuária" value={formatCurrency(vusDetails.pecuaria, 'BRL')} colorClass="bg-chart-4" tooltipText="(Renda Pecuária/ha * Peso) * Fator Arrend. * Área"/>
-                            <DetailListItem label="Milho" value={formatCurrency(vusDetails.milho, 'BRL')} colorClass="bg-chart-5" tooltipText="(Renda Milho/ha * Peso) * Fator Arrend. * Área"/>
-                            <DetailListItem label="Soja" value={formatCurrency(vusDetails.soja, 'BRL')} colorClass="bg-chart-1" tooltipText="(Renda Soja/ha * Peso) * Fator Arrend. * Área"/>
-                        </div>
-                        <div className="h-48 w-full order-1 md:order-2">
-                            <ResponsiveContainer>
-                                <PieChart>
-                                    <Tooltip content={<CustomTooltip />} cursor={{ fill: 'hsl(var(--muted))' }}/>
-                                    <Pie data={vusCompositionData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={40} outerRadius={70} paddingAngle={2} stroke="hsl(var(--background))" strokeWidth={3}>
-                                        {vusCompositionData.map((entry) => <Cell key={entry.name} fill={entry.fill} />)}
                                     </Pie>
                                 </PieChart>
                             </ResponsiveContainer>

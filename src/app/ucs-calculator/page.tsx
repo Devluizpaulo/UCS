@@ -12,7 +12,7 @@ export default function UCSCalculatorPage() {
       <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
         <PageHeader
           title="Calculadora UCS"
-          description="Calcule o valor da Unidade de Crédito de Sustentabilidade baseado na metodologia oficial"
+          description="Simule o valor da Unidade de Crédito de Sustentabilidade com base na nova metodologia"
           icon={Calculator}
         />
         <UCSCalculator />

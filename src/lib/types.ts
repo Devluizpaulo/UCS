@@ -1,5 +1,4 @@
 
-
 export type ChartData = {
   time: string;
   value: number;
@@ -69,24 +68,20 @@ export type FirestoreQuote = {
 }
 
 export type UcsData = {
-  ivp: number; // Insumo UCS
-  ucsCF: number; // UCS Crédito de Floresta
-  ucsASE: number; // UCS Ativo Socioambiental Equivalente
+  ucs: number;
+  ivp: number;
+  pdm: number;
+  ucs_eur: number;
+  ucs_usd: number;
   isConfigured: boolean;
   components: {
-    vm: number;
     vus: number;
+    vmad: number;
     crs: number;
-  };
-  vusDetails: {
-    pecuaria: number;
-    milho: number;
-    soja: number;
   };
 };
 
 export type CalculateUcsIndexOutput = UcsData;
-
 
 export type ScenarioResult = {
   newIndexValue: number;
@@ -111,44 +106,22 @@ export type RiskAnalysisData = {
     metrics: RiskMetric[];
 };
 
-// Based on the official methodology
+// Based on the new simplified methodology
 export type FormulaParameters = {
     // Produtividades
-    produtividade_boi: number; // @/ha
-    produtividade_milho: number; // ton/ha
-    produtividade_soja: number; // ton/ha
-    produtividade_madeira: number; // FM3, e.g., 120
-    produtividade_carbono: number; // tCO2e/ha
+    produtividade_boi: number; // 18 @/ha
+    produtividade_milho: number; // 7.2 ton/ha
+    produtividade_soja: number; // 3.3 ton/ha
+    produtividade_madeira: number; // 120 m³/ha
     
-    // Fatores de Ponderação VUS
-    fator_pecuaria: number; // 0-1
-    fator_milho: number; // 0-1
-    fator_soja: number; // 0-1
-    
-    // Fatores de Conversão e Custo
-    fator_arrendamento: number; // 0-1
-    fator_agua: number; // 0-1
-    fator_conversao_madeira: number; // Fator de Conversão da Madeira (10%)
-    FATOR_CARBONO: number; // Unidades tCO2/ha (e.g., 2.59)
-    fator_ucs: number; // Multiplicador para ASE, e.g., 2
-    
-    // Área
-    area_total: number; // ha
-    
+    // Fatores
+    fator_uso_terra: number; // 35%
+    credito_carbono_param: number; // Valor/parâmetro para CC
+    consumo_agua_param: number; // Valor/parâmetro para Água
+    fator_ucs: number; // 7%
+
     // Status
     isConfigured: boolean;
-
-    // Legacy fields for compatibility
-    VOLUME_MADEIRA_HA: number;
-    PROD_BOI: number;
-    PROD_MILHO: number;
-    PROD_SOJA: number;
-    PESO_PEC: number;
-    PESO_MILHO: number;
-    PESO_SOJA: number;
-    FATOR_ARREND: number;
-    pib_por_hectare: number;
-    FATOR_CONVERSAO_SERRADA_TORA: number;
 };
 
 export type ReportPreviewData = {
@@ -178,46 +151,26 @@ export type GenerateReportOutput = {
   previewData: ReportPreviewData;
 };
 
-// TYPES FOR UCS-PRICING-SERVICE
+// TYPES FOR UCS-PRICING-SERVICE (Calculadora)
 export type UCSCalculationInputs = Partial<FormulaParameters> & {
-  // Cotações (preços brutos, conversão acontece no motor de cálculo)
+  // Cotações
+  preco_boi_brl: number;
+  preco_milho_brl_ton: number;
+  preco_soja_brl_ton: number;
+  preco_madeira_brl_m3: number;
+  preco_carbono_brl: number;
+  preco_agua_brl_m3: number;
   taxa_usd_brl: number;
   taxa_eur_brl: number;
-  pm3mad_usd: number; // Preço Madeira em USD
-  pecuariaCotacao: number; // Preço Boi Arroba em BRL
-  milhoCotacao: number; // Preço Milho Saca em BRL
-  sojaCotacao_usd: number; // Preço Soja Saca em USD
-  cotacaoCreditoCarbono_eur: number; // Preço Carbono em EUR
 };
 
 export type UCSCalculationResult = {
-  // Componentes do PDM
-  valorMadeira: number; // VMAD
-  valorUsoSolo: number; // VUS
-  custoResponsabilidadeSocioambiental: number; // CRS
-  potencialDesflorestadorMonetizado: number; // PDM
-  
-  // Cálculos finais
-  indiceViabilidadeProjeto: number; // IVP
-  unidadeCreditoSustentabilidade: number; // UCS CF
-  
-  // Detalhamento dos cálculos
-  detalhes: {
-    vm: {
-      fm3: number;
-      pm3mad: number;
-    };
-    vus: {
-      pecuaria: number;
-      milho: number;
-      soja: number;
-    };
-    crs: {
-      cc: number;
-      ch2o: number;
-    };
-    ce: {
-      carbonoEstocadoTotal: number;
-    }
-  };
+  vUS: number;
+  vMAD: number;
+  cRS: number;
+  pdm: number;
+  ivp: number;
+  ucs: number;
+  ucs_eur: number;
+  ucs_usd: number;
 };

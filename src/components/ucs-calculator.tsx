@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -25,8 +24,6 @@ export function UCSCalculator() {
   const [resultado, setResultado] = useState<UCSCalculationResult | null>(null);
   const [erros, setErros] = useState<string[]>([]);
   const [carregando, setCarregando] = useState(true);
-  const [formattedResult, setFormattedResult] = useState<any>({});
-
 
   const carregarValoresPadrao = useCallback(async () => {
     setCarregando(true);
@@ -46,18 +43,6 @@ export function UCSCalculator() {
     carregarValoresPadrao();
   }, [carregarValoresPadrao]);
 
-  const formatResults = useCallback((result: UCSCalculationResult) => {
-    const formatted = {
-      ucs: formatCurrency(result.unidadeCreditoSustentabilidade, 'BRL'),
-      ivp: formatCurrency(result.indiceViabilidadeProjeto, 'BRL'),
-      pdm: formatCurrency(result.potencialDesflorestadorMonetizado, 'BRL'),
-      vmad: formatCurrency(result.valorMadeira, 'BRL'),
-      vus: formatCurrency(result.valorUsoSolo, 'BRL'),
-      crs: formatCurrency(result.custoResponsabilidadeSocioambiental, 'BRL'),
-    };
-    setFormattedResult(formatted);
-  }, []);
-
   const calcular = useCallback(async () => {
     const validacao = validarInputsUCS(inputs);
     
@@ -70,13 +55,12 @@ export function UCSCalculator() {
     try {
       const resultadoCalc = calcularUCSCompleto(inputs as UCSCalculationInputs);
       setResultado(resultadoCalc);
-      formatResults(resultadoCalc);
       setErros([]);
     } catch (error) {
       setErros([`Erro no cálculo: ${error instanceof Error ? error.message : 'Erro desconhecido'}`]);
       setResultado(null);
     }
-  }, [inputs, formatResults]);
+  }, [inputs]);
 
   useEffect(() => {
     if (!carregando && Object.keys(inputs).length > 0) {
@@ -97,6 +81,7 @@ export function UCSCalculator() {
         <Input
           id={id}
           type="number"
+          step="any"
           value={String(inputs[id] ?? '')}
           onChange={(e) => handleInputChange(id, e.target.value)}
           className={`text-right ${isCurrency ? 'pl-8' : ''}`}
@@ -133,9 +118,12 @@ export function UCSCalculator() {
     return (
         <div className="space-y-6">
             <div>
-                <Label className="text-sm text-muted-foreground">Valor Final da Unidade de Crédito</Label>
-                <p className="text-4xl font-bold text-primary">{formattedResult.ucs}</p>
-                <p className="text-xs text-muted-foreground">UCS (CF) - Crédito de Floresta</p>
+                <Label className="text-sm text-muted-foreground">Unidade de Crédito de Sustentabilidade (UCS)</Label>
+                <p className="text-4xl font-bold text-primary">{formatCurrency(resultado.ucs, 'BRL')}</p>
+                 <div className="text-xs text-muted-foreground flex gap-4">
+                    <span>{formatCurrency(resultado.ucs_usd, 'USD')}</span>
+                    <span>{formatCurrency(resultado.ucs_eur, 'EUR')}</span>
+                 </div>
             </div>
 
             <Separator />
@@ -143,30 +131,30 @@ export function UCSCalculator() {
             <div className="grid grid-cols-2 gap-4">
                  <div>
                     <Label className="text-sm">Índice de Viabilidade (IVP)</Label>
-                    <p className="text-lg font-semibold">{formattedResult.ivp}</p>
+                    <p className="text-lg font-semibold">{resultado.ivp.toFixed(4)}</p>
                 </div>
                 <div>
                     <Label className="text-sm">Potencial Desflorestador (PDM)</Label>
-                    <p className="text-lg font-semibold">{formattedResult.pdm}</p>
+                    <p className="text-lg font-semibold">{formatCurrency(resultado.pdm, 'BRL')}</p>
                 </div>
             </div>
 
             <Card className="bg-muted/30">
                 <CardHeader className="pb-4">
-                    <CardTitle className="text-base">Detalhamento dos Componentes do PDM</CardTitle>
+                    <CardTitle className="text-base">Detalhamento do PDM</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3 text-sm">
                     <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground">Valor da Madeira (VMAD)</span>
-                        <span className="font-medium">{formattedResult.vmad}</span>
+                        <span className="text-muted-foreground">Valor de Uso da Terra (vUS)</span>
+                        <span className="font-medium">{formatCurrency(resultado.vUS, 'BRL')}</span>
                     </div>
                      <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground">Valor de Uso do Solo (VUS)</span>
-                        <span className="font-medium">{formattedResult.vus}</span>
+                        <span className="text-muted-foreground">Valor da Madeira (vMAD)</span>
+                        <span className="font-medium">{formatCurrency(resultado.vMAD, 'BRL')}</span>
                     </div>
                      <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground">Custo Socioambiental (CRS)</span>
-                        <span className="font-medium">{formattedResult.crs}</span>
+                        <span className="text-muted-foreground">Custo Socioambiental (cRS)</span>
+                        <span className="font-medium">{formatCurrency(resultado.cRS, 'BRL')}</span>
                     </div>
                 </CardContent>
             </Card>
@@ -197,20 +185,20 @@ export function UCSCalculator() {
         <Card>
           <CardHeader>
             <CardTitle>Parâmetros de Cotação</CardTitle>
-            <CardDescription>Preços atuais dos ativos que compõem o índice. Altere-os para simular cenários.</CardDescription>
+            <CardDescription>Preços atuais dos ativos que compõem o índice. Os valores são carregados automaticamente mas podem ser alterados para simulações.</CardDescription>
           </CardHeader>
           <CardContent>
             {carregando ? (
                 renderInputSkeleton()
             ) : (
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {renderInputField('pecuariaCotacao', 'Preço Boi (@)', true)}
-                    {renderInputField('milhoCotacao', 'Preço Milho (Saca)', true)}
-                    {renderInputField('sojaCotacao_usd', 'Preço Soja (Saca $)', false)}
-                    {renderInputField('pm3mad_usd', 'Preço Madeira (m³ $)', false)}
-                    {renderInputField('cotacaoCreditoCarbono_eur', 'Preço Carbono (€)', false)}
-                    {renderInputField('taxa_usd_brl', 'Taxa de Câmbio USD/BRL', false)}
-                    {renderInputField('taxa_eur_brl', 'Taxa de Câmbio EUR/BRL', false)}
+                    {renderInputField('preco_boi_brl', 'Preço Boi (@)', true)}
+                    {renderInputField('preco_milho_brl_ton', 'Preço Milho (Ton)', true)}
+                    {renderInputField('preco_soja_brl_ton', 'Preço Soja (Ton)', true)}
+                    {renderInputField('preco_madeira_brl_m3', 'Preço Madeira (m³)', true)}
+                    {renderInputField('preco_carbono_brl', 'Preço Carbono (Ton CO₂)', true)}
+                    {renderInputField('taxa_usd_brl', 'Taxa Câmbio USD/BRL', false)}
+                    {renderInputField('taxa_eur_brl', 'Taxa Câmbio EUR/BRL', false)}
                 </div>
             )}
           </CardContent>
@@ -218,23 +206,22 @@ export function UCSCalculator() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Parâmetros da Fórmula</CardTitle>
+            <CardTitle>Parâmetros Fixos da Fórmula</CardTitle>
             <CardDescription>Ajuste as produtividades e fatores para simular cenários.</CardDescription>
           </CardHeader>
           <CardContent>
              {carregando ? (
                 <>
                   {renderInputSkeleton()}
-                  {renderInputSkeleton()}
                 </>
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {renderInputField('produtividade_madeira', 'Prod. Madeira (m³/ha)')}
                   {renderInputField('produtividade_boi', 'Prod. Boi (@/ha)')}
                   {renderInputField('produtividade_milho', 'Prod. Milho (ton/ha)')}
                   {renderInputField('produtividade_soja', 'Prod. Soja (ton/ha)')}
-                  {renderInputField('produtividade_carbono', 'Prod. Carbono (tCO2e/ha)')}
-                  {renderInputField('area_total', 'Área Total (ha)')}
+                  {renderInputField('produtividade_madeira', 'Prod. Madeira (m³/ha)')}
+                  {renderInputField('fator_uso_terra', 'Fator Uso Terra (%)', false)}
+                  {renderInputField('fator_ucs', 'Fator UCS (%)', false)}
               </div>
             )}
           </CardContent>
@@ -257,7 +244,7 @@ export function UCSCalculator() {
         <Card className="sticky top-24">
           <CardHeader>
             <CardTitle>Resultado do Cálculo</CardTitle>
-            <CardDescription>O valor da UCS é calculado em tempo real.</CardDescription>
+            <CardDescription>O valor da UCS é calculado em tempo real com base nos parâmetros inseridos.</CardDescription>
           </CardHeader>
           <CardContent className="min-h-[300px]">
             {carregando ? (
