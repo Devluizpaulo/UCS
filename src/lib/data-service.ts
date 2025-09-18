@@ -32,17 +32,16 @@ const serializeFirestoreTimestamp = (data: any): any => {
  * @returns The name of the collection holding price data (e.g., 'boi_gordo').
  */
 function getCollectionNameFromAssetId(assetId: string): string {
+    // This logic is critical. It derives the collection name from the asset ID.
+    // e.g., "boi_gordo_futuros" -> "boi_gordo"
+    // e.g., "usd_brl___dolar_americano_real_brasileiro" -> "usd_brl"
     const normalizedId = assetId.toLowerCase();
     
-    if (normalizedId.includes('boi')) return 'boi_gordo';
-    if (normalizedId.includes('carbono')) return 'carbono';
-    if (normalizedId.includes('eur')) return 'eur';
-    if (normalizedId.includes('madeira')) return 'madeira';
-    if (normalizedId.includes('milho')) return 'milho';
-    if (normalizedId.includes('soja')) return 'soja';
-    if (normalizedId.includes('usd') || normalizedId.includes('dolar')) return 'usd';
-
-    return normalizedId.replace(/_futuros$/, '').replace(/__/g, '_');
+    // Split by the '___' separator if it exists
+    const parts = normalizedId.split('___');
+    
+    // The collection name is the first part, with "_futuros" removed.
+    return parts[0].replace(/_futuros$/, '');
 }
 
 // Helper to parse DD/MM/YYYY or DD/MM/YY string to Date object
@@ -163,7 +162,7 @@ export async function getUcsIndexValue(): Promise<UcsData> {
         ucsCF: 0,
         ucsASE: 0,
         isConfigured: false,
-        components: { vm: 0, vus: 0, crs: 0 },
+        components: { vmad: 0, vus: 0, crs: 0 },
         vusDetails: { pecuaria: 0, milho: 0, soja: 0 },
     };
 
