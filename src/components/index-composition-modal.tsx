@@ -57,19 +57,18 @@ const StatCard = ({ title, value, subtext, icon: Icon, tooltipText }: { title:st
     <div className="flex-1 rounded-lg border bg-card p-4 flex flex-col justify-center">
         <div className="flex items-center justify-between mb-1">
             <div className="flex items-center gap-1.5">
-                <p className="text-sm font-medium text-muted-foreground">{title}</p>
-                 {tooltipText && (
-                    <TooltipProvider>
-                        <UiTooltip>
-                            <TooltipTrigger>
-                                <Info className="h-3 w-3 text-muted-foreground" />
-                            </TooltipTrigger>
+                <TooltipProvider>
+                    <UiTooltip>
+                        <TooltipTrigger asChild>
+                             <p className="text-sm font-medium text-muted-foreground cursor-help underline decoration-dashed">{title}</p>
+                        </TooltipTrigger>
+                        {tooltipText && (
                             <TooltipContent>
-                                <p>{tooltipText}</p>
+                                <p className="font-mono text-xs">{tooltipText}</p>
                             </TooltipContent>
-                        </UiTooltip>
-                    </TooltipProvider>
-                 )}
+                        )}
+                    </UiTooltip>
+                </TooltipProvider>
             </div>
             <Icon className="h-4 w-4 text-muted-foreground" />
         </div>
@@ -79,11 +78,22 @@ const StatCard = ({ title, value, subtext, icon: Icon, tooltipText }: { title:st
 );
 
 
-const DetailListItem = ({ label, value, colorClass }: { label: string; value: string; colorClass: string; }) => (
+const DetailListItem = ({ label, value, colorClass, tooltipText }: { label: string; value: string; colorClass: string; tooltipText?: string; }) => (
     <div className="flex items-center justify-between text-sm py-1.5">
         <div className="flex items-center gap-2">
             <div className={cn("h-2.5 w-2.5 rounded-full", colorClass)} />
-            <span className="text-muted-foreground">{label}</span>
+            <TooltipProvider>
+                <UiTooltip>
+                    <TooltipTrigger asChild>
+                         <span className="text-muted-foreground cursor-help underline decoration-dashed">{label}</span>
+                    </TooltipTrigger>
+                    {tooltipText && (
+                        <TooltipContent>
+                            <p className="font-mono text-xs">{tooltipText}</p>
+                        </TooltipContent>
+                    )}
+                </UiTooltip>
+            </TooltipProvider>
         </div>
         <span className="font-medium text-foreground font-mono">{value}</span>
     </div>
@@ -132,9 +142,18 @@ export function IndexCompositionModal({ data, isOpen, onClose }: IndexCompositio
             
              <Card className="text-center bg-muted/30">
                 <CardHeader>
-                    <CardTitle className="text-sm font-medium text-muted-foreground">
-                        Valor Final (UCS Crédito de Floresta)
-                    </CardTitle>
+                    <TooltipProvider>
+                      <UiTooltip>
+                          <TooltipTrigger>
+                            <CardTitle className="text-sm font-medium text-muted-foreground cursor-help underline decoration-dashed">
+                                Valor Final (UCS Crédito de Floresta)
+                            </CardTitle>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="font-mono text-xs">UCS CF = IVP * Fator UCS</p>
+                          </TooltipContent>
+                      </UiTooltip>
+                    </TooltipProvider>
                 </CardHeader>
                 <CardContent className="-mt-4">
                     <p className="text-4xl sm:text-5xl font-bold text-primary tracking-tight">{formatCurrency(ucsCF, 'BRL')}</p>
@@ -144,10 +163,10 @@ export function IndexCompositionModal({ data, isOpen, onClose }: IndexCompositio
             <div>
                 <h3 className="text-lg font-semibold mb-3">KPIs da Fórmula</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <StatCard title="UCS ASE" value={formatCurrency(ucsASE, 'BRL')} icon={TrendingUp} tooltipText="UCS Ativo Socioambiental Equivalente (UCS CF x 2)"/>
-                    <StatCard title="Insumo UCS (IVP)" value={formatCurrency(ivp, 'BRL')} icon={Target} tooltipText="Índice de Viabilidade do Projeto"/>
-                    <StatCard title="PDM Total" value={formatCurrency(totalPdm, 'BRL')} icon={Package} tooltipText="Potencial Desflorestador Monetizado"/>
-                    <StatCard title="Carbono Estocado (CE)" value={`${carbonoEstocado.toLocaleString('pt-BR')} tCO₂e`} icon={Leaf} tooltipText="Produtividade de Carbono x Área Total"/>
+                    <StatCard title="UCS ASE" value={formatCurrency(ucsASE, 'BRL')} icon={TrendingUp} tooltipText="UCS ASE = UCS CF * 2"/>
+                    <StatCard title="Insumo UCS (IVP)" value={formatCurrency(ivp, 'BRL')} icon={Target} tooltipText="IVP = (PDM / CE) / 2"/>
+                    <StatCard title="PDM Total" value={formatCurrency(totalPdm, 'BRL')} icon={Package} tooltipText="PDM = VMAD + VUS + CRS"/>
+                    <StatCard title="Carbono Estocado (CE)" value={`${carbonoEstocado.toLocaleString('pt-BR')} tCO₂e`} icon={Leaf} tooltipText="CE = Prod. Carbono * Área Total"/>
                 </div>
             </div>
 
@@ -159,9 +178,9 @@ export function IndexCompositionModal({ data, isOpen, onClose }: IndexCompositio
                     </CardHeader>
                     <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
                         <div className="order-2 md:order-1">
-                            <DetailListItem label="Valor da Madeira (VMAD)" value={formatCurrency(components.vm, 'BRL')} colorClass="bg-chart-1" />
-                            <DetailListItem label="Uso do Solo (VUS)" value={formatCurrency(components.vus, 'BRL')} colorClass="bg-chart-3" />
-                            <DetailListItem label="Custo Socioambiental (CRS)" value={formatCurrency(components.crs, 'BRL')} colorClass="bg-chart-2" />
+                            <DetailListItem label="Valor da Madeira (VMAD)" value={formatCurrency(components.vm, 'BRL')} colorClass="bg-chart-1" tooltipText="VMAD = Renda Madeira/ha * Área Total"/>
+                            <DetailListItem label="Uso do Solo (VUS)" value={formatCurrency(components.vus, 'BRL')} colorClass="bg-chart-3" tooltipText="VUS = (Renda Ponderada/ha * Fator Arrend.) * Área"/>
+                            <DetailListItem label="Custo Socioambiental (CRS)" value={formatCurrency(components.crs, 'BRL')} colorClass="bg-chart-2" tooltipText="CRS = Custo Carbono + Custo Água"/>
                         </div>
                         <div className="h-48 w-full order-1 md:order-2">
                              <ResponsiveContainer>
@@ -183,9 +202,9 @@ export function IndexCompositionModal({ data, isOpen, onClose }: IndexCompositio
                     </CardHeader>
                     <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
                          <div className="order-2 md:order-1">
-                            <DetailListItem label="Pecuária" value={formatCurrency(vusDetails.pecuaria, 'BRL')} colorClass="bg-chart-4" />
-                            <DetailListItem label="Milho" value={formatCurrency(vusDetails.milho, 'BRL')} colorClass="bg-chart-5" />
-                            <DetailListItem label="Soja" value={formatCurrency(vusDetails.soja, 'BRL')} colorClass="bg-chart-1" />
+                            <DetailListItem label="Pecuária" value={formatCurrency(vusDetails.pecuaria, 'BRL')} colorClass="bg-chart-4" tooltipText="(Renda Pecuária/ha * Peso Pecuária)"/>
+                            <DetailListItem label="Milho" value={formatCurrency(vusDetails.milho, 'BRL')} colorClass="bg-chart-5" tooltipText="(Renda Milho/ha * Peso Milho)"/>
+                            <DetailListItem label="Soja" value={formatCurrency(vusDetails.soja, 'BRL')} colorClass="bg-chart-1" tooltipText="(Renda Soja/ha * Peso Soja)"/>
                         </div>
                         <div className="h-48 w-full order-1 md:order-2">
                             <ResponsiveContainer>
