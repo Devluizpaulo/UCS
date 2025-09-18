@@ -1,31 +1,40 @@
 
 'use server';
 /**
- * @fileOverview A service for managing the UCS Index formula parameters, aligned with the new simplified methodology.
+ * @fileOverview A service for managing the UCS Index formula parameters, aligned with the user's Excel spreadsheet logic.
  */
 
 import { db } from './firebase-admin-config';
 import type { FormulaParameters } from './types';
 
-const FORMULA_DOC_ID = 'parametros_oficiais_v2'; // New doc ID for the new formula structure
+const FORMULA_DOC_ID = 'parametros_oficiais_v2';
 const SETTINGS_COLLECTION = 'settings';
 
-// Default values based on the new simplified formula specification.
-const defaultParameters: FormulaParameters = {
+// Default values based on the user's Excel spreadsheet.
+const defaultParameters: Omit<FormulaParameters, 'isConfigured'> = {
     // Produtividades
     produtividade_boi: 18,
     produtividade_milho: 7.2,
     produtividade_soja: 3.3,
     produtividade_madeira: 120,
+    produtividade_carbono: 900,
+    
+    // Fatores de Ponderação VUS
+    fator_pecuaria: 0.35,
+    fator_milho: 0.30,
+    fator_soja: 0.35,
+    
+    // Fatores de Conversão/Custo
+    fator_arrendamento: 0.048, // 4.8%
+    fator_agua: 0.07, // 7%
+    fator_conversao_madeira: 0.10, // 10%
 
-    // Fatores
-    fator_uso_terra: 0.35, // 35%
-    credito_carbono_param: 1, // Placeholder, e.g., units of carbon credit
-    consumo_agua_param: 1, // Placeholder, e.g., units of water consumption
-    fator_ucs: 0.07, // 7%
-
-    // Status
-    isConfigured: false,
+    // Fatores Finais e Multiplicadores
+    fator_ucs: 2, // Fator de multiplicação final para UCS CF -> UCS ASE
+    FATOR_CARBONO: 2.59, // Unidades de tCO2 por hectare para CRS
+    
+    // Área
+    area_total: 1197,
 };
 
 /**
@@ -41,9 +50,10 @@ export async function getFormulaParameters(): Promise<FormulaParameters> {
 
     if (docSnap.exists) {
       const dbData = docSnap.data();
+      // Ensure all default keys exist in the loaded data
       params = { ...defaultParameters, ...dbData, isConfigured: true } as FormulaParameters;
     } else {
-      console.log('[FormulaService] No new parameters found, creating with default values.');
+      console.log('[FormulaService] No parameters found, creating with default values.');
       params = { ...defaultParameters, isConfigured: true };
       await docRef.set(params);
     }
@@ -53,7 +63,7 @@ export async function getFormulaParameters(): Promise<FormulaParameters> {
   } catch (error) {
     console.error("[FormulaService] Error fetching formula parameters: ", error);
     // In case of error, return the hardcoded default values.
-    return defaultParameters;
+    return { ...defaultParameters, isConfigured: false };
   }
 }
 
@@ -68,9 +78,9 @@ export async function saveFormulaParameters(params: Omit<FormulaParameters, 'isC
   
   try {
     await docRef.set(dataToSave, { merge: true });
-    console.log('[FormulaService] Successfully saved new formula parameters.');
+    console.log('[FormulaService] Successfully saved formula parameters.');
   } catch (error) {
-    console.error("[FormulaService] Error saving new formula parameters: ", error);
+    console.error("[FormulaService] Error saving formula parameters: ", error);
     throw new Error("Failed to save formula parameters to the database.");
   }
 }

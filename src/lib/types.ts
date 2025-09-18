@@ -68,16 +68,20 @@ export type FirestoreQuote = {
 }
 
 export type UcsData = {
-  ucs: number;
+  ucsCF: number;
+  ucsASE: number;
   ivp: number;
   pdm: number;
-  ucs_eur: number;
-  ucs_usd: number;
   isConfigured: boolean;
   components: {
     vus: number;
     vmad: number;
     crs: number;
+  };
+  vusDetails: {
+    pecuaria: number;
+    milho: number;
+    soja: number;
   };
 };
 
@@ -106,23 +110,35 @@ export type RiskAnalysisData = {
     metrics: RiskMetric[];
 };
 
-// Based on the new simplified methodology
 export type FormulaParameters = {
     // Produtividades
-    produtividade_boi: number; // 18 @/ha
-    produtividade_milho: number; // 7.2 ton/ha
-    produtividade_soja: number; // 3.3 ton/ha
-    produtividade_madeira: number; // 120 m³/ha
+    produtividade_boi: number;
+    produtividade_milho: number;
+    produtividade_soja: number;
+    produtividade_madeira: number;
+    produtividade_carbono: number;
     
-    // Fatores
-    fator_uso_terra: number; // 35%
-    credito_carbono_param: number; // Valor/parâmetro para CC
-    consumo_agua_param: number; // Valor/parâmetro para Água
-    fator_ucs: number; // 7%
-
+    // Fatores de Ponderação VUS
+    fator_pecuaria: number;
+    fator_milho: number;
+    fator_soja: number;
+    
+    // Fatores de Conversão/Custo
+    fator_arrendamento: number;
+    fator_agua: number;
+    fator_conversao_madeira: number;
+    
+    // Fatores Finais e Multiplicadores
+    fator_ucs: number;
+    FATOR_CARBONO: number; // Unidades de tCO2 por hectare para CRS
+    
+    // Área
+    area_total: number;
+    
     // Status
     isConfigured: boolean;
 };
+
 
 export type ReportPreviewData = {
     reportTitle: string;
@@ -159,7 +175,6 @@ export type UCSCalculationInputs = Partial<FormulaParameters> & {
   preco_soja_brl_ton: number;
   preco_madeira_brl_m3: number;
   preco_carbono_brl: number;
-  preco_agua_brl_m3: number;
   taxa_usd_brl: number;
   taxa_eur_brl: number;
 };
@@ -170,7 +185,12 @@ export type UCSCalculationResult = {
   cRS: number;
   pdm: number;
   ivp: number;
-  ucs: number;
-  ucs_eur: number;
-  ucs_usd: number;
+  ucsCF: number;
+  ucsASE: number;
+  detalhes: {
+      vm: { fm3: number, pm3mad: number },
+      vus: { pecuaria: number; milho: number; soja: number; },
+      crs: { cc: number, ch2o: number },
+      ce: { carbonoEstocadoTotal: number },
+  }
 };

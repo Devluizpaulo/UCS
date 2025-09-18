@@ -9,13 +9,11 @@ import {
   DialogDescription as ModalDescription,
 } from '@/components/ui/dialog';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
-import type { UcsData, FormulaParameters } from '@/lib/types';
+import type { UcsData } from '@/lib/types';
 import { formatCurrency } from '@/lib/ucs-pricing-service';
-import { useEffect, useState } from 'react';
-import { Package, Leaf, Target, TrendingUp, Info } from 'lucide-react';
+import { Package, Target } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { getFormulaParameters } from '@/lib/formula-service';
 import { Tooltip as UiTooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface IndexCompositionModalProps {
@@ -83,7 +81,7 @@ const DetailListItem = ({ label, value, colorClass, tooltipText }: { label: stri
                     </TooltipTrigger>
                     {tooltipText && (
                         <TooltipContent>
-                            <p className="font-mono text-xs">{tooltipText}</p>
+                            <p className="font-mono text-xs max-w-xs">{tooltipText}</p>
                         </TooltipContent>
                     )}
                 </UiTooltip>
@@ -95,12 +93,13 @@ const DetailListItem = ({ label, value, colorClass, tooltipText }: { label: stri
 
 
 export function IndexCompositionModal({ data, isOpen, onClose }: IndexCompositionModalProps) {
-    const { ucs, pdm, ivp, components } = data;
+    const { ucsCF, ucsASE, pdm, ivp, components } = data;
     
+    const pdmTotal = components.vus + components.vmad + components.crs;
     const pdmCompositionData = [
-        { name: 'vUS', value: components.vus, percent: pdm > 0 ? (components.vus / pdm) * 100 : 0, fill: COLORS_PDM.VUS },
-        { name: 'vMAD', value: components.vmad, percent: pdm > 0 ? (components.vmad / pdm) * 100 : 0, fill: COLORS_PDM.VMAD },
-        { name: 'cRS', value: components.crs, percent: pdm > 0 ? (components.crs / pdm) * 100 : 0, fill: COLORS_PDM.CRS },
+        { name: 'VUS', value: components.vus, percent: pdmTotal > 0 ? (components.vus / pdmTotal) * 100 : 0, fill: COLORS_PDM.VUS },
+        { name: 'VMAD', value: components.vmad, percent: pdmTotal > 0 ? (components.vmad / pdmTotal) * 100 : 0, fill: COLORS_PDM.VMAD },
+        { name: 'CRS', value: components.crs, percent: pdmTotal > 0 ? (components.crs / pdmTotal) * 100 : 0, fill: COLORS_PDM.CRS },
     ].filter(item => item.value > 0);
 
 
@@ -118,29 +117,46 @@ export function IndexCompositionModal({ data, isOpen, onClose }: IndexCompositio
             
              <Card className="text-center bg-muted/30">
                 <CardHeader>
-                    <TooltipProvider>
-                      <UiTooltip>
-                          <TooltipTrigger>
-                            <CardTitle className="text-sm font-medium text-muted-foreground cursor-help underline decoration-dashed">
-                                Unidade de Crédito de Sustentabilidade (UCS)
-                            </CardTitle>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p className="font-mono text-xs">UCS = IVP * Fator_UCS (7%)</p>
-                          </TooltipContent>
-                      </UiTooltip>
-                    </TooltipProvider>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                             <TooltipProvider>
+                              <UiTooltip>
+                                  <TooltipTrigger>
+                                    <CardTitle className="text-sm font-medium text-muted-foreground cursor-help underline decoration-dashed">
+                                        UCS Crédito Floresta (CF)
+                                    </CardTitle>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p className="font-mono text-xs">UCS CF = IVP</p>
+                                  </TooltipContent>
+                              </UiTooltip>
+                            </TooltipProvider>
+                             <p className="text-4xl sm:text-5xl font-bold text-primary tracking-tight">{formatCurrency(ucsCF, 'BRL')}</p>
+                        </div>
+                         <div>
+                             <TooltipProvider>
+                              <UiTooltip>
+                                  <TooltipTrigger>
+                                    <CardTitle className="text-sm font-medium text-muted-foreground cursor-help underline decoration-dashed">
+                                        UCS Ativo Socioambiental (ASE)
+                                    </CardTitle>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p className="font-mono text-xs">UCS ASE = UCS CF × Fator UCS</p>
+                                  </TooltipContent>
+                              </UiTooltip>
+                            </TooltipProvider>
+                             <p className="text-4xl sm:text-5xl font-bold text-foreground/80 tracking-tight">{formatCurrency(ucsASE, 'BRL')}</p>
+                        </div>
+                    </div>
                 </CardHeader>
-                <CardContent className="-mt-4">
-                    <p className="text-4xl sm:text-5xl font-bold text-primary tracking-tight">{formatCurrency(ucs, 'BRL')}</p>
-                </CardContent>
             </Card>
 
             <div>
                 <h3 className="text-lg font-semibold mb-3">KPIs da Fórmula</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">
-                    <StatCard title="Índice de Viabilidade (IVP)" value={ivp.toFixed(4)} icon={Target} tooltipText="IVP = PDM / Preço_Carbono"/>
-                    <StatCard title="PDM Total" value={formatCurrency(pdm, 'BRL')} icon={Package} tooltipText="PDM = vUS + vMAD + cRS"/>
+                    <StatCard title="Insumo UCS (IVP)" value={ivp.toFixed(4)} icon={Target} tooltipText="IVP = PDM / Carbono Estocado Total"/>
+                    <StatCard title="PDM Total" value={formatCurrency(pdm, 'BRL')} icon={Package} tooltipText="PDM = VUS + VMAD + CRS"/>
                 </div>
             </div>
 
@@ -152,9 +168,9 @@ export function IndexCompositionModal({ data, isOpen, onClose }: IndexCompositio
                     </CardHeader>
                     <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
                         <div className="order-2 md:order-1">
-                            <DetailListItem label="Valor de Uso da Terra (vUS)" value={formatCurrency(components.vus, 'BRL')} colorClass="bg-chart-1" tooltipText="((Preço_Boi*18) + (Preço_Milho*7.2) + (Preço_Soja*3.3)) * 35%"/>
-                            <DetailListItem label="Valor da Madeira (vMAD)" value={formatCurrency(components.vmad, 'BRL')} colorClass="bg-chart-3" tooltipText="Preço_Madeira_m³ * 120"/>
-                            <DetailListItem label="Custo Socioambiental (cRS)" value={formatCurrency(components.crs, 'BRL')} colorClass="bg-chart-2" tooltipText="(Preço_Carbono * Param) + (Preço_Água * Param)"/>
+                            <DetailListItem label="Valor de Uso da Terra (VUS)" value={formatCurrency(components.vus, 'BRL')} colorClass="bg-chart-1" tooltipText="(Renda Ponderada / ha) * Fator Arrend. * Área Total" />
+                            <DetailListItem label="Valor da Madeira (VMAD)" value={formatCurrency(components.vmad, 'BRL')} colorClass="bg-chart-3" tooltipText="(Renda Madeira / ha) * Área Total"/>
+                            <DetailListItem label="Custo Socioambiental (CRS)" value={formatCurrency(components.crs, 'BRL')} colorClass="bg-chart-2" tooltipText="(Custo Água Total) + (Custo Carbono Total)"/>
                         </div>
                         <div className="h-48 w-full order-1 md:order-2">
                              <ResponsiveContainer>

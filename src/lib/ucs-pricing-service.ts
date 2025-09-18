@@ -5,7 +5,7 @@ import { calculateIndex } from './calculation-service';
 import type { CommodityPriceData, UCSCalculationInputs, UCSCalculationResult, CalculateUcsIndexOutput, FormulaParameters } from './types';
 
 // Re-export types for external use
-export type { UCSCalculationInputs, UCSCalculationResult } from './types';
+export type { UCSCalculationInputs, UCSCalculationResult };
 
 
 /**
@@ -26,8 +26,8 @@ export function formatCurrency(value: number, currency: string): string {
 }
 
 
-function findPrice(commodities: CommodityPriceData[], category: CommodityPriceData['category'], nameIncludes: string): number {
-    const asset = commodities.find(c => c.category === category && c.name.toLowerCase().includes(nameIncludes.toLowerCase()));
+function findPrice(commodities: CommodityPriceData[], nameIncludes: string): number {
+    const asset = commodities.find(c => c.name.toLowerCase().includes(nameIncludes.toLowerCase()));
     return asset ? asset.price : 0;
 }
 
@@ -35,7 +35,7 @@ function findPrice(commodities: CommodityPriceData[], category: CommodityPriceDa
 /**
  * Função principal que executa todo o cálculo da metodologia UCS, agindo como um wrapper para o motor de cálculo principal.
  */
-export function calcularUCSCompleto(inputs: UCSCalculationInputs): UCSCalculationResult {
+export async function calcularUCSCompleto(inputs: UCSCalculationInputs): Promise<UCSCalculationResult> {
   if (!inputs) {
     throw new Error("Inputs inválidos.");
   }
@@ -46,13 +46,13 @@ export function calcularUCSCompleto(inputs: UCSCalculationInputs): UCSCalculatio
       { id: 'eur', name: 'EUR/BRL - Euro Real Brasileiro', price: inputs.taxa_eur_brl, category: 'exchange' } as CommodityPriceData,
       { id: 'madeira_serrada_futuros', name: 'Madeira Serrada Futuros', price: inputs.preco_madeira_brl_m3 / (inputs.taxa_usd_brl || 1), category: 'vmad' } as CommodityPriceData,
       { id: 'boi_gordo_futuros', name: 'Boi Gordo Futuros', price: inputs.preco_boi_brl, category: 'vus' } as CommodityPriceData,
-      { id: 'milho_futuros', name: 'Milho Futuros', price: (inputs.preco_milho_brl_ton / 1000) * 60, category: 'vus' } as CommodityPriceData,
+      { id: 'milho_futuros', name: 'Milho Futuros', price: (inputs.preco_milho_brl_ton / 1000) * 60 / (inputs.taxa_usd_brl || 1), category: 'vus' } as CommodityPriceData,
       { id: 'soja_futuros', name: 'Soja Futuros', price: (inputs.preco_soja_brl_ton / 1000) * 60 / (inputs.taxa_usd_brl || 1), category: 'vus' } as CommodityPriceData,
       { id: 'credito_carbono_futuros', name: 'Crédito Carbono Futuros', price: inputs.preco_carbono_brl / (inputs.taxa_eur_brl || 1), category: 'crs' } as CommodityPriceData,
   ];
   
   // Utiliza o motor de cálculo unificado.
-  const result: CalculateUcsIndexOutput = calculateIndex(commodities, inputs as FormulaParameters);
+  const result = await calculateIndex(commodities, inputs as FormulaParameters);
 
   // Retorna os resultados no formato esperado pela calculadora.
   return {
@@ -61,9 +61,14 @@ export function calcularUCSCompleto(inputs: UCSCalculationInputs): UCSCalculatio
     cRS: result.components.crs,
     pdm: result.pdm,
     ivp: result.ivp,
-    ucs: result.ucs,
-    ucs_eur: result.ucs_eur,
-    ucs_usd: result.ucs_usd,
+    ucsCF: result.ucsCF,
+    ucsASE: result.ucsASE,
+    detalhes: {
+        vm: { fm3: inputs.produtividade_madeira ?? 0, pm3mad: inputs.preco_madeira_brl_m3 ?? 0, },
+        vus: result.vusDetails,
+        crs: { cc: 0, ch2o: 0, },
+        ce: { carbonoEstocadoTotal: (inputs.produtividade_carbono ?? 0) * (inputs.area_total ?? 0) }
+    }
   };
 }
 
@@ -77,18 +82,17 @@ export async function obterValoresPadrao(): Promise<Partial<UCSCalculationInputs
       getFormulaParameters()
     ]);
     
-    const taxa_usd_brl = findPrice(prices, 'exchange', 'dólar');
-    const taxa_eur_brl = findPrice(prices, 'exchange', 'euro');
+    const taxa_usd_brl = findPrice(prices, 'dólar');
+    const taxa_eur_brl = findPrice(prices, 'euro');
 
     const cotacoes = {
       taxa_usd_brl,
       taxa_eur_brl,
-      preco_boi_brl: findPrice(prices, 'vus', 'boi'),
-      preco_milho_brl_ton: (findPrice(prices, 'vus', 'milho') / 60) * 1000,
-      preco_soja_brl_ton: ((findPrice(prices, 'vus', 'soja') * taxa_usd_brl) / 60) * 1000,
-      preco_madeira_brl_m3: findPrice(prices, 'vmad', 'madeira') * taxa_usd_brl,
-      preco_carbono_brl: findPrice(prices, 'crs', 'carbono') * taxa_eur_brl,
-      preco_agua_brl_m3: 0, // Placeholder
+      preco_boi_brl: findPrice(prices, 'boi'),
+      preco_milho_brl_ton: (findPrice(prices, 'milho') * taxa_usd_brl / 60) * 1000,
+      preco_soja_brl_ton: (findPrice(prices, 'soja') * taxa_usd_brl / 60) * 1000,
+      preco_madeira_brl_m3: findPrice(prices, 'madeira') * taxa_usd_brl,
+      preco_carbono_brl: findPrice(prices, 'carbono') * taxa_eur_brl,
     };
 
     return { ...params, ...cotacoes };

@@ -41,31 +41,34 @@ export function UCSIndexDisplay({ className, initialData, chartData: initialChar
   const [isCompositionModalOpen, setIsCompositionModalOpen] = useState(false);
 
   const formatValue = (value: number, currency = 'BRL') => {
-    if (currency === 'BRL') return formatCurrency(value, 'BRL');
-    if (currency === 'USD') return formatCurrency(value, 'USD');
-    if (currency === 'EUR') return formatCurrency(value, 'EUR');
-    return value.toFixed(2);
+    return formatCurrency(value, currency);
   };
+  
+  const processData = (data: UcsData | null, history: ChartData[]) => {
+    setUcsData(data);
+    setChartData(history);
+
+    if (data) {
+        if (!data.isConfigured) {
+            setError('Parâmetros da fórmula não configurados. Configure em Configurações.');
+        } else {
+            setError(null);
+        }
+        setLastUpdate(new Date());
+
+        if (history.length > 1) {
+            const current = history[history.length - 1].value;
+            const prev = history[history.length - 2].value;
+            if (current > prev) setTrend('up');
+            else if (current < prev) setTrend('down');
+            else setTrend('stable');
+        }
+    }
+  }
 
   useEffect(() => {
-    setUcsData(initialData);
-    setChartData(initialChartData);
     setLoading(initialLoading);
-
-    if (!initialLoading && initialData) {
-      if (!initialData.isConfigured) {
-          setError('Parâmetros da fórmula não configurados. Configure em Configurações.');
-      }
-      setLastUpdate(new Date());
-
-       if (initialChartData.length > 1) {
-          const current = initialChartData[initialChartData.length - 1].value;
-          const prev = initialChartData[initialChartData.length - 2].value;
-          if (current > prev) setTrend('up');
-          else if (current < prev) setTrend('down');
-          else setTrend('stable');
-      }
-    }
+    processData(initialData, initialChartData);
   }, [initialData, initialChartData, initialLoading]);
 
 
@@ -77,22 +80,7 @@ export function UCSIndexDisplay({ className, initialData, chartData: initialChar
           getUcsIndexValue(),
           getUcsIndexHistory('1d')
       ]);
-
-      setUcsData(latestData);
-      setChartData(history);
-      setLastUpdate(new Date());
-
-      if (history.length > 1) {
-          const current = history[history.length - 1].value;
-          const prev = history[history.length - 2].value;
-          if (current > prev) setTrend('up');
-          else if (current < prev) setTrend('down');
-          else setTrend('stable');
-      }
-      
-      if (!latestData.isConfigured) {
-          setError('Parâmetros da fórmula não configurados. Configure em Configurações.');
-      }
+      processData(latestData, history);
 
     } catch (error) {
       console.error('Erro ao atualizar índice UCS:', error);
@@ -166,10 +154,10 @@ export function UCSIndexDisplay({ className, initialData, chartData: initialChar
         <CardContent>
           {loading ? (
              renderLoadingSkeleton()
-          ) : error && ucsData?.isConfigured === false ? (
+          ) : error || ucsData?.isConfigured === false ? (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
+              <AlertDescription>{error || 'Parâmetros da fórmula não configurados. Configure em Configurações.'}</AlertDescription>
             </Alert>
           ) : (
             ucsData && (
@@ -177,16 +165,16 @@ export function UCSIndexDisplay({ className, initialData, chartData: initialChar
                 <div className="flex flex-wrap items-baseline justify-between gap-4">
                     <div className="flex items-baseline gap-x-6 gap-y-2">
                          <div>
-                            <p className="text-3xl font-bold text-primary">{formatValue(ucsData.ucs)}</p>
-                            <p className="text-xs text-muted-foreground mt-1">UCS (BRL)</p>
+                            <p className="text-3xl font-bold text-primary">{formatValue(ucsData.ucsCF)}</p>
+                            <p className="text-xs text-muted-foreground mt-1">UCS Crédito Floresta (CF)</p>
                         </div>
                         <div>
-                            <p className="text-2xl font-semibold text-foreground/80">{formatValue(ucsData.ucs_usd, 'USD')}</p>
-                            <p className="text-xs text-muted-foreground mt-1">UCS (USD)</p>
+                            <p className="text-2xl font-semibold text-foreground/80">{formatValue(ucsData.ucsASE)}</p>
+                            <p className="text-xs text-muted-foreground mt-1">UCS Ativo Socioambiental (ASE)</p>
                         </div>
                         <div>
-                            <p className="text-xl font-medium text-muted-foreground">{formatValue(ucsData.ucs_eur, 'EUR')}</p>
-                            <p className="text-xs text-muted-foreground mt-1">UCS (EUR)</p>
+                            <p className="text-xl font-medium text-muted-foreground">{ucsData.ivp.toFixed(4)}</p>
+                            <p className="text-xs text-muted-foreground mt-1">Insumo UCS (IVP)</p>
                         </div>
                     </div>
                   <Button variant="outline" size="sm" onClick={() => setIsCompositionModalOpen(true)} disabled={!ucsData.isConfigured}>
@@ -200,15 +188,15 @@ export function UCSIndexDisplay({ className, initialData, chartData: initialChar
                 <div className="grid grid-cols-3 gap-4 text-center">
                     <div>
                         <p className="text-lg font-semibold">{formatValue(ucsData.components.vus)}</p>
-                        <p className="text-xs text-muted-foreground">vUS</p>
+                        <p className="text-xs text-muted-foreground">VUS</p>
                     </div>
                     <div>
                         <p className="text-lg font-semibold">{formatValue(ucsData.components.vmad)}</p>
-                        <p className="text-xs text-muted-foreground">vMAD</p>
+                        <p className="text-xs text-muted-foreground">VMAD</p>
                     </div>
                     <div>
                         <p className="text-lg font-semibold">{formatValue(ucsData.components.crs)}</p>
-                        <p className="text-xs text-muted-foreground">cRS</p>
+                        <p className="text-xs text-muted-foreground">CRS</p>
                     </div>
                 </div>
                 
