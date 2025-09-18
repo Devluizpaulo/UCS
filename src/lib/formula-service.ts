@@ -6,6 +6,7 @@
 
 import { db } from './firebase-admin-config';
 import type { FormulaParameters } from './types';
+import { clearCache } from './cache-service';
 
 const FORMULA_DOC_ID = 'parametros_oficiais_v2';
 const SETTINGS_COLLECTION = 'settings';
@@ -78,7 +79,10 @@ export async function saveFormulaParameters(params: Omit<FormulaParameters, 'isC
   
   try {
     await docRef.set(dataToSave, { merge: true });
-    console.log('[FormulaService] Successfully saved formula parameters.');
+    // Invalidate caches that depend on formula parameters
+    await clearCache('ucsIndexValue_latest');
+    await clearCache('commodityPrices'); // Prices might need re-calculation with new context
+    console.log('[FormulaService] Successfully saved formula parameters and cleared relevant caches.');
   } catch (error) {
     console.error("[FormulaService] Error saving formula parameters: ", error);
     throw new Error("Failed to save formula parameters to the database.");

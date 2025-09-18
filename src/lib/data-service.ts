@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import type { ChartData, CommodityPriceData, HistoryInterval, UcsData, FirestoreQuote, CommodityConfig } from './types';
@@ -8,6 +7,7 @@ import { db } from './firebase-admin-config';
 import { Timestamp } from 'firebase-admin/firestore';
 import { getFormulaParameters } from './formula-service';
 import { calculateIndex } from './calculation-service';
+import { getCache, setCache } from './cache-service';
 
 const serializeFirestoreTimestamp = (data: any): any => {
     if (data && typeof data === 'object') {
@@ -32,15 +32,8 @@ const serializeFirestoreTimestamp = (data: any): any => {
  * @returns The name of the collection holding price data (e.g., 'boi_gordo').
  */
 function getCollectionNameFromAssetId(assetId: string): string {
-    // This logic is critical. It derives the collection name from the asset ID.
-    // e.g., "boi_gordo_futuros" -> "boi_gordo"
-    // e.g., "usd_brl___dolar_americano_real_brasileiro" -> "usd_brl"
     const normalizedId = assetId.toLowerCase();
-    
-    // Split by the '___' separator if it exists
     const parts = normalizedId.split('___');
-    
-    // The collection name is the first part, with "_futuros" removed.
     return parts[0].replace(/_futuros$/, '');
 }
 
@@ -48,14 +41,12 @@ function getCollectionNameFromAssetId(assetId: string): string {
 const parseDateString = (dateStr: string): Date => {
     if (typeof dateStr !== 'string') return new Date(1970, 0, 1);
 
-    // Regex for DD/MM/YY
     if (/^\d{2}\/\d{2}\/\d{2}$/.test(dateStr)) {
         let [day, month, year] = dateStr.split('/').map(Number);
         year += (year > 50 ? 1900 : 2000);
         return new Date(year, month - 1, day);
     }
     
-    // Regex for DD/MM/YYYY
     if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
         const [day, month, year] = dateStr.split('/').map(Number);
         return new Date(year, month - 1, day);
@@ -67,6 +58,10 @@ const parseDateString = (dateStr: string): Date => {
 
 
 async function getAssetData(assetId: string, limit: number = 1): Promise<FirestoreQuote[]> {
+    const cacheKey = `assetData_${assetId}_${limit}`;
+    const cachedData = await getCache<FirestoreQuote[]>(cacheKey, 60000); // Cache for 1 minute
+    if (cachedData) return cachedData;
+    
     if (!assetId) return [];
     
     const collectionName = getCollectionNameFromAssetId(assetId);
@@ -89,7 +84,9 @@ async function getAssetData(assetId: string, limit: number = 1): Promise<Firesto
             return dateB - dateA; // Sort descending (most recent first)
         });
 
-        return sortedDocs.slice(0, limit);
+        const result = sortedDocs.slice(0, limit);
+        await setCache(cacheKey, result);
+        return result;
 
     } catch (error) {
         console.error(`Error fetching data for asset ID ${assetId} (collection: ${collectionName}):`, error);
@@ -98,6 +95,10 @@ async function getAssetData(assetId: string, limit: number = 1): Promise<Firesto
 }
 
 export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
+    const cacheKey = 'commodityPrices';
+    const cachedData = await getCache<CommodityPriceData[]>(cacheKey, 60000); // Cache for 1 minute
+    if (cachedData) return cachedData;
+
     try {
         const commodities = await getCommodities();
         if (!commodities || commodities.length === 0) return [];
@@ -143,7 +144,8 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
                 finalPrices.push(data);
             }
         }
-
+        
+        await setCache(cacheKey, finalPrices);
         return finalPrices;
     } catch (error) {
         console.error(`Failed to get commodity prices: ${error}`);
@@ -157,6 +159,10 @@ export async function getCotacoesHistorico(assetId: string, limit: number = 30):
 
 
 export async function getUcsIndexValue(): Promise<UcsData> {
+    const cacheKey = 'ucsIndexValue_latest';
+    const cachedData = await getCache<UcsData>(cacheKey);
+    if (cachedData) return cachedData;
+
     const defaultResult: UcsData = {
         ivp: 0,
         ucsCF: 0,
@@ -171,7 +177,9 @@ export async function getUcsIndexValue(): Promise<UcsData> {
         if (!params.isConfigured || prices.length === 0) {
             return { ...defaultResult, isConfigured: params.isConfigured };
         }
-        return calculateIndex(prices, params);
+        const result = calculateIndex(prices, params);
+        await setCache(cacheKey, result);
+        return result;
     } catch (error) {
         console.error(`Failed to get latest index value: ${error}`);
         return defaultResult;
@@ -179,6 +187,10 @@ export async function getUcsIndexValue(): Promise<UcsData> {
 }
 
 export async function getUcsIndexHistory(interval: HistoryInterval = '1d'): Promise<ChartData[]> {
+    const cacheKey = `ucsIndexHistory_${interval}`;
+    const cachedData = await getCache<ChartData[]>(cacheKey);
+    if (cachedData) return cachedData;
+
     const history: ChartData[] = [];
     try {
         const limit = { '1d': 30, '1wk': 26, '1mo': 60 }[interval] || 30;
@@ -196,5 +208,7 @@ export async function getUcsIndexHistory(interval: HistoryInterval = '1d'): Prom
     } catch (error) {
         console.error(`Failed to get index history: ${error}`);
     }
-    return history.reverse();
+    const result = history.reverse();
+    await setCache(cacheKey, result);
+    return result;
 }

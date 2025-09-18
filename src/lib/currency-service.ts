@@ -1,29 +1,24 @@
 
-
 'use server';
 
 import { getCommodityPrices } from './data-service';
 import type { CommodityPriceData, ConvertedPrice, CurrencyRate } from './types';
+import { getCache, setCache } from './cache-service';
 
-
-// Cache das taxas de câmbio para evitar múltiplas consultas
-let exchangeRatesCache: Map<string, CurrencyRate> = new Map();
-let cacheLastUpdate: Date | null = null;
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
+const CACHE_KEY = 'exchangeRates';
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutos
 
 /**
  * Obtém as taxas de câmbio atuais do sistema
- * Utiliza os dados de USD/BRL e EUR/BRL já disponíveis
+ * Utiliza os dados de USD/BRL e EUR/BRL já disponíveis e armazena em cache.
  */
 export async function getExchangeRates(): Promise<CurrencyRate[]> {
-  try {
-    // Verifica se o cache ainda é válido
-    if (cacheLastUpdate && 
-        Date.now() - cacheLastUpdate.getTime() < CACHE_DURATION && 
-        exchangeRatesCache.size > 0) {
-      return Array.from(exchangeRatesCache.values());
-    }
+  const cachedRates = await getCache<CurrencyRate[]>(CACHE_KEY, CACHE_TTL);
+  if (cachedRates) {
+    return cachedRates;
+  }
 
+  try {
     const commodityPrices = await getCommodityPrices();
     const rates: CurrencyRate[] = [];
     const now = new Date();
@@ -31,73 +26,25 @@ export async function getExchangeRates(): Promise<CurrencyRate[]> {
     // Encontra USD/BRL
     const usdBrl = commodityPrices.find(c => c.name === 'USD/BRL - Dólar Americano Real Brasileiro');
     if (usdBrl && usdBrl.price > 0) {
-      const rate: CurrencyRate = {
-        from: 'USD',
-        to: 'BRL',
-        rate: usdBrl.price,
-        lastUpdated: now
-      };
-      rates.push(rate);
-      exchangeRatesCache.set('USD-BRL', rate);
-      
-      // Taxa inversa BRL/USD
-      const inverseRate: CurrencyRate = {
-        from: 'BRL',
-        to: 'USD',
-        rate: 1 / usdBrl.price,
-        lastUpdated: now
-      };
-      rates.push(inverseRate);
-      exchangeRatesCache.set('BRL-USD', inverseRate);
+      rates.push({ from: 'USD', to: 'BRL', rate: usdBrl.price, lastUpdated: now });
+      rates.push({ from: 'BRL', to: 'USD', rate: 1 / usdBrl.price, lastUpdated: now });
     }
 
     // Encontra EUR/BRL
     const eurBrl = commodityPrices.find(c => c.name === 'EUR/BRL - Euro Real Brasileiro');
     if (eurBrl && eurBrl.price > 0) {
-      const rate: CurrencyRate = {
-        from: 'EUR',
-        to: 'BRL',
-        rate: eurBrl.price,
-        lastUpdated: now
-      };
-      rates.push(rate);
-      exchangeRatesCache.set('EUR-BRL', rate);
-      
-      // Taxa inversa BRL/EUR
-      const inverseRate: CurrencyRate = {
-        from: 'BRL',
-        to: 'EUR',
-        rate: 1 / eurBrl.price,
-        lastUpdated: now
-      };
-      rates.push(inverseRate);
-      exchangeRatesCache.set('BRL-EUR', inverseRate);
+      rates.push({ from: 'EUR', to: 'BRL', rate: eurBrl.price, lastUpdated: now });
+      rates.push({ from: 'BRL', to: 'EUR', rate: 1 / eurBrl.price, lastUpdated: now });
     }
 
     // Calcula EUR/USD se ambas as taxas estão disponíveis
     if (usdBrl && eurBrl && usdBrl.price > 0 && eurBrl.price > 0) {
       const eurUsdRate = eurBrl.price / usdBrl.price;
-      const rate: CurrencyRate = {
-        from: 'EUR',
-        to: 'USD',
-        rate: eurUsdRate,
-        lastUpdated: now
-      };
-      rates.push(rate);
-      exchangeRatesCache.set('EUR-USD', rate);
-      
-      // Taxa inversa USD/EUR
-      const inverseRate: CurrencyRate = {
-        from: 'USD',
-        to: 'EUR',
-        rate: 1 / eurUsdRate,
-        lastUpdated: now
-      };
-      rates.push(inverseRate);
-      exchangeRatesCache.set('USD-EUR', inverseRate);
+      rates.push({ from: 'EUR', to: 'USD', rate: eurUsdRate, lastUpdated: now });
+      rates.push({ from: 'USD', to: 'EUR', rate: 1 / eurUsdRate, lastUpdated: now });
     }
 
-    cacheLastUpdate = now;
+    await setCache(CACHE_KEY, rates);
     return rates;
   } catch (error) {
     console.error('[CurrencyService] Erro ao obter taxas de câmbio:', error);
@@ -114,7 +61,6 @@ export async function convertPrice(
   toCurrency: string
 ): Promise<ConvertedPrice | null> {
   try {
-    // Se as moedas são iguais, não precisa converter
     if (fromCurrency === toCurrency) {
       return {
         originalPrice: price,
@@ -163,7 +109,6 @@ export async function convertAllPricesToCurrency(
     for (const commodity of commodityPrices) {
       let result: CommodityPriceData & { convertedPrice?: ConvertedPrice } = { ...commodity };
       
-      // Se a moeda já é a desejada, não precisa converter
       if (commodity.currency === targetCurrency) {
         result.convertedPrice = {
           originalPrice: commodity.price,
@@ -174,7 +119,6 @@ export async function convertAllPricesToCurrency(
           lastUpdated: commodity.lastUpdated
         };
       } else {
-        // Converte o preço
         const converted = await convertPrice(commodity.price, commodity.currency, targetCurrency);
         if (converted) {
           result.convertedPrice = converted;
@@ -195,6 +139,5 @@ export async function convertAllPricesToCurrency(
  * Limpa o cache de taxas de câmbio (útil para forçar atualização)
  */
 export async function clearExchangeRateCache(): Promise<void> {
-  exchangeRatesCache.clear();
-  cacheLastUpdate = null;
+  await clearCache(CACHE_KEY);
 }
