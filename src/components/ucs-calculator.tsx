@@ -97,7 +97,7 @@ export function UCSCalculator() {
         <Input
           id={id}
           type="number"
-          value={inputs[id] ?? ''}
+          value={String(inputs[id] ?? '')}
           onChange={(e) => handleInputChange(id, e.target.value)}
           className={`text-right ${isCurrency ? 'pl-8' : ''}`}
           placeholder="0.00"
@@ -271,4 +271,3 @@ export function UCSCalculator() {
     </div>
   );
 }
-

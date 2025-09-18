@@ -96,7 +96,7 @@ export async function updateUser(uid: string, data: { displayName?: string; phon
     
     const authUpdatePayload: { displayName?: string; phoneNumber?: string, disabled?: boolean } = {};
     if (displayName !== undefined) authUpdatePayload.displayName = displayName;
-    if (phoneNumber !== undefined) authUpdatePayload.phoneNumber = phoneNumber;
+    if (phoneNumber !== undefined) authUpdatePayload.phoneNumber = phoneNumber || undefined;
     if (isActive !== undefined) authUpdatePayload.disabled = !isActive;
 
     // 1. Atualiza dados no Firebase Auth

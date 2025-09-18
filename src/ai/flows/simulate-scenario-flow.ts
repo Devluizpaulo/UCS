@@ -57,7 +57,7 @@ export async function simulateScenario(input: SimulateScenarioInput): Promise<Sc
 
         // 2. Calculate the original index value using the pure calculation service
         const originalIndexResult = calculateIndex(pricesData, params);
-        const originalIndexValue = originalIndexResult.indexValue;
+        const originalIndexValue = originalIndexResult.ucsCF;
 
         // 3. Create the new set of prices for the simulation
         const simulatedPricesData: CommodityPriceData[] = pricesData.map(p => {
@@ -72,7 +72,7 @@ export async function simulateScenario(input: SimulateScenarioInput): Promise<Sc
        
         // 4. Calculate the new index value with the simulated prices
         const newIndexResult = calculateIndex(simulatedPricesData, params);
-        const newIndexValue = newIndexResult.indexValue;
+        const newIndexValue = newIndexResult.ucsCF;
         
         // 5. Calculate the percentage change
         const changePercentage = originalIndexValue === 0 ? 0 : ((newIndexValue - originalIndexValue) / originalIndexValue) * 100;
