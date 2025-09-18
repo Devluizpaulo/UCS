@@ -59,8 +59,8 @@ const formulaSchema = z.object({
     // Fatores de Conversão
     fator_arrendamento: z.coerce.number().min(0).max(1, "Deve ser entre 0 e 1"),
     fator_agua: z.coerce.number().min(0).max(1, "Deve ser entre 0 e 1"),
+    fator_conversao_madeira: z.coerce.number().min(0).max(1, "Deve ser entre 0 e 1"),
     fator_ucs: z.coerce.number().min(0, "Valor não pode ser negativo"),
-    FATOR_CONVERSAO_SERRADA_TORA: z.coerce.number().min(0).max(1, "Deve ser entre 0 e 1"),
     FATOR_CARBONO: z.coerce.number().min(0, "Valor não pode ser negativo"),
     
     // Área
@@ -224,11 +224,11 @@ export default function SettingsPage() {
                           <Input id="produtividade_soja" type="number" step="any" {...formulaForm.register('produtividade_soja')} />
                       </div>
                       <div className="space-y-2">
-                          <Label htmlFor="produtividade_madeira">Madeira (m³/ha)</Label>
+                          <Label htmlFor="produtividade_madeira">Madeira (FM3)</Label>
                           <Input id="produtividade_madeira" type="number" step="any" {...formulaForm.register('produtividade_madeira')} />
                       </div>
                        <div className="space-y-2">
-                          <Label htmlFor="produtividade_carbono">Carbono Estocado (tCO₂e/ha)</Label>
+                          <Label htmlFor="produtividade_carbono">Média de CE (tCO₂e/ha)</Label>
                           <Input id="produtividade_carbono" type="number" step="any" {...formulaForm.register('produtividade_carbono')} />
                       </div>
                   </div>
@@ -259,11 +259,11 @@ export default function SettingsPage() {
                           <Input id="fator_agua" type="number" step="any" {...formulaForm.register('fator_agua')} placeholder="Ex: 0.07 para 7%" />
                       </div>
                       <div className="space-y-2">
-                          <Label htmlFor="FATOR_CONVERSAO_SERRADA_TORA">Conversão Madeira Serrada/Tora</Label>
-                          <Input id="FATOR_CONVERSAO_SERRADA_TORA" type="number" step="any" {...formulaForm.register('FATOR_CONVERSAO_SERRADA_TORA')} placeholder="Ex: 0.3756 para 37.56%" />
+                          <Label htmlFor="fator_conversao_madeira">Conversão Madeira</Label>
+                          <Input id="fator_conversao_madeira" type="number" step="any" {...formulaForm.register('fator_conversao_madeira')} placeholder="Ex: 0.10 para 10%" />
                       </div>
                        <div className="space-y-2">
-                          <Label htmlFor="fator_ucs">Fator Multiplicador UCS</Label>
+                          <Label htmlFor="fator_ucs">Fator Multiplicador UCS ASE</Label>
                           <Input id="fator_ucs" type="number" step="any" {...formulaForm.register('fator_ucs')} />
                       </div>
                       <div className="space-y-2">
@@ -424,31 +424,3 @@ function SettingsSkeleton() {
         </div>
     );
 }
-
-const defaultParameters: Omit<FormulaParameters, 'isConfigured'> = {
-    produtividade_boi: 0,
-    produtividade_milho: 0,
-    produtividade_soja: 0,
-    produtividade_madeira: 0,
-    produtividade_carbono: 900,
-    VOLUME_MADEIRA_HA: 0,
-    PROD_BOI: 0,
-    PROD_MILHO: 0,
-    PROD_SOJA: 0,
-    fator_pecuaria: 0,
-    fator_milho: 0,
-    fator_soja: 0,
-    PESO_PEC: 0,
-    PESO_MILHO: 0,
-    PESO_SOJA: 0,
-    fator_arrendamento: 0,
-    FATOR_ARREND: 0,
-    fator_agua: 0,
-    fator_ucs: 0,
-    FATOR_CARBONO: 0,
-    FATOR_CONVERSAO_SERRADA_TORA: 0,
-    pib_por_hectare: 0,
-    area_total: 0,
-};
-
-    

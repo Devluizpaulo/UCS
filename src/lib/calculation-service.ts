@@ -20,8 +20,6 @@ function findPrice(commodities: CommodityPriceData[], category: CommodityPriceDa
         (nameIncludes ? c.name.toLowerCase().includes(nameIncludes.toLowerCase()) : true)
     );
     if (!asset || asset.price === undefined || asset.price === null) {
-        // Log a warning if a price is not found, which helps in debugging.
-        // console.warn(`[CalculationService] Price not found for category '${category}' ${nameIncludes ? `with name including '${nameIncludes}'` : ''}. Defaulting to 0.`);
         return 0;
     }
     return asset.price;
@@ -52,13 +50,13 @@ export function calculateIndex(commodities: CommodityPriceData[], params: Formul
       const taxa_usd_brl = findPrice(commodities, 'exchange', 'dólar');
       const taxa_eur_brl = findPrice(commodities, 'exchange', 'euro');
 
-      const preco_madeira_serrada_usd = findPrice(commodities, 'vmad', 'madeira');
+      const preco_madeira_usd = findPrice(commodities, 'vmad', 'madeira');
       const preco_boi_arroba_brl = findPrice(commodities, 'vus', 'boi');
       const preco_milho_saca_brl = findPrice(commodities, 'vus', 'milho');
       const preco_soja_saca_usd = findPrice(commodities, 'vus', 'soja');
       const preco_carbono_eur = findPrice(commodities, 'crs', 'carbono');
       
-      const preco_madeira_tora_brl = (preco_madeira_serrada_usd * params.FATOR_CONVERSAO_SERRADA_TORA) * taxa_usd_brl;
+      const preco_madeira_brl = preco_madeira_usd * taxa_usd_brl;
       const preco_milho_ton_brl = (preco_milho_saca_brl / 60) * 1000;
       const preco_soja_ton_brl = ((preco_soja_saca_usd * taxa_usd_brl) / 60) * 1000;
       const preco_carbono_brl = preco_carbono_eur * taxa_eur_brl;
@@ -67,25 +65,33 @@ export function calculateIndex(commodities: CommodityPriceData[], params: Formul
       const renda_pecuaria_ha = params.produtividade_boi * preco_boi_arroba_brl;
       const renda_milho_ha = params.produtividade_milho * preco_milho_ton_brl;
       const renda_soja_ha = params.produtividade_soja * preco_soja_ton_brl;
-      const renda_madeira_ha = params.produtividade_madeira * preco_madeira_tora_brl;
+      
+      // Lógica do VMAD conforme planilha: Preço * Fator Conversão (10%) * Fator m3 (120)
+      const renda_madeira_ha = preco_madeira_brl * params.fator_conversao_madeira * params.produtividade_madeira;
+      
       const renda_carbono_ha = params.FATOR_CARBONO * preco_carbono_brl;
 
-      // --- 3. Componentes do Índice ---
-      const VMAD = renda_madeira_ha * params.area_total;
 
-      const renda_bruta_ponderada_ha_vus = 
+      // --- 3. Cálculo dos Componentes do PDM ---
+
+      // 3a. VUS (Valor de Uso do Solo)
+      const renda_ponderada_vus_ha = 
           (renda_pecuaria_ha * params.fator_pecuaria) + 
           (renda_milho_ha * params.fator_milho) + 
           (renda_soja_ha * params.fator_soja);
           
-      const vus_por_ha = renda_bruta_ponderada_ha_vus * params.fator_arrendamento;
+      const vus_por_ha = renda_ponderada_vus_ha * params.fator_arrendamento;
       const VUS = vus_por_ha * params.area_total;
 
-      const base_calculo_agua_ha = renda_bruta_ponderada_ha_vus + renda_madeira_ha + renda_carbono_ha;
-      const valor_carbono_total = renda_carbono_ha * params.area_total;
-      const valor_agua_total = (base_calculo_agua_ha * params.fator_agua) * params.area_total;
-      
-      const CRS = valor_carbono_total + valor_agua_total;
+      // 3b. VMAD (Valor da Madeira)
+      const VMAD = renda_madeira_ha * params.area_total;
+
+      // 3c. CRS (Custo da Responsabilidade Socioambiental)
+      // Base de cálculo da ÁGUA: Soma das rendas por hectare (ponderada para VUS, bruta para madeira/carbono)
+      const base_calculo_agua_ha = renda_ponderada_vus_ha + renda_madeira_ha + renda_carbono_ha;
+      const custo_agua_total = (base_calculo_agua_ha * params.fator_agua) * params.area_total;
+      const custo_carbono_total = renda_carbono_ha * params.area_total;
+      const CRS = custo_carbono_total + custo_agua_total;
       
       // --- 4. Finalização do Cálculo do Índice UCS ---
       const PDM = VMAD + VUS + CRS;
@@ -96,23 +102,27 @@ export function calculateIndex(commodities: CommodityPriceData[], params: Formul
         return { ...defaultResult, isConfigured: true };
       }
       
+      // IVP = PDM / CE, sem a divisão por 2.
       const ivp = PDM / CE;
-      const ucsCF = ivp / 2; // O fator de multiplicação final é 0.5 (dividir por 2)
-      const ucsASE = ucsCF * 2;
+      // UCS CF = IVP * Fator UCS (que pode ser 2 ou outro valor configurável)
+      const ucsCF = ivp * params.fator_ucs;
+      // UCS ASE = UCS CF * 2 (conforme regra da planilha)
+      const ucsASE = ucsCF; // Renomeado na planilha, IVP agora é o "UCS" e ucsCF é o "UCS ASE"
   
       if (!isFinite(ucsCF)) {
           console.error('[CalculationService] Cálculo do UCS resultou em um número não finito. Retornando valor padrão.');
           return { ...defaultResult, isConfigured: true };
       }
   
-      const vus_pecuaria_detalhe = renda_bruta_ponderada_ha_vus > 0 ? (renda_pecuaria_ha * params.fator_pecuaria / renda_bruta_ponderada_ha_vus) * VUS : 0;
-      const vus_milho_detalhe = renda_bruta_ponderada_ha_vus > 0 ? (renda_milho_ha * params.fator_milho / renda_bruta_ponderada_ha_vus) * VUS : 0;
-      const vus_soja_detalhe = renda_bruta_ponderada_ha_vus > 0 ? (renda_soja_ha * params.fator_soja / renda_bruta_ponderada_ha_vus) * VUS : 0;
+      // Detalhes do VUS para o modal
+      const vus_pecuaria_detalhe = (renda_pecuaria_ha * params.fator_pecuaria * params.fator_arrendamento) * params.area_total;
+      const vus_milho_detalhe = (renda_milho_ha * params.fator_milho * params.fator_arrendamento) * params.area_total;
+      const vus_soja_detalhe = (renda_soja_ha * params.fator_soja * params.fator_arrendamento) * params.area_total;
 
       return { 
           ivp: parseFloat(ivp.toFixed(4)),
-          ucsCF: parseFloat(ucsCF.toFixed(4)),
-          ucsASE: parseFloat(ucsASE.toFixed(4)),
+          ucsCF: parseFloat(ivp.toFixed(2)), // Conforme planilha, UCS = IVP
+          ucsASE: parseFloat((ivp * params.fator_ucs).toFixed(2)), // UCS ASE = IVP * Fator (2)
           isConfigured: params.isConfigured,
           components: {
               vm: parseFloat(VMAD.toFixed(2)),
@@ -126,6 +136,4 @@ export function calculateIndex(commodities: CommodityPriceData[], params: Formul
           }
       };
 }
-    
-
     

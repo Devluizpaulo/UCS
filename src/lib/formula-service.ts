@@ -20,37 +20,38 @@ const defaultParameters: FormulaParameters = {
     produtividade_boi: 18,
     produtividade_milho: 7.2,
     produtividade_soja: 3.3,
-    produtividade_madeira: 120,
-    produtividade_carbono: 900, // Média de CE por hectare, conforme planilha
-    VOLUME_MADEIRA_HA: 0, // Legacy, kept for compatibility, not used in new formula
-    PROD_BOI: 0, // Legacy, kept for compatibility, not used in new formula
-    PROD_MILHO: 0, // Legacy, kept for compatibility, not used in new formula
-    PROD_SOJA: 0, // Legacy, kept for compatibility, not used in new formula
+    produtividade_madeira: 120, // FM3
+    produtividade_carbono: 900, // Média de CE por hectare
     
     // Fatores de Ponderação VUS
     fator_pecuaria: 0.35,
     fator_milho: 0.30,
     fator_soja: 0.35,
-    PESO_PEC: 0, // Legacy, kept for compatibility, not used in new formula
-    PESO_MILHO: 0, // Legacy, kept for compatibility, not used in new formula
-    PESO_SOJA: 0, // Legacy, kept for compatibility, not used in new formula
     
     // Fatores de Conversão e Custo
     fator_arrendamento: 0.048,
-    FATOR_ARREND: 0, // Legacy, kept for compatibility, not used in new formula
     fator_agua: 0.07, // Custo da água
-    fator_ucs: 1.0, // Fator Multiplicador Final do UCS
-    FATOR_CARBONO: 2.59, // Unidades de tCO2/ha (e.g., 2.59)
-    FATOR_CONVERSAO_SERRADA_TORA: 0.3756, // Fator de conversão da madeira
-    
-    // Valores Econômicos
-    pib_por_hectare: 0, // Legacy, not used in new CRS water calculation
+    fator_conversao_madeira: 0.10, // Fator de Conversão da Madeira (10%)
+    FATOR_CARBONO: 2.59, // Unidades de tCO2/ha
+    fator_ucs: 2, // Fator Multiplicador Final para UCS ASE
     
     // Área
     area_total: 1197,
 
     // Status
     isConfigured: false, 
+
+    // Legacy fields for compatibility - should not be used in new calculations
+    VOLUME_MADEIRA_HA: 0,
+    PROD_BOI: 0,
+    PROD_MILHO: 0,
+    PROD_SOJA: 0,
+    PESO_PEC: 0,
+    PESO_MILHO: 0,
+    PESO_SOJA: 0,
+    FATOR_ARREND: 0,
+    pib_por_hectare: 0,
+    FATOR_CONVERSAO_SERRADA_TORA: 0,
 };
 
 /**
@@ -99,6 +100,3 @@ export async function saveFormulaParameters(params: Omit<FormulaParameters, 'isC
     throw new Error("Failed to save formula parameters to the database.");
   }
 }
-
-
-

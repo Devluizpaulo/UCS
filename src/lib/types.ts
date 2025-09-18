@@ -117,7 +117,7 @@ export type FormulaParameters = {
     produtividade_boi: number; // @/ha
     produtividade_milho: number; // ton/ha
     produtividade_soja: number; // ton/ha
-    produtividade_madeira: number; // m³/ha
+    produtividade_madeira: number; // FM3, e.g., 120
     produtividade_carbono: number; // tCO2e/ha
     
     // Fatores de Ponderação VUS
@@ -128,9 +128,9 @@ export type FormulaParameters = {
     // Fatores de Conversão e Custo
     fator_arrendamento: number; // 0-1
     fator_agua: number; // 0-1
-    fator_ucs: number; // Multiplicador
+    fator_conversao_madeira: number; // Fator de Conversão da Madeira (10%)
     FATOR_CARBONO: number; // Unidades tCO2/ha (e.g., 2.59)
-    FATOR_CONVERSAO_SERRADA_TORA: number; // 0-1
+    fator_ucs: number; // Multiplicador para ASE, e.g., 2
     
     // Área
     area_total: number; // ha
@@ -148,6 +148,7 @@ export type FormulaParameters = {
     PESO_SOJA: number;
     FATOR_ARREND: number;
     pib_por_hectare: number;
+    FATOR_CONVERSAO_SERRADA_TORA: number;
 };
 
 export type ReportPreviewData = {
@@ -182,7 +183,7 @@ export type UCSCalculationInputs = Partial<FormulaParameters> & {
   // Cotações (preços brutos, conversão acontece no motor de cálculo)
   taxa_usd_brl: number;
   taxa_eur_brl: number;
-  pm3mad_usd: number; // Preço Madeira Serrada em USD
+  pm3mad_usd: number; // Preço Madeira em USD
   pecuariaCotacao: number; // Preço Boi Arroba em BRL
   milhoCotacao: number; // Preço Milho Saca em BRL
   sojaCotacao_usd: number; // Preço Soja Saca em USD
@@ -191,14 +192,14 @@ export type UCSCalculationInputs = Partial<FormulaParameters> & {
 
 export type UCSCalculationResult = {
   // Componentes do PDM
-  valorMadeira: number; // VM
+  valorMadeira: number; // VMAD
   valorUsoSolo: number; // VUS
   custoResponsabilidadeSocioambiental: number; // CRS
   potencialDesflorestadorMonetizado: number; // PDM
   
   // Cálculos finais
   indiceViabilidadeProjeto: number; // IVP
-  unidadeCreditoSustentabilidade: number; // UCS
+  unidadeCreditoSustentabilidade: number; // UCS CF
   
   // Detalhamento dos cálculos
   detalhes: {

@@ -67,7 +67,7 @@ export function UCSIndexDisplay({ className, initialData, chartData: initialChar
       }
        setFormattedUcsCF(formatCurrency(initialData.ucsCF, 'BRL'));
        setFormattedUcsASE(formatCurrency(initialData.ucsASE, 'BRL'));
-       setFormattedIvp(formatCurrency(initialData.ivp, 'BRL'));
+       setFormattedIvp(initialData.ivp.toFixed(4));
 
        setFormattedVm(formatCurrency(initialData.components.vm, 'BRL'));
        setFormattedVus(formatCurrency(initialData.components.vus, 'BRL'));
@@ -91,7 +91,7 @@ export function UCSIndexDisplay({ className, initialData, chartData: initialChar
 
        setFormattedUcsCF(formatCurrency(latestData.ucsCF, 'BRL'));
        setFormattedUcsASE(formatCurrency(latestData.ucsASE, 'BRL'));
-       setFormattedIvp(formatCurrency(latestData.ivp, 'BRL'));
+       setFormattedIvp(latestData.ivp.toFixed(4));
        setFormattedVm(formatCurrency(latestData.components.vm, 'BRL'));
        setFormattedVus(formatCurrency(latestData.components.vus, 'BRL'));
        setFormattedCrs(formatCurrency(latestData.components.crs, 'BRL'));
@@ -192,7 +192,7 @@ export function UCSIndexDisplay({ className, initialData, chartData: initialChar
                     <div className="flex items-baseline gap-x-6 gap-y-2">
                          <div>
                             <p className="text-3xl font-bold text-primary">{formattedUcsCF}</p>
-                            <p className="text-xs text-muted-foreground mt-1">UCS Crédito de Floresta</p>
+                            <p className="text-xs text-muted-foreground mt-1">UCS (Crédito de Floresta)</p>
                         </div>
                         <div>
                             <p className="text-2xl font-semibold text-foreground/80">{formattedUcsASE}</p>
@@ -213,12 +213,12 @@ export function UCSIndexDisplay({ className, initialData, chartData: initialChar
                 
                 <div className="grid grid-cols-3 gap-4 text-center">
                     <div>
-                        <p className="text-lg font-semibold">{formattedVm}</p>
-                        <p className="text-xs text-muted-foreground">VMAD</p>
-                    </div>
-                    <div>
                         <p className="text-lg font-semibold">{formattedVus}</p>
                         <p className="text-xs text-muted-foreground">VUS</p>
+                    </div>
+                    <div>
+                        <p className="text-lg font-semibold">{formattedVm}</p>
+                        <p className="text-xs text-muted-foreground">VMAD</p>
                     </div>
                     <div>
                         <p className="text-lg font-semibold">{formattedCrs}</p>
@@ -237,7 +237,7 @@ export function UCSIndexDisplay({ className, initialData, chartData: initialChar
                 
                 {lastUpdate && (
                   <div className="flex items-center justify-end text-xs text-muted-foreground pt-2">
-                    <span>Última atualização: {lastUpdate.toLocaleTimeString('pt-BR')}</span>
+                    <span>Última atualização: {lastUpdate.toLocaleTimeString('pt-br')}</span>
                   </div>
                 )}
               </div>
