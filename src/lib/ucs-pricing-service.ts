@@ -56,9 +56,6 @@ export function calcularUCSCompleto(inputs: UCSCalculationInputs): UCSCalculatio
   const result: CalculateUcsIndexOutput = calculateIndex(commodities, inputs as FormulaParameters);
   
   const totalPDM = result.components.vm + result.components.vus + result.components.crs;
-  const ivp = result.isConfigured && inputs.produtividade_carbono! * inputs.area_total! > 0 
-      ? (totalPDM / (inputs.produtividade_carbono! * inputs.area_total!)) / 2 
-      : 0;
 
   // Retorna os resultados no formato esperado pela calculadora.
   return {
@@ -66,8 +63,8 @@ export function calcularUCSCompleto(inputs: UCSCalculationInputs): UCSCalculatio
     valorUsoSolo: result.components.vus,
     custoResponsabilidadeSocioambiental: result.components.crs,
     potencialDesflorestadorMonetizado: totalPDM,
-    indiceViabilidadeProjeto: ivp,
-    unidadeCreditoSustentabilidade: result.indexValue,
+    indiceViabilidadeProjeto: result.ivp,
+    unidadeCreditoSustentabilidade: result.ucsCF,
     detalhes: {
       vm: { 
         fm3: inputs.produtividade_madeira ?? 0, 

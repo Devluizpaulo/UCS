@@ -1,6 +1,5 @@
 
 
-
 export type ChartData = {
   time: string;
   value: number;
@@ -56,7 +55,7 @@ export type HistoryInterval = '1d' | '1wk' | '1mo';
 export type FirestoreQuote = {
   id: string;
   ativo?: string;
-  data: string; // "DD/MM/YYYY"
+  data: string; // "DD/MM/YYYY" or "DD/MM/YY"
   abertura: number;
   maxima: number;
   minima: number;
@@ -70,7 +69,9 @@ export type FirestoreQuote = {
 }
 
 export type UcsData = {
-  indexValue: number;
+  ivp: number; // Insumo UCS
+  ucsCF: number; // UCS Crédito de Floresta
+  ucsASE: number; // UCS Ativo Socioambiental Equivalente
   isConfigured: boolean;
   components: {
     vm: number;

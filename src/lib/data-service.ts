@@ -34,7 +34,6 @@ const serializeFirestoreTimestamp = (data: any): any => {
 function getCollectionNameFromAssetId(assetId: string): string {
     const normalizedId = assetId.toLowerCase();
     
-    // Ordered by specificity to avoid incorrect matches
     if (normalizedId.includes('boi')) return 'boi_gordo';
     if (normalizedId.includes('carbono')) return 'carbono';
     if (normalizedId.includes('eur')) return 'eur';
@@ -43,8 +42,6 @@ function getCollectionNameFromAssetId(assetId: string): string {
     if (normalizedId.includes('soja')) return 'soja';
     if (normalizedId.includes('usd') || normalizedId.includes('dolar')) return 'usd';
 
-    // Fallback if no specific rule matches, though it should not be reached with proper config.
-    // This is a safe fallback for custom assets.
     return normalizedId.replace(/_futuros$/, '').replace(/__/g, '_');
 }
 
@@ -55,8 +52,6 @@ const parseDateString = (dateStr: string): Date => {
     // Regex for DD/MM/YY
     if (/^\d{2}\/\d{2}\/\d{2}$/.test(dateStr)) {
         let [day, month, year] = dateStr.split('/').map(Number);
-        // Convert 2-digit year to 4-digit year
-        // Assumes years > 50 are 19xx and years <= 50 are 20xx
         year += (year > 50 ? 1900 : 2000);
         return new Date(year, month - 1, day);
     }
@@ -67,7 +62,6 @@ const parseDateString = (dateStr: string): Date => {
         return new Date(year, month - 1, day);
     }
     
-    // Fallback for other formats (like ISO strings) or invalid strings
     const parsedDate = new Date(dateStr);
     return isNaN(parsedDate.getTime()) ? new Date(1970, 0, 1) : parsedDate;
 };
@@ -79,7 +73,6 @@ async function getAssetData(assetId: string, limit: number = 1): Promise<Firesto
     const collectionName = getCollectionNameFromAssetId(assetId);
     
     try {
-        // Fetch more documents than needed to ensure we have enough data for correct sorting
         const queryLimit = Math.max(limit, 100); 
         const query = db.collection(collectionName).limit(queryLimit);
         const snapshot = await query.get();
@@ -91,14 +84,12 @@ async function getAssetData(assetId: string, limit: number = 1): Promise<Firesto
             ...serializeFirestoreTimestamp(doc.data())
         } as FirestoreQuote));
 
-        // Sort in memory to handle date strings correctly
         const sortedDocs = allDocs.sort((a, b) => {
             const dateA = a.data ? parseDateString(a.data).getTime() : new Date(a.created_at).getTime();
             const dateB = b.data ? parseDateString(b.data).getTime() : new Date(b.created_at).getTime();
             return dateB - dateA; // Sort descending (most recent first)
         });
 
-        // Return the requested number of documents after sorting
         return sortedDocs.slice(0, limit);
 
     } catch (error) {
@@ -167,21 +158,24 @@ export async function getCotacoesHistorico(assetId: string, limit: number = 30):
 
 
 export async function getUcsIndexValue(): Promise<UcsData> {
+    const defaultResult: UcsData = {
+        ivp: 0,
+        ucsCF: 0,
+        ucsASE: 0,
+        isConfigured: false,
+        components: { vm: 0, vus: 0, crs: 0 },
+        vusDetails: { pecuaria: 0, milho: 0, soja: 0 },
+    };
+
     try {
         const [params, prices] = await Promise.all([getFormulaParameters(), getCommodityPrices()]);
         if (!params.isConfigured || prices.length === 0) {
-            return {
-                indexValue: 0, isConfigured: false, components: { vm: 0, vus: 0, crs: 0 },
-                vusDetails: { pecuaria: 0, milho: 0, soja: 0 },
-            };
+            return { ...defaultResult, isConfigured: params.isConfigured };
         }
         return calculateIndex(prices, params);
     } catch (error) {
         console.error(`Failed to get latest index value: ${error}`);
-        return {
-            indexValue: 0, isConfigured: false, components: { vm: 0, vus: 0, crs: 0 },
-            vusDetails: { pecuaria: 0, milho: 0, soja: 0 },
-        };
+        return defaultResult;
     }
 }
 

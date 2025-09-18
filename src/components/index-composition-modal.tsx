@@ -12,10 +12,11 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import type { UcsData, FormulaParameters } from '@/lib/types';
 import { formatCurrency } from '@/lib/ucs-pricing-service';
 import { useEffect, useState } from 'react';
-import { Package, Leaf, Target } from 'lucide-react';
+import { Package, Leaf, Target, TrendingUp, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { getFormulaParameters } from '@/lib/formula-service';
+import { Tooltip as UiTooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface IndexCompositionModalProps {
   data: UcsData;
@@ -52,10 +53,24 @@ const CustomTooltip = ({ active, payload }: any) => {
     return null;
 };
 
-const StatCard = ({ title, value, subtext, icon: Icon }: { title:string; value: string; subtext?: string; icon: React.ElementType }) => (
+const StatCard = ({ title, value, subtext, icon: Icon, tooltipText }: { title:string; value: string; subtext?: string; icon: React.ElementType, tooltipText?: string }) => (
     <div className="flex-1 rounded-lg border bg-card p-4 flex flex-col justify-center">
         <div className="flex items-center justify-between mb-1">
-            <p className="text-sm font-medium text-muted-foreground">{title}</p>
+            <div className="flex items-center gap-1.5">
+                <p className="text-sm font-medium text-muted-foreground">{title}</p>
+                 {tooltipText && (
+                    <TooltipProvider>
+                        <UiTooltip>
+                            <TooltipTrigger>
+                                <Info className="h-3 w-3 text-muted-foreground" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>{tooltipText}</p>
+                            </TooltipContent>
+                        </UiTooltip>
+                    </TooltipProvider>
+                 )}
+            </div>
             <Icon className="h-4 w-4 text-muted-foreground" />
         </div>
         <p className="text-2xl font-bold">{value}</p>
@@ -76,15 +91,19 @@ const DetailListItem = ({ label, value, colorClass }: { label: string; value: st
 
 
 export function IndexCompositionModal({ data, isOpen, onClose }: IndexCompositionModalProps) {
-    const { indexValue, components, vusDetails } = data;
+    const { ucsCF, ucsASE, ivp, components, vusDetails } = data;
     const [params, setParams] = useState<Partial<FormulaParameters>>({});
+    
+    useEffect(() => {
+      if (isOpen) {
+        getFormulaParameters().then(setParams);
+      }
+    }, [isOpen]);
     
     const totalPdm = components.vm + components.vus + components.crs;
     const vusTotal = vusDetails.pecuaria + vusDetails.milho + vusDetails.soja;
 
     const carbonoEstocado = (params.produtividade_carbono || 0) * (params.area_total || 0);
-    const pdmPorCarbono = carbonoEstocado > 0 ? totalPdm / carbonoEstocado : 0;
-    const ivp = pdmPorCarbono / 2;
 
     const pdmCompositionData = [
         { name: 'VMAD', value: components.vm, percent: totalPdm > 0 ? (components.vm / totalPdm) * 100 : 0, fill: COLORS_PDM.VMAD },
@@ -98,11 +117,6 @@ export function IndexCompositionModal({ data, isOpen, onClose }: IndexCompositio
         { name: 'Soja', value: vusDetails.soja, percent: vusTotal > 0 ? (vusDetails.soja / vusTotal) * 100 : 0, fill: COLORS_VUS.Soja },
     ].filter(item => item.value > 0);
 
-    useEffect(() => {
-      if (isOpen) {
-        getFormulaParameters().then(setParams);
-      }
-    }, [isOpen]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -119,20 +133,21 @@ export function IndexCompositionModal({ data, isOpen, onClose }: IndexCompositio
              <Card className="text-center bg-muted/30">
                 <CardHeader>
                     <CardTitle className="text-sm font-medium text-muted-foreground">
-                        Valor Final do Índice UCS (em BRL)
+                        Valor Final (UCS Crédito de Floresta)
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="-mt-4">
-                    <p className="text-4xl sm:text-5xl font-bold text-primary tracking-tight">{formatCurrency(indexValue, 'BRL')}</p>
+                    <p className="text-4xl sm:text-5xl font-bold text-primary tracking-tight">{formatCurrency(ucsCF, 'BRL')}</p>
                 </CardContent>
             </Card>
 
             <div>
                 <h3 className="text-lg font-semibold mb-3">KPIs da Fórmula</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <StatCard title="Potencial Desflorestador (PDM)" value={formatCurrency(totalPdm, 'BRL')} icon={Package} subtext="VMAD + VUS + CRS"/>
-                    <StatCard title="Carbono Estocado (CE)" value={`${carbonoEstocado.toLocaleString('pt-BR')} tCO₂e`} icon={Leaf} subtext="Produtividade × Área Total"/>
-                    <StatCard title="Índice de Viabilidade (IVP)" value={formatCurrency(ivp, 'BRL')} icon={Target} subtext="(PDM ÷ CE) ÷ 2" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <StatCard title="UCS ASE" value={formatCurrency(ucsASE, 'BRL')} icon={TrendingUp} tooltipText="UCS Ativo Socioambiental Equivalente (UCS CF x 2)"/>
+                    <StatCard title="Insumo UCS (IVP)" value={formatCurrency(ivp, 'BRL')} icon={Target} tooltipText="Índice de Viabilidade do Projeto"/>
+                    <StatCard title="PDM Total" value={formatCurrency(totalPdm, 'BRL')} icon={Package} tooltipText="Potencial Desflorestador Monetizado"/>
+                    <StatCard title="Carbono Estocado (CE)" value={`${carbonoEstocado.toLocaleString('pt-BR')} tCO₂e`} icon={Leaf} tooltipText="Produtividade de Carbono x Área Total"/>
                 </div>
             </div>
 

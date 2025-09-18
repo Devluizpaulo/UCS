@@ -1,5 +1,6 @@
 
 
+
 /**
  * @fileOverview A pure, synchronous service for performing UCS Index calculations.
  * This file should NOT be marked with 'use server' as it contains only calculation logic
@@ -34,8 +35,10 @@ function findPrice(commodities: CommodityPriceData[], category: CommodityPriceDa
  * @returns {CalculateUcsIndexOutput} The calculated index data.
  */
 export function calculateIndex(commodities: CommodityPriceData[], params: FormulaParameters): CalculateUcsIndexOutput {
-      const defaultResult = { 
-          indexValue: 0, 
+      const defaultResult: CalculateUcsIndexOutput = {
+          ivp: 0,
+          ucsCF: 0,
+          ucsASE: 0,
           isConfigured: params.isConfigured,
           components: { vm: 0, vus: 0, crs: 0 }, 
           vusDetails: { pecuaria: 0, milho: 0, soja: 0 }
@@ -46,7 +49,6 @@ export function calculateIndex(commodities: CommodityPriceData[], params: Formul
       }
       
       // --- 1. Price Lookups & Conversions (Camada de Conversão) ---
-      // Garante que todas as cotações mais recentes sejam usadas e convertidas primeiro.
       
       // Taxas de Câmbio
       const taxa_usd_brl = findPrice(commodities, 'exchange', 'dólar');
@@ -60,27 +62,17 @@ export function calculateIndex(commodities: CommodityPriceData[], params: Formul
       const preco_carbono_eur = findPrice(commodities, 'crs', 'carbono');
       
       // --- Conversões de Unidade e Moeda para BRL ---
-      // Madeira: Serrada (USD) -> Tora (USD) -> Tora (BRL)
-      const preco_madeira_tora_usd = preco_madeira_serrada_usd * params.FATOR_CONVERSAO_SERRADA_TORA;
-      const preco_madeira_tora_brl = preco_madeira_tora_usd * taxa_usd_brl;
-
-      // Milho: Saca (BRL) -> Tonelada (BRL)
+      const preco_madeira_tora_brl = (preco_madeira_serrada_usd * params.FATOR_CONVERSAO_SERRADA_TORA) * taxa_usd_brl;
       const preco_milho_ton_brl = (preco_milho_saca_brl / 60) * 1000;
-      
-      // Soja: Saca (USD) -> Saca (BRL) -> Tonelada (BRL)
-      const preco_soja_saca_brl = preco_soja_saca_usd * taxa_usd_brl;
-      const preco_soja_ton_brl = (preco_soja_saca_brl / 60) * 1000;
-
-      // Carbono: EUR -> BRL
+      const preco_soja_ton_brl = ((preco_soja_saca_usd * taxa_usd_brl) / 60) * 1000;
       const preco_carbono_brl = preco_carbono_eur * taxa_eur_brl;
-
 
       // --- 2. Cálculo das Rendas Brutas por Hectare (R$/ha) ---
       const renda_pecuaria_ha = params.produtividade_boi * preco_boi_arroba_brl;
       const renda_milho_ha = params.produtividade_milho * preco_milho_ton_brl;
       const renda_soja_ha = params.produtividade_soja * preco_soja_ton_brl;
       const renda_madeira_ha = params.produtividade_madeira * preco_madeira_tora_brl;
-      const renda_carbono_ha = params.FATOR_CARBONO * preco_carbono_brl; // FATOR_CARBONO é 2.59
+      const renda_carbono_ha = params.FATOR_CARBONO * preco_carbono_brl;
 
       // --- 3. Componentes do Índice ---
 
@@ -88,21 +80,22 @@ export function calculateIndex(commodities: CommodityPriceData[], params: Formul
       const VMAD = renda_madeira_ha * params.area_total;
 
       // --- vUS (Valor de Uso do Solo) ---
-      // Renda ponderada por hectare das culturas do VUS
       const renda_bruta_ponderada_ha_vus = 
           (renda_pecuaria_ha * params.fator_pecuaria) + 
           (renda_milho_ha * params.fator_milho) + 
           (renda_soja_ha * params.fator_soja);
-      // VUS por hectare é a renda ponderada vezes o fator de arrendamento
       const vus_por_ha = renda_bruta_ponderada_ha_vus * params.fator_arrendamento;
       const VUS = vus_por_ha * params.area_total;
 
       // --- cRS (Custo da Responsabilidade Socioambiental) ---
-      // 3.a Crédito de Carbono (CC)
+      const base_calculo_agua_ha = 
+          (renda_pecuaria_ha * params.fator_pecuaria) + 
+          (renda_milho_ha * params.fator_milho) + 
+          (renda_soja_ha * params.fator_soja) + 
+          renda_madeira_ha + 
+          renda_carbono_ha;
+
       const valor_carbono_total = renda_carbono_ha * params.area_total;
-      
-      // 3.b Custo da Água (cH2O) - Exatamente como na fórmula do Excel
-      const base_calculo_agua_ha = renda_bruta_ponderada_ha_vus + renda_madeira_ha + renda_carbono_ha;
       const valor_agua_total = (base_calculo_agua_ha * params.fator_agua) * params.area_total;
       
       const CRS = valor_carbono_total + valor_agua_total;
@@ -116,21 +109,23 @@ export function calculateIndex(commodities: CommodityPriceData[], params: Formul
         return { ...defaultResult, isConfigured: true };
       }
       
-      const IVP = (PDM / CE) / 2;
-      const ucsValue = params.fator_ucs * IVP;
+      const ivp = (PDM / CE) / 2;
+      const ucsCF = ivp * params.fator_ucs;
+      const ucsASE = ucsCF * 2; // UCS ASE é sempre o dobro do UCS CF
   
-      if (!isFinite(ucsValue)) {
+      if (!isFinite(ucsCF)) {
           console.error('[CalculationService] Cálculo do UCS resultou em um número não finito. Retornando valor padrão.');
           return { ...defaultResult, isConfigured: true };
       }
   
-      // VUS details para o modal, proporcional ao valor final do VUS.
       const vus_pecuaria_detalhe = renda_bruta_ponderada_ha_vus > 0 ? (renda_pecuaria_ha * params.fator_pecuaria / renda_bruta_ponderada_ha_vus) * VUS : 0;
       const vus_milho_detalhe = renda_bruta_ponderada_ha_vus > 0 ? (renda_milho_ha * params.fator_milho / renda_bruta_ponderada_ha_vus) * VUS : 0;
       const vus_soja_detalhe = renda_bruta_ponderada_ha_vus > 0 ? (renda_soja_ha * params.fator_soja / renda_bruta_ponderada_ha_vus) * VUS : 0;
 
       return { 
-          indexValue: parseFloat(ucsValue.toFixed(4)),
+          ivp: parseFloat(ivp.toFixed(4)),
+          ucsCF: parseFloat(ucsCF.toFixed(4)),
+          ucsASE: parseFloat(ucsASE.toFixed(4)),
           isConfigured: params.isConfigured,
           components: {
               vm: parseFloat(VMAD.toFixed(2)),

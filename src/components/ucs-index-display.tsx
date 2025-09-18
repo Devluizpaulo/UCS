@@ -38,10 +38,14 @@ export function UCSIndexDisplay({ className, initialData, chartData: initialChar
   const [chartData, setChartData] = useState<ChartData[]>(initialChartData);
   const [showChart, setShowChart] = useState(false);
   const [isCompositionModalOpen, setIsCompositionModalOpen] = useState(false);
-  const [formattedIndex, setFormattedIndex] = useState('');
   const [formattedVm, setFormattedVm] = useState('');
   const [formattedVus, setFormattedVus] = useState('');
   const [formattedCrs, setFormattedCrs] = useState('');
+
+  const [formattedUcsCF, setFormattedUcsCF] = useState('');
+  const [formattedUcsASE, setFormattedUcsASE] = useState('');
+  const [formattedIvp, setFormattedIvp] = useState('');
+
 
   useEffect(() => {
     setUcsData(initialData);
@@ -61,7 +65,10 @@ export function UCSIndexDisplay({ className, initialData, chartData: initialChar
           else if (current < prev) setTrend('down');
           else setTrend('stable');
       }
-       setFormattedIndex(formatCurrency(initialData.indexValue, 'BRL'));
+       setFormattedUcsCF(formatCurrency(initialData.ucsCF, 'BRL'));
+       setFormattedUcsASE(formatCurrency(initialData.ucsASE, 'BRL'));
+       setFormattedIvp(formatCurrency(initialData.ivp, 'BRL'));
+
        setFormattedVm(formatCurrency(initialData.components.vm, 'BRL'));
        setFormattedVus(formatCurrency(initialData.components.vus, 'BRL'));
        setFormattedCrs(formatCurrency(initialData.components.crs, 'BRL'));
@@ -82,7 +89,9 @@ export function UCSIndexDisplay({ className, initialData, chartData: initialChar
       setChartData(history);
       setLastUpdate(new Date());
 
-       setFormattedIndex(formatCurrency(latestData.indexValue, 'BRL'));
+       setFormattedUcsCF(formatCurrency(latestData.ucsCF, 'BRL'));
+       setFormattedUcsASE(formatCurrency(latestData.ucsASE, 'BRL'));
+       setFormattedIvp(formatCurrency(latestData.ivp, 'BRL'));
        setFormattedVm(formatCurrency(latestData.components.vm, 'BRL'));
        setFormattedVus(formatCurrency(latestData.components.vus, 'BRL'));
        setFormattedCrs(formatCurrency(latestData.components.crs, 'BRL'));
@@ -179,15 +188,21 @@ export function UCSIndexDisplay({ className, initialData, chartData: initialChar
           ) : (
             ucsData && (
               <div className="space-y-4">
-                <div className="flex items-baseline justify-between">
-                  <div>
-                    <div className="text-3xl font-bold text-primary">
-                      {formattedIndex}
+                <div className="flex flex-wrap items-baseline justify-between gap-4">
+                    <div className="flex items-baseline gap-x-6 gap-y-2">
+                         <div>
+                            <p className="text-3xl font-bold text-primary">{formattedUcsCF}</p>
+                            <p className="text-xs text-muted-foreground mt-1">UCS Crédito de Floresta</p>
+                        </div>
+                        <div>
+                            <p className="text-2xl font-semibold text-foreground/80">{formattedUcsASE}</p>
+                            <p className="text-xs text-muted-foreground mt-1">UCS ASE</p>
+                        </div>
+                        <div>
+                            <p className="text-xl font-medium text-muted-foreground">{formattedIvp}</p>
+                            <p className="text-xs text-muted-foreground mt-1">IVP (Insumo)</p>
+                        </div>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Valor atual do índice
-                    </p>
-                  </div>
                   <Button variant="outline" size="sm" onClick={() => setIsCompositionModalOpen(true)}>
                     <Eye className="h-4 w-4 mr-2" />
                     Ver Composição
