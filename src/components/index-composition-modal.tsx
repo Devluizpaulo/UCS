@@ -150,7 +150,7 @@ export function IndexCompositionModal({ data, isOpen, onClose }: IndexCompositio
                             </CardTitle>
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p className="font-mono text-xs">UCS CF = IVP * Fator UCS</p>
+                            <p className="font-mono text-xs">UCS CF = IVP / 2</p>
                           </TooltipContent>
                       </UiTooltip>
                     </TooltipProvider>
@@ -164,7 +164,7 @@ export function IndexCompositionModal({ data, isOpen, onClose }: IndexCompositio
                 <h3 className="text-lg font-semibold mb-3">KPIs da Fórmula</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <StatCard title="UCS ASE" value={formatCurrency(ucsASE, 'BRL')} icon={TrendingUp} tooltipText="UCS ASE = UCS CF * 2"/>
-                    <StatCard title="Insumo UCS (IVP)" value={formatCurrency(ivp, 'BRL')} icon={Target} tooltipText="IVP = (PDM / CE) / 2"/>
+                    <StatCard title="Insumo UCS (IVP)" value={formatCurrency(ivp, 'BRL')} icon={Target} tooltipText="IVP = PDM / CE"/>
                     <StatCard title="PDM Total" value={formatCurrency(totalPdm, 'BRL')} icon={Package} tooltipText="PDM = VMAD + VUS + CRS"/>
                     <StatCard title="Carbono Estocado (CE)" value={`${carbonoEstocado.toLocaleString('pt-BR')} tCO₂e`} icon={Leaf} tooltipText="CE = Prod. Carbono * Área Total"/>
                 </div>
