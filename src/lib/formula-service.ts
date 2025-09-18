@@ -21,7 +21,7 @@ const defaultParameters: FormulaParameters = {
     produtividade_milho: 7.2,
     produtividade_soja: 3.3,
     produtividade_madeira: 120,
-    produtividade_carbono: 150,
+    produtividade_carbono: 900, // Média de CE por hectare, conforme planilha
     VOLUME_MADEIRA_HA: 0, // Legacy, kept for compatibility, not used in new formula
     PROD_BOI: 0, // Legacy, kept for compatibility, not used in new formula
     PROD_MILHO: 0, // Legacy, kept for compatibility, not used in new formula
@@ -40,7 +40,7 @@ const defaultParameters: FormulaParameters = {
     FATOR_ARREND: 0, // Legacy, kept for compatibility, not used in new formula
     fator_agua: 0.07, // Custo da água
     fator_ucs: 1.0, // Fator Multiplicador Final do UCS
-    FATOR_CARBONO: 2.59, // Unidades de tCO2 por Hectare
+    FATOR_CARBONO: 2.59, // Unidades de tCO2/ha (e.g., 2.59)
     FATOR_CONVERSAO_SERRADA_TORA: 0.3756, // Fator de conversão da madeira
     
     // Valores Econômicos
@@ -99,5 +99,6 @@ export async function saveFormulaParameters(params: Omit<FormulaParameters, 'isC
     throw new Error("Failed to save formula parameters to the database.");
   }
 }
+
 
 

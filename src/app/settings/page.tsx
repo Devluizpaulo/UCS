@@ -430,7 +430,7 @@ const defaultParameters: Omit<FormulaParameters, 'isConfigured'> = {
     produtividade_milho: 0,
     produtividade_soja: 0,
     produtividade_madeira: 0,
-    produtividade_carbono: 0,
+    produtividade_carbono: 900,
     VOLUME_MADEIRA_HA: 0,
     PROD_BOI: 0,
     PROD_MILHO: 0,
