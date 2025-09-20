@@ -33,18 +33,16 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         <SidebarContent>
           <SidebarMenu>
             <SidebarMenuItem>
-                <Link href="/" passHref legacyBehavior>
-                    <SidebarMenuButton
-                        asChild
-                        isActive={pathname === '/'}
-                        tooltip={{ children: 'Painel' }}
-                    >
-                        <a>
-                            <LayoutDashboard />
-                            <span>Painel</span>
-                        </a>
-                    </SidebarMenuButton>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname === '/'}
+                tooltip={{ children: 'Painel' }}
+              >
+                <Link href="/">
+                  <LayoutDashboard />
+                  <span>Painel</span>
                 </Link>
+              </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarContent>
