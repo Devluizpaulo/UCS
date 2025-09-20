@@ -45,7 +45,11 @@ export async function getLatestQuoteWithComponents(assetId: string): Promise<Fir
     if (snapshot.empty) {
         return null;
     }
-    return serializeFirestoreTimestamp(snapshot.docs[0].data()) as FirestoreQuote;
+    const data = snapshot.docs[0].data();
+    return {
+        id: snapshot.docs[0].id,
+        ...serializeFirestoreTimestamp(data)
+    } as FirestoreQuote;
 }
 
 
@@ -53,7 +57,6 @@ async function getAndProcessAsset(config: CommodityPriceData, calculatedPrice: n
     const now = Timestamp.now();
     const today = now.toDate().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
-    // For immediate display, we calculate change based on the last stored value
     const snapshot = await db.collection(config.id)
         .orderBy('timestamp', 'desc')
         .limit(2)
@@ -67,7 +70,25 @@ async function getAndProcessAsset(config: CommodityPriceData, calculatedPrice: n
     if (components) {
         Object.assign(docData, components);
     }
-    await db.collection(config.id).add(docData);
+    
+    // Check if there's already an entry for today to avoid duplicates
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const tomorrowStart = new Date(todayStart);
+    tomorrowStart.setDate(todayStart.getDate() + 1);
+
+    const todaySnapshot = await db.collection(config.id)
+        .where('timestamp', '>=', Timestamp.fromDate(todayStart))
+        .where('timestamp', '<', Timestamp.fromDate(tomorrowStart))
+        .limit(1)
+        .get();
+
+    if (todaySnapshot.empty) {
+        await db.collection(config.id).add(docData);
+    } else {
+        // Update today's entry
+        await todaySnapshot.docs[0].ref.update(docData);
+    }
 
     return {
         ...config,
@@ -89,7 +110,6 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
         const configs = await getCommodityConfigs();
         const assetDataMap = new Map<string, CommodityPriceData>();
 
-        // 1. Fetch all non-calculated assets first
         const baseAssetPromises = configs
             .filter(config => !config.isCalculated)
             .map(async (config) => {
@@ -115,50 +135,50 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
 
         await Promise.all(baseAssetPromises);
         
-        // 2. Execute calculated assets in a defined order
-        // Calculate CH2OAgua
-        const rentMediaIds = ['boi_gordo', 'milho', 'soja', 'madeira', 'carbono'];
-        const rentMediaQuotes = await Promise.all(rentMediaIds.map(id => getLatestQuoteWithComponents(id)));
+        const usdRate = assetDataMap.get('usd')?.price || 1;
+        const eurRate = assetDataMap.get('eur')?.price || 1;
+
+        const getPriceInBRL = (assetId: string) => {
+            const asset = assetDataMap.get(assetId);
+            if (!asset) return 0;
+            if (asset.currency === 'USD') return asset.price * usdRate;
+            if (asset.currency === 'EUR') return asset.price * eurRate;
+            return asset.price;
+        }
+
         const rentMediaValues = {
-            boi_gordo: rentMediaQuotes[0]?.rent_media ?? 0,
-            milho: rentMediaQuotes[1]?.rent_media ?? 0,
-            soja: rentMediaQuotes[2]?.rent_media ?? 0,
-            madeira: rentMediaQuotes[3]?.rent_media ?? 0,
-            carbono: rentMediaQuotes[4]?.rent_media ?? 0,
+            boi_gordo: (getPriceInBRL('boi_gordo') / 15) * 0.25 * 0.35, 
+            milho: (getPriceInBRL('milho') / 60) * 1.5 * 0.30,
+            soja: (getPriceInBRL('soja') / 60) * 1.5 * 0.35,
+            madeira: getPriceInBRL('madeira') * 0.05,
+            carbono: getPriceInBRL('carbono') * 0.15,
         };
+
         const ch2oAguaValue = calculateCh2oAgua(rentMediaValues);
         const aguaConfig = configs.find(c => c.id === 'agua')!;
         const aguaData = await getAndProcessAsset(aguaConfig as CommodityPriceData, ch2oAguaValue, { rent_media_components: rentMediaValues });
         assetDataMap.set('agua', aguaData);
 
-        // Calculate Custo da Água
         const custoAguaValue = calculateCustoAgua(ch2oAguaValue);
         const custoAguaConfig = configs.find(c => c.id === 'custo_agua')!;
         const custoAguaData = await getAndProcessAsset(custoAguaConfig as CommodityPriceData, custoAguaValue, { base_ch2o_agua: ch2oAguaValue });
         assetDataMap.set('custo_agua', custoAguaData);
 
-        // Calculate PDM
         const pdmValue = calculatePdm(ch2oAguaValue, custoAguaValue);
         const pdmConfig = configs.find(c => c.id === 'pdm')!;
         const pdmData = await getAndProcessAsset(pdmConfig as CommodityPriceData, pdmValue, { 
             base_ch2o_agua: ch2oAguaValue, 
             base_custo_agua: custoAguaValue,
-            rent_media_components: rentMediaValues
         });
         assetDataMap.set('pdm', pdmData);
         
-        // Calculate UCS
         const ucsValue = calculateUcs(pdmValue);
         const ucsConfig = configs.find(c => c.id === 'ucs')!;
         const ucsData = await getAndProcessAsset(ucsConfig as CommodityPriceData, ucsValue, { 
-            base_pdm: pdmValue,
-            base_ch2o_agua: ch2oAguaValue,
-            base_custo_agua: custoAguaValue,
-            rent_media_components: rentMediaValues
+            base_pdm: pdmValue
         });
         assetDataMap.set('ucs', ucsData);
 
-        // Calculate UCS ASE
         const ucsAseValue = calculateUcsAse(ucsValue);
         const ucsAseConfig = configs.find(c => c.id === 'ucs_ase')!;
         const ucsAseData = await getAndProcessAsset(ucsAseConfig as CommodityPriceData, ucsAseValue, { 
@@ -170,7 +190,6 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
         });
         assetDataMap.set('ucs_ase', ucsAseData);
 
-        // 3. Assemble final results in the correct order
         const results = configs.map(config => assetDataMap.get(config.id)).filter(Boolean) as CommodityPriceData[];
 
         setCache(CACHE_KEY_PRICES, results, CACHE_TTL_SECONDS);
@@ -182,11 +201,11 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
     }
 }
 
-export async function getCotacoesHistorico(assetId: string): Promise<FirestoreQuote[]> {
+export async function getCotacoesHistorico(assetId: string, limit: number = 90): Promise<FirestoreQuote[]> {
   try {
     const snapshot = await db.collection(assetId)
       .orderBy('timestamp', 'desc')
-      .limit(90)
+      .limit(limit)
       .get();
 
     if (snapshot.empty) {

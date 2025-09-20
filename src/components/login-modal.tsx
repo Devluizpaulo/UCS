@@ -15,6 +15,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import Link from 'next/link';
 
 interface LoginModalProps {
   children: React.ReactNode;
@@ -59,15 +60,17 @@ export function LoginModal({ children }: LoginModalProps) {
         </DialogHeader>
         <form onSubmit={handleLogin}>
           <DialogFooter className="pt-4">
-            <Button type="submit" disabled={isLoading} className="w-full">
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Entrando...
-                </>
-              ) : (
-                'Entrar'
-              )}
+            <Button type="submit" disabled={isLoading} className="w-full" asChild>
+              <Link href="/dashboard">
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Entrando...
+                  </>
+                ) : (
+                  'Entrar'
+                )}
+              </Link>
             </Button>
           </DialogFooter>
         </form>

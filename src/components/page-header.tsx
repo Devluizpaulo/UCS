@@ -1,3 +1,5 @@
+'use client';
+
 import type { ElementType, ReactNode } from 'react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 

@@ -7,10 +7,8 @@ import { formatCurrency } from "@/lib/formatters";
 import { ArrowRight, Briefcase, CircleCheckBig, Globe, HandCoins, Landmark, Repeat, Scale, ShieldCheck, TrendingUp, User, Euro } from "lucide-react";
 import Image from 'next/image';
 import Link from 'next/link';
-import { LogoBVM } from "@/components/logo-bvm";
-import { LoginModal } from "@/components/login-modal";
 import { getIconForCategory } from "@/lib/icons";
-import { LanguageSwitcher } from "@/components/language-switcher";
+import { HomeHeader } from "@/components/home-header";
 
 const services = [
   {
@@ -78,20 +76,7 @@ export default async function LandingPage() {
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-background text-foreground">
-      <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-sm">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
-          <LogoBVM />
-          <div className="flex items-center gap-2">
-            <LanguageSwitcher />
-            <LoginModal>
-              <Button variant="ghost" size="icon">
-                <User className="h-5 w-5" />
-                <span className="sr-only">Login</span>
-              </Button>
-            </LoginModal>
-          </div>
-        </div>
-      </header>
+      <HomeHeader />
 
       <main className="flex-1">
         <section className="relative w-full flex items-center justify-center text-center text-white py-20 lg:py-28">
@@ -126,11 +111,11 @@ export default async function LandingPage() {
             </Card>
 
              <div className="flex flex-col sm:flex-row gap-4 mt-4">
-              <LoginModal>
+               <Link href="/dashboard" passHref>
                 <Button size="lg">
                   Acessar Painel <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
-              </LoginModal>
+              </Link>
               <Button size="lg" variant="secondary" asChild>
                 <a href="https://bmvdigital.global/" target="_blank" rel="noopener noreferrer">
                   Conheça a BMV Digital

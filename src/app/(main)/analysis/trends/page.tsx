@@ -1,8 +1,15 @@
 
 import { PageHeader } from '@/components/page-header';
 import { LineChart } from 'lucide-react';
+import { TrendsClient } from '@/components/trends-client';
+import { getCommodityConfigs } from '@/lib/commodity-config-service';
 
-export default function TrendsPage() {
+export const dynamic = 'force-dynamic';
+
+export default async function TrendsPage() {
+    const configs = await getCommodityConfigs();
+    const availableAssets = configs.filter(c => c.id !== 'usd' && c.id !== 'eur');
+    
     return (
         <div className="w-full flex-col">
             <PageHeader 
@@ -10,8 +17,8 @@ export default function TrendsPage() {
                 description="Analise a performance histórica dos índices e ativos."
                 icon={LineChart}
             />
-            <main className="flex flex-1 flex-col items-center justify-center gap-4 p-4 md:gap-8 md:p-6">
-                <p className="text-muted-foreground">Página de Tendências em construção.</p>
+             <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
+                <TrendsClient availableAssets={availableAssets} />
             </main>
         </div>
     )
