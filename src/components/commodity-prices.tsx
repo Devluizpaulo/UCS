@@ -22,7 +22,7 @@ export function CommodityPrices({ loading, data }: CommodityPricesProps) {
     <Card className="shadow-sm">
       <CardHeader>
         <CardTitle>Ativos Subjacentes</CardTitle>
-        <CardDescription>Preços em tempo real das commodities no índice.</CardDescription>
+        <CardDescription>Preços em tempo real das commodities que compõem os índices.</CardDescription>
       </CardHeader>
       <CardContent className="p-0">
         <UnderlyingAssetsTable loading={loading} data={data} />

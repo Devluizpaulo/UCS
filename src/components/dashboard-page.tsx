@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { PageHeader } from '@/components/page-header';
 import type { CommodityPriceData } from '@/lib/types';
 import { AssetCard } from './asset-card';
+import { CommodityPrices } from './commodity-prices';
 
 interface DashboardPageProps {
   initialData: CommodityPriceData[];
@@ -51,17 +52,22 @@ export function DashboardPage({ initialData }: DashboardPageProps) {
 
     return () => clearInterval(intervalId);
   }, [data]);
-
+  
+  const mainIndexes = data.filter(asset => asset.id === 'ucs_ase' || asset.id === 'ucs');
+  const otherAssets = data.filter(asset => asset.id !== 'ucs_ase' && asset.id !== 'ucs');
 
   return (
     <div className="flex min-h-screen w-full flex-col">
       <PageHeader title="Painel de Cotações" />
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
-        <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {isLoading ? (
-            Array.from({ length: 8 }).map((_, i) => <AssetCard key={i} loading />)
+            <>
+              <AssetCard loading />
+              <AssetCard loading />
+            </>
           ) : (
-            data.map((asset) => (
+            mainIndexes.map((asset) => (
               <AssetCard 
                 key={asset.id} 
                 asset={asset}
@@ -69,6 +75,9 @@ export function DashboardPage({ initialData }: DashboardPageProps) {
               />
             ))
           )}
+        </div>
+        <div>
+          <CommodityPrices loading={isLoading} data={otherAssets} />
         </div>
       </main>
     </div>
