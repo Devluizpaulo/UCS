@@ -41,7 +41,6 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
 
         try {
             // Reset: No data is fetched here for now.
-            // const history = await getCotacoesHistorico(currentAsset.id, 30);
             const history: FirestoreQuote[] = [];
             
             const formatted = formatCurrency(asset.price, asset.currency);
@@ -223,5 +222,4 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
             </DialogContent>
         </Dialog>
     );
-
-    
+}
