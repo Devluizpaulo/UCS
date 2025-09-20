@@ -10,8 +10,8 @@ import {
     DialogDescription,
 } from '@/components/ui/dialog';
 import { AreaChart as AreaChartIcon, PieChart as PieChartIcon, Table as TableIcon, Loader2 } from 'lucide-react';
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
+import { Area, AreaChart, Brush, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+import { ChartContainer, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
 import type { CommodityPriceData, ChartData, FirestoreQuote } from '@/lib/types';
 import { useEffect, useState, useCallback } from 'react';
 import { Table as UiTable, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
@@ -35,14 +35,13 @@ interface PieChartDataItem {
 }
 
 const PIE_CHART_COLORS = {
-    'boi_gordo': 'hsl(var(--chart-1))',
-    'milho': 'hsl(var(--chart-2))',
-    'soja': 'hsl(var(--chart-3))',
-    'madeira': 'hsl(var(--chart-4))',
-    'carbono': 'hsl(var(--chart-5))',
-    'custo_agua': 'hsl(var(--chart-1))'
+    'Boi Gordo': 'hsl(var(--chart-1))',
+    'Milho': 'hsl(var(--chart-2))',
+    'Soja': 'hsl(var(--chart-3))',
+    'Madeira': 'hsl(var(--chart-4))',
+    'Carbono': 'hsl(var(--chart-5))',
+    'Custo da Água': 'hsl(var(--chart-1))'
 };
-
 
 export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDetailModalProps) {
     const [historicalData, setHistoricalData] = useState<FirestoreQuote[]>([]);
@@ -69,31 +68,25 @@ if (currentAsset.isCalculated) {
     const latestData = await getLatestQuoteWithComponents(currentAsset.id);
     if (latestData) {
         let components: PieChartDataItem[] = [];
-
-        // Check for the most detailed composition first (from PDM, UCS, UCS_ASE)
         if (latestData.rent_media_components && latestData.base_custo_agua) {
              const rentMediaComponents = latestData.rent_media_components;
-             components.push({ name: 'Boi Gordo (35%)', value: (rentMediaComponents.boi_gordo || 0) * 0.35, fill: PIE_CHART_COLORS.boi_gordo });
-             components.push({ name: 'Milho (30%)', value: (rentMediaComponents.milho || 0) * 0.30, fill: PIE_CHART_COLORS.milho });
-             components.push({ name: 'Soja (35%)', value: (rentMediaComponents.soja || 0) * 0.35, fill: PIE_CHART_COLORS.soja });
-             components.push({ name: 'Madeira', value: rentMediaComponents.madeira || 0, fill: PIE_CHART_COLORS.madeira });
-             components.push({ name: 'Carbono', value: rentMediaComponents.carbono || 0, fill: PIE_CHART_COLORS.carbono });
+             components.push({ name: 'Boi Gordo', value: (rentMediaComponents.boi_gordo || 0) * 0.35, fill: PIE_CHART_COLORS['Boi Gordo'] });
+             components.push({ name: 'Milho', value: (rentMediaComponents.milho || 0) * 0.30, fill: PIE_CHART_COLORS.Milho });
+             components.push({ name: 'Soja', value: (rentMediaComponents.soja || 0) * 0.35, fill: PIE_CHART_COLORS.Soja });
+             components.push({ name: 'Madeira', value: rentMediaComponents.madeira || 0, fill: PIE_CHART_COLORS.Madeira });
+             components.push({ name: 'Carbono', value: rentMediaComponents.carbono || 0, fill: PIE_CHART_COLORS.Carbono });
              components.push({ name: 'Custo da Água', value: latestData.base_custo_agua || 0, fill: 'hsl(var(--chart-2))' });
         
-        // CH2OAgua: Rent Media composition
         } else if (latestData.rent_media_components) {
              components = Object.entries(latestData.rent_media_components).map(([key, value]) => ({
                 name: key.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
                 value: value,
                 fill: (PIE_CHART_COLORS as any)[key] || 'hsl(var(--muted))'
             }));
-        // Custo da Agua: Based on CH2OAgua
         } else if (latestData.base_ch2o_agua) {
              components.push({ name: 'Base CH2OAgua', value: latestData.base_ch2o_agua, fill: 'hsl(var(--chart-1))' });
-        // UCS: Based on PDM (simplified)
         } else if (latestData.base_pdm) {
             components.push({ name: 'Base PDM', value: latestData.base_pdm, fill: 'hsl(var(--chart-1))' });
-        // UCS ASE: Based on UCS (simplified)
         } else if (latestData.base_ucs) {
              components.push({ name: 'Base UCS', value: latestData.base_ucs, fill: 'hsl(var(--chart-1))' });
         }
@@ -101,7 +94,6 @@ if (currentAsset.isCalculated) {
     }
 }
             
-            // Always fetch historical for table and area chart (if applicable)
             const history = await getCotacoesHistorico(currentAsset.id);
             setHistoricalData(history);
             
@@ -169,12 +161,19 @@ if (currentAsset.isCalculated) {
                                 innerRadius={50}
                                 paddingAngle={2}
                                 labelLine={false}
-                                label={({ name, value }) => `${name} (${((value / pieChartData.reduce((acc, item) => acc + item.value, 0)) * 100).toFixed(0)}%)`}
+                                label={false}
                             >
                                 {pieChartData.map((entry) => (
                                     <Cell key={`cell-${entry.name}`} fill={entry.fill} />
                                 ))}
                             </Pie>
+                            <ChartLegend
+                                content={<ChartLegendContent nameKey="name" />}
+                                wrapperStyle={{
+                                    fontSize: '10px',
+                                    paddingLeft: '30px'
+                                }}
+                            />
                         </PieChart>
                     </ResponsiveContainer>
                 </ChartContainer>
@@ -237,6 +236,14 @@ if (currentAsset.isCalculated) {
                                 strokeWidth={2}
                                 dot={false}
                                 activeDot={{ r: 4, stroke: 'hsl(var(--primary))', strokeWidth: 2, fill: 'hsl(var(--background))' }}
+                            />
+                             <Brush 
+                                dataKey="time" 
+                                height={25} 
+                                stroke="hsl(var(--primary))" 
+                                fill="hsl(var(--background))"
+                                travellerWidth={10}
+                                tickFormatter={(index) => chartData[index]?.time || ''}
                             />
                         </AreaChart>
                     </ResponsiveContainer>
@@ -338,3 +345,5 @@ if (currentAsset.isCalculated) {
         </Dialog>
     );
 }
+
+    
