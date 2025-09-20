@@ -4,12 +4,12 @@ import type { CommodityConfig } from './types';
 /**
  * Mapeamento central dos ativos (commodities) que compõem o índice.
  * 
- * A chave do mapa (ex: 'dolar_comercial') é usada como:
+ * A chave do mapa (ex: 'soja') é usada como:
  * 1. ID único para o ativo.
  * 2. Nome da coleção no Firestore onde os dados históricos são armazenados.
  */
 export const COMMODITIES_CONFIG: Record<string, Omit<CommodityConfig, 'id'>> = {
-  'dolar_comercial': {
+  'usd': {
     name: 'Dólar Comercial',
     currency: 'BRL',
     category: 'exchange',
