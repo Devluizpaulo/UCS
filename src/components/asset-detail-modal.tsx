@@ -9,8 +9,8 @@ import {
     DialogDescription,
 } from '@/components/ui/dialog';
 import { AreaChart as AreaChartIcon, PieChart as PieChartIcon, Table as TableIcon, Loader2, List, Euro, DollarSign } from 'lucide-react';
-import { Area, AreaChart, Brush, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import type { TooltipProps } from 'recharts';
+import { Area, AreaChart, Brush, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import type { CommodityPriceData, ChartData, FirestoreQuote } from '@/lib/types';
 import { useEffect, useState, useCallback } from 'react';
@@ -164,7 +164,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                             <PieChart>
                                 <Tooltip 
                                     content={<ChartTooltipContent 
-                                        formatter={pieTooltipFormatter} 
+                                        formatter={pieTooltipFormatter as any} 
                                         nameKey="name" 
                                         hideIndicator
                                     />} 
