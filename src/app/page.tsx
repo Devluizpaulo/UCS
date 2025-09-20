@@ -108,10 +108,10 @@ export default async function LandingPage() {
               <IconUcsAse className="h-5 w-5 text-primary" />
               <span>Índice de Unidade de Conservação Sustentável</span>
             </div>
-            <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl">
+            <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl">
               UCS - Unidade de Crédito de Sustentabilidade
             </h1>
-            <p className="mx-auto max-w-[700px] text-lg text-gray-200 md:text-xl">
+            <p className="mx-auto max-w-[700px] text-lg text-gray-200 md:text-lg">
               Acompanhe a performance econômica de ativos ambientais e agrícolas em tempo real.
             </p>
             
