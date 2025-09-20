@@ -104,8 +104,13 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
         const configs = await getCommodityConfigs();
         const assetDataMap = new Map<string, CommodityPriceData>();
 
-        const now = new Date();
-        const today = new Date(now.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' })).toLocaleDateString('pt-BR');
+        // Corrigido: Garante que a data seja sempre no fuso horário de São Paulo
+        const spTime = new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' });
+        const today = new Date(spTime).toLocaleDateString('pt-BR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
 
         const baseAssetPromises = configs
             .filter(config => !config.isCalculated)
