@@ -1,4 +1,3 @@
-
 import type { FirestoreQuote } from "./types";
 
 interface RentMediaValues {
