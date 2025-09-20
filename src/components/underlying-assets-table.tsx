@@ -10,7 +10,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { AnimatedNumber } from '@/components/ui/animated-number';
 import { ArrowDown, ArrowUp, DollarSign, LandPlot, TreePine, Droplets, HelpCircle } from 'lucide-react';
 import type { CommodityPriceData } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -40,7 +39,7 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
   const [selectedAsset, setSelectedAsset] = useState<CommodityPriceData | null>(null);
 
   const handleRowClick = (asset: CommodityPriceData) => {
-    if (loading || !asset.ticker) return;
+    if (loading) return;
     setSelectedAsset(asset);
   };
   
@@ -99,11 +98,6 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
                  {asset.price > 0 ? (
                     <div>
                       {formatCurrency(asset.price, asset.currency)}
-                      {asset.convertedPriceBRL && asset.currency !== 'BRL' && (
-                        <div className="text-xs text-muted-foreground">
-                            {formatCurrency(asset.convertedPriceBRL, 'BRL')}
-                        </div>
-                      )}
                     </div>
                  ) : (
                     <span className="text-muted-foreground">-</span>
@@ -115,7 +109,7 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
                       asset.change >= 0 ? "border-primary/50 text-primary" : "border-destructive/50 text-destructive"
                   )}>
                       {asset.change >= 0 ? <ArrowUp className="mr-1 h-3 w-3" /> : <ArrowDown className="mr-1 h-3 w-3" />}
-                      <AnimatedNumber value={asset.change} formatter={(v: number) => `${v.toFixed(2)}%`} />
+                      {asset.change.toFixed(2)}%
                   </div>
               </TableCell>
             </TableRow>

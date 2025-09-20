@@ -21,7 +21,6 @@ export const ASSET_COLLECTION_MAP: Record<string, string> = {
 export const COMMODITY_TICKER_MAP: CommodityMap = {
   'usd': { 
     name: 'Dólar Americano',
-    ticker: 'BRL=X', 
     currency: 'BRL',
     category: 'exchange',
     description: 'Taxa de câmbio USD para BRL.',
@@ -30,7 +29,6 @@ export const COMMODITY_TICKER_MAP: CommodityMap = {
   },
   'eur': { 
     name: 'Euro',
-    ticker: 'EURBRL=X', 
     currency: 'BRL',
     category: 'exchange',
     description: 'Taxa de câmbio EUR para BRL.',
@@ -39,7 +37,6 @@ export const COMMODITY_TICKER_MAP: CommodityMap = {
   },
   'boi_gordo': { 
     name: 'Boi Gordo',
-    ticker: 'BGI=F', 
     currency: 'BRL',
     category: 'vus',
     description: 'Contratos futuros de Boi Gordo.',
@@ -48,7 +45,6 @@ export const COMMODITY_TICKER_MAP: CommodityMap = {
   },
   'soja': { 
     name: 'Soja',
-    ticker: 'ZS=F',
     currency: 'USD',
     category: 'vus',
     description: 'Contratos futuros de Soja.',
@@ -57,7 +53,6 @@ export const COMMODITY_TICKER_MAP: CommodityMap = {
   },
   'milho': { 
     name: 'Milho',
-    ticker: 'ZC=F',
     currency: 'USD',
     category: 'vus',
     description: 'Contratos futuros de Milho.',
@@ -66,7 +61,6 @@ export const COMMODITY_TICKER_MAP: CommodityMap = {
   },
   'madeira': { 
     name: 'Madeira',
-    ticker: 'LBS=F',
     currency: 'USD',
     category: 'vmad',
     description: 'Contratos futuros de Madeira (Lumber).',
@@ -75,10 +69,9 @@ export const COMMODITY_TICKER_MAP: CommodityMap = {
   },
   'carbono': { 
     name: 'Crédito de Carbono',
-    ticker: 'KRBN', // Using KRBN ETF as a proxy for Carbon Credits
     currency: 'USD',
     category: 'crs',
-    description: 'KraneShares Global Carbon Strategy ETF como proxy para créditos de carbono.',
+    description: 'Proxy para o preço de créditos de carbono.',
     unit: 'USD',
     source: 'n8n',
   },

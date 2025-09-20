@@ -38,7 +38,7 @@ function getCollectionNameFromAssetId(assetId: string): string | null {
  */
 async function getAssetData(assetId: string, limit: number = 30): Promise<FirestoreQuote[]> {
     const cacheKey = `assetData_${assetId}_${limit}`;
-    const cached = await getCache<FirestoreQuote[]>(cacheKey, 60 * 1000 * 5); // Cache for 5 minutes
+    const cached = await getCache<FirestoreQuote[]>(cacheKey, 60 * 5); // Cache for 5 minutes
     if (cached) return cached;
     
     const collectionName = getCollectionNameFromAssetId(assetId);
@@ -56,8 +56,6 @@ async function getAssetData(assetId: string, limit: number = 30): Promise<Firest
             ...serializeFirestoreTimestamp(doc.data())
         } as FirestoreQuote));
         
-        // Data is already sorted by the query `orderBy('timestamp', 'desc')`
-        
         await setCache(cacheKey, data);
         return data;
 
@@ -69,8 +67,8 @@ async function getAssetData(assetId: string, limit: number = 30): Promise<Firest
 
 
 export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
-    const cacheKey = 'commodityPrices_v12_aligned';
-    const cachedData = await getCache<CommodityPriceData[]>(cacheKey, 60000); // 1 minute cache
+    const cacheKey = 'commodityPrices_v13_aligned';
+    const cachedData = await getCache<CommodityPriceData[]>(cacheKey, 60); // 1 minute cache
     if (cachedData) return cachedData;
 
     try {
@@ -88,28 +86,23 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
             if (history && history.length > 0) {
                 const latest = history[0];
                 lastUpdated = latest.data || new Date(latest.timestamp).toLocaleString('pt-BR');
+                currentPrice = latest.ultimo || 0;
                 
-                if (commodity.id === 'madeira' && latest.madeira_tora_brl_ajustado) {
-                    currentPrice = latest.madeira_tora_brl_ajustado;
-                    originalCurrency = 'BRL';
-                } else {
-                    currentPrice = latest.ultimo || 0;
-                }
-                
-                if (history.length > 1) {
+                // Use variacao_pct if available, otherwise calculate it
+                if (latest.variacao_pct !== null && typeof latest.variacao_pct === 'number') {
+                    change = latest.variacao_pct;
+                } else if (history.length > 1) {
                     const previous = history[1];
-                    let previousPrice = 0;
-                    
-                    if (commodity.id === 'madeira' && previous.madeira_tora_brl_ajustado) {
-                        previousPrice = previous.madeira_tora_brl_ajustado;
-                    } else {
-                        previousPrice = previous.ultimo || 0;
-                    }
-
+                    const previousPrice = previous.ultimo || 0;
                     if (previousPrice > 0) {
                         absoluteChange = currentPrice - previousPrice;
                         change = (absoluteChange / previousPrice) * 100;
                     }
+                }
+
+                // If we don't have absoluteChange yet, calculate it from percentage
+                if (absoluteChange === 0 && change !== 0) {
+                    absoluteChange = currentPrice * (change / 100);
                 }
             }
             

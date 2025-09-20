@@ -84,7 +84,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
                             <Icon className="h-5 w-5 text-muted-foreground" />
                         </div>
-                        <span className="truncate">{asset.name} ({asset.ticker})</span>
+                        <span className="truncate">{asset.name}</span>
                     </DialogTitle>
                     <DialogDescription>
                         Análise detalhada do histórico de preços para {asset.name}. Fonte: n8n.
