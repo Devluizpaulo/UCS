@@ -5,9 +5,9 @@ import type { CommodityPriceData, FirestoreQuote } from './types';
 import { getCommodities } from './commodity-config-service';
 import { db } from './firebase-admin-config';
 import { Timestamp, DocumentData } from 'firebase-admin/firestore';
-import { getCache, setCache } from './cache-service';
 import { ASSET_COLLECTION_MAP } from './marketdata-config';
 
+// Helper to safely serialize Firestore Timestamps to ISO strings
 const serializeFirestoreTimestamp = (data: any): any => {
     if (data && typeof data === 'object') {
         if (data instanceof Timestamp) {
@@ -25,16 +25,90 @@ const serializeFirestoreTimestamp = (data: any): any => {
     return data;
 };
 
-function getCollectionNameFromAssetId(assetId: string): string | null {
-    return ASSET_COLLECTION_MAP[assetId] || null;
+// Fetches the single most recent quote for a given asset ID.
+async function getLatestQuoteForAsset(assetId: string): Promise<FirestoreQuote | null> {
+    const collectionName = ASSET_COLLECTION_MAP[assetId];
+    if (!collectionName) {
+        console.warn(`[DataService] No collection mapping for asset ID: ${assetId}`);
+        return null;
+    }
+
+    try {
+        const snapshot = await db.collection(collectionName).orderBy('timestamp', 'desc').limit(1).get();
+        if (snapshot.empty) {
+            console.warn(`[DataService] No documents found in collection for asset ID: ${assetId}`);
+            return null;
+        }
+
+        const doc = snapshot.docs[0];
+        return {
+            id: doc.id,
+            ...serializeFirestoreTimestamp(doc.data())
+        } as FirestoreQuote;
+
+    } catch (error) {
+        console.error(`[DataService] Error fetching latest quote for asset ${assetId}:`, error);
+        return null;
+    }
 }
 
-async function getAssetData(assetId: string, limit: number = 30): Promise<FirestoreQuote[]> {
-    const cacheKey = `assetData_${assetId}_${limit}`;
-    const cached = getCache<FirestoreQuote[]>(cacheKey);
-    if (cached) return cached;
-    
-    const collectionName = getCollectionNameFromAssetId(assetId);
+/**
+ * Fetches the current price and change data for all configured commodities.
+ * This is the primary function used by the dashboard.
+ */
+export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
+    try {
+        const commodities = await getCommodities();
+        if (!commodities || commodities.length === 0) {
+            console.warn("[DataService] No commodities configured.");
+            return [];
+        }
+
+        // Fetch the latest quote for each commodity in parallel.
+        const pricePromises = commodities.map(async (commodity) => {
+            const latestQuote = await getLatestQuoteForAsset(commodity.id);
+
+            let price = 0;
+            let change = 0;
+            let absoluteChange = 0;
+            let lastUpdated = 'N/A';
+
+            if (latestQuote) {
+                price = latestQuote.ultimo ?? 0;
+                change = latestQuote.variacao_pct ?? 0;
+                lastUpdated = latestQuote.data ?? new Date(latestQuote.timestamp).toLocaleDateString('pt-BR');
+
+                // Calculate absolute change based on price and percentage
+                if (price > 0 && change !== 0) {
+                    const previousPrice = price / (1 + (change / 100));
+                    absoluteChange = price - previousPrice;
+                }
+            }
+
+            return {
+                ...commodity,
+                price,
+                change,
+                absoluteChange,
+                lastUpdated,
+            };
+        });
+
+        const priceData = await Promise.all(pricePromises);
+        
+        return priceData;
+
+    } catch (error) {
+        console.error(`[DataService] Critical error in getCommodityPrices: ${error}`);
+        return [];
+    }
+}
+
+/**
+ * Fetches the historical quotes for a single asset, used for the details modal.
+ */
+export async function getCotacoesHistorico(assetId: string, limit: number = 30): Promise<FirestoreQuote[]> {
+    const collectionName = ASSET_COLLECTION_MAP[assetId];
     if (!collectionName) {
         console.warn(`[DataService] No collection mapping for asset ID: ${assetId}`);
         return [];
@@ -49,70 +123,10 @@ async function getAssetData(assetId: string, limit: number = 30): Promise<Firest
             ...serializeFirestoreTimestamp(doc.data())
         } as FirestoreQuote));
         
-        setCache(cacheKey, data, 60 * 5); // Cache for 5 minutes
         return data;
 
     } catch (error) {
-        console.error(`Error fetching data for asset ${assetId} from collection ${collectionName}:`, error);
+        console.error(`[DataService] Error fetching historical data for asset ${assetId}:`, error);
         return [];
     }
-}
-
-
-export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
-    const cacheKey = 'commodityPrices_all_v2';
-    const cachedData = getCache<CommodityPriceData[]>(cacheKey);
-    if (cachedData) return cachedData;
-
-    try {
-        const commodities = await getCommodities();
-        if (!commodities || commodities.length === 0) return [];
-
-        const allHistoriesPromises = commodities.map(c => getAssetData(c.id, 2));
-        const allHistories = await Promise.all(allHistoriesPromises);
-
-        const priceData = commodities.map((commodity, index) => {
-            const history = allHistories[index];
-            let currentPrice = 0, change = 0, absoluteChange = 0, lastUpdated = 'N/A';
-            
-            if (history && history.length > 0) {
-                const latest = history[0];
-                currentPrice = latest.ultimo || 0;
-                // Use variacao_pct if it's a valid number, otherwise default to 0
-                change = (typeof latest.variacao_pct === 'number') ? latest.variacao_pct : 0;
-                lastUpdated = latest.data || new Date(latest.timestamp).toLocaleString('pt-BR');
-
-                if (currentPrice > 0 && change !== 0) {
-                    const previousPrice = currentPrice / (1 + (change / 100));
-                    absoluteChange = currentPrice - previousPrice;
-                } else if (history.length > 1) {
-                    const previous = history[1];
-                    const previousPrice = previous.ultimo || 0;
-                    if (previousPrice > 0) {
-                        absoluteChange = currentPrice - previousPrice;
-                        change = (absoluteChange / previousPrice) * 100;
-                    }
-                }
-            }
-            
-            return {
-                ...commodity,
-                price: currentPrice,
-                change,
-                absoluteChange,
-                lastUpdated,
-            };
-        });
-        
-        setCache(cacheKey, priceData, 60); // 1 minute cache
-        return priceData;
-    } catch (error) {
-        console.error(`Failed to get commodity prices: ${error}`);
-        return [];
-    }
-}
-
-
-export async function getCotacoesHistorico(assetId: string, limit: number = 30): Promise<FirestoreQuote[]> {
-     return getAssetData(assetId, limit);
 }

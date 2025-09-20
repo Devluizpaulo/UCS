@@ -11,18 +11,23 @@ export function DashboardPage() {
   const [allCommodities, setAllCommodities] = useState<CommodityPriceData[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // We use useEffect to fetch data on the client-side.
+  // This avoids issues with server-side rendering and caching complexities for now.
   useEffect(() => {
     const fetchDashboardData = async () => {
       setLoading(true);
       try {
+        // Directly call the server function.
         const commodities = await getCommodityPrices();
         setAllCommodities(commodities);
       } catch (error) {
         console.error('Failed to fetch dashboard data:', error);
+        // Optionally, set an error state to show a message to the user
       } finally {
         setLoading(false);
       }
     };
+    
     fetchDashboardData();
   }, []);
 
