@@ -1,6 +1,4 @@
 
-'use server';
-
 import admin from 'firebase-admin';
 
 // This is a simplified check to see if the app is already initialized.
