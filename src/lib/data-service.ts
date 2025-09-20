@@ -112,7 +112,9 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
             .map(async (config) => {
                 const snapshot = await db.collection(config.id).orderBy('timestamp', 'desc').limit(2).get();
                 if (snapshot.empty) {
-                    return { price: 0, change: 0, absoluteChange: 0, lastUpdated: 'N/A', ...config };
+                    const data = { price: 0, change: 0, absoluteChange: 0, lastUpdated: 'N/A', ...config };
+                    assetDataMap.set(config.id, data);
+                    return data;
                 }
 
                 const latestDoc = snapshot.docs[0].data() as FirestoreQuote;
@@ -140,11 +142,11 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
 
         const rentMediaComponentIds = ['boi_gordo', 'milho', 'soja', 'madeira', 'carbono'];
         const rentMediaValues = {
-            boi_gordo: (getPriceInBRL('boi_gordo') / 15) * 0.25 * 0.35, 
-            milho: (getPriceInBRL('milho') / 60) * 1.5 * 0.30,
-            soja: (getPriceInBRL('soja') / 60) * 1.5 * 0.35,
-            madeira: getPriceInBRL('madeira') * 0.05,
-            carbono: getPriceInBRL('carbono') * 0.15,
+            boi_gordo: getPriceInBRL('boi_gordo') * 0.35, 
+            milho: getPriceInBRL('milho') * 0.30,
+            soja: getPriceInBRL('soja') * 0.35,
+            madeira: getPriceInBRL('madeira'),
+            carbono: getPriceInBRL('carbono'),
         };
         const missingRentMediaComponents = rentMediaComponentIds.filter(id => getPrice(id) === 0);
 
