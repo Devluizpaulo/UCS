@@ -72,6 +72,14 @@ export const COMMODITIES_CONFIG: Record<string, Omit<CommodityConfig, 'id'>> = {
     description: 'Custo da água calculado como 7% do índice CH2OAgua.',
     unit: 'Pontos',
     isCalculated: true,
+  },
+  'pdm': {
+    name: 'PDM',
+    currency: 'BRL',
+    category: 'crs',
+    description: 'Índice PDM calculado a partir do CH2OAgua e Custo da Água.',
+    unit: 'Pontos',
+    isCalculated: true,
   }
 };
 

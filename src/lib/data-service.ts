@@ -1,15 +1,14 @@
-
 'use server';
 
 import { db } from '@/lib/firebase-admin-config';
 import { getCommodityConfigs } from '@/lib/commodity-config-service';
 import type { CommodityPriceData, FirestoreQuote } from '@/lib/types';
 import { getCache, setCache } from '@/lib/cache-service';
-import { calculateCh2oAgua, calculateCustoAgua } from './calculation-service';
+import { calculateCh2oAgua, calculateCustoAgua, calculatePdm } from './calculation-service';
 import { Timestamp } from 'firebase-admin/firestore';
 
 const CACHE_KEY_PRICES = 'commodity_prices';
-const CACHE_TTL_SECONDS = 6 * 60 * 60; // 6 horas
+const CACHE_TTL_SECONDS = 21600; // 6 horas
 
 function serializeFirestoreTimestamp(data: any): any {
     if (data === null || typeof data !== 'object') {
@@ -50,7 +49,7 @@ async function getLatestQuote(assetId: string): Promise<FirestoreQuote | null> {
 
 
 export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
-    const cachedData = getCache<CommodiextendsyPriceData[]>(CACHE_KEY_PRICES);
+    const cachedData = getCache<CommodityPriceData[]>(CACHE_KEY_PRICES);
     if (cachedData) {
         return cachedData;
     }
@@ -58,7 +57,8 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
     try {
         const configs = await getCommodityConfigs();
         const assetDataMap = new Map<string, CommodityPriceData>();
-        let ch2oAguaValue = 0; // Store the calculated CH2OAgua value to be used by other assets
+        let ch2oAguaValue = 0;
+        let custoAguaValue = 0;
 
         // First pass: get all non-calculated assets
         const pricePromises = configs
@@ -106,13 +106,15 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
         const calculatedAssetConfigs = configs.filter(config => config.isCalculated);
         for (const config of calculatedAssetConfigs) {
             let calculatedPrice = 0;
-            let rentMediaValues: any = {};
+            let docToSave: any = {};
+            const now = Timestamp.now();
+            const today = now.toDate().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
             if (config.id === 'agua') {
                 const rentMediaIds = ['boi_gordo', 'milho', 'soja', 'madeira', 'carbono'];
                 const rentMediaQuotes = await Promise.all(rentMediaIds.map(id => getLatestQuote(id)));
 
-                rentMediaValues = {
+                const rentMediaValues = {
                     boi_gordo: rentMediaQuotes[0]?.rent_media ?? 0,
                     milho: rentMediaQuotes[1]?.rent_media ?? 0,
                     soja: rentMediaQuotes[2]?.rent_media ?? 0,
@@ -121,30 +123,30 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
                 };
                 
                 calculatedPrice = calculateCh2oAgua(rentMediaValues);
-                ch2oAguaValue = calculatedPrice; // Save for next calculation
+                ch2oAguaValue = calculatedPrice;
+                docToSave.rent_media_components = rentMediaValues;
+
             } else if (config.id === 'custo_agua') {
                 calculatedPrice = calculateCustoAgua(ch2oAguaValue);
-            }
-
-            // Save the new calculated value to its collection
-            const now = Timestamp.now();
-            const today = now.toDate().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-
-            const docToSave: any = {
-                ultimo: calculatedPrice,
-                timestamp: now,
-                data: today,
-                variacao_pct: 0,
-            };
-
-            if (config.id === 'agua') {
-                docToSave.rent_media_components = rentMediaValues;
-            }
-             if (config.id === 'custo_agua') {
+                custoAguaValue = calculatedPrice;
                 docToSave.base_ch2o_agua = ch2oAguaValue;
+
+            } else if (config.id === 'pdm') {
+                calculatedPrice = calculatePdm(ch2oAguaValue, custoAguaValue);
+                docToSave.base_ch2o_agua = ch2oAguaValue;
+                docToSave.base_custo_agua = custoAguaValue;
             }
 
-            await db.collection(config.id).add(docToSave);
+            // Save the new calculated value to its collection, if it's a valid number
+            if (typeof calculatedPrice === 'number' && isFinite(calculatedPrice)) {
+                 Object.assign(docToSave, {
+                    ultimo: calculatedPrice,
+                    timestamp: now,
+                    data: today,
+                    variacao_pct: 0, // Simplified for now
+                });
+                await db.collection(config.id).add(docToSave);
+            }
             
             // For immediate display, we calculate change based on the last stored value
             const snapshot = await db.collection(config.id)

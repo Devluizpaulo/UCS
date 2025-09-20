@@ -1,4 +1,3 @@
-
 import type { FirestoreQuote } from "./types";
 
 interface RentMediaValues {
@@ -44,4 +43,18 @@ export function calculateCustoAgua(ch2oAguaValue: number): number {
         return 0;
     }
     return ch2oAguaValue * 0.07;
+}
+
+/**
+ * Calculates the PDM index.
+ * PDM = CH2OAgua + Custo da Água
+ * @param ch2oAguaValue The value of the CH2OAgua index.
+ * @param custoAguaValue The value of the Custo da Água index.
+ * @returns The calculated value of the PDM index.
+ */
+export function calculatePdm(ch2oAguaValue: number, custoAguaValue: number): number {
+    if (typeof ch2oAguaValue !== 'number' || typeof custoAguaValue !== 'number') {
+        return 0;
+    }
+    return ch2oAguaValue + custoAguaValue;
 }
