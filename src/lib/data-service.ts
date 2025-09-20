@@ -67,7 +67,7 @@ async function getAssetData(assetId: string, limit: number = 30): Promise<Firest
 
 
 export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
-    const cacheKey = 'commodityPrices_v13_aligned';
+    const cacheKey = 'commodityPrices_v14_final';
     const cachedData = await getCache<CommodityPriceData[]>(cacheKey, 60); // 1 minute cache
     if (cachedData) return cachedData;
 
@@ -81,28 +81,27 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
         const priceData = commodities.map((commodity, index) => {
             const history = allHistories[index];
             let currentPrice = 0, change = 0, absoluteChange = 0, lastUpdated = 'N/A';
-            let originalCurrency = commodity.currency;
-
+            
             if (history && history.length > 0) {
                 const latest = history[0];
-                lastUpdated = latest.data || new Date(latest.timestamp).toLocaleString('pt-BR');
                 currentPrice = latest.ultimo || 0;
-                
-                // Use variacao_pct if available, otherwise calculate it
-                if (latest.variacao_pct !== null && typeof latest.variacao_pct === 'number') {
-                    change = latest.variacao_pct;
+                change = latest.variacao_pct ?? 0;
+                lastUpdated = latest.data || new Date(latest.timestamp).toLocaleString('pt-BR');
+
+                if (currentPrice > 0 && change !== 0) {
+                    // Calculate absoluteChange based on the percentage change
+                    // The formula is PreviousPrice = CurrentPrice / (1 + (Change/100))
+                    // AbsoluteChange = CurrentPrice - PreviousPrice
+                    const previousPrice = currentPrice / (1 + (change / 100));
+                    absoluteChange = currentPrice - previousPrice;
                 } else if (history.length > 1) {
+                    // Fallback to calculating from previous day if variacao_pct is not available
                     const previous = history[1];
                     const previousPrice = previous.ultimo || 0;
                     if (previousPrice > 0) {
                         absoluteChange = currentPrice - previousPrice;
                         change = (absoluteChange / previousPrice) * 100;
                     }
-                }
-
-                // If we don't have absoluteChange yet, calculate it from percentage
-                if (absoluteChange === 0 && change !== 0) {
-                    absoluteChange = currentPrice * (change / 100);
                 }
             }
             
@@ -112,7 +111,6 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
                 change,
                 absoluteChange,
                 lastUpdated,
-                currency: originalCurrency,
             };
         });
         
