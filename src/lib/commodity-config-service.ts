@@ -1,4 +1,3 @@
-
 import type { CommodityConfig } from './types';
 
 /**
@@ -44,12 +43,12 @@ export const COMMODITIES_CONFIG: Record<string, Omit<CommodityConfig, 'id'>> = {
     description: 'Preço da arroba (15kg) de Boi Gordo.',
     unit: 'BRL por @',
   },
-  'credito_carbono': {
+  'carbono': {
     name: 'Crédito de Carbono',
-    currency: 'USD',
+    currency: 'EUR',
     category: 'crs',
-    description: 'Preço do crédito de carbono (CBL).',
-    unit: 'USD por tonelada',
+    description: 'Preço do crédito de carbono em Euros.',
+    unit: 'EUR por tonelada',
   },
   'madeira_serrada': {
     name: 'Madeira Serrada',
