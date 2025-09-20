@@ -8,6 +8,7 @@ import { Timestamp } from 'firebase-admin/firestore';
 import { getFormulaParameters } from './formula-service';
 import { calculateIndex } from './calculation-service';
 import { getCache, setCache } from './cache-service';
+import { ASSET_COLLECTION_MAP } from './marketdata-config';
 
 const serializeFirestoreTimestamp = (data: any): any => {
     if (data && typeof data === 'object') {
@@ -31,10 +32,8 @@ const serializeFirestoreTimestamp = (data: any): any => {
  * @param assetId The document ID from the 'commodities' collection (e.g., 'boi_gordo_futuros').
  * @returns The name of the collection holding price data (e.g., 'boi_gordo').
  */
-function getCollectionNameFromAssetId(assetId: string): string {
-    const normalizedId = assetId.toLowerCase();
-    const parts = normalizedId.split('___');
-    return parts[0].replace(/_futuros$/, '');
+function getCollectionNameFromAssetId(assetId: string): string | null {
+    return ASSET_COLLECTION_MAP[assetId] || null;
 }
 
 // Helper to parse DD/MM/YYYY or DD/MM/YY string to Date object
@@ -65,6 +64,10 @@ async function getAssetData(assetId: string, limit: number = 1): Promise<Firesto
     if (!assetId) return [];
     
     const collectionName = getCollectionNameFromAssetId(assetId);
+    if (!collectionName) {
+        console.warn(`[DataService] No collection mapping found for asset ID: ${assetId}`);
+        return [];
+    }
     
     try {
         const queryLimit = Math.max(limit, 100); 
@@ -167,6 +170,7 @@ export async function getUcsIndexValue(): Promise<UcsData> {
         ivp: 0,
         ucsCF: 0,
         ucsASE: 0,
+        pdm: 0,
         isConfigured: false,
         components: { vmad: 0, vus: 0, crs: 0 },
         vusDetails: { pecuaria: 0, milho: 0, soja: 0 },
@@ -177,7 +181,7 @@ export async function getUcsIndexValue(): Promise<UcsData> {
         if (!params.isConfigured || prices.length === 0) {
             return { ...defaultResult, isConfigured: params.isConfigured };
         }
-        const result = calculateIndex(prices, params);
+        const result = await calculateIndex(prices, params);
         await setCache(cacheKey, result);
         return result;
     } catch (error) {

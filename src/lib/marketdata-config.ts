@@ -5,24 +5,24 @@ import type { CommodityMap } from "./types";
 
 // This file is intentionally not marked with 'use server' as it exports constant objects.
 
-// Mapeamento dos nomes dos ativos para suas respectivas coleções no Firestore
-// Os nomes das coleções DEVEM corresponder ao ID do ativo normalizado (lowercase, _ para espaços, sem caracteres especiais)
-// DEPRECATED: This map is no longer the source of truth and will be removed.
-// The collection name is now derived from the asset's ticker.
+/**
+ * Maps asset IDs from the 'commodities' collection to the actual Firestore collection
+ * name where their price history is stored. This is the new source of truth.
+ */
 export const ASSET_COLLECTION_MAP: Record<string, string> = {
-  'USD/BRL - Dólar Americano Real Brasileiro': 'usd',
-  'EUR/BRL - Euro Real Brasileiro': 'eur',
-  'Boi Gordo Futuros': 'boi_gordo',
-  'Soja Futuros': 'soja',
-  'Milho Futuros': 'milho',
-  'Madeira Serrada Futuros': 'madeira',
-  'Crédito Carbono Futuros': 'carbono',
+  'usd_brl___dolar_americano_real_brasileiro': 'usd',
+  'eur_brl___euro_real_brasileiro': 'eur',
+  'boi_gordo_futuros': 'boi_gordo',
+  'soja_futuros': 'soja',
+  'milho_futuros': 'milho',
+  'madeira_serrada_futuros': 'madeira',
+  'credito_carbono_futuros': 'carbono',
 };
 
 
 // This map defines the INITIAL set of commodities to be seeded into the database
 // on the very first run. After that, the master list is managed in Firestore
-// via the Settings page. The keys here (e.g., 'USD-BRL-Cambio') will become the
+// via the Settings page. The keys here (e.g., 'usd_brl___dolar_americano_real_brasileiro') will become the
 // document IDs in Firestore. The tickers have been updated for Yahoo Finance compatibility
 // but the 'source' should reflect where the data is coming from (n8n).
 export const COMMODITY_TICKER_MAP: CommodityMap = {
