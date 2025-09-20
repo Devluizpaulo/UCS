@@ -8,14 +8,14 @@ import {
     DialogTitle,
     DialogDescription,
 } from '@/components/ui/dialog';
-import { AreaChart as AreaChartIcon, Table as TableIcon, Loader2 } from 'lucide-react';
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { AreaChart as AreaChartIcon, PieChart as PieChartIcon, Table as TableIcon, Loader2 } from 'lucide-react';
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import type { CommodityPriceData, ChartData, FirestoreQuote } from '@/lib/types';
 import { useEffect, useState, useCallback } from 'react';
 import { Table as UiTable, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { ScrollArea } from './ui/scroll-area';
-import { getCotacoesHistorico } from '@/lib/data-service';
+import { getCotacoesHistorico, getLatestQuoteWithComponents } from '@/lib/data-service';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/formatters';
 import { Skeleton } from './ui/skeleton';
@@ -27,9 +27,16 @@ interface AssetDetailModalProps {
     onClose: () => void;
 }
 
+interface PieChartDataItem {
+    name: string;
+    value: number;
+    fill: string;
+}
+
 export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDetailModalProps) {
     const [historicalData, setHistoricalData] = useState<FirestoreQuote[]>([]);
     const [chartData, setChartData] = useState<ChartData[]>([]);
+    const [pieChartData, setPieChartData] = useState<PieChartDataItem[] | null>(null);
     const [loading, setLoading] = useState(true);
     const [formattedPrice, setFormattedPrice] = useState('');
     const [formattedAbsoluteChange, setFormattedAbsoluteChange] = useState('');
@@ -38,24 +45,54 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
         setLoading(true);
         setHistoricalData([]);
         setChartData([]);
+        setPieChartData(null);
 
         try {
-            const history = await getCotacoesHistorico(currentAsset.id);
-
             const price = formatCurrency(asset.price, asset.currency, asset.id);
             const absChange = formatCurrency(Math.abs(asset.absoluteChange), asset.currency, asset.id);
             
             setFormattedPrice(price);
             setFormattedAbsoluteChange(absChange);
-            
+
+            if (currentAsset.isCalculated) {
+                const latestData = await getLatestQuoteWithComponents(currentAsset.id);
+                if (latestData) {
+                    let components: PieChartDataItem[] = [];
+                    if (latestData.rent_media_components) {
+                         const COLORS = {
+                            'boi_gordo': 'hsl(var(--chart-1))',
+                            'milho': 'hsl(var(--chart-2))',
+                            'soja': 'hsl(var(--chart-3))',
+                            'madeira': 'hsl(var(--chart-4))',
+                            'carbono': 'hsl(var(--chart-5))'
+                        };
+                        components = Object.entries(latestData.rent_media_components).map(([key, value]) => ({
+                            name: key.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
+                            value: value,
+                            fill: (COLORS as any)[key] || 'hsl(var(--muted))'
+                        }));
+                    } else if (latestData.base_ch2o_agua || latestData.base_custo_agua) {
+                        components.push({ name: 'CH2OAgua', value: latestData.base_ch2o_agua || 0, fill: 'hsl(var(--chart-1))' });
+                        components.push({ name: 'Custo da Água', value: latestData.base_custo_agua || 0, fill: 'hsl(var(--chart-2))' });
+                    } else if (latestData.base_pdm) {
+                        components.push({ name: 'PDM', value: latestData.base_pdm, fill: 'hsl(var(--chart-1))' });
+                    } else if (latestData.base_ucs) {
+                         components.push({ name: 'UCS', value: latestData.base_ucs, fill: 'hsl(var(--chart-1))' });
+                    }
+                    setPieChartData(components.filter(c => c.value > 0));
+                }
+            } else {
+                const history = await getCotacoesHistorico(currentAsset.id);
+                setHistoricalData(history);
+                const chartPoints = [...history].reverse().map((d: FirestoreQuote) => ({
+                    time: d.data || new Date(d.timestamp).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+                    value: d.ultimo
+                }));
+                setChartData(chartPoints);
+            }
+            const history = await getCotacoesHistorico(currentAsset.id);
             setHistoricalData(history);
 
-            const chartPoints = [...history].reverse().map((d: FirestoreQuote) => ({
-                time: d.data || new Date(d.timestamp).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
-                value: d.ultimo
-            }));
-
-            setChartData(chartPoints);
 
         } catch (error) {
             console.error("Failed to get asset details:", error);
@@ -79,8 +116,53 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
 
     const yAxisFormatter = (value: number) => formatCurrency(Number(value), asset.currency, asset.id);
     const tooltipFormatter = (value: any) => [formatCurrency(Number(value), asset.currency, asset.id), 'Cotação'];
+    const pieTooltipFormatter = (value: number, name: string) => [formatCurrency(value, asset.currency), name];
 
-    const renderChart = () => (
+    const renderPieChart = () => (
+         <div className="flex-1 h-full w-full"> 
+            {loading ? (
+                <div className="h-full w-full flex items-center justify-center">
+                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+            ) : !pieChartData || pieChartData.length === 0 ? (
+                <div className="h-full w-full flex items-center justify-center text-muted-foreground text-sm">
+                    Dados de composição indisponíveis.
+                </div>
+            ) : (
+                <ChartContainer config={chartConfig} className="w-full h-full">
+                    <ResponsiveContainer>
+                        <PieChart>
+                            <Tooltip 
+                                content={<ChartTooltipContent 
+                                    formatter={pieTooltipFormatter} 
+                                    nameKey="name" 
+                                    hideIndicator
+                                />} 
+                            />
+                            <Pie
+                                data={pieChartData}
+                                dataKey="value"
+                                nameKey="name"
+                                cx="50%"
+                                cy="50%"
+                                outerRadius={80}
+                                innerRadius={50}
+                                paddingAngle={2}
+                                labelLine={false}
+                                label={({ name, value }) => `${name} (${((value / pieChartData.reduce((acc, item) => acc + item.value, 0)) * 100).toFixed(0)}%)`}
+                            >
+                                {pieChartData.map((entry) => (
+                                    <Cell key={`cell-${entry.name}`} fill={entry.fill} />
+                                ))}
+                            </Pie>
+                        </PieChart>
+                    </ResponsiveContainer>
+                </ChartContainer>
+            )}
+        </div>
+    );
+    
+    const renderAreaChart = () => (
         <div className="flex-1 h-full w-full"> 
             {loading ? (
                 <div className="h-full w-full flex items-center justify-center">
@@ -185,6 +267,8 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
         </div>
     );
 
+    const isPie = asset.isCalculated && pieChartData && pieChartData.length > 0;
+
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="sm:max-w-6xl max-h-[90vh] w-[95vw] flex flex-col p-0">
@@ -214,10 +298,10 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                 <div className="flex-1 p-4 md:p-6 grid md:grid-cols-2 gap-6 min-h-0">
                      <div className="flex flex-col gap-2 h-80">
                         <h3 className="font-semibold text-md flex items-center gap-2">
-                            <AreaChartIcon className="h-4 w-4 text-muted-foreground"/>
-                            Desempenho do Preço
+                           {isPie ? <PieChartIcon className="h-4 w-4 text-muted-foreground"/> : <AreaChartIcon className="h-4 w-4 text-muted-foreground"/>}
+                           {isPie ? 'Composição do Índice' : 'Desempenho do Preço'}
                         </h3>
-                        {renderChart()}
+                        {isPie ? renderPieChart() : renderAreaChart()}
                     </div>
 
                      <div className="flex flex-col gap-2 h-80">

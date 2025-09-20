@@ -35,7 +35,7 @@ function serializeFirestoreTimestamp(data: any): any {
     return serializedData;
 }
 
-async function getLatestQuote(assetId: string): Promise<FirestoreQuote | null> {
+export async function getLatestQuoteWithComponents(assetId: string): Promise<FirestoreQuote | null> {
     const snapshot = await db.collection(assetId)
         .orderBy('timestamp', 'desc')
         .limit(1)
@@ -44,11 +44,11 @@ async function getLatestQuote(assetId: string): Promise<FirestoreQuote | null> {
     if (snapshot.empty) {
         return null;
     }
-    return snapshot.docs[0].data() as FirestoreQuote;
+    return serializeFirestoreTimestamp(snapshot.docs[0].data()) as FirestoreQuote;
 }
 
 
-async function getAndProcessAsset(config: CommodityPriceData, calculatedPrice: number) {
+async function getAndProcessAsset(config: CommodityPriceData, calculatedPrice: number, components?: any) {
     const now = Timestamp.now();
     const today = now.toDate().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
@@ -61,6 +61,12 @@ async function getAndProcessAsset(config: CommodityPriceData, calculatedPrice: n
     const previousPrice = snapshot.docs.length > 1 ? (snapshot.docs[1].data() as FirestoreQuote).ultimo : calculatedPrice;
     const absoluteChange = calculatedPrice - previousPrice;
     const change = previousPrice !== 0 ? (absoluteChange / previousPrice) * 100 : 0;
+    
+    const docData: any = { ultimo: calculatedPrice, timestamp: now, data: today, variacao_pct: change };
+    if (components) {
+        Object.assign(docData, components);
+    }
+    await db.collection(config.id).add(docData);
 
     return {
         ...config,
@@ -68,6 +74,7 @@ async function getAndProcessAsset(config: CommodityPriceData, calculatedPrice: n
         change,
         absoluteChange,
         lastUpdated: today,
+        ...components,
     };
 }
 
@@ -108,12 +115,9 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
         await Promise.all(baseAssetPromises);
         
         // 2. Execute calculated assets in a defined order
-        const now = Timestamp.now();
-        const today = now.toDate().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-
         // Calculate CH2OAgua
         const rentMediaIds = ['boi_gordo', 'milho', 'soja', 'madeira', 'carbono'];
-        const rentMediaQuotes = await Promise.all(rentMediaIds.map(id => getLatestQuote(id)));
+        const rentMediaQuotes = await Promise.all(rentMediaIds.map(id => getLatestQuoteWithComponents(id)));
         const rentMediaValues = {
             boi_gordo: rentMediaQuotes[0]?.rent_media ?? 0,
             milho: rentMediaQuotes[1]?.rent_media ?? 0,
@@ -123,37 +127,32 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
         };
         const ch2oAguaValue = calculateCh2oAgua(rentMediaValues);
         const aguaConfig = configs.find(c => c.id === 'agua')!;
-        const aguaDoc = { ultimo: ch2oAguaValue, timestamp: now, data: today, variacao_pct: 0, rent_media_components: rentMediaValues };
-        await db.collection('agua').add(aguaDoc);
-        assetDataMap.set('agua', await getAndProcessAsset(aguaConfig as CommodityPriceData, ch2oAguaValue));
+        const aguaData = await getAndProcessAsset(aguaConfig as CommodityPriceData, ch2oAguaValue, { rent_media_components: rentMediaValues });
+        assetDataMap.set('agua', aguaData);
 
         // Calculate Custo da Água
         const custoAguaValue = calculateCustoAgua(ch2oAguaValue);
         const custoAguaConfig = configs.find(c => c.id === 'custo_agua')!;
-        const custoAguaDoc = { ultimo: custoAguaValue, timestamp: now, data: today, variacao_pct: 0, base_ch2o_agua: ch2oAguaValue };
-        await db.collection('custo_agua').add(custoAguaDoc);
-        assetDataMap.set('custo_agua', await getAndProcessAsset(custoAguaConfig as CommodityPriceData, custoAguaValue));
+        const custoAguaData = await getAndProcessAsset(custoAguaConfig as CommodityPriceData, custoAguaValue, { base_ch2o_agua: ch2oAguaValue });
+        assetDataMap.set('custo_agua', custoAguaData);
 
         // Calculate PDM
         const pdmValue = calculatePdm(ch2oAguaValue, custoAguaValue);
         const pdmConfig = configs.find(c => c.id === 'pdm')!;
-        const pdmDoc = { ultimo: pdmValue, timestamp: now, data: today, variacao_pct: 0, base_ch2o_agua: ch2oAguaValue, base_custo_agua: custoAguaValue };
-        await db.collection('pdm').add(pdmDoc);
-        assetDataMap.set('pdm', await getAndProcessAsset(pdmConfig as CommodityPriceData, pdmValue));
+        const pdmData = await getAndProcessAsset(pdmConfig as CommodityPriceData, pdmValue, { base_ch2o_agua: ch2oAguaValue, base_custo_agua: custoAguaValue });
+        assetDataMap.set('pdm', pdmData);
         
         // Calculate UCS
         const ucsValue = calculateUcs(pdmValue);
         const ucsConfig = configs.find(c => c.id === 'ucs')!;
-        const ucsDoc = { ultimo: ucsValue, timestamp: now, data: today, variacao_pct: 0, base_pdm: pdmValue };
-        await db.collection('ucs').add(ucsDoc);
-        assetDataMap.set('ucs', await getAndProcessAsset(ucsConfig as CommodityPriceData, ucsValue));
+        const ucsData = await getAndProcessAsset(ucsConfig as CommodityPriceData, ucsValue, { base_pdm: pdmValue });
+        assetDataMap.set('ucs', ucsData);
 
         // Calculate UCS ASE
         const ucsAseValue = calculateUcsAse(ucsValue);
         const ucsAseConfig = configs.find(c => c.id === 'ucs_ase')!;
-        const ucsAseDoc = { ultimo: ucsAseValue, timestamp: now, data: today, variacao_pct: 0, base_ucs: ucsValue };
-        await db.collection('ucs_ase').add(ucsAseDoc);
-        assetDataMap.set('ucs_ase', await getAndProcessAsset(ucsAseConfig as CommodityPriceData, ucsAseValue));
+        const ucsAseData = await getAndProcessAsset(ucsAseConfig as CommodityPriceData, ucsAseValue, { base_ucs: ucsValue });
+        assetDataMap.set('ucs_ase', ucsAseData);
 
         // 3. Assemble final results in the correct order
         const results = configs.map(config => assetDataMap.get(config.id)).filter(Boolean) as CommodityPriceData[];
