@@ -19,8 +19,6 @@ import { getCotacoesHistorico } from '@/lib/data-service';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/formatters';
 import { Skeleton } from './ui/skeleton';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-
 
 interface AssetDetailModalProps {
     asset: CommodityPriceData;
@@ -76,7 +74,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
     };
 
     const renderChart = () => (
-        <div className="h-full w-full">
+        <div className="h-48 w-full"> 
             {loading ? (
                 <div className="h-full w-full flex items-center justify-center">
                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -145,18 +143,18 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                     <TableRow>
                         <TableHead className="w-[100px]">Data</TableHead>
                         <TableHead className="text-right">Fechamento</TableHead>
-                        <TableHead className="text-right hidden sm:table-cell">Máxima</TableHead>
-                        <TableHead className="text-right hidden sm:table-cell">Mínima</TableHead>
+                        <TableHead className="text-right">Máxima</TableHead>
+                        <TableHead className="text-right">Mínima</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                     {loading ? (
-                        Array.from({ length: 10 }).map((_, i) => (
+                        Array.from({ length: 7 }).map((_, i) => (
                             <TableRow key={i}>
                                 <TableCell><Skeleton className="h-4 w-20"/></TableCell>
                                 <TableCell><Skeleton className="h-4 w-24 ml-auto"/></TableCell>
-                                <TableCell className="hidden sm:table-cell"><Skeleton className="h-4 w-24 ml-auto"/></TableCell>
-                                <TableCell className="hidden sm:table-cell"><Skeleton className="h-4 w-24 ml-auto"/></TableCell>
+                                <TableCell><Skeleton className="h-4 w-24 ml-auto"/></TableCell>
+                                <TableCell><Skeleton className="h-4 w-24 ml-auto"/></TableCell>
                             </TableRow>
                         ))
                     ) : historicalData.length > 0 ? (
@@ -164,8 +162,8 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                             <TableRow key={dataPoint.id}>
                                 <TableCell className="font-medium text-xs sm:text-sm">{dataPoint.data}</TableCell>
                                 <TableCell className="text-right font-mono text-primary text-xs sm:text-sm">{formatCurrency(dataPoint.ultimo, asset.currency)}</TableCell>
-                                <TableCell className="text-right font-mono text-green-500 hidden sm:table-cell text-xs sm:text-sm">{formatCurrency(dataPoint.maxima, asset.currency)}</TableCell>
-                                <TableCell className="text-right font-mono text-destructive hidden sm:table-cell text-xs sm:text-sm">{formatCurrency(dataPoint.minima, asset.currency)}</TableCell>
+                                <TableCell className="text-right font-mono text-green-500 text-xs sm:text-sm">{formatCurrency(dataPoint.maxima, asset.currency)}</TableCell>
+                                <TableCell className="text-right font-mono text-destructive text-xs sm:text-sm">{formatCurrency(dataPoint.minima, asset.currency)}</TableCell>
                             </TableRow>
                         ))
                     ) : (
@@ -182,8 +180,8 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-5xl max-h-[90vh] w-[95vw] flex flex-col p-0">
-                <DialogHeader className="p-6 pb-4 border-b">
+            <DialogContent className="sm:max-w-4xl max-h-[90vh] w-[95vw] flex flex-col p-0">
+                <DialogHeader className="p-6 pb-4 border-b flex-shrink-0">
                     <DialogTitle className="flex items-center gap-3 text-lg sm:text-xl">
                         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
                             <Icon className="h-5 w-5 text-muted-foreground" />
@@ -195,7 +193,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                     </DialogDescription>
                 </DialogHeader>
                 
-                <div className="px-6 pb-4 border-b">
+                <div className="px-6 py-4 border-b flex-shrink-0">
                      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
                         <span className="text-3xl sm:text-4xl font-bold text-primary">{formattedPrice}</span>
                         <div className={cn("flex items-baseline gap-2 text-base sm:text-lg font-semibold", asset.absoluteChange >= 0 ? "text-primary" : "text-destructive")}>
@@ -206,57 +204,23 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                     </div>
                 </div>
 
-                {/* Mobile View with Tabs */}
-                <div className="flex-1 min-h-0 overflow-hidden md:hidden">
-                    <Tabs defaultValue="chart" className="flex flex-col h-full">
-                        <TabsList className="flex-shrink-0 mx-4 mt-4">
-                           <TabsTrigger value="chart" className="w-full gap-2">
-                               <AreaChartIcon className="h-4 w-4"/> Gráfico
-                           </TabsTrigger>
-                           <TabsTrigger value="history" className="w-full gap-2">
-                               <TableIcon className="h-4 w-4"/> Histórico
-                           </TabsTrigger>
-                        </TabsList>
-                        
-                        <div className="flex-1 p-4 min-h-0">
-                            <TabsContent value="chart" className="h-full m-0">
-                                {renderChart()}
-                            </TabsContent>
-                            <TabsContent value="history" className="h-full m-0">
-                                {renderHistoryTable()}
-                            </TabsContent>
-                        </div>
-                    </Tabs>
+                <div className="p-4 flex-shrink-0">
+                    <h3 className="font-semibold text-md flex items-center gap-2 mb-2">
+                        <AreaChartIcon className="h-4 w-4 text-muted-foreground"/>
+                        Desempenho do Preço
+                    </h3>
+                    {renderChart()}
                 </div>
 
-                {/* Desktop View with Columns */}
-                <div className="hidden md:flex flex-1 min-h-0 overflow-hidden">
-                    <div className="w-1/3 flex flex-col border-r">
-                         <div className="p-4 border-b">
-                            <h3 className="font-semibold text-md flex items-center gap-2">
-                                <TableIcon className="h-4 w-4 text-muted-foreground"/>
-                                Cotações Históricas
-                            </h3>
-                         </div>
-                         <div className="flex-1 min-h-0">
-                            {renderHistoryTable()}
-                         </div>
-                    </div>
-                    <div className="w-2/3 flex flex-col">
-                        <div className="p-4 border-b">
-                            <h3 className="font-semibold text-md flex items-center gap-2">
-                                <AreaChartIcon className="h-4 w-4 text-muted-foreground"/>
-                                Desempenho do Preço
-                            </h3>
-                        </div>
-                        <div className="flex-1 p-4 min-h-0">
-                            {renderChart()}
-                        </div>
-                    </div>
+                <div className="px-4 pb-4 flex-1 min-h-0">
+                     <h3 className="font-semibold text-md flex items-center gap-2 mb-2">
+                        <TableIcon className="h-4 w-4 text-muted-foreground"/>
+                        Cotações Históricas
+                    </h3>
+                    {renderHistoryTable()}
                 </div>
 
             </DialogContent>
         </Dialog>
     );
 }
- 
