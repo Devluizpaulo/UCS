@@ -4,7 +4,7 @@ import { getCotacoesHistorico } from '@/lib/data-service';
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const assetId = searchParams.get('assetId'); // Changed from symbol to assetId
+    const assetId = searchParams.get('assetId');
     
     if (!assetId) {
       return NextResponse.json(

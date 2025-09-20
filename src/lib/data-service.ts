@@ -5,7 +5,6 @@ import type { CommodityPriceData, FirestoreQuote } from './types';
 import { getCommodities } from './commodity-config-service';
 import { db } from './firebase-admin-config';
 import { Timestamp, DocumentData } from 'firebase-admin/firestore';
-import { ASSET_COLLECTION_MAP } from './marketdata-config';
 
 // Helper to safely serialize Firestore Timestamps to ISO strings
 const serializeFirestoreTimestamp = (data: any): any => {
@@ -25,18 +24,18 @@ const serializeFirestoreTimestamp = (data: any): any => {
     return data;
 };
 
-// Fetches the single most recent quote for a given asset ID.
+// Fetches the single most recent quote for a given asset ID, using the ID as the collection name.
 async function getLatestQuoteForAsset(assetId: string): Promise<FirestoreQuote | null> {
-    const collectionName = ASSET_COLLECTION_MAP[assetId];
+    const collectionName = assetId; // The asset ID is the collection name
     if (!collectionName) {
-        console.warn(`[DataService] No collection mapping for asset ID: ${assetId}`);
+        console.warn(`[DataService] Invalid asset ID provided: ${assetId}`);
         return null;
     }
 
     try {
         const snapshot = await db.collection(collectionName).orderBy('timestamp', 'desc').limit(1).get();
         if (snapshot.empty) {
-            console.warn(`[DataService] No documents found in collection for asset ID: ${assetId}`);
+            console.warn(`[DataService] No documents found in collection: ${collectionName}`);
             return null;
         }
 
@@ -47,7 +46,7 @@ async function getLatestQuoteForAsset(assetId: string): Promise<FirestoreQuote |
         } as FirestoreQuote;
 
     } catch (error) {
-        console.error(`[DataService] Error fetching latest quote for asset ${assetId}:`, error);
+        console.error(`[DataService] Error fetching latest quote for asset ${assetId} from collection ${collectionName}:`, error);
         return null;
     }
 }
@@ -64,7 +63,6 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
             return [];
         }
 
-        // Fetch the latest quote for each commodity in parallel.
         const pricePromises = commodities.map(async (commodity) => {
             const latestQuote = await getLatestQuoteForAsset(commodity.id);
 
@@ -78,7 +76,6 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
                 change = latestQuote.variacao_pct ?? 0;
                 lastUpdated = latestQuote.data ?? new Date(latestQuote.timestamp).toLocaleDateString('pt-BR');
 
-                // Calculate absolute change based on price and percentage
                 if (price > 0 && change !== 0) {
                     const previousPrice = price / (1 + (change / 100));
                     absoluteChange = price - previousPrice;
@@ -108,7 +105,7 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
  * Fetches the historical quotes for a single asset, used for the details modal.
  */
 export async function getCotacoesHistorico(assetId: string, limit: number = 30): Promise<FirestoreQuote[]> {
-    const collectionName = ASSET_COLLECTION_MAP[assetId];
+    const collectionName = assetId; // The asset ID is the collection name
     if (!collectionName) {
         console.warn(`[DataService] No collection mapping for asset ID: ${assetId}`);
         return [];

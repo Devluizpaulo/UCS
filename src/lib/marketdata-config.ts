@@ -1,26 +1,14 @@
 
 import type { CommodityMap } from "./types";
 
-/**
- * Maps asset IDs (which are now simplified) to the actual Firestore collection
- * name where their price history is stored. This is the source of truth for mapping.
- */
-export const ASSET_COLLECTION_MAP: Record<string, string> = {
-  'usd': 'usd',
-  'eur': 'eur',
-  'boi_gordo': 'boi_gordo',
-  'soja': 'soja',
-  'milho': 'milho',
-  'madeira': 'madeira',
-  'carbono': 'carbono',
-};
-
 // This map defines the INITIAL set of commodities to be seeded into the database.
 // After the first run, the master list is managed in Firestore via the Settings page.
-// The keys here (e.g., 'usd') will become the document IDs in Firestore.
+// The keys here (e.g., 'usd') will become the document IDs in Firestore and are assumed
+// to be the names of the Firestore collections themselves.
 export const COMMODITY_TICKER_MAP: CommodityMap = {
   'usd': { 
     name: 'Dólar Americano',
+    ticker: 'USD/BRL', // Ticker is kept for display/metadata, but not for fetching logic
     currency: 'BRL',
     category: 'exchange',
     description: 'Taxa de câmbio USD para BRL.',
@@ -29,6 +17,7 @@ export const COMMODITY_TICKER_MAP: CommodityMap = {
   },
   'eur': { 
     name: 'Euro',
+    ticker: 'EUR/BRL',
     currency: 'BRL',
     category: 'exchange',
     description: 'Taxa de câmbio EUR para BRL.',
@@ -37,6 +26,7 @@ export const COMMODITY_TICKER_MAP: CommodityMap = {
   },
   'boi_gordo': { 
     name: 'Boi Gordo',
+    ticker: 'BGI',
     currency: 'BRL',
     category: 'vus',
     description: 'Contratos futuros de Boi Gordo.',
@@ -45,6 +35,7 @@ export const COMMODITY_TICKER_MAP: CommodityMap = {
   },
   'soja': { 
     name: 'Soja',
+    ticker: 'SJC',
     currency: 'USD',
     category: 'vus',
     description: 'Contratos futuros de Soja.',
@@ -53,6 +44,7 @@ export const COMMODITY_TICKER_MAP: CommodityMap = {
   },
   'milho': { 
     name: 'Milho',
+    ticker: 'CCM',
     currency: 'USD',
     category: 'vus',
     description: 'Contratos futuros de Milho.',
@@ -61,6 +53,7 @@ export const COMMODITY_TICKER_MAP: CommodityMap = {
   },
   'madeira': { 
     name: 'Madeira',
+    ticker: 'LBS',
     currency: 'USD',
     category: 'vmad',
     description: 'Contratos futuros de Madeira (Lumber).',
@@ -69,6 +62,7 @@ export const COMMODITY_TICKER_MAP: CommodityMap = {
   },
   'carbono': { 
     name: 'Crédito de Carbono',
+    ticker: 'CO2',
     currency: 'USD',
     category: 'crs',
     description: 'Proxy para o preço de créditos de carbono.',
