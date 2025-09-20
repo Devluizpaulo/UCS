@@ -1,4 +1,3 @@
-
 import type { CommodityConfig } from './types';
 
 /**
@@ -25,10 +24,10 @@ export const COMMODITIES_CONFIG: Record<string, Omit<CommodityConfig, 'id'>> = {
   },
   'soja': {
     name: 'Soja',
-    currency: 'BRL',
+    currency: 'USD',
     category: 'vus',
     description: 'Preço da saca de 60kg de Soja.',
-    unit: 'BRL por saca',
+    unit: 'USD por saca',
   },
   'milho': {
     name: 'Milho',
