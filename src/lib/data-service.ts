@@ -5,7 +5,7 @@ import { db } from '@/lib/firebase-admin-config';
 import { getCommodityConfigs } from '@/lib/commodity-config-service';
 import type { CommodityPriceData, FirestoreQuote } from '@/lib/types';
 import { getCache, setCache } from '@/lib/cache-service';
-import { calculateCh2oAgua } from './calculation-service';
+import { calculateCh2oAgua, calculateCustoAgua } from './calculation-service';
 import { Timestamp } from 'firebase-admin/firestore';
 
 const CACHE_KEY_PRICES = 'commodity_prices';
@@ -50,7 +50,7 @@ async function getLatestQuote(assetId: string): Promise<FirestoreQuote | null> {
 
 
 export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
-    const cachedData = getCache<CommodityPriceData[]>(CACHE_KEY_PRICES);
+    const cachedData = getCache<CommodiextendsyPriceData[]>(CACHE_KEY_PRICES);
     if (cachedData) {
         return cachedData;
     }
@@ -58,6 +58,7 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
     try {
         const configs = await getCommodityConfigs();
         const assetDataMap = new Map<string, CommodityPriceData>();
+        let ch2oAguaValue = 0; // Store the calculated CH2OAgua value to be used by other assets
 
         // First pass: get all non-calculated assets
         const pricePromises = configs
@@ -104,11 +105,14 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
         // Second pass: process calculated assets
         const calculatedAssetConfigs = configs.filter(config => config.isCalculated);
         for (const config of calculatedAssetConfigs) {
+            let calculatedPrice = 0;
+            let rentMediaValues: any = {};
+
             if (config.id === 'agua') {
                 const rentMediaIds = ['boi_gordo', 'milho', 'soja', 'madeira', 'carbono'];
                 const rentMediaQuotes = await Promise.all(rentMediaIds.map(id => getLatestQuote(id)));
 
-                const rentMediaValues = {
+                rentMediaValues = {
                     boi_gordo: rentMediaQuotes[0]?.rent_media ?? 0,
                     milho: rentMediaQuotes[1]?.rent_media ?? 0,
                     soja: rentMediaQuotes[2]?.rent_media ?? 0,
@@ -116,39 +120,50 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
                     carbono: rentMediaQuotes[4]?.rent_media ?? 0,
                 };
                 
-                const calculatedPrice = calculateCh2oAgua(rentMediaValues);
-
-                // Save the new calculated value to its collection
-                const now = Timestamp.now();
-                const today = now.toDate().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-
-                await db.collection('agua').add({
-                    ultimo: calculatedPrice,
-                    timestamp: now,
-                    data: today,
-                    variacao_pct: 0, // Cannot be calculated without previous value easily here
-                    rent_media_components: rentMediaValues, // Store for traceability
-                });
-                
-                // For immediate display, we calculate change based on the last stored value
-                const snapshot = await db.collection('agua')
-                    .orderBy('timestamp', 'desc')
-                    .limit(2)
-                    .get();
-                
-                const previousPrice = snapshot.docs.length > 1 ? (snapshot.docs[1].data() as FirestoreQuote).ultimo : calculatedPrice;
-                const absoluteChange = calculatedPrice - previousPrice;
-                const change = previousPrice !== 0 ? (absoluteChange / previousPrice) * 100 : 0;
-
-                const data: CommodityPriceData = {
-                    ...config,
-                    price: calculatedPrice,
-                    change,
-                    absoluteChange,
-                    lastUpdated: today,
-                };
-                assetDataMap.set(config.id, data);
+                calculatedPrice = calculateCh2oAgua(rentMediaValues);
+                ch2oAguaValue = calculatedPrice; // Save for next calculation
+            } else if (config.id === 'custo_agua') {
+                calculatedPrice = calculateCustoAgua(ch2oAguaValue);
             }
+
+            // Save the new calculated value to its collection
+            const now = Timestamp.now();
+            const today = now.toDate().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+            const docToSave: any = {
+                ultimo: calculatedPrice,
+                timestamp: now,
+                data: today,
+                variacao_pct: 0,
+            };
+
+            if (config.id === 'agua') {
+                docToSave.rent_media_components = rentMediaValues;
+            }
+             if (config.id === 'custo_agua') {
+                docToSave.base_ch2o_agua = ch2oAguaValue;
+            }
+
+            await db.collection(config.id).add(docToSave);
+            
+            // For immediate display, we calculate change based on the last stored value
+            const snapshot = await db.collection(config.id)
+                .orderBy('timestamp', 'desc')
+                .limit(2)
+                .get();
+            
+            const previousPrice = snapshot.docs.length > 1 ? (snapshot.docs[1].data() as FirestoreQuote).ultimo : calculatedPrice;
+            const absoluteChange = calculatedPrice - previousPrice;
+            const change = previousPrice !== 0 ? (absoluteChange / previousPrice) * 100 : 0;
+
+            const data: CommodityPriceData = {
+                ...config,
+                price: calculatedPrice,
+                change,
+                absoluteChange,
+                lastUpdated: today,
+            };
+            assetDataMap.set(config.id, data);
         }
         
         // Ensure original order is maintained

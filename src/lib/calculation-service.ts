@@ -32,3 +32,16 @@ export function calculateCh2oAgua(values: RentMediaValues): number {
     
     return ch2oAguaValue;
 }
+
+/**
+ * Calculates the Custo da Agua (7%) based on the CH2OAgua value.
+ * Custo da Água (7%) = CH2OAgua * 7%
+ * @param ch2oAguaValue The calculated value of the CH2OAgua index.
+ * @returns The calculated value of Custo da Agua.
+ */
+export function calculateCustoAgua(ch2oAguaValue: number): number {
+    if (typeof ch2oAguaValue !== 'number') {
+        return 0;
+    }
+    return ch2oAguaValue * 0.07;
+}

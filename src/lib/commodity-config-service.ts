@@ -64,6 +64,14 @@ export const COMMODITIES_CONFIG: Record<string, Omit<CommodityConfig, 'id'>> = {
     description: 'Índice de Crédito de Água calculado.',
     unit: 'Pontos',
     isCalculated: true,
+  },
+  'custo_agua': {
+    name: 'Custo da Água (7%)',
+    currency: 'BRL',
+    category: 'crs',
+    description: 'Custo da água calculado como 7% do índice CH2OAgua.',
+    unit: 'Pontos',
+    isCalculated: true,
   }
 };
 
