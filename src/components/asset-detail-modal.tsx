@@ -74,14 +74,14 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
     };
 
     const renderChart = () => (
-        <div className="h-48 w-full"> 
+        <div className="flex-1 h-full w-full"> 
             {loading ? (
                 <div className="h-full w-full flex items-center justify-center">
                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
-            ) : chartData.length === 0 ? (
+            ) : chartData.length < 2 ? (
                 <div className="h-full w-full flex items-center justify-center text-muted-foreground text-sm">
-                    Sem dados para exibir o gráfico.
+                    Dados insuficientes para exibir o gráfico.
                 </div>
             ) : (
                 <ChartContainer config={chartConfig} className="w-full h-full">
@@ -203,7 +203,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                 </div>
 
                 <div className="flex-1 p-4 md:p-6 grid md:grid-cols-2 gap-6 min-h-0">
-                    <div className="flex flex-col gap-2">
+                     <div className="flex flex-col gap-2 h-80">
                         <h3 className="font-semibold text-md flex items-center gap-2">
                             <AreaChartIcon className="h-4 w-4 text-muted-foreground"/>
                             Desempenho do Preço
@@ -211,7 +211,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                         {renderChart()}
                     </div>
 
-                    <div className="flex flex-col gap-2 min-h-0">
+                     <div className="flex flex-col gap-2 h-80">
                          <h3 className="font-semibold text-md flex items-center gap-2">
                             <TableIcon className="h-4 w-4 text-muted-foreground"/>
                             Cotações Históricas
