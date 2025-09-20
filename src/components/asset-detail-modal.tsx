@@ -143,8 +143,8 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                     <TableRow>
                         <TableHead className="w-[100px]">Data</TableHead>
                         <TableHead className="text-right">Fechamento</TableHead>
-                        <TableHead className="text-right hidden sm:table-cell">Máxima</TableHead>
-                        <TableHead className="text-right hidden sm:table-cell">Mínima</TableHead>
+                        <TableHead className="text-right sm:table-cell">Máxima</TableHead>
+                        <TableHead className="text-right sm:table-cell">Mínima</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -153,8 +153,8 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                             <TableRow key={i}>
                                 <TableCell><Skeleton className="h-4 w-20"/></TableCell>
                                 <TableCell><Skeleton className="h-4 w-24 ml-auto"/></TableCell>
-                                <TableCell className="hidden sm:table-cell"><Skeleton className="h-4 w-24 ml-auto"/></TableCell>
-                                <TableCell className="hidden sm:table-cell"><Skeleton className="h-4 w-24 ml-auto"/></TableCell>
+                                <TableCell className="sm:table-cell"><Skeleton className="h-4 w-24 ml-auto"/></TableCell>
+                                <TableCell className="sm:table-cell"><Skeleton className="h-4 w-24 ml-auto"/></TableCell>
                             </TableRow>
                         ))
                     ) : historicalData.length > 0 ? (
@@ -162,8 +162,8 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                             <TableRow key={dataPoint.id}>
                                 <TableCell className="font-medium text-xs sm:text-sm">{dataPoint.data}</TableCell>
                                 <TableCell className="text-right font-mono text-primary text-xs sm:text-sm">{formatCurrency(dataPoint.ultimo, asset.currency)}</TableCell>
-                                <TableCell className="text-right font-mono text-green-500 text-xs sm:text-sm hidden sm:table-cell">{formatCurrency(dataPoint.maxima, asset.currency)}</TableCell>
-                                <TableCell className="text-right font-mono text-destructive text-xs sm:text-sm hidden sm:table-cell">{formatCurrency(dataPoint.minima, asset.currency)}</TableCell>
+                                <TableCell className="text-right font-mono text-green-500 text-xs sm:text-sm sm:table-cell">{formatCurrency(dataPoint.maxima, asset.currency)}</TableCell>
+                                <TableCell className="text-right font-mono text-destructive text-xs sm:text-sm sm:table-cell">{formatCurrency(dataPoint.minima, asset.currency)}</TableCell>
                             </TableRow>
                         ))
                     ) : (
@@ -180,7 +180,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-4xl max-h-[90vh] w-[95vw] flex flex-col p-0">
+            <DialogContent className="sm:max-w-6xl max-h-[90vh] w-[95vw] flex flex-col p-0">
                 <DialogHeader className="p-6 pb-4 border-b flex-shrink-0">
                     <DialogTitle className="flex items-center gap-3 text-lg sm:text-xl">
                         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
