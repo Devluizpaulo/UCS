@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dialog';
 import { AreaChart as AreaChartIcon, PieChart as PieChartIcon, Table as TableIcon, Loader2, List } from 'lucide-react';
 import { Area, AreaChart, Brush, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { ChartContainer, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
+import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import type { CommodityPriceData, ChartData, FirestoreQuote } from '@/lib/types';
 import { useEffect, useState, useCallback } from 'react';
 import { Table as UiTable, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
@@ -357,23 +357,20 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                     </div>
                 </div>
 
-                <div className="flex-1 p-4 md:p-6 grid md:grid-cols-2 gap-6 min-h-0">
-                     <div className="flex flex-col gap-2 h-80">
-                        <h3 className="font-semibold text-md flex items-center gap-2">
-                           {isCalculatedWithComposition ? <PieChartIcon className="h-4 w-4 text-muted-foreground"/> : <AreaChartIcon className="h-4 w-4 text-muted-foreground"/>}
-                           {isCalculatedWithComposition ? 'Composição do Valor' : 'Desempenho Histórico'}
-                        </h3>
+                <div className="flex-1 p-4 md:p-6 grid grid-cols-1 md:grid-cols-2 grid-rows-[auto,1fr] gap-x-6 gap-y-2 min-h-0">
+                    <h3 className="font-semibold text-md flex items-center gap-2">
+                        {isCalculatedWithComposition ? <PieChartIcon className="h-4 w-4 text-muted-foreground"/> : <AreaChartIcon className="h-4 w-4 text-muted-foreground"/>}
+                        {isCalculatedWithComposition ? 'Composição do Valor' : 'Desempenho Histórico'}
+                    </h3>
+                    <h3 className="font-semibold text-md flex items-center gap-2">
+                        <TableIcon className="h-4 w-4 text-muted-foreground"/>
+                        Cotações Históricas
+                    </h3>
+                    <div className="h-80 min-h-0">
                         {isCalculatedWithComposition ? renderCompositionContent() : renderAreaChart()}
                     </div>
-
-                     <div className="flex flex-col gap-2 h-80">
-                         <h3 className="font-semibold text-md flex items-center gap-2">
-                            <TableIcon className="h-4 w-4 text-muted-foreground"/>
-                            Cotações Históricas
-                        </h3>
-                        <div className="flex-1 min-h-0">
-                            {renderHistoryTable()}
-                        </div>
+                     <div className="h-80 min-h-0">
+                        {renderHistoryTable()}
                     </div>
                 </div>
             </DialogContent>
