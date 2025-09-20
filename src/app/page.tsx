@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { getCommodityPrices } from "@/lib/data-service";
 import type { CommodityPriceData } from "@/lib/types";
 import { formatCurrency } from "@/lib/formatters";
-import { ArrowRight, Briefcase, CheckCircle, HandCoins, Landmark, Repeat, TrendingUp } from "lucide-react";
+import { ArrowRight, Briefcase, CheckCircle, Globe, HandCoins, Landmark, Repeat, Scale, ShieldCheck, TrendingUp } from "lucide-react";
 import Image from 'next/image';
 import Link from 'next/link';
 import { LogoBVM } from "@/components/logo-bvm";
@@ -48,6 +48,24 @@ const services = [
     icon: TrendingUp,
     aiHint: 'green economy',
   },
+];
+
+const didYouKnow = [
+    {
+        icon: ShieldCheck,
+        title: "Segurança e Futuro",
+        description: "Que a UCS é um produto de necessidade real que assegura o futuro e reduz risco do mercado financeiro e climático?"
+    },
+    {
+        icon: Scale,
+        title: "Inovação Financeira Verde",
+        description: "Que a CPR verde é uma modernização da arquitetura financeira que assegura o retorno financeiro do investidor com sustentabilidade, validada pelo Banco Central?"
+    },
+    {
+        icon: Globe,
+        title: "A Nova Economia Global",
+        description: "Junte-se a nós nessa nova ordem econômica global, a do Capital Natural."
+    }
 ];
 
 
@@ -151,6 +169,33 @@ export default async function LandingPage() {
             </div>
           </div>
         </section>
+
+        <section id="did-you-know" className="w-full bg-background py-16 md:py-24">
+            <div className="container mx-auto px-4 md:px-6">
+                <div className="flex flex-col items-center justify-center space-y-4 text-center">
+                <div className="space-y-2">
+                    <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl text-primary">Você Sabia?</h2>
+                    <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed">
+                        Informações cruciais sobre o futuro do mercado financeiro e a economia sustentável.
+                    </p>
+                </div>
+                </div>
+                <div className="mx-auto grid max-w-3xl gap-10 py-12">
+                    {didYouKnow.map((item) => (
+                        <div key={item.title} className="flex items-start gap-6">
+                            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                                <item.icon className="h-6 w-6" />
+                            </div>
+                            <div className="flex-1">
+                                <h3 className="text-lg font-bold mb-1">{item.title}</h3>
+                                <p className="text-muted-foreground">{item.description}</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </section>
+
       </main>
 
       <footer className="border-t">
