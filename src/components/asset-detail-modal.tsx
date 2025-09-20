@@ -168,7 +168,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                                                         cursor={{ stroke: 'hsl(var(--primary))', strokeWidth: 1, strokeDasharray: '3 3' }} 
                                                         content={<ChartTooltipContent 
                                                             indicator="dot" 
-                                                            formatter={(value: number) => [formatCurrency(Number(value), asset.currency), 'Cotação']} 
+                                                            formatter={(value) => [formatCurrency(Number(value), asset.currency), 'Cotação']} 
                                                             labelFormatter={(label: string) => `Data: ${label}`}
                                                         />} 
                                                     />

@@ -16,7 +16,7 @@ import React from "react"
 
 // This interface defines the shape of a toast object for the toaster.
 // It ensures compatibility with the underlying Toast component props.
-export interface ToasterToast extends ToastProps {
+export interface ToasterToast extends Omit<ToastProps, 'title' | 'description'> {
   id: string;
   title?: React.ReactNode;
   description?: React.ReactNode;
@@ -29,7 +29,7 @@ export function Toaster() {
 
   return (
     <ToastProvider>
-      {toasts.map(function ({ id, title, description, action, ...props }: ToasterToast) {
+      {toasts.map(function ({ id, title, description, action, ...props }) {
         return (
           <Toast key={id} {...props}>
             <div className="grid gap-1">
