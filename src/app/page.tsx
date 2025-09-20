@@ -16,37 +16,37 @@ const services = [
     title: 'Plataforma de Registro',
     description: 'Registro e gestão de UCS de forma segura e transparente.',
     icon: Landmark,
-    aiHint: 'blockchain technology',
+    aiHint: 'forest preservation',
   },
   {
     title: 'Custódia da UCS',
     description: 'A BMV DIGITAL mantém a informação de registro da UCS e do valor armazenado em um sistema padronizado.',
     icon: Briefcase,
-    aiHint: 'secure data',
+    aiHint: 'sustainable agriculture',
   },
   {
     title: 'Oferta de UCS',
     description: 'A BMV DIGITAL oferta as UCS no mercado por vendedor padrão ou credenciado, garantindo a rastreabilidade da operação.',
     icon: HandCoins,
-    aiHint: 'digital currency',
+    aiHint: 'renewable energy',
   },
   {
     title: 'Liquidação da UCS',
     description: 'A BMV DIGITAL dará baixa no seu sistema na quantidade vendida e fará a transferência para o comprador.',
     icon: Repeat,
-    aiHint: 'financial transaction',
+    aiHint: 'water resources',
   },
   {
     title: 'Certificação pelo uso das UCSs',
     description: 'A BMV DIGITAL verifica, valida e baixa no sistema a quantidade vendida, transfere as UCS para o comprador com emissão do Selo Sustentabilidade.',
     icon: CheckCircle,
-    aiHint: 'certificate seal',
+    aiHint: 'environmental certificate',
   },
    {
     title: 'Análise de Ativos',
     description: 'Plataforma completa para análise de performance, risco e cenários dos ativos ambientais.',
     icon: TrendingUp,
-    aiHint: 'financial charts',
+    aiHint: 'green economy',
   },
 ];
 
