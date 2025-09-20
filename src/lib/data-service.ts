@@ -35,7 +35,6 @@ function serializeFirestoreTimestamp(data: any): any {
     return serializedData;
 }
 
-
 async function getLatestQuote(assetId: string): Promise<FirestoreQuote | null> {
     const snapshot = await db.collection(assetId)
         .orderBy('timestamp', 'desc')
@@ -49,6 +48,29 @@ async function getLatestQuote(assetId: string): Promise<FirestoreQuote | null> {
 }
 
 
+async function getAndProcessAsset(config: CommodityPriceData, calculatedPrice: number) {
+    const now = Timestamp.now();
+    const today = now.toDate().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+    // For immediate display, we calculate change based on the last stored value
+    const snapshot = await db.collection(config.id)
+        .orderBy('timestamp', 'desc')
+        .limit(2)
+        .get();
+    
+    const previousPrice = snapshot.docs.length > 1 ? (snapshot.docs[1].data() as FirestoreQuote).ultimo : calculatedPrice;
+    const absoluteChange = calculatedPrice - previousPrice;
+    const change = previousPrice !== 0 ? (absoluteChange / previousPrice) * 100 : 0;
+
+    return {
+        ...config,
+        price: calculatedPrice,
+        change,
+        absoluteChange,
+        lastUpdated: today,
+    };
+}
+
 export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
     const cachedData = getCache<CommodityPriceData[]>(CACHE_KEY_PRICES);
     if (cachedData) {
@@ -58,28 +80,15 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
     try {
         const configs = await getCommodityConfigs();
         const assetDataMap = new Map<string, CommodityPriceData>();
-        let ch2oAguaValue = 0;
-        let custoAguaValue = 0;
-        let pdmValue = 0;
 
-        // First pass: get all non-calculated assets
-        const pricePromises = configs
+        // 1. Fetch all non-calculated assets first
+        const baseAssetPromises = configs
             .filter(config => !config.isCalculated)
             .map(async (config) => {
-                const collectionRef = db.collection(config.id);
-                const snapshot = await collectionRef
-                    .orderBy('timestamp', 'desc')
-                    .limit(2)
-                    .get();
+                const snapshot = await db.collection(config.id).orderBy('timestamp', 'desc').limit(2).get();
 
                 if (snapshot.empty) {
-                    return {
-                        ...config,
-                        price: 0,
-                        change: 0,
-                        absoluteChange: 0,
-                        lastUpdated: 'N/A',
-                    };
+                    return { id: config.id, price: 0, change: 0, absoluteChange: 0, lastUpdated: 'N/A', ...config };
                 }
 
                 const latestDoc = snapshot.docs[0].data() as FirestoreQuote;
@@ -91,95 +100,58 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
                 const absoluteChange = latestPrice - previousPrice;
                 const change = (previousPrice !== 0) ? (absoluteChange / previousPrice) * 100 : 0;
                 
-                const data: CommodityPriceData = {
-                    ...config,
-                    price: latestPrice,
-                    change: change,
-                    absoluteChange: absoluteChange,
-                    lastUpdated: latestDoc.data || new Date(serializeFirestoreTimestamp(latestDoc.timestamp)).toLocaleDateString('pt-BR'),
-                };
+                const data = { ...config, price: latestPrice, change, absoluteChange, lastUpdated: latestDoc.data || new Date(serializeFirestoreTimestamp(latestDoc.timestamp)).toLocaleDateString('pt-BR') };
                 assetDataMap.set(config.id, data);
                 return data;
             });
 
-        await Promise.all(pricePromises);
-
-        // Second pass: process calculated assets
-        const calculatedAssetConfigs = configs.filter(config => config.isCalculated);
-        for (const config of calculatedAssetConfigs) {
-            let calculatedPrice = 0;
-            let docToSave: any = {};
-            const now = Timestamp.now();
-            const today = now.toDate().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-            
-            if (config.id === 'agua') {
-                const rentMediaIds = ['boi_gordo', 'milho', 'soja', 'madeira', 'carbono'];
-                const rentMediaQuotes = await Promise.all(rentMediaIds.map(id => getLatestQuote(id)));
-
-                const rentMediaValues = {
-                    boi_gordo: rentMediaQuotes[0]?.rent_media ?? 0,
-                    milho: rentMediaQuotes[1]?.rent_media ?? 0,
-                    soja: rentMediaQuotes[2]?.rent_media ?? 0,
-                    madeira: rentMediaQuotes[3]?.rent_media ?? 0,
-                    carbono: rentMediaQuotes[4]?.rent_media ?? 0,
-                };
-                
-                calculatedPrice = calculateCh2oAgua(rentMediaValues);
-                ch2oAguaValue = calculatedPrice;
-                docToSave.rent_media_components = rentMediaValues;
-
-            } else if (config.id === 'custo_agua') {
-                calculatedPrice = calculateCustoAgua(ch2oAguaValue);
-                custoAguaValue = calculatedPrice;
-                docToSave.base_ch2o_agua = ch2oAguaValue;
-
-            } else if (config.id === 'pdm') {
-                calculatedPrice = calculatePdm(ch2oAguaValue, custoAguaValue);
-                pdmValue = calculatedPrice;
-                docToSave.base_ch2o_agua = ch2oAguaValue;
-                docToSave.base_custo_agua = custoAguaValue;
-            
-            } else if (config.id === 'ucs') {
-                calculatedPrice = calculateUcs(pdmValue);
-                docToSave.base_pdm = pdmValue;
-            }
-
-            // Save the new calculated value to its collection, if it's a valid number
-            if (typeof calculatedPrice === 'number' && isFinite(calculatedPrice)) {
-                 Object.assign(docToSave, {
-                    ultimo: calculatedPrice,
-                    timestamp: now,
-                    data: today,
-                    variacao_pct: 0, // Simplified for now
-                });
-                await db.collection(config.id).add(docToSave);
-            }
-            
-            // For immediate display, we calculate change based on the last stored value
-            const snapshot = await db.collection(config.id)
-                .orderBy('timestamp', 'desc')
-                .limit(2)
-                .get();
-            
-            const previousPrice = snapshot.docs.length > 1 ? (snapshot.docs[1].data() as FirestoreQuote).ultimo : calculatedPrice;
-            const absoluteChange = calculatedPrice - previousPrice;
-            const change = previousPrice !== 0 ? (absoluteChange / previousPrice) * 100 : 0;
-
-            const data: CommodityPriceData = {
-                ...config,
-                price: calculatedPrice,
-                change,
-                absoluteChange,
-                lastUpdated: today,
-            };
-            assetDataMap.set(config.id, data);
-        }
+        await Promise.all(baseAssetPromises);
         
-        // Ensure original order is maintained
+        // 2. Execute calculated assets in a defined order
+        const now = Timestamp.now();
+        const today = now.toDate().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+        // Calculate CH2OAgua
+        const rentMediaIds = ['boi_gordo', 'milho', 'soja', 'madeira', 'carbono'];
+        const rentMediaQuotes = await Promise.all(rentMediaIds.map(id => getLatestQuote(id)));
+        const rentMediaValues = {
+            boi_gordo: rentMediaQuotes[0]?.rent_media ?? 0,
+            milho: rentMediaQuotes[1]?.rent_media ?? 0,
+            soja: rentMediaQuotes[2]?.rent_media ?? 0,
+            madeira: rentMediaQuotes[3]?.rent_media ?? 0,
+            carbono: rentMediaQuotes[4]?.rent_media ?? 0,
+        };
+        const ch2oAguaValue = calculateCh2oAgua(rentMediaValues);
+        const aguaConfig = configs.find(c => c.id === 'agua')!;
+        const aguaDoc = { ultimo: ch2oAguaValue, timestamp: now, data: today, variacao_pct: 0, rent_media_components: rentMediaValues };
+        await db.collection('agua').add(aguaDoc);
+        assetDataMap.set('agua', await getAndProcessAsset(aguaConfig as CommodityPriceData, ch2oAguaValue));
+
+        // Calculate Custo da Água
+        const custoAguaValue = calculateCustoAgua(ch2oAguaValue);
+        const custoAguaConfig = configs.find(c => c.id === 'custo_agua')!;
+        const custoAguaDoc = { ultimo: custoAguaValue, timestamp: now, data: today, variacao_pct: 0, base_ch2o_agua: ch2oAguaValue };
+        await db.collection('custo_agua').add(custoAguaDoc);
+        assetDataMap.set('custo_agua', await getAndProcessAsset(custoAguaConfig as CommodityPriceData, custoAguaValue));
+
+        // Calculate PDM
+        const pdmValue = calculatePdm(ch2oAguaValue, custoAguaValue);
+        const pdmConfig = configs.find(c => c.id === 'pdm')!;
+        const pdmDoc = { ultimo: pdmValue, timestamp: now, data: today, variacao_pct: 0, base_ch2o_agua: ch2oAguaValue, base_custo_agua: custoAguaValue };
+        await db.collection('pdm').add(pdmDoc);
+        assetDataMap.set('pdm', await getAndProcessAsset(pdmConfig as CommodityPriceData, pdmValue));
+        
+        // Calculate UCS
+        const ucsValue = calculateUcs(pdmValue);
+        const ucsConfig = configs.find(c => c.id === 'ucs')!;
+        const ucsDoc = { ultimo: ucsValue, timestamp: now, data: today, variacao_pct: 0, base_pdm: pdmValue };
+        await db.collection('ucs').add(ucsDoc);
+        assetDataMap.set('ucs', await getAndProcessAsset(ucsConfig as CommodityPriceData, ucsValue));
+
+        // 3. Assemble final results in the correct order
         const results = configs.map(config => assetDataMap.get(config.id)).filter(Boolean) as CommodityPriceData[];
 
         setCache(CACHE_KEY_PRICES, results, CACHE_TTL_SECONDS);
-
         return results;
 
     } catch (error) {
