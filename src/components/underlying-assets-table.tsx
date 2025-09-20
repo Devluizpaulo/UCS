@@ -23,6 +23,7 @@ export const getIconForCategory = (asset?: CommodityPriceData) => {
     
     switch (asset.id) {
         case 'ucs': return Gem;
+        case 'ucs_ase': return Gem;
         case 'eur': return Euro;
         case 'boi_gordo': return Beef;
         case 'milho': return Wheat;

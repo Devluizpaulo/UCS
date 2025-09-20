@@ -72,3 +72,17 @@ export function calculateUcs(pdmValue: number): number {
     }
     return (pdmValue / 900) / 2;
 }
+
+
+/**
+ * Calculates the UCS ASE index.
+ * UCS ASE = UCS * 2
+ * @param ucsValue The value of the UCS index.
+ * @returns The calculated value of the UCS ASE index.
+ */
+export function calculateUcsAse(ucsValue: number): number {
+    if (typeof ucsValue !== 'number') {
+        return 0;
+    }
+    return ucsValue * 2;
+}

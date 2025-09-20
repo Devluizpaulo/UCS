@@ -5,7 +5,7 @@ import { db } from '@/lib/firebase-admin-config';
 import { getCommodityConfigs } from '@/lib/commodity-config-service';
 import type { CommodityPriceData, FirestoreQuote } from '@/lib/types';
 import { getCache, setCache } from '@/lib/cache-service';
-import { calculateCh2oAgua, calculateCustoAgua, calculatePdm, calculateUcs } from './calculation-service';
+import { calculateCh2oAgua, calculateCustoAgua, calculatePdm, calculateUcs, calculateUcsAse } from './calculation-service';
 import { Timestamp } from 'firebase-admin/firestore';
 
 const CACHE_KEY_PRICES = 'commodity_prices';
@@ -147,6 +147,13 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
         const ucsDoc = { ultimo: ucsValue, timestamp: now, data: today, variacao_pct: 0, base_pdm: pdmValue };
         await db.collection('ucs').add(ucsDoc);
         assetDataMap.set('ucs', await getAndProcessAsset(ucsConfig as CommodityPriceData, ucsValue));
+
+        // Calculate UCS ASE
+        const ucsAseValue = calculateUcsAse(ucsValue);
+        const ucsAseConfig = configs.find(c => c.id === 'ucs_ase')!;
+        const ucsAseDoc = { ultimo: ucsAseValue, timestamp: now, data: today, variacao_pct: 0, base_ucs: ucsValue };
+        await db.collection('ucs_ase').add(ucsAseDoc);
+        assetDataMap.set('ucs_ase', await getAndProcessAsset(ucsAseConfig as CommodityPriceData, ucsAseValue));
 
         // 3. Assemble final results in the correct order
         const results = configs.map(config => assetDataMap.get(config.id)).filter(Boolean) as CommodityPriceData[];
