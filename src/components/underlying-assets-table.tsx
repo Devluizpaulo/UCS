@@ -10,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { DollarSign, LandPlot, TreePine, Droplets, HelpCircle } from 'lucide-react';
+import { DollarSign, LandPlot, TreePine, Droplets, HelpCircle, Euro } from 'lucide-react';
 import type { CommodityPriceData } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { AssetDetailModal } from './asset-detail-modal';
@@ -18,8 +18,11 @@ import { Skeleton } from './ui/skeleton';
 import { formatCurrency } from '@/lib/formatters';
 
 
-export const getIconForCategory = (category?: CommodityPriceData['category']) => {
-    switch (category) {
+export const getIconForCategory = (asset?: CommodityPriceData) => {
+    if (asset?.id === 'eur') {
+        return Euro;
+    }
+    switch (asset?.category) {
         case 'exchange': return DollarSign;
         case 'vus': return LandPlot;
         case 'vmad': return TreePine;
@@ -34,7 +37,7 @@ interface UnderlyingAssetsTableProps {
 }
 
 export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTableProps) {
-  const [selectedAsset, setSelectedAsset] = useState<CommodityPriceData | null>(null);
+  const [selectedAsset, setSelectedAsset] = useState<Commodit-yPriceData | null>(null);
 
   const handleRowClick = (asset: CommodityPriceData) => {
     if (loading) return;
@@ -77,7 +80,7 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
     }
     
     return data.map((asset) => {
-        const Icon = getIconForCategory(asset.category);
+        const Icon = getIconForCategory(asset);
         const priceFormatted = formatCurrency(asset.price, asset.currency);
         const changeColor = asset.change >= 0 ? 'text-primary' : 'text-destructive';
 
@@ -132,7 +135,7 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
       {selectedAsset && (
         <AssetDetailModal
           asset={selectedAsset}
-          icon={getIconForCategory(selectedAsset.category)}
+          icon={getIconForCategory(selectedAsset)}
           isOpen={!!selectedAsset}
           onClose={() => setSelectedAsset(null)}
         />

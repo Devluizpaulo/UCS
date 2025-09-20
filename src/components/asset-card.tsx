@@ -42,7 +42,7 @@ export function AssetCard({ asset, loading }: AssetCardProps) {
     );
   }
 
-  const Icon = getIconForCategory(asset.category);
+  const Icon = getIconForCategory(asset);
   const changeColor = asset.change >= 0 ? 'text-primary' : 'text-destructive';
   const priceFormatted = formatCurrency(asset.price, asset.currency);
 
