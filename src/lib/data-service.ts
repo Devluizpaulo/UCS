@@ -3,7 +3,7 @@
 
 import { db } from '@/lib/firebase-admin-config';
 import { getCommodityConfigs } from '@/lib/commodity-config-service';
-import type { CommodityPriceData, FirestoreQuote, CommodityConfig } from '@/lib/types';
+import type { CommodityPriceData, FirestoreQuote } from '@/lib/types';
 import { getCache, setCache } from '@/lib/cache-service';
 
 const CACHE_KEY_PRICES = 'commodity_prices';
