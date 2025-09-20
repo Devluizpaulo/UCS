@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { getCommodityPrices } from "@/lib/data-service";
 import type { CommodityPriceData } from "@/lib/types";
 import { formatCurrency } from "@/lib/formatters";
-import { ArrowRight, Briefcase, CheckCircle, Globe, HandCoins, Landmark, LogIn, Repeat, Scale, ShieldCheck, TrendingUp } from "lucide-react";
+import { ArrowRight, Briefcase, CheckCircle, Globe, HandCoins, Landmark, Repeat, Scale, ShieldCheck, TrendingUp, User } from "lucide-react";
 import Image from 'next/image';
 import Link from 'next/link';
 import { LogoBVM } from "@/components/logo-bvm";
@@ -85,7 +85,7 @@ export default async function LandingPage() {
             <LanguageSwitcher />
             <LoginModal>
               <Button variant="ghost" size="icon">
-                <LogIn className="h-5 w-5" />
+                <User className="h-5 w-5" />
                 <span className="sr-only">Login</span>
               </Button>
             </LoginModal>
@@ -108,7 +108,7 @@ export default async function LandingPage() {
               <IconUcsAse className="h-5 w-5 text-primary" />
               <span>Índice de Unidade de Conservação Sustentável</span>
             </div>
-            <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl">
+            <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-6xl">
               UCS - Unidade de Crédito de Sustentabilidade
             </h1>
             <p className="mx-auto max-w-[700px] text-lg text-gray-200 md:text-lg">
