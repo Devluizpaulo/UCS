@@ -1,3 +1,4 @@
+
 import type { CommodityConfig } from './types';
 
 /**
@@ -50,7 +51,7 @@ export const COMMODITIES_CONFIG: Record<string, Omit<CommodityConfig, 'id'>> = {
     description: 'Preço do crédito de carbono em Euros.',
     unit: 'EUR por tonelada',
   },
-  'madeira_serrada': {
+  'madeira': {
     name: 'Madeira Serrada',
     currency: 'USD',
     category: 'vmad',
