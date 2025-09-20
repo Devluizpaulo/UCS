@@ -15,6 +15,7 @@ import type { CommodityPriceData } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { AssetDetailModal } from './asset-detail-modal';
 import { Skeleton } from './ui/skeleton';
+import { formatCurrency } from '@/lib/formatters';
 
 
 const getIconForCategory = (category: CommodityPriceData['category']) => {
@@ -75,9 +76,11 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
         );
     }
     
-    // This part will not be reached in the reset state, but is kept for future use.
     return data.map((asset) => {
         const Icon = getIconForCategory(asset.category);
+        const priceFormatted = formatCurrency(asset.price, asset.currency);
+        const changeColor = asset.change >= 0 ? 'text-primary' : 'text-destructive';
+
         return (
             <TableRow key={asset.id} onClick={() => handleRowClick(asset)} className="cursor-pointer hover:bg-muted/50">
               <TableCell>
@@ -93,14 +96,18 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
               </TableCell>
               <TableCell className="text-right font-mono">
                  {asset.price > 0 ? (
-                    <div>{asset.price}</div>
+                    <div>{priceFormatted}</div>
                  ) : (
                     <span className="text-muted-foreground">-</span>
                  )}
               </TableCell>
               <TableCell className="text-right">
-                  <div className={cn("inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold font-mono transition-colors")}>
-                      {asset.change.toFixed(2)}%
+                  <div className={cn(
+                      "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold font-mono transition-colors",
+                      asset.price === 0 ? "border-transparent" : changeColor.replace('text-', 'border-'),
+                      asset.price === 0 ? "text-muted-foreground" : changeColor
+                    )}>
+                      {asset.change >= 0 ? '+' : ''}{asset.change.toFixed(2)}%
                   </div>
               </TableCell>
             </TableRow>

@@ -15,6 +15,7 @@ import type { CommodityPriceData, ChartData, FirestoreQuote } from '@/lib/types'
 import { useEffect, useState, useCallback } from 'react';
 import { Table as UiTable, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { ScrollArea } from './ui/scroll-area';
+import { getCotacoesHistorico } from '@/lib/data-service';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/formatters';
 import { Skeleton } from './ui/skeleton';
@@ -40,8 +41,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
         setChartData([]);
 
         try {
-            // Reset: No data is fetched here for now.
-            const history: FirestoreQuote[] = [];
+            const history = await getCotacoesHistorico(currentAsset.id);
             
             const formatted = formatCurrency(asset.price, asset.currency);
             setFormattedPrice(formatted);
@@ -94,7 +94,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
                         <span className="text-3xl sm:text-4xl font-bold text-primary">{formattedPrice}</span>
                         <div className={cn("flex items-baseline gap-2 text-base sm:text-lg font-semibold", asset.absoluteChange >= 0 ? "text-primary" : "text-destructive")}>
-                            <span>{asset.absoluteChange >= 0 ? '+' : ''}{asset.absoluteChange.toFixed(4)}</span>
+                            <span>{asset.absoluteChange >= 0 ? '+' : ''}{formatCurrency(asset.absoluteChange, asset.currency)}</span>
                             <span>({asset.change >= 0 ? '+' : ''}{asset.change.toFixed(2)}%)</span>
                         </div>
                         <span className="text-xs text-muted-foreground">{asset.lastUpdated}</span>
