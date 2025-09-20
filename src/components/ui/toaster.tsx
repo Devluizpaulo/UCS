@@ -9,8 +9,8 @@ import {
   ToastProvider,
   ToastTitle,
   ToastViewport,
-  ToastProps,
-  ToastActionElement,
+  type ToastProps,
+  type ToastActionElement,
 } from "@/components/ui/toast"
 import React from "react"
 
