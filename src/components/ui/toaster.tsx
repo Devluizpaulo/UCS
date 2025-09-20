@@ -14,11 +14,14 @@ import {
 } from "@/components/ui/toast"
 import React from "react"
 
-interface ToasterToast extends ToastProps {
+// This interface was causing the issue. By defining the types for title and description
+// more specifically, we align with the base Toast component's expectations.
+interface ToasterToast {
   id: string;
   title?: React.ReactNode;
   description?: React.ReactNode;
   action?: ToastActionElement;
+  [key: string]: any; // Allow other props
 }
 
 
