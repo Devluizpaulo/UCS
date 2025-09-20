@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { getCommodityPrices } from "@/lib/data-service";
 import type { CommodityPriceData } from "@/lib/types";
 import { formatCurrency } from "@/lib/formatters";
-import { ArrowRight, Briefcase, CheckCircle, Globe, HandCoins, Landmark, Repeat, Scale, ShieldCheck, TrendingUp } from "lucide-react";
+import { ArrowRight, Briefcase, CheckCircle, Globe, HandCoins, Landmark, LogIn, Repeat, Scale, ShieldCheck, TrendingUp } from "lucide-react";
 import Image from 'next/image';
 import Link from 'next/link';
 import { LogoBVM } from "@/components/logo-bvm";
@@ -84,8 +84,9 @@ export default async function LandingPage() {
           <div className="flex items-center gap-2">
             <LanguageSwitcher />
             <LoginModal>
-              <Button variant="outline">
-                Login
+              <Button variant="ghost" size="icon">
+                <LogIn className="h-5 w-5" />
+                <span className="sr-only">Login</span>
               </Button>
             </LoginModal>
           </div>
