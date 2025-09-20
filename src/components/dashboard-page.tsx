@@ -19,11 +19,10 @@ export function DashboardPage() {
     const fetchDashboardData = async () => {
       setLoading(true);
       try {
-        // We only fetch commodity prices for now to isolate issues.
         const commodities = await getCommodityPrices();
         setAllCommodities(commodities);
 
-        // We get default/empty data for UCS Index to keep it disabled.
+        // We get default/empty data for UCS Index to keep it disabled for now.
         const ucsValue = await getUcsIndexValue();
         const history = await getUcsIndexHistory();
         setUcsData(ucsValue);
