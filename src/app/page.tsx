@@ -71,7 +71,7 @@ export default async function LandingPage() {
       </header>
 
       <main className="flex-1">
-        <section className="relative w-full flex items-center justify-center text-center text-white py-24 lg:py-32">
+        <section className="relative w-full flex items-center justify-center text-center text-white py-20 lg:py-28">
           <Image
             src="https://picsum.photos/seed/forest/1920/1080"
             alt="Floresta exuberante"
