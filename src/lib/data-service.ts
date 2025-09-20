@@ -55,6 +55,10 @@ const parseDateString = (dateStr: string): Date => {
  * @returns A promise that resolves to an array of Firestore quotes.
  */
 async function getAssetData(assetId: string, limit: number = 30): Promise<FirestoreQuote[]> {
+    const cacheKey = `assetData_${assetId}_${limit}`;
+    const cached = await getCache<FirestoreQuote[]>(cacheKey, 60000 * 5); // Cache for 5 minutes
+    if (cached) return cached;
+    
     const collectionName = getCollectionNameFromAssetId(assetId);
     if (!collectionName) {
         console.warn(`[DataService] No collection mapping for asset ID: ${assetId}`);
@@ -75,6 +79,7 @@ async function getAssetData(assetId: string, limit: number = 30): Promise<Firest
         // from newest to oldest, as requested.
         data.sort((a, b) => parseDateString(b.data).getTime() - parseDateString(a.data).getTime());
         
+        await setCache(cacheKey, data);
         return data;
 
     } catch (error) {
@@ -85,7 +90,7 @@ async function getAssetData(assetId: string, limit: number = 30): Promise<Firest
 
 
 export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
-    const cacheKey = 'commodityPrices_v4'; // Changed version to bust cache
+    const cacheKey = 'commodityPrices_v5_all'; 
     const cachedData = await getCache<CommodityPriceData[]>(cacheKey, 60000); // 1 minute cache
     if (cachedData) return cachedData;
 
@@ -100,7 +105,7 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
             const history = allHistories[index];
             let currentPrice = 0, change = 0, absoluteChange = 0, lastUpdated = 'N/A';
             
-            if (history.length > 0) {
+            if (history && history.length > 0) {
                 // history is sorted newest to oldest, so history[0] is the latest.
                 const latest = history[0];
                 currentPrice = latest.ultimo || 0; // Use 'ultimo' as the main price.
@@ -109,7 +114,7 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
                 if (history.length > 1) {
                     // history[1] is the previous day.
                     const previousPrice = history[1].ultimo || 0;
-                    if (previousPrice !== 0) {
+                    if (previousPrice > 0) { // Avoid division by zero
                         absoluteChange = currentPrice - previousPrice;
                         change = (absoluteChange / previousPrice) * 100;
                     }
@@ -122,7 +127,6 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
                 change, 
                 absoluteChange, 
                 lastUpdated,
-                // n8n pre-converts prices, so we assume BRL if not specified.
                 currency: commodity.currency || 'BRL',
             };
         });
@@ -137,7 +141,6 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
 
 
 export async function getCotacoesHistorico(assetId: string, limit: number = 30): Promise<FirestoreQuote[]> {
-     // This function now directly uses the corrected getAssetData function.
      return getAssetData(assetId, limit);
 }
 
