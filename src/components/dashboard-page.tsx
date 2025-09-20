@@ -57,7 +57,10 @@ export function DashboardPage({ initialData }: DashboardPageProps) {
   const mainIndex = data.find(asset => asset.id === 'ucs_ase');
   const secondaryIndex = data.find(asset => asset.id === 'ucs');
   const pdmIndex = data.find(asset => asset.id === 'pdm');
-  const otherAssets = data.filter(asset => !asset.isCalculated && asset.id !== 'usd' && asset.id !== 'eur');
+  
+  const otherAssets = data.filter(asset => 
+    !asset.isCalculated || (asset.id !== 'ucs_ase' && asset.id !== 'ucs' && asset.id !== 'pdm')
+  );
   
   const usdRate = data.find(asset => asset.id === 'usd')?.price;
   const eurRate = data.find(asset => asset.id === 'eur')?.price;
