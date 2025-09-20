@@ -88,14 +88,14 @@ async function getAssetData(assetId: string, limit: number = 30): Promise<Firest
 
 
 export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
-    const cacheKey = 'commodityPrices_v6_all'; 
+    const cacheKey = 'commodityPrices_v7_all';
     const cachedData = await getCache<CommodityPriceData[]>(cacheKey, 60000); // 1 minute cache
     if (cachedData) return cachedData;
 
     try {
         const commodities = await getCommodities();
         if (!commodities || commodities.length === 0) return [];
-        
+
         const allHistoriesPromises = commodities.map(c => getAssetData(c.id, 2));
         const allHistories = await Promise.all(allHistoriesPromises);
 
@@ -104,28 +104,41 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
             let currentPrice = 0, change = 0, absoluteChange = 0, lastUpdated = 'N/A';
             
             if (history && history.length > 0) {
-                // history is sorted newest to oldest, so history[0] is the latest.
                 const latest = history[0];
-                currentPrice = latest.ultimo || 0; // Use 'ultimo' as the main price.
                 lastUpdated = latest.data || new Date(latest.created_at).toLocaleString('pt-BR');
                 
+                // Determine the correct price field based on the asset.
+                if (commodity.id === 'madeira_serrada_futuros' && latest.madeira_tora_brl_ajustado) {
+                    currentPrice = latest.madeira_tora_brl_ajustado;
+                } else {
+                    currentPrice = latest.ultimo || 0;
+                }
+                
                 if (history.length > 1) {
-                    // history[1] is the previous day.
-                    const previousPrice = history[1].ultimo || 0;
-                    if (previousPrice > 0) { // Avoid division by zero
+                    const previous = history[1];
+                    let previousPrice = 0;
+                    
+                    // Determine the correct previous price field
+                    if (commodity.id === 'madeira_serrada_futuros' && previous.madeira_tora_brl_ajustado) {
+                        previousPrice = previous.madeira_tora_brl_ajustado;
+                    } else {
+                        previousPrice = previous.ultimo || 0;
+                    }
+
+                    if (previousPrice > 0) {
                         absoluteChange = currentPrice - previousPrice;
                         change = (absoluteChange / previousPrice) * 100;
                     }
                 }
             }
             
-            return { 
-                ...commodity, 
-                price: currentPrice, 
-                change, 
-                absoluteChange, 
+            return {
+                ...commodity,
+                price: currentPrice,
+                change,
+                absoluteChange,
                 lastUpdated,
-                currency: commodity.currency || 'BRL',
+                currency: commodity.id === 'madeira_serrada_futuros' ? 'BRL' : commodity.currency,
             };
         });
         
