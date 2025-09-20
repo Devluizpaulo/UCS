@@ -1,6 +1,5 @@
 
 import { PageHeader } from '@/components/page-header';
-import { ShieldAlert } from 'lucide-react';
 import { RiskAnalysisClient } from '@/components/risk-analysis-client';
 import { getCommodityPrices, getCotacoesHistorico } from '@/lib/data-service';
 
@@ -25,7 +24,7 @@ export default async function RiskPage() {
             <PageHeader 
                 title="Análise de Risco" 
                 description="Calcule a volatilidade e a correlação dos ativos com o Índice UCS ASE."
-                icon={ShieldAlert}
+                iconName="ShieldAlert"
             />
             <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
                 <RiskAnalysisClient 

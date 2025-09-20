@@ -1,16 +1,21 @@
+
 'use client';
 
-import type { ElementType, ReactNode } from 'react';
+import * as React from 'react';
+import type { ReactNode } from 'react';
+import * as Icons from 'lucide-react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 
 type PageHeaderProps = {
   title: string;
   description?: string;
-  icon?: ElementType;
+  iconName?: keyof typeof Icons;
   children?: ReactNode;
 };
 
-export function PageHeader({ title, description, icon: Icon, children }: PageHeaderProps) {
+export function PageHeader({ title, description, iconName, children }: PageHeaderProps) {
+  const Icon = iconName ? (Icons[iconName] as React.ElementType) : null;
+
   return (
     <header className="flex h-auto min-h-16 items-start gap-4 border-b bg-background/95 px-4 sticky top-0 z-30 sm:px-6 py-4">
       <SidebarTrigger className="md:hidden" />
