@@ -29,16 +29,9 @@ function getCollectionNameFromAssetId(assetId: string): string | null {
     return ASSET_COLLECTION_MAP[assetId] || null;
 }
 
-/**
- * Fetches historical data for a single asset.
- * Data is sorted by date from newest to oldest.
- * @param assetId - The ID of the asset configuration.
- * @param limit - The number of recent documents to retrieve.
- * @returns A promise that resolves to an array of Firestore quotes.
- */
 async function getAssetData(assetId: string, limit: number = 30): Promise<FirestoreQuote[]> {
     const cacheKey = `assetData_${assetId}_${limit}`;
-    const cached = await getCache<FirestoreQuote[]>(cacheKey, 60 * 5); // Cache for 5 minutes
+    const cached = getCache<FirestoreQuote[]>(cacheKey);
     if (cached) return cached;
     
     const collectionName = getCollectionNameFromAssetId(assetId);
@@ -56,7 +49,7 @@ async function getAssetData(assetId: string, limit: number = 30): Promise<Firest
             ...serializeFirestoreTimestamp(doc.data())
         } as FirestoreQuote));
         
-        await setCache(cacheKey, data);
+        setCache(cacheKey, data, 60 * 5); // Cache for 5 minutes
         return data;
 
     } catch (error) {
@@ -67,8 +60,8 @@ async function getAssetData(assetId: string, limit: number = 30): Promise<Firest
 
 
 export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
-    const cacheKey = 'commodityPrices_v14_final';
-    const cachedData = await getCache<CommodityPriceData[]>(cacheKey, 60); // 1 minute cache
+    const cacheKey = 'commodityPrices_all_v2';
+    const cachedData = getCache<CommodityPriceData[]>(cacheKey);
     if (cachedData) return cachedData;
 
     try {
@@ -85,17 +78,14 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
             if (history && history.length > 0) {
                 const latest = history[0];
                 currentPrice = latest.ultimo || 0;
-                change = latest.variacao_pct ?? 0;
+                // Use variacao_pct if it's a valid number, otherwise default to 0
+                change = (typeof latest.variacao_pct === 'number') ? latest.variacao_pct : 0;
                 lastUpdated = latest.data || new Date(latest.timestamp).toLocaleString('pt-BR');
 
                 if (currentPrice > 0 && change !== 0) {
-                    // Calculate absoluteChange based on the percentage change
-                    // The formula is PreviousPrice = CurrentPrice / (1 + (Change/100))
-                    // AbsoluteChange = CurrentPrice - PreviousPrice
                     const previousPrice = currentPrice / (1 + (change / 100));
                     absoluteChange = currentPrice - previousPrice;
                 } else if (history.length > 1) {
-                    // Fallback to calculating from previous day if variacao_pct is not available
                     const previous = history[1];
                     const previousPrice = previous.ultimo || 0;
                     if (previousPrice > 0) {
@@ -114,7 +104,7 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
             };
         });
         
-        await setCache(cacheKey, priceData);
+        setCache(cacheKey, priceData, 60); // 1 minute cache
         return priceData;
     } catch (error) {
         console.error(`Failed to get commodity prices: ${error}`);
