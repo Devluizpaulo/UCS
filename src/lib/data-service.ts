@@ -2,7 +2,7 @@
 'use server';
 
 import { db } from '@/lib/firebase-admin-config';
-import { getCommodityConfigs, COMMODITIES_CONFIG } from '@/lib/commodity-config-service';
+import { getCommodityConfigs } from '@/lib/commodity-config-service';
 import type { CommodityPriceData, FirestoreQuote, CommodityConfig } from '@/lib/types';
 import { getCache, setCache } from '@/lib/cache-service';
 import { calculateCh2oAgua, calculateCustoAgua, calculatePdm, calculateUcs, calculateUcsAse } from './calculation-service';
@@ -20,7 +20,7 @@ function serializeFirestoreTimestamp(data: any): any {
         return data.toISOString();
     }
     
-    if ('toDate' in data && typeof data.toDate === 'function') {
+    if (data instanceof Timestamp) { // Handle Firestore Timestamps specifically
         return data.toDate().toISOString();
     }
 
@@ -63,8 +63,17 @@ async function getAndProcessAsset(
 
     const docRef = db.collection(config.id).doc(todayDocId);
 
-    const twoDaysAgoSnapshot = await db.collection(config.id).orderBy('timestamp', 'desc').limit(1).get();
-    let previousPrice = calculatedPrice;
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+    const twoDaysAgoSnapshot = await db.collection(config.id)
+        .where('timestamp', '<', new Timestamp(now.seconds, now.nanoseconds))
+        .orderBy('timestamp', 'desc')
+        .limit(1)
+        .get();
+
+    let previousPrice = 0;
     if(!twoDaysAgoSnapshot.empty) {
         previousPrice = (twoDaysAgoSnapshot.docs[0].data() as FirestoreQuote).ultimo;
     }
@@ -104,9 +113,9 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
         const configs = await getCommodityConfigs();
         const assetDataMap = new Map<string, CommodityPriceData>();
 
-        // Corrigido: Garante que a data seja sempre no fuso horário de São Paulo
         const spTime = new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' });
-        const today = new Date(spTime).toLocaleDateString('pt-BR', {
+        const todayDate = new Date(spTime);
+        const today = todayDate.toLocaleDateString('pt-BR', {
             day: '2-digit',
             month: '2-digit',
             year: 'numeric'
@@ -117,7 +126,7 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
             .map(async (config) => {
                 const snapshot = await db.collection(config.id).orderBy('timestamp', 'desc').limit(2).get();
                 if (snapshot.empty) {
-                    const data = { price: 0, change: 0, absoluteChange: 0, lastUpdated: 'N/A', ...config };
+                    const data: CommodityPriceData = { ...config, price: 0, change: 0, absoluteChange: 0, lastUpdated: 'N/A' };
                     assetDataMap.set(config.id, data);
                     return data;
                 }
@@ -129,7 +138,7 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
                 const absoluteChange = latestPrice - previousPrice;
                 const change = (previousPrice !== 0) ? (absoluteChange / previousPrice) * 100 : 0;
                 
-                const data = { ...config, price: latestPrice, change, absoluteChange, lastUpdated: latestDoc.data || new Date(serializeFirestoreTimestamp(latestDoc.timestamp)).toLocaleDateString('pt-BR') };
+                const data: CommodityPriceData = { ...config, price: latestPrice, change, absoluteChange, lastUpdated: latestDoc.data || new Date(serializeFirestoreTimestamp(latestDoc.timestamp)).toLocaleDateString('pt-BR') };
                 assetDataMap.set(config.id, data);
                 return data;
             });

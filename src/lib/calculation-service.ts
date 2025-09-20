@@ -11,7 +11,7 @@ interface RentMediaValues {
 
 /**
  * Calculates the value of the CH2OAgua index based on the rent_media of its component assets.
- * CH2O Água = (rent_media boi_gordo) + (rent_media milho) + (rent_media soja) + (rent_media madeira) + (rent_media carbono)
+ * CH2O Água = (rent_media boi_gordo × 35%) + (rent_media milho × 30%) + (rent_media soja × 35%) + (rent_media madeira) + (rent_media carbono)
  * The rent_media itself already contains the weighted calculation.
  * @param values An object containing the rent_media for each required asset.
  * @returns The calculated value of the CH2OAgua index.
