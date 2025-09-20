@@ -1,3 +1,4 @@
+
 import type { CommodityConfig } from './types';
 
 /**
@@ -15,7 +16,7 @@ export const COMMODITIES_CONFIG: Record<string, Omit<CommodityConfig, 'id'>> = {
     description: 'Cotação do Dólar Americano (USD) em Reais (BRL).',
     unit: 'BRL por USD',
   },
-  'euro': {
+  'eur': {
     name: 'Euro',
     currency: 'BRL',
     category: 'exchange',
