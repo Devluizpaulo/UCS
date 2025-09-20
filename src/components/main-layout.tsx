@@ -2,20 +2,17 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
-  Library,
   Settings,
   Moon,
   Sun,
   LogOut,
   User as UserIcon,
-  FileText,
   Loader2,
-  Calculator,
   User,
 } from 'lucide-react';
 import Image from 'next/image';
@@ -38,8 +35,6 @@ import {
   SidebarMenuButton,
   SidebarFooter,
   SidebarInset,
-  SidebarTrigger,
-  SidebarRail,
 } from '@/components/ui/sidebar';
 import { Button } from './ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -53,9 +48,6 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   { href: '/', icon: LayoutDashboard, label: 'Painel', exact: true },
-  { href: '/analysis', icon: Library, label: 'Análise' },
-  { href: '/reports', icon: FileText, label: 'Relatórios' },
-  { href: '/ucs-calculator', icon: Calculator, label: 'Calculadora UCS' },
 ];
 
 export function MainLayout({ children }: { children: ReactNode }) {
@@ -102,7 +94,6 @@ export function MainLayout({ children }: { children: ReactNode }) {
   return (
       <SidebarProvider>
         <Sidebar collapsible="icon">
-          <SidebarRail />
           <SidebarHeader>
             <Link href="/" className="flex items-center gap-2 p-2">
                 <Image src="/image/logo.svg" alt="Índice UCS Logo" width={28} height={28} />

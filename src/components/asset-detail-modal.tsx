@@ -17,7 +17,7 @@ import { Table as UiTable, TableBody, TableCell, TableHead, TableHeader, TableRo
 import { ScrollArea } from './ui/scroll-area';
 import { getCotacoesHistorico } from '@/lib/data-service';
 import { cn } from '@/lib/utils';
-import { formatCurrency } from '@/lib/ucs-pricing-service';
+import { formatCurrency } from '@/lib/formatters';
 import { Skeleton } from './ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 
@@ -72,7 +72,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
         } finally {
             setLoading(false);
         }
-    }, [asset.price, asset.currency]);
+    }, [asset.price, asset.currency, asset.id]);
 
     useEffect(() => {
         if (isOpen) {

@@ -1,7 +1,7 @@
 
 'use server';
 
-import type { ChartData, CommodityPriceData, HistoryInterval, UcsData, FirestoreQuote, CommodityConfig } from './types';
+import type { CommodityPriceData, FirestoreQuote } from './types';
 import { getCommodities } from './commodity-config-service';
 import { db } from './firebase-admin-config';
 import { Timestamp } from 'firebase-admin/firestore';
@@ -64,7 +64,6 @@ async function getAssetData(assetId: string, limit: number = 30): Promise<Firest
     }
     
     try {
-        // We fetch ordered by a server timestamp to get recent documents efficiently
         const snapshot = await db.collection(collectionName).orderBy('timestamp', 'desc').limit(limit).get();
         if (snapshot.empty) return [];
 
@@ -73,8 +72,6 @@ async function getAssetData(assetId: string, limit: number = 30): Promise<Firest
             ...serializeFirestoreTimestamp(doc.data())
         } as FirestoreQuote));
         
-        // After fetching, we sort in-memory using the 'data' field (DD/MM/YYYY)
-        // from newest to oldest, as requested.
         data.sort((a, b) => parseDateString(b.data).getTime() - parseDateString(a.data).getTime());
         
         await setCache(cacheKey, data);
@@ -88,7 +85,7 @@ async function getAssetData(assetId: string, limit: number = 30): Promise<Firest
 
 
 export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
-    const cacheKey = 'commodityPrices_v7_all';
+    const cacheKey = 'commodityPrices_v10_simple_refactor';
     const cachedData = await getCache<CommodityPriceData[]>(cacheKey, 60000); // 1 minute cache
     if (cachedData) return cachedData;
 
@@ -102,14 +99,16 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
         const priceData = commodities.map((commodity, index) => {
             const history = allHistories[index];
             let currentPrice = 0, change = 0, absoluteChange = 0, lastUpdated = 'N/A';
-            
+            let originalCurrency = commodity.currency;
+
             if (history && history.length > 0) {
                 const latest = history[0];
                 lastUpdated = latest.data || new Date(latest.created_at).toLocaleString('pt-BR');
                 
-                // Determine the correct price field based on the asset.
+                // For 'madeira', use the pre-converted and adjusted BRL price.
                 if (commodity.id === 'madeira_serrada_futuros' && latest.madeira_tora_brl_ajustado) {
                     currentPrice = latest.madeira_tora_brl_ajustado;
+                    originalCurrency = 'BRL'; // The final price is in BRL
                 } else {
                     currentPrice = latest.ultimo || 0;
                 }
@@ -118,7 +117,6 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
                     const previous = history[1];
                     let previousPrice = 0;
                     
-                    // Determine the correct previous price field
                     if (commodity.id === 'madeira_serrada_futuros' && previous.madeira_tora_brl_ajustado) {
                         previousPrice = previous.madeira_tora_brl_ajustado;
                     } else {
@@ -138,7 +136,7 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
                 change,
                 absoluteChange,
                 lastUpdated,
-                currency: commodity.id === 'madeira_serrada_futuros' ? 'BRL' : commodity.currency,
+                currency: originalCurrency, // Use the correct final currency.
             };
         });
         
@@ -153,26 +151,4 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
 
 export async function getCotacoesHistorico(assetId: string, limit: number = 30): Promise<FirestoreQuote[]> {
      return getAssetData(assetId, limit);
-}
-
-
-// --- UCS INDEX FUNCTIONS (Temporarily returning default data) ---
-
-export async function getUcsIndexValue(): Promise<UcsData> {
-    const defaultResult: UcsData = {
-        ivp: 0,
-        ucsCF: 0,
-        ucsASE: 0,
-        pdm: 0,
-        isConfigured: false,
-        components: { vmad: 0, vus: 0, crs: 0 },
-        vusDetails: { pecuaria: 0, milho: 0, soja: 0 },
-    };
-    // Return default empty data to "disable" the index display.
-    return Promise.resolve(defaultResult);
-}
-
-export async function getUcsIndexHistory(interval: HistoryInterval = '1d'): Promise<ChartData[]> {
-    // Return empty array to "disable" the history chart.
-    return Promise.resolve([]);
 }
