@@ -45,16 +45,9 @@ export function AssetCard({ asset, loading, changeStatus }: AssetCardProps) {
 
   const Icon = getIconForCategory(asset);
   const changeColor = asset.change >= 0 ? 'text-primary' : 'text-destructive';
-  const isSpecialNumberFormat = asset.id === 'agua' || asset.id === 'custo_agua';
   
-  const priceFormatted = isSpecialNumberFormat
-    ? asset.price.toFixed(2) 
-    : formatCurrency(asset.price, asset.currency);
-  
-  const absoluteChangeFormatted = isSpecialNumberFormat
-    ? asset.absoluteChange.toFixed(2) 
-    : formatCurrency(Math.abs(asset.absoluteChange), asset.currency);
-
+  const priceFormatted = formatCurrency(asset.price, asset.currency);
+  const absoluteChangeFormatted = formatCurrency(Math.abs(asset.absoluteChange), asset.currency);
 
   const flashClass = changeStatus === 'up' 
     ? 'animate-flash-green' 

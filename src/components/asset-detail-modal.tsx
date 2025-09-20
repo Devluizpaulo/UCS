@@ -34,9 +34,6 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
     const [formattedPrice, setFormattedPrice] = useState('');
     const [formattedAbsoluteChange, setFormattedAbsoluteChange] = useState('');
 
-
-    const isSpecialNumberFormat = asset.id === 'agua' || asset.id === 'custo_agua';
-
     const getDetails = useCallback(async (currentAsset: CommodityPriceData) => {
         setLoading(true);
         setHistoricalData([]);
@@ -45,8 +42,8 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
         try {
             const history = await getCotacoesHistorico(currentAsset.id);
 
-            const price = isSpecialNumberFormat ? asset.price.toFixed(2) : formatCurrency(asset.price, asset.currency);
-            const absChange = isSpecialNumberFormat ? Math.abs(asset.absoluteChange).toFixed(2) : formatCurrency(Math.abs(asset.absoluteChange), asset.currency);
+            const price = formatCurrency(asset.price, asset.currency);
+            const absChange = formatCurrency(Math.abs(asset.absoluteChange), asset.currency);
             
             setFormattedPrice(price);
             setFormattedAbsoluteChange(absChange);
@@ -65,7 +62,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
         } finally {
             setLoading(false);
         }
-    }, [asset, isSpecialNumberFormat]);
+    }, [asset]);
 
     useEffect(() => {
         if (isOpen) {
@@ -80,9 +77,8 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
         },
     };
 
-    const yAxisFormatter = isSpecialNumberFormat ? (value: number) => value.toFixed(2) : (value: number) => formatCurrency(Number(value), asset.currency);
-    const tooltipFormatter = isSpecialNumberFormat ? (value: any) => [value.toFixed(2), 'Valor'] : (value: any) => [formatCurrency(Number(value), asset.currency), 'Cotação'];
-
+    const yAxisFormatter = (value: number) => formatCurrency(Number(value), asset.currency);
+    const tooltipFormatter = (value: any) => [formatCurrency(Number(value), asset.currency), 'Cotação'];
 
     const renderChart = () => (
         <div className="flex-1 h-full w-full"> 
@@ -119,7 +115,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                                 axisLine={false}
                                 tickMargin={8}
                                 fontSize={10}
-                                width={isSpecialNumberFormat ? 60 : 70}
+                                width={80}
                                 tick={{ fill: 'hsl(var(--muted-foreground))' }}
                                 tickFormatter={yAxisFormatter}
                             />
@@ -172,7 +168,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                                 <TableRow key={dataPoint.id}>
                                     <TableCell className="font-medium text-xs sm:text-sm w-[100px]">{dataPoint.data}</TableCell>
                                     <TableCell className="text-right font-mono text-primary text-xs sm:text-sm">
-                                        {isSpecialNumberFormat ? dataPoint.ultimo.toFixed(2) : formatCurrency(dataPoint.ultimo, asset.currency)}
+                                        {formatCurrency(dataPoint.ultimo, asset.currency)}
                                     </TableCell>
                                 </TableRow>
                             ))
