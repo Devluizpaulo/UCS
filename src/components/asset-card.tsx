@@ -13,9 +13,10 @@ import { getIconForCategory } from './underlying-assets-table';
 interface AssetCardProps {
   asset?: CommodityPriceData;
   loading?: boolean;
+  changeStatus?: 'up' | 'down';
 }
 
-export function AssetCard({ asset, loading }: AssetCardProps) {
+export function AssetCard({ asset, loading, changeStatus }: AssetCardProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleCardClick = () => {
@@ -46,11 +47,20 @@ export function AssetCard({ asset, loading }: AssetCardProps) {
   const changeColor = asset.change >= 0 ? 'text-primary' : 'text-destructive';
   const priceFormatted = formatCurrency(asset.price, asset.currency);
 
+  const flashClass = changeStatus === 'up' 
+    ? 'animate-flash-green' 
+    : changeStatus === 'down' 
+    ? 'animate-flash-red' 
+    : '';
+
   return (
     <>
       <Card
         onClick={handleCardClick}
-        className="cursor-pointer transition-all hover:bg-muted/50 hover:shadow-md"
+        className={cn(
+            "cursor-pointer transition-all hover:bg-muted/50 hover:shadow-md",
+            flashClass
+        )}
       >
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">{asset.name}</CardTitle>
