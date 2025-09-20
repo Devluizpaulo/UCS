@@ -53,7 +53,7 @@ export function UCSCalculator() {
     }
 
     try {
-      const resultadoCalc = calcularUCSCompleto(inputs as UCSCalculationInputs);
+      const resultadoCalc = await calcularUCSCompleto(inputs as UCSCalculationInputs);
       setResultado(resultadoCalc);
       setErros([]);
     } catch (error) {
@@ -118,11 +118,11 @@ export function UCSCalculator() {
     return (
         <div className="space-y-6">
             <div>
-                <Label className="text-sm text-muted-foreground">Unidade de Crédito de Sustentabilidade (UCS)</Label>
-                <p className="text-4xl font-bold text-primary">{formatCurrency(resultado.ucs, 'BRL')}</p>
+                <Label className="text-sm text-muted-foreground">UCS Crédito Floresta (CF)</Label>
+                <p className="text-4xl font-bold text-primary">{formatCurrency(resultado.ucsCF, 'BRL')}</p>
                  <div className="text-xs text-muted-foreground flex gap-4">
-                    <span>{formatCurrency(resultado.ucs_usd, 'USD')}</span>
-                    <span>{formatCurrency(resultado.ucs_eur, 'EUR')}</span>
+                    <span>{formatCurrency(resultado.ucsCF * (inputs.taxa_usd_brl ? 1/inputs.taxa_usd_brl : 0), 'USD')}</span>
+                    <span>{formatCurrency(resultado.ucsCF * (inputs.taxa_eur_brl ? 1/inputs.taxa_eur_brl : 0), 'EUR')}</span>
                  </div>
             </div>
 
@@ -220,8 +220,18 @@ export function UCSCalculator() {
                   {renderInputField('produtividade_milho', 'Prod. Milho (ton/ha)')}
                   {renderInputField('produtividade_soja', 'Prod. Soja (ton/ha)')}
                   {renderInputField('produtividade_madeira', 'Prod. Madeira (m³/ha)')}
-                  {renderInputField('fator_uso_terra', 'Fator Uso Terra (%)', false)}
+                  {renderInputField('fator_arrendamento', 'Fator Arrendamento (%)', false)}
                   {renderInputField('fator_ucs', 'Fator UCS (%)', false)}
+                  {renderInputField('produtividade_carbono', 'Média de CE (tCO₂e/ha)')}
+                  {renderInputField('fator_pecuaria', 'Ponderação Pecuária (%)')}
+                  {renderInputField('fator_milho', 'Ponderação Milho (%)')}
+                  {renderInputField('fator_soja', 'Ponderação Soja (%)')}
+                  {renderInputField('fator_agua', 'Custo Água (%)')}
+                  {renderInputField('FATOR_CARBONO', 'Fator Carbono (CRS)')}
+                  {renderInputField('fator_vus_final', 'Fator VUS Final')}
+                  {renderInputField('fator_multiplicador_madeira', 'Fator Madeira Final')}
+                  {renderInputField('fator_crs_final', 'Fator CRS Final')}
+                  {renderInputField('area_total', 'Área Total (ha)')}
               </div>
             )}
           </CardContent>

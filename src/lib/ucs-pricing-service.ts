@@ -1,4 +1,5 @@
 
+
 import { getCommodityPrices } from './data-service';
 import { getFormulaParameters } from './formula-service';
 import { calculateIndex } from './calculation-service';
@@ -42,13 +43,14 @@ export async function calcularUCSCompleto(inputs: UCSCalculationInputs): Promise
 
   // Mapeia os inputs da calculadora para o formato esperado pelo motor de cálculo principal.
   const commodities: CommodityPriceData[] = [
-      { id: 'dolar', name: 'USD/BRL - Dólar Americano Real Brasileiro', price: inputs.taxa_usd_brl, category: 'exchange' } as CommodityPriceData,
-      { id: 'eur', name: 'EUR/BRL - Euro Real Brasileiro', price: inputs.taxa_eur_brl, category: 'exchange' } as CommodityPriceData,
-      { id: 'madeira_serrada_futuros', name: 'Madeira Serrada Futuros', price: inputs.preco_madeira_brl_m3 / (inputs.taxa_usd_brl || 1), category: 'vmad' } as CommodityPriceData,
-      { id: 'boi_gordo_futuros', name: 'Boi Gordo Futuros', price: inputs.preco_boi_brl, category: 'vus' } as CommodityPriceData,
-      { id: 'milho_futuros', name: 'Milho Futuros', price: (inputs.preco_milho_brl_ton / 1000) * 60 / (inputs.taxa_usd_brl || 1), category: 'vus' } as CommodityPriceData,
-      { id: 'soja_futuros', name: 'Soja Futuros', price: (inputs.preco_soja_brl_ton / 1000) * 60 / (inputs.taxa_usd_brl || 1), category: 'vus' } as CommodityPriceData,
-      { id: 'credito_carbono_futuros', name: 'Crédito Carbono Futuros', price: inputs.preco_carbono_brl / (inputs.taxa_eur_brl || 1), category: 'crs' } as CommodityPriceData,
+      { id: 'boi_gordo_futuros', name: 'Boi Gordo Futuros', price: inputs.preco_boi_brl } as CommodityPriceData,
+      { id: 'milho_futuros', name: 'Milho Futuros', price: inputs.preco_milho_brl_ton } as CommodityPriceData,
+      { id: 'soja_futuros', name: 'Soja Futuros', price: inputs.preco_soja_brl_ton } as CommodityPriceData,
+      { id: 'madeira_serrada_futuros', name: 'Madeira Serrada Futuros', price: inputs.preco_madeira_brl_m3 } as CommodityPriceData,
+      { id: 'credito_carbono_futuros', name: 'Crédito Carbono Futuros', price: inputs.preco_carbono_brl } as CommodityPriceData,
+      // Taxas de câmbio não são mais necessárias para o cálculo principal
+      { id: 'dolar', name: 'USD/BRL', price: inputs.taxa_usd_brl } as CommodityPriceData,
+      { id: 'eur', name: 'EUR/BRL', price: inputs.taxa_eur_brl } as CommodityPriceData,
   ];
   
   // Utiliza o motor de cálculo unificado.
@@ -82,17 +84,15 @@ export async function obterValoresPadrao(): Promise<Partial<UCSCalculationInputs
       getFormulaParameters()
     ]);
     
-    const taxa_usd_brl = findPrice(prices, 'dólar');
-    const taxa_eur_brl = findPrice(prices, 'euro');
-
+    // Agora que n8n pré-converte os preços, podemos pegá-los diretamente.
     const cotacoes = {
-      taxa_usd_brl,
-      taxa_eur_brl,
-      preco_boi_brl: findPrice(prices, 'boi'),
-      preco_milho_brl_ton: (findPrice(prices, 'milho') * taxa_usd_brl / 60) * 1000,
-      preco_soja_brl_ton: (findPrice(prices, 'soja') * taxa_usd_brl / 60) * 1000,
-      preco_madeira_brl_m3: findPrice(prices, 'madeira') * taxa_usd_brl,
-      preco_carbono_brl: findPrice(prices, 'carbono') * taxa_eur_brl,
+      preco_boi_brl: findPrice(prices, 'boi gordo'),
+      preco_milho_brl_ton: findPrice(prices, 'milho'),
+      preco_soja_brl_ton: findPrice(prices, 'soja'),
+      preco_madeira_brl_m3: findPrice(prices, 'madeira'),
+      preco_carbono_brl: findPrice(prices, 'carbono'),
+      taxa_usd_brl: findPrice(prices, 'dólar'),
+      taxa_eur_brl: findPrice(prices, 'euro'),
     };
 
     return { ...params, ...cotacoes };
@@ -111,7 +111,7 @@ export function validarInputsUCS(inputs: Partial<UCSCalculationInputs>): { valid
   const requiredFields: (keyof UCSCalculationInputs)[] = [
     'produtividade_boi', 'produtividade_milho', 'produtividade_soja', 'produtividade_madeira',
     'preco_boi_brl', 'preco_milho_brl_ton', 'preco_soja_brl_ton', 'preco_madeira_brl_m3',
-    'preco_carbono_brl', 'taxa_usd_brl', 'taxa_eur_brl',
+    'preco_carbono_brl',
   ];
 
   requiredFields.forEach(field => {

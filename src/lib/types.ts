@@ -126,11 +126,13 @@ export type FormulaParameters = {
     // Fatores de Conversão/Custo
     fator_arrendamento: number;
     fator_agua: number;
-    fator_conversao_madeira: number;
     
     // Fatores Finais e Multiplicadores
     fator_ucs: number;
     FATOR_CARBONO: number; // Unidades de tCO2 por hectare para CRS
+    fator_vus_final: number;
+    fator_multiplicador_madeira: number;
+    fator_crs_final: number;
     
     // Área
     area_total: number;

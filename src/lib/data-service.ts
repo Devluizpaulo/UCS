@@ -9,7 +9,6 @@ import { getFormulaParameters } from './formula-service';
 import { calculateIndex } from './calculation-service';
 import { getCache, setCache } from './cache-service';
 import { ASSET_COLLECTION_MAP } from './marketdata-config';
-import { getExchangeRates } from './currency-service';
 
 const serializeFirestoreTimestamp = (data: any): any => {
     if (data && typeof data === 'object') {
@@ -54,7 +53,7 @@ const parseDateString = (dateStr: string): Date => {
  * @returns A promise that resolves to an array of Firestore quotes, sorted newest to oldest.
  */
 async function fetchAndCacheAssetData(assetId: string, limit: number = 30): Promise<FirestoreQuote[]> {
-    const cacheKey = `assetData_v2_${assetId}_${limit}`;
+    const cacheKey = `assetData_v3_${assetId}_${limit}`;
     const cachedData = await getCache<FirestoreQuote[]>(cacheKey, 60000); // 1 minute cache
     if (cachedData) return cachedData;
     
@@ -73,6 +72,10 @@ async function fetchAndCacheAssetData(assetId: string, limit: number = 30): Prom
             ...serializeFirestoreTimestamp(doc.data())
         } as FirestoreQuote));
         
+        // Data from Firestore is already ordered by timestamp desc, so it's newest to oldest.
+        // For consistency, let's ensure it's sorted by the 'data' field string just in case.
+        data.sort((a, b) => parseDateString(b.data).getTime() - parseDateString(a.data).getTime());
+        
         await setCache(cacheKey, data);
         return data;
 
@@ -84,29 +87,22 @@ async function fetchAndCacheAssetData(assetId: string, limit: number = 30): Prom
 
 
 export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
-    const cacheKey = 'commodityPrices_v2';
+    const cacheKey = 'commodityPrices_v3';
     const cachedData = await getCache<CommodityPriceData[]>(cacheKey, 60000); // 1 minute cache
     if (cachedData) return cachedData;
 
     try {
-        const [commodities, exchangeRates] = await Promise.all([
-            getCommodities(),
-            getExchangeRates()
-        ]);
-        
+        const commodities = await getCommodities();
         if (!commodities || commodities.length === 0) return [];
         
-        const usdRate = exchangeRates.find(r => r.from === 'USD' && r.to === 'BRL')?.rate || 0;
-        const eurRate = exchangeRates.find(r => r.from === 'EUR' && r.to === 'BRL')?.rate || 0;
-
         const allHistoriesPromises = commodities.map(c => fetchAndCacheAssetData(c.id, 2));
         const allHistories = await Promise.all(allHistoriesPromises);
 
         const priceData = commodities.map((commodity, index) => {
             const history = allHistories[index];
             let currentPrice = 0, change = 0, absoluteChange = 0, lastUpdated = 'N/A';
-            let convertedPriceBRL: number | undefined = undefined;
-
+            
+            // The price is taken directly from 'ultimo' as it's assumed to be pre-converted by n8n.
             if (history.length > 0) {
                 const latest = history[0];
                 currentPrice = latest.ultimo || 0;
@@ -121,21 +117,14 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
                 }
             }
             
-            if (commodity.currency === 'BRL') {
-                convertedPriceBRL = currentPrice;
-            } else if (commodity.currency === 'USD' && usdRate > 0) {
-                convertedPriceBRL = currentPrice * usdRate;
-            } else if (commodity.currency === 'EUR' && eurRate > 0) {
-                convertedPriceBRL = currentPrice * eurRate;
-            }
-
             return { 
                 ...commodity, 
                 price: currentPrice, 
                 change, 
                 absoluteChange, 
                 lastUpdated,
-                convertedPriceBRL
+                // No more currency conversion here, currency is assumed to be BRL if not specified.
+                currency: commodity.currency || 'BRL',
             };
         });
         
