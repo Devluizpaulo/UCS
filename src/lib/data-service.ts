@@ -38,25 +38,23 @@ const parseDateString = (dateStr: string): Date => {
     if (parts.length === 3) {
         const [day, month, year] = parts.map(Number);
         const fullYear = year < 100 ? year + 2000 : year;
+        // Month in JS Date is 0-indexed, so we subtract 1.
         return new Date(fullYear, month - 1, day);
     }
+    // Fallback for other potential date formats
     const parsedDate = new Date(dateStr);
     return isNaN(parsedDate.getTime()) ? new Date(1970, 0, 1) : parsedDate;
 };
 
 
 /**
- * Fetches and caches historical data for a single asset.
- * This is the new centralized function for data retrieval.
+ * Fetches historical data for a single asset.
+ * Data is sorted by date from newest to oldest.
  * @param assetId - The ID of the asset configuration.
  * @param limit - The number of recent documents to retrieve.
- * @returns A promise that resolves to an array of Firestore quotes, sorted newest to oldest.
+ * @returns A promise that resolves to an array of Firestore quotes.
  */
-async function fetchAndCacheAssetData(assetId: string, limit: number = 30): Promise<FirestoreQuote[]> {
-    const cacheKey = `assetData_v3_${assetId}_${limit}`;
-    const cachedData = await getCache<FirestoreQuote[]>(cacheKey, 60000); // 1 minute cache
-    if (cachedData) return cachedData;
-    
+async function getAssetData(assetId: string, limit: number = 30): Promise<FirestoreQuote[]> {
     const collectionName = getCollectionNameFromAssetId(assetId);
     if (!collectionName) {
         console.warn(`[DataService] No collection mapping for asset ID: ${assetId}`);
@@ -64,6 +62,7 @@ async function fetchAndCacheAssetData(assetId: string, limit: number = 30): Prom
     }
     
     try {
+        // We fetch ordered by a server timestamp to get recent documents efficiently
         const snapshot = await db.collection(collectionName).orderBy('timestamp', 'desc').limit(limit).get();
         if (snapshot.empty) return [];
 
@@ -72,11 +71,10 @@ async function fetchAndCacheAssetData(assetId: string, limit: number = 30): Prom
             ...serializeFirestoreTimestamp(doc.data())
         } as FirestoreQuote));
         
-        // Data from Firestore is already ordered by timestamp desc, so it's newest to oldest.
-        // For consistency, let's ensure it's sorted by the 'data' field string just in case.
+        // After fetching, we sort in-memory using the 'data' field (DD/MM/YYYY)
+        // from newest to oldest, as requested.
         data.sort((a, b) => parseDateString(b.data).getTime() - parseDateString(a.data).getTime());
         
-        await setCache(cacheKey, data);
         return data;
 
     } catch (error) {
@@ -87,7 +85,7 @@ async function fetchAndCacheAssetData(assetId: string, limit: number = 30): Prom
 
 
 export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
-    const cacheKey = 'commodityPrices_v3';
+    const cacheKey = 'commodityPrices_v4'; // Changed version to bust cache
     const cachedData = await getCache<CommodityPriceData[]>(cacheKey, 60000); // 1 minute cache
     if (cachedData) return cachedData;
 
@@ -95,20 +93,21 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
         const commodities = await getCommodities();
         if (!commodities || commodities.length === 0) return [];
         
-        const allHistoriesPromises = commodities.map(c => fetchAndCacheAssetData(c.id, 2));
+        const allHistoriesPromises = commodities.map(c => getAssetData(c.id, 2));
         const allHistories = await Promise.all(allHistoriesPromises);
 
         const priceData = commodities.map((commodity, index) => {
             const history = allHistories[index];
             let currentPrice = 0, change = 0, absoluteChange = 0, lastUpdated = 'N/A';
             
-            // The price is taken directly from 'ultimo' as it's assumed to be pre-converted by n8n.
             if (history.length > 0) {
+                // history is sorted newest to oldest, so history[0] is the latest.
                 const latest = history[0];
-                currentPrice = latest.ultimo || 0;
+                currentPrice = latest.ultimo || 0; // Use 'ultimo' as the main price.
                 lastUpdated = latest.data || new Date(latest.created_at).toLocaleString('pt-BR');
                 
                 if (history.length > 1) {
+                    // history[1] is the previous day.
                     const previousPrice = history[1].ultimo || 0;
                     if (previousPrice !== 0) {
                         absoluteChange = currentPrice - previousPrice;
@@ -123,7 +122,7 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
                 change, 
                 absoluteChange, 
                 lastUpdated,
-                // No more currency conversion here, currency is assumed to be BRL if not specified.
+                // n8n pre-converts prices, so we assume BRL if not specified.
                 currency: commodity.currency || 'BRL',
             };
         });
@@ -138,15 +137,14 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
 
 
 export async function getCotacoesHistorico(assetId: string, limit: number = 30): Promise<FirestoreQuote[]> {
-     return fetchAndCacheAssetData(assetId, limit);
+     // This function now directly uses the corrected getAssetData function.
+     return getAssetData(assetId, limit);
 }
 
 
-export async function getUcsIndexValue(): Promise<UcsData> {
-    const cacheKey = 'ucsIndexValue_latest';
-    const cachedData = await getCache<UcsData>(cacheKey);
-    if (cachedData) return cachedData;
+// --- UCS INDEX FUNCTIONS (Temporarily returning default data) ---
 
+export async function getUcsIndexValue(): Promise<UcsData> {
     const defaultResult: UcsData = {
         ivp: 0,
         ucsCF: 0,
@@ -156,44 +154,11 @@ export async function getUcsIndexValue(): Promise<UcsData> {
         components: { vmad: 0, vus: 0, crs: 0 },
         vusDetails: { pecuaria: 0, milho: 0, soja: 0 },
     };
-
-    try {
-        const [params, prices] = await Promise.all([getFormulaParameters(), getCommodityPrices()]);
-        if (!params.isConfigured || prices.length === 0) {
-            return { ...defaultResult, isConfigured: params.isConfigured };
-        }
-        const result = await calculateIndex(prices, params);
-        await setCache(cacheKey, result);
-        return result;
-    } catch (error) {
-        console.error(`Failed to get latest index value: ${error}`);
-        return defaultResult;
-    }
+    // Return default empty data to "disable" the index display.
+    return Promise.resolve(defaultResult);
 }
 
 export async function getUcsIndexHistory(interval: HistoryInterval = '1d'): Promise<ChartData[]> {
-    const cacheKey = `ucsIndexHistory_v2_${interval}`;
-    const cachedData = await getCache<ChartData[]>(cacheKey);
-    if (cachedData) return cachedData;
-
-    const history: ChartData[] = [];
-    try {
-        const limit = { '1d': 30, '1wk': 26, '1mo': 60 }[interval] || 30;
-        const querySnapshot = await db.collection('ucs_index_history').orderBy('savedAt', 'desc').limit(limit).get();
-        if (!querySnapshot.empty) {
-            querySnapshot.docs.forEach(doc => {
-                const data = doc.data();
-                const date = data.savedAt?.toDate ? data.savedAt.toDate() : new Date();
-                history.push({
-                    time: date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
-                    value: data.value,
-                });
-            });
-        }
-    } catch (error) {
-        console.error(`Failed to get index history: ${error}`);
-    }
-    const result = history.reverse();
-    await setCache(cacheKey, result);
-    return result;
+    // Return empty array to "disable" the history chart.
+    return Promise.resolve([]);
 }

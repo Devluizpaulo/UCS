@@ -19,13 +19,13 @@ export function DashboardPage() {
     const fetchDashboardData = async () => {
       setLoading(true);
       try {
-        const [commodities, ucsValue, history] = await Promise.all([
-          getCommodityPrices(),
-          getUcsIndexValue(),
-          getUcsIndexHistory('1d'),
-        ]);
-        
+        // We only fetch commodity prices for now to isolate issues.
+        const commodities = await getCommodityPrices();
         setAllCommodities(commodities);
+
+        // We get default/empty data for UCS Index to keep it disabled.
+        const ucsValue = await getUcsIndexValue();
+        const history = await getUcsIndexHistory();
         setUcsData(ucsValue);
         setHistoryData(history);
 
@@ -43,11 +43,13 @@ export function DashboardPage() {
       <PageHeader title="Painel" />
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
         <div className="w-full">
+          {/* The UCS Index Display will show a disabled state because getUcsIndexValue returns isConfigured: false */}
           <UCSIndexDisplay initialData={ucsData} chartData={historyData} loading={loading} />
         </div>
         
         <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-2">
            <CommodityPrices data={allCommodities} loading={loading} />
+           {/* The history card will show a disabled state as well */}
            <IndexHistoryCard initialData={historyData} isConfigured={ucsData?.isConfigured ?? false} loading={loading} />
         </div>
       </main>
