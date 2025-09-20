@@ -6,7 +6,7 @@
  */
 
 import { db } from './firebase-admin-config';
-import type { CommodityConfig, InitialCommodityConfig } from './types';
+import type { CommodityConfig, InitialCommodityConfig, CommodityMap } from './types';
 import { COMMODITY_TICKER_MAP } from './marketdata-config';
 import { DocumentData } from 'firebase-admin/firestore';
 
@@ -62,7 +62,7 @@ export async function getCommodities(): Promise<CommodityConfig[]> {
             const seededSnapshot = await collectionRef.get();
             if (seededSnapshot.empty) {
                  console.error('[CommodityConfigService] FATAL: Firestore is still empty after seeding. Falling back to hardcoded config.');
-                 return Object.entries(COMMODITY_TICKER_MAP).map(([id, config]) => ({
+                 return Object.entries(COMMODITY_TICKER_MAP).map(([id, config]: [string, Omit<CommodityConfig, 'id'>]) => ({
                     id: id,
                     ...config,
                     source: config.source || 'n8n',
@@ -92,7 +92,7 @@ export async function getCommodities(): Promise<CommodityConfig[]> {
 
     } catch (error) {
         console.error('[CommodityConfigService] Error fetching commodities from DB, falling back to hardcoded list:', error);
-        return Object.entries(COMMODITY_TICKER_MAP).map(([id, config]) => ({
+        return Object.entries(COMMODITY_TICKER_MAP).map(([id, config]: [string, Omit<CommodityConfig, 'id'>]) => ({
             id: id,
             ...config,
             source: config.source || 'n8n',
