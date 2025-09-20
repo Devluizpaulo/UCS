@@ -59,7 +59,7 @@ export default async function LandingPage() {
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-background text-foreground">
-      <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur-sm">
+      <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-sm">
         <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
           <LogoBVM />
           <LoginModal>
@@ -80,7 +80,7 @@ export default async function LandingPage() {
             data-ai-hint="rainforest canopy"
           />
           <div className="absolute inset-0 bg-black/60" />
-          <div className="relative z-10 flex flex-col items-center gap-6 px-4 md:px-6">
+          <div className="relative flex flex-col items-center gap-6 px-4 md:px-6">
             <div className="flex items-center gap-3 rounded-full border border-white/30 bg-white/10 px-4 py-2 text-sm backdrop-blur-sm">
               <IconUcsAse className="h-5 w-5 text-primary" />
               <span>Índice de Unidade de Conservação Sustentável</span>
