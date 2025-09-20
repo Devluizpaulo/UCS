@@ -18,7 +18,7 @@ import { Skeleton } from './ui/skeleton';
 import { formatCurrency } from '@/lib/formatters';
 
 
-const getIconForCategory = (category: CommodityPriceData['category']) => {
+export const getIconForCategory = (category?: CommodityPriceData['category']) => {
     switch (category) {
         case 'exchange': return DollarSign;
         case 'vus': return LandPlot;
