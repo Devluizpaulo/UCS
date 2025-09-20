@@ -45,7 +45,7 @@ import {
   TrendingUp,
   User,
   Users,
-  CheckCircle,
+  CircleCheckBig,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
