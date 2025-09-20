@@ -46,7 +46,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
             const history = await getCotacoesHistorico(currentAsset.id);
 
             const price = isCalculatedCrs ? asset.price.toFixed(2) : formatCurrency(asset.price, asset.currency);
-            const absChange = isCalculatedCrs ? asset.absoluteChange.toFixed(2) : formatCurrency(asset.absoluteChange, asset.currency);
+            const absChange = isCalculatedCrs ? Math.abs(asset.absoluteChange).toFixed(2) : formatCurrency(Math.abs(asset.absoluteChange), asset.currency);
             
             setFormattedPrice(price);
             setFormattedAbsoluteChange(absChange);

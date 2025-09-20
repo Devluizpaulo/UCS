@@ -45,8 +45,15 @@ export function AssetCard({ asset, loading, changeStatus }: AssetCardProps) {
 
   const Icon = getIconForCategory(asset);
   const changeColor = asset.change >= 0 ? 'text-primary' : 'text-destructive';
-  const priceFormatted = asset.currency === 'BRL' && (asset.id === 'agua' || asset.id === 'custo_agua') ? asset.price.toFixed(2) : formatCurrency(asset.price, asset.currency);
-  const absoluteChangeFormatted = asset.currency === 'BRL' && (asset.id === 'agua' || asset.id === 'custo_agua') ? asset.absoluteChange.toFixed(2) : formatCurrency(asset.absoluteChange, asset.currency);
+  const isCalculatedCrs = asset.category === 'crs';
+  
+  const priceFormatted = isCalculatedCrs 
+    ? asset.price.toFixed(2) 
+    : formatCurrency(asset.price, asset.currency);
+  
+  const absoluteChangeFormatted = isCalculatedCrs 
+    ? asset.absoluteChange.toFixed(2) 
+    : formatCurrency(Math.abs(asset.absoluteChange), asset.currency);
 
 
   const flashClass = changeStatus === 'up' 
