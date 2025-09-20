@@ -43,7 +43,7 @@ export function DatePicker({ date, setDate }: DatePickerProps) {
           onSelect={setDate}
           initialFocus
           locale={ptBR}
-          disabled={(day) => day > new Date() || day < new Date("2020-01-01")}
+          disabled={(day: Date) => day > new Date() || day < new Date("2020-01-01")}
         />
       </PopoverContent>
     </Popover>

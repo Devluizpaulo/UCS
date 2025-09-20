@@ -16,7 +16,7 @@ import React from "react"
 
 // This interface defines the shape of a toast object for the toaster.
 // It ensures compatibility with the underlying Toast component props.
-interface ToasterToast extends ToastProps {
+export interface ToasterToast extends ToastProps {
   id: string;
   title?: React.ReactNode;
   description?: React.ReactNode;

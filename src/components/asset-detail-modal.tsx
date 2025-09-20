@@ -162,14 +162,14 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                                                         fontSize={10}
                                                         width={70}
                                                         tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                                                        tickFormatter={(value) => formatCurrency(Number(value), asset.currency)}
+                                                        tickFormatter={(value: number) => formatCurrency(Number(value), asset.currency)}
                                                     />
                                                     <Tooltip 
                                                         cursor={{ stroke: 'hsl(var(--primary))', strokeWidth: 1, strokeDasharray: '3 3' }} 
                                                         content={<ChartTooltipContent 
                                                             indicator="dot" 
-                                                            formatter={(value) => [formatCurrency(Number(value), asset.currency), 'Cotação']} 
-                                                            labelFormatter={(label) => `Data: ${label}`}
+                                                            formatter={(value: number) => [formatCurrency(Number(value), asset.currency), 'Cotação']} 
+                                                            labelFormatter={(label: string) => `Data: ${label}`}
                                                         />} 
                                                     />
                                                     <Area 

@@ -1,5 +1,4 @@
 
-
 'use server';
 /**
  * @fileOverview A service for managing Commodities in Firestore.
@@ -140,7 +139,7 @@ export async function deleteCommodity(id: string): Promise<void> {
         await docRef.delete();
         console.log(`[CommododyConfigService] Successfully deleted commodity: ${id}`);
     } catch (error) {
-        console.error(`[CommodityConfigService] Error deleting commodity ${id}:`, error);
+        console.error(`[CommododyConfigService] Error deleting commodity ${id}:`, error);
         throw new Error(`Failed to delete commodity ${id}.`);
     }
 }
