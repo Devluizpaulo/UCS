@@ -58,7 +58,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
         } finally {
             setLoading(false);
         }
-    }, [asset.price, asset.currency, asset.id]);
+    }, [asset]);
 
     useEffect(() => {
         if (isOpen) {
@@ -137,14 +137,14 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
     );
     
     const renderHistoryTable = () => (
-         <ScrollArea className="h-full w-full">
+         <ScrollArea className="h-full max-h-80 md:max-h-none w-full">
             <UiTable>
                 <TableHeader className="sticky top-0 bg-background/80 backdrop-blur-sm z-10">
                     <TableRow>
                         <TableHead className="w-[100px]">Data</TableHead>
                         <TableHead className="text-right">Fechamento</TableHead>
-                        <TableHead className="text-right">Máxima</TableHead>
-                        <TableHead className="text-right">Mínima</TableHead>
+                        <TableHead className="text-right hidden sm:table-cell">Máxima</TableHead>
+                        <TableHead className="text-right hidden sm:table-cell">Mínima</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -153,8 +153,8 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                             <TableRow key={i}>
                                 <TableCell><Skeleton className="h-4 w-20"/></TableCell>
                                 <TableCell><Skeleton className="h-4 w-24 ml-auto"/></TableCell>
-                                <TableCell><Skeleton className="h-4 w-24 ml-auto"/></TableCell>
-                                <TableCell><Skeleton className="h-4 w-24 ml-auto"/></TableCell>
+                                <TableCell className="hidden sm:table-cell"><Skeleton className="h-4 w-24 ml-auto"/></TableCell>
+                                <TableCell className="hidden sm:table-cell"><Skeleton className="h-4 w-24 ml-auto"/></TableCell>
                             </TableRow>
                         ))
                     ) : historicalData.length > 0 ? (
@@ -162,8 +162,8 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                             <TableRow key={dataPoint.id}>
                                 <TableCell className="font-medium text-xs sm:text-sm">{dataPoint.data}</TableCell>
                                 <TableCell className="text-right font-mono text-primary text-xs sm:text-sm">{formatCurrency(dataPoint.ultimo, asset.currency)}</TableCell>
-                                <TableCell className="text-right font-mono text-green-500 text-xs sm:text-sm">{formatCurrency(dataPoint.maxima, asset.currency)}</TableCell>
-                                <TableCell className="text-right font-mono text-destructive text-xs sm:text-sm">{formatCurrency(dataPoint.minima, asset.currency)}</TableCell>
+                                <TableCell className="text-right font-mono text-green-500 text-xs sm:text-sm hidden sm:table-cell">{formatCurrency(dataPoint.maxima, asset.currency)}</TableCell>
+                                <TableCell className="text-right font-mono text-destructive text-xs sm:text-sm hidden sm:table-cell">{formatCurrency(dataPoint.minima, asset.currency)}</TableCell>
                             </TableRow>
                         ))
                     ) : (
@@ -204,22 +204,25 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                     </div>
                 </div>
 
-                <div className="p-4 flex-shrink-0">
-                    <h3 className="font-semibold text-md flex items-center gap-2 mb-2">
-                        <AreaChartIcon className="h-4 w-4 text-muted-foreground"/>
-                        Desempenho do Preço
-                    </h3>
-                    {renderChart()}
-                </div>
+                <div className="flex-1 p-4 md:p-6 grid md:grid-cols-2 gap-6 min-h-0">
+                    <div className="flex flex-col gap-2">
+                        <h3 className="font-semibold text-md flex items-center gap-2">
+                            <AreaChartIcon className="h-4 w-4 text-muted-foreground"/>
+                            Desempenho do Preço
+                        </h3>
+                        {renderChart()}
+                    </div>
 
-                <div className="px-4 pb-4 flex-1 min-h-0">
-                     <h3 className="font-semibold text-md flex items-center gap-2 mb-2">
-                        <TableIcon className="h-4 w-4 text-muted-foreground"/>
-                        Cotações Históricas
-                    </h3>
-                    {renderHistoryTable()}
+                    <div className="flex flex-col gap-2 min-h-0">
+                         <h3 className="font-semibold text-md flex items-center gap-2">
+                            <TableIcon className="h-4 w-4 text-muted-foreground"/>
+                            Cotações Históricas
+                        </h3>
+                        <div className="flex-1 min-h-0">
+                            {renderHistoryTable()}
+                        </div>
+                    </div>
                 </div>
-
             </DialogContent>
         </Dialog>
     );
