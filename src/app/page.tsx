@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { getCommodityPrices } from "@/lib/data-service";
 import type { CommodityPriceData } from "@/lib/types";
 import { formatCurrency } from "@/lib/formatters";
-import { ArrowRight, Briefcase, CheckCircle, Globe, HandCoins, Landmark, Repeat, Scale, ShieldCheck, TrendingUp, User, Euro } from "lucide-react";
+import { ArrowRight, Briefcase, CircleCheckBig, Globe, HandCoins, Landmark, Repeat, Scale, ShieldCheck, TrendingUp, User, Euro } from "lucide-react";
 import Image from 'next/image';
 import Link from 'next/link';
 import { LogoBVM } from "@/components/logo-bvm";
@@ -40,7 +40,7 @@ const services = [
   {
     title: 'Certificação pelo uso das UCSs',
     description: 'A BMV DIGITAL verifica, valida e baixa no sistema a quantidade vendida, transfere as UCS para o comprador com emissão do Selo Sustentabilidade.',
-    icon: CheckCircle,
+    icon: CircleCheckBig,
     aiHint: 'environmental certificate',
   },
    {
