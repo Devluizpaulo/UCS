@@ -139,7 +139,11 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
         // Calculate PDM
         const pdmValue = calculatePdm(ch2oAguaValue, custoAguaValue);
         const pdmConfig = configs.find(c => c.id === 'pdm')!;
-        const pdmData = await getAndProcessAsset(pdmConfig as CommodityPriceData, pdmValue, { base_ch2o_agua: ch2oAguaValue, base_custo_agua: custoAguaValue });
+        const pdmData = await getAndProcessAsset(pdmConfig as CommodityPriceData, pdmValue, { 
+            base_ch2o_agua: ch2oAguaValue, 
+            base_custo_agua: custoAguaValue,
+            rent_media_components: rentMediaValues // Pass through for detailed pie chart
+        });
         assetDataMap.set('pdm', pdmData);
         
         // Calculate UCS
