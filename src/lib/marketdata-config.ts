@@ -1,32 +1,26 @@
 
 import type { CommodityMap } from "./types";
 
-
-// This file is intentionally not marked with 'use server' as it exports constant objects.
-
 /**
- * Maps asset IDs from the 'commodities' collection to the actual Firestore collection
- * name where their price history is stored. This is the new source of truth.
+ * Maps asset IDs (which are now simplified) to the actual Firestore collection
+ * name where their price history is stored. This is the source of truth for mapping.
  */
 export const ASSET_COLLECTION_MAP: Record<string, string> = {
-  'usd_brl___dolar_americano_real_brasileiro': 'usd',
-  'eur_brl___euro_real_brasileiro': 'eur',
-  'boi_gordo_futuros': 'boi_gordo',
-  'soja_futuros': 'soja',
-  'milho_futuros': 'milho',
-  'madeira_serrada_futuros': 'madeira',
-  'credito_carbono_futuros': 'carbono',
+  'usd': 'usd',
+  'eur': 'eur',
+  'boi_gordo': 'boi_gordo',
+  'soja': 'soja',
+  'milho': 'milho',
+  'madeira': 'madeira',
+  'carbono': 'carbono',
 };
 
-
-// This map defines the INITIAL set of commodities to be seeded into the database
-// on the very first run. After that, the master list is managed in Firestore
-// via the Settings page. The keys here (e.g., 'usd_brl___dolar_americano_real_brasileiro') will become the
-// document IDs in Firestore. The tickers have been updated for Yahoo Finance compatibility
-// but the 'source' should reflect where the data is coming from (n8n).
+// This map defines the INITIAL set of commodities to be seeded into the database.
+// After the first run, the master list is managed in Firestore via the Settings page.
+// The keys here (e.g., 'usd') will become the document IDs in Firestore.
 export const COMMODITY_TICKER_MAP: CommodityMap = {
-  'usd_brl___dolar_americano_real_brasileiro': { 
-    name: 'USD/BRL - Dólar Americano Real Brasileiro',
+  'usd': { 
+    name: 'Dólar Americano',
     ticker: 'BRL=X', 
     currency: 'BRL',
     category: 'exchange',
@@ -34,8 +28,8 @@ export const COMMODITY_TICKER_MAP: CommodityMap = {
     unit: 'BRL',
     source: 'n8n',
   },
-  'eur_brl___euro_real_brasileiro': { 
-    name: 'EUR/BRL - Euro Real Brasileiro',
+  'eur': { 
+    name: 'Euro',
     ticker: 'EURBRL=X', 
     currency: 'BRL',
     category: 'exchange',
@@ -43,8 +37,8 @@ export const COMMODITY_TICKER_MAP: CommodityMap = {
     unit: 'BRL',
     source: 'n8n',
   },
-  'boi_gordo_futuros': { 
-    name: 'Boi Gordo Futuros',
+  'boi_gordo': { 
+    name: 'Boi Gordo',
     ticker: 'BGI=F', 
     currency: 'BRL',
     category: 'vus',
@@ -52,8 +46,8 @@ export const COMMODITY_TICKER_MAP: CommodityMap = {
     unit: '@',
     source: 'n8n',
   },
-  'soja_futuros': { 
-    name: 'Soja Futuros',
+  'soja': { 
+    name: 'Soja',
     ticker: 'ZS=F',
     currency: 'USD',
     category: 'vus',
@@ -61,8 +55,8 @@ export const COMMODITY_TICKER_MAP: CommodityMap = {
     unit: 'USd/bu', // US Cents per Bushel
     source: 'n8n',
   },
-  'milho_futuros': { 
-    name: 'Milho Futuros',
+  'milho': { 
+    name: 'Milho',
     ticker: 'ZC=F',
     currency: 'USD',
     category: 'vus',
@@ -70,8 +64,8 @@ export const COMMODITY_TICKER_MAP: CommodityMap = {
     unit: 'USd/bu', // US Cents per Bushel
     source: 'n8n',
   },
-  'madeira_serrada_futuros': { 
-    name: 'Madeira Serrada Futuros',
+  'madeira': { 
+    name: 'Madeira',
     ticker: 'LBS=F',
     currency: 'USD',
     category: 'vmad',
@@ -79,8 +73,8 @@ export const COMMODITY_TICKER_MAP: CommodityMap = {
     unit: 'USD/1,000 board feet',
     source: 'n8n',
   },
-  'credito_carbono_futuros': { 
-    name: 'Crédito Carbono Futuros',
+  'carbono': { 
+    name: 'Crédito de Carbono',
     ticker: 'KRBN', // Using KRBN ETF as a proxy for Carbon Credits
     currency: 'USD',
     category: 'crs',
