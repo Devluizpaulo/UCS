@@ -6,13 +6,12 @@ import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import MainLayout from '@/app/(main)/layout';
 
 export default function SettingsPage() {
   const { setTheme, theme } = useTheme();
 
   return (
-    <MainLayout>
+    <>
       <div className="flex min-h-screen w-full flex-col">
         <PageHeader 
             title="Configurações" 
@@ -97,6 +96,6 @@ export default function SettingsPage() {
           </div>
         </main>
       </div>
-    </MainLayout>
+    </>
   );
 }

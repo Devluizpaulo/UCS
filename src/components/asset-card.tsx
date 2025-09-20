@@ -8,7 +8,7 @@ import { formatCurrency } from '@/lib/formatters';
 import type { CommodityPriceData } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { AssetDetailModal } from './asset-detail-modal';
-import { getIconForCategory } from './underlying-assets-table';
+import { getIconForCategory } from '@/lib/icons';
 import { DollarSign, Euro } from 'lucide-react';
 import { Separator } from './ui/separator';
 

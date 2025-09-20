@@ -10,40 +10,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { DollarSign, LandPlot, TreePine, Droplets, HelpCircle, Euro, Beef, Wheat, Bean, Sigma, Gem } from 'lucide-react';
 import type { CommodityPriceData } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { AssetDetailModal } from './asset-detail-modal';
 import { Skeleton } from './ui/skeleton';
 import { formatCurrency } from '@/lib/formatters';
+import { getIconForCategory } from '@/lib/icons';
 
-
-export const getIconForCategory = (asset?: CommodityPriceData) => {
-    if (!asset) return HelpCircle;
-    
-    switch (asset.id) {
-        case 'ucs': return Gem;
-        case 'ucs_ase': return Gem;
-        case 'eur': return Euro;
-        case 'boi_gordo': return Beef;
-        case 'milho': return Wheat;
-        case 'soja': return Bean;
-        case 'usd': return DollarSign;
-        case 'madeira': return TreePine;
-        case 'carbono': return Droplets;
-        case 'agua': return Droplets;
-        case 'custo_agua': return Droplets;
-        case 'pdm': return Sigma;
-        default:
-            switch (asset.category) {
-                case 'exchange': return DollarSign;
-                case 'vus': return LandPlot;
-                case 'vmad': return TreePine;
-                case 'crs': return Droplets;
-                default: return HelpCircle;
-            }
-    }
-};
 
 interface UnderlyingAssetsTableProps {
     data: CommodityPriceData[];
