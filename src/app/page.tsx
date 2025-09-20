@@ -62,40 +62,59 @@ export default async function LandingPage() {
       <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur-sm">
         <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
           <LogoBVM />
-          <nav className="hidden items-center gap-6 text-sm md:flex">
-            <a href="#services" className="transition-colors hover:text-primary">Serviços</a>
-            <a href="https://bmvdigital.global/" target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-primary">Site Institucional</a>
-          </nav>
           <LoginModal>
-            <Button>
-              Acessar Painel <ArrowRight className="ml-2 h-4 w-4" />
+            <Button variant="outline">
+              Login
             </Button>
           </LoginModal>
         </div>
       </header>
 
       <main className="flex-1">
-        <section className="container mx-auto flex flex-col items-center justify-center gap-8 px-4 py-20 text-center md:px-6 md:py-32">
-          <div className="flex items-center gap-3 rounded-full border bg-muted px-4 py-2 text-sm text-muted-foreground">
-             <IconUcsAse className="h-5 w-5 text-primary" />
-            <span>Índice de Unidade de Conservação Sustentável</span>
+        <section className="relative w-full h-[80vh] flex items-center justify-center text-center text-white">
+          <Image
+            src="https://picsum.photos/seed/forest/1920/1080"
+            alt="Floresta exuberante"
+            fill
+            className="object-cover"
+            data-ai-hint="rainforest canopy"
+          />
+          <div className="absolute inset-0 bg-black/60" />
+          <div className="relative z-10 flex flex-col items-center gap-6 px-4 md:px-6">
+            <div className="flex items-center gap-3 rounded-full border border-white/30 bg-white/10 px-4 py-2 text-sm backdrop-blur-sm">
+              <IconUcsAse className="h-5 w-5 text-primary" />
+              <span>Índice de Unidade de Conservação Sustentável</span>
+            </div>
+            <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl">
+              UCS - Unidade de Crédito de Sustentabilidade
+            </h1>
+            <p className="mx-auto max-w-[700px] text-lg text-gray-200 md:text-xl">
+              Acompanhe a performance econômica de ativos ambientais e agrícolas em tempo real.
+            </p>
+            
+            <Card className="w-full max-w-sm animate-fade-in bg-background/50 text-foreground backdrop-blur-md border-white/20">
+              <CardHeader>
+                <CardTitle className="text-lg">Cotação Atual - Índice UCS ASE</CardTitle>
+                <CardDescription className="text-gray-300">Valor atualizado do principal índice da plataforma.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                  <p className="text-5xl font-bold text-primary">{ucsAsePrice}</p>
+              </CardContent>
+            </Card>
+
+             <div className="flex flex-col sm:flex-row gap-4 mt-4">
+              <LoginModal>
+                <Button size="lg">
+                  Acessar Painel <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </LoginModal>
+              <Button size="lg" variant="secondary" asChild>
+                <a href="https://bmvdigital.global/" target="_blank" rel="noopener noreferrer">
+                  Conheça a BMV Digital
+                </a>
+              </Button>
+            </div>
           </div>
-          <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl">
-            UCS - Unidade de Crédito de Sustentabilidade
-          </h1>
-          <div className="mx-auto max-w-[700px] text-lg text-muted-foreground md:text-xl">
-             <p>Acompanhe a performance econômica de ativos ambientais e agrícolas em tempo real.</p>
-          </div>
-          
-          <Card className="w-full max-w-md animate-fade-in shadow-lg shadow-primary/10">
-            <CardHeader className="text-left">
-              <CardTitle className="text-lg">Cotação Atual - Índice UCS ASE</CardTitle>
-              <CardDescription>Valor atualizado do principal índice da plataforma.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <p className="text-5xl font-bold text-primary">{ucsAsePrice}</p>
-            </CardContent>
-          </Card>
         </section>
 
         <section id="services" className="w-full bg-muted/30 py-16 md:py-24">
