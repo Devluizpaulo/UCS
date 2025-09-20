@@ -1,11 +1,12 @@
 
 'use client';
 
+import * as React from 'react';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { addDays, format as formatDate } from "date-fns";
 import type { DateRange } from "react-day-picker";
 import { Area, AreaChart, Brush, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import type { CommodityConfig, ChartData } from '@/lib/types';
+import type { CommodityConfig, ChartData, CommodityPriceData } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DateRangePicker } from './ui/date-range-picker';
@@ -158,6 +159,18 @@ export function TrendsClient({ availableAssets }: TrendsClientProps) {
     );
   }
 
+  const getIconForAssetConfig = (assetConfig: CommodityConfig) => {
+    // Create a mock CommodityPriceData object for the icon function
+    const mockAsset: CommodityPriceData = {
+        ...assetConfig,
+        price: 0,
+        change: 0,
+        absoluteChange: 0,
+        lastUpdated: ''
+    };
+    return getIconForCategory(mockAsset);
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -177,7 +190,7 @@ export function TrendsClient({ availableAssets }: TrendsClientProps) {
                     {availableAssets.map(asset => (
                     <SelectItem key={asset.id} value={asset.id}>
                         <div className="flex items-center gap-2">
-                            {getIconForCategory(asset) && React.createElement(getIconForCategory(asset), { className: 'h-4 w-4' })}
+                            {React.createElement(getIconForAssetConfig(asset), { className: 'h-4 w-4' })}
                             {asset.name}
                         </div>
                     </SelectItem>

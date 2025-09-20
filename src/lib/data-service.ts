@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import { db } from '@/lib/firebase-admin-config';
@@ -113,7 +112,7 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
             .map(async (config) => {
                 const snapshot = await db.collection(config.id).orderBy('timestamp', 'desc').limit(2).get();
                 if (snapshot.empty) {
-                    return { id: config.id, price: 0, change: 0, absoluteChange: 0, lastUpdated: 'N/A', ...config };
+                    return { price: 0, change: 0, absoluteChange: 0, lastUpdated: 'N/A', ...config };
                 }
 
                 const latestDoc = snapshot.docs[0].data() as FirestoreQuote;

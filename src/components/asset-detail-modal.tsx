@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -9,6 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import { AreaChart as AreaChartIcon, PieChart as PieChartIcon, Table as TableIcon, Loader2, List, Euro, DollarSign } from 'lucide-react';
 import { Area, AreaChart, Brush, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import type { TooltipProps } from 'recharts';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import type { CommodityPriceData, ChartData, FirestoreQuote } from '@/lib/types';
 import { useEffect, useState, useCallback } from 'react';
@@ -90,7 +92,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                     } else if (latestData.rent_media_components) {
                          components = Object.entries(latestData.rent_media_components).map(([key, value]) => ({
                             name: key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-                            value: value,
+                            value: Number(value),
                             fill: (PIE_CHART_COLORS as any)[key] || 'hsl(var(--muted))'
                         }));
                     } else if (latestData.base_ucs) {
@@ -131,7 +133,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
 
     const yAxisFormatter = (value: number) => formatCurrency(Number(value), asset.currency, asset.id);
     const tooltipFormatter = (value: any) => [formatCurrency(Number(value), asset.currency, asset.id), 'Cotação'];
-    const pieTooltipFormatter = (value: number, name: string) => [formatCurrency(value, asset.currency), name];
+    const pieTooltipFormatter: TooltipProps<number, string>['formatter'] = (value, name) => [formatCurrency(value, asset.currency), name];
 
     const renderCompositionContent = () => {
         if (loading) {
