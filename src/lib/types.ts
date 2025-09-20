@@ -1,3 +1,4 @@
+
 // Defines the structure for a single commodity configuration
 export interface CommodityConfig {
     id: string;

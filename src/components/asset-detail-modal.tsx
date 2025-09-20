@@ -42,8 +42,8 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
         try {
             const history = await getCotacoesHistorico(currentAsset.id);
 
-            const price = formatCurrency(asset.price, asset.currency);
-            const absChange = formatCurrency(Math.abs(asset.absoluteChange), asset.currency);
+            const price = formatCurrency(asset.price, asset.currency, asset.id);
+            const absChange = formatCurrency(Math.abs(asset.absoluteChange), asset.currency, asset.id);
             
             setFormattedPrice(price);
             setFormattedAbsoluteChange(absChange);
@@ -77,8 +77,8 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
         },
     };
 
-    const yAxisFormatter = (value: number) => formatCurrency(Number(value), asset.currency);
-    const tooltipFormatter = (value: any) => [formatCurrency(Number(value), asset.currency), 'Cotação'];
+    const yAxisFormatter = (value: number) => formatCurrency(Number(value), asset.currency, asset.id);
+    const tooltipFormatter = (value: any) => [formatCurrency(Number(value), asset.currency, asset.id), 'Cotação'];
 
     const renderChart = () => (
         <div className="flex-1 h-full w-full"> 
@@ -168,7 +168,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                                 <TableRow key={dataPoint.id}>
                                     <TableCell className="font-medium text-xs sm:text-sm w-[100px]">{dataPoint.data}</TableCell>
                                     <TableCell className="text-right font-mono text-primary text-xs sm:text-sm">
-                                        {formatCurrency(dataPoint.ultimo, asset.currency)}
+                                        {formatCurrency(dataPoint.ultimo, asset.currency, asset.id)}
                                     </TableCell>
                                 </TableRow>
                             ))

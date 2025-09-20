@@ -46,8 +46,8 @@ export function AssetCard({ asset, loading, changeStatus }: AssetCardProps) {
   const Icon = getIconForCategory(asset);
   const changeColor = asset.change >= 0 ? 'text-primary' : 'text-destructive';
   
-  const priceFormatted = formatCurrency(asset.price, asset.currency);
-  const absoluteChangeFormatted = formatCurrency(Math.abs(asset.absoluteChange), asset.currency);
+  const priceFormatted = formatCurrency(asset.price, asset.currency, asset.id);
+  const absoluteChangeFormatted = formatCurrency(Math.abs(asset.absoluteChange), asset.currency, asset.id);
 
   const flashClass = changeStatus === 'up' 
     ? 'animate-flash-green' 
@@ -73,12 +73,15 @@ export function AssetCard({ asset, loading, changeStatus }: AssetCardProps) {
             {asset.price > 0 ? priceFormatted : <span className="text-muted-foreground">-</span>}
           </div>
           <div className={cn("flex items-baseline gap-2 text-xs", changeColor)}>
-            {asset.price > 0 && (
+            {asset.price > 0 && asset.id !== 'ucs' && (
               <>
                 <span>{asset.absoluteChange >= 0 ? '+' : ''}{absoluteChangeFormatted}</span>
                 <span>({asset.change >= 0 ? '+' : ''}{asset.change.toFixed(2)}%)</span>
               </>
             )}
+             {asset.price > 0 && asset.id === 'ucs' && (
+                <span>({asset.change >= 0 ? '+' : ''}{asset.change.toFixed(2)}%)</span>
+             )}
           </div>
            <p className="text-xs text-muted-foreground pt-2">
             {asset.lastUpdated}

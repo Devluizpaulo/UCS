@@ -1,3 +1,4 @@
+
 import type { CommodityConfig } from './types';
 
 /**
@@ -8,6 +9,14 @@ import type { CommodityConfig } from './types';
  * 2. Nome da coleção no Firestore onde os dados históricos são armazenados.
  */
 export const COMMODITIES_CONFIG: Record<string, Omit<CommodityConfig, 'id'>> = {
+  'ucs': {
+    name: 'Índice UCS',
+    currency: 'BRL',
+    category: 'crs',
+    description: 'Índice de Unidade de Conservação Sustentável.',
+    unit: 'Pontos',
+    isCalculated: true,
+  },
   'usd': {
     name: 'Dólar Comercial',
     currency: 'BRL',

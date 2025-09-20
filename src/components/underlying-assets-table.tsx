@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -9,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { DollarSign, LandPlot, TreePine, Droplets, HelpCircle, Euro, Beef, Wheat, Bean, Sigma } from 'lucide-react';
+import { DollarSign, LandPlot, TreePine, Droplets, HelpCircle, Euro, Beef, Wheat, Bean, Sigma, Gem } from 'lucide-react';
 import type { CommodityPriceData } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { AssetDetailModal } from './asset-detail-modal';
@@ -21,6 +22,7 @@ export const getIconForCategory = (asset?: CommodityPriceData) => {
     if (!asset) return HelpCircle;
     
     switch (asset.id) {
+        case 'ucs': return Gem;
         case 'eur': return Euro;
         case 'boi_gordo': return Beef;
         case 'milho': return Wheat;
@@ -92,7 +94,7 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
     
     return data.map((asset) => {
         const Icon = getIconForCategory(asset);
-        const priceFormatted = formatCurrency(asset.price, asset.currency);
+        const priceFormatted = formatCurrency(asset.price, asset.currency, asset.id);
         const changeColor = asset.change >= 0 ? 'text-primary' : 'text-destructive';
 
         return (

@@ -1,3 +1,4 @@
+
 import type { FirestoreQuote } from "./types";
 
 interface RentMediaValues {
@@ -57,4 +58,17 @@ export function calculatePdm(ch2oAguaValue: number, custoAguaValue: number): num
         return 0;
     }
     return ch2oAguaValue + custoAguaValue;
+}
+
+/**
+ * Calculates the UCS index.
+ * UCS = (PDM / 900) / 2
+ * @param pdmValue The value of the PDM index.
+ * @returns The calculated value of the UCS index.
+ */
+export function calculateUcs(pdmValue: number): number {
+    if (typeof pdmValue !== 'number' || pdmValue === 0) {
+        return 0;
+    }
+    return (pdmValue / 900) / 2;
 }

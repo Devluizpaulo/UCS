@@ -1,10 +1,11 @@
+
 'use server';
 
 import { db } from '@/lib/firebase-admin-config';
 import { getCommodityConfigs } from '@/lib/commodity-config-service';
 import type { CommodityPriceData, FirestoreQuote } from '@/lib/types';
 import { getCache, setCache } from '@/lib/cache-service';
-import { calculateCh2oAgua, calculateCustoAgua, calculatePdm } from './calculation-service';
+import { calculateCh2oAgua, calculateCustoAgua, calculatePdm, calculateUcs } from './calculation-service';
 import { Timestamp } from 'firebase-admin/firestore';
 
 const CACHE_KEY_PRICES = 'commodity_prices';
@@ -59,6 +60,7 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
         const assetDataMap = new Map<string, CommodityPriceData>();
         let ch2oAguaValue = 0;
         let custoAguaValue = 0;
+        let pdmValue = 0;
 
         // First pass: get all non-calculated assets
         const pricePromises = configs
@@ -109,7 +111,7 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
             let docToSave: any = {};
             const now = Timestamp.now();
             const today = now.toDate().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-
+            
             if (config.id === 'agua') {
                 const rentMediaIds = ['boi_gordo', 'milho', 'soja', 'madeira', 'carbono'];
                 const rentMediaQuotes = await Promise.all(rentMediaIds.map(id => getLatestQuote(id)));
@@ -133,8 +135,13 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
 
             } else if (config.id === 'pdm') {
                 calculatedPrice = calculatePdm(ch2oAguaValue, custoAguaValue);
+                pdmValue = calculatedPrice;
                 docToSave.base_ch2o_agua = ch2oAguaValue;
                 docToSave.base_custo_agua = custoAguaValue;
+            
+            } else if (config.id === 'ucs') {
+                calculatedPrice = calculateUcs(pdmValue);
+                docToSave.base_pdm = pdmValue;
             }
 
             // Save the new calculated value to its collection, if it's a valid number
