@@ -53,27 +53,43 @@ export function DashboardPage({ initialData }: DashboardPageProps) {
     return () => clearInterval(intervalId);
   }, [data]);
   
-  const mainIndexes = data.filter(asset => asset.id === 'ucs_ase' || asset.id === 'ucs');
+  const mainIndex = data.find(asset => asset.id === 'ucs_ase');
+  const secondaryIndex = data.find(asset => asset.id === 'ucs');
   const otherAssets = data.filter(asset => asset.id !== 'ucs_ase' && asset.id !== 'ucs');
+  
+  const usdRate = data.find(asset => asset.id === 'usd')?.price;
+  const eurRate = data.find(asset => asset.id === 'eur')?.price;
 
   return (
     <div className="flex min-h-screen w-full flex-col">
       <PageHeader title="Painel de Cotações" />
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-3">
           {isLoading ? (
             <>
-              <AssetCard loading />
+              <AssetCard loading className="md:col-span-2" />
               <AssetCard loading />
             </>
           ) : (
-            mainIndexes.map((asset) => (
-              <AssetCard 
-                key={asset.id} 
-                asset={asset}
-                changeStatus={changedAssets[asset.id]}
-              />
-            ))
+            <>
+              {mainIndex && (
+                 <AssetCard 
+                  key={mainIndex.id} 
+                  asset={mainIndex}
+                  changeStatus={changedAssets[mainIndex.id]}
+                  className="md:col-span-2"
+                  usdRate={usdRate}
+                  eurRate={eurRate}
+                />
+              )}
+              {secondaryIndex && (
+                 <AssetCard 
+                  key={secondaryIndex.id} 
+                  asset={secondaryIndex}
+                  changeStatus={changedAssets[secondaryIndex.id]}
+                />
+              )}
+            </>
           )}
         </div>
         <div>
