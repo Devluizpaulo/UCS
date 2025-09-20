@@ -61,7 +61,18 @@ async function getAndProcessAsset(config: CommodityPriceData, calculatedPrice: n
         .limit(2)
         .get();
     
-    const previousPrice = snapshot.docs.length > 1 ? (snapshot.docs[1].data() as FirestoreQuote).ultimo : calculatedPrice;
+    let previousPrice = calculatedPrice;
+    if (snapshot.docs.length > 0) {
+        // Se o registro mais recente for de um dia anterior, use-o como 'previous'
+        const latestData = snapshot.docs[0].data() as FirestoreQuote;
+        if (latestData.data !== today && snapshot.docs.length > 0) {
+            previousPrice = latestData.ultimo;
+        } else if (snapshot.docs.length > 1) {
+            // Se o mais recente for de hoje, o anterior é o segundo na lista
+            previousPrice = (snapshot.docs[1].data() as FirestoreQuote).ultimo;
+        }
+    }
+    
     const absoluteChange = calculatedPrice - previousPrice;
     const change = previousPrice !== 0 ? (absoluteChange / previousPrice) * 100 : 0;
     
@@ -70,22 +81,17 @@ async function getAndProcessAsset(config: CommodityPriceData, calculatedPrice: n
         Object.assign(docData, components);
     }
     
-    // Check if there's already an entry for today to avoid duplicates
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-    const tomorrowStart = new Date(todayStart);
-    tomorrowStart.setDate(todayStart.getDate() + 1);
-
+    // Procura por um documento com a data de hoje para evitar duplicatas
     const todaySnapshot = await db.collection(config.id)
-        .where('timestamp', '>=', Timestamp.fromDate(todayStart))
-        .where('timestamp', '<', Timestamp.fromDate(tomorrowStart))
+        .where('data', '==', today)
         .limit(1)
         .get();
 
     if (todaySnapshot.empty) {
+        // Se não houver registro para hoje, cria um novo
         await db.collection(config.id).add(docData);
     } else {
-        // Update today's entry
+        // Se já existir, atualiza o registro do dia
         await todaySnapshot.docs[0].ref.update(docData);
     }
 
@@ -119,6 +125,7 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
                 const snapshot = await db.collection(config.id).orderBy('timestamp', 'desc').limit(2).get();
 
                 if (snapshot.empty) {
+                    // Retorna um valor padrão com preço 0 se não houver dados
                     return { id: config.id, price: 0, change: 0, absoluteChange: 0, lastUpdated: 'N/A', ...config };
                 }
 
@@ -143,7 +150,7 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
 
         const getPriceInBRL = (assetId: string) => {
             const asset = assetDataMap.get(assetId);
-            if (!asset) return 0;
+            if (!asset || typeof asset.price !== 'number') return 0;
             if (asset.currency === 'USD') return asset.price * usdRate;
             if (asset.currency === 'EUR') return asset.price * eurRate;
             return asset.price;
