@@ -15,7 +15,6 @@ import type { CommodityPriceData, ChartData, FirestoreQuote } from '@/lib/types'
 import { useEffect, useState, useCallback } from 'react';
 import { Table as UiTable, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { ScrollArea } from './ui/scroll-area';
-import { getCotacoesHistorico } from '@/lib/data-service';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/formatters';
 import { Skeleton } from './ui/skeleton';
@@ -41,14 +40,15 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
         setChartData([]);
 
         try {
-            const history = await getCotacoesHistorico(currentAsset.id, 30);
+            // Reset: No data is fetched here for now.
+            // const history = await getCotacoesHistorico(currentAsset.id, 30);
+            const history: FirestoreQuote[] = [];
+            
             const formatted = formatCurrency(asset.price, asset.currency);
             setFormattedPrice(formatted);
             
-            // The data is already sorted by the service, so we can use it directly
             setHistoricalData(history);
 
-            // For the chart, we need the oldest first, so we reverse the sorted array
             const chartPoints = [...history].reverse().map((d: FirestoreQuote) => ({
                 time: d.data || new Date(d.timestamp).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
                 value: d.ultimo
@@ -223,4 +223,5 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
             </DialogContent>
         </Dialog>
     );
-}
+
+    

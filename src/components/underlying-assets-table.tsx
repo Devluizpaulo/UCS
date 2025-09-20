@@ -10,12 +10,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { ArrowDown, ArrowUp, DollarSign, LandPlot, TreePine, Droplets, HelpCircle } from 'lucide-react';
+import { DollarSign, LandPlot, TreePine, Droplets, HelpCircle } from 'lucide-react';
 import type { CommodityPriceData } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { AssetDetailModal } from './asset-detail-modal';
 import { Skeleton } from './ui/skeleton';
-import { formatCurrency } from '@/lib/formatters';
 
 
 const getIconForCategory = (category: CommodityPriceData['category']) => {
@@ -31,8 +30,6 @@ const getIconForCategory = (category: CommodityPriceData['category']) => {
 interface UnderlyingAssetsTableProps {
     data: CommodityPriceData[];
     loading?: boolean;
-    onManualUpdate?: (assetName: string) => void;
-    updatingAssets?: Set<string>;
 }
 
 export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTableProps) {
@@ -78,9 +75,9 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
         );
     }
     
+    // This part will not be reached in the reset state, but is kept for future use.
     return data.map((asset) => {
         const Icon = getIconForCategory(asset.category);
-
         return (
             <TableRow key={asset.id} onClick={() => handleRowClick(asset)} className="cursor-pointer hover:bg-muted/50">
               <TableCell>
@@ -96,19 +93,13 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
               </TableCell>
               <TableCell className="text-right font-mono">
                  {asset.price > 0 ? (
-                    <div>
-                      {formatCurrency(asset.price, asset.currency)}
-                    </div>
+                    <div>{asset.price}</div>
                  ) : (
                     <span className="text-muted-foreground">-</span>
                  )}
               </TableCell>
               <TableCell className="text-right">
-                  <div className={cn(
-                      "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold font-mono transition-colors",
-                      asset.change >= 0 ? "border-primary/50 text-primary" : "border-destructive/50 text-destructive"
-                  )}>
-                      {asset.change >= 0 ? <ArrowUp className="mr-1 h-3 w-3" /> : <ArrowDown className="mr-1 h-3 w-3" />}
+                  <div className={cn("inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold font-mono transition-colors")}>
                       {asset.change.toFixed(2)}%
                   </div>
               </TableCell>

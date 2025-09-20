@@ -15,11 +15,9 @@ import type { CommodityPriceData } from '@/lib/types';
 interface CommodityPricesProps {
   loading: boolean;
   data: CommodityPriceData[];
-  onManualUpdate?: (assetName: string) => void;
-  updatingAssets?: Set<string>;
 }
 
-export function CommodityPrices({ loading, data, onManualUpdate, updatingAssets }: CommodityPricesProps) {
+export function CommodityPrices({ loading, data }: CommodityPricesProps) {
   return (
     <Card className="shadow-sm">
       <CardHeader>
@@ -27,7 +25,7 @@ export function CommodityPrices({ loading, data, onManualUpdate, updatingAssets 
         <CardDescription>Preços em tempo real das commodities no índice.</CardDescription>
       </CardHeader>
       <CardContent className="p-0">
-        <UnderlyingAssetsTable loading={loading} data={data} onManualUpdate={onManualUpdate} updatingAssets={updatingAssets} />
+        <UnderlyingAssetsTable loading={loading} data={data} />
       </CardContent>
     </Card>
   );
