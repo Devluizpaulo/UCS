@@ -11,7 +11,7 @@ import {
   SidebarMenuButton,
   SidebarProvider,
 } from '@/components/ui/sidebar';
-import { LayoutDashboard } from 'lucide-react';
+import { LayoutDashboard, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LogoBVM } from '@/components/logo-bvm';
@@ -45,6 +45,22 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
+        </SidebarContent>
+        <SidebarContent className="!flex-grow-0">
+            <SidebarMenu>
+                <SidebarMenuItem>
+                    <SidebarMenuButton
+                        asChild
+                        isActive={pathname === '/settings'}
+                        tooltip={{ children: 'Configurações' }}
+                    >
+                        <Link href="/settings">
+                            <Settings />
+                            <span>Configurações</span>
+                        </Link>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+            </SidebarMenu>
         </SidebarContent>
       </Sidebar>
       <SidebarInset>{children}</SidebarInset>
