@@ -52,24 +52,10 @@ import { usePathname } from 'next/navigation';
 import { AppFooter } from '@/components/app-footer';
 
 const menuItems = [
-  { href: '/', label: 'Painel', icon: LayoutDashboard },
-];
-
-const analysisItems = [
-    { href: '/analysis/trends', label: 'Tendências', icon: LineChart },
-    { href: '/analysis/risk', label: 'Risco', icon: ShieldAlert },
-    { href: '/analysis/scenarios', label: 'Cenários', icon: CandlestickChart },
-];
-
-const toolsItems = [
-    { href: '/calculator', label: 'Calculadora', icon: Calculator },
-    { href: '/reports', label: 'Relatórios', icon: FileText },
-];
-
-const adminItems = [
-    { href: '/admin/users', label: 'Usuários', icon: Users },
-    { href: '/admin/formula', label: 'Fórmula do Índice', icon: SlidersHorizontal },
-    { href: '/admin/assets', label: 'Ativos do Índice', icon: Archive },
+  { href: '/dashboard', label: 'Painel', icon: LayoutDashboard },
+  { href: '/analysis/trends', label: 'Análise Estratégica', icon: TrendingUp },
+  { href: '/calculator', label: 'Calculadora', icon: Calculator },
+  { href: '/reports', label: 'Relatórios', icon: FileText },
 ];
 
 
@@ -80,7 +66,10 @@ export default function MainLayout({
 }) {
   const pathname = usePathname();
 
-    const isRouteActive = (href: string) => pathname === href || (href === '/' && pathname.startsWith('/dashboard'));
+    const isRouteActive = (href: string) => {
+        if (href === '/dashboard') return pathname === href || pathname === '/';
+        return pathname.startsWith(href);
+    }
     const isGroupActive = (items: { href: string }[]) => items.some(item => pathname.startsWith(item.href));
 
 
@@ -103,61 +92,6 @@ export default function MainLayout({
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
                     asChild
-                    isActive={isRouteActive('/dashboard')}
-                    tooltip={{ children: item.label }}
-                  >
-                    <Link href="/dashboard">
-                      <item.icon />
-                      <span>{item.label}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-
-              <Accordion type="multiple" className="w-full group-data-[collapsible=icon]:hidden">
-                {/* Análise Estratégica */}
-                <AccordionItem value="analysis" className="border-none">
-                    <AccordionTrigger 
-                        className="py-2 text-sm text-sidebar-foreground/70 hover:text-sidebar-foreground [&[data-state=open]>svg]:text-sidebar-primary"
-                        isNested
-                    >
-                       <div className="flex items-center gap-2">
-                           <TrendingUp className="h-4 w-4" /> Análise Estratégica
-                       </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="pb-1">
-                        <SidebarMenu className="p-0 pl-4">
-                            {analysisItems.map(item => (
-                                 <SidebarMenuItem key={item.href}>
-                                    <SidebarMenuButton
-                                        asChild
-                                        isActive={isRouteActive(item.href)}
-                                        size="sm"
-                                        className="h-8"
-                                    >
-                                        <Link href={item.href}>
-                                            <item.icon/>
-                                            <span>{item.label}</span>
-                                        </Link>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-                            ))}
-                        </SidebarMenu>
-                    </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-
-              {/* Ícone para Análise quando colapsado */}
-              <div className="hidden group-data-[collapsible=icon]:block">
-                 <SidebarMenuButton asChild isActive={isGroupActive(analysisItems)} tooltip={{ children: 'Análise Estratégica' }}>
-                      <Link href="/analysis/trends"><TrendingUp /></Link>
-                 </SidebarMenuButton>
-              </div>
-
-               {toolsItems.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton
-                    asChild
                     isActive={isRouteActive(item.href)}
                     tooltip={{ children: item.label }}
                   >
@@ -168,68 +102,10 @@ export default function MainLayout({
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
-
-              <Accordion type="multiple" className="w-full group-data-[collapsible=icon]:hidden">
-                {/* Administração */}
-                <AccordionItem value="admin" className="border-none">
-                    <AccordionTrigger 
-                        className="py-2 text-sm text-sidebar-foreground/70 hover:text-sidebar-foreground [&[data-state=open]>svg]:text-sidebar-primary"
-                        isNested
-                    >
-                       <div className="flex items-center gap-2">
-                           <AreaChart className="h-4 w-4" /> Administração
-                       </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="pb-1">
-                        <SidebarMenu className="p-0 pl-4">
-                            {adminItems.map(item => (
-                                 <SidebarMenuItem key={item.href}>
-                                    <SidebarMenuButton
-                                        asChild
-                                        isActive={isRouteActive(item.href)}
-                                        size="sm"
-                                        className="h-8"
-                                    >
-                                        <Link href={item.href}>
-                                            <item.icon/>
-                                            <span>{item.label}</span>
-                                        </Link>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-                            ))}
-                        </SidebarMenu>
-                    </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-
-              {/* Ícone para Admin quando colapsado */}
-               <div className="hidden group-data-[collapsible=icon]:block">
-                 <SidebarMenuButton asChild isActive={isGroupActive(adminItems)} tooltip={{ children: 'Administração' }}>
-                      <Link href="/admin/users"><AreaChart /></Link>
-                 </SidebarMenuButton>
-              </div>
-
             </SidebarMenu>
           </SidebarContent>
 
-          <SidebarContent className="!flex-grow-0 border-t border-sidebar-border">
-            <SidebarMenu>
-                <SidebarMenuItem>
-                    <SidebarMenuButton
-                        asChild
-                        isActive={isRouteActive('/admin/settings')}
-                        tooltip={{ children: 'Configurações' }}
-                    >
-                        <Link href="/admin/settings">
-                            <Settings />
-                            <span>Configurações</span>
-                        </Link>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarContent>
-
-          <SidebarContent className="!flex-grow-0 border-t border-sidebar-border p-2">
+          <div className="mt-auto border-t border-sidebar-border p-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -269,7 +145,7 @@ export default function MainLayout({
                 <DropdownMenuItem><LogOut className="mr-2"/>Sair</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          </SidebarContent>
+          </div>
         </div>
       </Sidebar>
       <SidebarInset>
