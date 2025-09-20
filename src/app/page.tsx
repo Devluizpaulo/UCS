@@ -71,7 +71,7 @@ export default async function LandingPage() {
       </header>
 
       <main className="flex-1">
-        <section className="relative w-full h-[80vh] flex items-center justify-center text-center text-white">
+        <section className="relative w-full flex items-center justify-center text-center text-white py-24 lg:py-32">
           <Image
             src="https://picsum.photos/seed/forest/1920/1080"
             alt="Floresta exuberante"
@@ -80,7 +80,7 @@ export default async function LandingPage() {
             data-ai-hint="rainforest canopy"
           />
           <div className="absolute inset-0 bg-black/60" />
-          <div className="relative flex flex-col items-center gap-6 px-4 md:px-6">
+          <div className="relative z-10 flex flex-col items-center gap-6 px-4 md:px-6">
             <div className="flex items-center gap-3 rounded-full border border-white/30 bg-white/10 px-4 py-2 text-sm backdrop-blur-sm">
               <IconUcsAse className="h-5 w-5 text-primary" />
               <span>Índice de Unidade de Conservação Sustentável</span>
