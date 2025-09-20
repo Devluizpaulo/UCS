@@ -82,6 +82,7 @@ export function AssetCard({ asset, loading, changeStatus, className, usdRate, eu
           <div className={cn("font-bold flex items-center gap-2", isUcsAse ? "text-3xl" : "text-2xl")}>
             {asset.price > 0 ? (
                 <>
+                  {asset.currency === 'USD' && <DollarSign className="h-6 w-6" />}
                   {asset.currency === 'EUR' && <Euro className="h-6 w-6" />}
                   {priceFormatted}
                 </>
