@@ -6,6 +6,7 @@ export interface CommodityConfig {
     category: 'exchange' | 'vus' | 'vmad' | 'crs';
     description: string;
     unit: string;
+    isCalculated?: boolean;
 }
 
 // Defines the structure for commodity data to be displayed
@@ -23,6 +24,7 @@ export interface FirestoreQuote {
     ultimo: number;
     timestamp: string;
     variacao_pct: number | null;
+    rent_media?: number;
     [key: string]: any; // Allow other fields
 }
 

@@ -32,6 +32,8 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
     const [chartData, setChartData] = useState<ChartData[]>([]);
     const [loading, setLoading] = useState(true);
     const [formattedPrice, setFormattedPrice] = useState('');
+    const [formattedAbsoluteChange, setFormattedAbsoluteChange] = useState('');
+
 
     const getDetails = useCallback(async (currentAsset: CommodityPriceData) => {
         setLoading(true);
@@ -40,9 +42,13 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
 
         try {
             const history = await getCotacoesHistorico(currentAsset.id);
+
+            const isAgua = asset.id === 'agua';
+            const price = isAgua ? asset.price.toFixed(2) : formatCurrency(asset.price, asset.currency);
+            const absChange = isAgua ? asset.absoluteChange.toFixed(2) : formatCurrency(asset.absoluteChange, asset.currency);
             
-            const formatted = formatCurrency(asset.price, asset.currency);
-            setFormattedPrice(formatted);
+            setFormattedPrice(price);
+            setFormattedAbsoluteChange(absChange);
             
             setHistoricalData(history);
 
@@ -72,6 +78,11 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
             color: 'hsl(var(--primary))',
         },
     };
+
+    const isAgua = asset.id === 'agua';
+    const yAxisFormatter = isAgua ? (value: number) => value.toFixed(2) : (value: number) => formatCurrency(Number(value), asset.currency);
+    const tooltipFormatter = isAgua ? (value: any) => [value.toFixed(2), 'Valor'] : (value: any) => [formatCurrency(Number(value), asset.currency), 'Cotação'];
+
 
     const renderChart = () => (
         <div className="flex-1 h-full w-full"> 
@@ -108,15 +119,15 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                                 axisLine={false}
                                 tickMargin={8}
                                 fontSize={10}
-                                width={70}
+                                width={isAgua ? 60 : 70}
                                 tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                                tickFormatter={(value: number) => formatCurrency(Number(value), asset.currency)}
+                                tickFormatter={yAxisFormatter}
                             />
                             <Tooltip 
                                 cursor={{ stroke: 'hsl(var(--primary))', strokeWidth: 1, strokeDasharray: '3 3' }} 
                                 content={<ChartTooltipContent 
                                     indicator="dot" 
-                                    formatter={(value) => [formatCurrency(Number(value), asset.currency), 'Cotação']} 
+                                    formatter={tooltipFormatter} 
                                     labelFormatter={(label: string) => `Data: ${label}`}
                                 />} 
                             />
@@ -160,7 +171,9 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                             historicalData.map((dataPoint) => (
                                 <TableRow key={dataPoint.id}>
                                     <TableCell className="font-medium text-xs sm:text-sm w-[100px]">{dataPoint.data}</TableCell>
-                                    <TableCell className="text-right font-mono text-primary text-xs sm:text-sm">{formatCurrency(dataPoint.ultimo, asset.currency)}</TableCell>
+                                    <TableCell className="text-right font-mono text-primary text-xs sm:text-sm">
+                                        {isAgua ? dataPoint.ultimo.toFixed(2) : formatCurrency(dataPoint.ultimo, asset.currency)}
+                                    </TableCell>
                                 </TableRow>
                             ))
                         ) : (
@@ -195,7 +208,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
                         <span className="text-3xl sm:text-4xl font-bold text-primary">{formattedPrice}</span>
                         <div className={cn("flex items-baseline gap-2 text-base sm:text-lg font-semibold", asset.absoluteChange >= 0 ? "text-primary" : "text-destructive")}>
-                            <span>{asset.absoluteChange >= 0 ? '+' : ''}{formatCurrency(asset.absoluteChange, asset.currency)}</span>
+                            <span>{asset.absoluteChange >= 0 ? '+' : ''}{formattedAbsoluteChange}</span>
                             <span>({asset.change >= 0 ? '+' : ''}{asset.change.toFixed(2)}%)</span>
                         </div>
                         <span className="text-xs text-muted-foreground ml-auto">Última atualização: {asset.lastUpdated}</span>

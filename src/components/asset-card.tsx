@@ -45,7 +45,9 @@ export function AssetCard({ asset, loading, changeStatus }: AssetCardProps) {
 
   const Icon = getIconForCategory(asset);
   const changeColor = asset.change >= 0 ? 'text-primary' : 'text-destructive';
-  const priceFormatted = formatCurrency(asset.price, asset.currency);
+  const priceFormatted = asset.currency === 'BRL' && asset.id === 'agua' ? asset.price.toFixed(2) : formatCurrency(asset.price, asset.currency);
+  const absoluteChangeFormatted = asset.currency === 'BRL' && asset.id === 'agua' ? asset.absoluteChange.toFixed(2) : formatCurrency(asset.absoluteChange, asset.currency);
+
 
   const flashClass = changeStatus === 'up' 
     ? 'animate-flash-green' 
@@ -73,7 +75,7 @@ export function AssetCard({ asset, loading, changeStatus }: AssetCardProps) {
           <div className={cn("flex items-baseline gap-2 text-xs", changeColor)}>
             {asset.price > 0 && (
               <>
-                <span>{asset.absoluteChange >= 0 ? '+' : ''}{formatCurrency(asset.absoluteChange, asset.currency)}</span>
+                <span>{asset.absoluteChange >= 0 ? '+' : ''}{absoluteChangeFormatted}</span>
                 <span>({asset.change >= 0 ? '+' : ''}{asset.change.toFixed(2)}%)</span>
               </>
             )}

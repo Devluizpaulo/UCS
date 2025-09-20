@@ -29,6 +29,7 @@ export const getIconForCategory = (asset?: CommodityPriceData) => {
         case 'usd': return DollarSign;
         case 'madeira': return TreePine;
         case 'carbono': return Droplets;
+        case 'agua': return Droplets;
         default:
             switch (asset.category) {
                 case 'exchange': return DollarSign;
@@ -90,7 +91,7 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
     
     return data.map((asset) => {
         const Icon = getIconForCategory(asset);
-        const priceFormatted = formatCurrency(asset.price, asset.currency);
+        const priceFormatted = asset.currency === 'BRL' && asset.id === 'agua' ? asset.price.toFixed(2) : formatCurrency(asset.price, asset.currency);
         const changeColor = asset.change >= 0 ? 'text-primary' : 'text-destructive';
 
         return (

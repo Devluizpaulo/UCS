@@ -56,6 +56,14 @@ export const COMMODITIES_CONFIG: Record<string, Omit<CommodityConfig, 'id'>> = {
     category: 'vmad',
     description: 'Preço por metro cúbico de madeira serrada.',
     unit: 'USD por m³',
+  },
+  'agua': {
+    name: 'CH2OAgua',
+    currency: 'BRL',
+    category: 'crs',
+    description: 'Índice de Crédito de Água calculado.',
+    unit: 'Pontos',
+    isCalculated: true,
   }
 };
 
