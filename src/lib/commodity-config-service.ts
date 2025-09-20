@@ -9,6 +9,7 @@
 import { db } from './firebase-admin-config';
 import type { CommodityConfig, InitialCommodityConfig } from './types';
 import { COMMODITY_TICKER_MAP } from './marketdata-config';
+import { DocumentData } from 'firebase-admin/firestore';
 
 const COMMODITIES_COLLECTION = 'commodities';
 
@@ -66,23 +67,23 @@ export async function getCommodities(): Promise<CommodityConfig[]> {
                     id: id,
                     ...config,
                     source: config.source || 'n8n',
-                })).sort((a, b) => a.name.localeCompare(b.name));
+                })).sort((a: CommodityConfig, b: CommodityConfig) => a.name.localeCompare(b.name));
             }
-            const commodities = seededSnapshot.docs.map(doc => ({
+            const commodities = seededSnapshot.docs.map((doc: DocumentData) => ({
                 id: doc.id,
                 ...doc.data(),
             } as CommodityConfig));
             return commodities;
         }
 
-        const commodities = snapshot.docs.map(doc => {
+        const commodities = snapshot.docs.map((doc: DocumentData) => {
              const data = doc.data();
              const { ...commodityData } = data;
              return {
                  id: doc.id,
                  ...commodityData,
              } as CommodityConfig;
-         }).sort((a, b) => {
+         }).sort((a: CommodityConfig, b: CommodityConfig) => {
             if (a.category === 'exchange' && b.category !== 'exchange') return -1;
             if (a.category !== 'exchange' && b.category === 'exchange') return 1;
             return a.name.localeCompare(b.name);
@@ -96,7 +97,7 @@ export async function getCommodities(): Promise<CommodityConfig[]> {
             id: id,
             ...config,
             source: config.source || 'n8n',
-        })).sort((a, b) => {
+        })).sort((a: CommodityConfig, b: CommodityConfig) => {
             if (a.category === 'exchange' && b.category !== 'exchange') return -1;
             if (a.category !== 'exchange' && b.category === 'exchange') return 1;
             return a.name.localeCompare(b.name);

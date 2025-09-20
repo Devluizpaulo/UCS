@@ -1,0 +1,58 @@
+
+'use client';
+
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarHeader,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
+  SidebarProvider,
+} from '@/components/ui/sidebar';
+import { LayoutDashboard } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { LogoBVM } from '@/components/logo-bvm';
+
+export default function MainLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+
+  return (
+    <SidebarProvider>
+      <Sidebar>
+        <SidebarHeader>
+          <div className="flex h-10 items-center justify-center p-2 group-data-[collapsible=icon]:hidden">
+            <LogoBVM className="h-8 w-auto text-primary" />
+          </div>
+          <div className="hidden h-10 items-center justify-center p-2 group-data-[collapsible=icon]:flex">
+            <LogoBVM className="h-8 w-auto text-primary" isIcon />
+          </div>
+        </SidebarHeader>
+        <SidebarContent>
+          <SidebarMenu>
+            <SidebarMenuItem>
+                <Link href="/" passHref legacyBehavior>
+                    <SidebarMenuButton
+                        asChild
+                        isActive={pathname === '/'}
+                        tooltip={{ children: 'Painel de Cotações' }}
+                    >
+                        <a>
+                            <LayoutDashboard />
+                            <span>Painel de Cotações</span>
+                        </a>
+                    </SidebarMenuButton>
+                </Link>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarContent>
+      </Sidebar>
+      <SidebarInset>{children}</SidebarInset>
+    </SidebarProvider>
+  );
+}
+
+// Re-exporting MainLayout for use in page.tsx
+export { MainLayout };

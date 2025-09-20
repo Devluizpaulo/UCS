@@ -4,7 +4,7 @@
 import type { CommodityPriceData, FirestoreQuote } from './types';
 import { getCommodities } from './commodity-config-service';
 import { db } from './firebase-admin-config';
-import { Timestamp } from 'firebase-admin/firestore';
+import { Timestamp, DocumentData } from 'firebase-admin/firestore';
 import { getCache, setCache } from './cache-service';
 import { ASSET_COLLECTION_MAP } from './marketdata-config';
 
@@ -67,12 +67,12 @@ async function getAssetData(assetId: string, limit: number = 30): Promise<Firest
         const snapshot = await db.collection(collectionName).orderBy('timestamp', 'desc').limit(limit).get();
         if (snapshot.empty) return [];
 
-        const data = snapshot.docs.map(doc => ({
+        const data = snapshot.docs.map((doc: DocumentData) => ({
             id: doc.id,
             ...serializeFirestoreTimestamp(doc.data())
         } as FirestoreQuote));
         
-        data.sort((a, b) => parseDateString(b.data).getTime() - parseDateString(a.data).getTime());
+        data.sort((a: FirestoreQuote, b: FirestoreQuote) => parseDateString(b.data).getTime() - parseDateString(a.data).getTime());
         
         await setCache(cacheKey, data);
         return data;

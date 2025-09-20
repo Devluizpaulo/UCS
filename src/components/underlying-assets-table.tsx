@@ -115,7 +115,7 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
                       asset.change >= 0 ? "border-primary/50 text-primary" : "border-destructive/50 text-destructive"
                   )}>
                       {asset.change >= 0 ? <ArrowUp className="mr-1 h-3 w-3" /> : <ArrowDown className="mr-1 h-3 w-3" />}
-                      <AnimatedNumber value={asset.change} formatter={(v) => `${v.toFixed(2)}%`} />
+                      <AnimatedNumber value={asset.change} formatter={(v: number) => `${v.toFixed(2)}%`} />
                   </div>
               </TableCell>
             </TableRow>
