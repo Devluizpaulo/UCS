@@ -1,11 +1,10 @@
 
 
-
 'use server';
 
 import { db } from '@/lib/firebase-admin-config';
 import { getCommodityConfigs, COMMODITIES_CONFIG } from '@/lib/commodity-config-service';
-import type { CommodityPriceData, FirestoreQuote } from '@/lib/types';
+import type { CommodityPriceData, FirestoreQuote, CommodityConfig } from '@/lib/types';
 import { getCache, setCache } from '@/lib/cache-service';
 import { calculateCh2oAgua, calculateCustoAgua, calculatePdm, calculateUcs, calculateUcsAse } from './calculation-service';
 import { Timestamp } from 'firebase-admin/firestore';
@@ -54,38 +53,21 @@ export async function getLatestQuoteWithComponents(assetId: string): Promise<Fir
 }
 
 
-async function getAndProcessAsset(config: CommodityPriceData, calculatedPrice: number, today: string, components?: any) {
+async function getAndProcessAsset(
+    config: CommodityConfig, 
+    calculatedPrice: number, 
+    today: string, 
+    components?: any
+): Promise<CommodityPriceData> {
     const now = Timestamp.now();
-    const todayDocId = today.split('/').reverse().join('-'); // Format YYYY-MM-DD for document ID
+    const todayDocId = today.split('/').reverse().join('-'); 
 
     const docRef = db.collection(config.id).doc(todayDocId);
-    const docSnapshot = await docRef.get();
 
+    const twoDaysAgoSnapshot = await db.collection(config.id).orderBy('timestamp', 'desc').limit(1).get();
     let previousPrice = calculatedPrice;
-
-    if (docSnapshot.exists) {
-        // Se o documento de hoje já existe, não precisamos buscar o anterior, pois a variação já foi calculada ou não é necessária.
-        // A lógica de variação deve ser tratada no cliente ou em um job noturno para consistência.
-        // Para simplificar, vamos manter a lógica de busca do dia anterior.
-        const yesterday = new Date(now.toDate());
-        yesterday.setDate(yesterday.getDate() - 1);
-        const yesterdayDocId = yesterday.toISOString().split('T')[0];
-        
-        const yesterdaySnapshot = await db.collection(config.id).doc(yesterdayDocId).get();
-        if(yesterdaySnapshot.exists) {
-            previousPrice = (yesterdaySnapshot.data() as FirestoreQuote).ultimo;
-        } else {
-             const twoDaysAgoSnapshot = await db.collection(config.id).orderBy('timestamp', 'desc').limit(1).get();
-             if(!twoDaysAgoSnapshot.empty) {
-                previousPrice = (twoDaysAgoSnapshot.docs[0].data() as FirestoreQuote).ultimo;
-             }
-        }
-
-    } else {
-        const snapshot = await db.collection(config.id).orderBy('timestamp', 'desc').limit(1).get();
-        if (!snapshot.empty) {
-            previousPrice = snapshot.docs[0].data().ultimo;
-        }
+    if(!twoDaysAgoSnapshot.empty) {
+        previousPrice = (twoDaysAgoSnapshot.docs[0].data() as FirestoreQuote).ultimo;
     }
     
     const absoluteChange = calculatedPrice - previousPrice;
@@ -96,7 +78,12 @@ async function getAndProcessAsset(config: CommodityPriceData, calculatedPrice: n
         Object.assign(docData, components);
     }
     
-    await docRef.set(docData, { merge: true });
+    const docSnapshot = await docRef.get();
+    if (docSnapshot.exists) {
+        await docRef.update(docData);
+    } else {
+        await docRef.set(docData);
+    }
 
     return {
         ...config,
@@ -119,7 +106,7 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
         const assetDataMap = new Map<string, CommodityPriceData>();
 
         const now = new Date();
-        const today = now.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', year: 'numeric' });
+        const today = new Date(now.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' })).toLocaleDateString('pt-BR');
 
         const baseAssetPromises = configs
             .filter(config => !config.isCalculated)
@@ -164,7 +151,7 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
 
         const ch2oAguaValue = calculateCh2oAgua(rentMediaValues);
         const aguaConfig = configs.find(c => c.id === 'agua')!;
-        const aguaData = await getAndProcessAsset(aguaConfig as CommodityPriceData, ch2oAguaValue, today, { 
+        const aguaData = await getAndProcessAsset(aguaConfig, ch2oAguaValue, today, { 
             rent_media_components: rentMediaValues,
             missingComponents: missingRentMediaComponents,
             dependencies: rentMediaComponentIds
@@ -173,7 +160,7 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
 
         const custoAguaValue = calculateCustoAgua(ch2oAguaValue);
         const custoAguaConfig = configs.find(c => c.id === 'custo_agua')!;
-        const custoAguaData = await getAndProcessAsset(custoAguaConfig as CommodityPriceData, custoAguaValue, today, { 
+        const custoAguaData = await getAndProcessAsset(custoAguaConfig, custoAguaValue, today, { 
             base_ch2o_agua: ch2oAguaValue,
             missingComponents: aguaData.missingComponents,
             dependencies: ['agua']
@@ -182,7 +169,7 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
 
         const pdmValue = calculatePdm(ch2oAguaValue, custoAguaValue);
         const pdmConfig = configs.find(c => c.id === 'pdm')!;
-        const pdmData = await getAndProcessAsset(pdmConfig as CommodityPriceData, pdmValue, today, { 
+        const pdmData = await getAndProcessAsset(pdmConfig, pdmValue, today, { 
             base_ch2o_agua: ch2oAguaValue, 
             base_custo_agua: custoAguaValue,
             missingComponents: aguaData.missingComponents,
@@ -192,7 +179,7 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
         
         const ucsValue = calculateUcs(pdmValue);
         const ucsConfig = configs.find(c => c.id === 'ucs')!;
-        const ucsData = await getAndProcessAsset(ucsConfig as CommodityPriceData, ucsValue, today, { 
+        const ucsData = await getAndProcessAsset(ucsConfig, ucsValue, today, { 
             base_pdm: pdmValue,
             missingComponents: pdmData.missingComponents,
             dependencies: ['pdm']
@@ -201,7 +188,7 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
 
         const ucsAseValue = calculateUcsAse(ucsValue);
         const ucsAseConfig = configs.find(c => c.id === 'ucs_ase')!;
-        const ucsAseData = await getAndProcessAsset(ucsAseConfig as CommodityPriceData, ucsAseValue, today, { 
+        const ucsAseData = await getAndProcessAsset(ucsAseConfig, ucsAseValue, today, { 
             base_ucs: ucsValue,
             base_pdm: pdmValue,
             base_ch2o_agua: ch2oAguaValue,
