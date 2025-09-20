@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -56,7 +57,7 @@ export function DashboardPage({ initialData }: DashboardPageProps) {
   const mainIndex = data.find(asset => asset.id === 'ucs_ase');
   const secondaryIndex = data.find(asset => asset.id === 'ucs');
   const pdmIndex = data.find(asset => asset.id === 'pdm');
-  const otherAssets = data.filter(asset => asset.id !== 'ucs_ase' && asset.id !== 'ucs' && asset.id !== 'pdm');
+  const otherAssets = data.filter(asset => !asset.isCalculated && asset.id !== 'usd' && asset.id !== 'eur');
   
   const usdRate = data.find(asset => asset.id === 'usd')?.price;
   const eurRate = data.find(asset => asset.id === 'eur')?.price;
@@ -73,6 +74,7 @@ export function DashboardPage({ initialData }: DashboardPageProps) {
               <AssetCard
                 key={mainIndex.id}
                 asset={mainIndex}
+                allAssets={data}
                 changeStatus={changedAssets[mainIndex.id]}
                 usdRate={usdRate}
                 eurRate={eurRate}
@@ -92,6 +94,7 @@ export function DashboardPage({ initialData }: DashboardPageProps) {
                  <AssetCard 
                   key={secondaryIndex.id} 
                   asset={secondaryIndex}
+                  allAssets={data}
                   changeStatus={changedAssets[secondaryIndex.id]}
                 />
               )}
@@ -99,6 +102,7 @@ export function DashboardPage({ initialData }: DashboardPageProps) {
                  <AssetCard 
                   key={pdmIndex.id} 
                   asset={pdmIndex}
+                  allAssets={data}
                   changeStatus={changedAssets[pdmIndex.id]}
                 />
               )}

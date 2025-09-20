@@ -1,16 +1,17 @@
 
 
+
 'use server';
 
 import { db } from '@/lib/firebase-admin-config';
-import { getCommodityConfigs } from '@/lib/commodity-config-service';
+import { getCommodityConfigs, COMMODITIES_CONFIG } from '@/lib/commodity-config-service';
 import type { CommodityPriceData, FirestoreQuote } from '@/lib/types';
 import { getCache, setCache } from '@/lib/cache-service';
 import { calculateCh2oAgua, calculateCustoAgua, calculatePdm, calculateUcs, calculateUcsAse } from './calculation-service';
 import { Timestamp } from 'firebase-admin/firestore';
 
 const CACHE_KEY_PRICES = 'commodity_prices';
-const CACHE_TTL_SECONDS = 21600; // 6 horas
+const CACHE_TTL_SECONDS = 3600; // 1 hora
 
 function serializeFirestoreTimestamp(data: any): any {
     if (data === null || typeof data !== 'object') {
@@ -55,21 +56,35 @@ export async function getLatestQuoteWithComponents(assetId: string): Promise<Fir
 
 async function getAndProcessAsset(config: CommodityPriceData, calculatedPrice: number, today: string, components?: any) {
     const now = Timestamp.now();
+    const todayDocId = today.split('/').reverse().join('-'); // Format YYYY-MM-DD for document ID
 
-    const snapshot = await db.collection(config.id)
-        .orderBy('timestamp', 'desc')
-        .limit(2)
-        .get();
-    
+    const docRef = db.collection(config.id).doc(todayDocId);
+    const docSnapshot = await docRef.get();
+
     let previousPrice = calculatedPrice;
-    if (snapshot.docs.length > 0) {
-        // Se o registro mais recente for de um dia anterior, use-o como 'previous'
-        const latestData = snapshot.docs[0].data() as FirestoreQuote;
-        if (latestData.data !== today && snapshot.docs.length > 0) {
-            previousPrice = latestData.ultimo;
-        } else if (snapshot.docs.length > 1) {
-            // Se o mais recente for de hoje, o anterior é o segundo na lista
-            previousPrice = (snapshot.docs[1].data() as FirestoreQuote).ultimo;
+
+    if (docSnapshot.exists) {
+        // Se o documento de hoje já existe, não precisamos buscar o anterior, pois a variação já foi calculada ou não é necessária.
+        // A lógica de variação deve ser tratada no cliente ou em um job noturno para consistência.
+        // Para simplificar, vamos manter a lógica de busca do dia anterior.
+        const yesterday = new Date(now.toDate());
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayDocId = yesterday.toISOString().split('T')[0];
+        
+        const yesterdaySnapshot = await db.collection(config.id).doc(yesterdayDocId).get();
+        if(yesterdaySnapshot.exists) {
+            previousPrice = (yesterdaySnapshot.data() as FirestoreQuote).ultimo;
+        } else {
+             const twoDaysAgoSnapshot = await db.collection(config.id).orderBy('timestamp', 'desc').limit(1).get();
+             if(!twoDaysAgoSnapshot.empty) {
+                previousPrice = (twoDaysAgoSnapshot.docs[0].data() as FirestoreQuote).ultimo;
+             }
+        }
+
+    } else {
+        const snapshot = await db.collection(config.id).orderBy('timestamp', 'desc').limit(1).get();
+        if (!snapshot.empty) {
+            previousPrice = snapshot.docs[0].data().ultimo;
         }
     }
     
@@ -81,19 +96,7 @@ async function getAndProcessAsset(config: CommodityPriceData, calculatedPrice: n
         Object.assign(docData, components);
     }
     
-    // Procura por um documento com a data de hoje para evitar duplicatas
-    const todaySnapshot = await db.collection(config.id)
-        .where('data', '==', today)
-        .limit(1)
-        .get();
-
-    if (todaySnapshot.empty) {
-        // Se não houver registro para hoje, cria um novo
-        await db.collection(config.id).add(docData);
-    } else {
-        // Se já existir, atualiza o registro do dia
-        await todaySnapshot.docs[0].ref.update(docData);
-    }
+    await docRef.set(docData, { merge: true });
 
     return {
         ...config,
@@ -116,25 +119,20 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
         const assetDataMap = new Map<string, CommodityPriceData>();
 
         const now = new Date();
-        const today = now.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-
+        const today = now.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', year: 'numeric' });
 
         const baseAssetPromises = configs
             .filter(config => !config.isCalculated)
             .map(async (config) => {
                 const snapshot = await db.collection(config.id).orderBy('timestamp', 'desc').limit(2).get();
-
                 if (snapshot.empty) {
-                    // Retorna um valor padrão com preço 0 se não houver dados
                     return { id: config.id, price: 0, change: 0, absoluteChange: 0, lastUpdated: 'N/A', ...config };
                 }
 
                 const latestDoc = snapshot.docs[0].data() as FirestoreQuote;
                 const previousDoc = snapshot.docs.length > 1 ? snapshot.docs[1].data() as FirestoreQuote : null;
-                
                 const latestPrice = latestDoc.ultimo || 0;
                 const previousPrice = previousDoc ? (previousDoc.ultimo || 0) : latestPrice;
-
                 const absoluteChange = latestPrice - previousPrice;
                 const change = (previousPrice !== 0) ? (absoluteChange / previousPrice) * 100 : 0;
                 
@@ -145,17 +143,16 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
 
         await Promise.all(baseAssetPromises);
         
-        const usdRate = assetDataMap.get('usd')?.price || 1;
-        const eurRate = assetDataMap.get('eur')?.price || 1;
-
+        const getPrice = (id: string) => assetDataMap.get(id)?.price || 0;
         const getPriceInBRL = (assetId: string) => {
             const asset = assetDataMap.get(assetId);
-            if (!asset || typeof asset.price !== 'number') return 0;
-            if (asset.currency === 'USD') return asset.price * usdRate;
-            if (asset.currency === 'EUR') return asset.price * eurRate;
+            if (!asset) return 0;
+            if (asset.currency === 'USD') return asset.price * getPrice('usd');
+            if (asset.currency === 'EUR') return asset.price * getPrice('eur');
             return asset.price;
         }
 
+        const rentMediaComponentIds = ['boi_gordo', 'milho', 'soja', 'madeira', 'carbono'];
         const rentMediaValues = {
             boi_gordo: (getPriceInBRL('boi_gordo') / 15) * 0.25 * 0.35, 
             milho: (getPriceInBRL('milho') / 60) * 1.5 * 0.30,
@@ -163,15 +160,24 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
             madeira: getPriceInBRL('madeira') * 0.05,
             carbono: getPriceInBRL('carbono') * 0.15,
         };
+        const missingRentMediaComponents = rentMediaComponentIds.filter(id => getPrice(id) === 0);
 
         const ch2oAguaValue = calculateCh2oAgua(rentMediaValues);
         const aguaConfig = configs.find(c => c.id === 'agua')!;
-        const aguaData = await getAndProcessAsset(aguaConfig as CommodityPriceData, ch2oAguaValue, today, { rent_media_components: rentMediaValues });
+        const aguaData = await getAndProcessAsset(aguaConfig as CommodityPriceData, ch2oAguaValue, today, { 
+            rent_media_components: rentMediaValues,
+            missingComponents: missingRentMediaComponents,
+            dependencies: rentMediaComponentIds
+        });
         assetDataMap.set('agua', aguaData);
 
         const custoAguaValue = calculateCustoAgua(ch2oAguaValue);
         const custoAguaConfig = configs.find(c => c.id === 'custo_agua')!;
-        const custoAguaData = await getAndProcessAsset(custoAguaConfig as CommodityPriceData, custoAguaValue, today, { base_ch2o_agua: ch2oAguaValue });
+        const custoAguaData = await getAndProcessAsset(custoAguaConfig as CommodityPriceData, custoAguaValue, today, { 
+            base_ch2o_agua: ch2oAguaValue,
+            missingComponents: aguaData.missingComponents,
+            dependencies: ['agua']
+        });
         assetDataMap.set('custo_agua', custoAguaData);
 
         const pdmValue = calculatePdm(ch2oAguaValue, custoAguaValue);
@@ -179,13 +185,17 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
         const pdmData = await getAndProcessAsset(pdmConfig as CommodityPriceData, pdmValue, today, { 
             base_ch2o_agua: ch2oAguaValue, 
             base_custo_agua: custoAguaValue,
+            missingComponents: aguaData.missingComponents,
+            dependencies: ['agua', 'custo_agua']
         });
         assetDataMap.set('pdm', pdmData);
         
         const ucsValue = calculateUcs(pdmValue);
         const ucsConfig = configs.find(c => c.id === 'ucs')!;
         const ucsData = await getAndProcessAsset(ucsConfig as CommodityPriceData, ucsValue, today, { 
-            base_pdm: pdmValue
+            base_pdm: pdmValue,
+            missingComponents: pdmData.missingComponents,
+            dependencies: ['pdm']
         });
         assetDataMap.set('ucs', ucsData);
 
@@ -196,7 +206,9 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
             base_pdm: pdmValue,
             base_ch2o_agua: ch2oAguaValue,
             base_custo_agua: custoAguaValue,
-            rent_media_components: rentMediaValues
+            rent_media_components: rentMediaValues,
+            missingComponents: ucsData.missingComponents,
+            dependencies: ['ucs']
         });
         assetDataMap.set('ucs_ase', ucsAseData);
 
@@ -207,7 +219,15 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
 
     } catch (error) {
         console.error("Error fetching commodity prices:", error);
-        return [];
+        // Return a default empty state for all configs to avoid crashing the UI
+        const configs = await getCommodityConfigs();
+        return configs.map(config => ({
+             ...config,
+             price: 0,
+             change: 0,
+             absoluteChange: 0,
+             lastUpdated: 'Erro ao carregar',
+        }));
     }
 }
 

@@ -10,9 +10,11 @@ import { AssetDetailModal } from './asset-detail-modal';
 import { getIconForCategory } from '@/lib/icons';
 import { DollarSign, Euro } from 'lucide-react';
 import { Separator } from './ui/separator';
+import { DataStatusIndicator } from './data-status-indicator';
 
 interface AssetCardProps {
   asset?: CommodityPriceData;
+  allAssets?: CommodityPriceData[];
   loading?: boolean;
   changeStatus?: 'up' | 'down';
   className?: string;
@@ -20,7 +22,7 @@ interface AssetCardProps {
   eurRate?: number;
 }
 
-export function AssetCard({ asset, loading, changeStatus, className, usdRate, eurRate }: AssetCardProps) {
+export function AssetCard({ asset, allAssets = [], loading, changeStatus, className, usdRate, eurRate }: AssetCardProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleCardClick = () => {
@@ -63,6 +65,8 @@ export function AssetCard({ asset, loading, changeStatus, className, usdRate, eu
   const priceInUsd = (usdRate && asset.price > 0) ? asset.price / usdRate : 0;
   const priceInEur = (eurRate && asset.price > 0) ? asset.price / eurRate : 0;
 
+  const hasMissingComponents = asset.isCalculated && asset.missingComponents && asset.missingComponents.length > 0;
+
   return (
     <>
       <Card
@@ -74,7 +78,10 @@ export function AssetCard({ asset, loading, changeStatus, className, usdRate, eu
         )}
       >
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">{asset.name}</CardTitle>
+          <CardTitle className="text-sm font-medium flex items-center gap-2">
+            {asset.name}
+            {hasMissingComponents && <DataStatusIndicator asset={asset} allAssets={allAssets} />}
+          </CardTitle>
           <Icon className="h-5 w-5 text-muted-foreground" />
         </CardHeader>
         <CardContent>
