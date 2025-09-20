@@ -5,8 +5,6 @@ import type { ChartData, CommodityPriceData, HistoryInterval, UcsData, Firestore
 import { getCommodities } from './commodity-config-service';
 import { db } from './firebase-admin-config';
 import { Timestamp } from 'firebase-admin/firestore';
-import { getFormulaParameters } from './formula-service';
-import { calculateIndex } from './calculation-service';
 import { getCache, setCache } from './cache-service';
 import { ASSET_COLLECTION_MAP } from './marketdata-config';
 
@@ -90,7 +88,7 @@ async function getAssetData(assetId: string, limit: number = 30): Promise<Firest
 
 
 export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
-    const cacheKey = 'commodityPrices_v5_all'; 
+    const cacheKey = 'commodityPrices_v6_all'; 
     const cachedData = await getCache<CommodityPriceData[]>(cacheKey, 60000); // 1 minute cache
     if (cachedData) return cachedData;
 
