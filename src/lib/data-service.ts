@@ -7,7 +7,7 @@ import type { CommodityPriceData, FirestoreQuote } from '@/lib/types';
 import { getCache, setCache } from '@/lib/cache-service';
 
 const CACHE_KEY_PRICES = 'commodity_prices';
-const CACHE_TTL_SECONDS = 60 * 5; // 5 minutos
+const CACHE_TTL_SECONDS = 6 * 60 * 60; // 6 horas
 
 function serializeFirestoreTimestamp(data: any): any {
     if (data === null || typeof data !== 'object') {
