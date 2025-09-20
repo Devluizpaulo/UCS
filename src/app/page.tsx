@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { getCommodityPrices } from "@/lib/data-service";
 import type { CommodityPriceData } from "@/lib/types";
 import { formatCurrency } from "@/lib/formatters";
-import { ArrowRight, Briefcase, CheckCircle, Globe, HandCoins, Landmark, Repeat, Scale, ShieldCheck, TrendingUp, User } from "lucide-react";
+import { ArrowRight, Briefcase, CheckCircle, Globe, HandCoins, Landmark, Repeat, Scale, ShieldCheck, TrendingUp, User, Euro } from "lucide-react";
 import Image from 'next/image';
 import Link from 'next/link';
 import { LogoBVM } from "@/components/logo-bvm";

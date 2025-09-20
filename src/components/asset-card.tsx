@@ -79,8 +79,13 @@ export function AssetCard({ asset, loading, changeStatus, className, usdRate, eu
           <Icon className="h-5 w-5 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className={cn("font-bold", isUcsAse ? "text-3xl" : "text-2xl")}>
-            {asset.price > 0 ? priceFormatted : <span className="text-muted-foreground">-</span>}
+          <div className={cn("font-bold flex items-center gap-2", isUcsAse ? "text-3xl" : "text-2xl")}>
+            {asset.price > 0 ? (
+                <>
+                  {asset.currency === 'EUR' && <Euro className="h-6 w-6" />}
+                  {priceFormatted}
+                </>
+            ) : <span className="text-muted-foreground">-</span>}
           </div>
           <div className={cn("flex items-baseline gap-2 text-xs", changeColor)}>
             {asset.price > 0 && (

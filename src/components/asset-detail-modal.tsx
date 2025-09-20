@@ -9,7 +9,7 @@ import {
     DialogTitle,
     DialogDescription,
 } from '@/components/ui/dialog';
-import { AreaChart as AreaChartIcon, PieChart as PieChartIcon, Table as TableIcon, Loader2, List } from 'lucide-react';
+import { AreaChart as AreaChartIcon, PieChart as PieChartIcon, Table as TableIcon, Loader2, List, Euro } from 'lucide-react';
 import { Area, AreaChart, Brush, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import type { CommodityPriceData, ChartData, FirestoreQuote } from '@/lib/types';
@@ -311,7 +311,8 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                             historicalData.map((dataPoint) => (
                                 <TableRow key={dataPoint.id}>
                                     <TableCell className="font-medium text-xs sm:text-sm w-[100px]">{dataPoint.data}</TableCell>
-                                    <TableCell className="text-right font-mono text-primary text-xs sm:text-sm">
+                                    <TableCell className="text-right font-mono text-primary text-xs sm:text-sm flex items-center justify-end gap-1">
+                                        {asset.currency === 'EUR' && <Euro className="h-4 w-4" />}
                                         {formatCurrency(dataPoint.ultimo, asset.currency, asset.id)}
                                     </TableCell>
                                 </TableRow>
@@ -348,7 +349,10 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                 
                 <div className="px-6 py-4 border-b flex-shrink-0">
                      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-                        <span className="text-3xl sm:text-4xl font-bold text-primary">{formattedPrice}</span>
+                        <span className="text-3xl sm:text-4xl font-bold text-primary flex items-center gap-2">
+                             {asset.currency === 'EUR' && <Euro className="h-7 w-7" />}
+                            {formattedPrice}
+                        </span>
                         <div className={cn("flex items-baseline gap-2 text-base sm:text-lg font-semibold", asset.absoluteChange >= 0 ? "text-primary" : "text-destructive")}>
                             <span>{asset.absoluteChange >= 0 ? '+' : ''}{formattedAbsoluteChange}</span>
                             <span>({asset.change >= 0 ? '+' : ''}{asset.change.toFixed(2)}%)</span>
