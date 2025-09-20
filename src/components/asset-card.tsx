@@ -45,13 +45,13 @@ export function AssetCard({ asset, loading, changeStatus }: AssetCardProps) {
 
   const Icon = getIconForCategory(asset);
   const changeColor = asset.change >= 0 ? 'text-primary' : 'text-destructive';
-  const isCalculatedCrs = asset.category === 'crs';
+  const isSpecialNumberFormat = asset.id === 'agua' || asset.id === 'custo_agua';
   
-  const priceFormatted = isCalculatedCrs 
+  const priceFormatted = isSpecialNumberFormat
     ? asset.price.toFixed(2) 
     : formatCurrency(asset.price, asset.currency);
   
-  const absoluteChangeFormatted = isCalculatedCrs 
+  const absoluteChangeFormatted = isSpecialNumberFormat
     ? asset.absoluteChange.toFixed(2) 
     : formatCurrency(Math.abs(asset.absoluteChange), asset.currency);
 
