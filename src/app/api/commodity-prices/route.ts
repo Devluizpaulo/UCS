@@ -1,5 +1,8 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import { getCommodityPrices } from '@/lib/data-service';
+
+export const revalidate = 0; // Disable caching for this route
 
 export async function GET(request: NextRequest) {
   try {

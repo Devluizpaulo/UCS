@@ -9,6 +9,7 @@ import { getFormulaParameters } from './formula-service';
 import { calculateIndex } from './calculation-service';
 import { getCache, setCache } from './cache-service';
 import { ASSET_COLLECTION_MAP } from './marketdata-config';
+import { getExchangeRates } from './currency-service';
 
 const serializeFirestoreTimestamp = (data: any): any => {
     if (data && typeof data === 'object') {
@@ -27,11 +28,6 @@ const serializeFirestoreTimestamp = (data: any): any => {
     return data;
 };
 
-/**
- * Maps the asset document ID from 'commodities' collection to the correct price history collection name.
- * @param assetId The document ID from the 'commodities' collection (e.g., 'boi_gordo_futuros').
- * @returns The name of the collection holding price data (e.g., 'boi_gordo').
- */
 function getCollectionNameFromAssetId(assetId: string): string | null {
     return ASSET_COLLECTION_MAP[assetId] || null;
 }
@@ -39,131 +35,121 @@ function getCollectionNameFromAssetId(assetId: string): string | null {
 // Helper to parse DD/MM/YYYY or DD/MM/YY string to Date object
 const parseDateString = (dateStr: string): Date => {
     if (typeof dateStr !== 'string') return new Date(1970, 0, 1);
-
-    // Matches DD/MM/YYYY
-    const matchFull = dateStr.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-    if (matchFull) {
-        const [, day, month, year] = matchFull;
-        // Month is 0-indexed in JS
-        return new Date(Number(year), Number(month) - 1, Number(day));
+    const parts = dateStr.split('/');
+    if (parts.length === 3) {
+        const [day, month, year] = parts.map(Number);
+        const fullYear = year < 100 ? year + 2000 : year;
+        return new Date(fullYear, month - 1, day);
     }
-    
-    // Matches DD/MM/YY
-    const matchShort = dateStr.match(/^(\d{2})\/(\d{2})\/(\d{2})$/);
-    if (matchShort) {
-        let [, day, month, year] = matchShort;
-        let fullYear = Number(year) + (Number(year) > 50 ? 1900 : 2000);
-        return new Date(fullYear, Number(month) - 1, Number(day));
-    }
-    
     const parsedDate = new Date(dateStr);
     return isNaN(parsedDate.getTime()) ? new Date(1970, 0, 1) : parsedDate;
 };
 
 
-async function getAssetData(assetId: string, limit: number = 1): Promise<FirestoreQuote[]> {
-    const cacheKey = `assetData_${assetId}_${limit}`;
-    const cachedData = await getCache<FirestoreQuote[]>(cacheKey, 60000); // Cache for 1 minute
+/**
+ * Fetches and caches historical data for a single asset.
+ * This is the new centralized function for data retrieval.
+ * @param assetId - The ID of the asset configuration.
+ * @param limit - The number of recent documents to retrieve.
+ * @returns A promise that resolves to an array of Firestore quotes, sorted newest to oldest.
+ */
+async function fetchAndCacheAssetData(assetId: string, limit: number = 30): Promise<FirestoreQuote[]> {
+    const cacheKey = `assetData_v2_${assetId}_${limit}`;
+    const cachedData = await getCache<FirestoreQuote[]>(cacheKey, 60000); // 1 minute cache
     if (cachedData) return cachedData;
-    
-    if (!assetId) return [];
     
     const collectionName = getCollectionNameFromAssetId(assetId);
     if (!collectionName) {
-        console.warn(`[DataService] No collection mapping found for asset ID: ${assetId}`);
+        console.warn(`[DataService] No collection mapping for asset ID: ${assetId}`);
         return [];
     }
     
     try {
-        const queryLimit = Math.max(limit, 100); 
-        const query = db.collection(collectionName).limit(queryLimit);
-        const snapshot = await query.get();
-        
+        const snapshot = await db.collection(collectionName).orderBy('timestamp', 'desc').limit(limit).get();
         if (snapshot.empty) return [];
 
-        const allDocs = snapshot.docs.map(doc => ({
+        const data = snapshot.docs.map(doc => ({
             id: doc.id,
             ...serializeFirestoreTimestamp(doc.data())
         } as FirestoreQuote));
         
-        // Sort documents by 'data' field, from newest to oldest
-        const sortedDocs = allDocs.sort((a, b) => {
-            const dateA = a.data ? parseDateString(a.data).getTime() : 0;
-            const dateB = b.data ? parseDateString(b.data).getTime() : 0;
-            return dateB - dateA; // Sort descending (most recent first)
-        });
-
-        const result = sortedDocs.slice(0, limit);
-        await setCache(cacheKey, result);
-        return result;
+        await setCache(cacheKey, data);
+        return data;
 
     } catch (error) {
-        console.error(`Error fetching data for asset ID ${assetId} (collection: ${collectionName}):`, error);
+        console.error(`Error fetching data for asset ${assetId} from collection ${collectionName}:`, error);
         return [];
     }
 }
 
+
 export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
-    const cacheKey = 'commodityPrices';
-    const cachedData = await getCache<CommodityPriceData[]>(cacheKey, 60000); // Cache for 1 minute
+    const cacheKey = 'commodityPrices_v2';
+    const cachedData = await getCache<CommodityPriceData[]>(cacheKey, 60000); // 1 minute cache
     if (cachedData) return cachedData;
 
     try {
-        const commodities = await getCommodities();
+        const [commodities, exchangeRates] = await Promise.all([
+            getCommodities(),
+            getExchangeRates()
+        ]);
+        
         if (!commodities || commodities.length === 0) return [];
         
-        const allAssetPromises = commodities.map(c => getAssetData(c.id, 2));
-        const allAssetHistories = await Promise.all(allAssetPromises);
+        const usdRate = exchangeRates.find(r => r.from === 'USD' && r.to === 'BRL')?.rate || 0;
+        const eurRate = exchangeRates.find(r => r.from === 'EUR' && r.to === 'BRL')?.rate || 0;
 
-        const priceDataMap = new Map<string, CommodityPriceData>();
+        const allHistoriesPromises = commodities.map(c => fetchAndCacheAssetData(c.id, 2));
+        const allHistories = await Promise.all(allHistoriesPromises);
 
-        commodities.forEach((commodity, index) => {
-            const assetHistory = allAssetHistories[index];
+        const priceData = commodities.map((commodity, index) => {
+            const history = allHistories[index];
             let currentPrice = 0, change = 0, absoluteChange = 0, lastUpdated = 'N/A';
+            let convertedPriceBRL: number | undefined = undefined;
 
-            if (assetHistory.length > 0) {
-                const latest = assetHistory[0];
-                currentPrice = latest.ultimo || 0; // Use 'ultimo' as the main price
-                lastUpdated = latest.data ? latest.data : (latest.created_at ? new Date(latest.created_at).toLocaleString('pt-BR') : 'N/A');
+            if (history.length > 0) {
+                const latest = history[0];
+                currentPrice = latest.ultimo || 0;
+                lastUpdated = latest.data || new Date(latest.created_at).toLocaleString('pt-BR');
                 
-                if (assetHistory.length > 1) {
-                    const previous = assetHistory[1];
-                    const previousPrice = previous.ultimo || 0; // Use 'ultimo' for previous day as well
+                if (history.length > 1) {
+                    const previousPrice = history[1].ultimo || 0;
                     if (previousPrice !== 0) {
                         absoluteChange = currentPrice - previousPrice;
                         change = (absoluteChange / previousPrice) * 100;
                     }
                 }
             }
-             priceDataMap.set(commodity.id, { ...commodity, price: currentPrice, change, absoluteChange, lastUpdated });
+            
+            if (commodity.currency === 'BRL') {
+                convertedPriceBRL = currentPrice;
+            } else if (commodity.currency === 'USD' && usdRate > 0) {
+                convertedPriceBRL = currentPrice * usdRate;
+            } else if (commodity.currency === 'EUR' && eurRate > 0) {
+                convertedPriceBRL = currentPrice * eurRate;
+            }
+
+            return { 
+                ...commodity, 
+                price: currentPrice, 
+                change, 
+                absoluteChange, 
+                lastUpdated,
+                convertedPriceBRL
+            };
         });
         
-        const usdRate = priceDataMap.get('usd_brl___dolar_americano_real_brasileiro')?.price || 0;
-        const eurRate = priceDataMap.get('eur_brl___euro_real_brasileiro')?.price || 0;
-        
-        const finalPrices: CommodityPriceData[] = [];
-        for (const commodity of commodities) {
-            const data = priceDataMap.get(commodity.id);
-            if (data) {
-                if (data.currency === 'USD' && usdRate > 0) {
-                    data.convertedPriceBRL = data.price * usdRate;
-                } else if (data.currency === 'EUR' && eurRate > 0) {
-                    data.convertedPriceBRL = data.price * eurRate;
-                }
-                finalPrices.push(data);
-            }
-        }
-        
-        await setCache(cacheKey, finalPrices);
-        return finalPrices;
+        await setCache(cacheKey, priceData);
+        return priceData;
     } catch (error) {
         console.error(`Failed to get commodity prices: ${error}`);
         return [];
     }
 }
 
+
 export async function getCotacoesHistorico(assetId: string, limit: number = 30): Promise<FirestoreQuote[]> {
-     return getAssetData(assetId, limit);
+     return fetchAndCacheAssetData(assetId, limit);
 }
 
 
@@ -197,7 +183,7 @@ export async function getUcsIndexValue(): Promise<UcsData> {
 }
 
 export async function getUcsIndexHistory(interval: HistoryInterval = '1d'): Promise<ChartData[]> {
-    const cacheKey = `ucsIndexHistory_${interval}`;
+    const cacheKey = `ucsIndexHistory_v2_${interval}`;
     const cachedData = await getCache<ChartData[]>(cacheKey);
     if (cachedData) return cachedData;
 

@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState } from 'react';
@@ -99,15 +98,15 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
               <TableCell className="text-right font-mono">
                  {asset.price > 0 ? (
                     <div>
-                      <AnimatedNumber value={asset.price} currency={asset.currency} />
-                      {asset.convertedPriceBRL && (
+                      {formatCurrency(asset.price, asset.currency)}
+                      {asset.convertedPriceBRL && asset.currency !== 'BRL' && (
                         <div className="text-xs text-muted-foreground">
                             {formatCurrency(asset.convertedPriceBRL, 'BRL')}
                         </div>
                       )}
                     </div>
                  ) : (
-                    <span className="text-muted-foreground">R$ 0,00</span>
+                    <span className="text-muted-foreground">-</span>
                  )}
               </TableCell>
               <TableCell className="text-right">
