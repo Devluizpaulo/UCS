@@ -8,7 +8,7 @@ import {
     DialogTitle,
     DialogDescription,
 } from '@/components/ui/dialog';
-import { AreaChart as AreaChartIcon, Table, Loader2 } from 'lucide-react';
+import { AreaChart as AreaChartIcon, Table as TableIcon, Loader2 } from 'lucide-react';
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import type { CommodityPriceData, ChartData, FirestoreQuote } from '@/lib/types';
@@ -75,10 +75,115 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
         },
     };
 
+    const renderChart = () => (
+        <div className="h-full w-full">
+            {loading ? (
+                <div className="h-full w-full flex items-center justify-center">
+                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+            ) : chartData.length === 0 ? (
+                <div className="h-full w-full flex items-center justify-center text-muted-foreground text-sm">
+                    Sem dados para exibir o gráfico.
+                </div>
+            ) : (
+                <ChartContainer config={chartConfig} className="w-full h-full">
+                    <ResponsiveContainer>
+                        <AreaChart data={chartData} margin={{ left: 5, right: 20, top: 10, bottom: 10 }}>
+                            <defs>
+                                <linearGradient id="colorValueDesktop" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.4}/>
+                                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.05}/>
+                                </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted-foreground))" strokeOpacity={0.2} vertical={false} />
+                             <XAxis 
+                                dataKey="time" 
+                                tickLine={false} 
+                                axisLine={false} 
+                                tickMargin={8} 
+                                fontSize={10}
+                                tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                            />
+                            <YAxis
+                                domain={['dataMin - (dataMin * 0.02)', 'dataMax + (dataMax * 0.02)']}
+                                tickLine={false}
+                                axisLine={false}
+                                tickMargin={8}
+                                fontSize={10}
+                                width={70}
+                                tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                                tickFormatter={(value: number) => formatCurrency(Number(value), asset.currency)}
+                            />
+                            <Tooltip 
+                                cursor={{ stroke: 'hsl(var(--primary))', strokeWidth: 1, strokeDasharray: '3 3' }} 
+                                content={<ChartTooltipContent 
+                                    indicator="dot" 
+                                    formatter={(value) => [formatCurrency(Number(value), asset.currency), 'Cotação']} 
+                                    labelFormatter={(label: string) => `Data: ${label}`}
+                                />} 
+                            />
+                            <Area 
+                                dataKey="value" 
+                                type="monotone" 
+                                fill="url(#colorValueDesktop)" 
+                                stroke="hsl(var(--primary))" 
+                                strokeWidth={2}
+                                dot={false}
+                                activeDot={{ r: 4, stroke: 'hsl(var(--primary))', strokeWidth: 2, fill: 'hsl(var(--background))' }}
+                            />
+                        </AreaChart>
+                    </ResponsiveContainer>
+                </ChartContainer>
+            )}
+        </div>
+    );
+    
+    const renderHistoryTable = () => (
+         <ScrollArea className="h-full w-full">
+            <UiTable>
+                <TableHeader className="sticky top-0 bg-background/80 backdrop-blur-sm z-10">
+                    <TableRow>
+                        <TableHead className="w-[100px]">Data</TableHead>
+                        <TableHead className="text-right">Fechamento</TableHead>
+                        <TableHead className="text-right hidden sm:table-cell">Máxima</TableHead>
+                        <TableHead className="text-right hidden sm:table-cell">Mínima</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {loading ? (
+                        Array.from({ length: 10 }).map((_, i) => (
+                            <TableRow key={i}>
+                                <TableCell><Skeleton className="h-4 w-20"/></TableCell>
+                                <TableCell><Skeleton className="h-4 w-24 ml-auto"/></TableCell>
+                                <TableCell className="hidden sm:table-cell"><Skeleton className="h-4 w-24 ml-auto"/></TableCell>
+                                <TableCell className="hidden sm:table-cell"><Skeleton className="h-4 w-24 ml-auto"/></TableCell>
+                            </TableRow>
+                        ))
+                    ) : historicalData.length > 0 ? (
+                        historicalData.map((dataPoint) => (
+                            <TableRow key={dataPoint.id}>
+                                <TableCell className="font-medium text-xs sm:text-sm">{dataPoint.data}</TableCell>
+                                <TableCell className="text-right font-mono text-primary text-xs sm:text-sm">{formatCurrency(dataPoint.ultimo, asset.currency)}</TableCell>
+                                <TableCell className="text-right font-mono text-green-500 hidden sm:table-cell text-xs sm:text-sm">{formatCurrency(dataPoint.maxima, asset.currency)}</TableCell>
+                                <TableCell className="text-right font-mono text-destructive hidden sm:table-cell text-xs sm:text-sm">{formatCurrency(dataPoint.minima, asset.currency)}</TableCell>
+                            </TableRow>
+                        ))
+                    ) : (
+                        <TableRow>
+                            <TableCell colSpan={4} className="h-24 text-center">
+                                Nenhum dado histórico encontrado.
+                            </TableCell>
+                        </TableRow>
+                    )}
+                </TableBody>
+            </UiTable>
+        </ScrollArea>
+    );
+
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-4xl max-h-[90vh] w-[95vw] flex flex-col p-0">
-                <DialogHeader className="p-6 pb-4">
+            <DialogContent className="sm:max-w-5xl max-h-[90vh] w-[95vw] flex flex-col p-0">
+                <DialogHeader className="p-6 pb-4 border-b">
                     <DialogTitle className="flex items-center gap-3 text-lg sm:text-xl">
                         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
                             <Icon className="h-5 w-5 text-muted-foreground" />
@@ -86,7 +191,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                         <span className="truncate">{asset.name}</span>
                     </DialogTitle>
                     <DialogDescription>
-                        Análise detalhada do histórico de preços para {asset.name}. Fonte: n8n.
+                        Análise detalhada do histórico de preços para {asset.name}.
                     </DialogDescription>
                 </DialogHeader>
                 
@@ -97,129 +202,61 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                             <span>{asset.absoluteChange >= 0 ? '+' : ''}{formatCurrency(asset.absoluteChange, asset.currency)}</span>
                             <span>({asset.change >= 0 ? '+' : ''}{asset.change.toFixed(2)}%)</span>
                         </div>
-                        <span className="text-xs text-muted-foreground">{asset.lastUpdated}</span>
+                        <span className="text-xs text-muted-foreground ml-auto">Última atualização: {asset.lastUpdated}</span>
                     </div>
                 </div>
 
-                <div className="flex-1 min-h-0 overflow-hidden">
-                    <Tabs defaultValue="chart" className="flex flex-col md:flex-row h-full">
-                        <TabsList className="flex md:flex-col md:h-full md:w-48 bg-transparent p-4 border-r">
-                           <TabsTrigger value="chart" className="w-full justify-start gap-2">
-                               <AreaChartIcon className="h-4 w-4"/> Gráfico de Preços
+                {/* Mobile View with Tabs */}
+                <div className="flex-1 min-h-0 overflow-hidden md:hidden">
+                    <Tabs defaultValue="chart" className="flex flex-col h-full">
+                        <TabsList className="flex-shrink-0 mx-4 mt-4">
+                           <TabsTrigger value="chart" className="w-full gap-2">
+                               <AreaChartIcon className="h-4 w-4"/> Gráfico
                            </TabsTrigger>
-                           <TabsTrigger value="history" className="w-full justify-start gap-2">
-                               <Table className="h-4 w-4"/> Cotações Históricas
+                           <TabsTrigger value="history" className="w-full gap-2">
+                               <TableIcon className="h-4 w-4"/> Histórico
                            </TabsTrigger>
                         </TabsList>
                         
-                        <div className="flex-1 p-4 md:p-6 min-h-0">
+                        <div className="flex-1 p-4 min-h-0">
                             <TabsContent value="chart" className="h-full m-0">
-                                <div className="h-full w-full">
-                                    {loading ? (
-                                        <div className="h-full w-full flex items-center justify-center">
-                                             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                                        </div>
-                                    ) : chartData.length === 0 ? (
-                                        <div className="h-full w-full flex items-center justify-center text-muted-foreground text-sm">
-                                            Sem dados para exibir o gráfico.
-                                        </div>
-                                    ) : (
-                                        <ChartContainer config={chartConfig} className="w-full h-full">
-                                            <ResponsiveContainer>
-                                                <AreaChart data={chartData} margin={{ left: 5, right: 20, top: 10, bottom: 10 }}>
-                                                    <defs>
-                                                        <linearGradient id="colorValueDesktop" x1="0" y1="0" x2="0" y2="1">
-                                                            <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.4}/>
-                                                            <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.05}/>
-                                                        </linearGradient>
-                                                    </defs>
-                                                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted-foreground))" strokeOpacity={0.2} vertical={false} />
-                                                     <XAxis 
-                                                        dataKey="time" 
-                                                        tickLine={false} 
-                                                        axisLine={false} 
-                                                        tickMargin={8} 
-                                                        fontSize={10}
-                                                        tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                                                    />
-                                                    <YAxis
-                                                        domain={['dataMin - (dataMin * 0.02)', 'dataMax + (dataMax * 0.02)']}
-                                                        tickLine={false}
-                                                        axisLine={false}
-                                                        tickMargin={8}
-                                                        fontSize={10}
-                                                        width={70}
-                                                        tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                                                        tickFormatter={(value: number) => formatCurrency(Number(value), asset.currency)}
-                                                    />
-                                                    <Tooltip 
-                                                        cursor={{ stroke: 'hsl(var(--primary))', strokeWidth: 1, strokeDasharray: '3 3' }} 
-                                                        content={<ChartTooltipContent 
-                                                            indicator="dot" 
-                                                            formatter={(value) => [formatCurrency(Number(value), asset.currency), 'Cotação']} 
-                                                            labelFormatter={(label: string) => `Data: ${label}`}
-                                                        />} 
-                                                    />
-                                                    <Area 
-                                                        dataKey="value" 
-                                                        type="monotone" 
-                                                        fill="url(#colorValueDesktop)" 
-                                                        stroke="hsl(var(--primary))" 
-                                                        strokeWidth={2}
-                                                        dot={false}
-                                                        activeDot={{ r: 4, stroke: 'hsl(var(--primary))', strokeWidth: 2, fill: 'hsl(var(--background))' }}
-                                                    />
-                                                </AreaChart>
-                                            </ResponsiveContainer>
-                                        </ChartContainer>
-                                    )}
-                                </div>
+                                {renderChart()}
                             </TabsContent>
                             <TabsContent value="history" className="h-full m-0">
-                                 <ScrollArea className="h-full w-full">
-                                    <UiTable>
-                                        <TableHeader className="sticky top-0 bg-background z-10">
-                                            <TableRow>
-                                                <TableHead className="w-[100px]">Data</TableHead>
-                                                <TableHead className="text-right">Fechamento</TableHead>
-                                                <TableHead className="text-right">Máxima</TableHead>
-                                                <TableHead className="text-right">Mínima</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {loading ? (
-                                                Array.from({ length: 10 }).map((_, i) => (
-                                                    <TableRow key={i}>
-                                                        <TableCell><Skeleton className="h-4 w-20"/></TableCell>
-                                                        <TableCell><Skeleton className="h-4 w-24 ml-auto"/></TableCell>
-                                                        <TableCell><Skeleton className="h-4 w-24 ml-auto"/></TableCell>
-                                                        <TableCell><Skeleton className="h-4 w-24 ml-auto"/></TableCell>
-                                                    </TableRow>
-                                                ))
-                                            ) : historicalData.length > 0 ? (
-                                                historicalData.map((dataPoint) => (
-                                                    <TableRow key={dataPoint.id}>
-                                                        <TableCell className="font-medium">{dataPoint.data}</TableCell>
-                                                        <TableCell className="text-right font-mono text-primary">{formatCurrency(dataPoint.ultimo, asset.currency)}</TableCell>
-                                                        <TableCell className="text-right font-mono text-green-500">{formatCurrency(dataPoint.maxima, asset.currency)}</TableCell>
-                                                        <TableCell className="text-right font-mono text-destructive">{formatCurrency(dataPoint.minima, asset.currency)}</TableCell>
-                                                    </TableRow>
-                                                ))
-                                            ) : (
-                                                <TableRow>
-                                                    <TableCell colSpan={4} className="h-24 text-center">
-                                                        Nenhum dado histórico encontrado.
-                                                    </TableCell>
-                                                </TableRow>
-                                            )}
-                                        </TableBody>
-                                    </UiTable>
-                                </ScrollArea>
+                                {renderHistoryTable()}
                             </TabsContent>
                         </div>
                     </Tabs>
                 </div>
+
+                {/* Desktop View with Columns */}
+                <div className="hidden md:flex flex-1 min-h-0 overflow-hidden">
+                    <div className="w-1/3 flex flex-col border-r">
+                         <div className="p-4 border-b">
+                            <h3 className="font-semibold text-md flex items-center gap-2">
+                                <TableIcon className="h-4 w-4 text-muted-foreground"/>
+                                Cotações Históricas
+                            </h3>
+                         </div>
+                         <div className="flex-1 min-h-0">
+                            {renderHistoryTable()}
+                         </div>
+                    </div>
+                    <div className="w-2/3 flex flex-col">
+                        <div className="p-4 border-b">
+                            <h3 className="font-semibold text-md flex items-center gap-2">
+                                <AreaChartIcon className="h-4 w-4 text-muted-foreground"/>
+                                Desempenho do Preço
+                            </h3>
+                        </div>
+                        <div className="flex-1 p-4 min-h-0">
+                            {renderChart()}
+                        </div>
+                    </div>
+                </div>
+
             </DialogContent>
         </Dialog>
     );
 }
+ 
