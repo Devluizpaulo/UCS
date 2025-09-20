@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -62,47 +63,43 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
             const absChange = formatCurrency(Math.abs(asset.absoluteChange), asset.currency, asset.id);
             
             setFormattedPrice(price);
-            setFormattedAbsoluteChange(absChange);
+setFormattedAbsoluteChange(absChange);
 
-            if (currentAsset.isCalculated) {
-                const latestData = await getLatestQuoteWithComponents(currentAsset.id);
-                if (latestData) {
-                    let components: PieChartDataItem[] = [];
+if (currentAsset.isCalculated) {
+    const latestData = await getLatestQuoteWithComponents(currentAsset.id);
+    if (latestData) {
+        let components: PieChartDataItem[] = [];
 
-                    // PDM: Detailed composition
-                    if (latestData.rent_media_components && latestData.base_custo_agua) {
-                         const rentMediaComponents = latestData.rent_media_components;
-                         components.push({ name: 'Boi Gordo (35%)', value: (rentMediaComponents.boi_gordo || 0) * 0.35, fill: PIE_CHART_COLORS.boi_gordo });
-                         components.push({ name: 'Milho (30%)', value: (rentMediaComponents.milho || 0) * 0.30, fill: PIE_CHART_COLORS.milho });
-                         components.push({ name: 'Soja (35%)', value: (rentMediaComponents.soja || 0) * 0.35, fill: PIE_CHART_COLORS.soja });
-                         components.push({ name: 'Madeira', value: rentMediaComponents.madeira || 0, fill: PIE_CHART_COLORS.madeira });
-                         components.push({ name: 'Carbono', value: rentMediaComponents.carbono || 0, fill: PIE_CHART_COLORS.carbono });
-                         components.push({ name: 'Custo da Água', value: latestData.base_custo_agua || 0, fill: 'hsl(var(--chart-2))' }); // Use a distinct color
-                    
-                    // CH2OAgua: Rent Media composition
-                    } else if (latestData.rent_media_components) {
-                         components = Object.entries(latestData.rent_media_components).map(([key, value]) => ({
-                            name: key.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
-                            value: value,
-                            fill: (PIE_CHART_COLORS as any)[key] || 'hsl(var(--muted))'
-                        }));
-                    // Custo da Agua: Based on CH2OAgua
-                    } else if (latestData.base_ch2o_agua) {
-                         components.push({ name: 'Base CH2OAgua', value: latestData.base_ch2o_agua, fill: 'hsl(var(--chart-1))' });
-                    // PDM: Simplified view (fallback)
-                    } else if (latestData.base_ch2o_agua && latestData.base_custo_agua) {
-                        components.push({ name: 'CH2OAgua', value: latestData.base_ch2o_agua || 0, fill: 'hsl(var(--chart-1))' });
-                        components.push({ name: 'Custo da Água', value: latestData.base_custo_agua || 0, fill: 'hsl(var(--chart-2))' });
-                    // UCS: Based on PDM
-                    } else if (latestData.base_pdm) {
-                        components.push({ name: 'Base PDM', value: latestData.base_pdm, fill: 'hsl(var(--chart-1))' });
-                    // UCS ASE: Based on UCS
-                    } else if (latestData.base_ucs) {
-                         components.push({ name: 'Base UCS', value: latestData.base_ucs, fill: 'hsl(var(--chart-1))' });
-                    }
-                    setPieChartData(components.filter(c => c.value > 0));
-                }
-            }
+        // Check for the most detailed composition first (from PDM, UCS, UCS_ASE)
+        if (latestData.rent_media_components && latestData.base_custo_agua) {
+             const rentMediaComponents = latestData.rent_media_components;
+             components.push({ name: 'Boi Gordo (35%)', value: (rentMediaComponents.boi_gordo || 0) * 0.35, fill: PIE_CHART_COLORS.boi_gordo });
+             components.push({ name: 'Milho (30%)', value: (rentMediaComponents.milho || 0) * 0.30, fill: PIE_CHART_COLORS.milho });
+             components.push({ name: 'Soja (35%)', value: (rentMediaComponents.soja || 0) * 0.35, fill: PIE_CHART_COLORS.soja });
+             components.push({ name: 'Madeira', value: rentMediaComponents.madeira || 0, fill: PIE_CHART_COLORS.madeira });
+             components.push({ name: 'Carbono', value: rentMediaComponents.carbono || 0, fill: PIE_CHART_COLORS.carbono });
+             components.push({ name: 'Custo da Água', value: latestData.base_custo_agua || 0, fill: 'hsl(var(--chart-2))' });
+        
+        // CH2OAgua: Rent Media composition
+        } else if (latestData.rent_media_components) {
+             components = Object.entries(latestData.rent_media_components).map(([key, value]) => ({
+                name: key.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
+                value: value,
+                fill: (PIE_CHART_COLORS as any)[key] || 'hsl(var(--muted))'
+            }));
+        // Custo da Agua: Based on CH2OAgua
+        } else if (latestData.base_ch2o_agua) {
+             components.push({ name: 'Base CH2OAgua', value: latestData.base_ch2o_agua, fill: 'hsl(var(--chart-1))' });
+        // UCS: Based on PDM (simplified)
+        } else if (latestData.base_pdm) {
+            components.push({ name: 'Base PDM', value: latestData.base_pdm, fill: 'hsl(var(--chart-1))' });
+        // UCS ASE: Based on UCS (simplified)
+        } else if (latestData.base_ucs) {
+             components.push({ name: 'Base UCS', value: latestData.base_ucs, fill: 'hsl(var(--chart-1))' });
+        }
+        setPieChartData(components.filter(c => c.value > 0));
+    }
+}
             
             // Always fetch historical for table and area chart (if applicable)
             const history = await getCotacoesHistorico(currentAsset.id);

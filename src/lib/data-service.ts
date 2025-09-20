@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { db } from '@/lib/firebase-admin-config';
@@ -142,20 +143,31 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
         const pdmData = await getAndProcessAsset(pdmConfig as CommodityPriceData, pdmValue, { 
             base_ch2o_agua: ch2oAguaValue, 
             base_custo_agua: custoAguaValue,
-            rent_media_components: rentMediaValues // Pass through for detailed pie chart
+            rent_media_components: rentMediaValues
         });
         assetDataMap.set('pdm', pdmData);
         
         // Calculate UCS
         const ucsValue = calculateUcs(pdmValue);
         const ucsConfig = configs.find(c => c.id === 'ucs')!;
-        const ucsData = await getAndProcessAsset(ucsConfig as CommodityPriceData, ucsValue, { base_pdm: pdmValue });
+        const ucsData = await getAndProcessAsset(ucsConfig as CommodityPriceData, ucsValue, { 
+            base_pdm: pdmValue,
+            base_ch2o_agua: ch2oAguaValue,
+            base_custo_agua: custoAguaValue,
+            rent_media_components: rentMediaValues
+        });
         assetDataMap.set('ucs', ucsData);
 
         // Calculate UCS ASE
         const ucsAseValue = calculateUcsAse(ucsValue);
         const ucsAseConfig = configs.find(c => c.id === 'ucs_ase')!;
-        const ucsAseData = await getAndProcessAsset(ucsAseConfig as CommodityPriceData, ucsAseValue, { base_ucs: ucsValue });
+        const ucsAseData = await getAndProcessAsset(ucsAseConfig as CommodityPriceData, ucsAseValue, { 
+            base_ucs: ucsValue,
+            base_pdm: pdmValue,
+            base_ch2o_agua: ch2oAguaValue,
+            base_custo_agua: custoAguaValue,
+            rent_media_components: rentMediaValues
+        });
         assetDataMap.set('ucs_ase', ucsAseData);
 
         // 3. Assemble final results in the correct order
