@@ -137,45 +137,43 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
     );
     
     const renderHistoryTable = () => (
-         <ScrollArea className="h-full max-h-80 md:max-h-none w-full">
+         <div className="flex flex-col h-full">
             <UiTable>
                 <TableHeader className="sticky top-0 bg-background/80 backdrop-blur-sm z-10">
                     <TableRow>
                         <TableHead className="w-[100px]">Data</TableHead>
                         <TableHead className="text-right">Fechamento</TableHead>
-                        <TableHead className="text-right sm:table-cell">Máxima</TableHead>
-                        <TableHead className="text-right sm:table-cell">Mínima</TableHead>
                     </TableRow>
                 </TableHeader>
-                <TableBody>
-                    {loading ? (
-                        Array.from({ length: 7 }).map((_, i) => (
-                            <TableRow key={i}>
-                                <TableCell><Skeleton className="h-4 w-20"/></TableCell>
-                                <TableCell><Skeleton className="h-4 w-24 ml-auto"/></TableCell>
-                                <TableCell className="sm:table-cell"><Skeleton className="h-4 w-24 ml-auto"/></TableCell>
-                                <TableCell className="sm:table-cell"><Skeleton className="h-4 w-24 ml-auto"/></TableCell>
-                            </TableRow>
-                        ))
-                    ) : historicalData.length > 0 ? (
-                        historicalData.map((dataPoint) => (
-                            <TableRow key={dataPoint.id}>
-                                <TableCell className="font-medium text-xs sm:text-sm">{dataPoint.data}</TableCell>
-                                <TableCell className="text-right font-mono text-primary text-xs sm:text-sm">{formatCurrency(dataPoint.ultimo, asset.currency)}</TableCell>
-                                <TableCell className="text-right font-mono text-green-500 text-xs sm:text-sm sm:table-cell">{formatCurrency(dataPoint.maxima, asset.currency)}</TableCell>
-                                <TableCell className="text-right font-mono text-destructive text-xs sm:text-sm sm:table-cell">{formatCurrency(dataPoint.minima, asset.currency)}</TableCell>
-                            </TableRow>
-                        ))
-                    ) : (
-                        <TableRow>
-                            <TableCell colSpan={4} className="h-24 text-center">
-                                Nenhum dado histórico encontrado.
-                            </TableCell>
-                        </TableRow>
-                    )}
-                </TableBody>
             </UiTable>
-        </ScrollArea>
+            <ScrollArea className="flex-1">
+                <UiTable>
+                    <TableBody>
+                        {loading ? (
+                            Array.from({ length: 7 }).map((_, i) => (
+                                <TableRow key={i}>
+                                    <TableCell className="w-[100px]"><Skeleton className="h-4 w-20"/></TableCell>
+                                    <TableCell><Skeleton className="h-4 w-24 ml-auto"/></TableCell>
+                                </TableRow>
+                            ))
+                        ) : historicalData.length > 0 ? (
+                            historicalData.map((dataPoint) => (
+                                <TableRow key={dataPoint.id}>
+                                    <TableCell className="font-medium text-xs sm:text-sm w-[100px]">{dataPoint.data}</TableCell>
+                                    <TableCell className="text-right font-mono text-primary text-xs sm:text-sm">{formatCurrency(dataPoint.ultimo, asset.currency)}</TableCell>
+                                </TableRow>
+                            ))
+                        ) : (
+                            <TableRow>
+                                <TableCell colSpan={2} className="h-24 text-center">
+                                    Nenhum dado histórico encontrado.
+                                </TableCell>
+                            </TableRow>
+                        )}
+                    </TableBody>
+                </UiTable>
+            </ScrollArea>
+        </div>
     );
 
     return (
