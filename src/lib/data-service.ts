@@ -53,9 +53,8 @@ export async function getLatestQuoteWithComponents(assetId: string): Promise<Fir
 }
 
 
-async function getAndProcessAsset(config: CommodityPriceData, calculatedPrice: number, components?: any) {
+async function getAndProcessAsset(config: CommodityPriceData, calculatedPrice: number, today: string, components?: any) {
     const now = Timestamp.now();
-    const today = now.toDate().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
     const snapshot = await db.collection(config.id)
         .orderBy('timestamp', 'desc')
@@ -110,6 +109,10 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
         const configs = await getCommodityConfigs();
         const assetDataMap = new Map<string, CommodityPriceData>();
 
+        const now = new Date();
+        const today = now.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+
         const baseAssetPromises = configs
             .filter(config => !config.isCalculated)
             .map(async (config) => {
@@ -156,17 +159,17 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
 
         const ch2oAguaValue = calculateCh2oAgua(rentMediaValues);
         const aguaConfig = configs.find(c => c.id === 'agua')!;
-        const aguaData = await getAndProcessAsset(aguaConfig as CommodityPriceData, ch2oAguaValue, { rent_media_components: rentMediaValues });
+        const aguaData = await getAndProcessAsset(aguaConfig as CommodityPriceData, ch2oAguaValue, today, { rent_media_components: rentMediaValues });
         assetDataMap.set('agua', aguaData);
 
         const custoAguaValue = calculateCustoAgua(ch2oAguaValue);
         const custoAguaConfig = configs.find(c => c.id === 'custo_agua')!;
-        const custoAguaData = await getAndProcessAsset(custoAguaConfig as CommodityPriceData, custoAguaValue, { base_ch2o_agua: ch2oAguaValue });
+        const custoAguaData = await getAndProcessAsset(custoAguaConfig as CommodityPriceData, custoAguaValue, today, { base_ch2o_agua: ch2oAguaValue });
         assetDataMap.set('custo_agua', custoAguaData);
 
         const pdmValue = calculatePdm(ch2oAguaValue, custoAguaValue);
         const pdmConfig = configs.find(c => c.id === 'pdm')!;
-        const pdmData = await getAndProcessAsset(pdmConfig as CommodityPriceData, pdmValue, { 
+        const pdmData = await getAndProcessAsset(pdmConfig as CommodityPriceData, pdmValue, today, { 
             base_ch2o_agua: ch2oAguaValue, 
             base_custo_agua: custoAguaValue,
         });
@@ -174,14 +177,14 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
         
         const ucsValue = calculateUcs(pdmValue);
         const ucsConfig = configs.find(c => c.id === 'ucs')!;
-        const ucsData = await getAndProcessAsset(ucsConfig as CommodityPriceData, ucsValue, { 
+        const ucsData = await getAndProcessAsset(ucsConfig as CommodityPriceData, ucsValue, today, { 
             base_pdm: pdmValue
         });
         assetDataMap.set('ucs', ucsData);
 
         const ucsAseValue = calculateUcsAse(ucsValue);
         const ucsAseConfig = configs.find(c => c.id === 'ucs_ase')!;
-        const ucsAseData = await getAndProcessAsset(ucsAseConfig as CommodityPriceData, ucsAseValue, { 
+        const ucsAseData = await getAndProcessAsset(ucsAseConfig as CommodityPriceData, ucsAseValue, today, { 
             base_ucs: ucsValue,
             base_pdm: pdmValue,
             base_ch2o_agua: ch2oAguaValue,
