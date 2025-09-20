@@ -40,15 +40,20 @@ function getCollectionNameFromAssetId(assetId: string): string | null {
 const parseDateString = (dateStr: string): Date => {
     if (typeof dateStr !== 'string') return new Date(1970, 0, 1);
 
-    if (/^\d{2}\/\d{2}\/\d{2}$/.test(dateStr)) {
-        let [day, month, year] = dateStr.split('/').map(Number);
-        year += (year > 50 ? 1900 : 2000);
-        return new Date(year, month - 1, day);
+    // Matches DD/MM/YYYY
+    const matchFull = dateStr.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (matchFull) {
+        const [, day, month, year] = matchFull;
+        // Month is 0-indexed in JS
+        return new Date(Number(year), Number(month) - 1, Number(day));
     }
     
-    if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
-        const [day, month, year] = dateStr.split('/').map(Number);
-        return new Date(year, month - 1, day);
+    // Matches DD/MM/YY
+    const matchShort = dateStr.match(/^(\d{2})\/(\d{2})\/(\d{2})$/);
+    if (matchShort) {
+        let [, day, month, year] = matchShort;
+        let fullYear = Number(year) + (Number(year) > 50 ? 1900 : 2000);
+        return new Date(fullYear, Number(month) - 1, Number(day));
     }
     
     const parsedDate = new Date(dateStr);
@@ -80,10 +85,11 @@ async function getAssetData(assetId: string, limit: number = 1): Promise<Firesto
             id: doc.id,
             ...serializeFirestoreTimestamp(doc.data())
         } as FirestoreQuote));
-
+        
+        // Sort documents by 'data' field, from newest to oldest
         const sortedDocs = allDocs.sort((a, b) => {
-            const dateA = a.data ? parseDateString(a.data).getTime() : new Date(a.created_at).getTime();
-            const dateB = b.data ? parseDateString(b.data).getTime() : new Date(b.created_at).getTime();
+            const dateA = a.data ? parseDateString(a.data).getTime() : 0;
+            const dateB = b.data ? parseDateString(b.data).getTime() : 0;
             return dateB - dateA; // Sort descending (most recent first)
         });
 
@@ -117,12 +123,12 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
 
             if (assetHistory.length > 0) {
                 const latest = assetHistory[0];
-                currentPrice = latest.ultimo > 0 ? latest.ultimo : latest.abertura || 0;
+                currentPrice = latest.ultimo || 0; // Use 'ultimo' as the main price
                 lastUpdated = latest.data ? latest.data : (latest.created_at ? new Date(latest.created_at).toLocaleString('pt-BR') : 'N/A');
                 
                 if (assetHistory.length > 1) {
                     const previous = assetHistory[1];
-                    const previousPrice = previous.ultimo > 0 ? previous.ultimo : previous.abertura || 0;
+                    const previousPrice = previous.ultimo || 0; // Use 'ultimo' for previous day as well
                     if (previousPrice !== 0) {
                         absoluteChange = currentPrice - previousPrice;
                         change = (absoluteChange / previousPrice) * 100;
