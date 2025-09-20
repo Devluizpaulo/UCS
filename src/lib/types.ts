@@ -25,14 +25,21 @@ export type InitialCommodityConfig = Omit<CommodityConfig, 'id'>;
 // Defines a map of commodity configurations, indexed by a string key
 export type CommodityMap = Record<string, Omit<CommodityConfig, 'id'>>;
 
-// Defines the structure for a historical quote from Firestore
+// Defines the structure for a historical quote from Firestore based on user provided sample
 export interface FirestoreQuote {
     id: string;
-    created_at: string; // ISO string date
-    data: string; // Formatted date string, e.g., "DD/MM/YYYY"
-    ultimo: number;
+    abertura: number;
+    ativo: string;
+    data: string; // Formatted date string, e.g., "20/09/2025"
+    fonte: string;
     maxima: number;
     minima: number;
+    moeda: string;
+    status: string;
+    timestamp: string; // ISO string from Firestore Timestamp
+    ultimo: number;
+    variacao_pct: number | null;
+    volume: number | null;
     madeira_tora_brl_ajustado?: number; // Optional field for specific assets
 }
 

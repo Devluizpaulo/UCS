@@ -29,22 +29,6 @@ function getCollectionNameFromAssetId(assetId: string): string | null {
     return ASSET_COLLECTION_MAP[assetId] || null;
 }
 
-// Helper to parse DD/MM/YYYY or DD/MM/YY string to Date object
-const parseDateString = (dateStr: string): Date => {
-    if (typeof dateStr !== 'string') return new Date(1970, 0, 1);
-    const parts = dateStr.split('/');
-    if (parts.length === 3) {
-        const [day, month, year] = parts.map(Number);
-        const fullYear = year < 100 ? year + 2000 : year;
-        // Month in JS Date is 0-indexed, so we subtract 1.
-        return new Date(fullYear, month - 1, day);
-    }
-    // Fallback for other potential date formats
-    const parsedDate = new Date(dateStr);
-    return isNaN(parsedDate.getTime()) ? new Date(1970, 0, 1) : parsedDate;
-};
-
-
 /**
  * Fetches historical data for a single asset.
  * Data is sorted by date from newest to oldest.
@@ -54,7 +38,7 @@ const parseDateString = (dateStr: string): Date => {
  */
 async function getAssetData(assetId: string, limit: number = 30): Promise<FirestoreQuote[]> {
     const cacheKey = `assetData_${assetId}_${limit}`;
-    const cached = await getCache<FirestoreQuote[]>(cacheKey, 60000 * 5); // Cache for 5 minutes
+    const cached = await getCache<FirestoreQuote[]>(cacheKey, 60 * 1000 * 5); // Cache for 5 minutes
     if (cached) return cached;
     
     const collectionName = getCollectionNameFromAssetId(assetId);
@@ -72,7 +56,7 @@ async function getAssetData(assetId: string, limit: number = 30): Promise<Firest
             ...serializeFirestoreTimestamp(doc.data())
         } as FirestoreQuote));
         
-        data.sort((a: FirestoreQuote, b: FirestoreQuote) => parseDateString(b.data).getTime() - parseDateString(a.data).getTime());
+        // Data is already sorted by the query `orderBy('timestamp', 'desc')`
         
         await setCache(cacheKey, data);
         return data;
@@ -85,7 +69,7 @@ async function getAssetData(assetId: string, limit: number = 30): Promise<Firest
 
 
 export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
-    const cacheKey = 'commodityPrices_v10_simple_refactor';
+    const cacheKey = 'commodityPrices_v12_aligned';
     const cachedData = await getCache<CommodityPriceData[]>(cacheKey, 60000); // 1 minute cache
     if (cachedData) return cachedData;
 
@@ -103,12 +87,11 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
 
             if (history && history.length > 0) {
                 const latest = history[0];
-                lastUpdated = latest.data || new Date(latest.created_at).toLocaleString('pt-BR');
+                lastUpdated = latest.data || new Date(latest.timestamp).toLocaleString('pt-BR');
                 
-                // For 'madeira', use the pre-converted and adjusted BRL price.
-                if (commodity.id === 'madeira_serrada_futuros' && latest.madeira_tora_brl_ajustado) {
+                if (commodity.id === 'madeira' && latest.madeira_tora_brl_ajustado) {
                     currentPrice = latest.madeira_tora_brl_ajustado;
-                    originalCurrency = 'BRL'; // The final price is in BRL
+                    originalCurrency = 'BRL';
                 } else {
                     currentPrice = latest.ultimo || 0;
                 }
@@ -117,7 +100,7 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
                     const previous = history[1];
                     let previousPrice = 0;
                     
-                    if (commodity.id === 'madeira_serrada_futuros' && previous.madeira_tora_brl_ajustado) {
+                    if (commodity.id === 'madeira' && previous.madeira_tora_brl_ajustado) {
                         previousPrice = previous.madeira_tora_brl_ajustado;
                     } else {
                         previousPrice = previous.ultimo || 0;
@@ -136,7 +119,7 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
                 change,
                 absoluteChange,
                 lastUpdated,
-                currency: originalCurrency, // Use the correct final currency.
+                currency: originalCurrency,
             };
         });
         

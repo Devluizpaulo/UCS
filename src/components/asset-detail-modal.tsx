@@ -9,7 +9,7 @@ import {
     DialogDescription,
 } from '@/components/ui/dialog';
 import { AreaChart as AreaChartIcon, Table, Loader2 } from 'lucide-react';
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, TooltipProps } from 'recharts';
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import type { CommodityPriceData, ChartData, FirestoreQuote } from '@/lib/types';
 import { useEffect, useState, useCallback } from 'react';
@@ -20,7 +20,6 @@ import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/formatters';
 import { Skeleton } from './ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { NameType, ValueType } from 'recharts/types/component/DefaultTooltipContent';
 
 
 interface AssetDetailModalProps {
@@ -29,17 +28,6 @@ interface AssetDetailModalProps {
     isOpen: boolean;
     onClose: () => void;
 }
-
-// Helper to parse DD/MM/YYYY string to Date object
-const parseDateString = (dateStr: string): Date => {
-    if (!/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
-        return new Date(dateStr); // Fallback for ISO strings or other formats
-    }
-    const [day, month, year] = dateStr.split('/').map(Number);
-    // Month is 0-indexed in JavaScript Dates
-    return new Date(year, month - 1, day);
-};
-
 
 export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDetailModalProps) {
     const [historicalData, setHistoricalData] = useState<FirestoreQuote[]>([]);
@@ -62,7 +50,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
 
             // For the chart, we need the oldest first, so we reverse the sorted array
             const chartPoints = [...history].reverse().map((d: FirestoreQuote) => ({
-                time: d.data || new Date(d.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+                time: d.data || new Date(d.timestamp).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
                 value: d.ultimo
             }));
 
