@@ -1,7 +1,5 @@
 
 import { Button } from "@/components/ui/button";
-import { getCommodityPrices } from "@/lib/data-service";
-import type { CommodityPriceData } from "@/lib/types";
 import { ArrowRight, Briefcase, CheckCircle, Globe, HandCoins, Landmark, Repeat, Scale, ShieldCheck, TrendingUp, User } from "lucide-react";
 import Image from 'next/image';
 import Link from 'next/link';
