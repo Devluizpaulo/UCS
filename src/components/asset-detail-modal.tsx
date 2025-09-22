@@ -219,9 +219,9 @@ export function AssetDetailModal({ asset, isOpen, onOpenChange }: AssetDetailMod
                                     </TableCell>
                                     <TableCell className={cn(
                                         "text-right font-mono",
-                                        (quote.variacao_pct ?? 0) >= 0 ? "text-primary" : "text-destructive"
+                                        (Number(quote.variacao_pct) ?? 0) >= 0 ? "text-primary" : "text-destructive"
                                     )}>
-                                        {quote.variacao_pct !== null ? `${quote.variacao_pct.toFixed(2)}%` : 'N/A'}
+                                        {quote.variacao_pct !== null ? `${Number(quote.variacao_pct).toFixed(2)}%` : 'N/A'}
                                     </TableCell>
                                     </TableRow>
                                 ))}
