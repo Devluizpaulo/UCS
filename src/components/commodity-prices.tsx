@@ -18,11 +18,11 @@ export function CommodityPrices({ initialData, displayDate, loading }: Commodity
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
          <Card className="shadow-sm">
             <CardHeader>
-                <CardTitle>Ativos Subjacentes</CardTitle>
+                <CardTitle>Cotações dos Ativos</CardTitle>
                 <CardDescription>
-                    {displayDate 
-                        ? `Preços para ${displayDate}.`
-                        : 'Preços das commodities que compõem os índices.'
+                    {displayDate === 'Tempo Real'
+                        ? "Cotações de hoje com variação baseada no fechamento anterior."
+                        : `Exibindo cotações para ${displayDate}.`
                     }
                 </CardDescription>
             </CardHeader>
