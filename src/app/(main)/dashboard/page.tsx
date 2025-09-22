@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, CalendarClock } from 'lucide-react';
 import Link from 'next/link';
 import { addDays, format, parseISO, isValid, isToday as isTodayDateFns } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 function getValidatedDate(dateString?: string | null): Date {
   if (dateString) {
@@ -36,8 +37,8 @@ export default async function DashboardPage({
   const prevDate = format(addDays(targetDate, -1), 'yyyy-MM-dd');
   const nextDate = format(addDays(targetDate, 1), 'yyyy-MM-dd');
   
-  // Format for the new date display
-  const displayDateFormatted = format(targetDate, "d 'de' LLLL");
+  // Format for the new date display in Portuguese
+  const displayDateFormatted = format(targetDate, "d 'de' LLLL", { locale: ptBR });
 
   return (
     <div className="flex min-h-screen w-full flex-col">
@@ -55,7 +56,7 @@ export default async function DashboardPage({
                       <ChevronLeft className="h-4 w-4" />
                   </Link>
               </Button>
-              <div className="px-3 text-sm font-medium tabular-nums">
+              <div className="px-3 text-sm font-medium tabular-nums capitalize">
                 {displayDateFormatted}
               </div>
               <Button variant="outline" size="icon" className="h-9 w-9 border-none" asChild>
