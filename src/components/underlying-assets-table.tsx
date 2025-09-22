@@ -29,6 +29,7 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
         <TableHeader>
           <TableRow>
             <TableHead>Ativo</TableHead>
+            <TableHead>Última Atualização</TableHead>
             <TableHead className="text-right">Último Preço</TableHead>
             <TableHead className="text-right">Variação (24h)</TableHead>
           </TableRow>
@@ -47,6 +48,9 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
                           </div>
                       </div>
                   </TableCell>
+                   <TableCell>
+                       <Skeleton className="h-5 w-24" />
+                   </TableCell>
                   <TableCell className="text-right font-mono">
                       <Skeleton className="h-5 w-20 ml-auto" />
                   </TableCell>
@@ -66,6 +70,7 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
           <TableHeader>
             <TableRow>
               <TableHead>Ativo</TableHead>
+              <TableHead>Última Atualização</TableHead>
               <TableHead className="text-right">Último Preço</TableHead>
               <TableHead className="text-right">Variação (24h)</TableHead>
             </TableRow>
@@ -84,11 +89,11 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
                             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
                               <Icon className="h-4 w-4 text-muted-foreground" />
                             </div>
-                            <div>
-                              <div className="font-medium">{asset.name}</div>
-                              <div className="text-xs text-muted-foreground">{asset.lastUpdated}</div>
-                            </div>
+                            <div className="font-medium">{asset.name}</div>
                           </div>
+                        </TableCell>
+                        <TableCell>
+                            <div className="text-sm text-muted-foreground">{asset.lastUpdated}</div>
                         </TableCell>
                         <TableCell className="text-right font-mono">
                            {asset.price > 0 ? (
@@ -113,7 +118,7 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
               })
             ) : (
               <TableRow>
-                  <TableCell colSpan={3} className="h-24 text-center">
+                  <TableCell colSpan={4} className="h-24 text-center">
                       Nenhum ativo configurado ou dados disponíveis.
                   </TableCell>
               </TableRow>

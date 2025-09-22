@@ -7,7 +7,7 @@ import { getCommodityConfigs } from '@/lib/commodity-config-service';
 import type { CommodityPriceData, FirestoreQuote } from '@/lib/types';
 import { getCache, setCache } from '@/lib/cache-service';
 import { Timestamp } from 'firebase-admin/firestore';
-import { startOfDay, endOfDay, subDays } from 'date-fns';
+import { startOfDay, endOfDay, subDays, format } from 'date-fns';
 
 
 const CACHE_KEY_PRICES = 'commodity_prices_simple';
@@ -67,6 +67,7 @@ export async function getCommodityPricesByDate(date: Date): Promise<CommodityPri
     }
 
     const previousDate = subDays(date, 1);
+    const formattedDate = format(date, 'dd/MM/yyyy');
 
     try {
         const configs = await getCommodityConfigs();
@@ -83,14 +84,12 @@ export async function getCommodityPricesByDate(date: Date): Promise<CommodityPri
             const absoluteChange = latestPrice - previousPrice;
             const change = (previousPrice !== 0) ? (absoluteChange / previousPrice) * 100 : 0;
             
-            const lastUpdatedTimestamp = latestDoc?.timestamp ? serializeFirestoreTimestamp(latestDoc.timestamp) : date.toISOString();
-            
             return { 
                 ...config, 
                 price: latestPrice, 
                 change, 
                 absoluteChange, 
-                lastUpdated: latestDoc?.data || new Date(lastUpdatedTimestamp).toLocaleDateString('pt-BR')
+                lastUpdated: formattedDate // Logic change: Always show the date being queried.
             };
         });
 
@@ -127,7 +126,7 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
     }
 
     try {
-        const configs = await getCommodifyConfigs();
+        const configs = await getCommodityConfigs();
         
         const assetPromises = configs.map(async (config) => {
             const snapshot = await db.collection(config.id).orderBy('timestamp', 'desc').limit(2).get();
@@ -151,14 +150,12 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
             const absoluteChange = latestPrice - previousPrice;
             const change = (previousPrice !== 0) ? (absoluteChange / previousPrice) * 100 : 0;
             
-            const lastUpdatedTimestamp = latestDoc.timestamp ? serializeFirestoreTimestamp(latestDoc.timestamp) : new Date().toISOString();
-            
             return { 
                 ...config, 
                 price: latestPrice, 
                 change, 
                 absoluteChange, 
-                lastUpdated: latestDoc.data || new Date(lastUpdatedTimestamp).toLocaleDateString('pt-BR') 
+                lastUpdated: "Tempo Real" // Logic change: Always show "real time" for the latest prices.
             };
         });
 

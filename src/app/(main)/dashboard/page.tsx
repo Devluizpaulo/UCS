@@ -3,7 +3,7 @@ import { CommodityPrices } from '@/components/commodity-prices';
 import { getCommodityPricesByDate, getCommodityPrices } from '@/lib/data-service';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, ArrowRight, CalendarClock, Home } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Home } from 'lucide-react';
 import Link from 'next/link';
 import { addDays, format, parseISO, isValid } from 'date-fns';
 
