@@ -7,7 +7,7 @@ import { getCommodityConfigs } from '@/lib/commodity-config-service';
 import type { CommodityPriceData, FirestoreQuote } from '@/lib/types';
 import { getCache, setCache } from '@/lib/cache-service';
 import { Timestamp } from 'firebase-admin/firestore';
-import { startOfDay, endOfDay, subDays, format } from 'date-fns';
+import { subDays, format } from 'date-fns';
 
 
 const CACHE_KEY_PRICES = 'commodity_prices_simple';
@@ -42,13 +42,10 @@ function serializeFirestoreTimestamp(data: any): any {
 }
 
 async function getQuoteForDate(assetId: string, date: Date): Promise<FirestoreQuote | null> {
-    const start = Timestamp.fromDate(startOfDay(date));
-    const end = Timestamp.fromDate(endOfDay(date));
+    const formattedDate = format(date, 'dd/MM/yyyy');
 
     const snapshot = await db.collection(assetId)
-        .where('timestamp', '>=', start)
-        .where('timestamp', '<=', end)
-        .orderBy('timestamp', 'desc')
+        .where('data', '==', formattedDate)
         .limit(1)
         .get();
 
@@ -67,7 +64,7 @@ export async function getCommodityPricesByDate(date: Date): Promise<CommodityPri
     }
 
     const previousDate = subDays(date, 1);
-    const formattedDate = format(date, 'dd/MM/yyyy');
+    const displayDate = format(date, 'dd/MM/yyyy');
 
     try {
         const configs = await getCommodityConfigs();
@@ -89,7 +86,7 @@ export async function getCommodityPricesByDate(date: Date): Promise<CommodityPri
                 price: latestPrice, 
                 change, 
                 absoluteChange, 
-                lastUpdated: formattedDate // Logic change: Always show the date being queried.
+                lastUpdated: displayDate
             };
         });
 
@@ -155,7 +152,7 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
                 price: latestPrice, 
                 change, 
                 absoluteChange, 
-                lastUpdated: "Tempo Real" // Logic change: Always show "real time" for the latest prices.
+                lastUpdated: "Tempo Real"
             };
         });
 
