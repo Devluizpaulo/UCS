@@ -238,7 +238,7 @@ export function AssetDetailModal({ asset, isOpen, onOpenChange }: AssetDetailMod
                                     onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                                     disabled={currentPage === 1}
                                     >
-                                    <ChevronLeft className="h-4 w-4" />
+                                    <ChevronLeft className="h-4 w-4 mr-1" />
                                     Anterior
                                     </Button>
                                     <Button
@@ -248,7 +248,7 @@ export function AssetDetailModal({ asset, isOpen, onOpenChange }: AssetDetailMod
                                     disabled={currentPage === totalPages}
                                     >
                                     Próximo
-                                    <ChevronRight className="h-4 w-4" />
+                                    <ChevronRight className="h-4 w-4 ml-1" />
                                     </Button>
                                 </div>
                             </div>
