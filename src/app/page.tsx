@@ -1,15 +1,12 @@
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getCommodityPrices } from "@/lib/data-service";
 import type { CommodityPriceData } from "@/lib/types";
-import { formatCurrency } from "@/lib/formatters";
-import { ArrowRight, Briefcase, CheckCircle, Globe, HandCoins, Landmark, Repeat, Scale, ShieldCheck, TrendingUp, User, Euro } from "lucide-react";
+import { ArrowRight, Briefcase, CheckCircle, Globe, HandCoins, Landmark, Repeat, Scale, ShieldCheck, TrendingUp, User } from "lucide-react";
 import Image from 'next/image';
 import Link from 'next/link';
 import { LogoBVM } from "@/components/logo-bvm";
 import { LoginModal } from "@/components/login-modal";
-import { getIconForCategory } from "@/lib/icons";
 import { LanguageSwitcher } from "@/components/language-switcher";
 
 const services = [
@@ -71,11 +68,7 @@ const didYouKnow = [
 
 
 export default async function LandingPage() {
-  const commodityData: CommodityPriceData[] = await getCommodityPrices();
-  const ucsAse = commodityData.find(asset => asset.id === 'ucs_ase');
-  const ucsAsePrice = ucsAse ? formatCurrency(ucsAse.price, ucsAse.currency, ucsAse.id) : '-';
-  const IconUcsAse = getIconForCategory(ucsAse);
-
+  
   return (
     <div className="flex min-h-screen w-full flex-col bg-background text-foreground">
       <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-sm">
@@ -104,27 +97,13 @@ export default async function LandingPage() {
           />
           <div className="absolute inset-0 bg-black/60" />
           <div className="relative z-10 flex flex-col items-center gap-6 px-4 md:px-6">
-            <div className="flex items-center gap-3 rounded-full border border-white/30 bg-white/10 px-4 py-2 text-sm backdrop-blur-sm">
-              <IconUcsAse className="h-5 w-5 text-primary" />
-              <span>Índice de Unidade de Conservação Sustentável</span>
-            </div>
             <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-6xl">
-              UCS - Unidade de Crédito de Sustentabilidade
+              Monitor do Índice UCS
             </h1>
             <p className="mx-auto max-w-[700px] text-lg text-gray-200 md:text-lg">
               Acompanhe a performance econômica de ativos ambientais e agrícolas em tempo real.
             </p>
             
-            <Card className="w-full max-w-sm animate-fade-in bg-background/50 text-foreground backdrop-blur-md border-white/20">
-              <CardHeader>
-                <CardTitle className="text-lg">Cotação Atual - Índice UCS ASE</CardTitle>
-                <CardDescription className="text-gray-300">Valor atualizado do principal índice da plataforma.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                  <p className="text-5xl font-bold text-primary">{ucsAsePrice}</p>
-              </CardContent>
-            </Card>
-
              <div className="flex flex-col sm:flex-row gap-4 mt-4">
               <LoginModal>
                 <Button size="lg">

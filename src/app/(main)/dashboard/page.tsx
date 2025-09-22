@@ -6,19 +6,11 @@ import { PageHeader } from '@/components/page-header';
 import type { CommodityPriceData } from '@/lib/types';
 import { CommodityPrices } from '@/components/commodity-prices';
 
-interface DashboardPageProps {
-  initialData: CommodityPriceData[];
-}
-
 const REFRESH_INTERVAL_MS = 60 * 1000; // 1 minuto
 
-export default function DashboardPage({ initialData }: DashboardPageProps) {
-  const [data, setData] = useState(initialData);
-  const isLoading = data.length === 0 && initialData.length === 0;
-
-  useEffect(() => {
-    setData(initialData);
-  }, [initialData]);
+export default function DashboardPage() {
+  const [data, setData] = useState<CommodityPriceData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -31,8 +23,12 @@ export default function DashboardPage({ initialData }: DashboardPageProps) {
         setData(newData);
       } catch (error) {
         console.error("Error refreshing data:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
+
+    fetchData(); // Fetch initial data
 
     const intervalId = setInterval(fetchData, REFRESH_INTERVAL_MS);
 
