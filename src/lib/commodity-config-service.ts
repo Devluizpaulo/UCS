@@ -1,4 +1,5 @@
 
+
 import type { CommodityConfig } from './types';
 
 /**
@@ -66,6 +67,13 @@ export const COMMODITIES_CONFIG: Record<string, Omit<CommodityConfig, 'id'>> = {
     category: 'crs',
     description: 'Preço do crédito de carbono em Euros.',
     unit: 'EUR por tonelada',
+  },
+   'agua': {
+    name: 'CH²O',
+    currency: 'EUR',
+    category: 'crs',
+    description: 'Preço do metro cúbico da água.',
+    unit: 'EUR por m³',
   },
   'madeira': {
     name: 'Madeira Serrada',
