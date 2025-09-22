@@ -9,22 +9,6 @@ import type { CommodityConfig } from './types';
  * 2. Nome da coleção no Firestore onde os dados históricos são armazenados.
  */
 export const COMMODITIES_CONFIG: Record<string, Omit<CommodityConfig, 'id'>> = {
-  'ucs_ase': {
-    name: 'Índice UCS ASE',
-    currency: 'BRL',
-    category: 'crs',
-    description: 'Índice Principal UCS ASE (UCS * 2).',
-    unit: 'Pontos',
-    isCalculated: true,
-  },
-  'ucs': {
-    name: 'Índice UCS',
-    currency: 'BRL',
-    category: 'crs',
-    description: 'Índice de Unidade de Conservação Sustentável.',
-    unit: 'Pontos',
-    isCalculated: true,
-  },
   'usd': {
     name: 'Dólar Comercial',
     currency: 'BRL',
@@ -74,30 +58,6 @@ export const COMMODITIES_CONFIG: Record<string, Omit<CommodityConfig, 'id'>> = {
     description: 'Preço por metro cúbico de madeira serrada.',
     unit: 'USD por m³',
   },
-  'agua': {
-    name: 'CH2OAgua',
-    currency: 'BRL',
-    category: 'crs',
-    description: 'Índice de Crédito de Água calculado.',
-    unit: 'Pontos',
-    isCalculated: true,
-  },
-  'custo_agua': {
-    name: 'Custo da Água (7%)',
-    currency: 'BRL',
-    category: 'crs',
-    description: 'Custo da água calculado como 7% do índice CH2OAgua.',
-    unit: 'Pontos',
-    isCalculated: true,
-  },
-  'pdm': {
-    name: 'PDM',
-    currency: 'BRL',
-    category: 'crs',
-    description: 'Índice PDM calculado a partir do CH2OAgua e Custo da Água.',
-    unit: 'Pontos',
-    isCalculated: true,
-  }
 };
 
 /**

@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react';
 import { PageHeader } from '@/components/page-header';
 import type { CommodityPriceData } from '@/lib/types';
-import { CommodityPrices } from './commodity-prices';
+import { CommodityPrices } from '@/components/commodity-prices';
 
 interface DashboardPageProps {
   initialData: CommodityPriceData[];
@@ -12,9 +12,13 @@ interface DashboardPageProps {
 
 const REFRESH_INTERVAL_MS = 60 * 1000; // 1 minuto
 
-export function DashboardPage({ initialData }: DashboardPageProps) {
+export default function DashboardPage({ initialData }: DashboardPageProps) {
   const [data, setData] = useState(initialData);
   const isLoading = data.length === 0 && initialData.length === 0;
+
+  useEffect(() => {
+    setData(initialData);
+  }, [initialData]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -35,7 +39,6 @@ export function DashboardPage({ initialData }: DashboardPageProps) {
     return () => clearInterval(intervalId);
   }, []);
   
-
   return (
     <div className="flex min-h-screen w-full flex-col">
       <PageHeader 
