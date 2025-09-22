@@ -88,7 +88,7 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
               <TableCell className="text-right font-mono">
                  {asset.price > 0 ? (
                     <div className="flex items-center justify-end gap-1">
-                      {asset.currency === 'EUR' && <Euro className="h-4 w-4" />}
+                      {asset.id === 'eur' && <Euro className="h-4 w-4" />}
                       {priceFormatted}
                     </div>
                  ) : (
