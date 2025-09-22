@@ -133,7 +133,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
 
     const yAxisFormatter = (value: number) => formatCurrency(Number(value), asset.currency, asset.id);
     const tooltipFormatter = (value: any) => [formatCurrency(Number(value), asset.currency, asset.id), 'Cotação'];
-    const pieTooltipFormatter = (value: number, name: string) => [formatCurrency(value, asset.currency, asset.id), name];
+    const pieTooltipFormatter = (value: any, name: string) => [formatCurrency(Number(value), asset.currency, asset.id), name];
 
     const renderCompositionContent = () => {
         if (loading) {
@@ -380,5 +380,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
         </Dialog>
     );
 }
+
+    
 
     
