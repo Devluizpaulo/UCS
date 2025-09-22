@@ -312,7 +312,6 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                                 <TableRow key={dataPoint.id}>
                                     <TableCell className="font-medium text-xs sm:text-sm w-[100px]">{dataPoint.data}</TableCell>
                                     <TableCell className="text-right font-mono text-primary text-xs sm:text-sm flex items-center justify-end gap-1">
-                                        {asset.id === 'eur' && <Euro className="h-4 w-4" />}
                                         {formatCurrency(dataPoint.ultimo, asset.currency, asset.id)}
                                     </TableCell>
                                 </TableRow>
