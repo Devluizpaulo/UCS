@@ -93,7 +93,7 @@ export function AssetDetailModal({ asset, isOpen, onOpenChange }: AssetDetailMod
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl w-full p-0">
+      <DialogContent className="max-w-5xl w-full p-0">
         <div className="grid md:grid-cols-[300px_1fr] h-full max-h-[90vh]">
           {/* ASSET INFO SIDEBAR */}
           <div className="bg-muted/50 p-6 flex flex-col gap-6 border-r">
