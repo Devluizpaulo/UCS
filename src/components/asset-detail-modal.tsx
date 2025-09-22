@@ -126,8 +126,14 @@ export function AssetDetailModal({ asset, isOpen, onOpenChange }: AssetDetailMod
             </div>
 
             <div className="space-y-2 text-sm text-muted-foreground mt-auto">
-                <p><span className="font-semibold text-foreground">Categoria:</span> <Badge variant="secondary">{asset.category.toUpperCase()}</Badge></p>
-                <p><span className="font-semibold text-foreground">Moeda:</span> {asset.currency}</p>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-foreground">Categoria:</span> 
+                  <Badge variant="secondary">{asset.category.toUpperCase()}</Badge>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-foreground">Moeda:</span>
+                  <span>{asset.currency}</span>
+                </div>
             </div>
           </div>
 
