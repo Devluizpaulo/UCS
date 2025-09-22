@@ -92,7 +92,7 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
                     } else if (latestData.rent_media_components) {
                          components = Object.entries(latestData.rent_media_components).map(([key, value]) => ({
                             name: key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-                            value: value,
+                            value: Number(value),
                             fill: (PIE_CHART_COLORS as any)[key] || 'hsl(var(--muted))'
                         }));
                     } else if (latestData.base_ucs) {
@@ -380,3 +380,5 @@ export function AssetDetailModal({ asset, icon: Icon, isOpen, onClose }: AssetDe
         </Dialog>
     );
 }
+
+    
