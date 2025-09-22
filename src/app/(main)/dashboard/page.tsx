@@ -5,7 +5,7 @@ import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, CalendarClock } from 'lucide-react';
 import Link from 'next/link';
-import { addDays, format, parseISO, isValid, isToday as isTodayDateFns } from 'date-fns';
+import { addDays, format, parseISO, isValid, isToday, isFuture } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 function getValidatedDate(dateString?: string | null): Date {
@@ -27,9 +27,9 @@ export default async function DashboardPage({
   const dateParam = typeof searchParams.date === 'string' ? searchParams.date : null;
   const targetDate = getValidatedDate(dateParam);
 
-  const isToday = !dateParam || isTodayDateFns(targetDate);
+  const isCurrentDateOrFuture = isToday(targetDate) || isFuture(targetDate);
   
-  const data = isToday 
+  const data = isCurrentDateOrFuture 
     ? await getCommodityPrices() 
     : await getCommodityPricesByDate(targetDate);
   
@@ -44,7 +44,7 @@ export default async function DashboardPage({
     <div className="flex min-h-screen w-full flex-col">
       <PageHeader 
         title="Painel de Cotações"
-        description={isToday 
+        description={isCurrentDateOrFuture 
             ? "Cotações em tempo real dos principais ativos." 
             : `Exibindo cotações para: ${formattedDate}`
         }
@@ -59,14 +59,14 @@ export default async function DashboardPage({
               <div className="px-3 text-sm font-medium tabular-nums capitalize">
                 {displayDateFormatted}
               </div>
-              <Button variant="outline" size="icon" className="h-9 w-9 border-none" asChild>
-                  <Link href={`/dashboard?date=${nextDate}`} scroll={false} title="Próximo dia">
+              <Button variant="outline" size="icon" className="h-9 w-9 border-none" asChild disabled={isCurrentDateOrFuture}>
+                  <Link href={`/dashboard?date=${nextDate}`} scroll={false} title={isCurrentDateOrFuture ? "Não é possível navegar para o futuro" : "Próximo dia"}>
                       <ChevronRight className="h-4 w-4" />
                   </Link>
               </Button>
             </div>
 
-             {!isToday && (
+             {!isCurrentDateOrFuture && (
               <Button variant="ghost" size="sm" asChild>
                 <Link href="/dashboard" scroll={false}>
                   <CalendarClock className="mr-2 h-4 w-4" />
@@ -78,7 +78,7 @@ export default async function DashboardPage({
       </PageHeader>
       <CommodityPrices 
         initialData={data} 
-        displayDate={isToday ? 'Tempo Real' : formattedDate} 
+        displayDate={isCurrentDateOrFuture ? 'Tempo Real' : formattedDate} 
       />
     </div>
   );
