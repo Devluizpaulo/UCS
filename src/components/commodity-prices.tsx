@@ -8,9 +8,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 interface CommodityPricesProps {
   initialData: CommodityPriceData[];
   displayDate?: string;
+  loading?: boolean;
 }
 
-export function CommodityPrices({ initialData, displayDate }: CommodityPricesProps) {
+export function CommodityPrices({ initialData, displayDate, loading }: CommodityPricesProps) {
 
   return (
     <>
@@ -26,7 +27,7 @@ export function CommodityPrices({ initialData, displayDate }: CommodityPricesPro
                 </CardDescription>
             </CardHeader>
             <CardContent className="p-0">
-                <UnderlyingAssetsTable data={initialData} />
+                <UnderlyingAssetsTable data={initialData} loading={loading} />
             </CardContent>
         </Card>
       </main>

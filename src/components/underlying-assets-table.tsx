@@ -32,42 +32,11 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
   
   if (loading) {
     return (
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Ativo</TableHead>
-            <TableHead>Última Atualização</TableHead>
-            <TableHead className="text-right">Último Preço</TableHead>
-            <TableHead className="text-right">Variação (24h)</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
+        <div className="p-4">
           {Array.from({length: 7}).map((_, i) => (
-               <TableRow key={i}>
-                  <TableCell>
-                      <div className="flex items-center gap-3">
-                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
-                             <Skeleton className="h-4 w-4 rounded-full"/>
-                          </div>
-                          <div>
-                              <Skeleton className="h-5 w-32 mb-1" />
-                              <Skeleton className="h-3 w-16" />
-                          </div>
-                      </div>
-                  </TableCell>
-                   <TableCell>
-                       <Skeleton className="h-5 w-24" />
-                   </TableCell>
-                  <TableCell className="text-right font-mono">
-                      <Skeleton className="h-5 w-20 ml-auto" />
-                  </TableCell>
-                  <TableCell className="text-right">
-                      <Skeleton className="h-6 w-24 ml-auto" />
-                  </TableCell>
-              </TableRow>
+              <Skeleton key={i} className="h-12 w-full my-2" />
           ))}
-        </TableBody>
-      </Table>
+        </div>
     );
   }
 
