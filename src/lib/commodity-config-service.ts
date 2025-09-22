@@ -2,11 +2,27 @@
 import type { CommodityConfig } from './types';
 
 /**
- * Mapeamento central dos ativos (commodities) que compõem o índice.
+ * ===================================================================================
+ * PAINEL DE CONTROLE DE ATIVOS (COMMODITIES)
+ * ===================================================================================
  * 
- * A chave do mapa (ex: 'soja') é usada como:
- * 1. ID único para o ativo.
- * 2. Nome da coleção no Firestore onde os dados históricos são armazenados.
+ * Este arquivo é o centro de controle para todos os ativos que o sistema utiliza.
+ * Cada entrada neste mapa define um ativo, suas propriedades e, mais importante,
+ * a coleção do Firestore de onde seus dados são buscados.
+ *
+ * COMO FUNCIONA:
+ * - A **CHAVE** de cada entrada (ex: 'soja', 'boi_gordo') é o **NOME DA COLEÇÃO** 
+ *   no banco de dados Firestore que armazena os dados históricos daquele ativo.
+ * - O objeto associado à chave contém os metadados do ativo, como seu nome de 
+ *   exibição, moeda, categoria, etc.
+ *
+ * PARA ADICIONAR UM NOVO ATIVO:
+ * 1. Crie uma nova coleção no Firestore com o nome desejado (ex: 'algodao').
+ * 2. Adicione uma nova entrada neste mapa com a chave correspondente ('algodao').
+ * 3. Preencha os detalhes do ativo (nome, moeda, categoria, etc.).
+ *
+ * O sistema irá automaticamente buscar e exibir o novo ativo no painel.
+ * ===================================================================================
  */
 export const COMMODITIES_CONFIG: Record<string, Omit<CommodityConfig, 'id'>> = {
   'usd': {
