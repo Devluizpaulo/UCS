@@ -23,7 +23,7 @@ export interface FirestoreQuote {
     id: string;
     data: string; 
     ultimo: number;
-    timestamp: string;
+    timestamp: number;
     variacao_pct: number | null;
     rent_media?: number;
     [key: string]: any; // Allow other fields

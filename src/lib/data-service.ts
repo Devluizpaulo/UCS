@@ -18,16 +18,16 @@ function serializeFirestoreTimestamp(data: any): any {
         return data;
     }
 
-    if (data instanceof Date) {
-        return data.toISOString();
+    if (data instanceof Timestamp) {
+        return data.toMillis();
     }
     
-    if (data instanceof Timestamp) {
-        return data.toDate().toISOString();
+    if (data instanceof Date) {
+        return data.getTime();
     }
 
     if ('toDate' in data && typeof data.toDate === 'function') {
-        return data.toDate().toISOString();
+        return data.toDate().getTime();
     }
 
     if (Array.isArray(data)) {

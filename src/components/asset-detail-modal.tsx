@@ -30,7 +30,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 import type { CommodityPriceData, FirestoreQuote } from '@/lib/types';
@@ -73,7 +73,7 @@ export function AssetDetailModal({ asset, isOpen, onOpenChange }: AssetDetailMod
     return historicalData
       .slice(0, 30) // Use last 30 days for chart
       .map((quote) => ({
-        date: format(parseISO(quote.timestamp), 'dd/MM'),
+        date: format(new Date(quote.timestamp), 'dd/MM'),
         price: quote.ultimo,
       }))
       .reverse(); // Ensure chronological order for the chart
@@ -213,7 +213,7 @@ export function AssetDetailModal({ asset, isOpen, onOpenChange }: AssetDetailMod
                                 <TableBody>
                                 {paginatedData.map((quote) => (
                                     <TableRow key={quote.id}>
-                                    <TableCell>{format(parseISO(quote.timestamp), 'dd/MM/yyyy')}</TableCell>
+                                    <TableCell>{format(new Date(quote.timestamp), 'dd/MM/yyyy')}</TableCell>
                                     <TableCell className="text-right font-mono">
                                         {formatCurrency(quote.ultimo, asset.currency, asset.id)}
                                     </TableCell>
