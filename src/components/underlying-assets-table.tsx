@@ -1,6 +1,7 @@
 
 'use client';
 
+import { useState } from 'react';
 import {
   Table,
   TableBody,
@@ -15,6 +16,7 @@ import { Skeleton } from './ui/skeleton';
 import { formatCurrency } from '@/lib/formatters';
 import { getIconForCategory } from '@/lib/icons';
 import { Euro } from 'lucide-react';
+import { AssetDetailModal } from './asset-detail-modal';
 
 interface UnderlyingAssetsTableProps {
     data: CommodityPriceData[];
@@ -22,6 +24,11 @@ interface UnderlyingAssetsTableProps {
 }
 
 export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTableProps) {
+  const [selectedAsset, setSelectedAsset] = useState<CommodityPriceData | null>(null);
+
+  const handleRowClick = (asset: CommodityPriceData) => {
+    setSelectedAsset(asset);
+  };
   
   if (loading) {
     return (
@@ -83,7 +90,7 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
                   const changeColor = asset.change >= 0 ? 'text-primary' : 'text-destructive';
 
                   return (
-                      <TableRow key={asset.id}>
+                      <TableRow key={asset.id} onClick={() => handleRowClick(asset)} className="cursor-pointer">
                         <TableCell>
                           <div className="flex items-center gap-3">
                             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
@@ -125,6 +132,17 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
             )}
           </TableBody>
         </Table>
+        {selectedAsset && (
+            <AssetDetailModal
+                asset={selectedAsset}
+                isOpen={!!selectedAsset}
+                onOpenChange={(isOpen) => {
+                    if (!isOpen) {
+                        setSelectedAsset(null);
+                    }
+                }}
+            />
+        )}
     </div>
   );
 }
