@@ -7,6 +7,8 @@ import { getCommodityConfigs } from '@/lib/commodity-config-service';
 import type { CommodityPriceData, FirestoreQuote } from '@/lib/types';
 import { getCache, setCache } from '@/lib/cache-service';
 import { Timestamp } from 'firebase-admin/firestore';
+import { startOfDay, endOfDay, subDays } from 'date-fns';
+
 
 const CACHE_KEY_PRICES = 'commodity_prices_simple';
 const CACHE_TTL_SECONDS = 300; // 5 minutos
@@ -39,6 +41,71 @@ function serializeFirestoreTimestamp(data: any): any {
     return serializedData;
 }
 
+async function getQuoteForDate(assetId: string, date: Date): Promise<FirestoreQuote | null> {
+    const start = Timestamp.fromDate(startOfDay(date));
+    const end = Timestamp.fromDate(endOfDay(date));
+
+    const snapshot = await db.collection(assetId)
+        .where('timestamp', '>=', start)
+        .where('timestamp', '<=', end)
+        .orderBy('timestamp', 'desc')
+        .limit(1)
+        .get();
+
+    if (snapshot.empty) return null;
+    
+    const doc = snapshot.docs[0];
+    return { id: doc.id, ...doc.data() } as FirestoreQuote;
+}
+
+
+export async function getCommodityPricesByDate(date: Date): Promise<CommodityPriceData[]> {
+    const cacheKey = `commodity_prices_${date.toISOString().split('T')[0]}`;
+    const cachedData = getCache<CommodityPriceData[]>(cacheKey);
+    if (cachedData) {
+        return cachedData;
+    }
+
+    const previousDate = subDays(date, 1);
+
+    try {
+        const configs = await getCommodityConfigs();
+        
+        const assetPromises = configs.map(async (config) => {
+            const [latestDoc, previousDoc] = await Promise.all([
+                getQuoteForDate(config.id, date),
+                getQuoteForDate(config.id, previousDate)
+            ]);
+            
+            const latestPrice = latestDoc?.ultimo ?? 0;
+            const previousPrice = previousDoc?.ultimo ?? latestPrice;
+
+            const absoluteChange = latestPrice - previousPrice;
+            const change = (previousPrice !== 0) ? (absoluteChange / previousPrice) * 100 : 0;
+            
+            const lastUpdatedTimestamp = latestDoc?.timestamp ? serializeFirestoreTimestamp(latestDoc.timestamp) : date.toISOString();
+            
+            return { 
+                ...config, 
+                price: latestPrice, 
+                change, 
+                absoluteChange, 
+                lastUpdated: latestDoc?.data || new Date(lastUpdatedTimestamp).toLocaleDateString('pt-BR')
+            };
+        });
+
+        const results = await Promise.all(assetPromises);
+
+        setCache(cacheKey, results, CACHE_TTL_SECONDS * 12 * 24); // Cache histórico por 1 dia
+        return results;
+
+    } catch (error) {
+        console.error("Error fetching commodity prices by date:", error);
+        return [];
+    }
+}
+
+
 export async function getLatestQuoteWithComponents(assetId: string): Promise<FirestoreQuote | null> {
     const snapshot = await db.collection(assetId)
         .orderBy('timestamp', 'desc')
@@ -60,7 +127,7 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
     }
 
     try {
-        const configs = await getCommodityConfigs();
+        const configs = await getCommodifyConfigs();
         
         const assetPromises = configs.map(async (config) => {
             const snapshot = await db.collection(config.id).orderBy('timestamp', 'desc').limit(2).get();
