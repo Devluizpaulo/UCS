@@ -2,7 +2,6 @@
 
 'use client';
 
-import { useState } from 'react';
 import {
   Table,
   TableBody,
@@ -13,7 +12,6 @@ import {
 } from '@/components/ui/table';
 import type { CommodityPriceData } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { AssetDetailModal } from './asset-detail-modal';
 import { Skeleton } from './ui/skeleton';
 import { formatCurrency } from '@/lib/formatters';
 import { getIconForCategory } from '@/lib/icons';
@@ -26,17 +24,11 @@ interface UnderlyingAssetsTableProps {
 }
 
 export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTableProps) {
-  const [selectedAsset, setSelectedAsset] = useState<CommodityPriceData | null>(null);
-
-  const handleRowClick = (asset: CommodityPriceData) => {
-    if (loading) return;
-    setSelectedAsset(asset);
-  };
   
   const renderTableRows = () => {
     if (loading) {
         return Array.from({length: 7}).map((_, i) => (
-             <TableRow key={i} className="cursor-wait">
+             <TableRow key={i}>
                 <TableCell>
                     <div className="flex items-center gap-3">
                         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
@@ -74,7 +66,7 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
         const changeColor = asset.change >= 0 ? 'text-primary' : 'text-destructive';
 
         return (
-            <TableRow key={asset.id} onClick={() => handleRowClick(asset)} className="cursor-pointer hover:bg-muted/50">
+            <TableRow key={asset.id}>
               <TableCell>
                 <div className="flex items-center gap-3">
                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
@@ -124,14 +116,6 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
               {renderTableRows()}
           </TableBody>
         </Table>
-      {selectedAsset && (
-        <AssetDetailModal
-          asset={selectedAsset}
-          icon={getIconForCategory(selectedAsset)}
-          isOpen={!!selectedAsset}
-          onClose={() => setSelectedAsset(null)}
-        />
-      )}
     </div>
   );
 }

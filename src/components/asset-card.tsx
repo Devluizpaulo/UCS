@@ -1,13 +1,11 @@
 
 'use client';
 
-import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatCurrency } from '@/lib/formatters';
 import type { CommodityPriceData } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { AssetDetailModal } from './asset-detail-modal';
 import { getIconForCategory } from '@/lib/icons';
 
 interface AssetCardProps {
@@ -17,14 +15,6 @@ interface AssetCardProps {
 }
 
 export function AssetCard({ asset, loading, className }: AssetCardProps) {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
-  const handleCardClick = () => {
-    if (!loading && asset) {
-      setIsModalOpen(true);
-    }
-  };
-
   if (loading || !asset) {
     return (
       <Card className={className}>
@@ -48,37 +38,23 @@ export function AssetCard({ asset, loading, className }: AssetCardProps) {
   const priceFormatted = formatCurrency(asset.price, asset.currency, asset.id);
 
   return (
-    <>
-      <Card
-        onClick={handleCardClick}
-        className={cn("cursor-pointer transition-all hover:bg-muted/50 hover:shadow-md", className)}
-      >
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">{asset.name}</CardTitle>
-          <Icon className="h-5 w-5 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">
-            {asset.price > 0 ? priceFormatted : <span className="text-muted-foreground">-</span>}
-          </div>
-          <p className="text-xs text-muted-foreground pt-1">
-            {asset.price > 0 ? (
-                <span className={cn("font-semibold", changeColor)}>
-                    {asset.change >= 0 ? '+' : ''}{asset.change.toFixed(2)}%
-                </span>
-            ) : 'Variação indisponível'}
-          </p>
-        </CardContent>
-      </Card>
-
-      {asset && (
-        <AssetDetailModal
-          asset={asset}
-          icon={Icon}
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-        />
-      )}
-    </>
+    <Card className={cn("transition-all hover:shadow-md", className)}>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-sm font-medium">{asset.name}</CardTitle>
+        <Icon className="h-5 w-5 text-muted-foreground" />
+      </CardHeader>
+      <CardContent>
+        <div className="text-2xl font-bold">
+          {asset.price > 0 ? priceFormatted : <span className="text-muted-foreground">-</span>}
+        </div>
+        <p className="text-xs text-muted-foreground pt-1">
+          {asset.price > 0 ? (
+              <span className={cn("font-semibold", changeColor)}>
+                  {asset.change >= 0 ? '+' : ''}{asset.change.toFixed(2)}%
+              </span>
+          ) : 'Variação indisponível'}
+        </p>
+      </CardContent>
+    </Card>
   );
 }
