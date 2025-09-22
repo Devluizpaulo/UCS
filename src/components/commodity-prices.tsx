@@ -1,47 +1,16 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
 import { UnderlyingAssetsTable } from './underlying-assets-table';
 import type { CommodityPriceData } from '@/lib/types';
 import { PageHeader } from './page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-
-const REFRESH_INTERVAL_MS = 60 * 1000; // 1 minuto
 
 interface CommodityPricesProps {
   initialData: CommodityPriceData[];
 }
 
 export function CommodityPrices({ initialData }: CommodityPricesProps) {
-  const [data, setData] = useState<CommodityPriceData[]>(initialData);
-  const [isLoading, setIsLoading] = useState(initialData.length === 0);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await fetch('/api/cotacoes');
-        if (!response.ok) {
-          throw new Error('Failed to fetch updated data');
-        }
-        const newData: CommodityPriceData[] = await response.json();
-        setData(newData);
-      } catch (error) {
-        console.error('Error refreshing data:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    if (initialData.length === 0) {
-        fetchData();
-    }
-    
-    const intervalId = setInterval(fetchData, REFRESH_INTERVAL_MS);
-
-    return () => clearInterval(intervalId);
-  }, [initialData]);
-
   return (
     <>
       <PageHeader 
@@ -55,7 +24,7 @@ export function CommodityPrices({ initialData }: CommodityPricesProps) {
                 <CardDescription>Preços em tempo real das commodities que compõem os índices.</CardDescription>
             </CardHeader>
             <CardContent className="p-0">
-                <UnderlyingAssetsTable loading={isLoading} data={data} />
+                <UnderlyingAssetsTable data={initialData} />
             </CardContent>
         </Card>
       </main>
