@@ -167,7 +167,7 @@ export function AssetDetailModal({ asset, isOpen, onOpenChange }: AssetDetailMod
                             fontSize={12}
                             tickLine={false}
                             axisLine={false}
-                            tickFormatter={(value) => formatCurrency(value as number, asset.currency, asset.id).replace(/[R$|$\s]/g, '')}
+                            tickFormatter={(value) => formatCurrency(value as number, asset.currency, asset.id)}
                           />
                           <Tooltip
                             contentStyle={{

@@ -47,7 +47,7 @@ function serializeFirestoreTimestamp(data: any): any {
     return serializedData;
 }
 
-
+// Retorna a cotação de um ativo para uma data específica
 async function getQuoteForDate(assetId: string, date: Date): Promise<FirestoreQuote | null> {
     const formattedDate = format(date, 'dd/MM/yyyy');
 
@@ -61,22 +61,62 @@ async function getQuoteForDate(assetId: string, date: Date): Promise<FirestoreQu
     const doc = snapshot.docs[0];
     const data = doc.data();
     
-    // Retorna o documento completo, incluindo rent_media
     return { id: doc.id, ...data } as FirestoreQuote;
 }
 
-async function calculateCh2oPrice(quoteFetcher: (assetId: string, date: Date) => Promise<FirestoreQuote | null>, date: Date): Promise<number> {
-    const components = ['boi_gordo', 'milho', 'soja', 'madeira', 'carbono'];
+// Retorna a cotação mais recente de um ativo
+async function getLatestQuote(assetId: string): Promise<FirestoreQuote | null> {
+    const snapshot = await db.collection(assetId)
+        .orderBy('timestamp', 'desc')
+        .limit(1)
+        .get();
+
+    if (snapshot.empty) return null;
     
-    const quotes = await Promise.all(
-        components.map(id => quoteFetcher(id, date))
+    const doc = snapshot.docs[0];
+    const data = doc.data();
+    
+    return { id: doc.id, ...data } as FirestoreQuote;
+}
+
+
+// Calcula o preço do CH²O com base nos seus componentes para uma data específica
+async function calculateCh2oPriceForDate(date: Date): Promise<number> {
+    const componentIds = ['boi_gordo', 'milho', 'soja', 'madeira', 'carbono'];
+    
+    const componentQuotes = await Promise.all(
+        componentIds.map(id => getQuoteForDate(id, date))
     );
 
-    const rentMedia: { [key: string]: number } = {};
-    quotes.forEach((quote, index) => {
-        const componentId = components[index];
-        rentMedia[componentId] = quote?.rent_media ?? 0;
-    });
+    const rentMedia = componentQuotes.reduce((acc, quote, index) => {
+        acc[componentIds[index]] = quote?.rent_media ?? 0;
+        return acc;
+    }, {} as Record<string, number>);
+
+    if (Object.values(rentMedia).every(val => val === 0)) return 0;
+
+    const price = 
+        (rentMedia['boi_gordo'] * 0.35) +
+        (rentMedia['milho'] * 0.30) +
+        (rentMedia['soja'] * 0.35) +
+        (rentMedia['madeira']) +
+        (rentMedia['carbono']);
+        
+    return price;
+}
+
+// Calcula o preço mais recente do CH²O com base nos seus componentes
+async function calculateLatestCh2oPrice(): Promise<number> {
+    const componentIds = ['boi_gordo', 'milho', 'soja', 'madeira', 'carbono'];
+    
+    const componentQuotes = await Promise.all(
+        componentIds.map(id => getLatestQuote(id))
+    );
+
+    const rentMedia = componentQuotes.reduce((acc, quote, index) => {
+        acc[componentIds[index]] = quote?.rent_media ?? 0;
+        return acc;
+    }, {} as Record<string, number>);
 
     if (Object.values(rentMedia).every(val => val === 0)) return 0;
 
@@ -105,55 +145,36 @@ export async function getCommodityPricesByDate(date: Date): Promise<CommodityPri
         const configs = await getCommodityConfigs();
         
         const assetPromises = configs.map(async (config) => {
-            if (config.isCalculated) {
-                let latestPrice = 0;
-                let previousPrice = 0;
+            let latestPrice: number;
+            let previousPrice: number;
 
-                const existingQuote = await getQuoteForDate(config.id, date);
-                if (existingQuote && existingQuote.ultimo) {
-                    latestPrice = existingQuote.ultimo;
-                } else {
-                    latestPrice = await calculateCh2oPrice(getQuoteForDate, date);
-                }
-
-                const existingPreviousQuote = await getQuoteForDate(config.id, previousDate);
-                if (existingPreviousQuote && existingPreviousQuote.ultimo) {
-                    previousPrice = existingPreviousQuote.ultimo;
-                } else {
-                    previousPrice = await calculateCh2oPrice(getQuoteForDate, previousDate);
-                }
+            if (config.id === 'agua') {
+                const quoteToday = await getQuoteForDate(config.id, date);
+                latestPrice = quoteToday?.ultimo ?? await calculateCh2oPriceForDate(date);
                 
-                const absoluteChange = latestPrice - previousPrice;
-                const change = (previousPrice !== 0) ? (absoluteChange / previousPrice) * 100 : 0;
-
-                return { 
-                    ...config, 
-                    price: latestPrice, 
-                    change, 
-                    absoluteChange, 
-                    lastUpdated: displayDate
-                };
-
+                const quoteYesterday = await getQuoteForDate(config.id, previousDate);
+                previousPrice = quoteYesterday?.ultimo ?? await calculateCh2oPriceForDate(previousDate);
+                
             } else {
                 const [latestDoc, previousDoc] = await Promise.all([
                     getQuoteForDate(config.id, date),
                     getQuoteForDate(config.id, previousDate)
                 ]);
                 
-                const latestPrice = latestDoc?.ultimo ?? 0;
-                const previousPrice = previousDoc?.ultimo ?? latestPrice;
-
-                const absoluteChange = latestPrice - previousPrice;
-                const change = (previousPrice !== 0) ? (absoluteChange / previousPrice) * 100 : 0;
-                
-                return { 
-                    ...config, 
-                    price: latestPrice, 
-                    change, 
-                    absoluteChange, 
-                    lastUpdated: displayDate
-                };
+                latestPrice = latestDoc?.ultimo ?? 0;
+                previousPrice = previousDoc?.ultimo ?? latestPrice;
             }
+
+            const absoluteChange = latestPrice - previousPrice;
+            const change = (previousPrice !== 0) ? (absoluteChange / previousPrice) * 100 : 0;
+            
+            return { 
+                ...config, 
+                price: latestPrice, 
+                change, 
+                absoluteChange, 
+                lastUpdated: displayDate
+            };
         });
 
         const results = await Promise.all(assetPromises);
@@ -192,25 +213,33 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
         const configs = await getCommodityConfigs();
         
         const assetPromises = configs.map(async (config) => {
-            if (config.isCalculated) {
-                 const quoteFetcher = getLatestQuoteWithComponents;
-                 const today = new Date();
-                 const yesterday = subDays(today, 1);
+             if (config.id === 'agua') {
+                const quoteToday = await getLatestQuote(config.id);
+                const latestPrice = quoteToday?.ultimo ?? await calculateLatestCh2oPrice();
 
-                 const latestPrice = await calculateCh2oPrice(quoteFetcher, today);
-                 const previousPrice = await calculateCh2oPrice(quoteFetcher, yesterday);
-                 
-                 const absoluteChange = latestPrice - previousPrice;
-                 const change = (previousPrice !== 0) ? (absoluteChange / previousPrice) * 100 : 0;
+                // Para a variação, buscamos os últimos 2 docs salvos, se existirem
+                const snapshot = await db.collection(config.id).orderBy('timestamp', 'desc').limit(2).get();
+                let previousPrice = latestPrice;
 
-                 return { 
+                if (snapshot.docs.length > 1) {
+                    previousPrice = snapshot.docs[1].data().ultimo ?? latestPrice;
+                } else {
+                    // Se não houver histórico salvo, calculamos para o dia anterior
+                    previousPrice = await calculateCh2oPriceForDate(subDays(new Date(), 1));
+                }
+                
+                const absoluteChange = latestPrice - previousPrice;
+                const change = (previousPrice !== 0) ? (absoluteChange / previousPrice) * 100 : 0;
+
+                return { 
                     ...config, 
                     price: latestPrice, 
                     change, 
                     absoluteChange, 
                     lastUpdated: 'Tempo Real'
-                 };
+                };
             }
+
 
             const snapshot = await db.collection(config.id).orderBy('timestamp', 'desc').limit(2).get();
 
@@ -267,7 +296,7 @@ export async function getCotacoesHistorico(assetId: string): Promise<FirestoreQu
     const data = snapshot.docs.map(doc => {
         const docData = doc.data();
         // Sanitize variacao_pct
-        if (docData.variacao_pct === 'null') {
+        if (docData.variacao_pct === 'null' || docData.variacao_pct === null) {
             docData.variacao_pct = null;
         } else if (typeof docData.variacao_pct === 'string') {
             const parsed = parseFloat(docData.variacao_pct);
@@ -287,5 +316,3 @@ export async function getCotacoesHistorico(assetId: string): Promise<FirestoreQu
     return [];
   }
 }
-
-    

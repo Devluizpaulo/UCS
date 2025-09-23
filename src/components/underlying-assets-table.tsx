@@ -15,7 +15,6 @@ import { cn } from '@/lib/utils';
 import { Skeleton } from './ui/skeleton';
 import { formatCurrency } from '@/lib/formatters';
 import { getIconForCategory } from '@/lib/icons';
-import { Euro } from 'lucide-react';
 import { AssetDetailModal } from './asset-detail-modal';
 
 interface UnderlyingAssetsTableProps {
@@ -73,10 +72,7 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
                         </TableCell>
                         <TableCell className="text-right font-mono">
                            {asset.price > 0 ? (
-                              <div className="flex items-center justify-end gap-1">
-                                {asset.id === 'eur' && <Euro className="h-4 w-4" />}
-                                {priceFormatted}
-                              </div>
+                              priceFormatted
                            ) : (
                               <span className="text-muted-foreground">N/A</span>
                            )}

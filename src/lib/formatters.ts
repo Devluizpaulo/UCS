@@ -9,31 +9,32 @@ export function formatCurrency(value: number, currency: string, assetId?: string
   const isExchangeRate = assetId === 'usd' || assetId === 'eur';
 
   const options: Intl.NumberFormatOptions = {
+    style: 'currency',
+    currency: currency,
     minimumFractionDigits: isExchangeRate ? 4 : 2,
     maximumFractionDigits: isExchangeRate ? 4 : 2,
   };
 
+  // Para moedas que não são BRL, não queremos o símbolo padrão (ex: US$ para USD)
+  // mas sim um formato mais limpo.
+  if (currency !== 'BRL') {
+    options.style = 'decimal';
+  }
+
+
   try {
     const numberFormatter = new Intl.NumberFormat('pt-BR', options);
-    const numericValue = numberFormatter.format(value);
-
-    switch(assetId) {
-        case 'usd':
-            return `$ ${numericValue}`;
-        case 'eur':
-             return `€ ${numericValue}`; 
-        case 'soja':
-        case 'madeira':
-             return `$ ${numericValue}`; // Soja e Madeira são em USD
-        case 'carbono':
-             return `€ ${numericValue}`;
-        case 'agua':
-        default:
-            return `R$ ${numericValue}`; // O padrão é BRL
-    }
+    return numberFormatter.format(value);
 
   } catch (e) {
     console.error("Error formatting currency:", e);
-    return `${value.toFixed(2)} ${currency}`;
+    
+    const fallbackOptions = { 
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2 
+    };
+    const fallbackFormatter = new Intl.NumberFormat('pt-BR', fallbackOptions);
+
+    return `${currency} ${fallbackFormatter.format(value)}`;
   }
 }
