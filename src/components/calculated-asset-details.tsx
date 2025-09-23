@@ -3,8 +3,9 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { getCotacoesHistorico } from '@/lib/data-service';
+import { COMMODITIES_CONFIG } from '@/lib/commodity-config-service';
 import type { CommodityPriceData, FirestoreQuote } from '@/lib/types';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import {
   Table,
   TableBody,
@@ -17,6 +18,7 @@ import { Button } from './ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Skeleton } from './ui/skeleton';
 import { formatCurrency } from '@/lib/formatters';
+import { isCalculableAsset, CALCULATION_CONFIGS } from '@/lib/calculation-service';
 
 const ITEMS_PER_PAGE = 7;
 
@@ -28,6 +30,11 @@ export function CalculatedAssetDetails({ asset }: CalculatedAssetDetailsProps) {
   const [compositionHistory, setCompositionHistory] = useState<FirestoreQuote[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+
+  const assetConfig = useMemo(() => {
+    if (!isCalculableAsset(asset.id)) return null;
+    return CALCULATION_CONFIGS[asset.id];
+  }, [asset.id]);
 
   useEffect(() => {
     setIsLoading(true);
@@ -50,11 +57,12 @@ export function CalculatedAssetDetails({ asset }: CalculatedAssetDetailsProps) {
   
   const totalPages = Math.ceil(compositionHistory.length / ITEMS_PER_PAGE);
 
-  if (isLoading) {
+  if (isLoading || !assetConfig) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Composição do Cálculo (Últimos 90 dias)</CardTitle>
+          <CardTitle>Composição do Cálculo</CardTitle>
+           <CardDescription>Carregando histórico de composição...</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-2 p-6">
@@ -67,22 +75,25 @@ export function CalculatedAssetDetails({ asset }: CalculatedAssetDetailsProps) {
       </Card>
     );
   }
+  
+  const componentIds = assetConfig.components;
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Composição do Cálculo de {asset.name} (Últimos 90 dias)</CardTitle>
+        <CardTitle>Composição do Cálculo de {asset.name}</CardTitle>
+        <CardDescription>Histórico de componentes dos últimos 90 dias.</CardDescription>
       </CardHeader>
       <CardContent className="p-0">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Data</TableHead>
-              <TableHead className="text-right">Boi Gordo</TableHead>
-              <TableHead className="text-right">Milho</TableHead>
-              <TableHead className="text-right">Soja</TableHead>
-              <TableHead className="text-right">Madeira</TableHead>
-              <TableHead className="text-right">Carbono</TableHead>
+              {componentIds.map(id => (
+                  <TableHead key={id} className="text-right">
+                    {COMMODITIES_CONFIG[id]?.name || id}
+                  </TableHead>
+              ))}
               <TableHead className="text-right font-bold">Total ({asset.name})</TableHead>
             </TableRow>
           </TableHeader>
@@ -90,12 +101,17 @@ export function CalculatedAssetDetails({ asset }: CalculatedAssetDetailsProps) {
             {paginatedData.map((item) => (
               <TableRow key={item.timestamp}>
                 <TableCell>{item.data}</TableCell>
-                <TableCell className="text-right font-mono">{formatCurrency(item.boi_gordo ?? 0, 'BRL')}</TableCell>
-                <TableCell className="text-right font-mono">{formatCurrency(item.milho ?? 0, 'BRL')}</TableCell>
-                <TableCell className="text-right font-mono">{formatCurrency(item.soja ?? 0, 'USD')}</TableCell>
-                <TableCell className="text-right font-mono">{formatCurrency(item.madeira ?? 0, 'USD')}</TableCell>
-                <TableCell className="text-right font-mono">{formatCurrency(item.carbono ?? 0, 'EUR')}</TableCell>
-                <TableCell className="text-right font-mono font-bold">{formatCurrency(item.ultimo, 'BRL')}</TableCell>
+                {componentIds.map(id => {
+                  const componentAsset = COMMODITIES_CONFIG[id];
+                  return (
+                    <TableCell key={id} className="text-right font-mono">
+                      {formatCurrency(item[id] ?? 0, componentAsset?.currency || 'BRL')}
+                    </TableCell>
+                  )
+                })}
+                <TableCell className="text-right font-mono font-bold">
+                  {formatCurrency(item.ultimo, asset.currency)}
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
