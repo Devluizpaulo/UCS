@@ -97,8 +97,9 @@ export async function GET(request: Request) {
     const absoluteChange = price - previousPrice;
     const change = (previousPrice !== 0) ? (absoluteChange / previousPrice) * 100 : 0;
     
-    // Atualiza a cotação do dia com a variação calculada
-    if (currentData.isNew) {
+    // Atualiza a cotação do dia com a variação calculada, se for um novo cálculo
+    // ou se a variação ainda não foi definida (é zero).
+    if (price > 0 && (currentData.isNew || (await getQuoteForDate(CH2O_ASSET_ID, targetDate))?.variacao_pct === 0) ) {
         await saveQuote(CH2O_ASSET_ID, {
             data: format(targetDate, 'dd/MM/yyyy'),
             timestamp: targetDate.getTime(),

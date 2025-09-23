@@ -60,7 +60,7 @@ async function getOrCalculatePriceForDate(targetDate: Date) {
       data: format(targetDate, 'dd/MM/yyyy'),
       timestamp: targetDate.getTime(),
       ultimo: calculatedPrice,
-      variacao_pct: 0,
+      variacao_pct: 0, // Variação será calculada no GET principal
       ...componentValues,
     });
   }
@@ -103,8 +103,8 @@ export async function GET(request: Request) {
     const absoluteChange = price - previousPrice;
     const change = previousPrice > 0 ? (absoluteChange / previousPrice) * 100 : 0;
 
-    // Atualiza variação na cotação do dia
-    if (currentData.isNew && price > 0) {
+    // Atualiza variação na cotação do dia se for um novo cálculo ou se a variação for 0
+    if (price > 0 && (currentData.isNew || (await getQuoteForDate(CUSTO_AGUA_ASSET_ID, targetDate))?.variacao_pct === 0)) {
       await saveQuote(CUSTO_AGUA_ASSET_ID, {
         data: format(targetDate, 'dd/MM/yyyy'),
         timestamp: targetDate.getTime(),
