@@ -18,7 +18,7 @@ const CUSTO_AGUA_WEIGHTS: Record<string, number> = {
 const CARBON_FACTOR = 0.07; // 7%
 
 async function getOrCalculatePriceForDate(targetDate: Date): Promise<any> {
-    // 1. Check if a quote already exists for the target date in the 'custo_agua' collection
+    // 1. Check if a quote already exists for the target date
     const existingQuote = await getQuoteForDate(CUSTO_AGUA_ASSET_ID, targetDate);
     if (existingQuote && typeof existingQuote.ultimo === 'number') {
         return { 
@@ -55,8 +55,7 @@ async function getOrCalculatePriceForDate(targetDate: Date): Promise<any> {
         componentValues.madeira +
         (componentValues.carbono * CARBON_FACTOR);
 
-
-    // 3. Save the newly calculated price and its components back to the 'custo_agua' collection,
+    // 3. Save the newly calculated price and its components back,
     // ONLY if the date is not in the future.
     if (calculatedPrice > 0 && !isFuture(startOfDay(targetDate))) {
          await saveQuote(CUSTO_AGUA_ASSET_ID, {
