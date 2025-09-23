@@ -156,7 +156,7 @@ export async function getCommodityPricesByDate(date: Date): Promise<CommodityPri
         const configs = await getCommodityConfigs();
         
         const assetPromises = configs.map(async (config) => {
-            if (config.id === 'agua') {
+            if (config.isCalculated && config.id === 'agua') {
                 const ch2oData = await getCh2oData(date);
                 return { 
                     ...config, 
@@ -208,7 +208,7 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
         const configs = await getCommodityConfigs();
         
         const assetPromises = configs.map(async (config) => {
-             if (config.id === 'agua') {
+             if (config.isCalculated && config.id === 'agua') {
                 const ch2oData = await getCh2oData();
                 return { 
                     ...config, 
