@@ -61,7 +61,6 @@ async function getQuoteForDate(assetId: string, date: Date): Promise<FirestoreQu
     const doc = snapshot.docs[0];
     const data = doc.data();
     
-    // Retorna todos os dados para garantir que `rent_media` esteja presente
     return { id: doc.id, ...data } as FirestoreQuote;
 }
 
@@ -85,27 +84,27 @@ async function calculateCh2oPrice(quoteFetcher: (assetId: string) => Promise<Fir
     const componentQuotes = await Promise.all(
         CH2O_COMPONENTS.map(id => quoteFetcher(id))
     );
-
-    const rentMedia: Record<string, number> = {};
+    
+    const prices: Record<string, number> = {};
     componentQuotes.forEach((quote, index) => {
-        rentMedia[CH2O_COMPONENTS[index]] = quote?.rent_media ?? 0;
+        prices[CH2O_COMPONENTS[index]] = quote?.ultimo ?? 0;
     });
 
-    if (Object.values(rentMedia).every(val => val === 0)) return 0;
-
+    if (Object.values(prices).every(val => val === 0)) return 0;
+    
     const price = 
-        (rentMedia['boi_gordo'] * 0.35) +
-        (rentMedia['milho'] * 0.30) +
-        (rentMedia['soja'] * 0.35) +
-        (rentMedia['madeira']) +
-        (rentMedia['carbono']);
+        (prices['boi_gordo'] * 0.35) +
+        (prices['milho'] * 0.30) +
+        (prices['soja'] * 0.35) +
+        (prices['madeira']) +
+        (prices['carbono']);
         
     return price;
 }
 
 export async function getCommodityPricesByDate(date: Date): Promise<CommodityPriceData[]> {
     const cacheKey = `commodity_prices_${date.toISOString().split('T')[0]}`;
-    const cachedData = getCache<CommodoityPriceData[]>(cacheKey);
+    const cachedData = getCache<CommodityPriceData[]>(cacheKey);
     if (cachedData) {
         return cachedData;
     }
@@ -306,3 +305,5 @@ export async function getCotacoesHistorico(assetId: string): Promise<FirestoreQu
     return [];
   }
 }
+
+    
