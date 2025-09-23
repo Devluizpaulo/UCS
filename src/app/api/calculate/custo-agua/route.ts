@@ -17,6 +17,8 @@ const CUSTO_AGUA_WEIGHTS: Record<ComponentId, number> = {
   carbono: 1,      // peso 1 (sem ajuste)
 };
 
+const CARBON_FACTOR = 0.07; // 7%
+
 /**
  * Busca ou calcula o preço do custo da água para a data alvo
  */
@@ -50,7 +52,7 @@ async function getOrCalculatePriceForDate(targetDate: Date) {
     + (componentValues.madeira * CUSTO_AGUA_WEIGHTS.madeira)
     + (componentValues.carbono * CUSTO_AGUA_WEIGHTS.carbono);
 
-  const calculatedPrice = weightedSum;
+  const calculatedPrice = weightedSum * CARBON_FACTOR;
 
   // Só salva se for uma data não futura e preço > 0
   if (calculatedPrice > 0 && !isFuture(startOfDay(targetDate))) {
