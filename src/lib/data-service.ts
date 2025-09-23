@@ -5,10 +5,8 @@ import { db } from '@/lib/firebase-admin-config';
 import type { CommodityPriceData, FirestoreQuote, Ch2oCompositionData } from '@/lib/types';
 import { getCache, setCache } from '@/lib/cache-service';
 import { Timestamp } from 'firebase-admin/firestore';
-import { subDays, format, parse, isValid } from 'date-fns';
+import { subDays, format, parse, isValid, startOfDay, parseISO } from 'date-fns';
 import { COMMODITIES_CONFIG } from './commodity-config-service';
-import { CH2O_COMPONENTS } from './constants';
-
 
 const CACHE_KEY_PRICES = 'commodity_prices_simple';
 const CACHE_TTL_SECONDS = 300; // 5 minutos
@@ -24,6 +22,10 @@ function serializeFirestoreTimestamp(data: any): any {
             const parsedDate2 = parse(data, 'yyyy/MM/dd HH:mm:ss.SSSSSSxxx', new Date());
             if (isValid(parsedDate2)) {
                 return parsedDate2.getTime();
+            }
+             const isoDate = parseISO(data);
+            if (isValid(isoDate)) {
+                return isoDate.getTime();
             }
         }
         return data;
@@ -54,13 +56,30 @@ function serializeFirestoreTimestamp(data: any): any {
 
 export async function getQuoteForDate(assetId: string, date: Date): Promise<FirestoreQuote | null> {
     const formattedDate = format(date, 'dd/MM/yyyy');
+    
+    // Normalize date to start of day for query consistency
+    const startDate = startOfDay(date);
+    const endDate = new Date(startDate.getTime() + 24 * 60 * 60 * 1000 -1);
 
     const snapshot = await db.collection(assetId)
-        .where('data', '==', formattedDate)
+        .where('timestamp', '>=', Timestamp.fromDate(startDate))
+        .where('timestamp', '<=', Timestamp.fromDate(endDate))
+        .orderBy('timestamp', 'desc')
         .limit(1)
         .get();
 
-    if (snapshot.empty) return null;
+    if (snapshot.empty) {
+        // Fallback to string-based date for older data
+         const fallbackSnapshot = await db.collection(assetId)
+            .where('data', '==', formattedDate)
+            .limit(1)
+            .get();
+        if (fallbackSnapshot.empty) return null;
+
+        const doc = fallbackSnapshot.docs[0];
+        const data = doc.data();
+        return { id: doc.id, ...data } as FirestoreQuote;
+    }
     
     const doc = snapshot.docs[0];
     const data = doc.data();
@@ -68,17 +87,19 @@ export async function getQuoteForDate(assetId: string, date: Date): Promise<Fire
     return { id: doc.id, ...data } as FirestoreQuote;
 }
 
+
 export async function saveQuote(assetId: string, quoteData: Omit<FirestoreQuote, 'id'>): Promise<void> {
     try {
-        const docRef = db.collection(assetId).doc(); // Create a new document with a unique ID
+        const docId = format(new Date(quoteData.timestamp), 'yyyy-MM-dd');
+        const docRef = db.collection(assetId).doc(docId);
         await docRef.set({
             ...quoteData,
-            timestamp: Timestamp.fromMillis(quoteData.timestamp) // Store as Firestore Timestamp
-        });
+            timestamp: Timestamp.fromMillis(quoteData.timestamp)
+        }, { merge: true });
         console.log(`[data-service] Saved quote for ${assetId} on date ${quoteData.data}`);
     } catch (error) {
         console.error(`[data-service] Error saving quote for ${assetId}:`, error);
-        throw error; // Re-throw the error to be handled by the caller
+        throw error;
     }
 }
 
@@ -98,24 +119,6 @@ export async function getLatestQuote(assetId: string): Promise<FirestoreQuote | 
 }
 
 
-export async function calculateCh2oPrice(
-    quoteFetcher: (assetId: string) => Promise<FirestoreQuote | null>
-): Promise<number> {
-    const componentQuotes = await Promise.all(
-        CH2O_COMPONENTS.map(id => quoteFetcher(id))
-    );
-
-    const boiGordoRent = (componentQuotes[0]?.rent_media ?? 0) * 0.35;
-    const milhoRent = (componentQuotes[1]?.rent_media ?? 0) * 0.30;
-    const sojaRent = (componentQuotes[2]?.rent_media ?? 0) * 0.35;
-    const madeiraRent = componentQuotes[3]?.rent_media ?? 0;
-    const carbonoRent = componentQuotes[4]?.rent_media ?? 0;
-    
-    const totalValue = boiGordoRent + milhoRent + sojaRent + madeiraRent + carbonoRent;
-        
-    return totalValue;
-}
-
 async function getCh2oData(date?: Date): Promise<Pick<CommodityPriceData, 'price' | 'change' | 'absoluteChange'>> {
   const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL 
     ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` 
@@ -125,7 +128,7 @@ async function getCh2oData(date?: Date): Promise<Pick<CommodityPriceData, 'price
   const url = `${baseUrl}/api/calculate/ch2o${dateParam}`;
   
   try {
-    const response = await fetch(url, { cache: 'no-store' });
+    const response = await fetch(url, { next: { revalidate: 60 } }); // Revalidate every 60s
     if (!response.ok) {
         console.error(`[data-service] Failed to fetch CH2O data from API. Status: ${response.status}. URL: ${url}`);
         return { price: 0, change: 0, absoluteChange: 0 };
@@ -308,28 +311,21 @@ export async function getCh2oCompositionHistory(limit = 90): Promise<Ch2oComposi
         const ch2oHistory = await getCotacoesHistorico('agua');
         if (ch2oHistory.length === 0) return [];
 
-        const compositionPromises = ch2oHistory.map(async (ch2oQuote) => {
-            const date = new Date(ch2oQuote.timestamp);
-            
-            const componentQuotes = await Promise.all(
-                CH2O_COMPONENTS.map(id => getQuoteForDate(id, date))
-            );
-
+        const compositionHistory = ch2oHistory.map((ch2oQuote) => {
             return {
                 date: ch2oQuote.data,
                 timestamp: ch2oQuote.timestamp,
                 total: ch2oQuote.ultimo,
                 components: {
-                    boi_gordo: componentQuotes[0]?.rent_media ?? 0,
-                    milho: componentQuotes[1]?.rent_media ?? 0,
-                    soja: componentQuotes[2]?.rent_media ?? 0,
-                    madeira: componentQuotes[3]?.rent_media ?? 0,
-                    carbono: componentQuotes[4]?.rent_media ?? 0,
+                    boi_gordo: ch2oQuote.boi_gordo ?? 0,
+                    milho: ch2oQuote.milho ?? 0,
+                    soja: ch2oQuote.soja ?? 0,
+                    madeira: ch2oQuote.madeira ?? 0,
+                    carbono: ch2oQuote.carbono ?? 0,
                 }
             };
         });
-
-        const compositionHistory = await Promise.all(compositionPromises);
+        
         return compositionHistory;
 
     } catch (error) {
