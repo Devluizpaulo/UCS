@@ -1,6 +1,5 @@
 
 
-
 'use server';
 
 import { db } from '@/lib/firebase-admin-config';
@@ -277,14 +276,4 @@ export async function getCotacoesHistorico(assetId: string): Promise<FirestoreQu
     console.error(`Error fetching historical data for ${assetId}:`, error);
     return [];
   }
-}
-
-export async function getCh2oCompositionHistory(assetId: string): Promise<FirestoreQuote[]> {
-    try {
-        const history = await getCotacoesHistorico(assetId);
-        return history;
-    } catch (error) {
-        console.error(`Error fetching composition history for ${assetId}:`, error);
-        return [];
-    }
 }
