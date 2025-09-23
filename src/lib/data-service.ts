@@ -2,7 +2,7 @@
 'use server';
 
 import { db } from '@/lib/firebase-admin-config';
-import { getCommodityConfigs, COMMODITIES_CONFIG } from '@/lib/commodity-config-service';
+import { getCommodityConfigs } from '@/lib/commodity-config-service';
 import type { CommodityPriceData, FirestoreQuote } from '@/lib/types';
 import { getCache, setCache } from '@/lib/cache-service';
 import { Timestamp } from 'firebase-admin/firestore';
@@ -10,13 +10,6 @@ import { subDays, format, parse, isValid } from 'date-fns';
 
 const CACHE_KEY_PRICES = 'commodity_prices_simple';
 const CACHE_TTL_SECONDS = 300; // 5 minutos
-
-export const CH2O_COMPONENTS = ['boi_gordo', 'milho', 'soja', 'madeira', 'carbono'];
-export const CH2O_WEIGHTS: Record<string, number> = {
-    'boi_gordo': 0.35,
-    'milho': 0.30,
-    'soja': 0.35,
-};
 
 
 function serializeFirestoreTimestamp(data: any): any {
@@ -91,27 +84,23 @@ export async function getLatestQuote(assetId: string): Promise<FirestoreQuote | 
 
 
 export async function calculateCh2oPrice(
-    quoteFetcher: (assetId: string) => Promise<FirestoreQuote | null>
+    quoteFetcher: (assetId: string) => Promise<FirestoreQuote | null>,
+    ch2oComponents: string[],
+    ch2oWeights: Record<string, number>
 ): Promise<number> {
     const componentQuotes = await Promise.all(
-        CH2O_COMPONENTS.map(id => quoteFetcher(id))
+        ch2oComponents.map(id => quoteFetcher(id))
     );
     
     const totalValue = componentQuotes.reduce((sum, quote, index) => {
-        if (!quote) {
-            console.log(`[calculateCh2oPrice] No quote for component: ${CH2O_COMPONENTS[index]}`);
-            return sum;
-        };
+        const componentId = ch2oComponents[index];
+        const rentMedia = quote?.rent_media ?? 0;
 
-        const componentId = CH2O_COMPONENTS[index];
-        const rentMedia = quote.rent_media ?? 0;
-        
-        if (CH2O_WEIGHTS[componentId]) {
-            return sum + (rentMedia * CH2O_WEIGHTS[componentId]);
+        if (ch2oWeights[componentId]) {
+            return sum + (rentMedia * ch2oWeights[componentId]);
         }
         
         return sum + rentMedia;
-
     }, 0);
         
     return totalValue;

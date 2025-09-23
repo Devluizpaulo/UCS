@@ -10,6 +10,14 @@ import type { FirestoreQuote } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
+export const CH2O_COMPONENTS = ['boi_gordo', 'milho', 'soja', 'madeira', 'carbono'];
+export const CH2O_WEIGHTS: Record<string, number> = {
+    'boi_gordo': 0.35,
+    'milho': 0.30,
+    'soja': 0.35,
+};
+
+
 /**
  * API endpoint to calculate the CH²O (Agua) index value.
  * Accepts a 'date' query parameter in 'yyyy-MM-dd' format.
@@ -36,8 +44,8 @@ export async function GET(request: Request) {
       const quoteFetcherPrevious = (assetId: string): Promise<FirestoreQuote | null> => getQuoteForDate(assetId, previousDate);
 
       const [latestPrice, previousPrice] = await Promise.all([
-        calculateCh2oPrice(quoteFetcherCurrent),
-        calculateCh2oPrice(quoteFetcherPrevious),
+        calculateCh2oPrice(quoteFetcherCurrent, CH2O_COMPONENTS, CH2O_WEIGHTS),
+        calculateCh2oPrice(quoteFetcherPrevious, CH2O_COMPONENTS, CH2O_WEIGHTS),
       ]);
 
       price = latestPrice;
@@ -52,8 +60,8 @@ export async function GET(request: Request) {
       const quoteFetcherPrevious = (assetId: string): Promise<FirestoreQuote | null> => getQuoteForDate(assetId, previousDate);
 
       const [latestPrice, previousPrice] = await Promise.all([
-        calculateCh2oPrice(quoteFetcherCurrent),
-        calculateCh2oPrice(quoteFetcherPrevious),
+        calculateCh2oPrice(quoteFetcherCurrent, CH2O_COMPONENTS, CH2O_WEIGHTS),
+        calculateCh2oPrice(quoteFetcherPrevious, CH2O_COMPONENTS, CH2O_WEIGHTS),
       ]);
       
       price = latestPrice;
