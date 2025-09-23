@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { getCh2oCompositionHistory } from '@/lib/data-service';
-import type { Ch2oCompositionData } from '@/lib/types';
+import type { Ch2oCompositionData, FirestoreQuote } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import {
   Table,
@@ -21,7 +21,7 @@ import { formatCurrency } from '@/lib/formatters';
 const ITEMS_PER_PAGE = 7;
 
 export function Ch2oDetails() {
-  const [compositionHistory, setCompositionHistory] = useState<Ch2oCompositionData[]>([]);
+  const [compositionHistory, setCompositionHistory] = useState<FirestoreQuote[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -86,11 +86,11 @@ export function Ch2oDetails() {
             {paginatedData.map((item) => (
               <TableRow key={item.timestamp}>
                 <TableCell>{item.data}</TableCell>
-                <TableCell className="text-right font-mono">{formatCurrency(item.components.boi_gordo, 'BRL')}</TableCell>
-                <TableCell className="text-right font-mono">{formatCurrency(item.components.milho, 'BRL')}</TableCell>
-                <TableCell className="text-right font-mono">{formatCurrency(item.components.soja, 'BRL')}</TableCell>
-                <TableCell className="text-right font-mono">{formatCurrency(item.components.madeira, 'BRL')}</TableCell>
-                <TableCell className="text-right font-mono">{formatCurrency(item.components.carbono, 'BRL')}</TableCell>
+                <TableCell className="text-right font-mono">{formatCurrency(item.boi_gordo ?? 0, 'BRL')}</TableCell>
+                <TableCell className="text-right font-mono">{formatCurrency(item.milho ?? 0, 'BRL')}</TableCell>
+                <TableCell className="text-right font-mono">{formatCurrency(item.soja ?? 0, 'BRL')}</TableCell>
+                <TableCell className="text-right font-mono">{formatCurrency(item.madeira ?? 0, 'BRL')}</TableCell>
+                <TableCell className="text-right font-mono">{formatCurrency(item.carbono ?? 0, 'BRL')}</TableCell>
                 <TableCell className="text-right font-mono font-bold">{formatCurrency(item.ultimo, 'BRL')}</TableCell>
               </TableRow>
             ))}

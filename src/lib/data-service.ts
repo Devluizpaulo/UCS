@@ -3,7 +3,7 @@
 'use server';
 
 import { db } from '@/lib/firebase-admin-config';
-import type { CommodityPriceData, FirestoreQuote, Ch2oCompositionData } from '@/lib/types';
+import type { CommodityPriceData, FirestoreQuote } from '@/lib/types';
 import { getCache, setCache } from '@/lib/cache-service';
 import { Timestamp } from 'firebase-admin/firestore';
 import { subDays, format, parse, isValid, startOfDay, parseISO } from 'date-fns';
@@ -267,28 +267,10 @@ export async function getCotacoesHistorico(assetId: string): Promise<FirestoreQu
   }
 }
 
-export async function getCh2oCompositionHistory(limit = 90): Promise<Ch2oCompositionData[]> {
+export async function getCh2oCompositionHistory(limit = 90): Promise<FirestoreQuote[]> {
     try {
         const ch2oHistory = await getCotacoesHistorico('agua');
-        if (ch2oHistory.length === 0) return [];
-
-        const compositionHistory = ch2oHistory.map((ch2oQuote) => {
-            return {
-                date: ch2oQuote.data,
-                timestamp: ch2oQuote.timestamp,
-                total: ch2oQuote.ultimo,
-                components: {
-                    boi_gordo: ch2oQuote.boi_gordo ?? 0,
-                    milho: ch2oQuote.milho ?? 0,
-                    soja: ch2oQuote.soja ?? 0,
-                    madeira: ch2oQuote.madeira ?? 0,
-                    carbono: ch2oQuote.carbono ?? 0,
-                }
-            };
-        });
-        
-        return compositionHistory;
-
+        return ch2oHistory;
     } catch (error) {
         console.error(`Error fetching CH2O composition history:`, error);
         return [];
