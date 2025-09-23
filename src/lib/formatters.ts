@@ -8,12 +8,13 @@ export function formatCurrency(value: number, currency: string, assetId?: string
   if (typeof value !== 'number' || isNaN(value)) return '';
 
   const isExchangeRate = assetId === 'usd' || assetId === 'eur';
+  const isIndex = assetId === 'agua' || assetId === 'custo_agua';
 
   const options: Intl.NumberFormatOptions = {
     style: 'currency',
     currency: currency,
-    minimumFractionDigits: isExchangeRate ? 4 : 2,
-    maximumFractionDigits: isExchangeRate ? 4 : 2,
+    minimumFractionDigits: isIndex ? 0 : (isExchangeRate ? 4 : 2),
+    maximumFractionDigits: isIndex ? 0 : (isExchangeRate ? 4 : 2),
   };
   
   try {
