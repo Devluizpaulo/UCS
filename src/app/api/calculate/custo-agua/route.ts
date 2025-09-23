@@ -19,7 +19,7 @@ const CARBON_FACTOR = 0.07; // 7%
 
 async function getOrCalculatePriceForDate(targetDate: Date): Promise<any> {
     const existingQuote = await getQuoteForDate(CUSTO_AGUA_ASSET_ID, targetDate);
-    if (existingQuote && typeof existingQuote.ultimo === 'number') {
+    if (existingQuote && typeof existingQuote.ultimo === 'number' && existingQuote.ultimo > 0) {
         return { 
             price: existingQuote.ultimo, 
             isNew: false, 
@@ -58,7 +58,7 @@ async function getOrCalculatePriceForDate(targetDate: Date): Promise<any> {
             data: format(targetDate, 'dd/MM/yyyy'),
             timestamp: targetDate.getTime(),
             ultimo: calculatedPrice,
-            variacao_pct: 0,
+            variacao_pct: 0, // A variação real será calculada na próxima chamada GET
             ...componentValues,
         });
     }
@@ -95,6 +95,17 @@ export async function GET(request: Request) {
 
     const absoluteChange = price - previousPrice;
     const change = (previousPrice !== 0) ? (absoluteChange / previousPrice) * 100 : 0;
+    
+    // Atualiza a cotação do dia com a variação calculada
+    if (currentData.isNew) {
+        await saveQuote(CUSTO_AGUA_ASSET_ID, {
+            data: format(targetDate, 'dd/MM/yyyy'),
+            timestamp: targetDate.getTime(),
+            ultimo: price,
+            variacao_pct: change,
+            ...currentData.componentValues,
+        });
+    }
 
     return NextResponse.json({ price, change, absoluteChange });
 

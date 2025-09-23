@@ -8,6 +8,7 @@ import {
 
 export const dynamic = 'force-dynamic';
 
+const CH2O_ASSET_ID = 'agua';
 const CH2O_COMPONENTS = ['boi_gordo', 'milho', 'soja', 'madeira', 'carbono'];
 const CH2O_WEIGHTS: Record<string, number> = {
     'boi_gordo': 0.35,
@@ -17,8 +18,8 @@ const CH2O_WEIGHTS: Record<string, number> = {
 
 
 async function getOrCalculatePriceForDate(targetDate: Date): Promise<any> {
-    const existingQuote = await getQuoteForDate('agua', targetDate);
-    if (existingQuote && typeof existingQuote.ultimo === 'number') {
+    const existingQuote = await getQuoteForDate(CH2O_ASSET_ID, targetDate);
+    if (existingQuote && typeof existingQuote.ultimo === 'number' && existingQuote.ultimo > 0) {
         return { 
             price: existingQuote.ultimo, 
             isNew: false, 
@@ -54,11 +55,11 @@ async function getOrCalculatePriceForDate(targetDate: Date): Promise<any> {
 
 
     if (calculatedPrice > 0 && !isFuture(startOfDay(targetDate))) {
-         await saveQuote('agua', {
+         await saveQuote(CH2O_ASSET_ID, {
             data: format(targetDate, 'dd/MM/yyyy'),
             timestamp: targetDate.getTime(),
             ultimo: calculatedPrice,
-            variacao_pct: 0,
+            variacao_pct: 0, // A variação real será calculada na próxima chamada GET
             ...componentValues,
         });
     }
@@ -95,6 +96,18 @@ export async function GET(request: Request) {
 
     const absoluteChange = price - previousPrice;
     const change = (previousPrice !== 0) ? (absoluteChange / previousPrice) * 100 : 0;
+    
+    // Atualiza a cotação do dia com a variação calculada
+    if (currentData.isNew) {
+        await saveQuote(CH2O_ASSET_ID, {
+            data: format(targetDate, 'dd/MM/yyyy'),
+            timestamp: targetDate.getTime(),
+            ultimo: price,
+            variacao_pct: change,
+            ...currentData.componentValues,
+        });
+    }
+
 
     return NextResponse.json({ price, change, absoluteChange });
 

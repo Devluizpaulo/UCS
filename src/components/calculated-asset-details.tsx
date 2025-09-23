@@ -92,9 +92,9 @@ export function CalculatedAssetDetails({ asset }: CalculatedAssetDetailsProps) {
                 <TableCell>{item.data}</TableCell>
                 <TableCell className="text-right font-mono">{formatCurrency(item.boi_gordo ?? 0, 'BRL')}</TableCell>
                 <TableCell className="text-right font-mono">{formatCurrency(item.milho ?? 0, 'BRL')}</TableCell>
-                <TableCell className="text-right font-mono">{formatCurrency(item.soja ?? 0, 'BRL')}</TableCell>
-                <TableCell className="text-right font-mono">{formatCurrency(item.madeira ?? 0, 'BRL')}</TableCell>
-                <TableCell className="text-right font-mono">{formatCurrency(item.carbono ?? 0, 'BRL')}</TableCell>
+                <TableCell className="text-right font-mono">{formatCurrency(item.soja ?? 0, 'USD')}</TableCell>
+                <TableCell className="text-right font-mono">{formatCurrency(item.madeira ?? 0, 'USD')}</TableCell>
+                <TableCell className="text-right font-mono">{formatCurrency(item.carbono ?? 0, 'EUR')}</TableCell>
                 <TableCell className="text-right font-mono font-bold">{formatCurrency(item.ultimo, 'BRL')}</TableCell>
               </TableRow>
             ))}
