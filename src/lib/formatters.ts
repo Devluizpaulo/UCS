@@ -14,17 +14,17 @@ export function formatCurrency(value: number, currency: string, assetId?: string
     minimumFractionDigits: isExchangeRate ? 4 : 2,
     maximumFractionDigits: isExchangeRate ? 4 : 2,
   };
-
-  // Para moedas que não são BRL, não queremos o símbolo padrão (ex: US$ para USD)
-  // mas sim um formato mais limpo.
-  if (currency !== 'BRL') {
-    options.style = 'decimal';
-  }
-
-
+  
   try {
-    const numberFormatter = new Intl.NumberFormat('pt-BR', options);
-    return numberFormatter.format(value);
+    // Para BRL, usa o formato pt-BR padrão que já inclui 'R$'
+    if (currency === 'BRL') {
+        return new Intl.NumberFormat('pt-BR', options).format(value);
+    }
+
+    // Para outras moedas, usa um formato que não inclui o símbolo da moeda por padrão,
+    // permitindo controle manual do prefixo/sufixo se necessário.
+    options.style = 'decimal';
+    return new Intl.NumberFormat('pt-BR', options).format(value);
 
   } catch (e) {
     console.error("Error formatting currency:", e);

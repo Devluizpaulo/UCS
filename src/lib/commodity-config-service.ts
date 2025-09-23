@@ -74,6 +74,7 @@ export const COMMODITIES_CONFIG: Record<string, Omit<CommodityConfig, 'id'>> = {
     category: 'crs',
     description: 'Preço do metro cúbico da água.',
     unit: 'BRL por m³',
+    isCalculated: true,
   },
   'madeira': {
     name: 'Madeira Serrada',
