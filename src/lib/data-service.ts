@@ -16,7 +16,6 @@ const CACHE_TTL_SECONDS = 300; // 5 minutos
 function serializeFirestoreTimestamp(data: any): any {
     if (data === null || typeof data !== 'object') {
         if (typeof data === 'string') {
-            // Tenta analisar vários formatos de data string para um timestamp
             const formats = [
                 "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
                 "yyyy-MM-dd HH:mm:ssXXX",
@@ -61,7 +60,6 @@ function serializeFirestoreTimestamp(data: any): any {
 export async function getQuoteForDate(assetId: string, date: Date): Promise<FirestoreQuote | null> {
     const formattedDate = format(date, 'dd/MM/yyyy');
     
-    // Prioriza a busca pelo campo 'data' (string), que é mais confiável com dados manuais.
     const stringDateSnapshot = await db.collection(assetId)
         .where('data', '==', formattedDate)
         .limit(1)
@@ -73,7 +71,6 @@ export async function getQuoteForDate(assetId: string, date: Date): Promise<Fire
         return { id: doc.id, ...data } as FirestoreQuote;
     }
 
-    // Fallback: Tenta buscar pelo campo 'timestamp' se a busca por string falhar.
     const startDate = startOfDay(date);
     const endDate = new Date(startDate.getTime() + 24 * 60 * 60 * 1000 - 1);
 
@@ -229,6 +226,21 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
     }
 }
 
+// Helper to clean and parse number values that might come as formatted strings
+function cleanAndParseNumber(value: any): number {
+    if (typeof value === 'number') {
+        return value;
+    }
+    if (typeof value === 'string') {
+        // Remove all dots (thousand separators) and replace last comma with a dot (decimal separator)
+        const cleanedString = value.replace(/\./g, '').replace(',', '.');
+        const parsed = parseFloat(cleanedString);
+        return isNaN(parsed) ? 0 : parsed;
+    }
+    return 0; // Return 0 for other types or null/undefined
+}
+
+
 export async function getCotacoesHistorico(assetId: string): Promise<FirestoreQuote[]> {
   try {
     const snapshot = await db.collection(assetId)
@@ -243,19 +255,25 @@ export async function getCotacoesHistorico(assetId: string): Promise<FirestoreQu
     const data = snapshot.docs.map(doc => {
         const docData = doc.data();
         
-        const variacaoPctRaw = docData.variacao_pct;
-        let variacaoPctProcessed = null;
-        if (variacaoPctRaw !== null && variacaoPctRaw !== undefined && variacaoPctRaw !== 'null') {
-            const parsed = parseFloat(String(variacaoPctRaw).replace(',', '.'));
-            if (!isNaN(parsed)) {
-                variacaoPctProcessed = parsed;
-            }
-        }
-        
+        // Clean and parse numeric fields that might be strings
+        const ultimo = cleanAndParseNumber(docData.ultimo);
+        const boi_gordo = cleanAndParseNumber(docData.boi_gordo);
+        const milho = cleanAndParseNumber(docData.milho);
+        const soja = cleanAndParseNumber(docData.soja);
+        const madeira = cleanAndParseNumber(docData.madeira);
+        const carbono = cleanAndParseNumber(docData.carbono);
+        const variacao_pct = cleanAndParseNumber(docData.variacao_pct);
+
         return {
             ...serializeFirestoreTimestamp(docData),
             id: doc.id,
-            variacao_pct: variacaoPctProcessed,
+            ultimo,
+            boi_gordo,
+            milho,
+            soja,
+            madeira,
+            carbono,
+            variacao_pct,
         } as FirestoreQuote;
     });
 
@@ -276,3 +294,5 @@ export async function getCh2oCompositionHistory(limit = 90): Promise<FirestoreQu
         return [];
     }
 }
+
+    
