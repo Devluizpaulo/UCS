@@ -61,7 +61,7 @@ export function HistoricalPriceTable({ asset, historicalData, isLoading }: Histo
               <TableBody>
                 {paginatedData.map((quote) => (
                   <TableRow key={quote.id}>
-                    <TableCell>{format(new Date(quote.timestamp), 'dd/MM/yyyy')}</TableCell>
+                    <TableCell>{quote.data || format(new Date(quote.timestamp), 'dd/MM/yyyy')}</TableCell>
                     <TableCell className="text-right font-mono">
                       {formatCurrency(quote.ultimo, asset.currency, asset.id)}
                     </TableCell>
@@ -106,3 +106,4 @@ export function HistoricalPriceTable({ asset, historicalData, isLoading }: Histo
     </Card>
   );
 }
+

@@ -60,6 +60,7 @@ function serializeFirestoreTimestamp(data: any): any {
 export async function getQuoteForDate(assetId: string, date: Date): Promise<FirestoreQuote | null> {
     const formattedDate = format(date, 'dd/MM/yyyy');
     
+    // 1. Try fetching by the 'data' string field first. This is more reliable.
     const stringDateSnapshot = await db.collection(assetId)
         .where('data', '==', formattedDate)
         .limit(1)
@@ -71,6 +72,7 @@ export async function getQuoteForDate(assetId: string, date: Date): Promise<Fire
         return { id: doc.id, ...data } as FirestoreQuote;
     }
 
+    // 2. If it fails, fallback to timestamp range query.
     const startDate = startOfDay(date);
     const endDate = new Date(startDate.getTime() + 24 * 60 * 60 * 1000 - 1);
 
@@ -161,7 +163,7 @@ export async function getCommodityPricesByDate(date: Date): Promise<CommodityPri
             
             return { 
                 ...config, 
-                price: latestPrice, 
+                price: cleanAndParseNumber(latestPrice), 
                 change, 
                 absoluteChange, 
                 lastUpdated: displayDate
@@ -208,7 +210,7 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
             
             return { 
                 ...config, 
-                price: latestPrice, 
+                price: cleanAndParseNumber(latestPrice), 
                 change, 
                 absoluteChange, 
                 lastUpdated: lastUpdatedTimestamp ? format(serializeFirestoreTimestamp(lastUpdatedTimestamp), "HH:mm:ss") : 'Tempo Real'
@@ -232,12 +234,11 @@ function cleanAndParseNumber(value: any): number {
         return value;
     }
     if (typeof value === 'string') {
-        // Remove all dots (thousand separators) and replace last comma with a dot (decimal separator)
         const cleanedString = value.replace(/\./g, '').replace(',', '.');
         const parsed = parseFloat(cleanedString);
         return isNaN(parsed) ? 0 : parsed;
     }
-    return 0; // Return 0 for other types or null/undefined
+    return 0;
 }
 
 
@@ -254,26 +255,18 @@ export async function getCotacoesHistorico(assetId: string): Promise<FirestoreQu
     
     const data = snapshot.docs.map(doc => {
         const docData = doc.data();
-        
-        // Clean and parse numeric fields that might be strings
-        const ultimo = cleanAndParseNumber(docData.ultimo);
-        const boi_gordo = cleanAndParseNumber(docData.boi_gordo);
-        const milho = cleanAndParseNumber(docData.milho);
-        const soja = cleanAndParseNumber(docData.soja);
-        const madeira = cleanAndParseNumber(docData.madeira);
-        const carbono = cleanAndParseNumber(docData.carbono);
-        const variacao_pct = cleanAndParseNumber(docData.variacao_pct);
 
         return {
-            ...serializeFirestoreTimestamp(docData),
             id: doc.id,
-            ultimo,
-            boi_gordo,
-            milho,
-            soja,
-            madeira,
-            carbono,
-            variacao_pct,
+            data: docData.data, // Preserve the original 'data' field
+            timestamp: serializeFirestoreTimestamp(docData.timestamp),
+            ultimo: cleanAndParseNumber(docData.ultimo),
+            variacao_pct: cleanAndParseNumber(docData.variacao_pct),
+            boi_gordo: cleanAndParseNumber(docData.boi_gordo),
+            milho: cleanAndParseNumber(docData.milho),
+            soja: cleanAndParseNumber(docData.soja),
+            madeira: cleanAndParseNumber(docData.madeira),
+            carbono: cleanAndParseNumber(docData.carbono),
         } as FirestoreQuote;
     });
 
