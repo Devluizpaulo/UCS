@@ -80,7 +80,7 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
                         <TableCell className="text-right">
                             <div className={cn(
                                 "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold font-mono transition-colors",
-                                asset.price === 0 ? "border-transparent text-muted-foreground" : changeColor.replace('text-', 'border-') + ' ' + changeColor
+                                asset.price === 0 ? "border-transparent text-muted-foreground" : `border-transparent bg-${changeColor.replace('text-', '')}/20 ${changeColor}`
                               )}>
                                 {asset.price > 0 ? `${asset.change >= 0 ? '+' : ''}${asset.change.toFixed(2)}%` : '-'}
                             </div>
@@ -111,3 +111,5 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
     </div>
   );
 }
+
+    

@@ -12,13 +12,27 @@ const CACHE_KEY_PRICES = 'commodity_prices_simple';
 const CACHE_TTL_SECONDS = 300; // 5 minutos
 
 const CH2O_COMPONENTS = ['boi_gordo', 'milho', 'soja', 'madeira', 'carbono'];
+const CH2O_WEIGHTS: Record<string, number> = {
+    'boi_gordo': 0.35,
+    'milho': 0.30,
+    'soja': 0.35,
+    'madeira': 1.0,
+    'carbono': 1.0,
+};
+
 
 function serializeFirestoreTimestamp(data: any): any {
     if (data === null || typeof data !== 'object') {
         if (typeof data === 'string') {
-            const parsedDate = parse(data, 'yyyy/MM/dd HH:mm:ss.SSSSSSxxx', new Date());
-            if (isValid(parsedDate)) {
+            // Handles Firestore string timestamp format
+            const parsedDate = parse(data, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", new Date());
+             if (isValid(parsedDate)) {
                 return parsedDate.getTime();
+            }
+             // Handles a different string format
+            const parsedDate2 = parse(data, 'yyyy/MM/dd HH:mm:ss.SSSSSSxxx', new Date());
+            if (isValid(parsedDate2)) {
+                return parsedDate2.getTime();
             }
         }
         return data;
@@ -106,7 +120,11 @@ async function calculateCh2oPrice(
             rentMedia *= exchangeRates.eur;
         }
 
-        return sum + rentMedia;
+        // Aplicar o peso
+        const weight = CH2O_WEIGHTS[componentId] ?? 1.0;
+        const weightedValue = rentMedia * weight;
+
+        return sum + weightedValue;
 
     }, 0);
         
@@ -145,11 +163,13 @@ export async function getCommodityPricesByDate(date: Date): Promise<CommodityPri
                 const quoteFetcherForDate = (assetId: string) => getQuoteForDate(assetId, date);
                 const quoteFetcherForPrevDate = (assetId: string) => getQuoteForDate(assetId, previousDate);
 
+                // Tenta buscar o valor salvo, senão calcula
                 let latestPrice = (await getQuoteForDate(config.id, date))?.ultimo;
                 if (latestPrice === undefined) {
                     latestPrice = await calculateCh2oPrice(quoteFetcherForDate, exchangeRates);
                 }
 
+                // Tenta buscar o valor salvo do dia anterior, senão calcula
                 let previousPrice = (await getQuoteForDate(config.id, previousDate))?.ultimo;
                  if (previousPrice === undefined) {
                     previousPrice = await calculateCh2oPrice(quoteFetcherForPrevDate, prevExchangeRates);
@@ -254,7 +274,7 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
                     latestPrice = await calculateCh2oPrice(quoteFetcherForLatest, exchangeRates);
                 }
 
-                // Para a variação, buscamos o valor calculado para o dia anterior
+                // Para a variação, buscamos o valor salvo/calculado para o dia anterior
                 const quoteFetcherForPrevDate = (assetId: string) => getQuoteForDate(assetId, previousDate);
                 let previousPrice = (await getQuoteForDate(config.id, previousDate))?.ultimo;
                 if (previousPrice === undefined) {
@@ -286,21 +306,23 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
                 };
             }
 
-            const latestDoc = snapshot.docs[0].data() as FirestoreQuote;
-            const previousDoc = snapshot.docs.length > 1 ? snapshot.docs[1].data() as FirestoreQuote : null;
-            
-            const latestPrice = latestDoc.ultimo || 0;
-            const previousPrice = previousDoc ? (previousDoc.ultimo || 0) : latestPrice;
+            const latestDocData = snapshot.docs[0].data();
+            const previousDocData = snapshot.docs.length > 1 ? snapshot.docs[1].data() : null;
+
+            // Use 'ultimo' as a fallback if it exists and rent_media doesn't, but prioritize rent_media.
+            const latestPrice = latestDocData.ultimo ?? 0;
+            const previousPrice = previousDocData ? (previousDocData.ultimo ?? latestPrice) : latestPrice;
 
             const absoluteChange = latestPrice - previousPrice;
             const change = (previousPrice !== 0) ? (absoluteChange / previousPrice) * 100 : 0;
+            const lastUpdatedTimestamp = latestDocData.timestamp;
             
             return { 
                 ...config, 
                 price: latestPrice, 
                 change, 
                 absoluteChange, 
-                lastUpdated: "Tempo Real"
+                lastUpdated: lastUpdatedTimestamp ? format(serializeFirestoreTimestamp(lastUpdatedTimestamp), "HH:mm:ss") : 'Tempo Real'
             };
         });
 
@@ -317,8 +339,6 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
 
 export async function getCotacoesHistorico(assetId: string): Promise<FirestoreQuote[]> {
   try {
-    // For 'agua', if we need to show calculated history, we would need a more complex logic here.
-    // For now, it will return saved values from its own collection.
     const snapshot = await db.collection(assetId)
       .orderBy('timestamp', 'desc')
       .limit(90)
@@ -330,17 +350,20 @@ export async function getCotacoesHistorico(assetId: string): Promise<FirestoreQu
     
     const data = snapshot.docs.map(doc => {
         const docData = doc.data();
-        // Sanitize variacao_pct
-        if (docData.variacao_pct === 'null' || docData.variacao_pct === null || docData.variacao_pct === undefined) {
-            docData.variacao_pct = null;
-        } else if (typeof docData.variacao_pct === 'string') {
-            const parsed = parseFloat(docData.variacao_pct.replace(',', '.'));
-            docData.variacao_pct = isNaN(parsed) ? null : parsed;
+        
+        const variacaoPctRaw = docData.variacao_pct;
+        let variacaoPctProcessed = null;
+        if (variacaoPctRaw !== null && variacaoPctRaw !== undefined && variacaoPctRaw !== 'null') {
+            const parsed = parseFloat(String(variacaoPctRaw).replace(',', '.'));
+            if (!isNaN(parsed)) {
+                variacaoPctProcessed = parsed;
+            }
         }
-
+        
         return {
-            id: doc.id,
             ...serializeFirestoreTimestamp(docData),
+            id: doc.id,
+            variacao_pct: variacaoPctProcessed,
         } as FirestoreQuote;
     });
 
@@ -351,3 +374,5 @@ export async function getCotacoesHistorico(assetId: string): Promise<FirestoreQu
     return [];
   }
 }
+
+    

@@ -1,3 +1,4 @@
+
 import type {Config} from 'tailwindcss';
 
 export default {
@@ -6,6 +7,12 @@ export default {
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
+  ],
+  safelist: [
+    'bg-primary/20',
+    'bg-destructive/20',
+    'text-primary',
+    'text-destructive',
   ],
   theme: {
     extend: {
@@ -107,3 +114,5 @@ export default {
   },
   plugins: [require('tailwindcss-animate')],
 } satisfies Config;
+
+    
