@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { parseISO, subDays, isValid, format } from 'date-fns';
+import { parseISO, subDays, isValid, format, isFuture, startOfDay } from 'date-fns';
 import { 
   getQuoteForDate, 
   calculateCh2oPrice,
@@ -40,7 +40,19 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const dateParam = searchParams.get('date');
 
-    const targetDate = dateParam && isValid(parseISO(dateParam)) ? parseISO(dateParam) : new Date();
+    let targetDateInput = dateParam ? parseISO(dateParam) : new Date();
+    if (!isValid(targetDateInput)) {
+        targetDateInput = new Date();
+    }
+    
+    // Normalize to the start of the day to prevent timezone issues with 'isFuture'
+    const targetDate = startOfDay(targetDateInput);
+
+    // CRITICAL: Prevent calculation for future dates
+    if (isFuture(targetDate)) {
+        return NextResponse.json({ message: 'Não é possível calcular cotações para datas futuras.' }, { status: 400 });
+    }
+
     // To calculate variation, we need the *previous day's* value.
     const previousDate = subDays(targetDate, 1);
 
