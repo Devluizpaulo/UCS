@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { db } from '@/lib/firebase-admin-config';
@@ -15,25 +16,19 @@ const CACHE_TTL_SECONDS = 300; // 5 minutos
 function serializeFirestoreTimestamp(data: any): any {
     if (data === null || typeof data !== 'object') {
         if (typeof data === 'string') {
-            // Tentativa 1: Formato ISO completo
-            let parsedDate = parseISO(data);
-            if (isValid(parsedDate)) {
-                return parsedDate.getTime();
-            }
-            // Tentativa 2: Formato com 'Z'
-            parsedDate = parse(data, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", new Date());
-            if (isValid(parsedDate)) {
-                return parsedDate.getTime();
-            }
-            // Tentativa 3: Formato com timezone (+00:00)
-             parsedDate = parse(data, "yyyy-MM-dd HH:mm:ssXXX", new Date());
-             if (isValid(parsedDate)) {
-                return parsedDate.getTime();
-            }
-            // Tentativa 4: Formato com timezone e microsegundos
-            parsedDate = parse(data, 'yyyy/MM/dd HH:mm:ss.SSSSSSxxx', new Date());
-            if (isValid(parsedDate)) {
-                return parsedDate.getTime();
+            // Tenta analisar vários formatos de data string para um timestamp
+            const formats = [
+                "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+                "yyyy-MM-dd HH:mm:ssXXX",
+                'yyyy/MM/dd HH:mm:ss.SSSSSSxxx',
+                'yyyy-MM-dd'
+            ];
+            let parsedDate = parseISO(data); // Padrão ISO 8601
+            if (isValid(parsedDate)) return parsedDate.getTime();
+            
+            for (const fmt of formats) {
+                parsedDate = parse(data, fmt, new Date());
+                if (isValid(parsedDate)) return parsedDate.getTime();
             }
         }
         return data;
@@ -65,31 +60,34 @@ function serializeFirestoreTimestamp(data: any): any {
 export async function getQuoteForDate(assetId: string, date: Date): Promise<FirestoreQuote | null> {
     const formattedDate = format(date, 'dd/MM/yyyy');
     
-    // Normalize date to start of day for query consistency
-    const startDate = startOfDay(date);
-    const endDate = new Date(startDate.getTime() + 24 * 60 * 60 * 1000 -1);
+    // Prioriza a busca pelo campo 'data' (string), que é mais confiável com dados manuais.
+    const stringDateSnapshot = await db.collection(assetId)
+        .where('data', '==', formattedDate)
+        .limit(1)
+        .get();
 
-    const snapshot = await db.collection(assetId)
+    if (!stringDateSnapshot.empty) {
+        const doc = stringDateSnapshot.docs[0];
+        const data = doc.data();
+        return { id: doc.id, ...data } as FirestoreQuote;
+    }
+
+    // Fallback: Tenta buscar pelo campo 'timestamp' se a busca por string falhar.
+    const startDate = startOfDay(date);
+    const endDate = new Date(startDate.getTime() + 24 * 60 * 60 * 1000 - 1);
+
+    const timestampSnapshot = await db.collection(assetId)
         .where('timestamp', '>=', Timestamp.fromDate(startDate))
         .where('timestamp', '<=', Timestamp.fromDate(endDate))
         .orderBy('timestamp', 'desc')
         .limit(1)
         .get();
 
-    if (snapshot.empty) {
-        // Fallback to string-based date for older data
-         const fallbackSnapshot = await db.collection(assetId)
-            .where('data', '==', formattedDate)
-            .limit(1)
-            .get();
-        if (fallbackSnapshot.empty) return null;
-
-        const doc = fallbackSnapshot.docs[0];
-        const data = doc.data();
-        return { id: doc.id, ...data } as FirestoreQuote;
+    if (timestampSnapshot.empty) {
+        return null;
     }
     
-    const doc = snapshot.docs[0];
+    const doc = timestampSnapshot.docs[0];
     const data = doc.data();
     
     return { id: doc.id, ...data } as FirestoreQuote;
