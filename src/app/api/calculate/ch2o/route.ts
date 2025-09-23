@@ -6,9 +6,10 @@ import {
   calculateCh2oPrice,
   saveQuote
 } from '@/lib/data-service';
-import { CH2O_COMPONENTS } from '@/lib/constants';
 
 export const dynamic = 'force-dynamic';
+
+const CH2O_COMPONENTS = ['boi_gordo', 'milho', 'soja', 'madeira', 'carbono'];
 
 async function getOrCalculatePriceForDate(targetDate: Date): Promise<number> {
     // 1. Check if a quote already exists for the target date in the 'agua' collection
@@ -21,13 +22,14 @@ async function getOrCalculatePriceForDate(targetDate: Date): Promise<number> {
     const quoteFetcher = (assetId: string): Promise<any | null> => getQuoteForDate(assetId, targetDate);
     const calculatedPrice = await calculateCh2oPrice(quoteFetcher);
 
-    // 3. Save the newly calculated price back to the 'agua' collection
-    if (calculatedPrice > 0) {
+    // 3. Save the newly calculated price back to the 'agua' collection,
+    // ONLY if the date is not in the future.
+    if (calculatedPrice > 0 && !isFuture(targetDate)) {
         await saveQuote('agua', {
             data: format(targetDate, 'dd/MM/yyyy'),
             timestamp: targetDate.getTime(),
             ultimo: calculatedPrice,
-            variacao_pct: 0, // Variation is calculated on the fly below
+            variacao_pct: 0, // Variation is calculated on the fly by the caller
         });
     }
 
@@ -45,13 +47,8 @@ export async function GET(request: Request) {
         targetDateInput = new Date();
     }
     
-    // Normalize to the start of the day to prevent timezone issues with 'isFuture'
+    // Normalize to the start of the day to prevent timezone issues
     const targetDate = startOfDay(targetDateInput);
-
-    // CRITICAL: Prevent calculation for future dates
-    if (isFuture(targetDate)) {
-        return NextResponse.json({ message: 'Não é possível calcular cotações para datas futuras.' }, { status: 400 });
-    }
 
     // To calculate variation, we need the *previous day's* value.
     const previousDate = subDays(targetDate, 1);
@@ -61,6 +58,10 @@ export async function GET(request: Request) {
         getOrCalculatePriceForDate(previousDate)
     ]);
     
+    if (price === 0) {
+        return NextResponse.json({ message: 'Não foi possível calcular o preço para a data solicitada. Verifique se os componentes possuem dados.' }, { status: 404 });
+    }
+
     const absoluteChange = price - previousPrice;
     const change = (previousPrice !== 0) ? (absoluteChange / previousPrice) * 100 : 0;
 
