@@ -31,7 +31,6 @@ export function CalculatedAssetDetails({ asset }: CalculatedAssetDetailsProps) {
 
   useEffect(() => {
     setIsLoading(true);
-    // Busca o histórico de composição para o assetId específico
     getCotacoesHistorico(asset.id)
       .then((data) => {
         setCompositionHistory(data);

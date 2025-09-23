@@ -3,7 +3,6 @@ import { NextResponse } from 'next/server';
 import { parseISO, subDays, isValid, format, isFuture, startOfDay } from 'date-fns';
 import { 
   getQuoteForDate, 
-  calculateCh2oPrice,
   saveQuote
 } from '@/lib/data-service';
 
@@ -18,7 +17,6 @@ const CH2O_WEIGHTS: Record<string, number> = {
 
 
 async function getOrCalculatePriceForDate(targetDate: Date): Promise<any> {
-    // 1. Check if a quote already exists for the target date in the 'agua' collection
     const existingQuote = await getQuoteForDate('agua', targetDate);
     if (existingQuote && typeof existingQuote.ultimo === 'number') {
         return { 
@@ -34,18 +32,17 @@ async function getOrCalculatePriceForDate(targetDate: Date): Promise<any> {
         };
     }
 
-    // 2. If not, calculate it
     const quoteFetcher = (assetId: string) => getQuoteForDate(assetId, targetDate);
     const componentQuotes = await Promise.all(
         CH2O_COMPONENTS.map(id => quoteFetcher(id))
     );
     
     const componentValues = {
-        boi_gordo: componentQuotes[0]?.rent_media ?? 0,
-        milho: componentQuotes[1]?.rent_media ?? 0,
-        soja: componentQuotes[2]?.rent_media ?? 0,
-        madeira: componentQuotes[3]?.rent_media ?? 0,
-        carbono: componentQuotes[4]?.rent_media ?? 0,
+        boi_gordo: componentQuotes[0]?.ultimo ?? 0,
+        milho: componentQuotes[1]?.ultimo ?? 0,
+        soja: componentQuotes[2]?.ultimo ?? 0,
+        madeira: componentQuotes[3]?.ultimo ?? 0,
+        carbono: componentQuotes[4]?.ultimo ?? 0,
     };
 
     const calculatedPrice = 
@@ -56,14 +53,12 @@ async function getOrCalculatePriceForDate(targetDate: Date): Promise<any> {
         componentValues.carbono;
 
 
-    // 3. Save the newly calculated price and its components back to the 'agua' collection,
-    // ONLY if the date is not in the future.
-    if (calculatedPrice > 0 && !isFuture(startOfDay(new Date()))) {
+    if (calculatedPrice > 0 && !isFuture(startOfDay(targetDate))) {
          await saveQuote('agua', {
             data: format(targetDate, 'dd/MM/yyyy'),
             timestamp: targetDate.getTime(),
             ultimo: calculatedPrice,
-            variacao_pct: 0, // Variation is calculated on the fly by the caller
+            variacao_pct: 0,
             ...componentValues,
         });
     }
@@ -82,10 +77,8 @@ export async function GET(request: Request) {
         targetDateInput = new Date();
     }
     
-    // Normalize to the start of the day to prevent timezone issues
     const targetDate = startOfDay(targetDateInput);
     
-    // To calculate variation, we need the *previous day's* value.
     const previousDate = subDays(targetDate, 1);
 
     const [currentData, previousData] = await Promise.all([
