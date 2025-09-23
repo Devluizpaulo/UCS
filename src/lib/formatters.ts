@@ -21,11 +21,13 @@ export function formatCurrency(value: number, currency: string, assetId?: string
         case 'usd':
             return `$ ${numericValue}`;
         case 'eur':
-            // O ícone do Euro é tratado na UI, então só retornamos o valor
-            return numericValue; 
+             return `€ ${numericValue}`; 
         case 'soja':
         case 'madeira':
              return `$ ${numericValue}`; // Soja e Madeira são em USD
+        case 'carbono':
+             return `€ ${numericValue}`;
+        case 'agua':
         default:
             return `R$ ${numericValue}`; // O padrão é BRL
     }

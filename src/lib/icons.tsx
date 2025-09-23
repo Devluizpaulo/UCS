@@ -13,6 +13,7 @@ export const getIconForCategory = (asset?: CommodityPriceData) => {
         case 'usd': return DollarSign;
         case 'madeira': return TreePine;
         case 'carbono': return Droplets;
+        case 'agua': return Droplets;
         default:
             switch (asset.category) {
                 case 'exchange': return DollarSign;
