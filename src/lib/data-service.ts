@@ -15,17 +15,25 @@ const CACHE_TTL_SECONDS = 300; // 5 minutos
 function serializeFirestoreTimestamp(data: any): any {
     if (data === null || typeof data !== 'object') {
         if (typeof data === 'string') {
-            const parsedDate = parse(data, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", new Date());
+            // Tentativa 1: Formato ISO completo
+            let parsedDate = parseISO(data);
+            if (isValid(parsedDate)) {
+                return parsedDate.getTime();
+            }
+            // Tentativa 2: Formato com 'Z'
+            parsedDate = parse(data, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", new Date());
+            if (isValid(parsedDate)) {
+                return parsedDate.getTime();
+            }
+            // Tentativa 3: Formato com timezone (+00:00)
+             parsedDate = parse(data, "yyyy-MM-dd HH:mm:ssXXX", new Date());
              if (isValid(parsedDate)) {
                 return parsedDate.getTime();
             }
-            const parsedDate2 = parse(data, 'yyyy/MM/dd HH:mm:ss.SSSSSSxxx', new Date());
-            if (isValid(parsedDate2)) {
-                return parsedDate2.getTime();
-            }
-             const isoDate = parseISO(data);
-            if (isValid(isoDate)) {
-                return isoDate.getTime();
+            // Tentativa 4: Formato com timezone e microsegundos
+            parsedDate = parse(data, 'yyyy/MM/dd HH:mm:ss.SSSSSSxxx', new Date());
+            if (isValid(parsedDate)) {
+                return parsedDate.getTime();
             }
         }
         return data;
