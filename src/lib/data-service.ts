@@ -163,7 +163,7 @@ export async function getCommodityPricesByDate(date: Date): Promise<CommodityPri
             
             return { 
                 ...config, 
-                price: cleanAndParseNumber(latestPrice), 
+                price: latestPrice, 
                 change, 
                 absoluteChange, 
                 lastUpdated: displayDate
@@ -210,7 +210,7 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
             
             return { 
                 ...config, 
-                price: cleanAndParseNumber(latestPrice), 
+                price: latestPrice, 
                 change, 
                 absoluteChange, 
                 lastUpdated: lastUpdatedTimestamp ? format(serializeFirestoreTimestamp(lastUpdatedTimestamp), "HH:mm:ss") : 'Tempo Real'
@@ -226,19 +226,6 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
         console.error("Error fetching commodity prices:", error);
         return [];
     }
-}
-
-// Helper to clean and parse number values that might come as formatted strings
-function cleanAndParseNumber(value: any): number {
-    if (typeof value === 'number') {
-        return value;
-    }
-    if (typeof value === 'string') {
-        const cleanedString = value.replace(/\./g, '').replace(',', '.');
-        const parsed = parseFloat(cleanedString);
-        return isNaN(parsed) ? 0 : parsed;
-    }
-    return 0;
 }
 
 
@@ -260,13 +247,13 @@ export async function getCotacoesHistorico(assetId: string): Promise<FirestoreQu
             id: doc.id,
             data: docData.data, // Preserve the original 'data' field
             timestamp: serializeFirestoreTimestamp(docData.timestamp),
-            ultimo: cleanAndParseNumber(docData.ultimo),
-            variacao_pct: cleanAndParseNumber(docData.variacao_pct),
-            boi_gordo: cleanAndParseNumber(docData.boi_gordo),
-            milho: cleanAndParseNumber(docData.milho),
-            soja: cleanAndParseNumber(docData.soja),
-            madeira: cleanAndParseNumber(docData.madeira),
-            carbono: cleanAndParseNumber(docData.carbono),
+            ultimo: docData.ultimo,
+            variacao_pct: docData.variacao_pct,
+            boi_gordo: docData.boi_gordo,
+            milho: docData.milho,
+            soja: docData.soja,
+            madeira: docData.madeira,
+            carbono: docData.carbono,
         } as FirestoreQuote;
     });
 
