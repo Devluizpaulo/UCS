@@ -46,12 +46,14 @@ async function getOrCalculatePriceForDate(targetDate: Date): Promise<any> {
         carbono: componentQuotes[4]?.ultimo ?? 0,
     };
 
-    const calculatedPrice = 
+    const totalSum = 
         (componentValues.boi_gordo * CUSTO_AGUA_WEIGHTS.boi_gordo) +
         (componentValues.milho * CUSTO_AGUA_WEIGHTS.milho) +
         (componentValues.soja * CUSTO_AGUA_WEIGHTS.soja) +
         componentValues.madeira +
-        (componentValues.carbono * CARBON_FACTOR);
+        componentValues.carbono;
+
+    const calculatedPrice = totalSum * CARBON_FACTOR;
 
     if (calculatedPrice > 0 && !isFuture(startOfDay(targetDate))) {
          await saveQuote(CUSTO_AGUA_ASSET_ID, {
@@ -97,7 +99,7 @@ export async function GET(request: Request) {
     const change = (previousPrice !== 0) ? (absoluteChange / previousPrice) * 100 : 0;
     
     // Atualiza a cotação do dia com a variação calculada
-    if (currentData.isNew) {
+    if (currentData.isNew && price > 0) {
         await saveQuote(CUSTO_AGUA_ASSET_ID, {
             data: format(targetDate, 'dd/MM/yyyy'),
             timestamp: targetDate.getTime(),
