@@ -63,8 +63,21 @@ export async function getQuoteForDate(assetId: string, date: Date): Promise<Fire
     const doc = snapshot.docs[0];
     const data = doc.data();
     
-    // CORREÇÃO: Retorna todos os dados do documento para garantir que 'rent_media' esteja incluído.
     return { id: doc.id, ...data } as FirestoreQuote;
+}
+
+export async function saveQuote(assetId: string, quoteData: Omit<FirestoreQuote, 'id'>): Promise<void> {
+    try {
+        const docRef = db.collection(assetId).doc(); // Create a new document with a unique ID
+        await docRef.set({
+            ...quoteData,
+            timestamp: Timestamp.fromMillis(quoteData.timestamp) // Store as Firestore Timestamp
+        });
+        console.log(`[data-service] Saved quote for ${assetId} on date ${quoteData.data}`);
+    } catch (error) {
+        console.error(`[data-service] Error saving quote for ${assetId}:`, error);
+        throw error; // Re-throw the error to be handled by the caller
+    }
 }
 
 

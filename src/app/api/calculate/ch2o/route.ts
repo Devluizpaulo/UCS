@@ -1,10 +1,10 @@
 
 import { NextResponse } from 'next/server';
-import { parseISO, subDays, isValid } from 'date-fns';
+import { parseISO, subDays, isValid, format } from 'date-fns';
 import { 
   getQuoteForDate, 
-  getLatestQuote,
-  calculateCh2oPrice 
+  calculateCh2oPrice,
+  saveQuote
 } from '@/lib/data-service';
 import type { FirestoreQuote } from '@/lib/types';
 
@@ -17,57 +17,46 @@ export const CH2O_WEIGHTS: Record<string, number> = {
     'soja': 0.35,
 };
 
+async function getOrCalculatePriceForDate(targetDate: Date): Promise<number> {
+    // 1. Check if a quote already exists for the target date in the 'agua' collection
+    const existingQuote = await getQuoteForDate('agua', targetDate);
+    if (existingQuote && existingQuote.ultimo) {
+        return existingQuote.ultimo;
+    }
 
-/**
- * API endpoint to calculate the CH²O (Agua) index value.
- * Accepts a 'date' query parameter in 'yyyy-MM-dd' format.
- * If no date is provided, calculates the latest real-time value.
- */
+    // 2. If not, calculate it
+    const quoteFetcher = (assetId: string): Promise<FirestoreQuote | null> => getQuoteForDate(assetId, targetDate);
+    const calculatedPrice = await calculateCh2oPrice(quoteFetcher, CH2O_COMPONENTS, CH2O_WEIGHTS);
+
+    // 3. Save the newly calculated price back to the 'agua' collection
+    if (calculatedPrice > 0) {
+        await saveQuote('agua', {
+            data: format(targetDate, 'dd/MM/yyyy'),
+            timestamp: targetDate.getTime(),
+            ultimo: calculatedPrice,
+            variacao_pct: 0, // Variation can be calculated later or in a separate process
+        });
+    }
+
+    return calculatedPrice;
+}
+
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const dateParam = searchParams.get('date');
 
-    let price = 0;
-    let absoluteChange = 0;
-    let change = 0;
+    const targetDate = dateParam && isValid(parseISO(dateParam)) ? parseISO(dateParam) : new Date();
+    const previousDate = subDays(targetDate, 1);
 
-    if (dateParam) {
-      // --- Historical Date Calculation ---
-      const targetDate = parseISO(dateParam);
-      if (!isValid(targetDate)) {
-        return NextResponse.json({ message: 'Invalid date format. Use yyyy-MM-dd.' }, { status: 400 });
-      }
-      const previousDate = subDays(targetDate, 1);
-
-      const quoteFetcherCurrent = (assetId: string): Promise<FirestoreQuote | null> => getQuoteForDate(assetId, targetDate);
-      const quoteFetcherPrevious = (assetId: string): Promise<FirestoreQuote | null> => getQuoteForDate(assetId, previousDate);
-
-      const [latestPrice, previousPrice] = await Promise.all([
-        calculateCh2oPrice(quoteFetcherCurrent, CH2O_COMPONENTS, CH2O_WEIGHTS),
-        calculateCh2oPrice(quoteFetcherPrevious, CH2O_COMPONENTS, CH2O_WEIGHTS),
-      ]);
-
-      price = latestPrice;
-      absoluteChange = price - previousPrice;
-      change = (previousPrice !== 0) ? (absoluteChange / previousPrice) * 100 : 0;
-
-    } else {
-      // --- Real-time Calculation ---
-      const previousDate = subDays(new Date(), 1);
-      
-      const quoteFetcherCurrent = (assetId: string): Promise<FirestoreQuote | null> => getLatestQuote(assetId);
-      const quoteFetcherPrevious = (assetId: string): Promise<FirestoreQuote | null> => getQuoteForDate(assetId, previousDate);
-
-      const [latestPrice, previousPrice] = await Promise.all([
-        calculateCh2oPrice(quoteFetcherCurrent, CH2O_COMPONENTS, CH2O_WEIGHTS),
-        calculateCh2oPrice(quoteFetcherPrevious, CH2O_COMPONENTS, CH2O_WEIGHTS),
-      ]);
-      
-      price = latestPrice;
-      absoluteChange = price - previousPrice;
-      change = (previousPrice !== 0) ? (absoluteChange / previousPrice) * 100 : 0;
-    }
+    const [price, previousPrice] = await Promise.all([
+        getOrCalculatePriceForDate(targetDate),
+        getOrCalculatePriceForDate(previousDate)
+    ]);
+    
+    const absoluteChange = price - previousPrice;
+    const change = (previousPrice !== 0) ? (absoluteChange / previousPrice) * 100 : 0;
 
     return NextResponse.json({ price, change, absoluteChange });
 
