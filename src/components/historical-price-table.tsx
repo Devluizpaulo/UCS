@@ -106,4 +106,3 @@ export function HistoricalPriceTable({ asset, historicalData, isLoading }: Histo
     </Card>
   );
 }
-

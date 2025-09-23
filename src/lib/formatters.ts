@@ -8,7 +8,7 @@ export function formatCurrency(value: number, currency: string, assetId?: string
   if (typeof value !== 'number' || isNaN(value)) return '';
 
   const isExchangeRate = assetId === 'usd' || assetId === 'eur';
-  const isIndex = assetId === 'agua' || assetId === 'custo_agua';
+  const isIndex = assetId === 'ucs_ase';
 
   const options: Intl.NumberFormatOptions = {
     style: 'currency',
@@ -16,6 +16,14 @@ export function formatCurrency(value: number, currency: string, assetId?: string
     minimumFractionDigits: isIndex ? 0 : (isExchangeRate ? 4 : 2),
     maximumFractionDigits: isIndex ? 0 : (isExchangeRate ? 4 : 2),
   };
+  
+  // Para índices que não são o principal, não mostramos o símbolo da moeda.
+  if (assetId === 'agua' || assetId === 'custo_agua') {
+      return new Intl.NumberFormat('pt-BR', {
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0,
+      }).format(value);
+  }
   
   try {
     // Usa 'pt-BR' para todas as moedas para garantir o formato R$ 1.234,56

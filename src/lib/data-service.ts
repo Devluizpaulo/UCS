@@ -15,22 +15,6 @@ const CACHE_TTL_SECONDS = 300; // 5 minutos
 
 function serializeFirestoreTimestamp(data: any): any {
     if (data === null || typeof data !== 'object') {
-        if (typeof data === 'string') {
-            const formats = [
-                "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
-                "yyyy-MM-dd HH:mm:ssXXX",
-                'yyyy/MM/dd HH:mm:ss.SSSSSSxxx',
-                'yyyy-MM-dd',
-                "dd/MM/yyyy",
-            ];
-            let parsedDate = parseISO(data); // Padrão ISO 8601
-            if (isValid(parsedDate)) return parsedDate.getTime();
-            
-            for (const fmt of formats) {
-                parsedDate = parse(data, fmt, new Date());
-                if (isValid(parsedDate)) return parsedDate.getTime();
-            }
-        }
         return data;
     }
 

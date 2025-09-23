@@ -105,12 +105,12 @@ export function CalculatedAssetDetails({ asset }: CalculatedAssetDetailsProps) {
                   const componentAsset = COMMODITIES_CONFIG[id];
                   return (
                     <TableCell key={id} className="text-right font-mono">
-                      {formatCurrency(item[id] ?? 0, componentAsset?.currency || 'BRL')}
+                      {formatCurrency(item[id] ?? 0, componentAsset?.currency || 'BRL', id)}
                     </TableCell>
                   )
                 })}
                 <TableCell className="text-right font-mono font-bold">
-                  {formatCurrency(item.ultimo, asset.currency)}
+                  {formatCurrency(item.ultimo, asset.currency, asset.id)}
                 </TableCell>
               </TableRow>
             ))}
