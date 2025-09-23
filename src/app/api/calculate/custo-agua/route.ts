@@ -42,7 +42,7 @@ async function getOrCalculatePriceForDate(targetDate: Date) {
   );
 
   const componentValues = Object.fromEntries(
-    CUSTO_AGUA_COMPONENTS.map((id, i) => [id, componentQuotes[i]?.ultimo ?? 0])
+    CUSTO_AGUA_COMPONENTS.map((id, i) => [id, componentQuotes[i]?.rent_media ?? 0])
   ) as Record<ComponentId, number>;
 
   // Calcula preço
@@ -60,7 +60,7 @@ async function getOrCalculatePriceForDate(targetDate: Date) {
       data: format(targetDate, 'dd/MM/yyyy'),
       timestamp: targetDate.getTime(),
       ultimo: calculatedPrice,
-      variacao_pct: 0, // Variação será calculada no GET principal
+      variacao_pct: 0,
       ...componentValues,
     });
   }
