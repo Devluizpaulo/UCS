@@ -21,7 +21,8 @@ function serializeFirestoreTimestamp(data: any): any {
                 "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
                 "yyyy-MM-dd HH:mm:ssXXX",
                 'yyyy/MM/dd HH:mm:ss.SSSSSSxxx',
-                'yyyy-MM-dd'
+                'yyyy-MM-dd',
+                "dd/MM/yyyy",
             ];
             let parsedDate = parseISO(data); // Padrão ISO 8601
             if (isValid(parsedDate)) return parsedDate.getTime();
@@ -124,33 +125,6 @@ export async function getLatestQuote(assetId: string): Promise<FirestoreQuote | 
     return { id: doc.id, ...data } as FirestoreQuote;
 }
 
-
-async function getCh2oData(date?: Date): Promise<Pick<CommodityPriceData, 'price' | 'change' | 'absoluteChange'>> {
-  const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL 
-    ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` 
-    : 'http://localhost:9002';
-
-  const dateParam = date ? `?date=${format(date, 'yyyy-MM-dd')}` : '';
-  const url = `${baseUrl}/api/calculate/ch2o${dateParam}`;
-  
-  try {
-    const response = await fetch(url, { next: { revalidate: 60 } }); // Revalidate every 60s
-    if (!response.ok) {
-        console.error(`[data-service] Failed to fetch CH2O data from API. Status: ${response.status}. URL: ${url}`);
-        return { price: 0, change: 0, absoluteChange: 0 };
-    }
-    const data = await response.json();
-    return {
-        price: data.price ?? 0,
-        change: data.change ?? 0,
-        absoluteChange: data.absoluteChange ?? 0,
-    };
-  } catch (error) {
-    console.error(`[data-service] Error calling CH2O API. URL: ${url}`, error);
-    return { price: 0, change: 0, absoluteChange: 0 };
-  }
-}
-
 export async function getCommodityConfigs(): Promise<CommodityPriceData[]> {
     return Object.entries(COMMODITIES_CONFIG).map(([id, config]) => ({
         id,
@@ -177,34 +151,24 @@ export async function getCommodityPricesByDate(date: Date): Promise<CommodityPri
         const configs = await getCommodityConfigs();
         
         const assetPromises = configs.map(async (config) => {
-            if (config.isCalculated && config.id === 'agua') {
-                const ch2oData = await getCh2oData(date);
-                return { 
-                    ...config, 
-                    ...ch2oData,
-                    lastUpdated: displayDate
-                };
-
-            } else {
-                const [latestDoc, previousDoc] = await Promise.all([
-                    getQuoteForDate(config.id, date),
-                    getQuoteForDate(config.id, previousDate)
-                ]);
-                
-                const latestPrice = latestDoc?.ultimo ?? 0;
-                const previousPrice = previousDoc?.ultimo ?? latestPrice;
+            const [latestDoc, previousDoc] = await Promise.all([
+                getQuoteForDate(config.id, date),
+                getQuoteForDate(config.id, previousDate)
+            ]);
             
-                const absoluteChange = latestPrice - previousPrice;
-                const change = (previousPrice !== 0) ? (absoluteChange / previousPrice) * 100 : 0;
-                
-                return { 
-                    ...config, 
-                    price: latestPrice, 
-                    change, 
-                    absoluteChange, 
-                    lastUpdated: displayDate
-                };
-            }
+            const latestPrice = latestDoc?.ultimo ?? 0;
+            const previousPrice = previousDoc?.ultimo ?? latestPrice;
+        
+            const absoluteChange = latestPrice - previousPrice;
+            const change = (previousPrice !== 0) ? (absoluteChange / previousPrice) * 100 : 0;
+            
+            return { 
+                ...config, 
+                price: latestPrice, 
+                change, 
+                absoluteChange, 
+                lastUpdated: displayDate
+            };
         });
 
         const results = await Promise.all(assetPromises);
@@ -229,15 +193,6 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
         const configs = await getCommodityConfigs();
         
         const assetPromises = configs.map(async (config) => {
-             if (config.isCalculated && config.id === 'agua') {
-                const ch2oData = await getCh2oData();
-                return { 
-                    ...config, 
-                    ...ch2oData,
-                    lastUpdated: 'Tempo Real'
-                };
-            }
-
             const snapshot = await db.collection(config.id).orderBy('timestamp', 'desc').limit(2).get();
 
             if (snapshot.empty) {
@@ -339,5 +294,3 @@ export async function getCh2oCompositionHistory(limit = 90): Promise<Ch2oComposi
         return [];
     }
 }
-
-    
