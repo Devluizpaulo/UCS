@@ -5,7 +5,7 @@ export interface CommodityConfig {
     id: string;
     name: string;
     currency: 'USD' | 'BRL' | 'EUR';
-    category: 'exchange' | 'vus' | 'vmad' | 'crs';
+    category: 'exchange' | 'vus' | 'vmad' | 'crs' | 'index';
     description: string;
     unit: string;
     isCalculated?: boolean;

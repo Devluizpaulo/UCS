@@ -1,5 +1,4 @@
 
-
 import type { CommodityConfig } from './types';
 
 /**
@@ -26,6 +25,27 @@ import type { CommodityConfig } from './types';
  * ===================================================================================
  */
 export const COMMODITIES_CONFIG: Record<string, Omit<CommodityConfig, 'id'>> = {
+  'ucs_ase': {
+    name: 'UCS ASE',
+    currency: 'BRL',
+    category: 'index',
+    description: 'Índice principal de Unidade de Crédito de Sustentabilidade da Amazônia em pé.',
+    unit: 'Pontos',
+  },
+  'ucs': {
+    name: 'UCS',
+    currency: 'BRL',
+    category: 'index',
+    description: 'Unidade de Crédito de Sustentabilidade.',
+    unit: 'BRL por UCS',
+  },
+  'pdm': {
+    name: 'PDM',
+    currency: 'BRL',
+    category: 'index',
+    description: 'Produto de Desenvolvimento de Mercado.',
+    unit: 'BRL por PDM',
+  },
   'usd': {
     name: 'Dólar Comercial',
     currency: 'BRL',

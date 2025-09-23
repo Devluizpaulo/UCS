@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { CommodityPrices } from '@/components/commodity-prices';
 import { getCommodityPricesByDate, getCommodityPrices } from '@/lib/data-service';
@@ -10,6 +10,8 @@ import { addDays, format, parseISO, isValid, isToday, isFuture } from 'date-fns'
 import { ptBR } from 'date-fns/locale';
 import { DateNavigator } from '@/components/date-navigator';
 import { Skeleton } from '@/components/ui/skeleton';
+import { MainIndexCard } from '@/components/main-index-card';
+import type { CommodityPriceData } from '@/lib/types';
 
 function getValidatedDate(dateString?: string | null): Date | null {
   if (dateString) {
@@ -27,7 +29,7 @@ export default function DashboardPage() {
 
   // Initialize state with null to ensure server and client match initially.
   const [targetDate, setTargetDate] = useState<Date | null>(null);
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<CommodityPriceData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -56,7 +58,14 @@ export default function DashboardPage() {
 
     fetchData();
   }, [targetDate]);
-
+  
+  const { mainIndices, otherAssets } = useMemo(() => {
+    const main = data.filter(d => d.category === 'index' && d.id !== 'ucs_ase').sort((a, b) => a.name.localeCompare(b.name));
+    const secondary = data.filter(d => d.category !== 'index');
+    return { mainIndices: main, otherAssets: secondary };
+  }, [data]);
+  
+  const ucsAseAsset = useMemo(() => data.find(d => d.id === 'ucs_ase'), [data]);
 
   // Render a loading skeleton if the date hasn't been set on the client yet.
   if (!targetDate) {
@@ -69,6 +78,8 @@ export default function DashboardPage() {
             <Skeleton className="h-9 w-[250px]" />
           </PageHeader>
           <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
+              <Skeleton className="h-32 w-full" />
+              <Skeleton className="h-24 w-full" />
               <Skeleton className="h-96 w-full" />
           </main>
       </div>
@@ -91,11 +102,29 @@ export default function DashboardPage() {
           targetDate={targetDate}
         />
       </PageHeader>
-      <CommodityPrices 
-        initialData={data} 
-        displayDate={isCurrentDateOrFuture ? 'Tempo Real' : formattedDate} 
-        loading={isLoading}
-      />
+      <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
+        {isLoading ? (
+          <>
+            <Skeleton className="h-[180px] w-full" />
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
+              <Skeleton className="h-32 w-full" />
+              <Skeleton className="h-32 w-full" />
+            </div>
+          </>
+        ) : (
+          <>
+            {ucsAseAsset && <MainIndexCard asset={ucsAseAsset} isMain />}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
+              {mainIndices.map(asset => <MainIndexCard key={asset.id} asset={asset} />)}
+            </div>
+          </>
+        )}
+        <CommodityPrices 
+          data={otherAssets} 
+          displayDate={isCurrentDateOrFuture ? 'Tempo Real' : formattedDate} 
+          loading={isLoading}
+        />
+      </main>
     </div>
   );
 }

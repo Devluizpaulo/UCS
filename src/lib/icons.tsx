@@ -1,11 +1,14 @@
 
 import type { CommodityPriceData } from '@/lib/types';
-import { DollarSign, LandPlot, TreePine, Droplets, HelpCircle, Euro, Beef, Wheat, Bean } from 'lucide-react';
+import { DollarSign, LandPlot, TreePine, Droplets, HelpCircle, Euro, Beef, Wheat, Bean, Leaf, Shield, Award } from 'lucide-react';
 
 export const getIconForCategory = (asset?: CommodityPriceData) => {
     if (!asset) return HelpCircle;
     
     switch (asset.id) {
+        case 'ucs_ase': return Award;
+        case 'ucs': return Shield;
+        case 'pdm': return Leaf;
         case 'eur': return Euro;
         case 'boi_gordo': return Beef;
         case 'milho': return Wheat;
@@ -17,6 +20,7 @@ export const getIconForCategory = (asset?: CommodityPriceData) => {
         case 'custo_agua': return Droplets;
         default:
             switch (asset.category) {
+                case 'index': return Award;
                 case 'exchange': return DollarSign;
                 case 'vus': return LandPlot;
                 case 'vmad': return TreePine;
