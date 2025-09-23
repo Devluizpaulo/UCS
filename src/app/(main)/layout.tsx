@@ -11,7 +11,7 @@ import {
   SidebarMenuButton,
   SidebarProvider,
 } from '@/components/ui/sidebar';
-import { LayoutDashboard, Settings, Archive } from 'lucide-react';
+import { LayoutDashboard, Settings, Archive, SlidersHorizontal } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LogoBVM } from '@/components/logo-bvm';
@@ -54,6 +54,18 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                     <Link href="/assets">
                       <Archive />
                       <span>Gerenciar Ativos</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith('/settings/formula')}
+                    tooltip={{ children: 'Fórmula do Índice' }}
+                  >
+                    <Link href="/settings/formula">
+                      <SlidersHorizontal />
+                      <span>Fórmula do Índice</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
