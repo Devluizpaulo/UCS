@@ -28,7 +28,7 @@ import { getIconForCategory } from '@/lib/icons';
 import { getCotacoesHistorico } from '@/lib/data-service';
 import { formatCurrency } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
-import { Ch2oDetails } from './ch2o-details';
+import { CalculatedAssetDetails } from './calculated-asset-details';
 import { HistoricalPriceTable } from './historical-price-table';
 
 interface AssetDetailModalProps {
@@ -42,7 +42,7 @@ export function AssetDetailModal({ asset, isOpen, onOpenChange }: AssetDetailMod
   const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
-    if (isOpen && asset.id !== 'agua') {
+    if (isOpen && !asset.isCalculated) {
       setIsLoading(true);
       getCotacoesHistorico(asset.id)
         .then((data) => {
@@ -53,37 +53,31 @@ export function AssetDetailModal({ asset, isOpen, onOpenChange }: AssetDetailMod
           setHistoricalData([]);
           setIsLoading(false);
         });
-    } else if (asset.id === 'agua') {
-      // O componente Ch2oDetails cuida do seu próprio fetch e estado de loading.
-      setIsLoading(false);
+    } else if (asset.isCalculated) {
+      // O componente CalculatedAssetDetails cuida do seu próprio fetch.
+      // Mas o gráfico aqui ainda precisa dos dados.
+      setIsLoading(true);
+       getCotacoesHistorico(asset.id).then(data => {
+         setHistoricalData(data);
+         setIsLoading(false);
+       });
     }
-  }, [asset.id, isOpen]);
+  }, [asset.id, asset.isCalculated, isOpen]);
 
   const chartData = useMemo(() => {
-    // Para o CH2O, o gráfico usará os dados de histórico que são buscados separadamente.
-    // Para outros ativos, usamos os dados do estado.
-    const sourceData = asset.id === 'agua' ? historicalData : historicalData;
-
-    return sourceData
+    return historicalData
       .slice(0, 30) // Use last 30 days for chart
       .map((quote) => ({
         date: format(new Date(quote.timestamp), 'dd/MM'),
         price: quote.ultimo,
       }))
       .reverse(); // Ensure chronological order for the chart
-  }, [historicalData, asset.id]);
+  }, [historicalData]);
 
   const Icon = getIconForCategory(asset);
   const changeColor = asset.change >= 0 ? 'text-primary' : 'text-destructive';
   const ChangeIcon = asset.change >= 0 ? ArrowUp : ArrowDown;
   
-  // Efeito para buscar os dados de histórico para o gráfico do CH2O
-  useEffect(() => {
-    if (isOpen && asset.id === 'agua') {
-      getCotacoesHistorico('agua').then(setHistoricalData);
-    }
-  }, [isOpen, asset.id]);
-
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-7xl w-full p-0">
@@ -140,7 +134,7 @@ export function AssetDetailModal({ asset, isOpen, onOpenChange }: AssetDetailMod
                     <CardTitle>Histórico de Preços (Últimos 30 dias)</CardTitle>
                   </CardHeader>
                   <CardContent className="h-64">
-                    {(isLoading || (asset.id === 'agua' && historicalData.length === 0)) ? (
+                    {isLoading ? (
                       <div className="h-full w-full flex items-center justify-center">
                         <Loader2 className="h-8 w-8 animate-spin text-primary" />
                       </div>
@@ -184,8 +178,8 @@ export function AssetDetailModal({ asset, isOpen, onOpenChange }: AssetDetailMod
                 </Card>
 
                 {/* HISTORICAL DATA */}
-                 {asset.id === 'agua' ? (
-                  <Ch2oDetails />
+                 {asset.isCalculated ? (
+                  <CalculatedAssetDetails asset={asset} />
                 ) : (
                   <HistoricalPriceTable 
                     asset={asset}

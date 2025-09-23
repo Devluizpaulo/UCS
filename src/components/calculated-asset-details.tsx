@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { getCh2oCompositionHistory } from '@/lib/data-service';
+import { getCotacoesHistorico } from '@/lib/data-service';
 import type { CommodityPriceData, FirestoreQuote } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import {
@@ -32,7 +32,7 @@ export function CalculatedAssetDetails({ asset }: CalculatedAssetDetailsProps) {
   useEffect(() => {
     setIsLoading(true);
     // Busca o histórico de composição para o assetId específico
-    getCh2oCompositionHistory(asset.id)
+    getCotacoesHistorico(asset.id)
       .then((data) => {
         setCompositionHistory(data);
         setIsLoading(false);

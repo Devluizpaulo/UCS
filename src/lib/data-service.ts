@@ -1,5 +1,6 @@
 
 
+
 'use server';
 
 import { db } from '@/lib/firebase-admin-config';
@@ -278,14 +279,12 @@ export async function getCotacoesHistorico(assetId: string): Promise<FirestoreQu
   }
 }
 
-export async function getCh2oCompositionHistory(limit = 90): Promise<FirestoreQuote[]> {
+export async function getCh2oCompositionHistory(assetId: string): Promise<FirestoreQuote[]> {
     try {
-        const ch2oHistory = await getCotacoesHistorico('agua');
-        return ch2oHistory;
+        const history = await getCotacoesHistorico(assetId);
+        return history;
     } catch (error) {
-        console.error(`Error fetching CH2O composition history:`, error);
+        console.error(`Error fetching composition history for ${assetId}:`, error);
         return [];
     }
 }
-
-    
