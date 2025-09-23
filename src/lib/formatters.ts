@@ -1,4 +1,5 @@
 
+
 /**
  * Formata um valor monetário ou numérico de acordo com a moeda e o tipo de ativo.
  * Esta é uma função utilitária síncrona segura para ser usada no cliente.
@@ -16,19 +17,13 @@ export function formatCurrency(value: number, currency: string, assetId?: string
   };
   
   try {
-    // Para BRL, usa o formato pt-BR padrão que já inclui 'R$'
-    if (currency === 'BRL') {
-        return new Intl.NumberFormat('pt-BR', options).format(value);
-    }
-
-    // Para outras moedas, usa um formato que não inclui o símbolo da moeda por padrão,
-    // permitindo controle manual do prefixo/sufixo se necessário.
-    options.style = 'decimal';
+    // Usa 'pt-BR' para todas as moedas para garantir o formato R$ 1.234,56
     return new Intl.NumberFormat('pt-BR', options).format(value);
 
   } catch (e) {
     console.error("Error formatting currency:", e);
     
+    // Fallback em caso de erro na API de internacionalização
     const fallbackOptions = { 
         minimumFractionDigits: 2,
         maximumFractionDigits: 2 
