@@ -11,8 +11,8 @@ import { subDays, format, parse, isValid } from 'date-fns';
 const CACHE_KEY_PRICES = 'commodity_prices_simple';
 const CACHE_TTL_SECONDS = 300; // 5 minutos
 
-const CH2O_COMPONENTS = ['boi_gordo', 'milho', 'soja', 'madeira', 'carbono'];
-const CH2O_WEIGHTS: Record<string, number> = {
+export const CH2O_COMPONENTS = ['boi_gordo', 'milho', 'soja', 'madeira', 'carbono'];
+export const CH2O_WEIGHTS: Record<string, number> = {
     'boi_gordo': 0.35,
     'milho': 0.30,
     'soja': 0.35,
@@ -70,6 +70,7 @@ export async function getQuoteForDate(assetId: string, date: Date): Promise<Fire
     const doc = snapshot.docs[0];
     const data = doc.data();
     
+    // CORREÇÃO: Retorna todos os dados do documento para garantir que 'rent_media' esteja incluído.
     return { id: doc.id, ...data } as FirestoreQuote;
 }
 
@@ -97,17 +98,18 @@ export async function calculateCh2oPrice(
     );
     
     const totalValue = componentQuotes.reduce((sum, quote, index) => {
-        if (!quote) return sum;
+        if (!quote) {
+            console.log(`[calculateCh2oPrice] No quote for component: ${CH2O_COMPONENTS[index]}`);
+            return sum;
+        };
 
         const componentId = CH2O_COMPONENTS[index];
         const rentMedia = quote.rent_media ?? 0;
         
-        // Apply weights for specific components
         if (CH2O_WEIGHTS[componentId]) {
             return sum + (rentMedia * CH2O_WEIGHTS[componentId]);
         }
         
-        // Add full value for components without weights
         return sum + rentMedia;
 
     }, 0);
@@ -126,7 +128,7 @@ async function getCh2oData(date?: Date): Promise<Pick<CommodityPriceData, 'price
   try {
     const response = await fetch(url, { cache: 'no-store' });
     if (!response.ok) {
-        console.error(`[data-service] Failed to fetch CH2O data from API. Status: ${response.status}`);
+        console.error(`[data-service] Failed to fetch CH2O data from API. Status: ${response.status}. URL: ${url}`);
         return { price: 0, change: 0, absoluteChange: 0 };
     }
     const data = await response.json();
@@ -136,7 +138,7 @@ async function getCh2oData(date?: Date): Promise<Pick<CommodityPriceData, 'price
         absoluteChange: data.absoluteChange ?? 0,
     };
   } catch (error) {
-    console.error('[data-service] Error calling CH2O API:', error);
+    console.error(`[data-service] Error calling CH2O API. URL: ${url}`, error);
     return { price: 0, change: 0, absoluteChange: 0 };
   }
 }
