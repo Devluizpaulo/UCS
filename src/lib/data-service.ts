@@ -96,8 +96,7 @@ async function getLatestQuote(assetId: string): Promise<FirestoreQuote | null> {
 
 
 async function calculateCh2oPrice(
-    quoteFetcher: (assetId: string) => Promise<FirestoreQuote | null>,
-    exchangeRates: { usd: number, eur: number }
+    quoteFetcher: (assetId: string) => Promise<FirestoreQuote | null>
 ): Promise<number> {
     
     const componentQuotes = await Promise.all(
@@ -108,19 +107,9 @@ async function calculateCh2oPrice(
         if (!quote) return sum;
 
         const componentId = CH2O_COMPONENTS[index];
-        const config = COMMODITIES_CONFIG[componentId];
-        if (!config) return sum;
-        
-        let rentMedia = quote.rent_media ?? 0;
+        const rentMedia = quote.rent_media ?? 0;
 
-        // Converter para BRL se necessário
-        if (config.currency === 'USD') {
-            rentMedia *= exchangeRates.usd;
-        } else if (config.currency === 'EUR') {
-            rentMedia *= exchangeRates.eur;
-        }
-
-        // Aplicar o peso
+        // Aplicar o peso (rent_media já está em BRL)
         const weight = CH2O_WEIGHTS[componentId] ?? 1.0;
         const weightedValue = rentMedia * weight;
 
@@ -143,20 +132,6 @@ export async function getCommodityPricesByDate(date: Date): Promise<CommodityPri
 
     try {
         const configs = await getCommodityConfigs();
-
-        // Fetch exchange rates for the specific date
-        const usdQuote = await getQuoteForDate('usd', date);
-        const eurQuote = await getQuoteForDate('eur', date);
-        const exchangeRates = {
-            usd: usdQuote?.ultimo ?? 1,
-            eur: eurQuote?.ultimo ?? 1,
-        };
-        const prevUsdQuote = await getQuoteForDate('usd', previousDate);
-        const prevEurQuote = await getQuoteForDate('eur', previousDate);
-        const prevExchangeRates = {
-            usd: prevUsdQuote?.ultimo ?? exchangeRates.usd,
-            eur: prevEurQuote?.ultimo ?? exchangeRates.eur,
-        };
         
         const assetPromises = configs.map(async (config) => {
             if (config.isCalculated && config.id === 'agua') {
@@ -166,13 +141,13 @@ export async function getCommodityPricesByDate(date: Date): Promise<CommodityPri
                 // Tenta buscar o valor salvo, senão calcula
                 let latestPrice = (await getQuoteForDate(config.id, date))?.ultimo;
                 if (latestPrice === undefined) {
-                    latestPrice = await calculateCh2oPrice(quoteFetcherForDate, exchangeRates);
+                    latestPrice = await calculateCh2oPrice(quoteFetcherForDate);
                 }
 
                 // Tenta buscar o valor salvo do dia anterior, senão calcula
                 let previousPrice = (await getQuoteForDate(config.id, previousDate))?.ultimo;
                  if (previousPrice === undefined) {
-                    previousPrice = await calculateCh2oPrice(quoteFetcherForPrevDate, prevExchangeRates);
+                    previousPrice = await calculateCh2oPrice(quoteFetcherForPrevDate);
                 }
 
                 const absoluteChange = latestPrice - previousPrice;
@@ -242,27 +217,7 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
 
     try {
         const configs = await getCommodityConfigs();
-        
-        // Fetch latest exchange rates first
-        const [usdQuote, eurQuote] = await Promise.all([
-            getLatestQuote('usd'),
-            getLatestQuote('eur')
-        ]);
-        const exchangeRates = {
-            usd: usdQuote?.ultimo ?? 1, // Fallback to 1 if not found
-            eur: eurQuote?.ultimo ?? 1,
-        };
-
-        // Fetch previous day's exchange rates
         const previousDate = subDays(new Date(), 1);
-        const [prevUsdQuote, prevEurQuote] = await Promise.all([
-            getQuoteForDate('usd', previousDate),
-            getQuoteForDate('eur', previousDate)
-        ]);
-        const prevExchangeRates = {
-            usd: prevUsdQuote?.ultimo ?? exchangeRates.usd,
-            eur: prevEurQuote?.ultimo ?? exchangeRates.eur,
-        };
         
         const assetPromises = configs.map(async (config) => {
              if (config.isCalculated && config.id === 'agua') {
@@ -271,14 +226,14 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
                 // Tenta buscar o valor salvo mais recente
                 let latestPrice = (await getLatestQuote(config.id))?.ultimo;
                 if (latestPrice === undefined) {
-                    latestPrice = await calculateCh2oPrice(quoteFetcherForLatest, exchangeRates);
+                    latestPrice = await calculateCh2oPrice(quoteFetcherForLatest);
                 }
 
                 // Para a variação, buscamos o valor salvo/calculado para o dia anterior
                 const quoteFetcherForPrevDate = (assetId: string) => getQuoteForDate(assetId, previousDate);
                 let previousPrice = (await getQuoteForDate(config.id, previousDate))?.ultimo;
                 if (previousPrice === undefined) {
-                    previousPrice = await calculateCh2oPrice(quoteFetcherForPrevDate, prevExchangeRates);
+                    previousPrice = await calculateCh2oPrice(quoteFetcherForPrevDate);
                 }
 
                 const absoluteChange = latestPrice - previousPrice;
@@ -374,5 +329,3 @@ export async function getCotacoesHistorico(assetId: string): Promise<FirestoreQu
     return [];
   }
 }
-
-    
