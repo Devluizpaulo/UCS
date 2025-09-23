@@ -1,115 +1,126 @@
-
 import { NextResponse } from 'next/server';
 import { parseISO, subDays, isValid, format, isFuture, startOfDay } from 'date-fns';
-import { 
-  getQuoteForDate, 
-  saveQuote
-} from '@/lib/data-service';
+import { getQuoteForDate, saveQuote } from '@/lib/data-service';
 
 export const dynamic = 'force-dynamic';
 
 const CUSTO_AGUA_ASSET_ID = 'custo_agua';
-const CUSTO_AGUA_COMPONENTS = ['boi_gordo', 'milho', 'soja', 'madeira', 'carbono'];
-const CUSTO_AGUA_WEIGHTS: Record<string, number> = {
-    'boi_gordo': 0.35,
-    'milho': 0.30,
-    'soja': 0.35,
+const CUSTO_AGUA_COMPONENTS = ['boi_gordo', 'milho', 'soja', 'madeira', 'carbono'] as const;
+type ComponentId = typeof CUSTO_AGUA_COMPONENTS[number];
+
+const CUSTO_AGUA_WEIGHTS: Record<ComponentId, number> = {
+  boi_gordo: 0.35,
+  milho: 0.30,
+  soja: 0.35,
+  madeira: 1,      // peso 1 (sem ajuste)
+  carbono: 1,      // peso 1 (sem ajuste)
 };
+
 const CARBON_FACTOR = 0.07; // 7%
 
-async function getOrCalculatePriceForDate(targetDate: Date): Promise<any> {
-    const existingQuote = await getQuoteForDate(CUSTO_AGUA_ASSET_ID, targetDate);
-    if (existingQuote && typeof existingQuote.ultimo === 'number' && existingQuote.ultimo > 0) {
-        return { 
-            price: existingQuote.ultimo, 
-            isNew: false, 
-            componentValues: {
-                boi_gordo: existingQuote.boi_gordo ?? 0,
-                milho: existingQuote.milho ?? 0,
-                soja: existingQuote.soja ?? 0,
-                madeira: existingQuote.madeira ?? 0,
-                carbono: existingQuote.carbono ?? 0,
-            } 
-        };
-    }
+/**
+ * Busca ou calcula o preço do custo da água para a data alvo
+ */
+async function getOrCalculatePriceForDate(targetDate: Date) {
+  const existingQuote = await getQuoteForDate(CUSTO_AGUA_ASSET_ID, targetDate);
 
-    const quoteFetcher = (assetId: string) => getQuoteForDate(assetId, targetDate);
-    const componentQuotes = await Promise.all(
-        CUSTO_AGUA_COMPONENTS.map(id => quoteFetcher(id))
-    );
-    
-    const componentValues = {
-        boi_gordo: componentQuotes[0]?.ultimo ?? 0,
-        milho: componentQuotes[1]?.ultimo ?? 0,
-        soja: componentQuotes[2]?.ultimo ?? 0,
-        madeira: componentQuotes[3]?.ultimo ?? 0,
-        carbono: componentQuotes[4]?.ultimo ?? 0,
+  // Retorna se já existir cotação válida
+  if (existingQuote?.ultimo && existingQuote.ultimo > 0) {
+    return {
+      price: existingQuote.ultimo,
+      isNew: false,
+      componentValues: Object.fromEntries(
+        CUSTO_AGUA_COMPONENTS.map(id => [id, existingQuote[id] ?? 0])
+      ) as Record<ComponentId, number>,
     };
+  }
 
-    const totalSum = 
-        (componentValues.boi_gordo * CUSTO_AGUA_WEIGHTS.boi_gordo) +
-        (componentValues.milho * CUSTO_AGUA_WEIGHTS.milho) +
-        (componentValues.soja * CUSTO_AGUA_WEIGHTS.soja) +
-        componentValues.madeira +
-        componentValues.carbono;
+  // Busca cotações dos componentes
+  const componentQuotes = await Promise.all(
+    CUSTO_AGUA_COMPONENTS.map(id => getQuoteForDate(id, targetDate))
+  );
 
-    const calculatedPrice = totalSum * CARBON_FACTOR;
+  const componentValues = Object.fromEntries(
+    CUSTO_AGUA_COMPONENTS.map((id, i) => [id, componentQuotes[i]?.ultimo ?? 0])
+  ) as Record<ComponentId, number>;
 
-    if (calculatedPrice > 0 && !isFuture(startOfDay(targetDate))) {
-         await saveQuote(CUSTO_AGUA_ASSET_ID, {
-            data: format(targetDate, 'dd/MM/yyyy'),
-            timestamp: targetDate.getTime(),
-            ultimo: calculatedPrice,
-            variacao_pct: 0, // A variação real será calculada na próxima chamada GET
-            ...componentValues,
-        });
-    }
+  // Calcula preço
+  const weightedSum = (componentValues.boi_gordo * CUSTO_AGUA_WEIGHTS.boi_gordo)
+    + (componentValues.milho * CUSTO_AGUA_WEIGHTS.milho)
+    + (componentValues.soja * CUSTO_AGUA_WEIGHTS.soja)
+    + (componentValues.madeira * CUSTO_AGUA_WEIGHTS.madeira)
+    + (componentValues.carbono * CUSTO_AGUA_WEIGHTS.carbono);
 
-    return { price: calculatedPrice, isNew: true, componentValues };
+  const calculatedPrice = weightedSum * CARBON_FACTOR;
+
+  // Só salva se for uma data não futura e preço > 0
+  if (calculatedPrice > 0 && !isFuture(startOfDay(targetDate))) {
+    await saveQuote(CUSTO_AGUA_ASSET_ID, {
+      data: format(targetDate, 'dd/MM/yyyy'),
+      timestamp: targetDate.getTime(),
+      ultimo: calculatedPrice,
+      variacao_pct: 0,
+      ...componentValues,
+    });
+  }
+
+  return { price: calculatedPrice, isNew: true, componentValues };
 }
 
-
+/**
+ * Endpoint principal
+ */
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const dateParam = searchParams.get('date');
 
+    // Valida data de entrada
     let targetDateInput = dateParam ? parseISO(dateParam) : new Date();
-    if (!isValid(targetDateInput)) {
-        targetDateInput = new Date();
-    }
-    
+    if (!isValid(targetDateInput)) targetDateInput = new Date();
+
     const targetDate = startOfDay(targetDateInput);
-    
     const previousDate = subDays(targetDate, 1);
 
+    // Busca valores atual e anterior em paralelo
     const [currentData, previousData] = await Promise.all([
-        getOrCalculatePriceForDate(targetDate),
-        getOrCalculatePriceForDate(previousDate)
+      getOrCalculatePriceForDate(targetDate),
+      getOrCalculatePriceForDate(previousDate),
     ]);
-    
-    const price = currentData.price;
+
+    const { price } = currentData;
     const previousPrice = previousData.price;
 
     if (price === 0) {
-        return NextResponse.json({ message: 'Não foi possível calcular o preço para a data solicitada. Verifique se os componentes possuem dados.' }, { status: 404 });
+      return NextResponse.json(
+        { message: 'Não foi possível calcular o preço para a data solicitada. Verifique se os componentes possuem dados.' },
+        { status: 404 },
+      );
     }
 
+    // Calcula variação
     const absoluteChange = price - previousPrice;
-    const change = (previousPrice !== 0) ? (absoluteChange / previousPrice) * 100 : 0;
-    
-    // Atualiza a cotação do dia com a variação calculada
+    const change = previousPrice > 0 ? (absoluteChange / previousPrice) * 100 : 0;
+
+    // Atualiza variação na cotação do dia
     if (currentData.isNew && price > 0) {
-        await saveQuote(CUSTO_AGUA_ASSET_ID, {
-            data: format(targetDate, 'dd/MM/yyyy'),
-            timestamp: targetDate.getTime(),
-            ultimo: price,
-            variacao_pct: change,
-            ...currentData.componentValues,
-        });
+      await saveQuote(CUSTO_AGUA_ASSET_ID, {
+        data: format(targetDate, 'dd/MM/yyyy'),
+        timestamp: targetDate.getTime(),
+        ultimo: price,
+        variacao_pct: change,
+        ...currentData.componentValues,
+      });
     }
 
-    return NextResponse.json({ price, change, absoluteChange });
+    return NextResponse.json({
+      asset: CUSTO_AGUA_ASSET_ID,
+      date: format(targetDate, 'dd/MM/yyyy'),
+      price,
+      change,
+      absoluteChange,
+      components: currentData.componentValues,
+    });
 
   } catch (error) {
     console.error(`[API /calculate/${CUSTO_AGUA_ASSET_ID}] Error:`, error);

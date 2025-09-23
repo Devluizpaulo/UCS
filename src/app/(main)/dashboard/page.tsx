@@ -25,20 +25,22 @@ export default function DashboardPage() {
   const searchParams = useSearchParams();
   const dateParam = searchParams.get('date');
 
-  const [targetDate, setTargetDate] = useState<Date | null>(getValidatedDate(dateParam));
+  // Initialize state with null to ensure server and client match initially.
+  const [targetDate, setTargetDate] = useState<Date | null>(null);
   const [data, setData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     // This effect runs only on the client, after hydration.
-    // It prevents hydration mismatch by ensuring the initial server render
-    // and client render are the same before this effect updates the state.
+    // It safely sets the initial date based on the URL or defaults to today.
+    // This prevents the hydration mismatch error caused by new Date().
     const initialDate = getValidatedDate(dateParam) || new Date();
     setTargetDate(initialDate);
   }, [dateParam]);
 
 
   useEffect(() => {
+    // This effect fetches data whenever the targetDate changes.
     if (!targetDate) return;
 
     setIsLoading(true);
@@ -56,6 +58,7 @@ export default function DashboardPage() {
   }, [targetDate]);
 
 
+  // Render a loading skeleton if the date hasn't been set on the client yet.
   if (!targetDate) {
     return (
        <div className="flex min-h-screen w-full flex-col">
