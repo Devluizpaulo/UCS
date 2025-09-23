@@ -57,8 +57,7 @@ function serializeFirestoreTimestamp(data: any): any {
     return serializedData;
 }
 
-// Retorna a cotação completa de um ativo para uma data específica
-async function getQuoteForDate(assetId: string, date: Date): Promise<FirestoreQuote | null> {
+export async function getQuoteForDate(assetId: string, date: Date): Promise<FirestoreQuote | null> {
     const formattedDate = format(date, 'dd/MM/yyyy');
 
     const snapshot = await db.collection(assetId)
@@ -75,8 +74,7 @@ async function getQuoteForDate(assetId: string, date: Date): Promise<FirestoreQu
 }
 
 
-// Retorna a cotação mais recente de um ativo
-async function getLatestQuote(assetId: string): Promise<FirestoreQuote | null> {
+export async function getLatestQuote(assetId: string): Promise<FirestoreQuote | null> {
     const snapshot = await db.collection(assetId)
         .orderBy('timestamp', 'desc')
         .limit(1)
@@ -91,7 +89,7 @@ async function getLatestQuote(assetId: string): Promise<FirestoreQuote | null> {
 }
 
 
-async function calculateCh2oPrice(
+export async function calculateCh2oPrice(
     quoteFetcher: (assetId: string) => Promise<FirestoreQuote | null>
 ): Promise<number> {
     const componentQuotes = await Promise.all(
@@ -103,15 +101,46 @@ async function calculateCh2oPrice(
 
         const componentId = CH2O_COMPONENTS[index];
         const rentMedia = quote.rent_media ?? 0;
-        const weight = CH2O_WEIGHTS[componentId] ?? 1.0;
-        const weightedValue = rentMedia * weight;
-
-        return sum + weightedValue;
+        
+        // Apply weights for specific components
+        if (CH2O_WEIGHTS[componentId]) {
+            return sum + (rentMedia * CH2O_WEIGHTS[componentId]);
+        }
+        
+        // Add full value for components without weights
+        return sum + rentMedia;
 
     }, 0);
         
     return totalValue;
 }
+
+async function getCh2oData(date?: Date): Promise<Pick<CommodityPriceData, 'price' | 'change' | 'absoluteChange'>> {
+  const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL 
+    ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` 
+    : 'http://localhost:9002';
+
+  const dateParam = date ? `?date=${format(date, 'yyyy-MM-dd')}` : '';
+  const url = `${baseUrl}/api/calculate/ch2o${dateParam}`;
+  
+  try {
+    const response = await fetch(url, { cache: 'no-store' });
+    if (!response.ok) {
+        console.error(`[data-service] Failed to fetch CH2O data from API. Status: ${response.status}`);
+        return { price: 0, change: 0, absoluteChange: 0 };
+    }
+    const data = await response.json();
+    return {
+        price: data.price ?? 0,
+        change: data.change ?? 0,
+        absoluteChange: data.absoluteChange ?? 0,
+    };
+  } catch (error) {
+    console.error('[data-service] Error calling CH2O API:', error);
+    return { price: 0, change: 0, absoluteChange: 0 };
+  }
+}
+
 
 export async function getCommodityPricesByDate(date: Date): Promise<CommodityPriceData[]> {
     const cacheKey = `commodity_prices_${date.toISOString().split('T')[0]}`;
@@ -128,22 +157,10 @@ export async function getCommodityPricesByDate(date: Date): Promise<CommodityPri
         
         const assetPromises = configs.map(async (config) => {
             if (config.id === 'agua') {
-                const quoteFetcherCurrent = (assetId: string) => getQuoteForDate(assetId, date);
-                const quoteFetcherPrevious = (assetId: string) => getQuoteForDate(assetId, previousDate);
-
-                const [latestPrice, previousPrice] = await Promise.all([
-                    calculateCh2oPrice(quoteFetcherCurrent),
-                    calculateCh2oPrice(quoteFetcherPrevious),
-                ]);
-
-                const absoluteChange = latestPrice - previousPrice;
-                const change = (previousPrice !== 0) ? (absoluteChange / previousPrice) * 100 : 0;
-                
+                const ch2oData = await getCh2oData(date);
                 return { 
                     ...config, 
-                    price: latestPrice, 
-                    change, 
-                    absoluteChange, 
+                    ...ch2oData,
                     lastUpdated: displayDate
                 };
 
@@ -189,30 +206,16 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
 
     try {
         const configs = await getCommodityConfigs();
-        const previousDate = subDays(new Date(), 1);
         
         const assetPromises = configs.map(async (config) => {
              if (config.id === 'agua') {
-                const quoteFetcherCurrent = (assetId: string) => getLatestQuote(assetId);
-                const quoteFetcherPrevious = (assetId: string) => getQuoteForDate(assetId, previousDate);
-
-                const [latestPrice, previousPrice] = await Promise.all([
-                    calculateCh2oPrice(quoteFetcherCurrent),
-                    calculateCh2oPrice(quoteFetcherPrevious),
-                ]);
-                
-                const absoluteChange = latestPrice - previousPrice;
-                const change = (previousPrice !== 0) ? (absoluteChange / previousPrice) * 100 : 0;
-
+                const ch2oData = await getCh2oData();
                 return { 
                     ...config, 
-                    price: latestPrice, 
-                    change, 
-                    absoluteChange, 
+                    ...ch2oData,
                     lastUpdated: 'Tempo Real'
                 };
             }
-
 
             const snapshot = await db.collection(config.id).orderBy('timestamp', 'desc').limit(2).get();
 
@@ -287,5 +290,3 @@ export async function getCotacoesHistorico(assetId: string): Promise<FirestoreQu
     return [];
   }
 }
-
-    
