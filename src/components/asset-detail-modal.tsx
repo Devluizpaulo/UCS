@@ -10,14 +10,6 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
   LineChart,
   Line,
   XAxis,
@@ -27,18 +19,17 @@ import {
   CartesianGrid,
 } from 'recharts';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 
 import type { CommodityPriceData, FirestoreQuote } from '@/lib/types';
 import { getIconForCategory } from '@/lib/icons';
 import { getCotacoesHistorico } from '@/lib/data-service';
 import { formatCurrency } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
-import { Skeleton } from './ui/skeleton';
+import { Ch2oDetails } from './ch2o-details';
+import { HistoricalPriceTable } from './historical-price-table';
 
 interface AssetDetailModalProps {
   asset: CommodityPriceData;
@@ -46,17 +37,13 @@ interface AssetDetailModalProps {
   onOpenChange: (isOpen: boolean) => void;
 }
 
-const ITEMS_PER_PAGE = 7;
-
 export function AssetDetailModal({ asset, isOpen, onOpenChange }: AssetDetailModalProps) {
   const [historicalData, setHistoricalData] = useState<FirestoreQuote[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
-
+  
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && asset.id !== 'agua') {
       setIsLoading(true);
-      setCurrentPage(1); // Reset page on new asset
       getCotacoesHistorico(asset.id)
         .then((data) => {
           setHistoricalData(data);
@@ -66,30 +53,36 @@ export function AssetDetailModal({ asset, isOpen, onOpenChange }: AssetDetailMod
           setHistoricalData([]);
           setIsLoading(false);
         });
+    } else if (asset.id === 'agua') {
+      // O componente Ch2oDetails cuida do seu próprio fetch e estado de loading.
+      setIsLoading(false);
     }
   }, [asset.id, isOpen]);
 
   const chartData = useMemo(() => {
-    return historicalData
+    // Para o CH2O, o gráfico usará os dados de histórico que são buscados separadamente.
+    // Para outros ativos, usamos os dados do estado.
+    const sourceData = asset.id === 'agua' ? historicalData : historicalData;
+
+    return sourceData
       .slice(0, 30) // Use last 30 days for chart
       .map((quote) => ({
         date: format(new Date(quote.timestamp), 'dd/MM'),
         price: quote.ultimo,
       }))
       .reverse(); // Ensure chronological order for the chart
-  }, [historicalData]);
-
-  const paginatedData = useMemo(() => {
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    const endIndex = startIndex + ITEMS_PER_PAGE;
-    return historicalData.slice(startIndex, endIndex);
-  }, [historicalData, currentPage]);
-  
-  const totalPages = Math.ceil(historicalData.length / ITEMS_PER_PAGE);
+  }, [historicalData, asset.id]);
 
   const Icon = getIconForCategory(asset);
   const changeColor = asset.change >= 0 ? 'text-primary' : 'text-destructive';
   const ChangeIcon = asset.change >= 0 ? ArrowUp : ArrowDown;
+  
+  // Efeito para buscar os dados de histórico para o gráfico do CH2O
+  useEffect(() => {
+    if (isOpen && asset.id === 'agua') {
+      getCotacoesHistorico('agua').then(setHistoricalData);
+    }
+  }, [isOpen, asset.id]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -147,7 +140,7 @@ export function AssetDetailModal({ asset, isOpen, onOpenChange }: AssetDetailMod
                     <CardTitle>Histórico de Preços (Últimos 30 dias)</CardTitle>
                   </CardHeader>
                   <CardContent className="h-64">
-                    {isLoading ? (
+                    {(isLoading || (asset.id === 'agua' && historicalData.length === 0)) ? (
                       <div className="h-full w-full flex items-center justify-center">
                         <Loader2 className="h-8 w-8 animate-spin text-primary" />
                       </div>
@@ -190,72 +183,16 @@ export function AssetDetailModal({ asset, isOpen, onOpenChange }: AssetDetailMod
                   </CardContent>
                 </Card>
 
-                {/* HISTORICAL DATA TABLE */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Dados Históricos (Últimos 90 dias)</CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-0">
-                         {isLoading ? (
-                            <div className="space-y-2 p-6">
-                                {Array.from({length: 5}).map((_, i) => <Skeleton key={i} className="h-8 w-full" />)}
-                            </div>
-                        ) : (
-                        <>
-                            <Table>
-                                <TableHeader>
-                                <TableRow>
-                                    <TableHead>Data</TableHead>
-                                    <TableHead className="text-right">Preço</TableHead>
-                                    <TableHead className="text-right">Variação</TableHead>
-                                </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                {paginatedData.map((quote) => (
-                                    <TableRow key={quote.id}>
-                                    <TableCell>{format(new Date(quote.timestamp), 'dd/MM/yyyy')}</TableCell>
-                                    <TableCell className="text-right font-mono">
-                                        {formatCurrency(quote.ultimo, asset.currency, asset.id)}
-                                    </TableCell>
-                                    <TableCell className={cn(
-                                        "text-right font-mono",
-                                        (Number(quote.variacao_pct) ?? 0) >= 0 ? "text-primary" : "text-destructive"
-                                    )}>
-                                        {quote.variacao_pct !== null ? `${Number(quote.variacao_pct).toFixed(2)}%` : 'N/A'}
-                                    </TableCell>
-                                    </TableRow>
-                                ))}
-                                </TableBody>
-                            </Table>
-                             <div className="flex items-center justify-between p-4 border-t">
-                                <span className="text-sm text-muted-foreground">
-                                    Página {currentPage} de {totalPages}
-                                </span>
-                                <div className="flex items-center gap-2">
-                                    <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                                    disabled={currentPage === 1}
-                                    >
-                                    <ChevronLeft className="h-4 w-4 mr-1" />
-                                    Anterior
-                                    </Button>
-                                    <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                                    disabled={currentPage === totalPages}
-                                    >
-                                    Próximo
-                                    <ChevronRight className="h-4 w-4 ml-1" />
-                                    </Button>
-                                </div>
-                            </div>
-                        </>
-                        )}
-                    </CardContent>
-                </Card>
+                {/* HISTORICAL DATA */}
+                 {asset.id === 'agua' ? (
+                  <Ch2oDetails />
+                ) : (
+                  <HistoricalPriceTable 
+                    asset={asset}
+                    historicalData={historicalData} 
+                    isLoading={isLoading} 
+                  />
+                )}
               </div>
             </div>
           </div>

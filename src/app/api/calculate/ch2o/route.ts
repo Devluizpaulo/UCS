@@ -6,27 +6,20 @@ import {
   calculateCh2oPrice,
   saveQuote
 } from '@/lib/data-service';
-import type { FirestoreQuote } from '@/lib/types';
+import { CH2O_COMPONENTS } from '@/lib/constants';
 
 export const dynamic = 'force-dynamic';
-
-export const CH2O_COMPONENTS = ['boi_gordo', 'milho', 'soja', 'madeira', 'carbono'];
-export const CH2O_WEIGHTS: Record<string, number> = {
-    'boi_gordo': 0.35,
-    'milho': 0.30,
-    'soja': 0.35,
-};
 
 async function getOrCalculatePriceForDate(targetDate: Date): Promise<number> {
     // 1. Check if a quote already exists for the target date in the 'agua' collection
     const existingQuote = await getQuoteForDate('agua', targetDate);
-    if (existingQuote && existingQuote.ultimo) {
+    if (existingQuote && typeof existingQuote.ultimo === 'number') {
         return existingQuote.ultimo;
     }
 
     // 2. If not, calculate it
-    const quoteFetcher = (assetId: string): Promise<FirestoreQuote | null> => getQuoteForDate(assetId, targetDate);
-    const calculatedPrice = await calculateCh2oPrice(quoteFetcher, CH2O_COMPONENTS, CH2O_WEIGHTS);
+    const quoteFetcher = (assetId: string): Promise<any | null> => getQuoteForDate(assetId, targetDate);
+    const calculatedPrice = await calculateCh2oPrice(quoteFetcher);
 
     // 3. Save the newly calculated price back to the 'agua' collection
     if (calculatedPrice > 0) {
@@ -34,7 +27,7 @@ async function getOrCalculatePriceForDate(targetDate: Date): Promise<number> {
             data: format(targetDate, 'dd/MM/yyyy'),
             timestamp: targetDate.getTime(),
             ultimo: calculatedPrice,
-            variacao_pct: 0, // Variation can be calculated later or in a separate process
+            variacao_pct: 0, // Variation is calculated on the fly below
         });
     }
 
@@ -48,6 +41,7 @@ export async function GET(request: Request) {
     const dateParam = searchParams.get('date');
 
     const targetDate = dateParam && isValid(parseISO(dateParam)) ? parseISO(dateParam) : new Date();
+    // To calculate variation, we need the *previous day's* value.
     const previousDate = subDays(targetDate, 1);
 
     const [price, previousPrice] = await Promise.all([

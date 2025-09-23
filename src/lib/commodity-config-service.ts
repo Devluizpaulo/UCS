@@ -72,7 +72,7 @@ export const COMMODITIES_CONFIG: Record<string, Omit<CommodityConfig, 'id'>> = {
     name: 'CH²O',
     currency: 'BRL',
     category: 'crs',
-    description: 'Preço do metro cúbico da água.',
+    description: 'Índice de Custo Hídrico para Produção de Alimentos.',
     unit: 'BRL por m³',
     isCalculated: true,
   },
@@ -84,13 +84,3 @@ export const COMMODITIES_CONFIG: Record<string, Omit<CommodityConfig, 'id'>> = {
     unit: 'USD por m³',
   },
 };
-
-/**
- * Retorna a lista completa de configurações de ativos, adicionando o ID a cada objeto.
- */
-export async function getCommodityConfigs(): Promise<CommodityConfig[]> {
-  return Object.entries(COMMODITIES_CONFIG).map(([id, config]) => ({
-    id,
-    ...config,
-  }));
-}

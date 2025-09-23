@@ -2,11 +2,13 @@
 'use server';
 
 import { db } from '@/lib/firebase-admin-config';
-import { getCommodityConfigs } from '@/lib/commodity-config-service';
-import type { CommodityPriceData, FirestoreQuote } from '@/lib/types';
+import type { CommodityPriceData, FirestoreQuote, Ch2oCompositionData } from '@/lib/types';
 import { getCache, setCache } from '@/lib/cache-service';
 import { Timestamp } from 'firebase-admin/firestore';
 import { subDays, format, parse, isValid } from 'date-fns';
+import { COMMODITIES_CONFIG } from './commodity-config-service';
+import { CH2O_COMPONENTS } from './constants';
+
 
 const CACHE_KEY_PRICES = 'commodity_prices_simple';
 const CACHE_TTL_SECONDS = 300; // 5 minutos
@@ -97,24 +99,19 @@ export async function getLatestQuote(assetId: string): Promise<FirestoreQuote | 
 
 
 export async function calculateCh2oPrice(
-    quoteFetcher: (assetId: string) => Promise<FirestoreQuote | null>,
-    ch2oComponents: string[],
-    ch2oWeights: Record<string, number>
+    quoteFetcher: (assetId: string) => Promise<FirestoreQuote | null>
 ): Promise<number> {
     const componentQuotes = await Promise.all(
-        ch2oComponents.map(id => quoteFetcher(id))
+        CH2O_COMPONENTS.map(id => quoteFetcher(id))
     );
-    
-    const totalValue = componentQuotes.reduce((sum, quote, index) => {
-        const componentId = ch2oComponents[index];
-        const rentMedia = quote?.rent_media ?? 0;
 
-        if (ch2oWeights[componentId]) {
-            return sum + (rentMedia * ch2oWeights[componentId]);
-        }
-        
-        return sum + rentMedia;
-    }, 0);
+    const boiGordoRent = (componentQuotes[0]?.rent_media ?? 0) * 0.35;
+    const milhoRent = (componentQuotes[1]?.rent_media ?? 0) * 0.30;
+    const sojaRent = (componentQuotes[2]?.rent_media ?? 0) * 0.35;
+    const madeiraRent = componentQuotes[3]?.rent_media ?? 0;
+    const carbonoRent = componentQuotes[4]?.rent_media ?? 0;
+    
+    const totalValue = boiGordoRent + milhoRent + sojaRent + madeiraRent + carbonoRent;
         
     return totalValue;
 }
@@ -143,6 +140,17 @@ async function getCh2oData(date?: Date): Promise<Pick<CommodityPriceData, 'price
     console.error(`[data-service] Error calling CH2O API. URL: ${url}`, error);
     return { price: 0, change: 0, absoluteChange: 0 };
   }
+}
+
+export async function getCommodityConfigs(): Promise<CommodityPriceData[]> {
+    return Object.entries(COMMODITIES_CONFIG).map(([id, config]) => ({
+        id,
+        ...config,
+        price: 0,
+        change: 0,
+        absoluteChange: 0,
+        lastUpdated: ''
+    }));
 }
 
 
@@ -293,4 +301,39 @@ export async function getCotacoesHistorico(assetId: string): Promise<FirestoreQu
     console.error(`Error fetching historical data for ${assetId}:`, error);
     return [];
   }
+}
+
+export async function getCh2oCompositionHistory(limit = 90): Promise<Ch2oCompositionData[]> {
+    try {
+        const ch2oHistory = await getCotacoesHistorico('agua');
+        if (ch2oHistory.length === 0) return [];
+
+        const compositionPromises = ch2oHistory.map(async (ch2oQuote) => {
+            const date = new Date(ch2oQuote.timestamp);
+            
+            const componentQuotes = await Promise.all(
+                CH2O_COMPONENTS.map(id => getQuoteForDate(id, date))
+            );
+
+            return {
+                date: ch2oQuote.data,
+                timestamp: ch2oQuote.timestamp,
+                total: ch2oQuote.ultimo,
+                components: {
+                    boi_gordo: componentQuotes[0]?.rent_media ?? 0,
+                    milho: componentQuotes[1]?.rent_media ?? 0,
+                    soja: componentQuotes[2]?.rent_media ?? 0,
+                    madeira: componentQuotes[3]?.rent_media ?? 0,
+                    carbono: componentQuotes[4]?.rent_media ?? 0,
+                }
+            };
+        });
+
+        const compositionHistory = await Promise.all(compositionPromises);
+        return compositionHistory;
+
+    } catch (error) {
+        console.error(`Error fetching CH2O composition history:`, error);
+        return [];
+    }
 }

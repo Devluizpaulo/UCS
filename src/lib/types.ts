@@ -1,4 +1,5 @@
 
+
 // Defines the structure for a single commodity configuration
 export interface CommodityConfig {
     id: string;
@@ -33,4 +34,18 @@ export interface FirestoreQuote {
 export interface ChartData {
     time: string;
     value: number;
+}
+
+// Defines the structure for the CH2O composition breakdown
+export interface Ch2oCompositionData {
+    date: string;
+    timestamp: number;
+    total: number;
+    components: {
+        boi_gordo: number;
+        milho: number;
+        soja: number;
+        madeira: number;
+        carbono: number;
+    };
 }
