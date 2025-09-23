@@ -85,13 +85,13 @@ export function Ch2oDetails() {
           <TableBody>
             {paginatedData.map((item) => (
               <TableRow key={item.timestamp}>
-                <TableCell>{item.date}</TableCell>
+                <TableCell>{item.data}</TableCell>
                 <TableCell className="text-right font-mono">{formatCurrency(item.components.boi_gordo, 'BRL')}</TableCell>
                 <TableCell className="text-right font-mono">{formatCurrency(item.components.milho, 'BRL')}</TableCell>
                 <TableCell className="text-right font-mono">{formatCurrency(item.components.soja, 'BRL')}</TableCell>
                 <TableCell className="text-right font-mono">{formatCurrency(item.components.madeira, 'BRL')}</TableCell>
                 <TableCell className="text-right font-mono">{formatCurrency(item.components.carbono, 'BRL')}</TableCell>
-                <TableCell className="text-right font-mono font-bold">{formatCurrency(item.total, 'BRL')}</TableCell>
+                <TableCell className="text-right font-mono font-bold">{formatCurrency(item.ultimo, 'BRL')}</TableCell>
               </TableRow>
             ))}
           </TableBody>
