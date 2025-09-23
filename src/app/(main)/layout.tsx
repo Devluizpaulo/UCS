@@ -11,7 +11,7 @@ import {
   SidebarMenuButton,
   SidebarProvider,
 } from '@/components/ui/sidebar';
-import { LayoutDashboard, Settings } from 'lucide-react';
+import { LayoutDashboard, Settings, Archive } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LogoBVM } from '@/components/logo-bvm';
@@ -42,6 +42,18 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                     <Link href="/dashboard">
                       <LayoutDashboard />
                       <span>Painel</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                 <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith('/assets')}
+                    tooltip={{ children: 'Gerenciar Ativos' }}
+                  >
+                    <Link href="/assets">
+                      <Archive />
+                      <span>Gerenciar Ativos</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
