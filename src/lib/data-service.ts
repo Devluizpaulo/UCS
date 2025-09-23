@@ -16,8 +16,6 @@ const CH2O_WEIGHTS: Record<string, number> = {
     'boi_gordo': 0.35,
     'milho': 0.30,
     'soja': 0.35,
-    'madeira': 1.0,
-    'carbono': 1.0,
 };
 
 
@@ -94,15 +92,13 @@ async function getLatestQuote(assetId: string): Promise<FirestoreQuote | null> {
 
 
 async function calculateCh2oPrice(
-    quoteFetcher: (assetId: string, date: Date) => Promise<FirestoreQuote | null>,
-    date: Date
+    quoteFetcher: (assetId: string) => Promise<FirestoreQuote | null>
 ): Promise<number> {
-    
     const componentQuotes = await Promise.all(
-        CH2O_COMPONENTS.map(id => quoteFetcher(id, date))
+        CH2O_COMPONENTS.map(id => quoteFetcher(id))
     );
     
-    const totalValueBRL = componentQuotes.reduce((sum, quote, index) => {
+    const totalValue = componentQuotes.reduce((sum, quote, index) => {
         if (!quote) return sum;
 
         const componentId = CH2O_COMPONENTS[index];
@@ -114,7 +110,7 @@ async function calculateCh2oPrice(
 
     }, 0);
         
-    return totalValueBRL;
+    return totalValue;
 }
 
 export async function getCommodityPricesByDate(date: Date): Promise<CommodityPriceData[]> {
@@ -131,17 +127,14 @@ export async function getCommodityPricesByDate(date: Date): Promise<CommodityPri
         const configs = await getCommodityConfigs();
         
         const assetPromises = configs.map(async (config) => {
-            if (config.isCalculated && config.id === 'agua') {
+            if (config.id === 'agua') {
+                const quoteFetcherCurrent = (assetId: string) => getQuoteForDate(assetId, date);
+                const quoteFetcherPrevious = (assetId: string) => getQuoteForDate(assetId, previousDate);
 
-                let latestPrice = (await getQuoteForDate(config.id, date))?.ultimo;
-                if (latestPrice === undefined || latestPrice === 0) {
-                    latestPrice = await calculateCh2oPrice(getQuoteForDate, date);
-                }
-
-                let previousPrice = (await getQuoteForDate(config.id, previousDate))?.ultimo;
-                 if (previousPrice === undefined || previousPrice === 0) {
-                    previousPrice = await calculateCh2oPrice(getQuoteForDate, previousDate);
-                }
+                const [latestPrice, previousPrice] = await Promise.all([
+                    calculateCh2oPrice(quoteFetcherCurrent),
+                    calculateCh2oPrice(quoteFetcherPrevious),
+                ]);
 
                 const absoluteChange = latestPrice - previousPrice;
                 const change = (previousPrice !== 0) ? (absoluteChange / previousPrice) * 100 : 0;
@@ -196,34 +189,18 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
 
     try {
         const configs = await getCommodityConfigs();
-        const today = new Date();
-        const previousDate = subDays(today, 1);
+        const previousDate = subDays(new Date(), 1);
         
         const assetPromises = configs.map(async (config) => {
-             if (config.isCalculated && config.id === 'agua') {
+             if (config.id === 'agua') {
+                const quoteFetcherCurrent = (assetId: string) => getLatestQuote(assetId);
+                const quoteFetcherPrevious = (assetId: string) => getQuoteForDate(assetId, previousDate);
+
+                const [latestPrice, previousPrice] = await Promise.all([
+                    calculateCh2oPrice(quoteFetcherCurrent),
+                    calculateCh2oPrice(quoteFetcherPrevious),
+                ]);
                 
-                const quoteFetcherForLatest = async (assetId: string) => getLatestQuote(assetId);
-                const calculateForLatest = async (fetcher: (id: string) => Promise<any>, date: Date) => {
-                    const componentQuotes = await Promise.all(CH2O_COMPONENTS.map(id => fetcher(id)));
-                    return componentQuotes.reduce((sum, quote, index) => {
-                        if (!quote) return sum;
-                        const componentId = CH2O_COMPONENTS[index];
-                        const rentMedia = quote.rent_media ?? 0;
-                        const weight = CH2O_WEIGHTS[componentId] ?? 1.0;
-                        return sum + (rentMedia * weight);
-                    }, 0);
-                }
-
-                let latestPrice = (await getLatestQuote(config.id))?.ultimo;
-                if (latestPrice === undefined || latestPrice === 0) {
-                    latestPrice = await calculateForLatest(getLatestQuote, today);
-                }
-
-                let previousPrice = (await getQuoteForDate(config.id, previousDate))?.ultimo;
-                if (previousPrice === undefined || previousPrice === 0) {
-                    previousPrice = await calculateCh2oPrice(getQuoteForDate, previousDate);
-                }
-
                 const absoluteChange = latestPrice - previousPrice;
                 const change = (previousPrice !== 0) ? (absoluteChange / previousPrice) * 100 : 0;
 
