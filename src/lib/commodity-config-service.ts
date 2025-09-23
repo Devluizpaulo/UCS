@@ -76,6 +76,14 @@ export const COMMODITIES_CONFIG: Record<string, Omit<CommodityConfig, 'id'>> = {
     unit: 'BRL por m³',
     isCalculated: true,
   },
+   'custo_agua': {
+    name: 'Custo da Água',
+    currency: 'BRL',
+    category: 'crs',
+    description: 'Custo da Água para Produção de Alimentos.',
+    unit: 'BRL por m³',
+    isCalculated: true,
+  },
   'madeira': {
     name: 'Madeira Serrada',
     currency: 'USD',
