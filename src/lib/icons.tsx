@@ -1,6 +1,22 @@
 
 import type { CommodityPriceData } from '@/lib/types';
-import { DollarSign, LandPlot, TreePine, Droplets, HelpCircle, Euro, Beef, Wheat, Bean, Leaf, Shield, Award } from 'lucide-react';
+import {
+  DollarSign,
+  LandPlot,
+  TreePine,
+  Droplets,
+  HelpCircle,
+  Euro,
+  Beef,
+  Wheat,
+  Bean,
+  Leaf,
+  Shield,
+  Award,
+  TrendingUp,
+  ShieldAlert,
+  FileText,
+} from 'lucide-react';
 
 export const getIconForCategory = (asset?: CommodityPriceData) => {
     if (!asset) return HelpCircle;
