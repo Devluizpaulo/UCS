@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Briefcase, CheckCircle, Globe, HandCoins, Landmark, Leaf, Library, Repeat, Scale, ShieldCheck, TrendingUp, User } from "lucide-react";
+import { ArrowRight, Briefcase, CheckCircle, Globe, HandCoins, Landmark, Leaf, Repeat, Scale, ShieldCheck, TrendingUp, User, Euro, DollarSign } from "lucide-react";
 import Image from 'next/image';
 import Link from 'next/link';
 import { LogoBVM } from "@/components/logo-bvm";
@@ -7,6 +7,9 @@ import { LoginModal } from "@/components/login-modal";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { getCommodityPrices } from "@/lib/data-service";
+import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
+import { formatCurrency } from "@/lib/formatters";
 
 const services = [
   {
@@ -67,6 +70,21 @@ const didYouKnow = [
 
 
 export default async function LandingPage() {
+  const allPrices = await getCommodityPrices();
+
+  const ucsAseAsset = allPrices.find(p => p.id === 'ucs_ase');
+  const usdAsset = allPrices.find(p => p.id === 'usd');
+  const eurAsset = allPrices.find(p => p.id === 'eur');
+  
+  const ucsAseBRL = ucsAseAsset?.price || 0;
+  const ucsAseUSD = (usdAsset?.price && ucsAseAsset?.price) ? ucsAseAsset.price / usdAsset.price : 0;
+  const ucsAseEUR = (eurAsset?.price && ucsAseAsset?.price) ? ucsAseAsset.price / eurAsset.price : 0;
+
+  const indexValues = [
+    { currency: 'BRL', value: ucsAseBRL, icon: Leaf },
+    { currency: 'USD', value: ucsAseUSD, icon: DollarSign },
+    { currency: 'EUR', value: ucsAseEUR, icon: Euro },
+  ]
   
   return (
     <div className="flex min-h-screen w-full flex-col bg-background text-foreground">
@@ -88,11 +106,11 @@ export default async function LandingPage() {
       <main className="flex-1">
         <section className="relative w-full flex items-center justify-center text-center py-24 lg:py-40">
           <Image
-            src="https://picsum.photos/seed/lush-forest/1920/1080"
+            src="https://picsum.photos/seed/forest-path/1920/1080"
             alt="Floresta exuberante e sustentável"
             fill
             className="object-cover"
-            data-ai-hint="lush forest"
+            data-ai-hint="lush forest path"
           />
           <div className="absolute inset-0 bg-black/70" />
           <div className="relative z-10 flex flex-col items-center gap-6 px-4 md:px-6">
@@ -146,20 +164,35 @@ export default async function LandingPage() {
                                 <div>
                                     <h3 className="font-semibold">Oportunidade</h3>
                                     <p className="text-muted-foreground text-sm">Um novo horizonte para investimentos de impacto com retorno financeiro.</p>
-                               _</div>
+                                </div>
                             </li>
                          </ul>
                     </div>
                     <div className="flex items-center justify-center">
-                         <Card className="w-full max-w-sm bg-secondary/30 border-primary/50 shadow-primary/20 animate-pulse-slow">
-                            <CardHeader className="text-center">
-                                <CardTitle className="text-xl">Índice UCS ASE</CardTitle>
-                            </CardHeader>
-                            <CardContent className="text-center">
-                                <p className="text-6xl font-bold text-white font-mono">1.789</p>
-                                <p className="text-sm text-muted-foreground">pontos</p>
-                            </CardContent>
-                        </Card>
+                       <Carousel className="w-full max-w-sm" opts={{ loop: true }} plugins={[
+                          // Autoplay({ delay: 4000 }),
+                       ]}>
+                          <CarouselContent>
+                            {indexValues.map((item, index) => (
+                              <CarouselItem key={index}>
+                                <Card className="bg-secondary/30 border-primary/50 shadow-primary/20">
+                                  <CardHeader className="items-center text-center">
+                                      <div className="flex items-center gap-2">
+                                        <item.icon className="h-6 w-6 text-primary" />
+                                        <CardTitle className="text-xl">Índice UCS ASE</CardTitle>
+                                      </div>
+                                  </CardHeader>
+                                  <CardContent className="text-center">
+                                    <p className="text-5xl lg:text-6xl font-bold text-white font-mono">
+                                      {item.value > 0 ? formatCurrency(item.value, item.currency) : '...'}
+                                    </p>
+                                    <p className="text-sm text-muted-foreground">{item.currency}</p>
+                                  </CardContent>
+                                </Card>
+                              </CarouselItem>
+                            ))}
+                          </CarouselContent>
+                        </Carousel>
                     </div>
                 </div>
             </div>
@@ -232,5 +265,3 @@ export default async function LandingPage() {
     </div>
   );
 }
-
-    
