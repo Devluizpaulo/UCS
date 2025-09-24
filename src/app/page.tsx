@@ -82,8 +82,8 @@ export default async function LandingPage() {
 
   const indexValues = [
     { currency: 'BRL', value: ucsAseBRL, icon: Leaf },
-    { currency: 'USD', value: ucsAseUSD, icon: DollarSign },
-    { currency: 'EUR', value: ucsAseEUR, icon: Euro },
+    { currency: 'USD', value: ucsAseUSD, icon: DollarSign, conversionRate: usdAsset?.price },
+    { currency: 'EUR', value: ucsAseEUR, icon: Euro, conversionRate: eurAsset?.price },
   ]
   
   return (
@@ -187,6 +187,11 @@ export default async function LandingPage() {
                                       {item.value > 0 ? formatCurrency(item.value, item.currency) : '...'}
                                     </p>
                                     <p className="text-sm text-muted-foreground">{item.currency}</p>
+                                    {item.conversionRate && (
+                                        <p className="text-xs text-muted-foreground/70 mt-2">
+                                            (1 {item.currency} = {formatCurrency(item.conversionRate, 'BRL', 'usd')})
+                                        </p>
+                                    )}
                                   </CardContent>
                                 </Card>
                               </CarouselItem>
