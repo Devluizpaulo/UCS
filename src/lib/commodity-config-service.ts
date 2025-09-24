@@ -88,13 +88,12 @@ export const COMMODITIES_CONFIG: Record<string, Omit<CommodityConfig, 'id'>> = {
     description: 'Preço do crédito de carbono em Euros.',
     unit: 'EUR por tonelada',
   },
-   'agua': {
+   'ch2o_agua': {
     name: 'CH²O',
     currency: 'BRL',
     category: 'crs',
     description: 'Índice de Custo Hídrico para Produção de Alimentos.',
     unit: 'BRL por m³',
-    isCalculated: true,
   },
    'custo_agua': {
     name: 'Custo da Água',
@@ -102,7 +101,6 @@ export const COMMODITIES_CONFIG: Record<string, Omit<CommodityConfig, 'id'>> = {
     category: 'crs',
     description: 'Custo da Água para Produção de Alimentos.',
     unit: 'BRL por m³',
-    isCalculated: true,
   },
   'madeira': {
     name: 'Madeira Serrada',

@@ -28,7 +28,6 @@ import { getIconForCategory } from '@/lib/icons';
 import { getCotacoesHistorico } from '@/lib/data-service';
 import { formatCurrency } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
-import { CalculatedAssetDetails } from './calculated-asset-details';
 import { HistoricalPriceTable } from './historical-price-table';
 
 interface AssetDetailModalProps {
@@ -42,7 +41,7 @@ export function AssetDetailModal({ asset, isOpen, onOpenChange }: AssetDetailMod
   const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
-    if (isOpen && !asset.isCalculated) {
+    if (isOpen) {
       setIsLoading(true);
       getCotacoesHistorico(asset.id)
         .then((data) => {
@@ -53,16 +52,8 @@ export function AssetDetailModal({ asset, isOpen, onOpenChange }: AssetDetailMod
           setHistoricalData([]);
           setIsLoading(false);
         });
-    } else if (asset.isCalculated) {
-      // O componente CalculatedAssetDetails cuida do seu próprio fetch.
-      // Mas o gráfico aqui ainda precisa dos dados.
-      setIsLoading(true);
-       getCotacoesHistorico(asset.id).then(data => {
-         setHistoricalData(data);
-         setIsLoading(false);
-       });
     }
-  }, [asset.id, asset.isCalculated, isOpen]);
+  }, [asset.id, isOpen]);
 
   const chartData = useMemo(() => {
     return historicalData
@@ -80,8 +71,8 @@ export function AssetDetailModal({ asset, isOpen, onOpenChange }: AssetDetailMod
   
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-7xl w-full p-0">
-        <div className="grid md:grid-cols-[300px_1fr] h-full max-h-[90vh]">
+      <DialogContent className="max-w-4xl w-full p-0">
+        <div className="grid md:grid-cols-[280px_1fr] h-full max-h-[90vh]">
           {/* ASSET INFO SIDEBAR */}
           <div className="bg-muted/50 p-6 flex flex-col gap-6 border-r">
             <DialogHeader className="text-left">
@@ -178,15 +169,11 @@ export function AssetDetailModal({ asset, isOpen, onOpenChange }: AssetDetailMod
                 </Card>
 
                 {/* HISTORICAL DATA */}
-                 {asset.isCalculated ? (
-                  <CalculatedAssetDetails asset={asset} />
-                ) : (
-                  <HistoricalPriceTable 
-                    asset={asset}
-                    historicalData={historicalData} 
-                    isLoading={isLoading} 
-                  />
-                )}
+                <HistoricalPriceTable 
+                  asset={asset}
+                  historicalData={historicalData} 
+                  isLoading={isLoading} 
+                />
               </div>
             </div>
           </div>

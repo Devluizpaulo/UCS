@@ -34,7 +34,7 @@ export default async function AssetsPage() {
                     <CardHeader>
                         <CardTitle>Ativos Configurados</CardTitle>
                         <CardDescription>
-                            A lista de todos os ativos, incluindo commodities e índices calculados, que estão configurados no sistema.
+                            A lista de todos os ativos, incluindo commodities e índices, que estão configurados no sistema.
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="p-0">
@@ -44,7 +44,6 @@ export default async function AssetsPage() {
                                     <TableHead>Ativo</TableHead>
                                     <TableHead>ID da Coleção</TableHead>
                                     <TableHead>Categoria</TableHead>
-                                    <TableHead>Tipo</TableHead>
                                     <TableHead className="text-right">Ações</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -66,13 +65,6 @@ export default async function AssetsPage() {
                                             </TableCell>
                                             <TableCell>
                                                 <Badge variant="secondary">{asset.category.toUpperCase()}</Badge>
-                                            </TableCell>
-                                            <TableCell>
-                                                {asset.isCalculated ? (
-                                                    <Badge>Calculado</Badge>
-                                                ) : (
-                                                    <Badge variant="secondary">Padrão</Badge>
-                                                )}
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 <Button variant="ghost" size="sm">

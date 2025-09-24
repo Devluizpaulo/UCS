@@ -9,19 +9,20 @@ export function formatCurrency(value: number, currency: string, assetId?: string
 
   const isExchangeRate = assetId === 'usd' || assetId === 'eur';
   const isIndex = assetId === 'ucs_ase';
+  const isSpecialIndex = assetId === 'ch2o_agua' || assetId === 'custo_agua';
+
 
   const options: Intl.NumberFormatOptions = {
     style: 'currency',
     currency: currency,
-    minimumFractionDigits: isIndex ? 0 : (isExchangeRate ? 4 : 2),
-    maximumFractionDigits: isIndex ? 0 : (isExchangeRate ? 4 : 2),
+    minimumFractionDigits: isIndex || isSpecialIndex ? 0 : (isExchangeRate ? 4 : 2),
+    maximumFractionDigits: isIndex || isSpecialIndex ? 0 : (isExchangeRate ? 4 : 2),
   };
   
-  // Para índices que não são o principal, não mostramos o símbolo da moeda.
-  if (assetId === 'agua' || assetId === 'custo_agua') {
+  if (isSpecialIndex) {
       return new Intl.NumberFormat('pt-BR', {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0,
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
       }).format(value);
   }
   
