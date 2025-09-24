@@ -87,7 +87,7 @@ export default async function LandingPage() {
   
   return (
     <div className="flex min-h-screen w-full flex-col bg-background text-foreground">
-      <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-background/80 backdrop-blur-sm">
+      <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-sm">
         <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
           <LogoBVM />
           <div className="flex items-center gap-2">
@@ -111,17 +111,17 @@ export default async function LandingPage() {
             className="object-cover"
             data-ai-hint="lush forest path"
           />
-          <div className="absolute inset-0 bg-black/70" />
+          <div className="absolute inset-0 bg-black/60" />
           <div className="relative z-10 flex flex-col items-center gap-6 px-4 md:px-6">
             <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl text-white">
               O Futuro do Capital Natural é Digital
             </h1>
-            <p className="mx-auto max-w-[700px] text-lg text-gray-300 md:text-xl">
+            <p className="mx-auto max-w-[700px] text-lg text-gray-200 md:text-xl">
               Transformamos ativos ambientais em oportunidades de investimento seguras e transparentes.
             </p>
             
              <div className="flex flex-col sm:flex-row gap-4 mt-6">
-                <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground" asChild>
+                <Button size="lg" asChild>
                     <Link href="/login">
                         Acessar Plataforma <ArrowRight className="ml-2 h-5 w-5" />
                     </Link>
@@ -174,7 +174,7 @@ export default async function LandingPage() {
                           <CarouselContent>
                             {indexValues.map((item, index) => (
                               <CarouselItem key={index}>
-                                <Card className="bg-secondary/30 border-primary/50 shadow-primary/20">
+                                <Card className="bg-card border-border shadow-lg">
                                   <CardHeader className="items-center text-center">
                                       <div className="flex items-center gap-2">
                                         <item.icon className="h-6 w-6 text-primary" />
@@ -182,7 +182,7 @@ export default async function LandingPage() {
                                       </div>
                                   </CardHeader>
                                   <CardContent className="text-center">
-                                    <p className="text-5xl lg:text-6xl font-bold text-white font-mono">
+                                    <p className="text-5xl lg:text-6xl font-bold text-foreground font-mono">
                                       {item.value > 0 ? formatCurrency(item.value, item.currency) : '...'}
                                     </p>
                                     <p className="text-sm text-muted-foreground">{item.currency}</p>
@@ -202,7 +202,7 @@ export default async function LandingPage() {
             </div>
         </section>
 
-        <section id="services" className="w-full bg-muted/20 py-16 md:py-24">
+        <section id="services" className="w-full bg-muted/50 py-16 md:py-24">
           <div className="container mx-auto px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
               <div className="space-y-2">
@@ -214,7 +214,7 @@ export default async function LandingPage() {
             </div>
             <div className="mx-auto grid max-w-5xl items-stretch gap-6 sm:grid-cols-2 md:max-w-none md:grid-cols-3">
               {services.map((service) => (
-                <div key={service.title} className="group flex flex-col items-start gap-4 rounded-xl border border-white/10 bg-card p-6 shadow-sm transition-all hover:border-primary/50 hover:shadow-primary/20">
+                <div key={service.title} className="group flex flex-col items-start gap-4 rounded-xl border bg-card p-6 shadow-sm transition-all hover:border-primary/50 hover:shadow-primary/10">
                   <div className="flex items-center gap-4">
                     <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
                         <service.icon className="h-6 w-6" />
@@ -256,7 +256,7 @@ export default async function LandingPage() {
 
       </main>
 
-      <footer className="border-t border-white/10">
+      <footer className="border-t">
         <div className="container mx-auto flex flex-col items-center justify-between gap-4 px-4 py-8 md:flex-row md:px-6">
           <div className="flex flex-col items-center gap-2 text-center md:flex-row md:gap-4 md:text-left">
             <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} BMV Digital. Todos os direitos reservados.</p>

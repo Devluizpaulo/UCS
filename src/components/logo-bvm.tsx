@@ -42,7 +42,7 @@ export function LogoBVM({ isIcon = false, className, ...props }: LogoBVMProps) {
                 <path d="M2 17l10 5 10-5" />
                 <path d="M2 12l10 5 10-5" />
             </svg>
-            <span className="text-white">BMV Digital</span>
+            <span className="text-foreground">BMV Digital</span>
         </div>
     );
 }
