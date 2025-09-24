@@ -8,7 +8,7 @@
  * - ReportOutputSchema - O Zod schema para a saída do fluxo.
  */
 
-import { genkit, z } from '@/ai/genkit';
+import { z, ai } from '@/ai/genkit';
 import { getCotacoesHistoricoPorRange } from '@/lib/data-service';
 import type { FirestoreQuote } from '@/lib/types';
 
@@ -38,7 +38,7 @@ export const ReportOutputSchema = z.object({
 export type ReportOutput = z.infer<typeof ReportOutputSchema>;
 
 
-const reportGeneratorPrompt = genkit.definePrompt(
+const reportGeneratorPrompt = ai.definePrompt(
     {
       name: 'reportGeneratorPrompt',
       input: { schema: ReportInputSchema },
@@ -79,13 +79,13 @@ const reportGeneratorPrompt = genkit.definePrompt(
  * @param input Os dados de entrada para a geração do relatório.
  * @returns Uma promessa que resolve para a análise gerada pela IA.
  */
-export const generateReportFlow = genkit.defineFlow(
+export const generateReportFlow = ai.defineFlow(
   {
     name: 'generateReportFlow',
     inputSchema: ReportInputSchema,
     outputSchema: ReportOutputSchema,
   },
-  async (input) => {
+  async (input: ReportInput) => {
     
     // Etapa 1: Buscar dados históricos reais do Firestore
     console.log(`[report-flow] Buscando dados históricos para ${input.assetId} no período...`);

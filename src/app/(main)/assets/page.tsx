@@ -18,7 +18,7 @@ import { getCommodityConfigs, saveCommodityConfig } from '@/lib/data-service';
 import { getIconForCategory } from '@/lib/icons';
 import { Button } from '@/components/ui/button';
 import { AssetFormModal } from '@/components/asset-form-modal';
-import type { CommodityConfig } from '@/lib/types';
+import type { CommodityConfig, CommodityPriceData } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 
 function useAssets() {
@@ -115,7 +115,7 @@ export default function AssetsPage() {
                                     </TableRow>
                                 ) : (
                                     assets.map((asset) => {
-                                        const Icon = getIconForCategory(asset);
+                                        const Icon = getIconForCategory(asset as CommodityPriceData);
                                         return (
                                             <TableRow key={asset.id}>
                                                 <TableCell>
