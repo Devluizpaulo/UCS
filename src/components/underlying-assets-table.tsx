@@ -17,6 +17,7 @@ import { formatCurrency } from '@/lib/formatters';
 import { getIconForCategory } from '@/lib/icons';
 import { AssetDetailModal } from './asset-detail-modal';
 import { Card } from './ui/card';
+import { usePriceChangeAnimation } from '@/hooks/use-price-change-animation';
 
 interface UnderlyingAssetsTableProps {
     data: CommodityPriceData[];
@@ -25,6 +26,8 @@ interface UnderlyingAssetsTableProps {
 
 export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTableProps) {
   const [selectedAsset, setSelectedAsset] = useState<CommodityPriceData | null>(null);
+  const animationClasses = usePriceChangeAnimation(data);
+
 
   const handleRowClick = (asset: CommodityPriceData) => {
     setSelectedAsset(asset);
@@ -59,9 +62,14 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
                         const Icon = getIconForCategory(asset);
                         const priceFormatted = formatCurrency(asset.price, asset.currency, asset.id);
                         const changeColor = asset.change >= 0 ? 'text-primary' : 'text-destructive';
+                        const animationClass = animationClasses[asset.id];
 
                         return (
-                            <TableRow key={asset.id} onClick={() => handleRowClick(asset)} className="cursor-pointer">
+                            <TableRow 
+                                key={asset.id} 
+                                onClick={() => handleRowClick(asset)} 
+                                className={cn("cursor-pointer", animationClass)}
+                            >
                                 <TableCell>
                                 <div className="flex items-center gap-3">
                                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
@@ -109,9 +117,14 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
                     const Icon = getIconForCategory(asset);
                     const priceFormatted = formatCurrency(asset.price, asset.currency, asset.id);
                     const changeColor = asset.change >= 0 ? 'text-primary' : 'text-destructive';
+                    const animationClass = animationClasses[asset.id];
                     
                     return (
-                        <Card key={asset.id} onClick={() => handleRowClick(asset)} className="p-3 cursor-pointer">
+                        <Card 
+                            key={asset.id} 
+                            onClick={() => handleRowClick(asset)} 
+                            className={cn("p-3 cursor-pointer", animationClass)}
+                        >
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
                                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">

@@ -23,15 +23,57 @@ function getValidatedDate(dateString?: string | null): Date | null {
   return null;
 }
 
+function useRealtimeData(initialDate: Date | null) {
+    const [data, setData] = useState<CommodityPriceData[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const isCurrentDateOrFuture = initialDate ? isToday(initialDate) || isFuture(initialDate) : true;
+
+    useEffect(() => {
+        if (!initialDate) return;
+
+        let intervalId: NodeJS.Timeout | undefined;
+        setIsLoading(true);
+
+        const fetchData = async () => {
+            try {
+                const result = isCurrentDateOrFuture
+                    ? await getCommodityPrices()
+                    : await getCommodityPricesByDate(initialDate);
+                setData(result);
+            } catch (error) {
+                console.error("Failed to fetch data:", error);
+                // Optionally set an error state here
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchData();
+
+        if (isCurrentDateOrFuture) {
+            // Poll for new data every 30 seconds for "real-time" feel
+            intervalId = setInterval(fetchData, 30000); 
+        }
+
+        return () => {
+            if (intervalId) {
+                clearInterval(intervalId);
+            }
+        };
+
+    }, [initialDate, isCurrentDateOrFuture]);
+
+    return { data, isLoading };
+}
+
+
 export default function DashboardPage() {
   const searchParams = useSearchParams();
   const dateParam = searchParams.get('date');
 
   // Initialize state with null to ensure server and client match initially.
   const [targetDate, setTargetDate] = useState<Date | null>(null);
-  const [data, setData] = useState<CommodityPriceData[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
+  
   useEffect(() => {
     // This effect runs only on the client, after hydration.
     // It safely sets the initial date based on the URL or defaults to today.
@@ -39,25 +81,8 @@ export default function DashboardPage() {
     const initialDate = getValidatedDate(dateParam) || new Date();
     setTargetDate(initialDate);
   }, [dateParam]);
-
-
-  useEffect(() => {
-    // This effect fetches data whenever the targetDate changes.
-    if (!targetDate) return;
-
-    setIsLoading(true);
-    const isCurrentDateOrFuture = isToday(targetDate) || isFuture(targetDate);
-    
-    const fetchData = async () => {
-      const result = isCurrentDateOrFuture 
-        ? await getCommodityPrices() 
-        : await getCommodityPricesByDate(targetDate);
-      setData(result);
-      setIsLoading(false);
-    };
-
-    fetchData();
-  }, [targetDate]);
+  
+  const { data, isLoading } = useRealtimeData(targetDate);
   
   const { mainIndices, otherAssets } = useMemo(() => {
     const main = data.filter(d => d.category === 'index' && d.id !== 'ucs_ase').sort((a, b) => a.name.localeCompare(b.name));
@@ -103,7 +128,7 @@ export default function DashboardPage() {
         />
       </PageHeader>
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
-        {isLoading ? (
+        {isLoading && data.length === 0 ? (
           <>
             <Skeleton className="h-[180px] w-full" />
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
@@ -122,7 +147,7 @@ export default function DashboardPage() {
         <CommodityPrices 
           data={otherAssets} 
           displayDate={isCurrentDateOrFuture ? 'Tempo Real' : formattedDate} 
-          loading={isLoading}
+          loading={isLoading && otherAssets.length === 0}
         />
       </main>
     </div>
