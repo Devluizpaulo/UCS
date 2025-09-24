@@ -195,6 +195,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                   asChild
                   isActive={pathname.startsWith('/assets')}
                   tooltip={{ children: 'Gerenciar Ativos' }}
+                  disabled
                 >
                   <Link href="/assets">
                     <Archive />
