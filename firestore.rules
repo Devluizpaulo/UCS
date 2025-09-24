@@ -1,0 +1,147 @@
+/**
+ * @fileoverview Firestore Security Rules for the UCS Index Tracker application.
+ *
+ * Core Philosophy:
+ * This ruleset enforces a strict user-ownership model for user profiles and alert configurations.
+ * Commodities and UCS indices are publicly readable but require admin privileges for modification.
+ *
+ * Data Structure:
+ * - /users/{userId}: Stores user profile data, with 'userId' matching the Firebase Auth UID.
+ * - /roles_admin/{userId}: Presence of a document grants admin privileges to the user.
+ * - /commodities/{commodityId}: Stores commodity definitions.
+ * - /ucs_indices/{ucsIndexId}: Stores calculated UCS index values.
+ * - /users/{userId}/alerts/{alertId}: Stores alert configurations for each user.
+ *
+ * Key Security Decisions:
+ * - User listing is disallowed for privacy.
+ * - Commodities and UCS indices are readable by all but only modifiable by admins.
+ * - Alert configurations are accessible only to the owning user.
+ *
+ * Denormalization for Authorization:
+ * - Admin status is checked via a separate `roles_admin` collection.
+ *
+ * Structural Segregation:
+ * - User-specific alert configurations are stored in a subcollection for private access.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Manages user profile data. Only the authenticated user can read/write their own profile.
+     * @path /users/{userId}
+     * @allow (create) - Authenticated user creates their own profile with matching UID.
+     * @allow (get, update, delete) - Authenticated user reads/updates/deletes their own profile.
+     * @deny (create) - User attempts to create a profile with a UID different from their own.
+     * @deny (get, update, delete) - User attempts to read/update/delete another user's profile.
+     * @principle Enforces document ownership for user profiles.
+     */
+    match /users/{userId} {
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isSignedIn() && isOwner(userId) && resource.data.id == userId;
+      allow delete: if isSignedIn() && isOwner(userId) && resource.data.id == userId;
+    }
+
+    /**
+     * @description Manages admin roles. Admin status is granted by the existence of a document with the user's ID in this collection.
+     * @path /roles_admin/{userId}
+     * @allow (create) - Only an existing admin can create a new admin role.
+     * @allow (get) - Any authenticated user can check for admin role.
+     * @allow (list) - Only existing admins can list admin roles.
+     * @allow (update, delete) - Only an existing admin can modify admin roles.
+     * @deny (create, update, delete) - Non-admin user attempts to manage admin roles.
+     * @principle Grants admin privileges based on document existence.
+     */
+    match /roles_admin/{userId} {
+      function isAdmin() {
+        return exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+      }
+
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      allow get: if isSignedIn();
+      allow list: if isAdmin();
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    /**
+     * @description Manages commodity definitions. Publicly readable, but only admins can modify.
+     * @path /commodities/{commodityId}
+     * @allow (get, list) - Any user can read commodity definitions.
+     * @allow (create, update, delete) - Only admins can create, update, or delete commodity definitions.
+     * @deny (create, update, delete) - Non-admin user attempts to modify commodity definitions.
+     * @principle Restricts write access to admins while allowing public read access.
+     */
+    match /commodities/{commodityId} {
+      function isAdmin() {
+        return exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+      }
+
+      allow get: if true;
+      allow list: if true;
+      allow create: if isAdmin();
+      allow update: if isAdmin() && resource != null;
+      allow delete: if isAdmin() && resource != null;
+    }
+
+    /**
+     * @description Manages UCS index values. Publicly readable, but only admins can modify.
+     * @path /ucs_indices/{ucsIndexId}
+     * @allow (get, list) - Any user can read UCS index values.
+     * @allow (create, update, delete) - Only admins can create, update, or delete UCS index values.
+     * @deny (create, update, delete) - Non-admin user attempts to modify UCS index values.
+     * @principle Restricts write access to admins while allowing public read access.
+     */
+    match /ucs_indices/{ucsIndexId} {
+      function isAdmin() {
+        return exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+      }
+
+      allow get: if true;
+      allow list: if true;
+      allow create: if isAdmin();
+      allow update: if isAdmin() && resource != null;
+      allow delete: if isAdmin() && resource != null;
+    }
+
+    /**
+     * @description Manages alert configurations for each user. Only the owning user can access their alerts.
+     * @path /users/{userId}/alerts/{alertId}
+     * @allow (create) - Authenticated user creates an alert configuration under their own user ID.
+     * @allow (get, update, delete) - Authenticated user reads/updates/deletes their own alert configurations.
+     * @allow (list) - Authenticated user lists their own alert configurations.
+     * @deny (create) - User attempts to create an alert configuration under another user's ID.
+     * @deny (get, update, delete) - User attempts to read/update/delete another user's alert configurations.
+     * @principle Enforces document ownership for alert configurations.
+     */
+    match /users/{userId}/alerts/{alertId} {
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isSignedIn() && isOwner(userId) && resource.data.userId == userId;
+      allow delete: if isSignedIn() && isOwner(userId) && resource.data.userId == userId;
+    }
+  }
+}
