@@ -10,13 +10,13 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from 'recharts';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import type { FirestoreQuote } from '@/lib/types';
 import { getCotacoesHistorico } from '@/lib/data-service';
 import { formatCurrency } from '@/lib/formatters';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Skeleton }largura="90%" altura="256"/>
+import { Skeleton } from '@/components/ui/skeleton';
 
 const ChartSkeleton = () => (
   <div className="h-64 w-full">
@@ -24,16 +24,24 @@ const ChartSkeleton = () => (
   </div>
 );
 
+type TimeRange = '7d' | '30d' | '90d';
+const timeRangeToDays: Record<TimeRange, number> = {
+  '7d': 7,
+  '30d': 30,
+  '90d': 90,
+};
 
 export function TrendChart() {
   const [data, setData] = useState<FirestoreQuote[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [timeRange, setTimeRange] = useState('90d');
+  const [timeRange, setTimeRange] = useState<TimeRange>('90d');
 
   useEffect(() => {
     setIsLoading(true);
-    // Para este exemplo, vamos focar no índice principal 'ucs_ase'
-    getCotacoesHistorico('ucs_ase')
+    const days = timeRangeToDays[timeRange];
+    
+    // For this example, we focus on the main index 'ucs_ase'
+    getCotacoesHistorico('ucs_ase', days)
       .then((history) => {
         setData(history);
         setIsLoading(false);
@@ -42,23 +50,22 @@ export function TrendChart() {
         setData([]);
         setIsLoading(false);
       });
-  }, []);
+  }, [timeRange]);
 
   const chartData = useMemo(() => {
-    const rangeMap: { [key: string]: number } = {
-      '7d': 7,
-      '30d': 30,
-      '90d': 90,
-    };
-    const days = rangeMap[timeRange] || 90;
-
     return data
-      .slice(0, days)
-      .map((quote) => ({
-        date: format(new Date(quote.timestamp), 'dd/MM'),
-        value: quote.valor ?? quote.ultimo,
-      }))
-      .reverse(); // Garante a ordem cronológica
+      .map((quote) => {
+        const dateObject = typeof quote.timestamp === 'number' ? new Date(quote.timestamp) : parseISO(quote.timestamp as any);
+        let dateFormat = 'dd/MM';
+        if (timeRange === '90d') {
+           dateFormat = 'dd/MM';
+        }
+        return {
+           date: format(dateObject, dateFormat),
+           value: quote.valor ?? quote.ultimo,
+        }
+      })
+      .reverse(); // Ensure chronological order for the chart
   }, [data, timeRange]);
 
   return (
@@ -71,7 +78,11 @@ export function TrendChart() {
               Evolução do valor do principal índice da plataforma.
             </CardDescription>
           </div>
-          <Tabs defaultValue="90d" className="w-full sm:w-auto mt-4 sm:mt-0" onValueChange={setTimeRange}>
+          <Tabs 
+            defaultValue={timeRange} 
+            className="w-full sm:w-auto mt-4 sm:mt-0" 
+            onValueChange={(value) => setTimeRange(value as TimeRange)}
+          >
             <TabsList>
               <TabsTrigger value="7d">7D</TabsTrigger>
               <TabsTrigger value="30d">30D</TabsTrigger>
@@ -93,6 +104,7 @@ export function TrendChart() {
                 fontSize={12}
                 tickLine={false}
                 axisLine={false}
+                interval="preserveStartEnd"
               />
               <YAxis
                 stroke="hsl(var(--muted-foreground))"

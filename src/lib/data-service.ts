@@ -209,11 +209,14 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
 }
 
 
-export async function getCotacoesHistorico(assetId: string): Promise<FirestoreQuote[]> {
+export async function getCotacoesHistorico(assetId: string, days: number): Promise<FirestoreQuote[]> {
   try {
+    const startDate = subDays(new Date(), days);
+    
     const snapshot = await db.collection(assetId)
+      .where('timestamp', '>=', Timestamp.fromDate(startDate))
       .orderBy('timestamp', 'desc')
-      .limit(90)
+      .limit(365) // Limit to a max of 365 docs to avoid huge queries
       .get();
 
     if (snapshot.empty) {

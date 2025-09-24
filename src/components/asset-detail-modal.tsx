@@ -21,7 +21,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { ArrowDown, ArrowUp, Loader2 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 
 import type { CommodityPriceData, FirestoreQuote } from '@/lib/types';
 import { getIconForCategory } from '@/lib/icons';
@@ -43,7 +43,8 @@ export function AssetDetailModal({ asset, isOpen, onOpenChange }: AssetDetailMod
   useEffect(() => {
     if (isOpen) {
       setIsLoading(true);
-      getCotacoesHistorico(asset.id)
+      // Fetch last 90 days of data for the components
+      getCotacoesHistorico(asset.id, 90)
         .then((data) => {
           setHistoricalData(data);
           setIsLoading(false);
@@ -56,12 +57,16 @@ export function AssetDetailModal({ asset, isOpen, onOpenChange }: AssetDetailMod
   }, [asset.id, isOpen]);
 
   const chartData = useMemo(() => {
+    // Use last 30 entries for the chart for better readability
     return historicalData
-      .slice(0, 30) // Use last 30 days for chart
-      .map((quote) => ({
-        date: format(new Date(quote.timestamp), 'dd/MM'),
-        price: quote.valor ?? quote.ultimo,
-      }))
+      .slice(0, 30) 
+      .map((quote) => {
+        const dateObject = typeof quote.timestamp === 'number' ? new Date(quote.timestamp) : parseISO(quote.timestamp as any);
+         return {
+            date: format(dateObject, 'dd/MM'),
+            price: quote.valor ?? quote.ultimo,
+         }
+      })
       .reverse(); // Ensure chronological order for the chart
   }, [historicalData]);
 
@@ -122,7 +127,7 @@ export function AssetDetailModal({ asset, isOpen, onOpenChange }: AssetDetailMod
                 {/* CHART */}
                 <Card>
                   <CardHeader>
-                    <CardTitle>Histórico de Preços (Últimos 30 dias)</CardTitle>
+                    <CardTitle>Histórico de Preços (Últimos 30 Dias)</CardTitle>
                   </CardHeader>
                   <CardContent className="h-64">
                     {isLoading ? (
