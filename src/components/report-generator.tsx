@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { addDays } from "date-fns"
+import { addDays, formatISO } from "date-fns"
 import type { DateRange } from "react-day-picker"
 import * as React from 'react';
 
@@ -23,6 +23,8 @@ import {
 import { Loader2, Sparkles, FileDown, FileText } from 'lucide-react';
 import { DateRangePicker } from './date-range-picker';
 import { Separator } from './ui/separator';
+import { generateReport, type ReportInput, type ReportOutput } from '@/ai/flows/report-flow';
+import { useToast } from '@/hooks/use-toast';
 
 const reportSchema = z.object({
   assetId: z.string().min(1, { message: 'Selecione um ativo.' }),
@@ -37,8 +39,8 @@ type ReportFormData = z.infer<typeof reportSchema>;
 
 export function ReportGenerator() {
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isPreviewing, setIsPreviewing] = useState(false);
-  const [reportResult, setReportResult] = useState<{ analysis: string, pdfUrl: string } | null>(null);
+  const [reportResult, setReportResult] = useState<ReportOutput | null>(null);
+  const { toast } = useToast();
 
   const [date, setDate] = useState<DateRange | undefined>({
     from: addDays(new Date(), -30),
@@ -71,24 +73,22 @@ export function ReportGenerator() {
   const processForm = async (data: ReportFormData) => {
     setIsGenerating(true);
     setReportResult(null);
-    console.log('Gerando relatório com os dados:', data);
 
-    // Simulação da chamada da IA e geração de PDF
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    const result = await generateReport(data);
 
-    setReportResult({
-        analysis: "Esta é uma análise gerada por IA sobre o período selecionado. O índice UCS ASE apresentou uma volatilidade moderada, com um pico de alta no início do mês e uma correção subsequente. Fatores macroeconômicos, como a variação do dólar, influenciaram o desempenho. A observação do usuário sobre o 'impacto da nova regulação' foi considerada, e notamos uma queda de 2% no dia seguinte ao anúncio.",
-        pdfUrl: "/mock-report.pdf" // URL de um PDF falso
-    });
-
+    if (result.executiveSummary.startsWith('Erro:')) {
+      toast({
+        variant: 'destructive',
+        title: 'Falha na Geração do Relatório',
+        description: result.executiveSummary,
+      });
+    } else {
+       setReportResult(result);
+    }
+    
     setIsGenerating(false);
   };
 
-  const handlePreview = () => {
-    setIsPreviewing(true);
-    // Lógica para gerar e exibir preview
-    setTimeout(() => setIsPreviewing(false), 1500);
-  }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -121,8 +121,10 @@ export function ReportGenerator() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="ucs_ase">Índice UCS ASE</SelectItem>
-                        <SelectItem value="soja" disabled>Soja (em breve)</SelectItem>
-                        <SelectItem value="milho" disabled>Milho (em breve)</SelectItem>
+                        <SelectItem value="soja">Soja</SelectItem>
+                        <SelectItem value="milho">Milho</SelectItem>
+                        <SelectItem value="boi_gordo">Boi Gordo</SelectItem>
+                        <SelectItem value="carbono">Crédito de Carbono</SelectItem>
                       </SelectContent>
                     </Select>
                   )}
@@ -141,15 +143,7 @@ export function ReportGenerator() {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-2">
-                <Button type="button" variant="outline" onClick={handlePreview} disabled={isGenerating || isPreviewing} className="w-full">
-                    {isPreviewing ? (
-                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                        <FileDown className="mr-2 h-4 w-4" />
-                    )}
-                    Pré-visualizar
-                </Button>
-                <Button type="submit" disabled={isGenerating || isPreviewing} className="w-full">
+                <Button type="submit" disabled={isGenerating} className="w-full">
                   {isGenerating ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -170,7 +164,7 @@ export function ReportGenerator() {
 
       {/* Coluna de Resultado */}
       <div className="lg:col-span-2">
-        <Card className="h-full">
+        <Card className="h-full min-h-[600px]">
            <CardHeader>
               <CardTitle>Resultado da Análise</CardTitle>
               <CardDescription>
@@ -189,22 +183,40 @@ export function ReportGenerator() {
                     <div>
                         <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
                             <Sparkles className="h-5 w-5 text-primary" />
-                            Análise Executiva da IA
+                            Resumo Executivo
                         </h3>
-                        <div className="prose prose-sm dark:prose-invert max-w-none rounded-md border bg-muted/30 p-4">
-                            <p>{reportResult.analysis}</p>
+                        <div className="prose prose-sm dark:prose-invert max-w-none rounded-md border bg-muted/30 p-4 text-sm">
+                            <p>{reportResult.executiveSummary}</p>
                         </div>
                     </div>
+                     <div>
+                        <h3 className="text-lg font-semibold mb-2">Análise de Tendência</h3>
+                        <div className="prose prose-sm dark:prose-invert max-w-none rounded-md border bg-muted/30 p-4 text-sm">
+                            <p>{reportResult.trendAnalysis}</p>
+                        </div>
+                    </div>
+                     <div>
+                        <h3 className="text-lg font-semibold mb-2">Análise de Volatilidade</h3>
+                        <div className="prose prose-sm dark:prose-invert max-w-none rounded-md border bg-muted/30 p-4 text-sm">
+                            <p>{reportResult.volatilityAnalysis}</p>
+                        </div>
+                    </div>
+                     <div>
+                        <h3 className="text-lg font-semibold mb-2">Conclusão</h3>
+                        <div className="prose prose-sm dark:prose-invert max-w-none rounded-md border bg-muted/30 p-4 text-sm">
+                            <p>{reportResult.conclusion}</p>
+                        </div>
+                    </div>
+
                     <Separator />
+
                     <div className="flex flex-col items-center justify-center text-center bg-muted/30 border-2 border-dashed rounded-lg p-8">
                          <FileText className="h-12 w-12 text-muted-foreground mb-4" />
-                        <h3 className="text-lg font-semibold mb-2">Relatório Pronto para Download</h3>
-                        <p className="text-sm text-muted-foreground mb-4">O relatório completo em formato PDF está pronto.</p>
-                        <Button asChild>
-                            <a href={reportResult.pdfUrl} download="relatorio-ucs-ase.pdf">
-                                <FileDown className="mr-2 h-4 w-4" />
-                                Baixar PDF
-                            </a>
+                        <h3 className="text-lg font-semibold mb-2">Geração de PDF (Em Breve)</h3>
+                        <p className="text-sm text-muted-foreground mb-4">A funcionalidade para baixar o relatório completo em PDF será implementada em breve.</p>
+                        <Button disabled>
+                            <FileDown className="mr-2 h-4 w-4" />
+                            Baixar PDF
                         </Button>
                     </div>
                 </div>

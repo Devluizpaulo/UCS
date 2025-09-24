@@ -6,8 +6,9 @@ import { db } from '@/lib/firebase-admin-config';
 import type { CommodityPriceData, FirestoreQuote } from '@/lib/types';
 import { getCache, setCache } from '@/lib/cache-service';
 import { Timestamp } from 'firebase-admin/firestore';
-import { subDays, format, parse, isValid, startOfDay, parseISO } from 'date-fns';
+import { subDays, format, parse, isValid, startOfDay, parseISO, endOfDay } from 'date-fns';
 import { COMMODITIES_CONFIG } from './commodity-config-service';
+import type { DateRange } from 'react-day-picker';
 
 const CACHE_KEY_PRICES = 'commodity_prices_simple';
 const CACHE_TTL_SECONDS = 300; // 5 minutos
@@ -242,4 +243,45 @@ export async function getCotacoesHistorico(assetId: string, days: number): Promi
     console.error(`Error fetching historical data for ${assetId}:`, error);
     return [];
   }
+}
+
+
+export async function getCotacoesHistoricoPorRange(assetId: string, dateRange: DateRange): Promise<FirestoreQuote[]> {
+    if (!dateRange.from || !dateRange.to) {
+        console.warn('getCotacoesHistoricoPorRange foi chamada sem um intervalo de datas válido.');
+        return [];
+    }
+
+    try {
+        const startDate = startOfDay(dateRange.from);
+        const endDate = endOfDay(dateRange.to);
+
+        const snapshot = await db.collection(assetId)
+            .where('timestamp', '>=', Timestamp.fromDate(startDate))
+            .where('timestamp', '<=', Timestamp.fromDate(endDate))
+            .orderBy('timestamp', 'desc')
+            .get();
+
+        if (snapshot.empty) {
+            return [];
+        }
+
+        const data = snapshot.docs.map(doc => {
+            const docData = doc.data();
+            return {
+                id: doc.id,
+                data: docData.data,
+                timestamp: serializeFirestoreTimestamp(docData.timestamp),
+                ultimo: getPriceFromQuote(docData),
+                valor: docData.valor,
+                variacao_pct: docData.variacao_pct,
+            } as FirestoreQuote;
+        });
+
+        return data;
+
+    } catch (error) {
+        console.error(`Error fetching historical data for ${assetId} in range:`, error);
+        return [];
+    }
 }
