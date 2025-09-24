@@ -18,6 +18,10 @@ const COMMODITIES_CONFIG_CACHE_KEY = 'commodities_config';
 
 // --- HELPER FUNCTIONS ---
 
+/**
+ * Normaliza Timestamps do Firestore ou objetos Date para milissegundos.
+ * Essencial para garantir a consistência dos dados, especialmente em ambientes de serialização.
+ */
 function serializeFirestoreTimestamp(data: any): any {
     if (data === null || typeof data !== 'object') {
         return data;
@@ -41,6 +45,10 @@ function serializeFirestoreTimestamp(data: any): any {
     return serializedData;
 }
 
+/**
+ * Obtém o valor principal de uma cotação, priorizando 'valor' e depois 'ultimo'.
+ * Abstrai a inconsistência dos campos nos dados de origem.
+ */
 function getPriceFromQuote(quoteData: any): number {
     if (quoteData) {
         if (typeof quoteData.valor === 'number') return quoteData.valor;
@@ -50,8 +58,12 @@ function getPriceFromQuote(quoteData: any): number {
 }
 
 
-// --- CONFIGURATION MANAGEMENT ---
+// --- CONFIGURATION MANAGEMENT (CRUD Ativos) ---
 
+/**
+ * Configuração inicial dos ativos. Usada apenas se o documento de configuração
+ * no Firestore não existir.
+ */
 const initialCommoditiesConfig: Record<string, Omit<CommodityConfig, 'id'>> = {
     'ucs_ase': { name: 'UCS ASE', currency: 'BRL', category: 'index', description: 'Índice principal de Unidade de Crédito de Sustentabilidade da Amazônia em pé.', unit: 'Pontos' },
     'ucs': { name: 'UCS', currency: 'BRL', category: 'index', description: 'Unidade de Crédito de Sustentabilidade.', unit: 'BRL por UCS' },
@@ -68,31 +80,36 @@ const initialCommoditiesConfig: Record<string, Omit<CommodityConfig, 'id'>> = {
 };
 
 /**
- * Saves a new or updated commodity configuration to the Firestore settings document.
- * @param id The ID of the commodity.
- * @param config The configuration object for the commodity.
+ * Salva uma nova configuração de ativo ou atualiza uma existente no Firestore.
+ * Invalida o cache de configurações para forçar a releitura dos dados frescos.
+ * @param id O ID do ativo (ex: 'meu_ativo').
+ * @param config O objeto de configuração do ativo.
  */
 export async function saveCommodityConfig(id: string, config: Omit<CommodityConfig, 'id'>): Promise<void> {
     const settingsDocRef = db.collection(SETTINGS_COLLECTION).doc(COMMODITIES_DOC);
     
-    // Use a transaction to ensure atomicity
+    // Transação para garantir atomicidade.
     await db.runTransaction(async (transaction) => {
         const doc = await transaction.get(settingsDocRef);
         if (!doc.exists) {
-            // If the document doesn't exist, create it with the initial configs plus the new one.
+            // Se o documento não existe, cria com a configuração inicial + a nova.
             const initialData = { ...initialCommoditiesConfig, [id]: config };
             transaction.set(settingsDocRef, initialData);
         } else {
-            // If it exists, just update the field for the new/updated commodity.
+            // Se existe, apenas atualiza o campo do ativo específico.
             transaction.update(settingsDocRef, { [id]: config });
         }
     });
 
-    // Invalidate the cache
+    // Invalida o cache para forçar a releitura.
     setCache(COMMODITIES_CONFIG_CACHE_KEY, null, 0);
 }
 
-
+/**
+ * Busca a lista de todas as configurações de ativos.
+ * Primeiro tenta buscar do cache; se não encontrar, busca do Firestore e armazena em cache.
+ * @returns Um array com todas as configurações de ativos.
+ */
 export async function getCommodityConfigs(): Promise<CommodityConfig[]> {
     const cachedConfigs = getCache<CommodityConfig[]>(COMMODITIES_CONFIG_CACHE_KEY);
     if (cachedConfigs) {
@@ -105,8 +122,9 @@ export async function getCommodityConfigs(): Promise<CommodityConfig[]> {
     let configData: Record<string, Omit<CommodityConfig, 'id'>>;
 
     if (!doc.exists) {
-        console.log("No commodity config found in Firestore, using initial static config.");
+        console.log("Nenhuma configuração de commodity encontrada, usando configuração inicial e criando documento.");
         configData = initialCommoditiesConfig;
+        await docRef.set(configData); // Salva a configuração inicial no banco.
     } else {
         configData = doc.data() as Record<string, Omit<CommodityConfig, 'id'>>;
     }
@@ -116,16 +134,24 @@ export async function getCommodityConfigs(): Promise<CommodityConfig[]> {
         ...config,
     }));
 
-    setCache(COMMODITIES_CONFIG_CACHE_KEY, configsArray, CACHE_TTL_SECONDS * 10); // Cache for 50 mins
+    setCache(COMMODITIES_CONFIG_CACHE_KEY, configsArray, CACHE_TTL_SECONDS * 10); // Cache longo (50 min)
     return configsArray;
 }
 
 
 // --- DATA FETCHING SERVICES ---
 
+/**
+ * Busca a cotação mais recente para um ativo em uma data específica.
+ * Tenta buscar por campo 'data' (string) e depois por 'timestamp' (data).
+ * @param assetId O ID da coleção do ativo.
+ * @param date A data para a qual a cotação é desejada.
+ * @returns A cotação encontrada ou nulo.
+ */
 export async function getQuoteForDate(assetId: string, date: Date): Promise<FirestoreQuote | null> {
     const formattedDate = format(date, 'dd/MM/yyyy');
     
+    // Tentativa 1: Buscar pela data em formato string 'dd/MM/yyyy'
     const stringDateSnapshot = await db.collection(assetId)
         .where('data', '==', formattedDate)
         .limit(1)
@@ -136,8 +162,9 @@ export async function getQuoteForDate(assetId: string, date: Date): Promise<Fire
         return { id: doc.id, ...doc.data() } as FirestoreQuote;
     }
 
+    // Tentativa 2: Buscar por timestamp dentro do dia
     const startDate = startOfDay(date);
-    const endDate = new Date(startDate.getTime() + 24 * 60 * 60 * 1000 - 1);
+    const endDate = endOfDay(date);
 
     const timestampSnapshot = await db.collection(assetId)
         .where('timestamp', '>=', Timestamp.fromDate(startDate))
@@ -152,7 +179,11 @@ export async function getQuoteForDate(assetId: string, date: Date): Promise<Fire
     return { id: doc.id, ...doc.data() } as FirestoreQuote;
 }
 
-
+/**
+ * Busca a cotação mais recente de um ativo, ordenando por timestamp.
+ * @param assetId O ID da coleção do ativo.
+ * @returns A cotação mais recente ou nulo.
+ */
 export async function getLatestQuote(assetId: string): Promise<FirestoreQuote | null> {
     const snapshot = await db.collection(assetId)
         .orderBy('timestamp', 'desc')
@@ -165,7 +196,12 @@ export async function getLatestQuote(assetId: string): Promise<FirestoreQuote | 
     return { id: doc.id, ...doc.data() } as FirestoreQuote;
 }
 
-
+/**
+ * Busca os preços de todos os ativos para uma data específica (visão de fechamento).
+ * Calcula a variação com base no dia anterior.
+ * @param date A data para a qual os preços são desejados.
+ * @returns Um array com os dados de preço de todos os ativos.
+ */
 export async function getCommodityPricesByDate(date: Date): Promise<CommodityPriceData[]> {
     const cacheKey = `commodity_prices_${date.toISOString().split('T')[0]}`;
     const cachedData = getCache<CommodityPriceData[]>(cacheKey);
@@ -200,16 +236,20 @@ export async function getCommodityPricesByDate(date: Date): Promise<CommodityPri
 
         const results = await Promise.all(assetPromises);
 
-        setCache(cacheKey, results, CACHE_TTL_SECONDS * 12 * 24); // Cache histórico por 1 dia
+        setCache(cacheKey, results, CACHE_TTL_SECONDS * 12 * 24); // Cache de 1 dia para dados históricos
         return results;
 
     } catch (error) {
-        console.error("Error fetching commodity prices by date:", error);
-        return [];
+        console.error("Erro ao buscar preços por data:", error);
+        throw new Error("Falha ao obter as cotações para a data especificada.");
     }
 }
 
-
+/**
+ * Busca os preços mais recentes de todos os ativos (visão "tempo real").
+ * Calcula a variação com base no penúltimo registro de cada ativo.
+ * @returns Um array com os dados de preço de todos os ativos.
+ */
 export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
     const cachedData = getCache<CommodityPriceData[]>(CACHE_KEY_PRICES);
     if (cachedData) return cachedData;
@@ -249,12 +289,17 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
         return results;
 
     } catch (error) {
-        console.error("Error fetching commodity prices:", error);
-        return [];
+        console.error("Erro ao buscar preços 'em tempo real':", error);
+        throw new Error("Falha ao obter as cotações mais recentes.");
     }
 }
 
-
+/**
+ * Busca o histórico de cotações de um ativo nos últimos N dias.
+ * @param assetId O ID da coleção do ativo.
+ * @param days O número de dias no passado para buscar.
+ * @returns Um array com o histórico de cotações.
+ */
 export async function getCotacoesHistorico(assetId: string, days: number): Promise<FirestoreQuote[]> {
   try {
     const startDate = subDays(new Date(), days);
@@ -262,7 +307,6 @@ export async function getCotacoesHistorico(assetId: string, days: number): Promi
     const snapshot = await db.collection(assetId)
       .where('timestamp', '>=', Timestamp.fromDate(startDate))
       .orderBy('timestamp', 'desc')
-      .limit(365)
       .get();
 
     if (snapshot.empty) return [];
@@ -280,15 +324,20 @@ export async function getCotacoesHistorico(assetId: string, days: number): Promi
     return data;
 
   } catch (error) {
-    console.error(`Error fetching historical data for ${assetId}:`, error);
-    return [];
+    console.error(`Erro ao buscar histórico de ${days} dias para ${assetId}:`, error);
+    throw new Error(`Falha ao obter o histórico para ${assetId}.`);
   }
 }
 
-
+/**
+ * Busca o histórico de cotações de um ativo dentro de um intervalo de datas específico.
+ * @param assetId O ID da coleção do ativo.
+ * @param dateRange Um objeto com as propriedades 'from' e 'to'.
+ * @returns Um array com o histórico de cotações no período.
+ */
 export async function getCotacoesHistoricoPorRange(assetId: string, dateRange: DateRange): Promise<FirestoreQuote[]> {
     if (!dateRange.from || !dateRange.to) {
-        console.warn('getCotacoesHistoricoPorRange foi chamada sem um intervalo de datas válido.');
+        console.warn('getCotacoesHistoricoPorRange chamada sem um intervalo de datas válido.');
         return [];
     }
 
@@ -317,7 +366,7 @@ export async function getCotacoesHistoricoPorRange(assetId: string, dateRange: D
         return data;
 
     } catch (error) {
-        console.error(`Error fetching historical data for ${assetId} in range:`, error);
-        return [];
+        console.error(`Erro ao buscar histórico por período para ${assetId}:`, error);
+        throw new Error(`Falha ao obter o histórico por período para ${assetId}.`);
     }
 }
