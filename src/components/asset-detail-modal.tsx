@@ -60,7 +60,7 @@ export function AssetDetailModal({ asset, isOpen, onOpenChange }: AssetDetailMod
       .slice(0, 30) // Use last 30 days for chart
       .map((quote) => ({
         date: format(new Date(quote.timestamp), 'dd/MM'),
-        price: quote.ultimo,
+        price: quote.valor ?? quote.ultimo,
       }))
       .reverse(); // Ensure chronological order for the chart
   }, [historicalData]);

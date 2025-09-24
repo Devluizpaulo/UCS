@@ -41,6 +41,19 @@ function serializeFirestoreTimestamp(data: any): any {
     return serializedData;
 }
 
+function getPriceFromQuote(quoteData: any): number {
+    if (quoteData) {
+        if (typeof quoteData.valor === 'number') {
+            return quoteData.valor;
+        }
+        if (typeof quoteData.ultimo === 'number') {
+            return quoteData.ultimo;
+        }
+    }
+    return 0;
+}
+
+
 export async function getQuoteForDate(assetId: string, date: Date): Promise<FirestoreQuote | null> {
     const formattedDate = format(date, 'dd/MM/yyyy');
     
@@ -76,23 +89,6 @@ export async function getQuoteForDate(assetId: string, date: Date): Promise<Fire
     
     return { id: doc.id, ...data } as FirestoreQuote;
 }
-
-
-export async function saveQuote(assetId: string, quoteData: Omit<FirestoreQuote, 'id'>): Promise<void> {
-    try {
-        const docId = format(new Date(quoteData.timestamp), 'yyyy-MM-dd');
-        const docRef = db.collection(assetId).doc(docId);
-        await docRef.set({
-            ...quoteData,
-            timestamp: Timestamp.fromMillis(quoteData.timestamp)
-        }, { merge: true });
-        console.log(`[data-service] Saved quote for ${assetId} on date ${quoteData.data}`);
-    } catch (error) {
-        console.error(`[data-service] Error saving quote for ${assetId}:`, error);
-        throw error;
-    }
-}
-
 
 export async function getLatestQuote(assetId: string): Promise<FirestoreQuote | null> {
     const snapshot = await db.collection(assetId)
@@ -139,8 +135,8 @@ export async function getCommodityPricesByDate(date: Date): Promise<CommodityPri
                 getQuoteForDate(config.id, previousDate)
             ]);
             
-            const latestPrice = latestDoc?.ultimo ?? 0;
-            const previousPrice = previousDoc?.ultimo ?? latestPrice;
+            const latestPrice = getPriceFromQuote(latestDoc);
+            const previousPrice = previousDoc ? getPriceFromQuote(previousDoc) : latestPrice;
         
             const absoluteChange = latestPrice - previousPrice;
             const change = (previousPrice !== 0) ? (absoluteChange / previousPrice) * 100 : 0;
@@ -185,8 +181,8 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
             const latestDocData = snapshot.docs[0].data();
             const previousDocData = snapshot.docs.length > 1 ? snapshot.docs[1].data() : null;
 
-            const latestPrice = latestDocData.ultimo ?? 0;
-            const previousPrice = previousDocData ? (previousDocData.ultimo ?? latestPrice) : latestPrice;
+            const latestPrice = getPriceFromQuote(latestDocData);
+            const previousPrice = previousDocData ? getPriceFromQuote(previousDocData) : latestPrice;
 
             const absoluteChange = latestPrice - previousPrice;
             const change = (previousPrice !== 0) ? (absoluteChange / previousPrice) * 100 : 0;
@@ -229,15 +225,11 @@ export async function getCotacoesHistorico(assetId: string): Promise<FirestoreQu
 
         return {
             id: doc.id,
-            data: docData.data, // Preserve the original 'data' field
+            data: docData.data,
             timestamp: serializeFirestoreTimestamp(docData.timestamp),
-            ultimo: docData.ultimo,
+            ultimo: getPriceFromQuote(docData), // Use the helper here as well
+            valor: docData.valor,
             variacao_pct: docData.variacao_pct,
-            boi_gordo: docData.boi_gordo,
-            milho: docData.milho,
-            soja: docData.soja,
-            madeira: docData.madeira,
-            carbono: docData.carbono,
         } as FirestoreQuote;
     });
 

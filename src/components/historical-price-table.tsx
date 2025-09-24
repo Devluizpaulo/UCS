@@ -63,13 +63,13 @@ export function HistoricalPriceTable({ asset, historicalData, isLoading }: Histo
                   <TableRow key={quote.id}>
                     <TableCell>{quote.data || format(new Date(quote.timestamp), 'dd/MM/yyyy')}</TableCell>
                     <TableCell className="text-right font-mono">
-                      {formatCurrency(quote.ultimo, asset.currency, asset.id)}
+                      {formatCurrency(quote.valor ?? quote.ultimo, asset.currency, asset.id)}
                     </TableCell>
                     <TableCell className={cn(
                       "text-right font-mono",
                       (Number(quote.variacao_pct) ?? 0) >= 0 ? "text-primary" : "text-destructive"
                     )}>
-                      {quote.variacao_pct !== null ? `${Number(quote.variacao_pct).toFixed(2)}%` : 'N/A'}
+                      {quote.variacao_pct !== null && quote.variacao_pct !== undefined ? `${Number(quote.variacao_pct).toFixed(2)}%` : 'N/A'}
                     </TableCell>
                   </TableRow>
                 ))}
