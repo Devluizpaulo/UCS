@@ -39,7 +39,7 @@ O objetivo é fornecer a gestores, analistas e produtores rurais uma ferramenta 
   - **Autenticação:** (Placeholder) Simples redirecionamento para o dashboard.
 
 - **Fonte de Dados Externa:**
-  - **Automação de Dados:** Processos externos (como [n8n](https://n8n.io/)) são usados para coletar dados de mercado do [investing.com.br](https://br.investing.com/) e inseri-los no Firestore diariamente. A plataforma apenas lê esses dados.
+  - **Automação de Dados:** Processos externos (como [n8n](https://n8n.io/)) são usados para coletar dados de mercado do [investing.com.br](https://br.investing.com/) e inseri-los no Firestore diariamente. A aplicação apenas lê esses dados.
 
 ## 4. Camada de Abstração de Dados
 
@@ -125,6 +125,17 @@ FIREBASE_SERVICE_ACCOUNT_BASE64="COLE_SUA_STRING_BASE64_AQUI"
 # Google AI
 GEMINI_API_KEY=sua_gemini_api_key
 ```
+
+### 7.1. Trocando o Projeto Firebase
+
+Caso seja necessário conectar a aplicação a um projeto Firebase diferente, siga estes passos:
+
+1.  **Gere uma Nova Chave de Serviço:** No console do **novo** projeto Firebase, vá para "Configurações do Projeto" > "Contas de Serviço" e gere uma nova chave privada. Um arquivo JSON será baixado.
+2.  **Codifique a Chave em Base64:** Converta todo o conteúdo do arquivo JSON para uma única string em Base64. Você pode usar um site como o [Base64 Encode](https://www.base64encode.org/).
+3.  **Atualize as Variáveis de Ambiente:** Substitua o valor da variável `FIREBASE_SERVICE_ACCOUNT_BASE64` pela nova string Base64 que você gerou.
+    -   **Localmente:** Altere o valor no seu arquivo `.env`.
+    -   **Em Produção (Vercel, etc.):** Altere o valor nas configurações de variáveis de ambiente do seu provedor de hospedagem.
+4.  **Reinicie a Aplicação:** Para que as alterações tenham efeito, reinicie seu servidor de desenvolvimento local ou faça um novo deploy em produção.
 
 ## 8. Como Executar Localmente
 
