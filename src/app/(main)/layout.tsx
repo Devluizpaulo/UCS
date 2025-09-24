@@ -20,6 +20,7 @@ import {
   FileText,
   Users,
   LogOut,
+  Sparkles,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -136,11 +137,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 <SidebarMenuButton
                   asChild
                   isActive={pathname.startsWith('/reports')}
-                  tooltip={{ children: 'Relatórios' }}
+                  tooltip={{ children: 'Relatórios IA' }}
                 >
                   <Link href="/reports">
-                    <FileText />
-                    <span>Relatórios</span>
+                    <Sparkles />
+                    <span>Relatórios IA</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
