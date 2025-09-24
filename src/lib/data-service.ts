@@ -321,17 +321,3 @@ export async function getCotacoesHistoricoPorRange(assetId: string, dateRange: D
         return [];
     }
 }
-
-
-/**
- * Saves a quote to a specific asset collection.
- * @param assetId The ID of the asset collection.
- * @param quote The quote data to save.
- */
-export async function saveQuote(assetId: string, quote: Partial<FirestoreQuote>): Promise<void> {
-    const docRef = db.collection(assetId).doc(); // Creates a new document with a random ID
-    await docRef.set({
-        ...quote,
-        timestamp: quote.timestamp ? new Date(quote.timestamp) : FieldValue.serverTimestamp(),
-    }, { merge: true });
-}
