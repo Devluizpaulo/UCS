@@ -259,7 +259,10 @@ export default async function LandingPage() {
 
       <footer className="border-t border-white/10">
         <div className="container mx-auto flex flex-col items-center justify-between gap-4 px-4 py-8 md:flex-row md:px-6">
-          <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} BMV Digital. Todos os direitos reservados.</p>
+          <div className="flex flex-col items-center gap-2 text-center md:flex-row md:gap-4 md:text-left">
+            <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} BMV Digital. Todos os direitos reservados.</p>
+            <p className="text-sm text-muted-foreground">Fonte dos dados: <a href="https://br.investing.com/" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">investing.com.br</a></p>
+          </div>
           <div className="flex items-center gap-4">
               <a href="https://bmvdigital.global/" target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground transition-colors hover:text-primary">
                 Site Institucional
