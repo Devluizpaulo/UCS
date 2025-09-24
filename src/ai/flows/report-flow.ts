@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview Fluxo de IA para geração de relatórios de análise de ativos.
@@ -8,7 +9,8 @@
  */
 
 import { genkit, z } from '@/ai/genkit';
-import { StreamingTextResponse, streamText } from 'genkit/next';
+import { generateReportFlow } from './report-flow';
+
 
 // Esquema de entrada para o fluxo de geração de relatório
 export const ReportInputSchema = z.object({
@@ -54,9 +56,9 @@ const reportGeneratorPrompt = genkit.definePrompt(
         (Os dados históricos serão fornecidos aqui em uma etapa futura. Por enquanto, baseie-se no perfil do ativo e nas observações do usuário para gerar uma resposta de exemplo.)
 
         **Sua Tarefa:**
-        Com base nos dados fornecidos e no seu conhecimento, gere uma análise estruturada contendo os seguintes campos:
+        Com base NOS DADOS FORNECIDOS e no seu conhecimento, gere uma análise estruturada contendo os seguintes campos. NÃO ESPECULE OU "ALUCINE" informações que não possam ser comprovadas pelos dados.
         1.  **executiveSummary:** Um parágrafo curto no início resumindo os pontos mais importantes.
-        2.  **trendAnalysis:** Descreva a tendência principal (alta, baixa, lateralidade), identifique picos e vales significativos e explique possíveis causas.
+        2.  **trendAnalysis:** Descreva a tendência principal (alta, baixa, lateralidade), identifique picos e vales significativos e explique possíveis causas baseadas nos dados.
         3.  **volatilityAnalysis:** Comente sobre a volatilidade do ativo no período. Foi um período estável ou instável?
         4.  **conclusion:** Feche com uma conclusão sobre o desempenho do ativo e o que pode ser esperado para o futuro, se possível.
 
@@ -83,14 +85,21 @@ export const generateReportFlow = genkit.defineFlow(
     const llmResponse = await reportGeneratorPrompt.generate({
         input: input,
     });
+    
+    const output = llmResponse.output();
 
-    // Etapa 2: Retornar a saída estruturada
-    return llmResponse.output() ?? {
-        executiveSummary: '',
-        trendAnalysis: '',
-        volatilityAnalysis: '',
-        conclusion: '',
-    };
+    // Etapa 2: Retornar a saída estruturada ou um objeto vazio em caso de falha
+    if (!output) {
+      console.error("[report-flow] A resposta da IA não gerou uma saída estruturada válida.");
+      return {
+          executiveSummary: 'Erro: Não foi possível gerar a análise.',
+          trendAnalysis: '',
+          volatilityAnalysis: '',
+          conclusion: '',
+      };
+    }
+    
+    return output;
   }
 );
 
@@ -102,7 +111,17 @@ export const generateReportFlow = genkit.defineFlow(
  */
 export async function generateReport(input: ReportInput): Promise<ReportOutput> {
     console.log('[report-flow] Iniciando geração de relatório com input:', input);
-    const result = await generateReportFlow(input);
-    console.log('[report-flow] Relatório gerado com sucesso.');
-    return result;
+    try {
+        const result = await generateReportFlow(input);
+        console.log('[report-flow] Relatório gerado com sucesso.');
+        return result;
+    } catch (error) {
+        console.error('[report-flow] Ocorreu um erro durante a geração do relatório:', error);
+        return {
+             executiveSummary: 'Erro: Ocorreu uma falha inesperada ao tentar gerar a análise. Por favor, tente novamente.',
+             trendAnalysis: '',
+             volatilityAnalysis: '',
+             conclusion: '',
+        }
+    }
 }
