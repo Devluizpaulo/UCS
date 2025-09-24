@@ -1,4 +1,5 @@
 
+
 import type { CommodityPriceData } from '@/lib/types';
 import {
   DollarSign,
@@ -13,10 +14,7 @@ import {
   Leaf,
   Shield,
   Award,
-  TrendingUp,
-  ShieldAlert,
-  FileText,
-  Sigma,
+  Users,
 } from 'lucide-react';
 
 export const getIconForCategory = (asset?: CommodityPriceData) => {

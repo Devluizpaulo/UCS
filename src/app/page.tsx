@@ -3,7 +3,6 @@ import { ArrowRight, Briefcase, CheckCircle, Globe, HandCoins, Landmark, Leaf, R
 import Image from 'next/image';
 import Link from 'next/link';
 import { LogoBVM } from "@/components/logo-bvm";
-import { LoginModal } from "@/components/login-modal";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -93,12 +92,12 @@ export default async function LandingPage() {
           <LogoBVM />
           <div className="flex items-center gap-2">
             <LanguageSwitcher />
-            <LoginModal>
-              <Button variant="ghost">
-                <User className="mr-2 h-4 w-4" />
-                Acessar Plataforma
-              </Button>
-            </LoginModal>
+             <Button variant="ghost" asChild>
+                <Link href="/login">
+                    <User className="mr-2 h-4 w-4" />
+                    Acessar Plataforma
+                </Link>
+            </Button>
           </div>
         </div>
       </header>
@@ -122,11 +121,11 @@ export default async function LandingPage() {
             </p>
             
              <div className="flex flex-col sm:flex-row gap-4 mt-6">
-              <LoginModal>
-                <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                  Acessar Plataforma <ArrowRight className="ml-2 h-5 w-5" />
+                <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground" asChild>
+                    <Link href="/login">
+                        Acessar Plataforma <ArrowRight className="ml-2 h-5 w-5" />
+                    </Link>
                 </Button>
-              </LoginModal>
               <Button size="lg" variant="outline" className="border-primary text-primary hover:bg-primary/10" asChild>
                 <a href="https://bmvdigital.global/" target="_blank" rel="noopener noreferrer">
                   Conheça a BMV Digital
