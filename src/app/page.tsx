@@ -1,10 +1,12 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Briefcase, CheckCircle, Globe, HandCoins, Landmark, Repeat, Scale, ShieldCheck, TrendingUp, User } from "lucide-react";
+import { ArrowRight, Briefcase, CheckCircle, Globe, HandCoins, Landmark, Leaf, Library, Repeat, Scale, ShieldCheck, TrendingUp, User } from "lucide-react";
 import Image from 'next/image';
 import Link from 'next/link';
 import { LogoBVM } from "@/components/logo-bvm";
 import { LoginModal } from "@/components/login-modal";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 const services = [
   {
@@ -23,7 +25,7 @@ const services = [
     title: 'Oferta de UCS',
     description: 'A BMV DIGITAL oferta as UCS no mercado por vendedor padrão ou credenciado, garantindo a rastreabilidade da operação.',
     icon: HandCoins,
-aiHint: 'global market',
+    aiHint: 'global market',
   },
   {
     title: 'Liquidação da UCS',
@@ -84,27 +86,27 @@ export default async function LandingPage() {
       </header>
 
       <main className="flex-1">
-        <section className="relative w-full flex items-center justify-center text-center py-24 lg:py-32">
+        <section className="relative w-full flex items-center justify-center text-center py-24 lg:py-40">
           <Image
-            src="https://picsum.photos/seed/digital-wave/1920/1080"
-            alt="Abstrato digital verde"
+            src="https://picsum.photos/seed/lush-forest/1920/1080"
+            alt="Floresta exuberante e sustentável"
             fill
             className="object-cover"
-            data-ai-hint="digital particles"
+            data-ai-hint="lush forest"
           />
           <div className="absolute inset-0 bg-black/70" />
           <div className="relative z-10 flex flex-col items-center gap-6 px-4 md:px-6">
             <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl text-white">
-              A sua plataforma de ativos sustentáveis
+              O Futuro do Capital Natural é Digital
             </h1>
             <p className="mx-auto max-w-[700px] text-lg text-gray-300 md:text-xl">
-              O ESG ao seu alcance, de acordo com suas demandas.
+              Transformamos ativos ambientais em oportunidades de investimento seguras e transparentes.
             </p>
             
              <div className="flex flex-col sm:flex-row gap-4 mt-6">
               <LoginModal>
                 <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                  Acessar Agora <ArrowRight className="ml-2 h-5 w-5" />
+                  Acessar Plataforma <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </LoginModal>
               <Button size="lg" variant="outline" className="border-primary text-primary hover:bg-primary/10" asChild>
@@ -116,18 +118,65 @@ export default async function LandingPage() {
           </div>
         </section>
 
-        <section id="services" className="w-full bg-background py-16 md:py-24">
+        <section id="index-highlight" className="w-full bg-background py-16 md:py-24">
+            <div className="container mx-auto px-4 md:px-6">
+                 <div className="grid md:grid-cols-2 gap-12 items-center">
+                    <div className="flex flex-col gap-4">
+                         <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl text-primary">Índice UCS ASE</h2>
+                         <p className="text-muted-foreground text-lg">
+                            O principal indicador do mercado de ativos sustentáveis. O Índice de Unidade de Crédito de Sustentabilidade da Amazônia em Pé (UCS ASE) reflete o valor combinado dos ativos ambientais e agrícolas, criando uma referência sólida para o mercado de capitais naturais.
+                         </p>
+                         <ul className="grid gap-4 mt-4">
+                            <li className="flex items-start gap-3">
+                                <CheckCircle className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
+                                <div>
+                                    <h3 className="font-semibold">Transparência</h3>
+                                    <p className="text-muted-foreground text-sm">Baseado em dados de mercado atualizados diariamente.</p>
+                                </div>
+                            </li>
+                            <li className="flex items-start gap-3">
+                                <CheckCircle className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
+                                <div>
+                                    <h3 className="font-semibold">Credibilidade</h3>
+                                    <p className="text-muted-foreground text-sm">Composto por ativos essenciais da economia verde e agrícola.</p>
+                                </div>
+                            </li>
+                            <li className="flex items-start gap-3">
+                                <CheckCircle className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
+                                <div>
+                                    <h3 className="font-semibold">Oportunidade</h3>
+                                    <p className="text-muted-foreground text-sm">Um novo horizonte para investimentos de impacto com retorno financeiro.</p>
+                               _</div>
+                            </li>
+                         </ul>
+                    </div>
+                    <div className="flex items-center justify-center">
+                         <Card className="w-full max-w-sm bg-secondary/30 border-primary/50 shadow-primary/20 animate-pulse-slow">
+                            <CardHeader className="text-center">
+                                <CardTitle className="text-xl">Índice UCS ASE</CardTitle>
+                            </CardHeader>
+                            <CardContent className="text-center">
+                                <p className="text-6xl font-bold text-white font-mono">1.789</p>
+                                <p className="text-sm text-muted-foreground">pontos</p>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="services" className="w-full bg-muted/20 py-16 md:py-24">
           <div className="container mx-auto px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
               <div className="space-y-2">
-                <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl">A BMV DIGITAL oferece serviços:</h2>
+                <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl">Nossas Soluções</h2>
                 <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed">
-                  Soluções completas para a gestão, negociação e certificação de Unidades de Crédito de Sustentabilidade.
+                  Oferecemos um ecossistema completo para a gestão, negociação e certificação de Unidades de Crédito de Sustentabilidade.
                 </p>
               </div>
             </div>
             <div className="mx-auto grid max-w-5xl items-stretch gap-6 sm:grid-cols-2 md:max-w-none md:grid-cols-3">
-              {services.map((service, index) => (
+              {services.map((service) => (
                 <div key={service.title} className="group flex flex-col items-start gap-4 rounded-xl border border-white/10 bg-card p-6 shadow-sm transition-all hover:border-primary/50 hover:shadow-primary/20">
                   <div className="flex items-center gap-4">
                     <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -142,7 +191,7 @@ export default async function LandingPage() {
           </div>
         </section>
 
-        <section id="did-you-know" className="w-full bg-muted/20 py-16 md:py-24">
+        <section id="did-you-know" className="w-full bg-background py-16 md:py-24">
             <div className="container mx-auto px-4 md:px-6">
                 <div className="flex flex-col items-center justify-center space-y-4 text-center">
                 <div className="space-y-2">
@@ -183,3 +232,5 @@ export default async function LandingPage() {
     </div>
   );
 }
+
+    
