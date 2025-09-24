@@ -16,6 +16,7 @@ import {
   TrendingUp,
   ShieldAlert,
   FileText,
+  Sigma,
 } from 'lucide-react';
 
 export const getIconForCategory = (asset?: CommodityPriceData) => {
