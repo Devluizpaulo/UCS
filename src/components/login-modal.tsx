@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -36,7 +35,7 @@ export function LoginModal({ children }: LoginModalProps) {
     // On success:
     toast({
       title: 'Login Bem-sucedido!',
-      description: 'Redirecionando para o painel...',
+      description: 'Redirecionando para a plataforma...',
     });
     
     // Redirect to the dashboard
@@ -52,12 +51,13 @@ export function LoginModal({ children }: LoginModalProps) {
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Acessar o Painel</DialogTitle>
+          <DialogTitle>Acessar a Plataforma</DialogTitle>
           <DialogDescription>
-            Clique em "Entrar" para acessar o painel de monitoramento em tempo real.
+            Entre com suas credenciais para acessar o painel de monitoramento em tempo real. Por enquanto, basta clicar em "Entrar".
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleLogin}>
+          {/* Form fields will go here in the future */}
           <DialogFooter className="pt-4">
             <Button type="submit" disabled={isLoading} className="w-full">
               {isLoading ? (

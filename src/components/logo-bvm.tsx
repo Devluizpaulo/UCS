@@ -1,4 +1,3 @@
-
 import { cn } from "@/lib/utils";
 
 interface LogoBVMProps extends React.SVGProps<SVGSVGElement> {
@@ -36,14 +35,14 @@ export function LogoBVM({ isIcon = false, className, ...props }: LogoBVMProps) {
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className="w-6 h-6"
+                className="w-6 h-6 text-primary"
                 {...props}
             >
                 <path d="M12 2L2 7l10 5 10-5-10-5z" />
                 <path d="M2 17l10 5 10-5" />
                 <path d="M2 12l10 5 10-5" />
             </svg>
-            <span>Monitor UCS</span>
+            <span className="text-white">BMV Digital</span>
         </div>
     );
 }
