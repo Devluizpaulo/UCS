@@ -5,8 +5,9 @@ import { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { addDays, format } from "date-fns"
-import { DateRange } from "react-day-picker"
+import { addDays } from "date-fns"
+import type { DateRange } from "react-day-picker"
+import * as React from 'react';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Loader2, Sparkles, FileDown } from 'lucide-react';
+import { Loader2, Sparkles, FileDown, FileText } from 'lucide-react';
 import { DateRangePicker } from './date-range-picker';
 import { Separator } from './ui/separator';
 
@@ -69,6 +70,7 @@ export function ReportGenerator() {
 
   const processForm = async (data: ReportFormData) => {
     setIsGenerating(true);
+    setReportResult(null);
     console.log('Gerando relatório com os dados:', data);
 
     // Simulação da chamada da IA e geração de PDF
@@ -189,7 +191,7 @@ export function ReportGenerator() {
                             <Sparkles className="h-5 w-5 text-primary" />
                             Análise Executiva da IA
                         </h3>
-                        <div className="prose prose-sm dark:prose-invert rounded-md border bg-muted/30 p-4">
+                        <div className="prose prose-sm dark:prose-invert max-w-none rounded-md border bg-muted/30 p-4">
                             <p>{reportResult.analysis}</p>
                         </div>
                     </div>
@@ -208,9 +210,12 @@ export function ReportGenerator() {
                 </div>
             ) : (
                 <div className="flex h-96 items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/20">
-                    <p className="text-center text-muted-foreground">
-                        O resultado da sua análise aparecerá aqui.
-                    </p>
+                    <div className="text-center">
+                        <Sparkles className="mx-auto h-12 w-12 text-muted-foreground" />
+                        <p className="mt-4 text-center text-muted-foreground">
+                            O resultado da sua análise aparecerá aqui.
+                        </p>
+                    </div>
                 </div>
             )}
           </CardContent>
