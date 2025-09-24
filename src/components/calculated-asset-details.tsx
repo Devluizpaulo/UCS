@@ -14,7 +14,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from './ui/button';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { Skeleton } from './ui/skeleton';
 import { formatCurrency } from '@/lib/formatters';
 import { isCalculableAsset, CALCULATION_CONFIGS } from '@/lib/calculation-service';
@@ -79,11 +79,8 @@ export function CalculatedAssetDetails({ asset }: CalculatedAssetDetailsProps) {
            <CardDescription>Carregando histórico de composição...</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-2 p-6">
-            <Skeleton className="h-8 w-full" />
-            <Skeleton className="h-8 w-full" />
-            <Skeleton className="h-8 w-full" />
-            <Skeleton className="h-8 w-full" />
+          <div className="flex items-center justify-center p-6 h-48">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         </CardContent>
       </Card>
@@ -112,14 +109,15 @@ export function CalculatedAssetDetails({ asset }: CalculatedAssetDetailsProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paginatedData.map((item) => (
+            {paginatedData.length > 0 ? paginatedData.map((item) => (
               <TableRow key={item.timestamp}>
                 <TableCell>{item.data}</TableCell>
                 {componentIds.map(id => {
                   const componentAsset = commoditiesConfig[id];
+                  const value = item[id] ?? 0;
                   return (
                     <TableCell key={id} className="text-right font-mono">
-                      {formatCurrency(item[id] ?? 0, componentAsset?.currency || 'BRL', id)}
+                      {value > 0 ? formatCurrency(value, componentAsset?.currency || 'BRL', id) : 'N/A'}
                     </TableCell>
                   )
                 })}
@@ -127,34 +125,42 @@ export function CalculatedAssetDetails({ asset }: CalculatedAssetDetailsProps) {
                   {formatCurrency(item.ultimo, asset.currency, asset.id)}
                 </TableCell>
               </TableRow>
-            ))}
+            )) : (
+              <TableRow>
+                <TableCell colSpan={componentIds.length + 2} className="h-24 text-center text-muted-foreground">
+                  Nenhum dado de composição encontrado para este período.
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
-        <div className="flex items-center justify-between p-4 border-t">
-          <span className="text-sm text-muted-foreground">
-            Página {currentPage} de {totalPages}
-          </span>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-            >
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              Anterior
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
-            >
-              Próximo
-              <ChevronRight className="h-4 w-4 ml-1" />
-            </Button>
-          </div>
-        </div>
+        {totalPages > 1 && (
+            <div className="flex items-center justify-between p-4 border-t">
+              <span className="text-sm text-muted-foreground">
+                Página {currentPage} de {totalPages}
+              </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Anterior
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                >
+                  Próximo
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+            </div>
+        )}
       </CardContent>
     </Card>
   );

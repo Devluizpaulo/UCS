@@ -29,6 +29,8 @@ import { getCotacoesHistorico } from '@/lib/data-service';
 import { formatCurrency } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
 import { HistoricalPriceTable } from './historical-price-table';
+import { isCalculableAsset } from '@/lib/calculation-service';
+import { CalculatedAssetDetails } from './calculated-asset-details';
 
 interface AssetDetailModalProps {
   asset: CommodityPriceData;
@@ -40,6 +42,8 @@ export function AssetDetailModal({ asset, isOpen, onOpenChange }: AssetDetailMod
   const [historicalData, setHistoricalData] = useState<FirestoreQuote[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
+  const isCalculated = isCalculableAsset(asset.id);
+
   useEffect(() => {
     if (isOpen) {
       setIsLoading(true);
@@ -113,6 +117,12 @@ export function AssetDetailModal({ asset, isOpen, onOpenChange }: AssetDetailMod
                   <span className="font-semibold text-foreground">Categoria:</span> 
                   <Badge variant="secondary">{asset.category.toUpperCase()}</Badge>
                 </div>
+                 {isCalculated && (
+                    <div className="flex items-center gap-2">
+                        <span className="font-semibold text-foreground">Tipo:</span>
+                        <Badge variant="outline">Índice Calculado</Badge>
+                    </div>
+                )}
                 <div className="flex items-center gap-2">
                   <span className="font-semibold text-foreground">Moeda:</span>
                   <span>{asset.currency}</span>
@@ -174,11 +184,15 @@ export function AssetDetailModal({ asset, isOpen, onOpenChange }: AssetDetailMod
                 </Card>
 
                 {/* HISTORICAL DATA */}
-                <HistoricalPriceTable 
-                  asset={asset}
-                  historicalData={historicalData} 
-                  isLoading={isLoading} 
-                />
+                {isCalculated ? (
+                    <CalculatedAssetDetails asset={asset} />
+                ) : (
+                    <HistoricalPriceTable 
+                      asset={asset}
+                      historicalData={historicalData} 
+                      isLoading={isLoading} 
+                    />
+                )}
               </div>
             </div>
           </div>

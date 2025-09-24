@@ -1,9 +1,10 @@
 
+
 import type { FirestoreQuote } from './types';
 
 // --- DEFINIÇÕES DE TIPOS ---
 
-type ComponentId = 'boi_gordo' | 'milho' | 'soja' | 'madeira' | 'carbono';
+type ComponentId = 'boi_gordo' | 'milho' | 'soja' | 'madeira' | 'carbono' | 'ucs' | 'pdm';
 type ComponentValues = Record<string, number>;
 type CalculationStrategy = (values: ComponentValues) => number;
 
@@ -55,6 +56,22 @@ const calculateCustoAguaPrice: CalculationStrategy = (componentValues) => {
   return weightedSum * CARBON_FACTOR;
 };
 
+/**
+ * Lógica de cálculo para o índice UCS ASE.
+ * Média simples dos componentes UCS e PDM.
+ */
+const calculateUcsAsePrice: CalculationStrategy = (componentValues) => {
+    const ucsValue = componentValues['ucs'] ?? 0;
+    const pdmValue = componentValues['pdm'] ?? 0;
+
+    // Evita divisão por zero se nenhum dos componentes tiver valor
+    if (ucsValue === 0 && pdmValue === 0) {
+        return 0;
+    }
+    // Média simples, mas poderia ser ponderada no futuro
+    return (ucsValue + pdmValue) / 2; 
+};
+
 
 // --- CONFIGURAÇÃO DOS ATIVOS CALCULADOS ---
 
@@ -68,6 +85,11 @@ interface CalculationConfig {
  * Mapeia cada ID de ativo calculado à sua configuração de cálculo.
  */
 export const CALCULATION_CONFIGS: Record<string, CalculationConfig> = {
+  ucs_ase: {
+    components: ['ucs', 'pdm'],
+    valueField: 'ultimo',
+    calculator: calculateUcsAsePrice,
+  },
   agua: {
     components: ['boi_gordo', 'milho', 'soja', 'madeira', 'carbono'],
     valueField: 'ultimo',
