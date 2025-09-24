@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { PageHeader } from '@/components/page-header';
 import { Archive } from 'lucide-react';
 import {
@@ -14,50 +14,63 @@ import {
 } from '@/components/ui/table';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { getCommodityConfigs } from '@/lib/data-service';
+import { getCommodityConfigs, saveCommodityConfig } from '@/lib/data-service';
 import { getIconForCategory } from '@/lib/icons';
 import { Button } from '@/components/ui/button';
 import { AssetFormModal } from '@/components/asset-form-modal';
-import type { CommodityPriceData } from '@/lib/types';
+import type { CommodityConfig } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { useRouter } from 'next/navigation';
 
-// Mock data fetching hook
 function useAssets() {
-    const [assets, setAssets] = useState<CommodityPriceData[]>([]);
+    const [assets, setAssets] = useState<CommodityConfig[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-    useState(() => {
-        getCommodityConfigs().then(data => {
+    const fetchAssets = async () => {
+        setLoading(true);
+        try {
+            const data = await getCommodityConfigs();
             setAssets(data);
+            setError(null);
+        } catch (err) {
+            setError('Falha ao carregar os ativos.');
+            console.error(err);
+        } finally {
             setLoading(false);
-        });
-    });
+        }
+    };
 
-    return { assets, loading };
+    useEffect(() => {
+        fetchAssets();
+    }, []);
+
+    return { assets, loading, error, refresh: fetchAssets };
 }
 
 
 export default function AssetsPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const { assets, loading } = useAssets();
+    const { assets, loading, error, refresh } = useAssets();
     const { toast } = useToast();
-    const router = useRouter();
 
 
-    const handleAssetCreate = async (values: any) => {
-        console.log('Novo ativo a ser criado:', values);
-        // Aqui iria a lógica para salvar o novo ativo no Firestore
-        // e/ou atualizar um arquivo de configuração via API.
-        
-        // Por enquanto, apenas exibimos uma notificação e fechamos o modal.
-        toast({
-            title: "Ativo Criado com Sucesso!",
-            description: `O ativo "${values.name}" foi adicionado.`,
-        });
-        setIsModalOpen(false);
-        // Simulando o refresh da lista
-        router.refresh(); 
+    const handleAssetCreate = async (values: Omit<CommodityConfig, 'price' | 'change' | 'absoluteChange' | 'lastUpdated'>) => {
+        try {
+            await saveCommodityConfig(values.id, values);
+            toast({
+                title: "Ativo Salvo com Sucesso!",
+                description: `O ativo "${values.name}" foi adicionado.`,
+            });
+            setIsModalOpen(false);
+            refresh();
+        } catch (err: any) {
+            console.error("Falha ao criar ativo:", err);
+            toast({
+                variant: 'destructive',
+                title: "Erro ao Salvar Ativo",
+                description: err.message || "Não foi possível adicionar o ativo. Tente novamente.",
+            });
+        }
     };
 
     return (
@@ -94,6 +107,12 @@ export default function AssetsPage() {
                                             Carregando ativos...
                                         </TableCell>
                                     </TableRow>
+                                ) : error ? (
+                                     <TableRow>
+                                        <TableCell colSpan={4} className="h-24 text-center text-destructive">
+                                            {error}
+                                        </TableCell>
+                                    </TableRow>
                                 ) : (
                                     assets.map((asset) => {
                                         const Icon = getIconForCategory(asset);
@@ -114,7 +133,7 @@ export default function AssetsPage() {
                                                     <Badge variant="secondary">{asset.category.toUpperCase()}</Badge>
                                                 </TableCell>
                                                 <TableCell className="text-right">
-                                                    <Button variant="ghost" size="sm">
+                                                    <Button variant="ghost" size="sm" disabled>
                                                         Editar
                                                     </Button>
                                                 </TableCell>

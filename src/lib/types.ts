@@ -23,10 +23,10 @@ export interface FirestoreQuote {
     id: string;
     data: string; 
     ultimo: number;
-    valor?: number; // Add 'valor' as an optional field
+    valor?: number;
     timestamp: number;
     variacao_pct: number | null;
-    [key: string]: any; // Allow other fields
+    [key: string]: any;
 }
 
 // Defines the structure for data points used in charts

@@ -3,38 +3,37 @@
 'use server';
 
 import { db } from '@/lib/firebase-admin-config';
-import type { CommodityPriceData, FirestoreQuote } from '@/lib/types';
+import type { CommodityConfig, CommodityPriceData, FirestoreQuote } from '@/lib/types';
 import { getCache, setCache } from '@/lib/cache-service';
-import { Timestamp } from 'firebase-admin/firestore';
+import { Timestamp, FieldValue } from 'firebase-admin/firestore';
 import { subDays, format, parse, isValid, startOfDay, parseISO, endOfDay } from 'date-fns';
-import { COMMODITIES_CONFIG } from './commodity-config-service';
 import type { DateRange } from 'react-day-picker';
 
+// --- CONSTANTS ---
 const CACHE_KEY_PRICES = 'commodity_prices_simple';
 const CACHE_TTL_SECONDS = 300; // 5 minutos
+const SETTINGS_COLLECTION = 'settings';
+const COMMODITIES_DOC = 'commodities';
+const COMMODITIES_CONFIG_CACHE_KEY = 'commodities_config';
 
+// --- HELPER FUNCTIONS ---
 
 function serializeFirestoreTimestamp(data: any): any {
     if (data === null || typeof data !== 'object') {
         return data;
     }
-
     if (data instanceof Timestamp) {
         return data.toMillis();
     }
-    
     if (data instanceof Date) {
         return data.getTime();
     }
-
     if ('toDate' in data && typeof data.toDate === 'function') {
         return data.toDate().getTime();
     }
-
     if (Array.isArray(data)) {
         return data.map(serializeFirestoreTimestamp);
     }
-
     const serializedData: { [key: string]: any } = {};
     for (const key in data) {
         serializedData[key] = serializeFirestoreTimestamp(data[key]);
@@ -44,21 +43,89 @@ function serializeFirestoreTimestamp(data: any): any {
 
 function getPriceFromQuote(quoteData: any): number {
     if (quoteData) {
-        if (typeof quoteData.valor === 'number') {
-            return quoteData.valor;
-        }
-        if (typeof quoteData.ultimo === 'number') {
-            return quoteData.ultimo;
-        }
+        if (typeof quoteData.valor === 'number') return quoteData.valor;
+        if (typeof quoteData.ultimo === 'number') return quoteData.ultimo;
     }
     return 0;
 }
 
 
+// --- CONFIGURATION MANAGEMENT ---
+
+const initialCommoditiesConfig: Record<string, Omit<CommodityConfig, 'id'>> = {
+    'ucs_ase': { name: 'UCS ASE', currency: 'BRL', category: 'index', description: 'Índice principal de Unidade de Crédito de Sustentabilidade da Amazônia em pé.', unit: 'Pontos' },
+    'ucs': { name: 'UCS', currency: 'BRL', category: 'index', description: 'Unidade de Crédito de Sustentabilidade.', unit: 'BRL por UCS' },
+    'pdm': { name: 'PDM', currency: 'BRL', category: 'index', description: 'Produto de Desenvolvimento de Mercado.', unit: 'BRL por PDM' },
+    'usd': { name: 'Dólar Comercial', currency: 'BRL', category: 'exchange', description: 'Cotação do Dólar Americano (USD) em Reais (BRL).', unit: 'BRL por USD' },
+    'eur': { name: 'Euro', currency: 'BRL', category: 'exchange', description: 'Cotação do Euro (EUR) em Reais (BRL).', unit: 'BRL por EUR' },
+    'soja': { name: 'Soja', currency: 'USD', category: 'vus', description: 'Preço da saca de 60kg de Soja.', unit: 'USD por saca' },
+    'milho': { name: 'Milho', currency: 'BRL', category: 'vus', description: 'Preço da saca de 60kg de Milho.', unit: 'BRL por saca' },
+    'boi_gordo': { name: 'Boi Gordo', currency: 'BRL', category: 'vus', description: 'Preço da arroba (15kg) de Boi Gordo.', unit: 'BRL por @' },
+    'carbono': { name: 'Crédito de Carbono', currency: 'EUR', category: 'crs', description: 'Preço do crédito de carbono em Euros.', unit: 'EUR por tonelada' },
+    'ch2o_agua': { name: 'CH²O', currency: 'BRL', category: 'crs', description: 'Índice de Custo Hídrico para Produção de Alimentos.', unit: 'BRL por m³' },
+    'custo_agua': { name: 'Custo da Água', currency: 'BRL', category: 'crs', description: 'Custo da Água para Produção de Alimentos.', unit: 'BRL por m³' },
+    'madeira': { name: 'Madeira Serrada', currency: 'USD', category: 'vmad', description: 'Preço por metro cúbico de madeira serrada.', unit: 'USD por m³' },
+};
+
+/**
+ * Saves a new or updated commodity configuration to the Firestore settings document.
+ * @param id The ID of the commodity.
+ * @param config The configuration object for the commodity.
+ */
+export async function saveCommodityConfig(id: string, config: Omit<CommodityConfig, 'id'>): Promise<void> {
+    const settingsDocRef = db.collection(SETTINGS_COLLECTION).doc(COMMODITIES_DOC);
+    
+    // Use a transaction to ensure atomicity
+    await db.runTransaction(async (transaction) => {
+        const doc = await transaction.get(settingsDocRef);
+        if (!doc.exists) {
+            // If the document doesn't exist, create it with the initial configs plus the new one.
+            const initialData = { ...initialCommoditiesConfig, [id]: config };
+            transaction.set(settingsDocRef, initialData);
+        } else {
+            // If it exists, just update the field for the new/updated commodity.
+            transaction.update(settingsDocRef, { [id]: config });
+        }
+    });
+
+    // Invalidate the cache
+    setCache(COMMODITIES_CONFIG_CACHE_KEY, null, 0);
+}
+
+
+export async function getCommodityConfigs(): Promise<CommodityConfig[]> {
+    const cachedConfigs = getCache<CommodityConfig[]>(COMMODITIES_CONFIG_CACHE_KEY);
+    if (cachedConfigs) {
+        return cachedConfigs;
+    }
+
+    const docRef = db.collection(SETTINGS_COLLECTION).doc(COMMODITIES_DOC);
+    const doc = await docRef.get();
+
+    let configData: Record<string, Omit<CommodityConfig, 'id'>>;
+
+    if (!doc.exists) {
+        console.log("No commodity config found in Firestore, using initial static config.");
+        configData = initialCommoditiesConfig;
+    } else {
+        configData = doc.data() as Record<string, Omit<CommodityConfig, 'id'>>;
+    }
+    
+    const configsArray = Object.entries(configData).map(([id, config]) => ({
+        id,
+        ...config,
+    }));
+
+    setCache(COMMODITIES_CONFIG_CACHE_KEY, configsArray, CACHE_TTL_SECONDS * 10); // Cache for 50 mins
+    return configsArray;
+}
+
+
+// --- DATA FETCHING SERVICES ---
+
 export async function getQuoteForDate(assetId: string, date: Date): Promise<FirestoreQuote | null> {
     const formattedDate = format(date, 'dd/MM/yyyy');
     
-    // 1. Try fetching by the 'data' string field first. This is more reliable.
     const stringDateSnapshot = await db.collection(assetId)
         .where('data', '==', formattedDate)
         .limit(1)
@@ -66,11 +133,9 @@ export async function getQuoteForDate(assetId: string, date: Date): Promise<Fire
 
     if (!stringDateSnapshot.empty) {
         const doc = stringDateSnapshot.docs[0];
-        const data = doc.data();
-        return { id: doc.id, ...data } as FirestoreQuote;
+        return { id: doc.id, ...doc.data() } as FirestoreQuote;
     }
 
-    // 2. If it fails, fallback to timestamp range query.
     const startDate = startOfDay(date);
     const endDate = new Date(startDate.getTime() + 24 * 60 * 60 * 1000 - 1);
 
@@ -81,15 +146,12 @@ export async function getQuoteForDate(assetId: string, date: Date): Promise<Fire
         .limit(1)
         .get();
 
-    if (timestampSnapshot.empty) {
-        return null;
-    }
+    if (timestampSnapshot.empty) return null;
     
     const doc = timestampSnapshot.docs[0];
-    const data = doc.data();
-    
-    return { id: doc.id, ...data } as FirestoreQuote;
+    return { id: doc.id, ...doc.data() } as FirestoreQuote;
 }
+
 
 export async function getLatestQuote(assetId: string): Promise<FirestoreQuote | null> {
     const snapshot = await db.collection(assetId)
@@ -100,29 +162,14 @@ export async function getLatestQuote(assetId: string): Promise<FirestoreQuote | 
     if (snapshot.empty) return null;
     
     const doc = snapshot.docs[0];
-    const data = doc.data();
-    
-    return { id: doc.id, ...data } as FirestoreQuote;
-}
-
-export async function getCommodityConfigs(): Promise<CommodityPriceData[]> {
-    return Object.entries(COMMODITIES_CONFIG).map(([id, config]) => ({
-        id,
-        ...config,
-        price: 0,
-        change: 0,
-        absoluteChange: 0,
-        lastUpdated: ''
-    }));
+    return { id: doc.id, ...doc.data() } as FirestoreQuote;
 }
 
 
 export async function getCommodityPricesByDate(date: Date): Promise<CommodityPriceData[]> {
     const cacheKey = `commodity_prices_${date.toISOString().split('T')[0]}`;
     const cachedData = getCache<CommodityPriceData[]>(cacheKey);
-    if (cachedData) {
-        return cachedData;
-    }
+    if (cachedData) return cachedData;
 
     const previousDate = subDays(date, 1);
     const displayDate = format(date, 'dd/MM/yyyy');
@@ -165,9 +212,7 @@ export async function getCommodityPricesByDate(date: Date): Promise<CommodityPri
 
 export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
     const cachedData = getCache<CommodityPriceData[]>(CACHE_KEY_PRICES);
-    if (cachedData) {
-        return cachedData;
-    }
+    if (cachedData) return cachedData;
 
     try {
         const configs = await getCommodityConfigs();
@@ -217,23 +262,18 @@ export async function getCotacoesHistorico(assetId: string, days: number): Promi
     const snapshot = await db.collection(assetId)
       .where('timestamp', '>=', Timestamp.fromDate(startDate))
       .orderBy('timestamp', 'desc')
-      .limit(365) // Limit to a max of 365 docs to avoid huge queries
+      .limit(365)
       .get();
 
-    if (snapshot.empty) {
-      return [];
-    }
+    if (snapshot.empty) return [];
     
     const data = snapshot.docs.map(doc => {
         const docData = doc.data();
-
         return {
             id: doc.id,
-            data: docData.data,
+            ...docData,
             timestamp: serializeFirestoreTimestamp(docData.timestamp),
-            ultimo: getPriceFromQuote(docData), // Use the helper here as well
-            valor: docData.valor,
-            variacao_pct: docData.variacao_pct,
+            ultimo: getPriceFromQuote(docData),
         } as FirestoreQuote;
     });
 
@@ -262,19 +302,15 @@ export async function getCotacoesHistoricoPorRange(assetId: string, dateRange: D
             .orderBy('timestamp', 'desc')
             .get();
 
-        if (snapshot.empty) {
-            return [];
-        }
+        if (snapshot.empty) return [];
 
         const data = snapshot.docs.map(doc => {
             const docData = doc.data();
             return {
                 id: doc.id,
-                data: docData.data,
+                ...docData,
                 timestamp: serializeFirestoreTimestamp(docData.timestamp),
                 ultimo: getPriceFromQuote(docData),
-                valor: docData.valor,
-                variacao_pct: docData.variacao_pct,
             } as FirestoreQuote;
         });
 
@@ -284,4 +320,18 @@ export async function getCotacoesHistoricoPorRange(assetId: string, dateRange: D
         console.error(`Error fetching historical data for ${assetId} in range:`, error);
         return [];
     }
+}
+
+
+/**
+ * Saves a quote to a specific asset collection.
+ * @param assetId The ID of the asset collection.
+ * @param quote The quote data to save.
+ */
+export async function saveQuote(assetId: string, quote: Partial<FirestoreQuote>): Promise<void> {
+    const docRef = db.collection(assetId).doc(); // Creates a new document with a random ID
+    await docRef.set({
+        ...quote,
+        timestamp: quote.timestamp ? new Date(quote.timestamp) : FieldValue.serverTimestamp(),
+    }, { merge: true });
 }

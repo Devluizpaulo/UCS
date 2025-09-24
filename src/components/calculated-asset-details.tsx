@@ -2,8 +2,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { getCotacoesHistorico } from '@/lib/data-service';
-import { COMMODITIES_CONFIG } from '@/lib/commodity-config-service';
+import { getCotacoesHistorico, getCommodityConfigs } from '@/lib/data-service';
 import type { CommodityPriceData, FirestoreQuote } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import {
@@ -28,6 +27,7 @@ interface CalculatedAssetDetailsProps {
 
 export function CalculatedAssetDetails({ asset }: CalculatedAssetDetailsProps) {
   const [compositionHistory, setCompositionHistory] = useState<FirestoreQuote[]>([]);
+  const [commoditiesConfig, setCommoditiesConfig] = useState<Record<string, CommodityPriceData>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -37,16 +37,30 @@ export function CalculatedAssetDetails({ asset }: CalculatedAssetDetailsProps) {
   }, [asset.id]);
 
   useEffect(() => {
-    setIsLoading(true);
-    getCotacoesHistorico(asset.id)
-      .then((data) => {
-        setCompositionHistory(data);
-        setIsLoading(false);
-      })
-      .catch(() => {
-        setCompositionHistory([]);
-        setIsLoading(false);
-      });
+    async function fetchData() {
+        setIsLoading(true);
+        try {
+            const [history, configs] = await Promise.all([
+                getCotacoesHistorico(asset.id, 90),
+                getCommodityConfigs()
+            ]);
+            
+            const configMap = configs.reduce((acc, config) => {
+                acc[config.id] = config as CommodityPriceData;
+                return acc;
+            }, {} as Record<string, CommodityPriceData>);
+            
+            setCompositionHistory(history);
+            setCommoditiesConfig(configMap);
+
+        } catch (error) {
+            console.error("Failed to fetch calculated asset details:", error);
+            setCompositionHistory([]);
+        } finally {
+            setIsLoading(false);
+        }
+    }
+    fetchData();
   }, [asset.id]);
 
   const paginatedData = useMemo(() => {
@@ -91,7 +105,7 @@ export function CalculatedAssetDetails({ asset }: CalculatedAssetDetailsProps) {
               <TableHead>Data</TableHead>
               {componentIds.map(id => (
                   <TableHead key={id} className="text-right">
-                    {COMMODITIES_CONFIG[id]?.name || id}
+                    {commoditiesConfig[id]?.name || id}
                   </TableHead>
               ))}
               <TableHead className="text-right font-bold">Total ({asset.name})</TableHead>
@@ -102,7 +116,7 @@ export function CalculatedAssetDetails({ asset }: CalculatedAssetDetailsProps) {
               <TableRow key={item.timestamp}>
                 <TableCell>{item.data}</TableCell>
                 {componentIds.map(id => {
-                  const componentAsset = COMMODITIES_CONFIG[id];
+                  const componentAsset = commoditiesConfig[id];
                   return (
                     <TableCell key={id} className="text-right font-mono">
                       {formatCurrency(item[id] ?? 0, componentAsset?.currency || 'BRL', id)}
