@@ -103,15 +103,13 @@ export const generateReportFlow = ai.defineFlow(
     
     // Etapa 2: Chamar o prompt de IA com os dados de entrada e os dados históricos
     console.log('[report-flow] Invocando o modelo de linguagem com os dados...');
-    const llmResponse = await reportGeneratorPrompt.generate({
-        input: {
-            ...input,
-            // Converte os dados para uma string JSON para o prompt
-            historicalData: JSON.stringify(simplifiedData, null, 2),
-        },
+    const llmResponse = await reportGeneratorPrompt({
+      ...input,
+      // Converte os dados para uma string JSON para o prompt
+      historicalData: JSON.stringify(simplifiedData, null, 2),
     });
     
-    const output = llmResponse.output();
+    const output = llmResponse.output;
 
     // Etapa 3: Retornar a saída estruturada ou um objeto vazio em caso de falha
     if (!output) {
