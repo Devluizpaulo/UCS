@@ -10,7 +10,6 @@ export const ai = genkit({
       apiVersion: 'v1beta',
     }),
   ],
-  enableTracingAndMetrics: true,
 });
 
 export { z };
