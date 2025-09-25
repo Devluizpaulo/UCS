@@ -91,7 +91,7 @@ export function UserFormModal({ isOpen, onOpenChange, onSubmit, user }: UserForm
           <DialogDescription>
             {isEditing 
                 ? 'Atualize os dados do usuário.' 
-                : 'O usuário receberá um e-mail para definir sua senha e acessar a plataforma.'
+                : "O usuário receberá um e-mail para definir sua senha e acessar a plataforma. (Nota: O envio de e-mails deve ser habilitado e configurado no seu projeto Firebase)."
             }
           </DialogDescription>
         </DialogHeader>
