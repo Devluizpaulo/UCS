@@ -17,13 +17,13 @@ import {
   Users,
   LogOut,
   Sparkles,
+  Archive,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LogoUCS } from '@/components/logo-bvm';
 import { useAuth, useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import React from 'react';
@@ -99,10 +99,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         <div className="flex flex-col h-full">
           <SidebarHeader>
             <div className="flex h-10 items-center justify-center p-2 group-data-[collapsible=icon]:hidden">
-              <LogoUCS className="h-8 w-auto text-primary" />
+              <LogoUCS className="h-8 w-auto" />
             </div>
             <div className="hidden h-10 items-center justify-center p-2 group-data-[collapsible=icon]:flex">
-              <LogoUCS className="h-8 w-auto text-primary" isIcon />
+              <LogoUCS className="h-8 w-auto" isIcon />
             </div>
           </SidebarHeader>
           <SidebarContent className="flex-grow">
@@ -174,6 +174,18 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                   <Link href="/admin/users">
                     <Users />
                     <span>Usuários</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+                <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname.startsWith('/assets')}
+                  tooltip={{ children: 'Gerenciar Ativos' }}
+                >
+                  <Link href="/assets">
+                    <Archive />
+                    <span>Ativos</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
