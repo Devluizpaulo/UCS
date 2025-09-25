@@ -4,7 +4,7 @@
 
 O **Monitor do Índice UCS** é uma aplicação web completa, desenvolvida para calcular, monitorar e analisar o "Índice de Unidade de Conservação Sustentável" (UCS) e seus ativos componentes. A plataforma oferece um dashboard em tempo real, ferramentas de análise estratégica, geração de relatórios com IA e um sistema de configuração flexível para os ativos.
 
-O objetivo é fornecer a gestores, analistas e produtores rurais uma ferramenta poderosa para entender a performance econômica de ativos ambientais e agrícolas de forma unificada.
+O objetivo é fornecer a gestores, analistas e produtores rurais uma ferramenta poderosa para entender a performance econômica de ativos ambientais e agrícolas de forma unificada. Os principais índices são a **UCS (Unidade de Crédito de Sustentabilidade)** e o **PDM (Potencial Desflorestador Monetizado)**.
 
 ## 2. Funcionalidades Principais
 
@@ -16,8 +16,10 @@ O objetivo é fornecer a gestores, analistas e produtores rurais uma ferramenta 
   - Ferramenta para gerar uma análise executiva sobre a performance de um ativo em um período específico.
   - A IA (via Genkit) atua como uma analista financeira sênior, baseando-se nos dados históricos reais do ativo, que são buscados do banco de dados no momento da geração.
   - O usuário pode fornecer observações adicionais para guiar a análise da IA.
+  - **Exportação para PDF:** Permite baixar a análise gerada pela IA em um arquivo PDF.
 - **Administração:**
   - **Gerenciamento de Usuários:** Interface completa de **CRUD** (Adicionar, Editar, Desativar, Remover) para os usuários da plataforma, com um fluxo de convite que gera um link para o novo usuário definir sua senha.
+  - **Promoção de Administradores:** Administradores podem promover outros usuários a administradores diretamente pela interface.
   - **Gerenciamento de Ativos:** Interface para visualizar a lista de todos os ativos e **adicionar novos**, salvando as configurações diretamente no banco de dados.
 - **Autenticação:**
   - Sistema de login com e-mail e senha.
@@ -33,6 +35,7 @@ O objetivo é fornecer a gestores, analistas e produtores rurais uma ferramenta 
   - **Gráficos:** [Recharts](https://recharts.org/)
   - **Ícones:** [Lucide React](https://lucide.dev/)
   - **Estatísticas:** [simple-statistics](https://simplestatistics.org/)
+  - **Exportação PDF:** [jsPDF](https://github.com/parallax/jsPDF) & [html2canvas](https://html2canvas.hertzen.com/)
 
 - **Backend & IA:**
   - **Orquestração de IA:** [Genkit (Google AI)](https://firebase.google.com/docs/genkit)

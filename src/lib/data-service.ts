@@ -68,7 +68,7 @@ function getPriceFromQuote(quoteData: any): number {
 const initialCommoditiesConfig: Record<string, Omit<CommodityConfig, 'id'>> = {
     'ucs_ase': { name: 'UCS ASE', currency: 'BRL', category: 'index', description: 'Índice principal de Unidade de Crédito de Sustentabilidade da Amazônia em pé.', unit: 'Pontos' },
     'ucs': { name: 'UCS', currency: 'BRL', category: 'index', description: 'Unidade de Crédito de Sustentabilidade.', unit: 'BRL por UCS' },
-    'pdm': { name: 'PDM', currency: 'BRL', category: 'index', description: 'Produto de Desenvolvimento de Mercado.', unit: 'BRL por PDM' },
+    'pdm': { name: 'PDM', currency: 'BRL', category: 'index', description: 'Potencial Desflorestador Monetizado.', unit: 'BRL por PDM' },
     'usd': { name: 'Dólar Comercial', currency: 'BRL', category: 'exchange', description: 'Cotação do Dólar Americano (USD) em Reais (BRL).', unit: 'BRL por USD' },
     'eur': { name: 'Euro', currency: 'BRL', category: 'exchange', description: 'Cotação do Euro (EUR) em Reais (BRL).', unit: 'BRL por EUR' },
     'soja': { name: 'Soja', currency: 'USD', category: 'vus', description: 'Preço da saca de 60kg de Soja.', unit: 'USD por saca' },
@@ -318,7 +318,7 @@ export async function getCommodityPricesByDate(date: Date): Promise<CommodityPri
  * @returns Um array com os dados de preço de todos os ativos.
  */
 export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
-    const cachedData = getCache<CommododyPriceData[]>(CACHE_KEY_PRICES);
+    const cachedData = getCache<CommodityPriceData[]>(CACHE_KEY_PRICES);
     if (cachedData) return cachedData;
 
     try {
