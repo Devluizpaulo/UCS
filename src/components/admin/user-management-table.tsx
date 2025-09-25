@@ -45,7 +45,9 @@ interface UserManagementTableProps {
 }
 
 interface InviteInfo {
+  name: string;
   email: string;
+  phoneNumber?: string;
   link: string;
 }
 
@@ -66,7 +68,12 @@ export function UserManagementTable({ initialUsers }: UserManagementTableProps) 
       const { user, link } = await createUser(values);
       toast({ title: 'Sucesso', description: `Usuário ${user.email} criado. Compartilhe o link de acesso.` });
       setIsFormModalOpen(false);
-      setInviteInfo({ email: user.email!, link });
+      setInviteInfo({
+        name: user.displayName || 'Novo Usuário',
+        email: user.email!,
+        phoneNumber: user.phoneNumber,
+        link
+      });
       refreshUsers();
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Erro', description: error.message });
@@ -113,7 +120,7 @@ export function UserManagementTable({ initialUsers }: UserManagementTableProps) 
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Email</TableHead>
+                <TableHead>Usuário</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Data de Criação</TableHead>
                 <TableHead>Último Login</TableHead>
@@ -125,7 +132,10 @@ export function UserManagementTable({ initialUsers }: UserManagementTableProps) 
             <TableBody>
               {users.map((user) => (
                 <TableRow key={user.uid}>
-                  <TableCell className="font-medium">{user.email}</TableCell>
+                  <TableCell>
+                    <div className="font-medium">{user.displayName || 'Nome não definido'}</div>
+                    <div className="text-sm text-muted-foreground">{user.email}</div>
+                  </TableCell>
                   <TableCell>
                     <Badge variant={user.disabled ? 'destructive' : 'secondary'}>
                       {user.disabled ? 'Desativado' : 'Ativo'}
@@ -197,8 +207,7 @@ export function UserManagementTable({ initialUsers }: UserManagementTableProps) 
         <InviteLinkModal
           isOpen={!!inviteInfo}
           onOpenChange={() => setInviteInfo(null)}
-          email={inviteInfo.email}
-          inviteLink={inviteInfo.link}
+          inviteInfo={inviteInfo}
         />
       )}
     </>

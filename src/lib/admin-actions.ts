@@ -24,29 +24,41 @@ export async function getUsers(): Promise<UserRecord[]> {
 
 /**
  * Cria um novo usuário no Firebase Authentication.
- * @param userData - Dados do usuário (email, senha, etc.).
+ * @param userData - Dados do usuário (email, nome, etc.).
  */
-export async function createUser(userData: { email: string; disabled?: boolean }): Promise<{ user: UserRecord, link: string }> {
+export async function createUser(userData: {
+  email: string;
+  displayName: string;
+  phoneNumber?: string;
+  disabled?: boolean;
+}): Promise<{ user: UserRecord, link: string }> {
   try {
-    // Gera uma senha aleatória e segura, pois o campo é obrigatório.
-    // Esta senha não será usada pelo usuário final.
     const tempPassword = Math.random().toString(36).slice(-10) + 'A1!';
 
-    const userRecord = await auth.createUser({
+    const userPayload: any = {
       email: userData.email,
+      displayName: userData.displayName,
       password: tempPassword,
       disabled: userData.disabled || false,
       emailVerified: true, 
-    });
+    };
 
+    if (userData.phoneNumber) {
+      userPayload.phoneNumber = userData.phoneNumber;
+    }
+
+    const userRecord = await auth.createUser(userPayload);
     const link = await auth.generatePasswordResetLink(userRecord.email as string);
 
-    revalidatePath('/admin/users'); // Invalida o cache da página de usuários
+    revalidatePath('/admin/users');
     return { user: userRecord.toJSON() as UserRecord, link };
   } catch (error: any) {
     console.error('Error creating user:', error);
     if (error.code === 'auth/email-already-exists') {
         throw new Error('Este e-mail já está em uso por outro usuário.');
+    }
+     if (error.code === 'auth/invalid-phone-number') {
+      throw new Error('O número de telefone fornecido é inválido. Use o formato E.164 (ex: +5511999998888).');
     }
     throw new Error('Falha ao criar o usuário.');
   }
@@ -57,10 +69,18 @@ export async function createUser(userData: { email: string; disabled?: boolean }
  * @param uid - O UID do usuário a ser atualizado.
  * @param userData - Os dados a serem atualizados.
  */
-export async function updateUser(uid: string, userData: { email?: string; password?: string; disabled?: boolean }): Promise<UserRecord> {
+export async function updateUser(uid: string, userData: {
+  email?: string;
+  password?: string;
+  disabled?: boolean;
+  displayName?: string;
+  phoneNumber?: string;
+}): Promise<UserRecord> {
   try {
     const dataToUpdate: any = {
         disabled: userData.disabled,
+        displayName: userData.displayName,
+        phoneNumber: userData.phoneNumber,
     };
     if (userData.email) dataToUpdate.email = userData.email;
     if (userData.password) dataToUpdate.password = userData.password;
@@ -68,8 +88,11 @@ export async function updateUser(uid: string, userData: { email?: string; passwo
     const userRecord = await auth.updateUser(uid, dataToUpdate);
     revalidatePath('/admin/users');
     return userRecord.toJSON() as UserRecord;
-  } catch (error) {
+  } catch (error: any) {
     console.error(`Error updating user ${uid}:`, error);
+     if (error.code === 'auth/invalid-phone-number') {
+      throw new Error('O número de telefone fornecido é inválido. Use o formato E.164 (ex: +5511999998888).');
+    }
     throw new Error('Falha ao atualizar o usuário.');
   }
 }

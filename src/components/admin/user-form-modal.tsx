@@ -28,15 +28,18 @@ import { Switch } from '@/components/ui/switch';
 import { Loader2 } from 'lucide-react';
 import { useEffect } from 'react';
 
-const createUserSchema = z.object({
+const userSchema = {
+  displayName: z.string().min(3, { message: 'O nome é obrigatório.' }),
   email: z.string().email({ message: 'E-mail inválido.' }),
+  phoneNumber: z.string().optional(),
   disabled: z.boolean().default(false),
-});
+}
+
+const createUserSchema = z.object(userSchema);
 
 const updateUserSchema = z.object({
-  email: z.string().email({ message: 'E-mail inválido.' }),
+  ...userSchema,
   password: z.string().optional().describe('Deixe em branco para não alterar'),
-  disabled: z.boolean().default(false),
 });
 
 export type UserFormValues = z.infer<typeof createUserSchema> & { password?: string };
@@ -55,7 +58,9 @@ export function UserFormModal({ isOpen, onOpenChange, onSubmit, user }: UserForm
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      displayName: '',
       email: '',
+      phoneNumber: '',
       password: '',
       disabled: false,
     },
@@ -64,13 +69,18 @@ export function UserFormModal({ isOpen, onOpenChange, onSubmit, user }: UserForm
   useEffect(() => {
     if (user) {
       form.reset({
+        displayName: user.displayName || '',
         email: user.email || '',
+        phoneNumber: user.phoneNumber || '',
         password: '',
         disabled: user.disabled,
       });
     } else {
       form.reset({
+        displayName: '',
         email: '',
+        phoneNumber: '',
+        password: '',
         disabled: false,
       });
     }
@@ -91,12 +101,25 @@ export function UserFormModal({ isOpen, onOpenChange, onSubmit, user }: UserForm
           <DialogDescription>
             {isEditing 
                 ? 'Atualize os dados do usuário.' 
-                : "O usuário receberá um e-mail para definir sua senha e acessar a plataforma. (Nota: O envio de e-mails deve ser habilitado e configurado no seu projeto Firebase)."
+                : "Preencha os dados abaixo. O usuário receberá um link único para definir sua senha e acessar a plataforma."
             }
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
+             <FormField
+              control={form.control}
+              name="displayName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Nome Completo</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Nome do usuário" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name="email"
@@ -106,6 +129,22 @@ export function UserFormModal({ isOpen, onOpenChange, onSubmit, user }: UserForm
                   <FormControl>
                     <Input placeholder="usuario@exemplo.com" {...field} />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="phoneNumber"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>WhatsApp (Opcional)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="+5511999998888" {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    Use o formato internacional (ex: +5511999998888).
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -148,7 +187,7 @@ export function UserFormModal({ isOpen, onOpenChange, onSubmit, user }: UserForm
               </Button>
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                {isEditing ? 'Salvar Alterações' : 'Enviar Convite'}
+                {isEditing ? 'Salvar Alterações' : 'Criar e Gerar Link'}
               </Button>
             </DialogFooter>
           </form>
