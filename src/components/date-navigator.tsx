@@ -35,8 +35,8 @@ export function DateNavigator({ targetDate }: DateNavigatorProps) {
   };
 
   return (
-    <div className="flex items-center gap-2">
-      <Button variant="outline" size="icon" className="h-9 w-9" asChild>
+    <div className="flex items-center gap-1">
+      <Button variant="outline" size="icon" className="h-8 w-8" asChild>
           <Link href={`/dashboard?date=${prevDate}`} scroll={false} title="Dia anterior">
             <ChevronLeft className="h-4 w-4" />
           </Link>
@@ -47,12 +47,12 @@ export function DateNavigator({ targetDate }: DateNavigatorProps) {
           <Button
             variant="outline"
             className={cn(
-              'h-9 w-[180px] justify-start text-left font-normal',
-              'md:w-[220px]'
+              'h-8 w-[160px] justify-start text-left font-normal',
+              'md:w-[200px]'
             )}
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
-            <span className='flex-1'>{isToday(targetDate) ? 'Hoje' : displayDateFormatted}</span>
+            <span className='flex-1 truncate'>{isToday(targetDate) ? 'Hoje' : displayDateFormatted}</span>
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="end">
@@ -67,7 +67,7 @@ export function DateNavigator({ targetDate }: DateNavigatorProps) {
         </PopoverContent>
       </Popover>
 
-      <Button variant="outline" size="icon" className="h-9 w-9" asChild disabled={isCurrentDateOrFuture}>
+      <Button variant="outline" size="icon" className="h-8 w-8" asChild disabled={isCurrentDateOrFuture}>
         <Link href={`/dashboard?date=${nextDate}`} scroll={false} title={isCurrentDateOrFuture ? "Não é possível navegar para o futuro" : "Próximo dia"}>
           <ChevronRight className="h-4 w-4" />
         </Link>
