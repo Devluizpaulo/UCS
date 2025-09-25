@@ -123,20 +123,40 @@ export default async function LandingPage() {
                 </p>
             </div>
             
-            {ucsAseAsset && (
-              <div className="rounded-xl border border-white/20 bg-white/10 p-6 text-white shadow-lg backdrop-blur-md">
-                <div className="flex items-center justify-center gap-2 text-lg font-medium">
-                  <Leaf className="h-5 w-5 text-primary" />
-                  <span>Índice UCS ASE</span>
-                </div>
-                <div className="mt-2 text-center">
-                  <span className="text-5xl font-bold tracking-tight">
-                    {formatCurrency(ucsAseAsset.price, ucsAseAsset.currency, ucsAseAsset.id)}
-                  </span>
-                  <span className="ml-1 text-base font-medium text-gray-300">{ucsAseAsset.currency}</span>
-                </div>
-              </div>
-            )}
+            <Carousel
+                opts={{
+                    align: "start",
+                    loop: true,
+                }}
+                className="w-full max-w-xs sm:max-w-sm"
+                >
+                <CarouselContent>
+                    {indexValues.map(({ currency, value, icon: Icon, conversionRate }) => (
+                    <CarouselItem key={currency}>
+                        <div className="p-1">
+                        <Card className="rounded-xl border border-white/20 bg-white/10 p-6 text-white shadow-lg backdrop-blur-md">
+                            <CardHeader className="p-0 text-center flex-row items-center justify-center gap-2">
+                                <Icon className="h-5 w-5 text-primary" />
+                                <CardTitle className="text-lg font-medium">Índice UCS ASE</CardTitle>
+                            </CardHeader>
+                             <CardContent className="p-0 mt-2 text-center">
+                                <span className="text-5xl font-bold tracking-tight">
+                                    {formatCurrency(value, currency, 'ucs_ase')}
+                                </span>
+                                <span className="ml-1 text-base font-medium text-gray-300">{currency}</span>
+                                {conversionRate && (
+                                    <p className="text-xs text-gray-400 mt-2">
+                                        (1 {currency} = {formatCurrency(conversionRate, 'BRL', 'usd')})
+                                    </p>
+                                )}
+                            </CardContent>
+                        </Card>
+                        </div>
+                    </CarouselItem>
+                    ))}
+                </CarouselContent>
+            </Carousel>
+
 
              <div className="flex flex-col sm:flex-row gap-4">
               <Button size="lg" variant="outline" className="border-primary bg-transparent text-primary hover:bg-primary/10 hover:text-primary-foreground" asChild>
@@ -171,3 +191,4 @@ export default async function LandingPage() {
     
 
     
+
