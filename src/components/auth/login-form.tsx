@@ -1,8 +1,10 @@
+
 'use client';
 
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import Link from 'next/link';
 import {
   Form,
   FormControl,
@@ -20,7 +22,7 @@ import { signInWithEmailAndPassword } from 'firebase/auth';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Por favor, insira um e-mail válido.' }),
-  password: z.string().min(6, { message: 'A senha deve ter pelo menos 6 caracteres.' }),
+  password: z.string().min(1, { message: 'A senha é obrigatória.' }),
 });
 
 type LoginFormValues = z.infer<typeof formSchema>;
@@ -62,7 +64,7 @@ export function LoginForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <FormField
           control={form.control}
           name="email"
@@ -81,7 +83,12 @@ export function LoginForm() {
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Senha</FormLabel>
+                <div className="flex items-center justify-between">
+                    <FormLabel>Senha</FormLabel>
+                    <Link href="/forgot-password" className="text-sm font-medium text-primary hover:underline">
+                        Esqueceu sua senha?
+                    </Link>
+                </div>
               <FormControl>
                 <Input type="password" placeholder="••••••••" {...field} className="bg-background/70" />
               </FormControl>
@@ -89,7 +96,7 @@ export function LoginForm() {
             </FormItem>
           )}
         />
-        <Button type="submit" disabled={isSubmitting} className="w-full">
+        <Button type="submit" disabled={isSubmitting} className="w-full mt-6">
           {isSubmitting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

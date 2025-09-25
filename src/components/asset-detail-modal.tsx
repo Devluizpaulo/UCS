@@ -31,6 +31,7 @@ import { cn } from '@/lib/utils';
 import { HistoricalPriceTable } from './historical-price-table';
 import { isCalculableAsset } from '@/lib/calculation-service';
 import { CalculatedAssetDetails } from './calculated-asset-details';
+import { ScrollArea } from './ui/scroll-area';
 
 interface AssetDetailModalProps {
   asset: CommodityPriceData;
@@ -80,123 +81,123 @@ export function AssetDetailModal({ asset, isOpen, onOpenChange }: AssetDetailMod
   
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl w-full p-0">
-        <div className="grid md:grid-cols-[280px_1fr] h-full max-h-[90vh]">
-          {/* ASSET INFO SIDEBAR */}
-          <div className="bg-muted/50 p-6 flex flex-col gap-6 border-r">
-            <DialogHeader className="text-left">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-background border">
-                  <Icon className="h-5 w-5 text-muted-foreground" />
+      <DialogContent className="max-w-4xl w-full p-0 grid grid-rows-[auto_minmax(0,1fr)] max-h-[90svh]">
+         <DialogHeader className="p-6 pb-0">
+            <div className="flex items-center gap-3 mb-1">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted border">
+                    <Icon className="h-5 w-5 text-muted-foreground" />
                 </div>
                 <DialogTitle className="text-xl font-bold">{asset.name}</DialogTitle>
-              </div>
-              <DialogDescription>{asset.description}</DialogDescription>
-            </DialogHeader>
-
-            <div className="flex flex-col gap-4">
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-bold font-mono">
-                  {formatCurrency(asset.price, asset.currency, asset.id)}
-                </span>
-                <span className="text-sm text-muted-foreground">{asset.unit}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className={cn('flex items-center text-sm font-semibold', changeColor)}>
-                  <ChangeIcon className="h-4 w-4 mr-1" />
-                  <span>{asset.change.toFixed(2)}%</span>
-                  <span className="mx-1">/</span>
-                  <span>{formatCurrency(asset.absoluteChange, asset.currency, asset.id)}</span>
-                   <span className="text-xs text-muted-foreground ml-1">(24h)</span>
-                </div>
-              </div>
             </div>
+            <DialogDescription>{asset.description}</DialogDescription>
+         </DialogHeader>
 
-            <div className="space-y-2 text-sm text-muted-foreground mt-auto">
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold text-foreground">Categoria:</span> 
-                  <Badge variant="secondary">{asset.category.toUpperCase()}</Badge>
+        <ScrollArea className="w-full">
+            <div className="grid md:grid-cols-[280px_1fr] h-full p-6 pt-2">
+            {/* ASSET INFO SIDEBAR */}
+            <div className="flex flex-col gap-6 border-b md:border-b-0 md:border-r md:pr-6 pb-6 mb-6 md:pb-0 md:mb-0">
+                <div className="flex flex-col gap-4">
+                <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-bold font-mono">
+                    {formatCurrency(asset.price, asset.currency, asset.id)}
+                    </span>
+                    <span className="text-sm text-muted-foreground">{asset.unit}</span>
                 </div>
-                 {isCalculated && (
-                    <div className="flex items-center gap-2">
-                        <span className="font-semibold text-foreground">Tipo:</span>
-                        <Badge variant="outline">Índice Calculado</Badge>
+                <div className="flex items-center gap-2">
+                    <div className={cn('flex items-center text-sm font-semibold', changeColor)}>
+                    <ChangeIcon className="h-4 w-4 mr-1" />
+                    <span>{asset.change.toFixed(2)}%</span>
+                    <span className="mx-1">/</span>
+                    <span>{formatCurrency(asset.absoluteChange, asset.currency, asset.id)}</span>
+                    <span className="text-xs text-muted-foreground ml-1">(24h)</span>
                     </div>
-                )}
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold text-foreground">Moeda:</span>
-                  <span>{asset.currency}</span>
+                </div>
+                </div>
+
+                <div className="space-y-2 text-sm text-muted-foreground mt-auto">
+                    <div className="flex items-center gap-2">
+                    <span className="font-semibold text-foreground">Categoria:</span> 
+                    <Badge variant="secondary">{asset.category.toUpperCase()}</Badge>
+                    </div>
+                    {isCalculated && (
+                        <div className="flex items-center gap-2">
+                            <span className="font-semibold text-foreground">Tipo:</span>
+                            <Badge variant="outline">Índice Calculado</Badge>
+                        </div>
+                    )}
+                    <div className="flex items-center gap-2">
+                    <span className="font-semibold text-foreground">Moeda:</span>
+                    <span>{asset.currency}</span>
+                    </div>
                 </div>
             </div>
-          </div>
 
-          {/* MAIN CONTENT */}
-          <div className="flex flex-col overflow-hidden">
-            <div className="flex-1 p-4 md:p-6 overflow-y-auto">
-              <div className="grid gap-6">
-                {/* CHART */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Histórico de Preços (Últimos 30 Dias)</CardTitle>
-                  </CardHeader>
-                  <CardContent className="h-64">
-                    {isLoading ? (
-                      <div className="h-full w-full flex items-center justify-center">
-                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                      </div>
+            {/* MAIN CONTENT */}
+            <div className="flex flex-col md:pl-6">
+                <div className="grid gap-6">
+                    {/* CHART */}
+                    <Card>
+                    <CardHeader>
+                        <CardTitle>Histórico de Preços (Últimos 30 Dias)</CardTitle>
+                    </CardHeader>
+                    <CardContent className="h-64">
+                        {isLoading ? (
+                        <div className="h-full w-full flex items-center justify-center">
+                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                        </div>
+                        ) : (
+                        <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={chartData}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                            <XAxis 
+                                dataKey="date" 
+                                stroke="hsl(var(--muted-foreground))"
+                                fontSize={12}
+                                tickLine={false}
+                                axisLine={false}
+                            />
+                            <YAxis 
+                                stroke="hsl(var(--muted-foreground))"
+                                fontSize={12}
+                                tickLine={false}
+                                axisLine={false}
+                                tickFormatter={(value) => formatCurrency(value as number, asset.currency, asset.id)}
+                            />
+                            <Tooltip
+                                contentStyle={{
+                                    backgroundColor: "hsl(var(--background))",
+                                    border: "1px solid hsl(var(--border))",
+                                    borderRadius: "var(--radius)",
+                                }}
+                                formatter={(value: any) => [formatCurrency(Number(value), asset.currency, asset.id), 'Preço']}
+                            />
+                            <Line
+                                type="monotone"
+                                dataKey="price"
+                                stroke="hsl(var(--primary))"
+                                strokeWidth={2}
+                                dot={false}
+                            />
+                            </LineChart>
+                        </ResponsiveContainer>
+                        )}
+                    </CardContent>
+                    </Card>
+
+                    {/* HISTORICAL DATA */}
+                    {isCalculated ? (
+                        <CalculatedAssetDetails asset={asset} />
                     ) : (
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={chartData}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                          <XAxis 
-                            dataKey="date" 
-                            stroke="hsl(var(--muted-foreground))"
-                            fontSize={12}
-                            tickLine={false}
-                            axisLine={false}
-                          />
-                          <YAxis 
-                            stroke="hsl(var(--muted-foreground))"
-                            fontSize={12}
-                            tickLine={false}
-                            axisLine={false}
-                            tickFormatter={(value) => formatCurrency(value as number, asset.currency, asset.id)}
-                          />
-                          <Tooltip
-                            contentStyle={{
-                                backgroundColor: "hsl(var(--background))",
-                                border: "1px solid hsl(var(--border))",
-                                borderRadius: "var(--radius)",
-                            }}
-                             formatter={(value: any) => [formatCurrency(Number(value), asset.currency, asset.id), 'Preço']}
-                          />
-                          <Line
-                            type="monotone"
-                            dataKey="price"
-                            stroke="hsl(var(--primary))"
-                            strokeWidth={2}
-                            dot={false}
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
+                        <HistoricalPriceTable 
+                        asset={asset}
+                        historicalData={historicalData} 
+                        isLoading={isLoading} 
+                        />
                     )}
-                  </CardContent>
-                </Card>
-
-                {/* HISTORICAL DATA */}
-                {isCalculated ? (
-                    <CalculatedAssetDetails asset={asset} />
-                ) : (
-                    <HistoricalPriceTable 
-                      asset={asset}
-                      historicalData={historicalData} 
-                      isLoading={isLoading} 
-                    />
-                )}
-              </div>
+                </div>
             </div>
-          </div>
-        </div>
+            </div>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );

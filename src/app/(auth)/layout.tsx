@@ -39,7 +39,7 @@ export default function AuthLayout({
         priority
       />
       <div className="absolute inset-0 bg-black/60" />
-      <div className="relative z-10 w-full max-w-md">
+      <div className="relative z-10 w-full max-w-sm sm:max-w-md">
         {children}
       </div>
     </div>
