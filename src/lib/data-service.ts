@@ -10,7 +10,7 @@ import type { DateRange } from 'react-day-picker';
 
 // --- CONSTANTS ---
 const CACHE_KEY_PRICES = 'commodity_prices_simple';
-const CACHE_TTL_SECONDS = 300; // 5 minutos
+const CACHE_TTL_SECONDS = 30000; // 5 minutos
 const SETTINGS_COLLECTION = 'settings';
 const COMMODITIES_DOC = 'commodities';
 const COMMODITIES_CONFIG_CACHE_KEY = 'commodities_config';
