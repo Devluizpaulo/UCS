@@ -11,7 +11,6 @@ import { isToday, isFuture, parseISO, isValid } from 'date-fns';
 import { useSearchParams } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CompositionChart } from '@/components/composition-chart';
-import { CALCULATION_CONFIGS } from '@/lib/calculation-service';
 
 
 function getValidatedDate(dateString?: string | null): Date | null {
@@ -29,7 +28,7 @@ function useUcsComposition(targetDate: Date | null) {
     const [compositionData, setCompositionData] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    const ucsCompositionConfig = CALCULATION_CONFIGS['ucs'];
+    const ucsComponentIds = ['pdm', 'vus', 'crs']; // Main components of UCS
 
     useEffect(() => {
         if (!targetDate) {
@@ -41,8 +40,8 @@ function useUcsComposition(targetDate: Date | null) {
 
         const fetchData = async () => {
             try {
-                // 1. Fetch the main UCS asset quote for the date
-                const ucsQuote = await getQuoteByDate('ucs', targetDate);
+                // 1. Fetch the main UCS ASE asset quote for the date
+                const ucsQuote = await getQuoteByDate('ucs_ase', targetDate);
                 setUcsAsset(ucsQuote);
 
                 if (!ucsQuote) {
@@ -51,8 +50,7 @@ function useUcsComposition(targetDate: Date | null) {
                 }
                 
                 // 2. Fetch each component to get its rent_media value
-                const componentPromises = ucsCompositionConfig.components
-                    .filter(id => id !== 'usd') // Exclude USD from composition display
+                const componentPromises = ucsComponentIds
                     .map(async (componentId) => {
                         const componentQuote = await getQuoteByDate(componentId, targetDate);
                         return {
@@ -64,7 +62,7 @@ function useUcsComposition(targetDate: Date | null) {
                     });
 
                 const resolvedComponents = await Promise.all(componentPromises);
-                setCompositionData(resolvedComponents);
+                setCompositionData(resolvedComponents.filter(c => c.value > 0));
 
             } catch (err) {
                 console.error("Falha ao buscar composição", err);
@@ -77,14 +75,14 @@ function useUcsComposition(targetDate: Date | null) {
 
         fetchData();
         
-    }, [targetDate, ucsCompositionConfig.components]);
+    }, [targetDate]);
     
     // Create a CommodityPriceData-like object for the chart component
     const ucsAssetForChart: CommodityPriceData | undefined = useMemo(() => {
         if (!ucsAsset) return undefined;
         return {
-            id: 'ucs',
-            name: 'Índice UCS',
+            id: 'ucs_ase',
+            name: 'Índice UCS ASE',
             price: ucsAsset.ultimo,
             currency: 'BRL',
             category: 'index',
