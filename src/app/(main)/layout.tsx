@@ -18,7 +18,6 @@ import {
   Users,
   LogOut,
   Sparkles,
-  Archive,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -83,7 +82,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
    const handleSignOut = async () => {
     await auth.signOut();
-    router.push('/login');
+    router.push('/');
   };
 
   if (isUserLoading || !user) {
