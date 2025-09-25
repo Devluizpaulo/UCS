@@ -1,10 +1,10 @@
 import { cn } from "@/lib/utils";
 
-interface LogoBVMProps extends React.SVGProps<SVGSVGElement> {
+interface LogoUCSProps extends React.SVGProps<SVGSVGElement> {
     isIcon?: boolean;
 }
 
-export function LogoBVM({ isIcon = false, className, ...props }: LogoBVMProps) {
+export function LogoUCS({ isIcon = false, className, ...props }: LogoUCSProps) {
     if (isIcon) {
         return (
             <svg
@@ -42,7 +42,7 @@ export function LogoBVM({ isIcon = false, className, ...props }: LogoBVMProps) {
                 <path d="M2 17l10 5 10-5" />
                 <path d="M2 12l10 5 10-5" />
             </svg>
-            <span className="text-foreground">BMV Digital</span>
+            <span className="text-foreground">UCS Index</span>
         </div>
     );
 }

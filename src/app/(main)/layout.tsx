@@ -12,19 +12,15 @@ import {
 } from '@/components/ui/sidebar';
 import {
   LayoutDashboard,
-  Settings,
-  Archive,
-  SlidersHorizontal,
   TrendingUp,
   ShieldAlert,
-  FileText,
   Users,
   LogOut,
   Sparkles,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LogoBVM } from '@/components/logo-bvm';
+import { LogoUCS } from '@/components/logo-bvm';
 import { useAuth, useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -34,14 +30,7 @@ import React from 'react';
 
 function UserProfile() {
     const { user, isUserLoading } = useUser();
-    const auth = useAuth();
-    const router = useRouter();
-
-    const handleSignOut = async () => {
-        await auth.signOut();
-        router.push('/login');
-    };
-
+    
     if (isUserLoading) {
         return (
             <div className="flex items-center gap-2 p-2">
@@ -74,15 +63,6 @@ function UserProfile() {
                     <p className="text-xs text-muted-foreground">Admin</p>
                 </div>
             </div>
-             <Button
-                variant="ghost"
-                size="sm"
-                className="w-full justify-start group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-2"
-                onClick={handleSignOut}
-            >
-                <LogOut className="h-4 w-4" />
-                <span className="group-data-[collapsible=icon]:hidden ml-2">Sair</span>
-            </Button>
         </div>
     );
 }
@@ -92,12 +72,18 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const pathname = usePathname();
   const { user, isUserLoading } = useUser();
   const router = useRouter();
+  const auth = useAuth();
 
   React.useEffect(() => {
     if (!isUserLoading && !user) {
       router.replace('/login');
     }
   }, [isUserLoading, user, router]);
+
+   const handleSignOut = async () => {
+    await auth.signOut();
+    router.push('/login');
+  };
 
   if (isUserLoading || !user) {
      return (
@@ -113,10 +99,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         <div className="flex flex-col h-full">
           <SidebarHeader>
             <div className="flex h-10 items-center justify-center p-2 group-data-[collapsible=icon]:hidden">
-              <LogoBVM className="h-8 w-auto text-primary" />
+              <LogoUCS className="h-8 w-auto text-primary" />
             </div>
             <div className="hidden h-10 items-center justify-center p-2 group-data-[collapsible=icon]:flex">
-              <LogoBVM className="h-8 w-auto text-primary" isIcon />
+              <LogoUCS className="h-8 w-auto text-primary" isIcon />
             </div>
           </SidebarHeader>
           <SidebarContent className="flex-grow">
@@ -193,9 +179,20 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarContent>
-          <SidebarContent className="!flex-grow-0 border-t">
-             <UserProfile />
-          </SidebarContent>
+           <SidebarContent className="!flex-grow-0 border-t">
+              <SidebarMenu>
+                 <SidebarMenuItem>
+                    <SidebarMenuButton
+                      onClick={handleSignOut}
+                      tooltip={{ children: 'Sair' }}
+                    >
+                      <LogOut />
+                      <span>Sair</span>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+              <UserProfile />
+           </SidebarContent>
         </div>
       </Sidebar>
       <SidebarInset>{children}</SidebarInset>

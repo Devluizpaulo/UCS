@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, Briefcase, CheckCircle, Globe, HandCoins, Landmark, Leaf, Repeat, Scale, ShieldCheck, TrendingUp, User, Euro, DollarSign } from "lucide-react";
 import Image from 'next/image';
 import Link from 'next/link';
-import { LogoBVM } from "@/components/logo-bvm";
+import { LogoUCS } from "@/components/logo-bvm";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -89,7 +89,7 @@ export default async function LandingPage() {
     <div className="flex min-h-screen w-full flex-col bg-background text-foreground">
       <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-sm">
         <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
-          <LogoBVM />
+          <LogoUCS />
           <div className="flex items-center gap-2">
             <LanguageSwitcher />
              <Button variant="ghost" asChild>
