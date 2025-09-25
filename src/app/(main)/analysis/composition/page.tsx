@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -11,6 +12,7 @@ import { isToday, isFuture, parseISO, isValid } from 'date-fns';
 import { useSearchParams } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CompositionChart } from '@/components/composition-chart';
+import { getAssetCompositionConfig } from '@/lib/calculation-service';
 
 
 function getValidatedDate(dateString?: string | null): Date | null {
@@ -23,12 +25,10 @@ function getValidatedDate(dateString?: string | null): Date | null {
   return null;
 }
 
-function useUcsComposition(targetDate: Date | null) {
-    const [ucsAsset, setUcsAsset] = useState<FirestoreQuote | null>(null);
+function usePdmComposition(targetDate: Date | null) {
+    const [pdmAsset, setPdmAsset] = useState<FirestoreQuote | null>(null);
     const [compositionData, setCompositionData] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-
-    const ucsComponentIds = ['pdm', 'vus', 'crs']; // Main components of UCS
 
     useEffect(() => {
         if (!targetDate) {
@@ -40,22 +40,25 @@ function useUcsComposition(targetDate: Date | null) {
 
         const fetchData = async () => {
             try {
-                // 1. Fetch the main UCS ASE asset quote for the date
-                const ucsQuote = await getQuoteByDate('ucs_ase', targetDate);
-                setUcsAsset(ucsQuote);
+                // 1. Pega a configuração dos componentes do PDM
+                const pdmComponentIds = await getAssetCompositionConfig('pdm');
+                
+                // 2. Busca a cotação principal do PDM para a data
+                const pdmQuote = await getQuoteByDate('pdm', targetDate);
+                setPdmAsset(pdmQuote);
 
-                if (!ucsQuote) {
+                if (!pdmQuote) {
                     setCompositionData([]);
                     return;
                 }
                 
-                // 2. Fetch each component to get its rent_media value
-                const componentPromises = ucsComponentIds
+                // 3. Busca cada componente para obter seu valor
+                const componentPromises = pdmComponentIds
                     .map(async (componentId) => {
                         const componentQuote = await getQuoteByDate(componentId, targetDate);
                         return {
                             name: componentQuote?.ativo || componentId,
-                            value: componentQuote?.rent_media || 0,
+                            value: componentQuote?.rent_media || componentQuote?.ultimo || 0,
                             currency: componentQuote?.moeda || 'BRL',
                             id: componentId,
                         };
@@ -65,9 +68,9 @@ function useUcsComposition(targetDate: Date | null) {
                 setCompositionData(resolvedComponents.filter(c => c.value > 0));
 
             } catch (err) {
-                console.error("Falha ao buscar composição", err);
+                console.error("Falha ao buscar composição do PDM", err);
                 setCompositionData([]);
-                setUcsAsset(null);
+                setPdmAsset(null);
             } finally {
                 setIsLoading(false);
             }
@@ -77,25 +80,24 @@ function useUcsComposition(targetDate: Date | null) {
         
     }, [targetDate]);
     
-    // Create a CommodityPriceData-like object for the chart component
-    const ucsAssetForChart: CommodityPriceData | undefined = useMemo(() => {
-        if (!ucsAsset) return undefined;
+    const pdmAssetForChart: CommodityPriceData | undefined = useMemo(() => {
+        if (!pdmAsset) return undefined;
         return {
-            id: 'ucs_ase',
-            name: 'Índice UCS ASE',
-            price: ucsAsset.ultimo,
+            id: 'pdm',
+            name: 'Índice PDM',
+            price: pdmAsset.ultimo,
             currency: 'BRL',
             category: 'index',
             description: '',
             unit: 'Pontos',
             change: 0,
             absoluteChange: 0,
-            lastUpdated: ucsAsset.data,
+            lastUpdated: pdmAsset.data,
         };
-    }, [ucsAsset]);
+    }, [pdmAsset]);
 
 
-    return { ucsAsset: ucsAssetForChart, compositionData, isLoading };
+    return { ucsAsset: pdmAssetForChart, compositionData, isLoading };
 }
 
 
@@ -110,12 +112,12 @@ export default function CompositionPage() {
         setTargetDate(initialDate);
     }, [dateParam]);
 
-    const { ucsAsset, compositionData, isLoading } = useUcsComposition(targetDate);
+    const { ucsAsset, compositionData, isLoading } = usePdmComposition(targetDate);
     
     const isCurrentDateOrFuture = targetDate ? isToday(targetDate) || isFuture(targetDate) : true;
     const description = isCurrentDateOrFuture
-        ? "Visualização da composição do Índice UCS em tempo real."
-        : `Composição do Índice UCS para a data selecionada.`;
+        ? "Visualização da composição do Índice PDM em tempo real."
+        : `Composição do Índice PDM para a data selecionada.`;
 
     if (!targetDate) {
         return (
@@ -137,7 +139,7 @@ export default function CompositionPage() {
     return (
         <div className="flex min-h-screen w-full flex-col">
             <PageHeader
-                title="Análise de Composição"
+                title="Análise de Composição do PDM"
                 description={description}
                 icon={PieChart}
             >

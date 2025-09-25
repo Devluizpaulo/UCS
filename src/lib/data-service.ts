@@ -8,7 +8,7 @@ import { getCache, setCache } from '@/lib/cache-service';
 import { Timestamp, FieldValue } from 'firebase-admin/firestore';
 import { subDays, format, parse, isValid, startOfDay, parseISO, endOfDay } from 'date-fns';
 import type { DateRange } from 'react-day-picker';
-import { isCalculableAsset, CALCULATION_CONFIGS } from './calculation-service';
+import { isCalculableAsset, getCalculationConfig } from './calculation-service';
 
 // --- CONSTANTS ---
 const CACHE_KEY_PRICES = 'commodity_prices_simple';
@@ -33,7 +33,7 @@ function serializeFirestoreTimestamp(data: any): any {
     if (data instanceof Date) {
         return data.getTime();
     }
-    if ('toDate' in data && typeof data.toDate === 'function') {
+    if (data && typeof data.toDate === 'function') {
         return data.toDate().getTime();
     }
     if (Array.isArray(data)) {
@@ -41,10 +41,13 @@ function serializeFirestoreTimestamp(data: any): any {
     }
     const serializedData: { [key: string]: any } = {};
     for (const key in data) {
-        serializedData[key] = serializeFirestoreTimestamp(data[key]);
+        if (Object.prototype.hasOwnProperty.call(data, key)) {
+            serializedData[key] = serializeFirestoreTimestamp(data[key]);
+        }
     }
     return serializedData;
 }
+
 
 /**
  * Obtém o valor principal de uma cotação, priorizando 'valor' e depois 'ultimo'.
@@ -69,14 +72,16 @@ const initialCommoditiesConfig: Record<string, Omit<CommodityConfig, 'id'>> = {
     'ucs_ase': { name: 'UCS ASE', currency: 'BRL', category: 'index', description: 'Índice de Unidade de Crédito de Sustentabilidade.', unit: 'Pontos' },
     'ucs': { name: 'UCS', currency: 'BRL', category: 'index', description: 'Unidade de Crédito de Sustentabilidade.', unit: 'BRL por UCS' },
     'pdm': { name: 'PDM', currency: 'BRL', category: 'index', description: 'Potencial Desflorestador Monetizado.', unit: 'BRL por PDM' },
+    'vus': { name: 'VUS', currency: 'BRL', category: 'index', description: 'Valor de Uso do Solo.', unit: 'BRL por VUS' },
+    'vmad': { name: 'VMAD', currency: 'BRL', category: 'index', description: 'Valor da Madeira.', unit: 'BRL por VMAD' },
+    'crs': { name: 'CRS', currency: 'BRL', category: 'index', description: 'Custo de Responsabilidade Socioambiental.', unit: 'BRL por CRS' },
     'usd': { name: 'Dólar Comercial', currency: 'BRL', category: 'exchange', description: 'Cotação do Dólar Americano (USD) em Reais (BRL).', unit: 'BRL por USD' },
     'eur': { name: 'Euro', currency: 'BRL', category: 'exchange', description: 'Cotação do Euro (EUR) em Reais (BRL).', unit: 'BRL por EUR' },
     'soja': { name: 'Soja', currency: 'USD', category: 'vus', description: 'Preço da saca de 60kg de Soja.', unit: 'USD por saca' },
     'milho': { name: 'Milho', currency: 'BRL', category: 'vus', description: 'Preço da saca de 60kg de Milho.', unit: 'BRL por saca' },
     'boi_gordo': { name: 'Boi Gordo', currency: 'BRL', category: 'vus', description: 'Preço da arroba (15kg) de Boi Gordo.', unit: 'BRL por @' },
-    'carbono': { name: 'Custo da Responsabilidade Socioambiental', currency: 'EUR', category: 'crs', description: 'Custo da manutenção com a chamada Responsabilidade Social do projeto.', unit: 'EUR por Tonelada' },
-    'ch2o_agua': { name: 'CH²O', currency: 'BRL', category: 'crs', description: 'Índice de Custo Hídrico para Produção de Alimentos.', unit: 'BRL por m³' },
-    'custo_agua': { name: 'Custo da Água', currency: 'BRL', category: 'crs', description: 'Custo da Água para Produção de Alimentos.', unit: 'BRL por m³' },
+    'carbono': { name: 'Crédito de Carbono', currency: 'EUR', category: 'crs', description: 'Custo da manutenção com a chamada Responsabilidade Social do projeto.', unit: 'EUR por Tonelada' },
+    'custo_agua': { name: 'Crédito de Água', currency: 'BRL', category: 'crs', description: 'Custo da Água para Produção de Alimentos.', unit: 'BRL por m³' },
     'madeira': { name: 'Madeira Serrada', currency: 'USD', category: 'vmad', description: 'Preço por metro cúbico de madeira serrada.', unit: 'USD por m³' },
 };
 
@@ -179,10 +184,7 @@ export async function getQuoteByDate(assetId: string, date: Date): Promise<Fires
     if (!stringDateSnapshot.empty) {
         const doc = stringDateSnapshot.docs[0];
         const data = doc.data();
-        return {
-          id: doc.id,
-          ...serializeFirestoreTimestamp(data),
-        } as FirestoreQuote;
+        return serializeFirestoreTimestamp({ id: doc.id, ...data }) as FirestoreQuote;
     }
 
     // Tentativa 2: Buscar por timestamp dentro do dia
@@ -200,10 +202,7 @@ export async function getQuoteByDate(assetId: string, date: Date): Promise<Fires
     
     const doc = timestampSnapshot.docs[0];
     const data = doc.data();
-    return {
-        id: doc.id,
-        ...serializeFirestoreTimestamp(data),
-    } as FirestoreQuote;
+    return serializeFirestoreTimestamp({ id: doc.id, ...data }) as FirestoreQuote;
 }
 
 
@@ -216,12 +215,12 @@ export async function getQuoteByDate(assetId: string, date: Date): Promise<Fires
  * @returns A cotação calculada.
  */
 export async function getOrCalculateAssetForDate(assetId: string, date: Date): Promise<FirestoreQuote | null> {
-    if (!await isCalculableAsset(assetId)) {
-        throw new Error(`${assetId} não é um ativo calculável.`);
+    const config = await getCalculationConfig(assetId);
+    if (!config) {
+        throw new Error(`${assetId} não é um ativo calculável ou a configuração não foi encontrada.`);
     }
 
     const { db } = await getFirebaseAdmin();
-    const config = CALCULATION_CONFIGS[assetId];
     const formattedDate = format(date, 'dd/MM/yyyy');
     const startOfDate = startOfDay(date);
 
@@ -258,11 +257,7 @@ export async function getOrCalculateAssetForDate(assetId: string, date: Date): P
 
     const docRef = await db.collection(assetId).add(newQuoteData);
     
-    return {
-        id: docRef.id,
-        ...newQuoteData,
-        timestamp: serializeFirestoreTimestamp(newQuoteData.timestamp), // Serialize timestamp before returning
-    } as FirestoreQuote;
+    return serializeFirestoreTimestamp({ id: docRef.id, ...newQuoteData }) as FirestoreQuote;
 }
 
 
@@ -282,10 +277,7 @@ export async function getLatestQuote(assetId: string): Promise<FirestoreQuote | 
     
     const doc = snapshot.docs[0];
     const data = doc.data();
-    return {
-        id: doc.id,
-        ...serializeFirestoreTimestamp(data),
-    } as FirestoreQuote;
+    return serializeFirestoreTimestamp({ id: doc.id, ...data }) as FirestoreQuote;
 }
 
 /**
@@ -407,11 +399,11 @@ export async function getCotacoesHistorico(assetId: string, days: number): Promi
     
     const data = snapshot.docs.map(doc => {
         const docData = doc.data();
-        return {
+        return serializeFirestoreTimestamp({
             id: doc.id,
-            ...serializeFirestoreTimestamp(docData),
+            ...docData,
             ultimo: getPriceFromQuote(docData),
-        } as FirestoreQuote;
+        }) as FirestoreQuote;
     });
 
     return data;
@@ -449,11 +441,11 @@ export async function getCotacoesHistoricoPorRange(assetId: string, dateRange: D
 
         const data = snapshot.docs.map(doc => {
             const docData = doc.data();
-            return {
+            return serializeFirestoreTimestamp({
                 id: doc.id,
-                ...serializeFirestoreTimestamp(docData),
+                ...docData,
                 ultimo: getPriceFromQuote(docData),
-            } as FirestoreQuote;
+            }) as FirestoreQuote;
         });
 
         return data;

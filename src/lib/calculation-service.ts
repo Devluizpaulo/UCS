@@ -53,7 +53,8 @@ const calculateVmadPrice: CalculationStrategy = (componentValues) => {
  * crs = cc + ch2o
  */
 const calculateCrsPrice: CalculationStrategy = (componentValues) => {
-    return (componentValues['cc'] ?? 0) + (componentValues['ch2o'] ?? 0);
+    // "cc" (credito de carbono) é mapeado de 'carbono' e "ch2o" de 'custo_agua'
+    return (componentValues['carbono'] ?? 0) + (componentValues['custo_agua'] ?? 0);
 };
 
 /**
@@ -106,7 +107,8 @@ interface CalculationConfig {
   calculator: CalculationStrategy;
 }
 
-export const CALCULATION_CONFIGS: Record<string, CalculationConfig> = {
+// Este objeto agora é privado para o módulo
+const CALCULATION_CONFIGS: Record<string, CalculationConfig> = {
   vus: {
     components: ['soja', 'milho', 'boi_gordo', 'usd'],
     valueField: 'ultimo',
@@ -118,7 +120,7 @@ export const CALCULATION_CONFIGS: Record<string, CalculationConfig> = {
     calculator: calculateVmadPrice,
   },
   crs: {
-    components: ['cc', 'ch2o'], // cc (carbono), ch2o (custo_agua)
+    components: ['carbono', 'custo_agua'],
     valueField: 'ultimo',
     calculator: calculateCrsPrice,
   },
@@ -139,6 +141,19 @@ export const CALCULATION_CONFIGS: Record<string, CalculationConfig> = {
   },
 };
 
+
+/**
+ * Retorna a configuração de composição para um ativo calculável.
+ * @param assetId O ID do ativo.
+ * @returns A lista de componentes do ativo.
+ */
+export async function getAssetCompositionConfig(assetId: string): Promise<readonly string[]> {
+    if (assetId in CALCULATION_CONFIGS) {
+        return Promise.resolve(CALCULATION_CONFIGS[assetId].components);
+    }
+    return Promise.resolve([]);
+}
+
 /**
  * Verifica se um ID de ativo corresponde a um ativo calculável.
  * @param assetId O ID do ativo.
@@ -146,4 +161,12 @@ export const CALCULATION_CONFIGS: Record<string, CalculationConfig> = {
  */
 export async function isCalculableAsset(assetId: string): Promise<boolean> {
     return Promise.resolve(assetId in CALCULATION_CONFIGS);
+}
+
+// Função interna para obter o objeto de configuração
+export async function getCalculationConfig(assetId: string): Promise<CalculationConfig | null> {
+    if (assetId in CALCULATION_CONFIGS) {
+        return Promise.resolve(CALCULATION_CONFIGS[assetId]);
+    }
+    return Promise.resolve(null);
 }
