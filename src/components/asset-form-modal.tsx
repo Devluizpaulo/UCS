@@ -118,7 +118,7 @@ export function AssetFormModal({ isOpen, onOpenChange, onSubmit, asset }: AssetF
                                 <SelectItem value="exchange">Câmbio</SelectItem>
                                 <SelectItem value="vus">VUS (Commodity Agrícola)</SelectItem>
                                 <SelectItem value="vmad">VMAD (Madeira)</SelectItem>
-                                <SelectItem value="crs">CRS (Sustentabilidade)</SelectItem>
+                                <SelectItem value="crs">Custo de Responsabilidade Socioambiental</SelectItem>
                             </SelectContent>
                         </Select>
                     )}

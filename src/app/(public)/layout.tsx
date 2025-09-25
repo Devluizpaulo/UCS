@@ -51,7 +51,7 @@ export default function PublicLayout({
 
         <main className="relative flex-1 flex items-center justify-center p-4">
             <Image
-                src="https://picsum.photos/seed/deep-forest/1920/1080"
+                src="/image/login.png"
                 alt="Floresta exuberante ao fundo"
                 fill
                 className="object-cover animate-zoom-in"

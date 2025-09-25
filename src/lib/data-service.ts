@@ -66,7 +66,7 @@ function getPriceFromQuote(quoteData: any): number {
  * no Firestore não existir.
  */
 const initialCommoditiesConfig: Record<string, Omit<CommodityConfig, 'id'>> = {
-    'ucs_ase': { name: 'UCS ASE', currency: 'BRL', category: 'index', description: 'Índice principal de Unidade de Crédito de Sustentabilidade.', unit: 'Pontos' },
+    'ucs_ase': { name: 'UCS ASE', currency: 'BRL', category: 'index', description: 'Índice de Unidade de Crédito de Sustentabilidade.', unit: 'Pontos' },
     'ucs': { name: 'UCS', currency: 'BRL', category: 'index', description: 'Unidade de Crédito de Sustentabilidade.', unit: 'BRL por UCS' },
     'pdm': { name: 'PDM', currency: 'BRL', category: 'index', description: 'Potencial Desflorestador Monetizado.', unit: 'BRL por PDM' },
     'usd': { name: 'Dólar Comercial', currency: 'BRL', category: 'exchange', description: 'Cotação do Dólar Americano (USD) em Reais (BRL).', unit: 'BRL por USD' },
@@ -74,7 +74,7 @@ const initialCommoditiesConfig: Record<string, Omit<CommodityConfig, 'id'>> = {
     'soja': { name: 'Soja', currency: 'USD', category: 'vus', description: 'Preço da saca de 60kg de Soja.', unit: 'USD por saca' },
     'milho': { name: 'Milho', currency: 'BRL', category: 'vus', description: 'Preço da saca de 60kg de Milho.', unit: 'BRL por saca' },
     'boi_gordo': { name: 'Boi Gordo', currency: 'BRL', category: 'vus', description: 'Preço da arroba (15kg) de Boi Gordo.', unit: 'BRL por @' },
-    'carbono': { name: 'Crédito de Carbono', currency: 'EUR', category: 'crs', description: 'Preço do crédito de carbono em Euros.', unit: 'EUR por tonelada' },
+    'carbono': { name: 'Custo da Responsabilidade Socioambiental', currency: 'EUR', category: 'crs', description: 'Custo da manutenção com a chamada Responsabilidade Social do projeto.', unit: 'EUR por Tonelada' },
     'ch2o_agua': { name: 'CH²O', currency: 'BRL', category: 'crs', description: 'Índice de Custo Hídrico para Produção de Alimentos.', unit: 'BRL por m³' },
     'custo_agua': { name: 'Custo da Água', currency: 'BRL', category: 'crs', description: 'Custo da Água para Produção de Alimentos.', unit: 'BRL por m³' },
     'madeira': { name: 'Madeira Serrada', currency: 'USD', category: 'vmad', description: 'Preço por metro cúbico de madeira serrada.', unit: 'USD por m³' },

@@ -31,7 +31,7 @@ export const getIconForCategory = (asset?: CommodityPriceData) => {
         case 'soja': return Bean;
         case 'usd': return DollarSign;
         case 'madeira': return TreePine;
-        case 'carbono': return Droplets;
+        case 'carbono': return Shield;
         case 'ch2o_agua': return Droplets;
         case 'custo_agua': return Droplets;
         default:
@@ -40,7 +40,7 @@ export const getIconForCategory = (asset?: CommodityPriceData) => {
                 case 'exchange': return DollarSign;
                 case 'vus': return LandPlot;
                 case 'vmad': return TreePine;
-                case 'crs': return Droplets;
+                case 'crs': return Shield;
                 default: return HelpCircle;
             }
     }
