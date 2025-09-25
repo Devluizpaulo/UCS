@@ -18,6 +18,7 @@ import {
   LogOut,
   Sparkles,
   Archive,
+  PieChart,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -221,6 +222,18 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                   <Link href="/analysis/risk">
                     <ShieldAlert />
                     <span>Risco</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname.startsWith('/analysis/composition')}
+                  tooltip={{ children: 'Composição do Índice' }}
+                >
+                  <Link href="/analysis/composition">
+                    <PieChart />
+                    <span>Composição</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

@@ -10,6 +10,27 @@ type CalculationStrategy = (values: ComponentValues) => number;
 
 // --- ESTRATÉGIAS DE CÁLCULO ---
 
+const calculateUcsPrice: CalculationStrategy = (componentValues) => {
+    const weights: Record<string, number> = {
+        boi_gordo: 0.10, // Exemplo de peso
+        milho: 0.60,     // Exemplo de peso
+        soja: 0.10,      // Exemplo de peso
+    };
+    const dolar = componentValues['usd'] || 1; // Fallback para 1 para evitar divisão por zero
+
+    // Converte componentes de USD para BRL se necessário
+    const boiBRL = (componentValues['boi_gordo'] ?? 0); // Já em BRL
+    const milhoBRL = (componentValues['milho'] ?? 0); // Já em BRL
+    const sojaBRL = (componentValues['soja'] ?? 0) * dolar; // Soja é em USD
+
+    return (
+        (boiBRL * weights.boi_gordo) +
+        (milhoBRL * weights.milho) +
+        (sojaBRL * weights.soja)
+    );
+};
+
+
 /**
  * Lógica de cálculo para o ativo 'agua' (CH²O).
  * Usa o valor 'ultimo' dos componentes.
@@ -76,7 +97,7 @@ const calculateUcsAsePrice: CalculationStrategy = (componentValues) => {
 // --- CONFIGURAÇÃO DOS ATIVOS CALCULADOS ---
 
 interface CalculationConfig {
-  components: readonly ComponentId[];
+  components: readonly string[]; // Alterado para string[] para flexibilidade
   valueField: keyof FirestoreQuote;
   calculator: CalculationStrategy;
 }
@@ -85,6 +106,11 @@ interface CalculationConfig {
  * Mapeia cada ID de ativo calculado à sua configuração de cálculo.
  */
 export const CALCULATION_CONFIGS: Record<string, CalculationConfig> = {
+  ucs: {
+    components: ['boi_gordo', 'milho', 'soja', 'usd'],
+    valueField: 'ultimo',
+    calculator: calculateUcsPrice,
+  },
   ucs_ase: {
     components: ['ucs', 'pdm'],
     valueField: 'ultimo',

@@ -15,6 +15,7 @@ import {
   Shield,
   Award,
   Users,
+  PieChart,
 } from 'lucide-react';
 
 export const getIconForCategory = (asset?: CommodityPriceData) => {

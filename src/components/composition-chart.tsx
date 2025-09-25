@@ -1,0 +1,175 @@
+
+'use client';
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ResponsiveContainer, PieChart as RechartsPieChart, Pie, Cell, Tooltip } from 'recharts';
+import type { CommodityPriceData } from '@/lib/types';
+import { formatCurrency } from '@/lib/formatters';
+import { Skeleton } from './ui/skeleton';
+import { useMemo } from 'react';
+import { cn } from '@/lib/utils';
+import { getIconForCategory } from '@/lib/icons';
+
+interface CompositionData {
+    name: string;
+    value: number;
+    currency: string;
+    id: string;
+}
+
+interface CompositionChartProps {
+    ucsAsset?: CommodityPriceData | null;
+    compositionData: CompositionData[];
+    isLoading: boolean;
+}
+
+const COLORS = [
+    'hsl(var(--chart-1))',
+    'hsl(var(--chart-2))',
+    'hsl(var(--chart-3))',
+    'hsl(var(--chart-4))',
+    'hsl(var(--chart-5))',
+];
+
+const ChartLoader = () => (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="flex items-center justify-center">
+             <Skeleton className="h-64 w-64 rounded-full" />
+        </div>
+        <div>
+            <Skeleton className="h-10 w-3/4 mb-4" />
+            <div className="space-y-2">
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-8 w-full" />
+            </div>
+        </div>
+    </div>
+);
+
+
+export function CompositionChart({ ucsAsset, compositionData, isLoading }: CompositionChartProps) {
+
+    const totalValue = useMemo(() => {
+        return compositionData.reduce((sum, item) => sum + item.value, 0);
+    }, [compositionData]);
+
+    const chartData = useMemo(() => {
+        return compositionData.map(item => ({
+            name: item.name,
+            value: item.value,
+        }));
+    }, [compositionData]);
+
+    if (isLoading) {
+        return (
+            <Card>
+                <CardHeader>
+                    <Skeleton className="h-6 w-1/2" />
+                    <Skeleton className="h-4 w-3/4" />
+                </CardHeader>
+                <CardContent>
+                    <ChartLoader />
+                </CardContent>
+            </Card>
+        );
+    }
+    
+    if (!ucsAsset || compositionData.length === 0 || ucsAsset.price === 0) {
+         return (
+            <Card>
+                <CardHeader>
+                     <CardTitle>Composição do Índice UCS</CardTitle>
+                    <CardDescription>
+                        Dados de composição para a data selecionada.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex h-96 items-center justify-center text-center">
+                        <p className="text-muted-foreground">Não há dados de composição disponíveis para esta data.<br/>O cálculo pode não ter sido executado ou os componentes não tinham valor.</p>
+                    </div>
+                </CardContent>
+            </Card>
+        );
+    }
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Composição do Índice UCS</CardTitle>
+                <CardDescription>
+                    O valor total do índice é <span className="font-bold text-foreground">{formatCurrency(ucsAsset.price, ucsAsset.currency, ucsAsset.id)}</span>, composto pelos seguintes ativos.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                    <div className="w-full h-80">
+                         <ResponsiveContainer>
+                            <RechartsPieChart>
+                                <Pie
+                                    data={chartData}
+                                    cx="50%"
+                                    cy="50%"
+                                    labelLine={false}
+                                    outerRadius={120}
+                                    fill="#8884d8"
+                                    dataKey="value"
+                                    nameKey="name"
+                                >
+                                    {chartData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                    ))}
+                                </Pie>
+                                <Tooltip
+                                    formatter={(value: number, name: string) => [formatCurrency(value, 'BRL', ''), name]}
+                                    contentStyle={{
+                                        backgroundColor: "hsl(var(--background))",
+                                        border: "1px solid hsl(var(--border))",
+                                        borderRadius: "var(--radius)",
+                                    }}
+                                />
+                            </RechartsPieChart>
+                        </ResponsiveContainer>
+                    </div>
+                    <div>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Componente</TableHead>
+                                    <TableHead className="text-right">Valor (BRL)</TableHead>
+                                    <TableHead className="text-right">Participação</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {compositionData.map((item, index) => {
+                                    const percentage = totalValue > 0 ? (item.value / totalValue) * 100 : 0;
+                                    const Icon = getIconForCategory({ id: item.id } as CommodityPriceData);
+                                    return (
+                                        <TableRow key={item.name}>
+                                            <TableCell>
+                                                <div className="flex items-center gap-2 font-medium">
+                                                    <div className="h-2 w-2 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }}/>
+                                                    <Icon className="h-4 w-4 text-muted-foreground" />
+                                                    <span>{item.name}</span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="text-right font-mono">{formatCurrency(item.value, 'BRL', item.id)}</TableCell>
+                                            <TableCell className="text-right font-mono">{percentage.toFixed(2)}%</TableCell>
+                                        </TableRow>
+                                    );
+                                })}
+                                 <TableRow className="font-bold bg-muted/50">
+                                    <TableCell>Total</TableCell>
+                                    <TableCell className="text-right font-mono">{formatCurrency(totalValue, 'BRL', 'ucs')}</TableCell>
+                                    <TableCell className="text-right font-mono">100.00%</TableCell>
+                                </TableRow>
+                            </TableBody>
+                        </Table>
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+    )
+}
