@@ -44,7 +44,7 @@ export async function createUser(userData: { email: string; disabled?: boolean }
     await auth.generatePasswordResetLink(userRecord.email as string);
 
     revalidatePath('/admin/users'); // Invalida o cache da página de usuários
-    return userRecord;
+    return userRecord.toJSON() as UserRecord;
   } catch (error: any) {
     console.error('Error creating user:', error);
     if (error.code === 'auth/email-already-exists') {
@@ -69,7 +69,7 @@ export async function updateUser(uid: string, userData: { email?: string; passwo
     
     const userRecord = await auth.updateUser(uid, dataToUpdate);
     revalidatePath('/admin/users');
-    return userRecord;
+    return userRecord.toJSON() as UserRecord;
   } catch (error) {
     console.error(`Error updating user ${uid}:`, error);
     throw new Error('Falha ao atualizar o usuário.');
