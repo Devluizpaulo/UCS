@@ -59,13 +59,14 @@ export default function LandingPage() {
       </header>
 
       <main className="flex-1">
-        <section className="relative w-full flex items-center justify-center text-center py-24 lg:py-32">
+        <section className="relative w-full h-[calc(100vh-4rem)] flex items-center justify-center text-center">
           <Image
-            src="https://picsum.photos/seed/deep-forest/1920/1080"
-            alt="Floresta exuberante ao fundo"
+            src="https://picsum.photos/seed/forest-path/1920/1080"
+            alt="Floresta exuberante com caminho de luz"
             fill
             className="object-cover animate-zoom-in"
-            data-ai-hint="lush forest"
+            data-ai-hint="lush forest light path"
+            priority
           />
           <div className="absolute inset-0 bg-black/60" />
           <div className="relative z-10 flex flex-col items-center gap-8 px-4 md:px-6">

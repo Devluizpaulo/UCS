@@ -98,6 +98,11 @@
 }
 
 @layer base {
+  html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
   * {
     @apply border-border;
   }
@@ -120,16 +125,19 @@
   }
 
   @keyframes zoom-in {
-      from {
+      0% {
           transform: scale(1);
       }
-      to {
+      50% {
           transform: scale(1.1);
+      }
+      100% {
+          transform: scale(1);
       }
   }
 
   .animate-zoom-in {
-      animation: zoom-in 20s ease-in-out infinite alternate;
+      animation: zoom-in 20s ease-in-out infinite;
   }
 
   /* Custom scrollbar styles */
