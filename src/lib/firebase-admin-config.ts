@@ -1,8 +1,24 @@
 
 import admin from 'firebase-admin';
 
-// This is a simplified check to see if the app is already initialized.
-if (!admin.apps.length) {
+let app: admin.app.App;
+
+/**
+ * Inicializa e retorna o SDK do Firebase Admin.
+ * Usa um padrão singleton para evitar reinicializações.
+ */
+export async function getFirebaseAdmin() {
+    if (admin.apps.find(a => a?.name === 'firebase-admin-app')) {
+        app = admin.app('firebase-admin-app');
+    }
+
+    if (app) {
+        return {
+            auth: app.auth(),
+            db: app.firestore(),
+        };
+    }
+
     try {
         const serviceAccountString = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64;
         if (!serviceAccountString) {
@@ -11,14 +27,20 @@ if (!admin.apps.length) {
 
         const serviceAccount = JSON.parse(Buffer.from(serviceAccountString, 'base64').toString('utf-8'));
 
-        admin.initializeApp({
+        app = admin.initializeApp({
             credential: admin.credential.cert(serviceAccount)
-        });
+        }, 'firebase-admin-app');
+        
         console.log('[FirebaseAdmin] Initialized successfully.');
+
+        return {
+            auth: app.auth(),
+            db: app.firestore(),
+        };
+
     } catch (e: any) {
         console.error('[FirebaseAdmin] Failed to initialize:', e.message);
+        // Em caso de falha, lançamos o erro para que o chamador saiba que o admin SDK não está disponível.
+        throw new Error('Firebase Admin SDK could not be initialized.');
     }
 }
-
-export const db = admin.firestore();
-export const auth = admin.auth();

@@ -2,7 +2,7 @@
 
 'use server';
 
-import { db } from '@/lib/firebase-admin-config';
+import { getFirebaseAdmin } from '@/lib/firebase-admin-config';
 import type { CommodityConfig, CommodityPriceData, FirestoreQuote } from '@/lib/types';
 import { getCache, setCache } from '@/lib/cache-service';
 import { Timestamp, FieldValue } from 'firebase-admin/firestore';
@@ -86,6 +86,7 @@ const initialCommoditiesConfig: Record<string, Omit<CommodityConfig, 'id'>> = {
  * @param config O objeto de configuração do ativo.
  */
 export async function saveCommodityConfig(id: string, config: Omit<CommodityConfig, 'id'>): Promise<void> {
+    const { db } = await getFirebaseAdmin();
     const settingsDocRef = db.collection(SETTINGS_COLLECTION).doc(COMMODITIES_DOC);
     
     // Transação para garantir atomicidade.
@@ -115,7 +116,8 @@ export async function getCommodityConfigs(): Promise<CommodityConfig[]> {
     if (cachedConfigs) {
         return cachedConfigs;
     }
-
+    
+    const { db } = await getFirebaseAdmin();
     const docRef = db.collection(SETTINGS_COLLECTION).doc(COMMODITIES_DOC);
     const doc = await docRef.get();
 
@@ -149,6 +151,7 @@ export async function getCommodityConfigs(): Promise<CommodityConfig[]> {
  * @returns A cotação encontrada ou nulo.
  */
 export async function getQuoteForDate(assetId: string, date: Date): Promise<FirestoreQuote | null> {
+    const { db } = await getFirebaseAdmin();
     const formattedDate = format(date, 'dd/MM/yyyy');
     
     // Tentativa 1: Buscar pela data em formato string 'dd/MM/yyyy'
@@ -185,6 +188,7 @@ export async function getQuoteForDate(assetId: string, date: Date): Promise<Fire
  * @returns A cotação mais recente ou nulo.
  */
 export async function getLatestQuote(assetId: string): Promise<FirestoreQuote | null> {
+    const { db } = await getFirebaseAdmin();
     const snapshot = await db.collection(assetId)
         .orderBy('timestamp', 'desc')
         .limit(1)
@@ -256,6 +260,7 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
 
     try {
         const configs = await getCommodityConfigs();
+        const { db } = await getFirebaseAdmin();
         
         const assetPromises = configs.map(async (config) => {
             const snapshot = await db.collection(config.id).orderBy('timestamp', 'desc').limit(2).get();
@@ -302,6 +307,7 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
  */
 export async function getCotacoesHistorico(assetId: string, days: number): Promise<FirestoreQuote[]> {
   try {
+    const { db } = await getFirebaseAdmin();
     const startDate = subDays(new Date(), days);
     
     const snapshot = await db.collection(assetId)
@@ -342,6 +348,7 @@ export async function getCotacoesHistoricoPorRange(assetId: string, dateRange: D
     }
 
     try {
+        const { db } = await getFirebaseAdmin();
         const startDate = startOfDay(dateRange.from);
         const endDate = endOfDay(dateRange.to);
 

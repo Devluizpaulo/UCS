@@ -2,7 +2,6 @@
 'use client';
 
 import { useState } from 'react';
-import type { UserRecord } from 'firebase-admin/auth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
@@ -22,7 +21,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Trash2, Edit } from 'lucide-react';
+import { MoreHorizontal, Trash2, Edit, ShieldCheck, UserCheck } from 'lucide-react';
 import { UserFormModal } from './user-form-modal';
 import { InviteLinkModal } from './invite-link-modal';
 import {
@@ -37,11 +36,13 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { createUser, updateUser, deleteUser, getUsers } from '@/lib/admin-actions';
+import { createUser, updateUser, deleteUser, getUsers, setAdminRole, removeAdminRole } from '@/lib/admin-actions';
 import type { UserFormValues } from './user-form-modal';
+import type { AppUserRecord } from '@/lib/types';
+import { useUser } from '@/firebase';
 
 interface UserManagementTableProps {
-  initialUsers: UserRecord[];
+  initialUsers: AppUserRecord[];
 }
 
 interface InviteInfo {
@@ -52,9 +53,10 @@ interface InviteInfo {
 }
 
 export function UserManagementTable({ initialUsers }: UserManagementTableProps) {
+  const { user: currentUser } = useUser();
   const [users, setUsers] = useState(initialUsers);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<UserRecord | null>(null);
+  const [editingUser, setEditingUser] = useState<AppUserRecord | null>(null);
   const [inviteInfo, setInviteInfo] = useState<InviteInfo | null>(null);
   const { toast } = useToast();
 
@@ -102,6 +104,22 @@ export function UserManagementTable({ initialUsers }: UserManagementTableProps) 
     }
   };
 
+  const handleToggleAdmin = async (user: AppUserRecord) => {
+    try {
+      if (user.isAdmin) {
+        await removeAdminRole(user.uid);
+        toast({ title: 'Sucesso', description: `${user.displayName || user.email} não é mais administrador.` });
+      } else {
+        await setAdminRole(user.uid);
+        toast({ title: 'Sucesso', description: `${user.displayName || user.email} agora é um administrador.` });
+      }
+      refreshUsers();
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'Erro', description: error.message });
+    }
+  };
+
+
   return (
     <>
       <Card>
@@ -133,7 +151,10 @@ export function UserManagementTable({ initialUsers }: UserManagementTableProps) 
               {users.map((user) => (
                 <TableRow key={user.uid}>
                   <TableCell>
-                    <div className="font-medium">{user.displayName || 'Nome não definido'}</div>
+                    <div className="font-medium flex items-center gap-2">
+                        {user.displayName || 'Nome não definido'}
+                        {user.isAdmin && <ShieldCheck className="h-4 w-4 text-primary" title="Administrador" />}
+                    </div>
                     <div className="text-sm text-muted-foreground">{user.email}</div>
                   </TableCell>
                   <TableCell>
@@ -153,7 +174,7 @@ export function UserManagementTable({ initialUsers }: UserManagementTableProps) 
                     <AlertDialog>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button aria-haspopup="true" size="icon" variant="ghost">
+                          <Button aria-haspopup="true" size="icon" variant="ghost" disabled={user.uid === currentUser?.uid}>
                             <MoreHorizontal className="h-4 w-4" />
                             <span className="sr-only">Toggle menu</span>
                           </Button>
@@ -162,6 +183,12 @@ export function UserManagementTable({ initialUsers }: UserManagementTableProps) 
                           <DropdownMenuLabel>Ações</DropdownMenuLabel>
                           <DropdownMenuItem onSelect={() => { setEditingUser(user); setIsFormModalOpen(true); }}>
                             <Edit className="mr-2 h-4 w-4" /> Editar
+                          </DropdownMenuItem>
+                           <DropdownMenuItem onSelect={() => handleToggleAdmin(user)}>
+                            {user.isAdmin 
+                                ? <><UserCheck className="mr-2 h-4 w-4" /> Remover Acesso Admin</> 
+                                : <><ShieldCheck className="mr-2 h-4 w-4" /> Promover a Admin</>
+                            }
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <AlertDialogTrigger asChild>
