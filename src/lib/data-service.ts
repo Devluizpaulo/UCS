@@ -7,7 +7,6 @@ import { getCache, setCache } from '@/lib/cache-service';
 import { Timestamp, FieldValue } from 'firebase-admin/firestore';
 import { subDays, format, parse, isValid, startOfDay, parseISO, endOfDay } from 'date-fns';
 import type { DateRange } from 'react-day-picker';
-import { getCalculationConfig, calculateAssetValue, isCalculableAsset } from './calculation-service';
 
 // --- CONSTANTS ---
 const CACHE_KEY_PRICES = 'commodity_prices_simple';
@@ -148,82 +147,6 @@ export async function getCommodityConfigs(): Promise<CommodityConfig[]> {
 
 // --- DATA FETCHING SERVICES ---
 
-
-/**
- * Busca ou calcula a cotação de um ativo para uma data específica.
- * Se o ativo for calculável, ele recursivamente busca/calcula seus componentes.
- * @param assetId O ID do ativo.
- * @param date A data para a qual a cotação é desejada.
- * @returns A cotação calculada ou buscada, ou nulo.
- */
-async function getOrCalculateAssetForDate(assetId: string, date: Date): Promise<FirestoreQuote | null> {
-    const isCalculable = await isCalculableAsset(assetId);
-
-    if (!isCalculable) {
-        return getQuoteByDate(assetId, date);
-    }
-
-    const calculationConfig = await getCalculationConfig(assetId);
-    if (!calculationConfig) return null;
-    
-    const componentIds = calculationConfig.components;
-    
-    const componentQuotes = await Promise.all(
-        componentIds.map(id => getOrCalculateAssetForDate(id, date))
-    );
-
-    const componentData: Record<string, number> = {};
-    let allComponentsAvailable = true;
-
-    componentQuotes.forEach((quote, index) => {
-        const componentId = componentIds[index];
-        const value = quote?.rent_media ?? getPriceFromQuote(quote);
-        if (value === 0 && quote !== null) { // Permite componentes com valor 0 se existirem
-            // console.warn(`[data-service] Componente ${componentId} tem valor 0 para ${format(date, 'dd/MM/yyyy')}`);
-        }
-        if (quote === null) {
-            allComponentsAvailable = false;
-        }
-        componentData[componentId] = value;
-    });
-
-    if (!allComponentsAvailable) {
-        // console.warn(`[data-service] Não foi possível calcular ${assetId} para ${format(date, 'dd/MM/yyyy')} porque um ou mais componentes não foram encontrados.`);
-        // Tenta buscar um valor pré-calculado no banco de dados como fallback.
-        const precalculatedQuote = await getQuoteByDate(assetId, date);
-        if (precalculatedQuote) return precalculatedQuote;
-        return null;
-    }
-
-    const calculatedValue = await calculateAssetValue(assetId, componentData);
-
-    const finalQuote: FirestoreQuote = {
-        id: assetId,
-        ativo: assetId,
-        data: format(date, 'dd/MM/yyyy'),
-        ultimo: calculatedValue,
-        valor: calculatedValue,
-        rent_media: calculatedValue,
-        timestamp: date.getTime(),
-        variacao_pct: 0, // Variação não é calculada aqui
-        ...componentData // Inclui os valores dos componentes
-    };
-
-    return finalQuote;
-}
-
-
-/**
- * Busca a cotação mais recente para um ativo em uma data específica.
- * Tenta buscar por campo 'data' (string) e depois por 'timestamp' (data).
- * @param assetId O ID da coleção do ativo.
- * @param date A data para a qual a cotação é desejada.
- * @returns A cotação encontrada ou nulo.
- */
-export async function getQuoteForDate(assetId: string, date: Date): Promise<FirestoreQuote | null> {
-    return getOrCalculateAssetForDate(assetId, date);
-}
-
 /**
  * Busca o documento de cotação completo para um ativo em uma data específica.
  * @param assetId O ID da coleção do ativo.
@@ -302,8 +225,8 @@ export async function getCommodityPricesByDate(date: Date): Promise<CommodityPri
         
         const assetPromises = configs.map(async (config) => {
             const [latestDoc, previousDoc] = await Promise.all([
-                getOrCalculateAssetForDate(config.id, date),
-                getOrCalculateAssetForDate(config.id, previousDate)
+                getQuoteByDate(config.id, date),
+                getQuoteByDate(config.id, previousDate)
             ]);
             
             const latestPrice = latestDoc?.rent_media ?? getPriceFromQuote(latestDoc);
@@ -343,28 +266,35 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
 
     try {
         const configs = await getCommodityConfigs();
-        const { db } = await getFirebaseAdmin();
         
         const assetPromises = configs.map(async (config) => {
-            const today = new Date();
-            const yesterday = subDays(today, 1);
-            
-            const [latestQuote, previousQuote] = await Promise.all([
-                getOrCalculateAssetForDate(config.id, today),
-                getOrCalculateAssetForDate(config.id, yesterday)
-            ]);
+            const { db } = await getFirebaseAdmin();
+            const snapshot = await db.collection(config.id)
+                .orderBy('timestamp', 'desc')
+                .limit(2)
+                .get();
 
-            const latestPrice = latestQuote?.rent_media ?? getPriceFromQuote(latestQuote);
-            const previousPrice = previousQuote ? (previousQuote.rent_media ?? getPriceFromQuote(previousQuote)) : latestPrice;
-            
-            const absoluteChange = latestPrice - previousPrice;
-            const change = previousPrice !== 0 ? (absoluteChange / previousPrice) * 100 : 0;
-            
-            let lastUpdated = 'Tempo Real';
-            if (latestQuote && latestQuote.timestamp) {
-                lastUpdated = format(serializeFirestoreTimestamp(latestQuote.timestamp), "HH:mm:ss");
-            } else if (await isCalculableAsset(config.id)) {
-                lastUpdated = 'Calculado';
+            let latestPrice = 0;
+            let change = 0;
+            let absoluteChange = 0;
+            let lastUpdated = 'N/A';
+
+            if (!snapshot.empty) {
+                const latestDoc = snapshot.docs[0].data();
+                latestPrice = latestDoc.rent_media ?? getPriceFromQuote(latestDoc);
+
+                if (latestDoc.timestamp) {
+                    lastUpdated = format(serializeFirestoreTimestamp(latestDoc.timestamp), "HH:mm:ss");
+                } else if (latestDoc.data) {
+                    lastUpdated = latestDoc.data;
+                }
+
+                if (snapshot.docs.length > 1) {
+                    const previousDoc = snapshot.docs[1].data();
+                    const previousPrice = previousDoc.rent_media ?? getPriceFromQuote(previousDoc);
+                    absoluteChange = latestPrice - previousPrice;
+                    change = previousPrice !== 0 ? (absoluteChange / previousPrice) * 100 : 0;
+                }
             }
 
             return {
@@ -394,15 +324,6 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
  * @returns Um array com o histórico de cotações.
  */
 export async function getCotacoesHistorico(assetId: string, days: number): Promise<FirestoreQuote[]> {
-    const isCalculable = await isCalculableAsset(assetId);
-    
-    if (isCalculable) {
-        const dateArray = Array.from({ length: days }, (_, i) => subDays(new Date(), i));
-        const quotes = await Promise.all(dateArray.map(date => getOrCalculateAssetForDate(assetId, date)));
-        return quotes.filter((q): q is FirestoreQuote => q !== null);
-    }
-    
-    // Default behavior for non-calculable assets
     try {
         const { db } = await getFirebaseAdmin();
         const startDate = subDays(new Date(), days);
@@ -442,24 +363,7 @@ export async function getCotacoesHistoricoPorRange(assetId: string, dateRange: D
         console.warn('getCotacoesHistoricoPorRange chamada sem um intervalo de datas válido.');
         return [];
     }
-
-    const isCalculable = await isCalculableAsset(assetId);
-
-    if (isCalculable) {
-        let currentDate = startOfDay(dateRange.from);
-        const endDate = startOfDay(dateRange.to);
-        const dateArray: Date[] = [];
-        
-        while(currentDate <= endDate) {
-            dateArray.push(new Date(currentDate));
-            currentDate = subDays(currentDate, -1);
-        }
-        
-        const quotes = await Promise.all(dateArray.map(date => getOrCalculateAssetForDate(assetId, date)));
-        return quotes.filter((q): q is FirestoreQuote => q !== null).reverse();
-    }
-
-
+    
     try {
         const { db } = await getFirebaseAdmin();
         const startDate = startOfDay(dateRange.from);

@@ -12,8 +12,8 @@ import { isToday, isFuture, parseISO, isValid } from 'date-fns';
 import { useSearchParams } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CompositionChart } from '@/components/composition-chart';
-import { getAssetCompositionConfig } from '@/lib/calculation-service';
 
+const STATIC_PDM_COMPONENTS = ['vmad', 'vus', 'crs'] as const;
 
 function getValidatedDate(dateString?: string | null): Date | null {
   if (dateString) {
@@ -40,10 +40,7 @@ function usePdmComposition(targetDate: Date | null) {
 
         const fetchData = async () => {
             try {
-                // 1. Pega a configuração dos componentes do PDM
-                const pdmComponentIds = await getAssetCompositionConfig('pdm');
-                
-                // 2. Busca a cotação principal do PDM para a data
+                // 1. Busca a cotação principal do PDM para a data
                 const pdmQuote = await getQuoteByDate('pdm', targetDate);
                 setPdmAsset(pdmQuote);
 
@@ -52,8 +49,8 @@ function usePdmComposition(targetDate: Date | null) {
                     return;
                 }
                 
-                // 3. Busca cada componente para obter seu valor
-                const componentPromises = pdmComponentIds
+                // 2. Busca cada componente para obter seu valor
+                const componentPromises = STATIC_PDM_COMPONENTS
                     .map(async (componentId) => {
                         const componentQuote = await getQuoteByDate(componentId, targetDate);
                         return {
