@@ -1,3 +1,4 @@
+
 'use server';
 
 import { getFirebaseAdmin } from '@/lib/firebase-admin-config';
@@ -148,6 +149,13 @@ export async function getCommodityConfigs(): Promise<CommodityConfig[]> {
 // --- DATA FETCHING SERVICES ---
 
 
+/**
+ * Busca ou calcula a cotação de um ativo para uma data específica.
+ * Se o ativo for calculável, ele recursivamente busca/calcula seus componentes.
+ * @param assetId O ID do ativo.
+ * @param date A data para a qual a cotação é desejada.
+ * @returns A cotação calculada ou buscada, ou nulo.
+ */
 async function getOrCalculateAssetForDate(assetId: string, date: Date): Promise<FirestoreQuote | null> {
     const isCalculable = await isCalculableAsset(assetId);
 
@@ -155,7 +163,6 @@ async function getOrCalculateAssetForDate(assetId: string, date: Date): Promise<
         return getQuoteByDate(assetId, date);
     }
 
-    // É um ativo calculável
     const calculationConfig = await getCalculationConfig(assetId);
     if (!calculationConfig) return null;
     
@@ -171,15 +178,21 @@ async function getOrCalculateAssetForDate(assetId: string, date: Date): Promise<
     componentQuotes.forEach((quote, index) => {
         const componentId = componentIds[index];
         const value = quote?.rent_media ?? getPriceFromQuote(quote);
-        if (value === 0) {
+        if (value === 0 && quote !== null) { // Permite componentes com valor 0 se existirem
+            // console.warn(`[data-service] Componente ${componentId} tem valor 0 para ${format(date, 'dd/MM/yyyy')}`);
+        }
+        if (quote === null) {
             allComponentsAvailable = false;
         }
         componentData[componentId] = value;
     });
 
     if (!allComponentsAvailable) {
-        console.warn(`[data-service] Não foi possível calcular ${assetId} para ${format(date, 'dd/MM/yyyy')} porque um ou mais componentes não tinham valor.`);
-        return getQuoteByDate(assetId, date); // Fallback to fetching directly if calculation fails
+        // console.warn(`[data-service] Não foi possível calcular ${assetId} para ${format(date, 'dd/MM/yyyy')} porque um ou mais componentes não foram encontrados.`);
+        // Tenta buscar um valor pré-calculado no banco de dados como fallback.
+        const precalculatedQuote = await getQuoteByDate(assetId, date);
+        if (precalculatedQuote) return precalculatedQuote;
+        return null;
     }
 
     const calculatedValue = await calculateAssetValue(assetId, componentData);
@@ -293,8 +306,8 @@ export async function getCommodityPricesByDate(date: Date): Promise<CommodityPri
                 getOrCalculateAssetForDate(config.id, previousDate)
             ]);
             
-            const latestPrice = getPriceFromQuote(latestDoc);
-            const previousPrice = previousDoc ? getPriceFromQuote(previousDoc) : latestPrice;
+            const latestPrice = latestDoc?.rent_media ?? getPriceFromQuote(latestDoc);
+            const previousPrice = previousDoc ? (previousDoc.rent_media ?? getPriceFromQuote(previousDoc)) : latestPrice;
         
             const absoluteChange = latestPrice - previousPrice;
             const change = (previousPrice !== 0) ? (absoluteChange / previousPrice) * 100 : 0;
@@ -333,56 +346,33 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
         const { db } = await getFirebaseAdmin();
         
         const assetPromises = configs.map(async (config) => {
-            // Check if asset is calculable
-            const isCalculable = await isCalculableAsset(config.id);
-            if (isCalculable) {
-                // For calculable assets, get the latest calculated value for today
-                const today = new Date();
-                const yesterday = subDays(today, 1);
-                
-                const [latestQuote, previousQuote] = await Promise.all([
-                    getOrCalculateAssetForDate(config.id, today),
-                    getOrCalculateAssetForDate(config.id, yesterday)
-                ]);
-
-                const latestPrice = getPriceFromQuote(latestQuote);
-                const previousPrice = getPriceFromQuote(previousQuote);
-                
-                const absoluteChange = latestPrice - previousPrice;
-                const change = previousPrice !== 0 ? (absoluteChange / previousPrice) * 100 : 0;
-                
-                return {
-                    ...config,
-                    price: latestPrice,
-                    change,
-                    absoluteChange,
-                    lastUpdated: 'Calculado'
-                };
-            }
+            const today = new Date();
+            const yesterday = subDays(today, 1);
             
-            // For non-calculable assets, fetch from Firestore
-            const snapshot = await db.collection(config.id).orderBy('timestamp', 'desc').limit(2).get();
+            const [latestQuote, previousQuote] = await Promise.all([
+                getOrCalculateAssetForDate(config.id, today),
+                getOrCalculateAssetForDate(config.id, yesterday)
+            ]);
 
-            if (snapshot.empty) {
-                return { ...config, price: 0, change: 0, absoluteChange: 0, lastUpdated: 'N/A' };
-            }
-
-            const latestDocData = snapshot.docs[0].data();
-            const previousDocData = snapshot.docs.length > 1 ? snapshot.docs[1].data() : null;
-
-            const latestPrice = getPriceFromQuote(latestDocData);
-            const previousPrice = previousDocData ? getPriceFromQuote(previousDocData) : latestPrice;
-
+            const latestPrice = latestQuote?.rent_media ?? getPriceFromQuote(latestQuote);
+            const previousPrice = previousQuote ? (previousQuote.rent_media ?? getPriceFromQuote(previousQuote)) : latestPrice;
+            
             const absoluteChange = latestPrice - previousPrice;
-            const change = (previousPrice !== 0) ? (absoluteChange / previousPrice) * 100 : 0;
-            const lastUpdatedTimestamp = latestDocData.timestamp;
+            const change = previousPrice !== 0 ? (absoluteChange / previousPrice) * 100 : 0;
             
-            return { 
-                ...config, 
-                price: latestPrice, 
-                change, 
-                absoluteChange, 
-                lastUpdated: lastUpdatedTimestamp ? format(serializeFirestoreTimestamp(lastUpdatedTimestamp), "HH:mm:ss") : 'Tempo Real'
+            let lastUpdated = 'Tempo Real';
+            if (latestQuote && latestQuote.timestamp) {
+                lastUpdated = format(serializeFirestoreTimestamp(latestQuote.timestamp), "HH:mm:ss");
+            } else if (await isCalculableAsset(config.id)) {
+                lastUpdated = 'Calculado';
+            }
+
+            return {
+                ...config,
+                price: latestPrice,
+                change,
+                absoluteChange,
+                lastUpdated
             };
         });
 

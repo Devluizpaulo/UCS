@@ -12,18 +12,7 @@ import { isToday, isFuture, parseISO, isValid } from 'date-fns';
 import { useSearchParams } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CompositionChart } from '@/components/composition-chart';
-
-
-// Este é um fallback estático, já que a lógica de cálculo foi removida do frontend.
-// O ideal é que o backend (n8n) salve os componentes junto com o índice calculado.
-const STATIC_COMPOSITION_CONFIG: Record<string, readonly string[]> = {
-  pdm: ['vmad', 'vus', 'crs'],
-  ucs: ['pdm'],
-  ucs_ase: ['ucs', 'pdm'],
-  vus: ['soja', 'milho', 'boi_gordo', 'usd'],
-  vmad: ['madeira'],
-  crs: ['carbono', 'custo_agua'],
-};
+import { getAssetCompositionConfig } from '@/lib/calculation-service';
 
 
 function getValidatedDate(dateString?: string | null): Date | null {
@@ -52,7 +41,7 @@ function usePdmComposition(targetDate: Date | null) {
         const fetchData = async () => {
             try {
                 // 1. Pega a configuração dos componentes do PDM
-                const pdmComponentIds = STATIC_COMPOSITION_CONFIG['pdm'] || [];
+                const pdmComponentIds = await getAssetCompositionConfig('pdm');
                 
                 // 2. Busca a cotação principal do PDM para a data
                 const pdmQuote = await getQuoteByDate('pdm', targetDate);

@@ -1,3 +1,4 @@
+
 'use server';
 import { CH2O_WEIGHTS } from './constants';
 import { getQuoteByDate } from './data-service';
@@ -46,6 +47,26 @@ async function calculatePDM(componentData: Record<string, number>): Promise<numb
     return Promise.resolve(vmad + vus + crs);
 }
 
+/**
+ * Calcula o valor do 'Valor da Madeira' (VMAD).
+ * Fórmula: rent_media da madeira * 5
+ */
+async function calculateVMAD(componentData: Record<string, number>): Promise<number> {
+    const { madeira = 0 } = componentData;
+    return Promise.resolve(madeira * 5);
+}
+
+/**
+ * Calcula o valor do Custo de Responsabilidade Socioambiental (CRS), baseado no carbono.
+ * Fórmula: rent_media do carbono * 25
+ */
+async function calculateCRS(componentData: Record<string, number>): Promise<number> {
+    const { carbono = 0, custo_agua = 0 } = componentData;
+    // A fórmula mencionou apenas o carbono, mas adicionamos água para flexibilidade futura.
+    // Atualmente, a fórmula do usuário é `rent_media carbono * 25`.
+    return Promise.resolve(carbono * 25);
+}
+
 
 // --- CONFIGURAÇÃO CENTRAL DE CÁLCULOS ---
 
@@ -54,6 +75,14 @@ const CALCULATION_CONFIGS: Record<string, CalculationConfig> = {
     'vus': {
         components: ['boi_gordo', 'milho', 'soja', 'crs'],
         calculationFn: calculateVUS,
+    },
+    'vmad': {
+        components: ['madeira'],
+        calculationFn: calculateVMAD,
+    },
+    'crs': {
+        components: ['carbono', 'custo_agua'],
+        calculationFn: calculateCRS,
     },
     'pdm': {
         components: ['vmad', 'vus', 'crs'],
@@ -87,6 +116,16 @@ export async function isCalculableAsset(assetId: string): Promise<boolean> {
  */
 export async function getCalculationConfig(assetId: string): Promise<CalculationConfig | null> {
     return Promise.resolve(CALCULATION_CONFIGS[assetId] || null);
+}
+
+/**
+ * Retorna a lista de componentes para um ativo calculável.
+ * @param assetId O ID do ativo.
+ * @returns Uma lista de strings com os IDs dos componentes, ou um array vazio.
+ */
+export async function getAssetCompositionConfig(assetId: string): Promise<readonly string[]> {
+    const config = await getCalculationConfig(assetId);
+    return config?.components || [];
 }
 
 /**
