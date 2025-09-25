@@ -63,16 +63,16 @@ export function InviteLinkModal({ isOpen, onOpenChange, inviteInfo }: InviteLink
   };
 
   const getMailtoLink = () => {
-    const subject = encodeURIComponent(`Convite para a Plataforma de Monitoramento UCS Index`);
+    const subject = encodeURIComponent(`Convite para a Plataforma UCS Index`);
     const body = encodeURIComponent(
-      `Olá, ${inviteInfo.name},\n\nÉ com grande prazer que convidamos você para acessar a Plataforma de Monitoramento do Índice UCS.\n\nPara ativar sua conta e definir uma senha de acesso segura, por favor, utilize o link exclusivo abaixo:\n\n${inviteInfo.link}\n\nEste link é pessoal e intransferível.\n\nSeja bem-vindo(a)!\n\nAtenciosamente,\nA Equipe UCS Index`
+      `Olá, ${inviteInfo.name},\n\nÉ com prazer que convidamos você para acessar a Plataforma de Monitoramento do Índice UCS.\n\nPara ativar sua conta e definir uma senha de acesso, utilize o link exclusivo abaixo:\n${inviteInfo.link}\n\nEste link é pessoal e intransferível.\n\nSeja bem-vindo(a)!\n\nAtenciosamente,\nA Equipe UCS Index`
     );
     return `mailto:${inviteInfo.email}?subject=${subject}&body=${body}`;
   };
 
   const getWhatsAppLink = () => {
     const text = encodeURIComponent(
-      `Olá, ${inviteInfo.name}! 🚀 Você foi convidado para a plataforma de monitoramento UCS Index. Para ativar sua conta e definir sua senha, acesse o link seguro: ${inviteInfo.link}`
+      `Olá, ${inviteInfo.name}! 🚀\n\nVocê foi convidado(a) para a plataforma UCS Index.\n\nPara ativar sua conta e criar sua senha, acesse o link seguro abaixo:\n${inviteInfo.link}\n\nAtenciosamente,\nEquipe UCS Index`
     );
     // Remove non-digit characters from phone number for the link, but keeps the '+'
     const cleanPhoneNumber = inviteInfo.phoneNumber?.replace(/[^0-9+]/g, '').replace('+', '');
