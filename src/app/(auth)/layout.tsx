@@ -31,14 +31,14 @@ export default function AuthLayout({
   return (
     <div className="relative flex min-h-screen w-full items-center justify-center p-4">
       <Image
-        src="https://picsum.photos/seed/login-bg/1920/1080"
+        src="https://picsum.photos/seed/deep-forest/1920/1080"
         alt="Floresta exuberante ao fundo"
         fill
         className="object-cover animate-zoom-in"
         data-ai-hint="lush forest"
         priority
       />
-      <div className="absolute inset-0 bg-black/50" />
+      <div className="absolute inset-0 bg-black/60" />
       <div className="relative z-10 w-full max-w-md">
         {children}
       </div>
