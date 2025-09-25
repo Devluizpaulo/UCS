@@ -93,10 +93,10 @@ export default async function LandingPage() {
           <LogoUCS />
           <div className="flex items-center gap-2">
             <LanguageSwitcher />
-             <Button variant="ghost" asChild>
+             <Button variant="ghost" size="icon" asChild>
                 <Link href="/login">
-                    <User className="mr-2 h-4 w-4" />
-                    Acessar Plataforma
+                    <User className="h-5 w-5" />
+                    <span className="sr-only">Acessar Plataforma</span>
                 </Link>
             </Button>
           </div>
@@ -291,4 +291,5 @@ export default async function LandingPage() {
   );
 }
 
+    
     
