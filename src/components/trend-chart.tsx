@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -11,6 +12,7 @@ import {
   CartesianGrid,
 } from 'recharts';
 import { format, parseISO } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import type { FirestoreQuote } from '@/lib/types';
 import { getCotacoesHistorico } from '@/lib/data-service';
 import { formatCurrency } from '@/lib/formatters';
@@ -56,12 +58,9 @@ export function TrendChart() {
     return data
       .map((quote) => {
         const dateObject = typeof quote.timestamp === 'number' ? new Date(quote.timestamp) : parseISO(quote.timestamp as any);
-        let dateFormat = 'dd/MM';
-        if (timeRange === '90d') {
-           dateFormat = 'dd/MM';
-        }
+        let dateFormat = timeRange === '90d' ? 'MMM' : 'dd/MM';
         return {
-           date: format(dateObject, dateFormat),
+           date: format(dateObject, dateFormat, { locale: ptBR }),
            value: quote.valor ?? quote.ultimo,
         }
       })

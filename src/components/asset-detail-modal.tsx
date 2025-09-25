@@ -48,7 +48,7 @@ export function AssetDetailModal({ asset, isOpen, onOpenChange }: AssetDetailMod
   useEffect(() => {
     if (isOpen) {
       setIsLoading(true);
-      // Fetch last 90 days of data for the components
+      // Fetch last 30 days of data for the chart, and 90 for the table.
       getCotacoesHistorico(asset.id, 90)
         .then((data) => {
           setHistoricalData(data);
@@ -64,7 +64,7 @@ export function AssetDetailModal({ asset, isOpen, onOpenChange }: AssetDetailMod
   const chartData = useMemo(() => {
     // Use last 30 entries for the chart for better readability
     return historicalData
-      .slice(0, 30) 
+      .slice(0, 30)
       .map((quote) => {
         const dateObject = typeof quote.timestamp === 'number' ? new Date(quote.timestamp) : parseISO(quote.timestamp as any);
          return {
