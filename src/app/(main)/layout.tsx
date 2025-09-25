@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -177,7 +178,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-                <SidebarMenuItem>
+              <SidebarMenuItem>
                 <SidebarMenuButton
                   asChild
                   isActive={pathname.startsWith('/assets')}
