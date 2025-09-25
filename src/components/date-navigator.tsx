@@ -36,48 +36,46 @@ export function DateNavigator({ targetDate }: DateNavigatorProps) {
 
   return (
     <div className="flex items-center gap-2">
-      <div className="flex items-center rounded-md border">
-        <Button variant="outline" size="icon" className="h-9 w-9 border-none" asChild>
+      <Button variant="outline" size="icon" className="h-9 w-9" asChild>
           <Link href={`/dashboard?date=${prevDate}`} scroll={false} title="Dia anterior">
             <ChevronLeft className="h-4 w-4" />
           </Link>
-        </Button>
-        
-        <Popover open={isCalendarOpen} onOpenChange={setCalendarOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              className={cn(
-                'h-9 w-[150px] justify-center text-center text-sm font-medium capitalize border-none',
-                'md:w-[200px]'
-              )}
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {displayDateFormatted}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="center">
-            <Calendar
-              mode="single"
-              selected={targetDate}
-              onSelect={handleDateSelect}
-              disabled={(date) => isFuture(date) || date < new Date('2015-01-01')}
-              initialFocus
-              locale={ptBR}
-            />
-          </PopoverContent>
-        </Popover>
+      </Button>
+      
+      <Popover open={isCalendarOpen} onOpenChange={setCalendarOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            className={cn(
+              'h-9 w-[180px] justify-start text-left font-normal',
+              'md:w-[220px]'
+            )}
+          >
+            <CalendarIcon className="mr-2 h-4 w-4" />
+            <span className='flex-1'>{isToday(targetDate) ? 'Hoje' : displayDateFormatted}</span>
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="end">
+          <Calendar
+            mode="single"
+            selected={targetDate}
+            onSelect={handleDateSelect}
+            disabled={(date) => isFuture(date) || date < new Date('2015-01-01')}
+            initialFocus
+            locale={ptBR}
+          />
+        </PopoverContent>
+      </Popover>
 
-        <Button variant="outline" size="icon" className="h-9 w-9 border-none" asChild disabled={isCurrentDateOrFuture}>
-          <Link href={`/dashboard?date=${nextDate}`} scroll={false} title={isCurrentDateOrFuture ? "Não é possível navegar para o futuro" : "Próximo dia"}>
-            <ChevronRight className="h-4 w-4" />
-          </Link>
-        </Button>
-      </div>
+      <Button variant="outline" size="icon" className="h-9 w-9" asChild disabled={isCurrentDateOrFuture}>
+        <Link href={`/dashboard?date=${nextDate}`} scroll={false} title={isCurrentDateOrFuture ? "Não é possível navegar para o futuro" : "Próximo dia"}>
+          <ChevronRight className="h-4 w-4" />
+        </Link>
+      </Button>
 
       {!isCurrentDateOrFuture && (
         <Button variant="ghost" size="sm" asChild>
-          <Link href="/dashboard" scroll={false}>
+          <Link href="/dashboard" scroll={false} className='hidden sm:inline-flex'>
             <CalendarClock className="mr-2 h-4 w-4" />
             Hoje
           </Link>
