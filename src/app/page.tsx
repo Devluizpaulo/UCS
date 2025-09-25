@@ -59,7 +59,7 @@ export default function LandingPage() {
       </header>
 
       <main className="flex-1">
-        <section className="relative w-full h-[calc(100vh-4rem)] flex flex-col justify-between text-center p-4 sm:p-6">
+        <section className="relative w-full min-h-[calc(100vh-4rem)] flex flex-col justify-between text-center">
           <Image
             src="https://picsum.photos/seed/lush-forest/1920/1080"
             alt="Floresta exuberante ao fundo"
@@ -70,7 +70,7 @@ export default function LandingPage() {
           />
           <div className="absolute inset-0 bg-black/60" />
 
-          <div className="relative z-10 flex flex-col items-center gap-4 pt-8 sm:pt-16">
+          <div className="relative z-10 flex flex-col items-center gap-4 px-4 pt-12 md:px-6">
             <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl text-white">
               O Futuro do Capital Natural é Digital
             </h1>
@@ -118,7 +118,7 @@ export default function LandingPage() {
             </Carousel>
           </div>
 
-          <div className="relative z-10 pb-4">
+          <div className="relative z-10 px-4 pb-8 md:px-6">
              <Button size="lg" variant="outline" className="border-primary bg-transparent text-primary hover:bg-primary/10 hover:text-primary-foreground" asChild>
                 <a href="https://bmvdigital.global/" target="_blank" rel="noopener noreferrer">
                   Conheça a BMV Digital
