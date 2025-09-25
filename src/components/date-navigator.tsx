@@ -2,7 +2,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { format, addDays, isToday, isFuture } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, CalendarClock, CalendarIcon } from 'lucide-react';
@@ -19,6 +19,7 @@ interface DateNavigatorProps {
 
 export function DateNavigator({ targetDate }: DateNavigatorProps) {
   const router = useRouter();
+  const pathname = usePathname(); // Pega o caminho atual da URL
   const [isCalendarOpen, setCalendarOpen] = useState(false);
 
   const isCurrentDateOrFuture = isToday(targetDate) || isFuture(targetDate);
@@ -29,7 +30,8 @@ export function DateNavigator({ targetDate }: DateNavigatorProps) {
   const handleDateSelect = (selectedDate: Date | undefined) => {
     if (selectedDate) {
       const newDate = format(selectedDate, 'yyyy-MM-dd');
-      router.push(`/dashboard?date=${newDate}`);
+      // Usa o pathname dinâmico para construir a URL
+      router.push(`${pathname}?date=${newDate}`);
       setCalendarOpen(false);
     }
   };
@@ -37,7 +39,7 @@ export function DateNavigator({ targetDate }: DateNavigatorProps) {
   return (
     <div className="flex items-center gap-1">
       <Button variant="outline" size="icon" className="h-8 w-8" asChild>
-          <Link href={`/dashboard?date=${prevDate}`} scroll={false} title="Dia anterior">
+          <Link href={`${pathname}?date=${prevDate}`} scroll={false} title="Dia anterior">
             <ChevronLeft className="h-4 w-4" />
           </Link>
       </Button>
@@ -68,14 +70,14 @@ export function DateNavigator({ targetDate }: DateNavigatorProps) {
       </Popover>
 
       <Button variant="outline" size="icon" className="h-8 w-8" asChild disabled={isCurrentDateOrFuture}>
-        <Link href={`/dashboard?date=${nextDate}`} scroll={false} title={isCurrentDateOrFuture ? "Não é possível navegar para o futuro" : "Próximo dia"}>
+        <Link href={`${pathname}?date=${nextDate}`} scroll={false} title={isCurrentDateOrFuture ? "Não é possível navegar para o futuro" : "Próximo dia"}>
           <ChevronRight className="h-4 w-4" />
         </Link>
       </Button>
 
       {!isCurrentDateOrFuture && (
         <Button variant="ghost" size="sm" asChild>
-          <Link href="/dashboard" scroll={false} className='hidden sm:inline-flex'>
+          <Link href={pathname} scroll={false} className='hidden sm:inline-flex'>
             <CalendarClock className="mr-2 h-4 w-4" />
             Hoje
           </Link>
