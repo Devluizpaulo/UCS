@@ -59,27 +59,28 @@ export default function LandingPage() {
       </header>
 
       <main className="flex-1">
-        <section className="relative w-full h-[calc(100vh-4rem)] flex items-center justify-center text-center">
+        <section className="relative w-full h-[calc(100vh-4rem)] flex flex-col justify-between text-center p-4 sm:p-6">
           <Image
-            src="https://picsum.photos/seed/forest-path/1920/1080"
-            alt="Floresta exuberante com caminho de luz"
+            src="https://picsum.photos/seed/deep-forest/1920/1080"
+            alt="Floresta exuberante ao fundo"
             fill
             className="object-cover animate-zoom-in"
-            data-ai-hint="lush forest light path"
+            data-ai-hint="lush forest"
             priority
           />
           <div className="absolute inset-0 bg-black/60" />
-          <div className="relative z-10 flex flex-col items-center gap-8 px-4 md:px-6">
-            <div className="flex flex-col items-center gap-4">
-                <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl text-white">
-                O Futuro do Capital Natural é Digital
-                </h1>
-                <p className="mx-auto max-w-[700px] text-lg text-gray-200 md:text-xl">
-                Transformamos ativos ambientais em oportunidades de investimento seguras e transparentes.
-                </p>
-            </div>
-            
-            <Carousel
+
+          <div className="relative z-10 flex flex-col items-center gap-4 pt-8 sm:pt-16">
+            <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl text-white">
+              O Futuro do Capital Natural é Digital
+            </h1>
+            <p className="mx-auto max-w-[700px] text-lg text-gray-200 md:text-xl">
+              Transformamos ativos ambientais em oportunidades de investimento seguras e transparentes.
+            </p>
+          </div>
+
+          <div className="relative z-10 flex flex-col items-center justify-center">
+             <Carousel
                 plugins={[autoplayPlugin.current]}
                 opts={{
                     align: "start",
@@ -93,18 +94,18 @@ export default function LandingPage() {
                     {indexValues.map(({ currency, value, icon: Icon, conversionRate }) => (
                     <CarouselItem key={currency}>
                         <div className="p-1">
-                        <Card className="rounded-xl border border-white/20 bg-white/10 p-6 text-white shadow-lg backdrop-blur-md">
+                        <Card className="rounded-xl border border-white/20 bg-white/10 p-4 text-white shadow-lg backdrop-blur-md">
                             <CardHeader className="p-0 text-center flex-row items-center justify-center gap-2">
                                 <Icon className="h-5 w-5 text-primary" />
-                                <CardTitle className="text-lg font-medium">Índice UCS ASE</CardTitle>
+                                <CardTitle className="text-base font-medium">Índice UCS ASE</CardTitle>
                             </CardHeader>
                              <CardContent className="p-0 mt-2 text-center">
-                                <span className="text-5xl font-bold tracking-tight">
+                                <span className="text-4xl font-bold tracking-tight">
                                     {formatCurrency(value, currency, 'ucs_ase')}
                                 </span>
                                 <span className="ml-1 text-base font-medium text-gray-300">{currency}</span>
                                 {conversionRate && (
-                                    <p className="text-xs text-gray-400 mt-2">
+                                    <p className="text-xs text-gray-400 mt-1">
                                         (1 {currency} = {formatCurrency(conversionRate, 'BRL', 'usd')})
                                     </p>
                                 )}
@@ -115,15 +116,16 @@ export default function LandingPage() {
                     ))}
                 </CarouselContent>
             </Carousel>
+          </div>
 
-             <div className="flex flex-col sm:flex-row gap-4">
-              <Button size="lg" variant="outline" className="border-primary bg-transparent text-primary hover:bg-primary/10 hover:text-primary-foreground" asChild>
+          <div className="relative z-10 pb-4">
+             <Button size="lg" variant="outline" className="border-primary bg-transparent text-primary hover:bg-primary/10 hover:text-primary-foreground" asChild>
                 <a href="https://bmvdigital.global/" target="_blank" rel="noopener noreferrer">
                   Conheça a BMV Digital
                 </a>
               </Button>
-            </div>
           </div>
+
         </section>
       </main>
 
