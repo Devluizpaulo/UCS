@@ -152,10 +152,8 @@ export async function getCommodityConfigs(): Promise<CommodityConfig[]> {
  * @returns A cotação encontrada ou nulo.
  */
 export async function getQuoteForDate(assetId: string, date: Date): Promise<FirestoreQuote | null> {
-    const { db } = await getFirebaseAdmin();
-
     // Se o ativo for calculável, calcula e salva, depois retorna.
-    if (isCalculableAsset(assetId)) {
+    if (await isCalculableAsset(assetId)) {
         return getOrCalculateAssetForDate(assetId, date);
     }
     
@@ -218,7 +216,7 @@ export async function getQuoteByDate(assetId: string, date: Date): Promise<Fires
  * @returns A cotação calculada.
  */
 export async function getOrCalculateAssetForDate(assetId: string, date: Date): Promise<FirestoreQuote | null> {
-    if (!isCalculableAsset(assetId)) {
+    if (!await isCalculableAsset(assetId)) {
         throw new Error(`${assetId} não é um ativo calculável.`);
     }
 

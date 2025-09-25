@@ -1,81 +1,85 @@
 
 
+'use server';
+
 import type { FirestoreQuote } from './types';
 
 // --- DEFINIÇÕES DE TIPOS ---
 
-type ComponentId = 'boi_gordo' | 'milho' | 'soja' | 'madeira' | 'carbono' | 'ucs' | 'pdm';
+type ComponentId = 'boi_gordo' | 'milho' | 'soja' | 'madeira' | 'carbono' | 'ucs' | 'pdm' | 'vmad' | 'vus' | 'crs' | 'cc' | 'ch2o';
 type ComponentValues = Record<string, number>;
 type CalculationStrategy = (values: ComponentValues) => number;
 
+
 // --- ESTRATÉGIAS DE CÁLCULO ---
 
-const calculateUcsPrice: CalculationStrategy = (componentValues) => {
+/**
+ * vus = Σ (FP x Pmed x C) x Famed
+ * FP = Fator de Ponderação
+ * Pmed = Preço médio da commodity
+ * C = Câmbio (se aplicável)
+ * Famed = Fator de Arrendamento médio (4,8%)
+ */
+const calculateVusPrice: CalculationStrategy = (componentValues) => {
     const weights: Record<string, number> = {
-        boi_gordo: 0.10, // Exemplo de peso
-        milho: 0.60,     // Exemplo de peso
-        soja: 0.10,      // Exemplo de peso
+        soja: 0.35,
+        milho: 0.30,
+        boi_gordo: 0.35,
     };
-    const dolar = componentValues['usd'] || 1; // Fallback para 1 para evitar divisão por zero
+    const dolar = componentValues['usd'] ?? 1;
+    const arrendamentoFactor = 0.048; // 4,8%
 
-    // Converte componentes de USD para BRL se necessário
-    const boiBRL = (componentValues['boi_gordo'] ?? 0); // Já em BRL
-    const milhoBRL = (componentValues['milho'] ?? 0); // Já em BRL
-    const sojaBRL = (componentValues['soja'] ?? 0) * dolar; // Soja é em USD
+    const sojaBRL = (componentValues['soja'] ?? 0) * dolar;
+    const milhoBRL = (componentValues['milho'] ?? 0);
+    const boiBRL = (componentValues['boi_gordo'] ?? 0);
 
-    return (
-        (boiBRL * weights.boi_gordo) +
+    const weightedSum =
+        (sojaBRL * weights.soja) +
         (milhoBRL * weights.milho) +
-        (sojaBRL * weights.soja)
-    );
-};
-
-
-/**
- * Lógica de cálculo para o ativo 'agua' (CH²O).
- * Usa o valor 'ultimo' dos componentes.
- */
-const calculateCh2oPrice: CalculationStrategy = (componentValues) => {
-  const weights: Record<string, number> = {
-    boi_gordo: 0.35,
-    milho: 0.30,
-    soja: 0.35,
-    madeira: 1,
-    carbono: 1,
-  };
-
-  return (
-    (componentValues['boi_gordo'] ?? 0) * weights.boi_gordo +
-    (componentValues['milho'] ?? 0) * weights.milho +
-    (componentValues['soja'] ?? 0) * weights.soja +
-    (componentValues['madeira'] ?? 0) * weights.madeira +
-    (componentValues['carbono'] ?? 0) * weights.carbono
-  );
-};
-
-/**
- * Lógica de cálculo para o ativo 'custo_agua'.
- * Soma os componentes e aplica um fator de 7% sobre o resultado.
- */
-const calculateCustoAguaPrice: CalculationStrategy = (componentValues) => {
-  const CARBON_FACTOR = 0.07; // 7%
-  const weights: Record<string, number> = {
-    boi_gordo: 0.35,
-    milho: 0.30,
-    soja: 0.35,
-    madeira: 1,
-    carbono: 1,
-  };
-
-  const weightedSum =
-    (componentValues['boi_gordo'] ?? 0) * weights.boi_gordo +
-    (componentValues['milho'] ?? 0) * weights.milho +
-    (componentValues['soja'] ?? 0) * weights.soja +
-    (componentValues['madeira'] ?? 0) * weights.madeira +
-    (componentValues['carbono'] ?? 0) * weights.carbono;
+        (boiBRL * weights.boi_gordo);
     
-  return weightedSum * CARBON_FACTOR;
+    return weightedSum * arrendamentoFactor;
 };
+
+/**
+ * vmad = madeira * factor
+ */
+const calculateVmadPrice: CalculationStrategy = (componentValues) => {
+    const factor = 1; // Fator de multiplicação, pode ser ajustado
+    return (componentValues['madeira'] ?? 0) * factor;
+};
+
+/**
+ * crs = cc + ch2o
+ */
+const calculateCrsPrice: CalculationStrategy = (componentValues) => {
+    return (componentValues['cc'] ?? 0) + (componentValues['ch2o'] ?? 0);
+};
+
+/**
+ * pdm = vmad + vus + crs
+ */
+const calculatePdmPrice: CalculationStrategy = (componentValues) => {
+    return (componentValues['vmad'] ?? 0) + (componentValues['vus'] ?? 0) + (componentValues['crs'] ?? 0);
+};
+
+
+/**
+ * Lógica de cálculo para o índice UCS.
+ * UCS (CF) = 2 x IVP
+ * IVP = (PDM / CE) / 2      (CE = Custo de Emissão, por ora = 1)
+ * UCS = 2 * ((PDM / 1) / 2) = PDM
+ */
+const calculateUcsPrice: CalculationStrategy = (componentValues) => {
+    const pdmValue = componentValues['pdm'] ?? 0;
+    const custoEmissao = 1; // Custo de Emissão, pode ser dinâmico no futuro
+
+    if (pdmValue === 0) return 0;
+    
+    const ivp = (pdmValue / custoEmissao) / 2;
+    return 2 * ivp;
+};
+
 
 /**
  * Lógica de cálculo para o índice UCS ASE.
@@ -97,17 +101,34 @@ const calculateUcsAsePrice: CalculationStrategy = (componentValues) => {
 // --- CONFIGURAÇÃO DOS ATIVOS CALCULADOS ---
 
 interface CalculationConfig {
-  components: readonly string[]; // Alterado para string[] para flexibilidade
+  components: readonly string[];
   valueField: keyof FirestoreQuote;
   calculator: CalculationStrategy;
 }
 
-/**
- * Mapeia cada ID de ativo calculado à sua configuração de cálculo.
- */
 export const CALCULATION_CONFIGS: Record<string, CalculationConfig> = {
+  vus: {
+    components: ['soja', 'milho', 'boi_gordo', 'usd'],
+    valueField: 'ultimo',
+    calculator: calculateVusPrice,
+  },
+  vmad: {
+    components: ['madeira'],
+    valueField: 'ultimo',
+    calculator: calculateVmadPrice,
+  },
+  crs: {
+    components: ['cc', 'ch2o'], // cc (carbono), ch2o (custo_agua)
+    valueField: 'ultimo',
+    calculator: calculateCrsPrice,
+  },
+  pdm: {
+    components: ['vmad', 'vus', 'crs'],
+    valueField: 'ultimo',
+    calculator: calculatePdmPrice,
+  },
   ucs: {
-    components: ['boi_gordo', 'milho', 'soja', 'usd'],
+    components: ['pdm'],
     valueField: 'ultimo',
     calculator: calculateUcsPrice,
   },
@@ -116,16 +137,6 @@ export const CALCULATION_CONFIGS: Record<string, CalculationConfig> = {
     valueField: 'ultimo',
     calculator: calculateUcsAsePrice,
   },
-  agua: {
-    components: ['boi_gordo', 'milho', 'soja', 'madeira', 'carbono'],
-    valueField: 'ultimo',
-    calculator: calculateCh2oPrice,
-  },
-  custo_agua: {
-    components: ['boi_gordo', 'milho', 'soja', 'madeira', 'carbono'],
-    valueField: 'rent_media', // Alterado para usar rent_media
-    calculator: calculateCustoAguaPrice,
-  },
 };
 
 /**
@@ -133,6 +144,6 @@ export const CALCULATION_CONFIGS: Record<string, CalculationConfig> = {
  * @param assetId O ID do ativo.
  * @returns boolean
  */
-export function isCalculableAsset(assetId: string): assetId is keyof typeof CALCULATION_CONFIGS {
-    return assetId in CALCULATION_CONFIGS;
+export async function isCalculableAsset(assetId: string): Promise<boolean> {
+    return Promise.resolve(assetId in CALCULATION_CONFIGS);
 }
