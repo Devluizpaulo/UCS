@@ -96,22 +96,22 @@ export function InviteLinkModal({ isOpen, onOpenChange, inviteInfo }: InviteLink
             {hasCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
           </Button>
         </div>
-        <DialogFooter className="flex-col sm:flex-row sm:justify-start pt-4 gap-2">
-          <Button asChild>
-            <a href={getMailtoLink()} target="_blank" rel="noopener noreferrer">
-              <Mail className="mr-2 h-4 w-4" /> Enviar por E-mail
-            </a>
-          </Button>
-          {inviteInfo.phoneNumber && (
-             <Button asChild variant="outline">
-                <a href={getWhatsAppLink()} target="_blank" rel="noopener noreferrer">
-                    <WhatsAppIcon className="mr-2 h-4 w-4" /> Enviar por WhatsApp
+        <DialogFooter className="flex-col gap-2 pt-4 sm:flex-row sm:justify-start">
+            <Button asChild>
+                <a href={getMailtoLink()} target="_blank" rel="noopener noreferrer">
+                <Mail className="mr-2 h-4 w-4" /> Enviar por E-mail
                 </a>
-             </Button>
-          )}
-          <Button type="button" variant="secondary" onClick={() => onOpenChange(false)} className="sm:ml-auto">
-            Fechar
-          </Button>
+            </Button>
+            {inviteInfo.phoneNumber && (
+                <Button asChild variant="outline">
+                    <a href={getWhatsAppLink()} target="_blank" rel="noopener noreferrer">
+                        <WhatsAppIcon className="mr-2 h-4 w-4" /> Enviar por WhatsApp
+                    </a>
+                </Button>
+            )}
+            <Button type="button" variant="secondary" onClick={() => onOpenChange(false)} className="mt-2 sm:mt-0 sm:ml-auto">
+                Fechar
+            </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
