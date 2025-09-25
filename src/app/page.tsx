@@ -58,7 +58,7 @@ export default function LandingPage() {
       </header>
 
       <main className="flex-1">
-        <section className="relative flex h-full flex-col items-center justify-center p-4 text-center">
+        <section className="relative flex flex-1 flex-col p-4 text-center">
           <Image
             src="https://picsum.photos/seed/lush-forest/1920/1080"
             alt="Floresta exuberante ao fundo"
@@ -69,17 +69,17 @@ export default function LandingPage() {
           />
           <div className="absolute inset-0 bg-black/60" />
 
-          <div className="relative z-10 flex flex-1 flex-col items-center justify-center gap-4 px-4 pt-12 md:px-6">
-            <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl text-white">
-              O Futuro do Capital Natural é Digital
-            </h1>
-            <p className="mx-auto max-w-[700px] text-lg text-gray-200 md:text-xl text-justify sm:text-center">
-              Transformamos ativos ambientais em oportunidades de investimento seguras e transparentes.
-            </p>
-          </div>
+          <div className="relative z-10 flex flex-1 flex-col items-center justify-center gap-8">
+            <div className="flex flex-col items-center gap-4 px-4 md:px-6">
+                <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl text-white">
+                O Futuro do Capital Natural é Digital
+                </h1>
+                <p className="mx-auto max-w-[700px] text-lg text-gray-200 md:text-xl text-justify sm:text-center">
+                Transformamos ativos ambientais em oportunidades de investimento seguras e transparentes.
+                </p>
+            </div>
 
-          <div className="relative z-10 flex flex-1 flex-col items-center justify-center">
-             <Carousel
+            <Carousel
                 plugins={[autoplayPlugin.current]}
                 opts={{
                     align: "start",
@@ -116,8 +116,8 @@ export default function LandingPage() {
                 </CarouselContent>
             </Carousel>
           </div>
-
-          <div className="relative z-10 flex flex-1 flex-col items-center justify-end px-4 pb-8 md:px-6">
+          
+          <div className="relative z-10 flex flex-col items-center justify-end px-4 py-4 md:px-6">
              <Button size="lg" variant="outline" className="border-primary bg-transparent text-primary hover:bg-primary/10 hover:text-primary-foreground" asChild>
                 <a href="https://bmvdigital.global/" target="_blank" rel="noopener noreferrer">
                   Conheça a BMV Digital
