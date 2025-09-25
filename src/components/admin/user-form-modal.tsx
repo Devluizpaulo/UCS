@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -59,6 +60,11 @@ interface UserFormModalProps {
   isSelfEdit?: boolean;
 }
 
+// Type guard to check if the user object is a server-side UserRecord
+function isUserRecord(user: any): user is UserRecord {
+  return user && 'metadata' in user && 'creationTime' in user.metadata;
+}
+
 export function UserFormModal({ isOpen, onOpenChange, onSubmit, user, isSelfEdit = false }: UserFormModalProps) {
   const isEditing = !!user;
   const formSchema = isEditing ? updateUserSchema : createUserSchema;
@@ -82,7 +88,8 @@ export function UserFormModal({ isOpen, onOpenChange, onSubmit, user, isSelfEdit
         email: user.email || '',
         phoneNumber: user.phoneNumber || '+55',
         password: '',
-        disabled: user.disabled,
+        // The 'disabled' property only exists on the server-side UserRecord
+        disabled: isUserRecord(user) ? user.disabled : false,
       });
     } else {
       form.reset({

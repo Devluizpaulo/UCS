@@ -40,6 +40,7 @@ import { createUser, updateUser, deleteUser, getUsers, setAdminRole, removeAdmin
 import type { UserFormValues } from './user-form-modal';
 import type { AppUserRecord } from '@/lib/types';
 import { useUser } from '@/firebase';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '../ui/tooltip';
 
 interface UserManagementTableProps {
   initialUsers: AppUserRecord[];
@@ -135,93 +136,104 @@ export function UserManagementTable({ initialUsers }: UserManagementTableProps) 
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Usuário</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Data de Criação</TableHead>
-                <TableHead>Último Login</TableHead>
-                <TableHead>
-                  <span className="sr-only">Ações</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {users.map((user) => (
-                <TableRow key={user.uid}>
-                  <TableCell>
-                    <div className="font-medium flex items-center gap-2">
-                        {user.displayName || 'Nome não definido'}
-                        {user.isAdmin && <ShieldCheck className="h-4 w-4 text-primary" title="Administrador" />}
-                    </div>
-                    <div className="text-sm text-muted-foreground">{user.email}</div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={user.disabled ? 'destructive' : 'secondary'}>
-                      {user.disabled ? 'Desativado' : 'Ativo'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {new Date(user.metadata.creationTime).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell>
-                    {user.metadata.lastSignInTime
-                      ? new Date(user.metadata.lastSignInTime).toLocaleString()
-                      : 'Nunca'}
-                  </TableCell>
-                  <TableCell>
-                    <AlertDialog>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button aria-haspopup="true" size="icon" variant="ghost" disabled={user.uid === currentUser?.uid}>
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Toggle menu</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                          <DropdownMenuItem onSelect={() => { setEditingUser(user); setIsFormModalOpen(true); }}>
-                            <Edit className="mr-2 h-4 w-4" /> Editar
-                          </DropdownMenuItem>
-                           <DropdownMenuItem onSelect={() => handleToggleAdmin(user)}>
-                            {user.isAdmin 
-                                ? <><UserCheck className="mr-2 h-4 w-4" /> Remover Acesso Admin</> 
-                                : <><ShieldCheck className="mr-2 h-4 w-4" /> Promover a Admin</>
-                            }
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <AlertDialogTrigger asChild>
-                            <DropdownMenuItem className="text-destructive focus:text-destructive">
-                              <Trash2 className="mr-2 h-4 w-4" /> Excluir
-                            </DropdownMenuItem>
-                          </AlertDialogTrigger>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Esta ação não pode ser desfeita. Isso excluirá permanentemente o usuário{' '}
-                            <span className="font-bold">{user.email}</span>.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction
-                            className="bg-destructive hover:bg-destructive/90"
-                            onClick={() => handleDelete(user.uid)}
-                          >
-                            Excluir
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </TableCell>
+          <TooltipProvider>
+            <Table>
+                <TableHeader>
+                <TableRow>
+                    <TableHead>Usuário</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Data de Criação</TableHead>
+                    <TableHead>Último Login</TableHead>
+                    <TableHead>
+                    <span className="sr-only">Ações</span>
+                    </TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                </TableHeader>
+                <TableBody>
+                {users.map((user) => (
+                    <TableRow key={user.uid}>
+                    <TableCell>
+                        <div className="font-medium flex items-center gap-2">
+                            {user.displayName || 'Nome não definido'}
+                            {user.isAdmin && (
+                                <Tooltip>
+                                <TooltipTrigger>
+                                    <ShieldCheck className="h-4 w-4 text-primary" />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Administrador</p>
+                                </TooltipContent>
+                                </Tooltip>
+                            )}
+                        </div>
+                        <div className="text-sm text-muted-foreground">{user.email}</div>
+                    </TableCell>
+                    <TableCell>
+                        <Badge variant={user.disabled ? 'destructive' : 'secondary'}>
+                        {user.disabled ? 'Desativado' : 'Ativo'}
+                        </Badge>
+                    </TableCell>
+                    <TableCell>
+                        {new Date(user.metadata.creationTime).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                        {user.metadata.lastSignInTime
+                        ? new Date(user.metadata.lastSignInTime).toLocaleString()
+                        : 'Nunca'}
+                    </TableCell>
+                    <TableCell>
+                        <AlertDialog>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                            <Button aria-haspopup="true" size="icon" variant="ghost" disabled={user.uid === currentUser?.uid}>
+                                <MoreHorizontal className="h-4 w-4" />
+                                <span className="sr-only">Toggle menu</span>
+                            </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                            <DropdownMenuItem onSelect={() => { setEditingUser(user); setIsFormModalOpen(true); }}>
+                                <Edit className="mr-2 h-4 w-4" /> Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => handleToggleAdmin(user)}>
+                                {user.isAdmin 
+                                    ? <><UserCheck className="mr-2 h-4 w-4" /> Remover Acesso Admin</> 
+                                    : <><ShieldCheck className="mr-2 h-4 w-4" /> Promover a Admin</>
+                                }
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <AlertDialogTrigger asChild>
+                                <DropdownMenuItem className="text-destructive focus:text-destructive">
+                                <Trash2 className="mr-2 h-4 w-4" /> Excluir
+                                </DropdownMenuItem>
+                            </AlertDialogTrigger>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Esta ação não pode ser desfeita. Isso excluirá permanentemente o usuário{' '}
+                                <span className="font-bold">{user.email}</span>.
+                            </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction
+                                className="bg-destructive hover:bg-destructive/90"
+                                onClick={() => handleDelete(user.uid)}
+                            >
+                                Excluir
+                            </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                        </AlertDialog>
+                    </TableCell>
+                    </TableRow>
+                ))}
+                </TableBody>
+            </Table>
+          </TooltipProvider>
         </CardContent>
       </Card>
       <UserFormModal

@@ -169,7 +169,12 @@ export async function getQuoteForDate(assetId: string, date: Date): Promise<Fire
 
     if (!stringDateSnapshot.empty) {
         const doc = stringDateSnapshot.docs[0];
-        return { id: doc.id, ...doc.data() } as FirestoreQuote;
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          timestamp: serializeFirestoreTimestamp(data.timestamp),
+        } as FirestoreQuote;
     }
 
     // Tentativa 2: Buscar por timestamp dentro do dia
@@ -186,7 +191,12 @@ export async function getQuoteForDate(assetId: string, date: Date): Promise<Fire
     if (timestampSnapshot.empty) return null;
     
     const doc = timestampSnapshot.docs[0];
-    return { id: doc.id, ...doc.data() } as FirestoreQuote;
+    const data = doc.data();
+    return {
+        id: doc.id,
+        ...data,
+        timestamp: serializeFirestoreTimestamp(data.timestamp),
+    } as FirestoreQuote;
 }
 
 
@@ -241,7 +251,11 @@ export async function getOrCalculateAssetForDate(assetId: string, date: Date): P
 
     const docRef = await db.collection(assetId).add(newQuoteData);
     
-    return { id: docRef.id, ...newQuoteData } as FirestoreQuote;
+    return {
+        id: docRef.id,
+        ...newQuoteData,
+        timestamp: serializeFirestoreTimestamp(newQuoteData.timestamp), // Serialize timestamp before returning
+    } as FirestoreQuote;
 }
 
 
@@ -260,7 +274,12 @@ export async function getLatestQuote(assetId: string): Promise<FirestoreQuote | 
     if (snapshot.empty) return null;
     
     const doc = snapshot.docs[0];
-    return { id: doc.id, ...doc.data() } as FirestoreQuote;
+    const data = doc.data();
+    return {
+        id: doc.id,
+        ...data,
+        timestamp: serializeFirestoreTimestamp(data.timestamp),
+    } as FirestoreQuote;
 }
 
 /**

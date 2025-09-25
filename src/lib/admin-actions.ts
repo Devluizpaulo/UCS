@@ -22,13 +22,16 @@ export async function getUsers(): Promise<AppUserRecord[]> {
     const adminUids = new Set(adminDocs.docs.map(doc => doc.id));
     
     // Mapeia para um objeto simples para evitar problemas de serialização com o cliente
-    return userRecords.users.map(user => {
+    const users = userRecords.users.map(user => {
         const userJson = user.toJSON() as UserRecord;
         return {
             ...userJson,
             isAdmin: adminUids.has(user.uid),
         };
     });
+
+    return users as AppUserRecord[];
+
   } catch (error) {
     console.error('Error fetching users:', error);
     return [];
