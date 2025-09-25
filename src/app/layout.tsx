@@ -1,8 +1,10 @@
+
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/theme-provider';
 import { FirebaseClientProvider } from '@/firebase';
+import { CookieConsentBanner } from '@/components/cookie-consent-banner';
 
 export const metadata: Metadata = {
   title: 'Monitor do Índice UCS',
@@ -34,6 +36,7 @@ export default function RootLayout({
           >
             {children}
             <Toaster />
+            <CookieConsentBanner />
           </ThemeProvider>
         </FirebaseClientProvider>
       </body>

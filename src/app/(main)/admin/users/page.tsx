@@ -12,7 +12,8 @@ import { cookies } from 'next/headers';
 async function verifyAdmin(): Promise<boolean> {
   try {
     const { auth, db: firestore } = await getFirebaseAdmin();
-    const authToken = cookies().get('AuthToken')?.value;
+    const cookieStore = cookies();
+    const authToken = cookieStore.get('AuthToken')?.value;
 
     if (!authToken) {
       return false;
