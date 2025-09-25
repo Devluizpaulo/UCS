@@ -74,7 +74,7 @@ export default function LandingPage() {
             <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl text-white">
               O Futuro do Capital Natural é Digital
             </h1>
-            <p className="mx-auto max-w-[700px] text-lg text-gray-200 md:text-xl">
+            <p className="mx-auto max-w-[700px] text-lg text-gray-200 md:text-xl text-justify sm:text-center">
               Transformamos ativos ambientais em oportunidades de investimento seguras e transparentes.
             </p>
           </div>
