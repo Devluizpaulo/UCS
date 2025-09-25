@@ -67,7 +67,7 @@ function getPriceFromQuote(quoteData: any): number {
  * no Firestore não existir.
  */
 const initialCommoditiesConfig: Record<string, Omit<CommodityConfig, 'id'>> = {
-    'ucs_ase': { name: 'UCS ASE', currency: 'BRL', category: 'index', description: 'Índice de Unidade de Crédito de Sustentabilidade.', unit: 'Pontos' },
+    'ucs_ase': { name: 'UCS ASE', currency: 'BRL', category: 'index', description: 'Índice principal de Unidade de Crédito de Sustentabilidade.', unit: 'Pontos' },
     'ucs': { name: 'UCS', currency: 'BRL', category: 'index', description: 'Unidade de Crédito de Sustentabilidade.', unit: 'BRL por UCS' },
     'pdm': { name: 'PDM', currency: 'BRL', category: 'index', description: 'Potencial Desflorestador Monetizado.', unit: 'BRL por PDM' },
     'vus': { name: 'VUS', currency: 'BRL', category: 'index', description: 'Valor de Uso do Solo.', unit: 'BRL por VUS' },
@@ -393,3 +393,5 @@ export async function getCotacoesHistoricoPorRange(assetId: string, dateRange: D
         throw new Error(`Falha ao obter o histórico por período para ${assetId}.`);
     }
 }
+
+    
