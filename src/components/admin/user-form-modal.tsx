@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -25,8 +24,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { Loader2 } from 'lucide-react';
-import { useEffect } from 'react';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { User } from 'firebase/auth';
 
@@ -63,6 +62,7 @@ interface UserFormModalProps {
 export function UserFormModal({ isOpen, onOpenChange, onSubmit, user, isSelfEdit = false }: UserFormModalProps) {
   const isEditing = !!user;
   const formSchema = isEditing ? updateUserSchema : createUserSchema;
+  const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -176,9 +176,21 @@ export function UserFormModal({ isOpen, onOpenChange, onSubmit, user, isSelfEdit
                     render={({ field }) => (
                         <FormItem>
                         <FormLabel>Nova Senha</FormLabel>
-                        <FormControl>
-                            <Input type="password" placeholder={'Deixe em branco para não alterar'} {...field} />
-                        </FormControl>
+                        <div className="relative">
+                            <FormControl>
+                                <Input type={showPassword ? 'text' : 'password'} placeholder={'Deixe em branco para não alterar'} {...field} />
+                            </FormControl>
+                             <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="absolute inset-y-0 right-0 h-full px-3"
+                                onClick={() => setShowPassword(!showPassword)}
+                                aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                            >
+                                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </Button>
+                        </div>
                         <FormMessage />
                         </FormItem>
                     )}
