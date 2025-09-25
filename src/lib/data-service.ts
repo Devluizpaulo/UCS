@@ -159,6 +159,17 @@ export async function getQuoteForDate(assetId: string, date: Date): Promise<Fire
         return getOrCalculateAssetForDate(assetId, date);
     }
     
+    return getQuoteByDate(assetId, date);
+}
+
+/**
+ * Busca o documento de cotação completo para um ativo em uma data específica.
+ * @param assetId O ID da coleção do ativo.
+ * @param date A data para a qual a cotação é desejada.
+ * @returns O documento de cotação completo ou nulo.
+ */
+export async function getQuoteByDate(assetId: string, date: Date): Promise<FirestoreQuote | null> {
+    const { db } = await getFirebaseAdmin();
     const formattedDate = format(date, 'dd/MM/yyyy');
     
     // Tentativa 1: Buscar pela data em formato string 'dd/MM/yyyy'
@@ -219,7 +230,7 @@ export async function getOrCalculateAssetForDate(assetId: string, date: Date): P
     const startOfDate = startOfDay(date);
 
     // 1. Tenta buscar um valor já calculado para a data
-    const existingQuote = await getQuoteForDate(assetId, date);
+    const existingQuote = await getQuoteByDate(assetId, date);
     if (existingQuote) {
         return existingQuote;
     }

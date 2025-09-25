@@ -5,8 +5,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { PageHeader } from '@/components/page-header';
 import { PieChart, Loader2 } from 'lucide-react';
 import { DateNavigator } from '@/components/date-navigator';
-import { getCommodityPricesByDate, getCommodityPrices } from '@/lib/data-service';
-import type { CommodityPriceData } from '@/lib/types';
+import { getQuoteByDate } from '@/lib/data-service';
+import type { CommodityPriceData, FirestoreQuote } from '@/lib/types';
 import { isToday, isFuture, parseISO, isValid } from 'date-fns';
 import { useSearchParams } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -25,55 +25,79 @@ function getValidatedDate(dateString?: string | null): Date | null {
 }
 
 function useUcsComposition(targetDate: Date | null) {
-    const [data, setData] = useState<CommodityPriceData[]>([]);
+    const [ucsAsset, setUcsAsset] = useState<FirestoreQuote | null>(null);
+    const [compositionData, setCompositionData] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+
+    const ucsCompositionConfig = CALCULATION_CONFIGS['ucs'];
 
     useEffect(() => {
         if (!targetDate) {
             setIsLoading(false);
             return;
-        };
-        
+        }
+
         setIsLoading(true);
-        const isCurrent = isToday(targetDate) || isFuture(targetDate);
 
-        const fetchData = isCurrent
-            ? getCommodityPrices()
-            : getCommodityPricesByDate(targetDate);
+        const fetchData = async () => {
+            try {
+                // 1. Fetch the main UCS asset quote for the date
+                const ucsQuote = await getQuoteByDate('ucs', targetDate);
+                setUcsAsset(ucsQuote);
 
-        fetchData
-            .then(setData)
-            .catch(err => {
+                if (!ucsQuote) {
+                    setCompositionData([]);
+                    return;
+                }
+                
+                // 2. Fetch each component to get its rent_media value
+                const componentPromises = ucsCompositionConfig.components
+                    .filter(id => id !== 'usd') // Exclude USD from composition display
+                    .map(async (componentId) => {
+                        const componentQuote = await getQuoteByDate(componentId, targetDate);
+                        return {
+                            name: componentQuote?.ativo || componentId,
+                            value: componentQuote?.rent_media || 0,
+                            currency: componentQuote?.moeda || 'BRL',
+                            id: componentId,
+                        };
+                    });
+
+                const resolvedComponents = await Promise.all(componentPromises);
+                setCompositionData(resolvedComponents);
+
+            } catch (err) {
                 console.error("Falha ao buscar composição", err);
-                setData([]);
-            })
-            .finally(() => setIsLoading(false));
+                setCompositionData([]);
+                setUcsAsset(null);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchData();
         
-    }, [targetDate]);
+    }, [targetDate, ucsCompositionConfig.components]);
+    
+    // Create a CommodityPriceData-like object for the chart component
+    const ucsAssetForChart: CommodityPriceData | undefined = useMemo(() => {
+        if (!ucsAsset) return undefined;
+        return {
+            id: 'ucs',
+            name: 'Índice UCS',
+            price: ucsAsset.ultimo,
+            currency: 'BRL',
+            category: 'index',
+            description: '',
+            unit: 'Pontos',
+            change: 0,
+            absoluteChange: 0,
+            lastUpdated: ucsAsset.data,
+        };
+    }, [ucsAsset]);
 
-    const ucsAsset = useMemo(() => data.find(d => d.id === 'ucs'), [data]);
-    const ucsCompositionConfig = CALCULATION_CONFIGS['ucs'];
 
-    const compositionData = useMemo(() => {
-        if (!ucsAsset) return [];
-        
-        // A cotação salva do UCS já contém os valores dos componentes usados no cálculo
-        const componentValues = ucsAsset as unknown as Record<string, number>;
-        
-        return ucsCompositionConfig.components.map(componentId => {
-            const componentAsset = data.find(d => d.id === componentId);
-            const value = componentValues[componentId] || 0;
-            return {
-                name: componentAsset?.name || componentId,
-                value: value,
-                currency: componentAsset?.currency || 'BRL',
-                id: componentId,
-            };
-        }).filter(item => item.id !== 'usd'); // Filtra o dólar para não aparecer no gráfico
-
-    }, [ucsAsset, data, ucsCompositionConfig]);
-
-    return { ucsAsset, compositionData, isLoading };
+    return { ucsAsset: ucsAssetForChart, compositionData, isLoading };
 }
 
 
