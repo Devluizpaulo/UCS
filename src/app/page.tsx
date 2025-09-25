@@ -106,11 +106,11 @@ export default async function LandingPage() {
       <main className="flex-1">
         <section className="relative w-full flex items-center justify-center text-center py-24 lg:py-32">
           <Image
-            src="https://picsum.photos/seed/forest-path/1920/1080"
-            alt="Floresta exuberante e sustentável"
+            src="https://picsum.photos/seed/deep-forest/1920/1080"
+            alt="Floresta exuberante ao fundo"
             fill
-            className="object-cover"
-            data-ai-hint="lush forest path"
+            className="object-cover animate-zoom-in"
+            data-ai-hint="lush forest"
           />
           <div className="absolute inset-0 bg-black/60" />
           <div className="relative z-10 flex flex-col items-center gap-8 px-4 md:px-6">
@@ -139,11 +139,6 @@ export default async function LandingPage() {
             )}
 
              <div className="flex flex-col sm:flex-row gap-4">
-                <Button size="lg" asChild>
-                    <Link href="/login">
-                        Acessar Plataforma
-                    </Link>
-                </Button>
               <Button size="lg" variant="outline" className="border-primary bg-transparent text-primary hover:bg-primary/10 hover:text-primary-foreground" asChild>
                 <a href="https://bmvdigital.global/" target="_blank" rel="noopener noreferrer">
                   Conheça a BMV Digital
@@ -291,5 +286,6 @@ export default async function LandingPage() {
   );
 }
 
+    
     
     
