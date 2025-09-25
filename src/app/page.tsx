@@ -97,7 +97,7 @@ export default function LandingPage() {
                         <Card className="rounded-xl border border-white/20 bg-white/10 p-4 text-white shadow-lg backdrop-blur-md">
                             <CardHeader className="p-0 text-center flex-row items-center justify-center gap-2">
                                 <Icon className="h-5 w-5 text-primary" />
-                                <CardTitle className="text-base font-medium">Índice UCS ASE</CardTitle>
+                                <CardTitle className="text-base font-medium">Índice UCS</CardTitle>
                             </CardHeader>
                              <CardContent className="p-0 mt-2 text-center">
                                 <span className="text-4xl font-bold tracking-tight">
