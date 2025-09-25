@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { PageHeader } from '@/components/page-header';
 import { PieChart, Loader2 } from 'lucide-react';
 import { DateNavigator } from '@/components/date-navigator';
-import { getCommodityPricesByDate } from '@/lib/data-service';
+import { getCommodityPricesByDate, getCommodityPrices } from '@/lib/data-service';
 import type { CommodityPriceData } from '@/lib/types';
 import { isToday, isFuture, parseISO, isValid } from 'date-fns';
 import { useSearchParams } from 'next/navigation';
@@ -33,10 +33,15 @@ function useUcsComposition(targetDate: Date | null) {
             setIsLoading(false);
             return;
         };
-
+        
         setIsLoading(true);
-        // A função getCommodityPricesByDate já otimiza e calcula se necessário
-        getCommodityPricesByDate(targetDate)
+        const isCurrent = isToday(targetDate) || isFuture(targetDate);
+
+        const fetchData = isCurrent
+            ? getCommodityPrices()
+            : getCommodityPricesByDate(targetDate);
+
+        fetchData
             .then(setData)
             .catch(err => {
                 console.error("Falha ao buscar composição", err);
@@ -126,4 +131,3 @@ export default function CompositionPage() {
         </div>
     );
 }
-
