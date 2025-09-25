@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -17,7 +16,6 @@ import { Button } from './ui/button';
 import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { Skeleton } from './ui/skeleton';
 import { formatCurrency } from '@/lib/formatters';
-import { isCalculableAsset, CALCULATION_CONFIGS } from '@/lib/calculation-service';
 
 const ITEMS_PER_PAGE = 7;
 
@@ -25,33 +23,45 @@ interface CalculatedAssetDetailsProps {
     asset: CommodityPriceData;
 }
 
+// Este é um fallback estático, já que a lógica de cálculo foi removida do frontend.
+// O ideal é que o backend (n8n) salve os componentes junto com o índice calculado.
+const STATIC_COMPOSITION_CONFIG: Record<string, readonly string[]> = {
+  pdm: ['vmad', 'vus', 'crs'],
+  ucs: ['pdm'],
+  ucs_ase: ['ucs', 'pdm'],
+  vus: ['soja', 'milho', 'boi_gordo', 'usd'],
+  vmad: ['madeira'],
+  crs: ['carbono', 'custo_agua'],
+};
+
+
 export function CalculatedAssetDetails({ asset }: CalculatedAssetDetailsProps) {
   const [compositionHistory, setCompositionHistory] = useState<FirestoreQuote[]>([]);
   const [commoditiesConfig, setCommoditiesConfig] = useState<Record<string, CommodityPriceData>>({});
+  const [componentIds, setComponentIds] = useState<readonly string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-
-  const assetConfig = useMemo(() => {
-    if (!isCalculableAsset(asset.id)) return null;
-    return CALCULATION_CONFIGS[asset.id];
-  }, [asset.id]);
-
+  
   useEffect(() => {
     async function fetchData() {
         setIsLoading(true);
         try {
             const [history, configs] = await Promise.all([
                 getCotacoesHistorico(asset.id, 90),
-                getCommodityConfigs()
+                getCommodityConfigs(),
             ]);
             
             const configMap = configs.reduce((acc, config) => {
                 acc[config.id] = config as CommodityPriceData;
                 return acc;
             }, {} as Record<string, CommodityPriceData>);
+
+            // Usa a configuração estática para determinar os componentes
+            const composition = STATIC_COMPOSITION_CONFIG[asset.id] || [];
             
             setCompositionHistory(history);
             setCommoditiesConfig(configMap);
+            setComponentIds(composition);
 
         } catch (error) {
             console.error("Failed to fetch calculated asset details:", error);
@@ -71,7 +81,7 @@ export function CalculatedAssetDetails({ asset }: CalculatedAssetDetailsProps) {
   
   const totalPages = Math.ceil(compositionHistory.length / ITEMS_PER_PAGE);
 
-  if (isLoading || !assetConfig) {
+  if (isLoading || componentIds.length === 0) {
     return (
       <Card>
         <CardHeader>
@@ -80,14 +90,16 @@ export function CalculatedAssetDetails({ asset }: CalculatedAssetDetailsProps) {
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center p-6 h-48">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+             {isLoading ? (
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+             ) : (
+                <p className="text-sm text-muted-foreground">Não há configuração de composição para este ativo.</p>
+             )}
           </div>
         </CardContent>
       </Card>
     );
   }
-  
-  const componentIds = assetConfig.components;
 
   return (
     <Card>

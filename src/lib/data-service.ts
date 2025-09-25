@@ -1,5 +1,3 @@
-
-
 'use server';
 
 import { getFirebaseAdmin } from '@/lib/firebase-admin-config';
@@ -8,7 +6,6 @@ import { getCache, setCache } from '@/lib/cache-service';
 import { Timestamp, FieldValue } from 'firebase-admin/firestore';
 import { subDays, format, parse, isValid, startOfDay, parseISO, endOfDay } from 'date-fns';
 import type { DateRange } from 'react-day-picker';
-import { isCalculableAsset, getCalculationConfig } from './calculation-service';
 
 // --- CONSTANTS ---
 const CACHE_KEY_PRICES = 'commodity_prices_simple';
@@ -157,11 +154,6 @@ export async function getCommodityConfigs(): Promise<CommodityConfig[]> {
  * @returns A cotação encontrada ou nulo.
  */
 export async function getQuoteForDate(assetId: string, date: Date): Promise<FirestoreQuote | null> {
-    // Se o ativo for calculável, calcula e salva, depois retorna.
-    if (await isCalculableAsset(assetId)) {
-        return getOrCalculateAssetForDate(assetId, date);
-    }
-    
     return getQuoteByDate(assetId, date);
 }
 
@@ -204,62 +196,6 @@ export async function getQuoteByDate(assetId: string, date: Date): Promise<Fires
     const data = doc.data();
     return serializeFirestoreTimestamp({ id: doc.id, ...data }) as FirestoreQuote;
 }
-
-
-/**
- * Obtém ou calcula o valor de um ativo calculável para uma data específica.
- * Primeiro, verifica se o valor já foi calculado e salvo no Firestore.
- * Se não, busca os componentes, calcula o novo valor e salva no banco antes de retornar.
- * @param assetId O ID do ativo calculável (ex: 'ucs').
- * @param date A data para o cálculo.
- * @returns A cotação calculada.
- */
-export async function getOrCalculateAssetForDate(assetId: string, date: Date): Promise<FirestoreQuote | null> {
-    const config = await getCalculationConfig(assetId);
-    if (!config) {
-        throw new Error(`${assetId} não é um ativo calculável ou a configuração não foi encontrada.`);
-    }
-
-    const { db } = await getFirebaseAdmin();
-    const formattedDate = format(date, 'dd/MM/yyyy');
-    const startOfDate = startOfDay(date);
-
-    // 1. Tenta buscar um valor já calculado para a data
-    const existingQuote = await getQuoteByDate(assetId, date);
-    if (existingQuote) {
-        return existingQuote;
-    }
-
-    // 2. Se não existe, busca os componentes necessários
-    const componentValues: Record<string, number> = {};
-    for (const componentId of config.components) {
-        // Recursivamente chama a função para obter o valor do componente (que também pode ser calculado)
-        const componentQuote = await getQuoteForDate(componentId, date);
-        componentValues[componentId] = getPriceFromQuote(componentQuote);
-    }
-    
-    // 3. Calcula o novo valor
-    const calculatedValue = config.calculator(componentValues);
-    if (isNaN(calculatedValue) || calculatedValue === 0) {
-        console.warn(`Cálculo para ${assetId} em ${formattedDate} resultou em 0 ou NaN. Não será salvo.`);
-        return null; // Não salva se o valor for 0 ou NaN.
-    }
-
-    // 4. Salva o novo valor no Firestore
-    const newQuoteData = {
-        data: formattedDate,
-        timestamp: Timestamp.fromDate(startOfDate),
-        ultimo: calculatedValue,
-        valor: calculatedValue,
-        variacao_pct: 0, // Variação é calculada em outro lugar
-        ...componentValues, // Salva os valores dos componentes para rastreabilidade
-    };
-
-    const docRef = await db.collection(assetId).add(newQuoteData);
-    
-    return serializeFirestoreTimestamp({ id: docRef.id, ...newQuoteData }) as FirestoreQuote;
-}
-
 
 /**
  * Busca a cotação mais recente de um ativo, ordenando por timestamp.
