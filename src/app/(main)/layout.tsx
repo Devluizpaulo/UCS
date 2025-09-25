@@ -5,11 +5,11 @@ import {
   Sidebar,
   SidebarContent,
   SidebarHeader,
-  SidebarInset,
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarProvider,
+  SidebarInset,
 } from '@/components/ui/sidebar';
 import {
   LayoutDashboard,
@@ -182,7 +182,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 <SidebarMenuButton
                   asChild
                   isActive={pathname.startsWith('/assets')}
-                  tooltip={{ children: 'Gerenciar Ativos' }}
+                  tooltip={{ children: 'Ativos' }}
                 >
                   <Link href="/assets">
                     <Archive />
@@ -192,20 +192,22 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarContent>
-           <SidebarContent className="!flex-grow-0 border-t">
-              <SidebarMenu>
-                 <SidebarMenuItem>
-                    <SidebarMenuButton
-                      onClick={handleSignOut}
-                      tooltip={{ children: 'Sair' }}
-                    >
-                      <LogOut />
-                      <span>Sair</span>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-              <UserProfile />
-           </SidebarContent>
+          <div className="mt-auto">
+            <SidebarContent className="!flex-grow-0 border-t">
+                <SidebarMenu>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton
+                        onClick={handleSignOut}
+                        tooltip={{ children: 'Sair' }}
+                        >
+                        <LogOut />
+                        <span>Sair</span>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                </SidebarMenu>
+                <UserProfile />
+            </SidebarContent>
+          </div>
         </div>
       </Sidebar>
       <SidebarInset>{children}</SidebarInset>
