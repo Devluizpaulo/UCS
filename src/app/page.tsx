@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Briefcase, CheckCircle, Globe, HandCoins, Landmark, Leaf, Repeat, Scale, ShieldCheck, TrendingUp, User, Euro, DollarSign } from "lucide-react";
 import Image from 'next/image';
@@ -140,7 +141,7 @@ export default async function LandingPage() {
              <div className="flex flex-col sm:flex-row gap-4">
                 <Button size="lg" asChild>
                     <Link href="/login">
-                        Acessar Plataforma <ArrowRight className="ml-2 h-5 w-5" />
+                        Acessar Plataforma
                     </Link>
                 </Button>
               <Button size="lg" variant="outline" className="border-primary bg-transparent text-primary hover:bg-primary/10 hover:text-primary-foreground" asChild>
@@ -289,3 +290,5 @@ export default async function LandingPage() {
     </div>
   );
 }
+
+    
