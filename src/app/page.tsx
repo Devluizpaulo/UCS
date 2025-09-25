@@ -58,7 +58,7 @@ export default function LandingPage() {
       </header>
 
       <main className="flex-1">
-        <section className="relative flex flex-1 flex-col p-4 text-center">
+        <section className="relative flex flex-1 flex-col p-8 text-center">
           <Image
             src="https://picsum.photos/seed/lush-forest/1920/1080"
             alt="Floresta exuberante ao fundo"
@@ -130,7 +130,7 @@ export default function LandingPage() {
       </main>
 
       <footer className="border-t">
-        <div className="container mx-auto flex flex-col items-center justify-between gap-4 px-4 py-8 md:flex-row md:px-6">
+        <div className="container mx-auto flex flex-col items-center justify-between gap-2 px-4 py-4 md:flex-row md:px-4">
           <div className="flex flex-col items-center gap-2 text-center md:flex-row md:gap-4 md:text-left">
             <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} UCS Index. Todos os direitos reservados.</p>
             <p className="text-sm text-muted-foreground">Fonte dos dados: <a href="https://br.investing.com/" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">investing.com.br</a></p>

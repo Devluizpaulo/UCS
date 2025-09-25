@@ -51,7 +51,7 @@ export default function PublicLayout({
 
         <main className="relative flex-1 flex items-center justify-center p-4">
             <Image
-                src="/image/login.png"
+                src="/image/login.jpg"
                 alt="Floresta exuberante ao fundo"
                 fill
                 className="object-cover animate-zoom-in"
@@ -64,13 +64,12 @@ export default function PublicLayout({
             </div>
         </main>
         <footer className="border-t">
-            <div className="container mx-auto flex flex-col items-center justify-between gap-4 px-4 py-8 md:flex-row md:px-6">
-                <div className="flex flex-col items-center gap-2 text-center md:flex-row md:gap-4 md:text-left">
-                    <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} UCS Index. Todos os direitos reservados.</p>
-                    <p className="text-sm text-muted-foreground">Fonte dos dados: <a href="https://br.investing.com/" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">investing.com.br</a></p>
-                </div>
+            <div className="container mx-auto flex items-center justify-center gap-2 px-4 py-4">
+                <p className="text-xs text-muted-foreground">&copy; {new Date().getFullYear()} UCS Index</p>
+                <span className="text-xs text-muted-foreground">•</span>
+                <p className="text-xs text-muted-foreground">Fonte: <a href="https://br.investing.com/" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">investing.com.br</a></p>
             </div>
-      </footer>
+        </footer>
     </div>
   );
 }

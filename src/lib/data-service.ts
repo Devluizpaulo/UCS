@@ -10,7 +10,7 @@ import type { DateRange } from 'react-day-picker';
 
 // --- CONSTANTS ---
 const CACHE_KEY_PRICES = 'commodity_prices_simple';
-const CACHE_TTL_SECONDS = 30000; // 5 minutos
+const CACHE_TTL_SECONDS = 28800; // 8 horas
 const SETTINGS_COLLECTION = 'settings';
 const COMMODITIES_DOC = 'commodities';
 const COMMODITIES_CONFIG_CACHE_KEY = 'commodities_config';
@@ -82,6 +82,29 @@ const initialCommoditiesConfig: Record<string, Omit<CommodityConfig, 'id'>> = {
     'custo_agua': { name: 'Crédito de Água', currency: 'BRL', category: 'crs', description: 'Custo da Água para Produção de Alimentos.', unit: 'BRL por m³' },
     'madeira': { name: 'Madeira Serrada', currency: 'USD', category: 'vmad', description: 'Preço por metro cúbico de madeira serrada.', unit: 'USD por m³' },
 };
+
+/**
+ * Atualiza a descrição do UCS ASE no Firestore para corrigir a descrição.
+ * Função temporária para corrigir dados existentes.
+ */
+export async function updateUCSASEDescription(): Promise<void> {
+    const { db } = await getFirebaseAdmin();
+    const settingsDocRef = db.collection(SETTINGS_COLLECTION).doc(COMMODITIES_DOC);
+    
+    await db.runTransaction(async (transaction) => {
+        const doc = await transaction.get(settingsDocRef);
+        if (doc.exists) {
+            const data = doc.data();
+            if (data && data.ucs_ase) {
+                data.ucs_ase.description = 'Índice principal de Unidade de Crédito de Sustentabilidade.';
+                transaction.update(settingsDocRef, { ucs_ase: data.ucs_ase });
+            }
+        }
+    });
+
+    // Invalida o cache para forçar a releitura.
+    setCache(COMMODITIES_CONFIG_CACHE_KEY, null, 0);
+}
 
 /**
  * Salva uma nova configuração de ativo ou atualiza uma existente no Firestore.
