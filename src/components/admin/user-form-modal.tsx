@@ -27,6 +27,7 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Loader2 } from 'lucide-react';
 import { useEffect } from 'react';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const userSchema = {
   displayName: z.string().min(3, { message: 'O nome é obrigatório.' }),
@@ -95,8 +96,8 @@ export function UserFormModal({ isOpen, onOpenChange, onSubmit, user }: UserForm
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
+      <DialogContent className="grid max-h-[90vh] grid-rows-[auto_minmax(0,1fr)_auto] p-0 sm:max-w-lg">
+        <DialogHeader className="p-6 pb-4">
           <DialogTitle>{isEditing ? 'Editar Usuário' : 'Convidar Novo Usuário'}</DialogTitle>
           <DialogDescription>
             {isEditing 
@@ -105,93 +106,95 @@ export function UserFormModal({ isOpen, onOpenChange, onSubmit, user }: UserForm
             }
           </DialogDescription>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
-             <FormField
-              control={form.control}
-              name="displayName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nome Completo</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Nome do usuário" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>E-mail</FormLabel>
-                  <FormControl>
-                    <Input placeholder="usuario@exemplo.com" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="phoneNumber"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>WhatsApp (Opcional)</FormLabel>
-                  <FormControl>
-                    <Input placeholder="+5511999998888" {...field} />
-                  </FormControl>
-                  <FormDescription>
-                    Use o formato internacional (ex: +5511999998888).
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            {isEditing && (
+        <ScrollArea className="px-6">
+            <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4" id="user-form">
                 <FormField
                 control={form.control}
-                name="password"
+                name="displayName"
                 render={({ field }) => (
                     <FormItem>
-                    <FormLabel>Nova Senha</FormLabel>
+                    <FormLabel>Nome Completo</FormLabel>
                     <FormControl>
-                        <Input type="password" placeholder={'Deixe em branco para não alterar'} {...field} />
+                        <Input placeholder="Nome do usuário" {...field} />
                     </FormControl>
                     <FormMessage />
                     </FormItem>
                 )}
                 />
-            )}
-            <FormField
-              control={form.control}
-              name="disabled"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                  <div className="space-y-0.5">
-                    <FormLabel>Desativado</FormLabel>
+                <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>E-mail</FormLabel>
+                    <FormControl>
+                        <Input placeholder="usuario@exemplo.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+                <FormField
+                control={form.control}
+                name="phoneNumber"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>WhatsApp (Opcional)</FormLabel>
+                    <FormControl>
+                        <Input placeholder="+5511999998888" {...field} />
+                    </FormControl>
                     <FormDescription>
-                      Um usuário desativado não poderá fazer login.
+                        Use o formato internacional (ex: +5511999998888).
                     </FormDescription>
-                  </div>
-                  <FormControl>
-                    <Switch checked={field.value} onCheckedChange={field.onChange} />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                {isEditing ? 'Salvar Alterações' : 'Criar e Gerar Link'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+                {isEditing && (
+                    <FormField
+                    control={form.control}
+                    name="password"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Nova Senha</FormLabel>
+                        <FormControl>
+                            <Input type="password" placeholder={'Deixe em branco para não alterar'} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                )}
+                <FormField
+                control={form.control}
+                name="disabled"
+                render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                    <div className="space-y-0.5">
+                        <FormLabel>Desativado</FormLabel>
+                        <FormDescription>
+                        Um usuário desativado não poderá fazer login.
+                        </FormDescription>
+                    </div>
+                    <FormControl>
+                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                    </FormControl>
+                    </FormItem>
+                )}
+                />
+            </form>
+            </Form>
+        </ScrollArea>
+        <DialogFooter className="border-t p-6 pt-4">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            Cancelar
+            </Button>
+            <Button type="submit" form="user-form" disabled={isSubmitting}>
+            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            {isEditing ? 'Salvar Alterações' : 'Criar e Gerar Link'}
+            </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
