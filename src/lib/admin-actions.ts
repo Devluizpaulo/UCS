@@ -77,6 +77,9 @@ export async function createUser(userData: {
      if (error.code === 'auth/invalid-phone-number') {
       throw new Error('O número de telefone fornecido é inválido. Use o formato E.164 (ex: +5511999998888).');
     }
+     if (error.code === 'auth/phone-number-already-exists') {
+      throw new Error('Este número de telefone já está em uso por outro usuário.');
+    }
     throw new Error('Falha ao criar o usuário: ' + (error.message || 'Erro desconhecido'));
   }
 }
