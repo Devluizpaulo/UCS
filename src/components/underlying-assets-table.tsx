@@ -125,13 +125,13 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
                             onClick={() => handleRowClick(asset)} 
                             className={cn("p-3 cursor-pointer", animationClass)}
                         >
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
+                            <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+                                <div className="flex items-center gap-2">
                                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
                                         <Icon className="h-5 w-5 text-muted-foreground" />
                                     </div>
                                     <div>
-                                        <p className="font-semibold">{asset.name}</p>
+                                        <p className="font-semibold truncate max-w-[150px] sm:max-w-xs">{asset.name}</p>
                                         <p className="text-xs text-muted-foreground">{asset.lastUpdated}</p>
                                     </div>
                                 </div>
