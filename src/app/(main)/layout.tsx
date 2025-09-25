@@ -152,7 +152,7 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
   };
 
   const handleMenuItemClick = () => {
-    if (isMobile) {
+    if (isMobile && setOpenMobile) {
       setOpenMobile(false);
     }
   };
