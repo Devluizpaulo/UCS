@@ -21,7 +21,8 @@
         },
         "role": {
           "type": "string",
-          "description": "The role of the user in the system (e.g., admin, user)."
+          "description": "The role of the user in the system (e.g., admin, user).",
+          "enum": ["admin", "user"]
         },
         "createdAt": {
           "type": "string",

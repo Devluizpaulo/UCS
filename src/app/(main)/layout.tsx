@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -18,6 +17,7 @@ import {
   Users,
   LogOut,
   Sparkles,
+  Archive,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -26,16 +26,32 @@ import { useAuth, useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { UserRecord } from 'firebase-admin/auth';
 import { UserFormModal, type UserFormValues } from '@/components/admin/user-form-modal';
 import { useToast } from '@/hooks/use-toast';
 import { updateUser } from '@/lib/admin-actions';
+import { doc, getDoc } from 'firebase/firestore';
+import { useFirestore } from '@/firebase';
+
 
 function UserProfile() {
     const { user, isUserLoading } = useUser();
     const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
     const { toast } = useToast();
+    const firestore = useFirestore();
+    const [isAdmin, setIsAdmin] = useState(false);
+
+     useEffect(() => {
+        if (user) {
+            const checkAdmin = async () => {
+                const adminRef = doc(firestore, `roles_admin/${user.uid}`);
+                const adminSnap = await getDoc(adminRef);
+                setIsAdmin(adminSnap.exists());
+            };
+            checkAdmin();
+        }
+    }, [user, firestore]);
 
     const handleProfileUpdate = async (values: UserFormValues) => {
         if (!user) return;
@@ -43,9 +59,6 @@ function UserProfile() {
             await updateUser(user.uid, values);
             toast({ title: 'Sucesso', description: 'Seu perfil foi atualizado.' });
             setIsProfileModalOpen(false);
-            // Os dados do usuário no hook `useUser` não atualizam sozinhos aqui.
-            // O ideal seria forçar uma re-autenticação ou recarregar a página para ver as mudanças refletidas.
-            // Para simplicidade, vamos assumir que a atualização foi bem-sucedida visualmente.
         } catch (error: any) {
             toast({ variant: 'destructive', title: 'Erro', description: error.message });
         }
@@ -88,7 +101,7 @@ function UserProfile() {
                     </Avatar>
                     <div className="flex-1 truncate group-data-[collapsible=icon]:hidden">
                         <p className="font-semibold text-sm truncate">{user.displayName || user.email}</p>
-                        <p className="text-xs text-muted-foreground">Admin</p>
+                        <p className="text-xs text-muted-foreground">{isAdmin ? 'Admin' : 'Usuário'}</p>
                     </div>
                 </div>
             </div>
@@ -109,6 +122,21 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const { user, isUserLoading } = useUser();
   const router = useRouter();
   const auth = useAuth();
+  const firestore = useFirestore();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+   useEffect(() => {
+    if (user) {
+      const checkAdminStatus = async () => {
+        const adminDocRef = doc(firestore, 'roles_admin', user.uid);
+        const docSnap = await getDoc(adminDocRef);
+        setIsAdmin(docSnap.exists());
+      };
+      checkAdminStatus();
+    } else {
+        setIsAdmin(false);
+    }
+  }, [user, firestore]);
 
   React.useEffect(() => {
     if (!isUserLoading && !user) {
@@ -197,23 +225,37 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
-             <SidebarMenu>
-               <p className="px-4 py-2 text-xs font-semibold text-muted-foreground/50 tracking-wider group-data-[collapsible=icon]:text-center">
-                Admin
-              </p>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={pathname.startsWith('/admin/users')}
-                  tooltip={{ children: 'Usuários' }}
-                >
-                  <Link href="/admin/users">
-                    <Users />
-                    <span>Usuários</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
+             {isAdmin && (
+                <SidebarMenu>
+                <p className="px-4 py-2 text-xs font-semibold text-muted-foreground/50 tracking-wider group-data-[collapsible=icon]:text-center">
+                    Admin
+                </p>
+                <SidebarMenuItem>
+                    <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith('/admin/users')}
+                    tooltip={{ children: 'Usuários' }}
+                    >
+                    <Link href="/admin/users">
+                        <Users />
+                        <span>Usuários</span>
+                    </Link>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+                 <SidebarMenuItem>
+                    <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith('/assets')}
+                    tooltip={{ children: 'Ativos' }}
+                    >
+                    <Link href="/assets">
+                        <Archive />
+                        <span>Ativos</span>
+                    </Link>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+                </SidebarMenu>
+            )}
           </SidebarContent>
           <div className="mt-auto">
             <SidebarContent className="!flex-grow-0 border-t">

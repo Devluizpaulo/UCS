@@ -41,6 +41,7 @@ export async function createUser(userData: {
       password: tempPassword,
       disabled: userData.disabled || false,
       emailVerified: true, 
+      customClaims: { role: 'user' } // Define o papel padrão como 'user'
     };
 
     if (userData.phoneNumber) {
