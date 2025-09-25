@@ -1,45 +1,12 @@
 
 'use server';
 
-import { redirect } from 'next/navigation';
 import { PageHeader } from '@/components/page-header';
 import { Users } from 'lucide-react';
 import { UserManagementTable } from '@/components/admin/user-management-table';
 import { getUsers } from '@/lib/admin-actions';
-import { getFirebaseAdmin } from '@/lib/firebase-admin-config';
-import { cookies } from 'next/headers';
-
-async function verifyAdmin(): Promise<boolean> {
-  try {
-    const { auth, db: firestore } = await getFirebaseAdmin();
-    const cookieStore = cookies();
-    const authToken = cookieStore.get('AuthToken')?.value;
-
-    if (!authToken) {
-      return false;
-    }
-
-    const decodedToken = await auth.verifyIdToken(authToken);
-    const adminUserDoc = await firestore
-      .collection('roles_admin')
-      .doc(decodedToken.uid)
-      .get();
-    
-    return adminUserDoc.exists;
-  } catch (error) {
-    console.error("Error verifying admin status:", error);
-    return false;
-  }
-}
-
 
 export default async function AdminUsersPage() {
-  const isAdmin = await verifyAdmin();
-
-  if (!isAdmin) {
-    redirect('/dashboard');
-  }
-  
   const users = await getUsers();
 
   return (
