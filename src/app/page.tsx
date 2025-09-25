@@ -147,59 +147,6 @@ export default async function LandingPage() {
             </div>
           </div>
         </section>
-
-        <section id="services" className="w-full bg-muted/50 py-16 md:py-24">
-          <div className="container mx-auto px-4 md:px-6">
-            <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
-              <div className="space-y-2">
-                <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl">Nossas Soluções</h2>
-                <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed">
-                  Oferecemos um ecossistema completo para a gestão, negociação e certificação de Unidades de Crédito de Sustentabilidade.
-                </p>
-              </div>
-            </div>
-            <div className="mx-auto grid max-w-5xl items-stretch gap-6 sm:grid-cols-2 md:max-w-none md:grid-cols-3">
-              {services.map((service) => (
-                <div key={service.title} className="group flex flex-col items-start gap-4 rounded-xl border bg-card p-6 shadow-sm transition-all hover:border-primary/50 hover:shadow-primary/10">
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                        <service.icon className="h-6 w-6" />
-                    </div>
-                    <h3 className="text-xl font-bold">{service.title}</h3>
-                  </div>
-                  <p className="text-sm text-muted-foreground flex-grow">{service.description}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section id="did-you-know" className="w-full bg-background py-16 md:py-24">
-            <div className="container mx-auto px-4 md:px-6">
-                <div className="flex flex-col items-center justify-center space-y-4 text-center">
-                <div className="space-y-2">
-                    <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl text-primary">Você Sabia?</h2>
-                    <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed">
-                        Informações cruciais sobre o futuro do mercado financeiro e a economia sustentável.
-                    </p>
-                </div>
-                </div>
-                <div className="mx-auto grid max-w-3xl gap-10 py-12">
-                    {didYouKnow.map((item) => (
-                        <div key={item.title} className="flex items-start gap-6">
-                            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                                <item.icon className="h-6 w-6" />
-                            </div>
-                            <div className="flex-1">
-                                <h3 className="text-lg font-bold mb-1">{item.title}</h3>
-                                <p className="text-muted-foreground">{item.description}</p>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        </section>
-
       </main>
 
       <footer className="border-t">
