@@ -61,7 +61,7 @@ export function UserFormModal({ isOpen, onOpenChange, onSubmit, user }: UserForm
     defaultValues: {
       displayName: '',
       email: '',
-      phoneNumber: '',
+      phoneNumber: '+55',
       password: '',
       disabled: false,
     },
@@ -72,7 +72,7 @@ export function UserFormModal({ isOpen, onOpenChange, onSubmit, user }: UserForm
       form.reset({
         displayName: user.displayName || '',
         email: user.email || '',
-        phoneNumber: user.phoneNumber || '',
+        phoneNumber: user.phoneNumber || '+55',
         password: '',
         disabled: user.disabled,
       });
@@ -80,7 +80,7 @@ export function UserFormModal({ isOpen, onOpenChange, onSubmit, user }: UserForm
       form.reset({
         displayName: '',
         email: '',
-        phoneNumber: '',
+        phoneNumber: '+55',
         password: '',
         disabled: false,
       });
@@ -102,7 +102,7 @@ export function UserFormModal({ isOpen, onOpenChange, onSubmit, user }: UserForm
           <DialogDescription>
             {isEditing 
                 ? 'Atualize os dados do usuário.' 
-                : "Preencha os dados abaixo. O usuário receberá um link único para definir sua senha e acessar a plataforma."
+                : "Preencha os dados abaixo. O usuário receberá um link único para que possa definir sua senha e acessar a plataforma."
             }
           </DialogDescription>
         </DialogHeader>
