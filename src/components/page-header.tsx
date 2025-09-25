@@ -10,16 +10,16 @@ type PageHeaderProps = {
 
 export function PageHeader({ title, description, icon: Icon, children }: PageHeaderProps) {
   return (
-    <header className="flex h-auto min-h-16 flex-wrap items-center gap-4 border-b bg-background/95 px-4 sticky top-0 z-30 sm:px-6 py-3">
-      <SidebarTrigger className="md:hidden" />
+    <header className="flex h-auto min-h-16 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b bg-background/95 px-4 sticky top-0 z-30 sm:px-6 py-3">
       <div className="flex flex-1 items-center gap-3 min-w-0">
-        {Icon && <Icon className="h-6 w-6 text-muted-foreground" />}
-        <div className="flex-1">
+        <SidebarTrigger className="md:hidden" />
+        {Icon && <Icon className="h-6 w-6 text-muted-foreground hidden sm:block" />}
+        <div className="flex-1 min-w-0">
           <h1 className="font-semibold text-lg md:text-2xl truncate">{title}</h1>
           {description && <p className="text-sm text-muted-foreground truncate">{description}</p>}
         </div>
       </div>
-      <div className="flex items-center gap-2 ml-auto">{children}</div>
+      {children && <div className="flex items-center gap-2">{children}</div>}
     </header>
   );
 }
