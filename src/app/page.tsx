@@ -61,7 +61,7 @@ export default function LandingPage() {
       <main className="flex-1">
         <section className="relative w-full h-[calc(100vh-4rem)] flex flex-col justify-between text-center p-4 sm:p-6">
           <Image
-            src="https://picsum.photos/seed/deep-forest/1920/1080"
+            src="https://picsum.photos/seed/lush-forest/1920/1080"
             alt="Floresta exuberante ao fundo"
             fill
             className="object-cover animate-zoom-in"
@@ -134,11 +134,6 @@ export default function LandingPage() {
           <div className="flex flex-col items-center gap-2 text-center md:flex-row md:gap-4 md:text-left">
             <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} UCS Index. Todos os direitos reservados.</p>
             <p className="text-sm text-muted-foreground">Fonte dos dados: <a href="https://br.investing.com/" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">investing.com.br</a></p>
-          </div>
-          <div className="flex items-center gap-4">
-              <a href="https://bmvdigital.global/" target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground transition-colors hover:text-primary">
-                Site Institucional
-              </a>
           </div>
         </div>
       </footer>
