@@ -85,8 +85,9 @@ export default function DashboardPage() {
   const { data, isLoading } = useRealtimeData(targetDate);
   
   const { mainIndices, otherAssets } = useMemo(() => {
-    const main = data.filter(d => d.category === 'index' && d.id !== 'ucs_ase').sort((a, b) => a.name.localeCompare(b.name));
-    const secondary = data.filter(d => d.category !== 'index');
+    const excludedIndexIds = ['ucs_ase', 'vus', 'vmad', 'crs'];
+    const main = data.filter(d => d.category === 'index' && !excludedIndexIds.includes(d.id)).sort((a, b) => a.name.localeCompare(b.name));
+    const secondary = data.filter(d => d.category !== 'index' || ['vus', 'vmad', 'crs'].includes(d.id));
     return { mainIndices: main, otherAssets: secondary };
   }, [data]);
   
