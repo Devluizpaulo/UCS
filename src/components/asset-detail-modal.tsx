@@ -29,7 +29,6 @@ import { getCotacoesHistorico } from '@/lib/data-service';
 import { formatCurrency } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
 import { HistoricalPriceTable } from './historical-price-table';
-import { isCalculableAsset } from '@/lib/calculation-service';
 import { CalculatedAssetDetails } from './calculated-asset-details';
 import { ScrollArea } from './ui/scroll-area';
 
@@ -43,7 +42,7 @@ export function AssetDetailModal({ asset, isOpen, onOpenChange }: AssetDetailMod
   const [historicalData, setHistoricalData] = useState<FirestoreQuote[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  const isCalculated = isCalculableAsset(asset.id);
+  const isCalculated = asset.category === 'index';
 
   useEffect(() => {
     if (isOpen) {
