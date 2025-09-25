@@ -103,7 +103,7 @@ export default async function LandingPage() {
       </header>
 
       <main className="flex-1">
-        <section className="relative w-full flex items-center justify-center text-center py-24 lg:py-40">
+        <section className="relative w-full flex items-center justify-center text-center py-24 lg:py-32">
           <Image
             src="https://picsum.photos/seed/forest-path/1920/1080"
             alt="Floresta exuberante e sustentável"
@@ -112,21 +112,38 @@ export default async function LandingPage() {
             data-ai-hint="lush forest path"
           />
           <div className="absolute inset-0 bg-black/60" />
-          <div className="relative z-10 flex flex-col items-center gap-6 px-4 md:px-6">
-            <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl text-white">
-              O Futuro do Capital Natural é Digital
-            </h1>
-            <p className="mx-auto max-w-[700px] text-lg text-gray-200 md:text-xl">
-              Transformamos ativos ambientais em oportunidades de investimento seguras e transparentes.
-            </p>
+          <div className="relative z-10 flex flex-col items-center gap-8 px-4 md:px-6">
+            <div className="flex flex-col items-center gap-4">
+                <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl text-white">
+                O Futuro do Capital Natural é Digital
+                </h1>
+                <p className="mx-auto max-w-[700px] text-lg text-gray-200 md:text-xl">
+                Transformamos ativos ambientais em oportunidades de investimento seguras e transparentes.
+                </p>
+            </div>
             
-             <div className="flex flex-col sm:flex-row gap-4 mt-6">
+            {ucsAseAsset && (
+              <div className="rounded-xl border border-white/20 bg-white/10 p-6 text-white shadow-lg backdrop-blur-md">
+                <div className="flex items-center justify-center gap-2 text-lg font-medium">
+                  <Leaf className="h-5 w-5 text-primary" />
+                  <span>Índice UCS ASE</span>
+                </div>
+                <div className="mt-2 text-center">
+                  <span className="text-5xl font-bold tracking-tight">
+                    {formatCurrency(ucsAseAsset.price, ucsAseAsset.currency, ucsAseAsset.id)}
+                  </span>
+                  <span className="ml-1 text-base font-medium text-gray-300">{ucsAseAsset.currency}</span>
+                </div>
+              </div>
+            )}
+
+             <div className="flex flex-col sm:flex-row gap-4">
                 <Button size="lg" asChild>
                     <Link href="/login">
                         Acessar Plataforma <ArrowRight className="ml-2 h-5 w-5" />
                     </Link>
                 </Button>
-              <Button size="lg" variant="outline" className="border-primary text-primary hover:bg-primary/10" asChild>
+              <Button size="lg" variant="outline" className="border-primary bg-transparent text-primary hover:bg-primary/10 hover:text-primary-foreground" asChild>
                 <a href="https://bmvdigital.global/" target="_blank" rel="noopener noreferrer">
                   Conheça a BMV Digital
                 </a>
@@ -259,7 +276,7 @@ export default async function LandingPage() {
       <footer className="border-t">
         <div className="container mx-auto flex flex-col items-center justify-between gap-4 px-4 py-8 md:flex-row md:px-6">
           <div className="flex flex-col items-center gap-2 text-center md:flex-row md:gap-4 md:text-left">
-            <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} BMV Digital. Todos os direitos reservados.</p>
+            <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} UCS Index. Todos os direitos reservados.</p>
             <p className="text-sm text-muted-foreground">Fonte dos dados: <a href="https://br.investing.com/" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">investing.com.br</a></p>
           </div>
           <div className="flex items-center gap-4">
