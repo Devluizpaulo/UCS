@@ -28,6 +28,7 @@ import { Switch } from '@/components/ui/switch';
 import { Loader2 } from 'lucide-react';
 import { useEffect } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { User } from 'firebase/auth';
 
 const e164Regex = /^\+[1-9]\d{1,14}$/;
 
@@ -55,10 +56,11 @@ interface UserFormModalProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   onSubmit: (values: any) => Promise<void>;
-  user?: UserRecord | null;
+  user?: UserRecord | User | null;
+  isSelfEdit?: boolean;
 }
 
-export function UserFormModal({ isOpen, onOpenChange, onSubmit, user }: UserFormModalProps) {
+export function UserFormModal({ isOpen, onOpenChange, onSubmit, user, isSelfEdit = false }: UserFormModalProps) {
   const isEditing = !!user;
   const formSchema = isEditing ? updateUserSchema : createUserSchema;
 
@@ -102,19 +104,24 @@ export function UserFormModal({ isOpen, onOpenChange, onSubmit, user }: UserForm
       phoneNumber: values.phoneNumber === '+55' ? '' : values.phoneNumber,
     };
     await onSubmit(processedValues);
-    form.reset();
+    if (!isEditing) {
+        form.reset();
+    }
   };
+
+  const title = isSelfEdit ? 'Editar Meu Perfil' : (isEditing ? 'Editar Usuário' : 'Convidar Novo Usuário');
+  const description = isSelfEdit 
+    ? 'Atualize seus dados pessoais.' 
+    : (isEditing ? 'Atualize os dados do usuário.' : "Preencha os dados abaixo. O usuário receberá um link único para que possa definir sua senha e acessar a plataforma.");
+
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="grid max-h-[90vh] grid-rows-[auto_minmax(0,1fr)_auto] p-0 sm:max-w-lg">
         <DialogHeader className="p-6 pb-4">
-          <DialogTitle>{isEditing ? 'Editar Usuário' : 'Convidar Novo Usuário'}</DialogTitle>
+          <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
-            {isEditing 
-                ? 'Atualize os dados do usuário.' 
-                : "Preencha os dados abaixo. O usuário receberá um link único para que possa definir sua senha e acessar a plataforma."
-            }
+            {description}
           </DialogDescription>
         </DialogHeader>
         <ScrollArea className="px-6">
@@ -177,23 +184,25 @@ export function UserFormModal({ isOpen, onOpenChange, onSubmit, user }: UserForm
                     )}
                     />
                 )}
-                <FormField
-                control={form.control}
-                name="disabled"
-                render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                    <div className="space-y-0.5">
-                        <FormLabel>Desativado</FormLabel>
-                        <FormDescription>
-                        Um usuário desativado não poderá fazer login.
-                        </FormDescription>
-                    </div>
-                    <FormControl>
-                        <Switch checked={field.value} onCheckedChange={field.onChange} />
-                    </FormControl>
-                    </FormItem>
+                {isEditing && !isSelfEdit && (
+                    <FormField
+                    control={form.control}
+                    name="disabled"
+                    render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                        <div className="space-y-0.5">
+                            <FormLabel>Desativado</FormLabel>
+                            <FormDescription>
+                            Um usuário desativado não poderá fazer login.
+                            </FormDescription>
+                        </div>
+                        <FormControl>
+                            <Switch checked={field.value} onCheckedChange={field.onChange} />
+                        </FormControl>
+                        </FormItem>
+                    )}
+                    />
                 )}
-                />
             </form>
             </Form>
         </ScrollArea>

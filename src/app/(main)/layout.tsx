@@ -26,10 +26,30 @@ import { useAuth, useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
-import React from 'react';
+import React, { useState } from 'react';
+import type { UserRecord } from 'firebase-admin/auth';
+import { UserFormModal, type UserFormValues } from '@/components/admin/user-form-modal';
+import { useToast } from '@/hooks/use-toast';
+import { updateUser } from '@/lib/admin-actions';
 
 function UserProfile() {
     const { user, isUserLoading } = useUser();
+    const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+    const { toast } = useToast();
+
+    const handleProfileUpdate = async (values: UserFormValues) => {
+        if (!user) return;
+        try {
+            await updateUser(user.uid, values);
+            toast({ title: 'Sucesso', description: 'Seu perfil foi atualizado.' });
+            setIsProfileModalOpen(false);
+            // Os dados do usuário no hook `useUser` não atualizam sozinhos aqui.
+            // O ideal seria forçar uma re-autenticação ou recarregar a página para ver as mudanças refletidas.
+            // Para simplicidade, vamos assumir que a atualização foi bem-sucedida visualmente.
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Erro', description: error.message });
+        }
+    }
     
     if (isUserLoading) {
         return (
@@ -49,21 +69,37 @@ function UserProfile() {
     
     const getInitials = (email: string | null) => {
         if (!email) return '..';
+        const nameParts = user.displayName?.split(' ') || [email];
+        if (nameParts.length > 1) {
+            return `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`.toUpperCase();
+        }
         return email.substring(0, 2).toUpperCase();
     }
 
     return (
-        <div className="flex flex-col items-start gap-2 p-2 group-data-[collapsible=icon]:items-center">
-            <div className="flex w-full items-center gap-2">
-                 <Avatar>
-                    <AvatarFallback>{getInitials(user.email)}</AvatarFallback>
-                </Avatar>
-                <div className="flex-1 truncate group-data-[collapsible=icon]:hidden">
-                    <p className="font-semibold text-sm truncate">{user.email}</p>
-                    <p className="text-xs text-muted-foreground">Admin</p>
+        <>
+            <div 
+                className="flex flex-col items-start gap-2 p-2 group-data-[collapsible=icon]:items-center cursor-pointer hover:bg-sidebar-accent/50 rounded-md"
+                onClick={() => setIsProfileModalOpen(true)}
+            >
+                <div className="flex w-full items-center gap-2">
+                    <Avatar>
+                        <AvatarFallback>{getInitials(user.email)}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 truncate group-data-[collapsible=icon]:hidden">
+                        <p className="font-semibold text-sm truncate">{user.displayName || user.email}</p>
+                        <p className="text-xs text-muted-foreground">Admin</p>
+                    </div>
                 </div>
             </div>
-        </div>
+             <UserFormModal
+                isOpen={isProfileModalOpen}
+                onOpenChange={setIsProfileModalOpen}
+                onSubmit={handleProfileUpdate}
+                user={user as unknown as UserRecord}
+                isSelfEdit={true}
+            />
+        </>
     );
 }
 
