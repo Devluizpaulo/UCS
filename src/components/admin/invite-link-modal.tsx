@@ -63,20 +63,20 @@ export function InviteLinkModal({ isOpen, onOpenChange, inviteInfo }: InviteLink
   };
 
   const getMailtoLink = () => {
-    const subject = encodeURIComponent(`Convite para a Plataforma UCS Index`);
+    const subject = encodeURIComponent(`Convite para a Plataforma de Monitoramento UCS Index`);
     const body = encodeURIComponent(
-      `Olá, ${inviteInfo.name},\n\nVocê foi convidado para acessar a plataforma de monitoramento do Índice UCS.\n\nClique no link abaixo para criar sua senha e começar:\n${inviteInfo.link}\n\nAtenciosamente,\nA Equipe`
+      `Olá, ${inviteInfo.name},\n\nÉ com grande prazer que convidamos você para acessar a Plataforma de Monitoramento do Índice UCS.\n\nPara ativar sua conta e definir uma senha de acesso segura, por favor, utilize o link exclusivo abaixo:\n\n${inviteInfo.link}\n\nEste link é pessoal e intransferível.\n\nSeja bem-vindo(a)!\n\nAtenciosamente,\nA Equipe UCS Index`
     );
     return `mailto:${inviteInfo.email}?subject=${subject}&body=${body}`;
   };
 
   const getWhatsAppLink = () => {
-      const text = encodeURIComponent(
-        `Olá, ${inviteInfo.name}. Você foi convidado para a plataforma UCS Index. Crie sua senha e acesse pelo link: ${inviteInfo.link}`
-      );
-      // Remove non-digit characters from phone number for the link, but keeps the '+'
-      const cleanPhoneNumber = inviteInfo.phoneNumber?.replace(/[^0-9+]/g, '').replace('+', '');
-      return `https://wa.me/${cleanPhoneNumber}?text=${text}`;
+    const text = encodeURIComponent(
+      `Olá, ${inviteInfo.name}! 🚀 Você foi convidado para a plataforma de monitoramento UCS Index. Para ativar sua conta e definir sua senha, acesse o link seguro: ${inviteInfo.link}`
+    );
+    // Remove non-digit characters from phone number for the link, but keeps the '+'
+    const cleanPhoneNumber = inviteInfo.phoneNumber?.replace(/[^0-9+]/g, '').replace('+', '');
+    return `https://wa.me/${cleanPhoneNumber}?text=${text}`;
   }
 
   return (
@@ -96,7 +96,7 @@ export function InviteLinkModal({ isOpen, onOpenChange, inviteInfo }: InviteLink
             {hasCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
           </Button>
         </div>
-        <DialogFooter className="flex-col gap-2 pt-4 sm:flex-row sm:justify-start">
+        <DialogFooter className="flex-col gap-2 pt-4 sm:flex-row sm:flex-wrap sm:justify-start">
             <Button asChild>
                 <a href={getMailtoLink()} target="_blank" rel="noopener noreferrer">
                 <Mail className="mr-2 h-4 w-4" /> Enviar por E-mail
