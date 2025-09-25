@@ -1,13 +1,16 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { addDays, formatISO } from "date-fns"
+import { addDays, format } from "date-fns"
 import type { DateRange } from "react-day-picker"
 import * as React from 'react';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
+
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Loader2, Sparkles, FileDown, FileText } from 'lucide-react';
+import { Loader2, Sparkles, FileDown } from 'lucide-react';
 import { DateRangePicker } from './date-range-picker';
 import { Separator } from './ui/separator';
 import { generateReport, type ReportInput, type ReportOutput } from '@/ai/flows/report-flow';
@@ -39,7 +42,9 @@ type ReportFormData = z.infer<typeof reportSchema>;
 
 export function ReportGenerator() {
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const [reportResult, setReportResult] = useState<ReportOutput | null>(null);
+  const reportContentRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   const [date, setDate] = useState<DateRange | undefined>({
@@ -51,6 +56,7 @@ export function ReportGenerator() {
     control,
     handleSubmit,
     setValue,
+    watch,
     formState: { errors },
   } = useForm<ReportFormData>({
     resolver: zodResolver(reportSchema),
@@ -63,6 +69,8 @@ export function ReportGenerator() {
       userPrompt: '',
     },
   });
+
+  const assetId = watch('assetId');
 
   React.useEffect(() => {
     if (date) {
@@ -87,6 +95,61 @@ export function ReportGenerator() {
     }
     
     setIsGenerating(false);
+  };
+  
+  const handleDownloadPdf = async () => {
+    if (!reportContentRef.current) {
+        toast({
+            variant: 'destructive',
+            title: 'Erro de Exportação',
+            description: 'Não foi possível encontrar o conteúdo do relatório para exportar.',
+        });
+        return;
+    }
+    
+    setIsDownloading(true);
+
+    try {
+        const canvas = await html2canvas(reportContentRef.current, {
+            scale: 2, // Aumenta a resolução da captura
+            useCORS: true,
+            backgroundColor: null,
+        });
+        
+        const imgData = canvas.toDataURL('image/png');
+        
+        const pdf = new jsPDF({
+            orientation: 'p',
+            unit: 'mm',
+            format: 'a4',
+        });
+        
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+        const ratio = canvasWidth / canvasHeight;
+        
+        // Define margens
+        const margin = 15;
+        const contentWidth = pdfWidth - (margin * 2);
+        const contentHeight = contentWidth / ratio;
+
+        pdf.addImage(imgData, 'PNG', margin, margin, contentWidth, contentHeight);
+
+        const fileName = `relatorio_${assetId}_${format(new Date(), 'yyyy-MM-dd')}.pdf`;
+        pdf.save(fileName);
+
+    } catch(error) {
+         toast({
+            variant: 'destructive',
+            title: 'Erro ao gerar PDF',
+            description: 'Ocorreu uma falha durante a criação do arquivo PDF.',
+        });
+        console.error('PDF Generation Error:', error);
+    } finally {
+        setIsDownloading(false);
+    }
   };
 
 
@@ -165,11 +228,26 @@ export function ReportGenerator() {
       {/* Coluna de Resultado */}
       <div className="lg:col-span-2">
         <Card className="h-full min-h-[600px]">
-           <CardHeader>
-              <CardTitle>Resultado da Análise</CardTitle>
-              <CardDescription>
-                Visualize o resumo da IA e faça o download do relatório completo.
-              </CardDescription>
+           <CardHeader className="flex flex-row items-start justify-between">
+              <div>
+                <CardTitle>Resultado da Análise</CardTitle>
+                <CardDescription>
+                  Visualize o resumo da IA e faça o download do relatório completo.
+                </CardDescription>
+              </div>
+              <Button onClick={handleDownloadPdf} disabled={!reportResult || isDownloading}>
+                {isDownloading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Baixando...
+                    </>
+                  ) : (
+                    <>
+                      <FileDown className="mr-2 h-4 w-4" />
+                      Baixar PDF
+                    </>
+                )}
+              </Button>
             </CardHeader>
           <CardContent>
             {isGenerating ? (
@@ -179,7 +257,7 @@ export function ReportGenerator() {
                     <p className="text-sm text-muted-foreground max-w-sm">Isso pode levar alguns instantes. Estamos compilando o histórico de preços, calculando métricas e gerando a análise textual.</p>
                 </div>
             ) : reportResult ? (
-                <div className="space-y-6">
+                <div ref={reportContentRef} className="space-y-6 bg-background p-4 sm:p-6 rounded-lg">
                     <div>
                         <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
                             <Sparkles className="h-5 w-5 text-primary" />
@@ -207,17 +285,9 @@ export function ReportGenerator() {
                             <p>{reportResult.conclusion}</p>
                         </div>
                     </div>
-
-                    <Separator />
-
-                    <div className="flex flex-col items-center justify-center text-center bg-muted/30 border-2 border-dashed rounded-lg p-8">
-                         <FileText className="h-12 w-12 text-muted-foreground mb-4" />
-                        <h3 className="text-lg font-semibold mb-2">Geração de PDF (Em Breve)</h3>
-                        <p className="text-sm text-muted-foreground mb-4">A funcionalidade para baixar o relatório completo em PDF será implementada em breve.</p>
-                        <Button disabled>
-                            <FileDown className="mr-2 h-4 w-4" />
-                            Baixar PDF
-                        </Button>
+                    <Separator className="my-6" />
+                     <div className="text-xs text-muted-foreground text-center pt-4">
+                        Relatório gerado pela plataforma UCS Index em {format(new Date(), "dd/MM/yyyy 'às' HH:mm")}
                     </div>
                 </div>
             ) : (
