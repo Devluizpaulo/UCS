@@ -148,73 +148,6 @@ export default async function LandingPage() {
           </div>
         </section>
 
-        <section id="index-highlight" className="w-full bg-background py-16 md:py-24">
-            <div className="container mx-auto px-4 md:px-6">
-                 <div className="grid md:grid-cols-2 gap-12 items-center">
-                    <div className="flex flex-col gap-4">
-                         <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl text-primary">Índice UCS ASE</h2>
-                         <p className="text-muted-foreground text-lg">
-                            O principal indicador do mercado de ativos sustentáveis. O Índice de Unidade de Crédito de Sustentabilidade da Amazônia em Pé (UCS ASE) reflete o valor combinado dos ativos ambientais e agrícolas, criando uma referência sólida para o mercado de capitais naturais.
-                         </p>
-                         <ul className="grid gap-4 mt-4">
-                            <li className="flex items-start gap-3">
-                                <CheckCircle className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
-                                <div>
-                                    <h3 className="font-semibold">Transparência</h3>
-                                    <p className="text-muted-foreground text-sm">Baseado em dados de mercado atualizados diariamente.</p>
-                                </div>
-                            </li>
-                            <li className="flex items-start gap-3">
-                                <CheckCircle className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
-                                <div>
-                                    <h3 className="font-semibold">Credibilidade</h3>
-                                    <p className="text-muted-foreground text-sm">Composto por ativos essenciais da economia verde e agrícola.</p>
-                                </div>
-                            </li>
-                            <li className="flex items-start gap-3">
-                                <CheckCircle className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
-                                <div>
-                                    <h3 className="font-semibold">Oportunidade</h3>
-                                    <p className="text-muted-foreground text-sm">Um novo horizonte para investimentos de impacto com retorno financeiro.</p>
-                                </div>
-                            </li>
-                         </ul>
-                    </div>
-                    <div className="flex items-center justify-center">
-                       <Carousel className="w-full max-w-sm" opts={{ loop: true }} plugins={[
-                          // Autoplay({ delay: 4000 }),
-                       ]}>
-                          <CarouselContent>
-                            {indexValues.map((item, index) => (
-                              <CarouselItem key={index}>
-                                <Card className="bg-card border-border shadow-lg">
-                                  <CardHeader className="items-center text-center">
-                                      <div className="flex items-center gap-2">
-                                        <item.icon className="h-6 w-6 text-primary" />
-                                        <CardTitle className="text-xl">Índice UCS ASE</CardTitle>
-                                      </div>
-                                  </CardHeader>
-                                  <CardContent className="text-center">
-                                    <p className="text-5xl lg:text-6xl font-bold text-foreground font-mono">
-                                      {item.value > 0 ? formatCurrency(item.value, item.currency) : '...'}
-                                    </p>
-                                    <p className="text-sm text-muted-foreground">{item.currency}</p>
-                                    {item.conversionRate && (
-                                        <p className="text-xs text-muted-foreground/70 mt-2">
-                                            (1 {item.currency} = {formatCurrency(item.conversionRate, 'BRL', 'usd')})
-                                        </p>
-                                    )}
-                                  </CardContent>
-                                </Card>
-                              </CarouselItem>
-                            ))}
-                          </CarouselContent>
-                        </Carousel>
-                    </div>
-                </div>
-            </div>
-        </section>
-
         <section id="services" className="w-full bg-muted/50 py-16 md:py-24">
           <div className="container mx-auto px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
@@ -288,4 +221,6 @@ export default async function LandingPage() {
 
     
     
+    
+
     
