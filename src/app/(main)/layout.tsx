@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -23,7 +24,7 @@ import {
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LogoUCS } from '@/components/logo-bvm';
-import { useAuth, useUser } from '@/firebase';
+import { useAuth, useUser, useSidebar } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -117,16 +118,16 @@ function UserProfile() {
     );
 }
 
-
-export default function MainLayout({ children }: { children: React.ReactNode }) {
+function MainLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, isUserLoading } = useUser();
   const router = useRouter();
   const auth = useAuth();
   const firestore = useFirestore();
+  const { isMobile, setOpenMobile } = useSidebar();
   const [isAdmin, setIsAdmin] = useState(false);
 
-   useEffect(() => {
+  useEffect(() => {
     if (user) {
       const checkAdminStatus = async () => {
         const adminDocRef = doc(firestore, 'roles_admin', user.uid);
@@ -135,23 +136,29 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       };
       checkAdminStatus();
     } else {
-        setIsAdmin(false);
+      setIsAdmin(false);
     }
   }, [user, firestore]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isUserLoading && !user) {
       router.replace('/login');
     }
   }, [isUserLoading, user, router]);
 
-   const handleSignOut = async () => {
+  const handleSignOut = async () => {
     await auth.signOut();
     router.push('/');
   };
 
+  const handleMenuItemClick = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
+
   if (isUserLoading || !user) {
-     return (
+    return (
       <div className="flex h-screen w-full items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
@@ -159,7 +166,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   }
 
   return (
-    <SidebarProvider>
+    <>
       <Sidebar>
         <div className="flex flex-col h-full">
           <SidebarHeader>
@@ -172,7 +179,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           </SidebarHeader>
           <SidebarContent className="flex-grow">
             <SidebarMenu>
-              <SidebarMenuItem>
+              <SidebarMenuItem onClick={handleMenuItemClick}>
                 <SidebarMenuButton
                   asChild
                   isActive={pathname === '/dashboard'}
@@ -184,7 +191,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              <SidebarMenuItem>
+              <SidebarMenuItem onClick={handleMenuItemClick}>
                 <SidebarMenuButton
                   asChild
                   isActive={pathname.startsWith('/reports')}
@@ -201,7 +208,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
               <p className="px-4 py-2 text-xs font-semibold text-muted-foreground/50 tracking-wider group-data-[collapsible=icon]:text-center">
                 Análise
               </p>
-              <SidebarMenuItem>
+              <SidebarMenuItem onClick={handleMenuItemClick}>
                 <SidebarMenuButton
                   asChild
                   isActive={pathname.startsWith('/analysis/trends')}
@@ -213,7 +220,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              <SidebarMenuItem>
+              <SidebarMenuItem onClick={handleMenuItemClick}>
                 <SidebarMenuButton
                   asChild
                   isActive={pathname.startsWith('/analysis/risk')}
@@ -225,7 +232,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              <SidebarMenuItem>
+              <SidebarMenuItem onClick={handleMenuItemClick}>
                 <SidebarMenuButton
                   asChild
                   isActive={pathname.startsWith('/analysis/composition')}
@@ -238,57 +245,63 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
-             {isAdmin && (
-                <SidebarMenu>
+            {isAdmin && (
+              <SidebarMenu>
                 <p className="px-4 py-2 text-xs font-semibold text-muted-foreground/50 tracking-wider group-data-[collapsible=icon]:text-center">
-                    Admin
+                  Admin
                 </p>
-                <SidebarMenuItem>
-                    <SidebarMenuButton
+                <SidebarMenuItem onClick={handleMenuItemClick}>
+                  <SidebarMenuButton
                     asChild
                     isActive={pathname.startsWith('/admin/users')}
                     tooltip={{ children: 'Usuários' }}
-                    >
+                  >
                     <Link href="/admin/users">
-                        <Users />
-                        <span>Usuários</span>
+                      <Users />
+                      <span>Usuários</span>
                     </Link>
-                    </SidebarMenuButton>
+                  </SidebarMenuButton>
                 </SidebarMenuItem>
-                 <SidebarMenuItem>
-                    <SidebarMenuButton
+                <SidebarMenuItem onClick={handleMenuItemClick}>
+                  <SidebarMenuButton
                     asChild
                     isActive={pathname.startsWith('/assets')}
                     tooltip={{ children: 'Ativos' }}
-                    >
+                  >
                     <Link href="/assets">
-                        <Archive />
-                        <span>Ativos</span>
+                      <Archive />
+                      <span>Ativos</span>
                     </Link>
-                    </SidebarMenuButton>
+                  </SidebarMenuButton>
                 </SidebarMenuItem>
-                </SidebarMenu>
+              </SidebarMenu>
             )}
           </SidebarContent>
           <div className="mt-auto">
             <SidebarContent className="!flex-grow-0 border-t">
-                <SidebarMenu>
-                    <SidebarMenuItem>
-                        <SidebarMenuButton
-                        onClick={handleSignOut}
-                        tooltip={{ children: 'Sair' }}
-                        >
-                        <LogOut />
-                        <span>Sair</span>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                </SidebarMenu>
-                <UserProfile />
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton onClick={handleSignOut} tooltip={{ children: 'Sair' }}>
+                    <LogOut />
+                    <span>Sair</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+              <UserProfile />
             </SidebarContent>
           </div>
         </div>
       </Sidebar>
       <SidebarInset>{children}</SidebarInset>
+    </>
+  );
+}
+
+
+export default function MainLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <SidebarProvider>
+      <MainLayoutContent>{children}</MainLayoutContent>
     </SidebarProvider>
   );
 }

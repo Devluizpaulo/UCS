@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { DependencyList, createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
@@ -29,6 +30,9 @@ export interface FirebaseContextState {
   user: User | null;
   isUserLoading: boolean; // True during initial auth check
   userError: Error | null; // Error from auth listener
+  // Sidebar state for mobile
+  isMobile?: boolean;
+  setOpenMobile?: (open: boolean) => void;
 }
 
 // Return type for useFirebase()
@@ -113,7 +117,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
  * Hook to access core Firebase services and user authentication state.
  * Throws error if core services are not available or used outside provider.
  */
-export const useFirebase = (): FirebaseServicesAndUser => {
+export const useFirebase = (): FirebaseServicesAndUser & Partial<Pick<FirebaseContextState, 'isMobile' | 'setOpenMobile'>> => {
   const context = useContext(FirebaseContext);
 
   if (context === undefined) {
@@ -131,6 +135,8 @@ export const useFirebase = (): FirebaseServicesAndUser => {
     user: context.user,
     isUserLoading: context.isUserLoading,
     userError: context.userError,
+    isMobile: context.isMobile,
+    setOpenMobile: context.setOpenMobile,
   };
 };
 
@@ -172,3 +178,12 @@ export const useUser = (): UserHookResult => { // Renamed from useAuthUser
   const { user, isUserLoading, userError } = useFirebase(); // Leverages the main hook
   return { user, isUserLoading, userError };
 };
+
+export const useSidebar = () => {
+    const context = useContext(FirebaseContext);
+    if (context === undefined) {
+        throw new Error('useSidebar must be used within a SidebarProvider.');
+    }
+    const { isMobile, setOpenMobile } = useFirebase();
+    return { isMobile, setOpenMobile };
+}
