@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Copy, Check, Mail, MessageCircle } from 'lucide-react';
+import { Copy, Check, Mail } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface InviteInfo {
@@ -74,8 +74,8 @@ export function InviteLinkModal({ isOpen, onOpenChange, inviteInfo }: InviteLink
       const text = encodeURIComponent(
         `Olá, ${inviteInfo.name}. Você foi convidado para a plataforma UCS Index. Crie sua senha e acesse pelo link: ${inviteInfo.link}`
       );
-      // Remove non-digit characters from phone number for the link
-      const cleanPhoneNumber = inviteInfo.phoneNumber?.replace(/\D/g, '');
+      // Remove non-digit characters from phone number for the link, but keeps the '+'
+      const cleanPhoneNumber = inviteInfo.phoneNumber?.replace(/[^0-9+]/g, '').replace('+', '');
       return `https://wa.me/${cleanPhoneNumber}?text=${text}`;
   }
 
@@ -98,7 +98,7 @@ export function InviteLinkModal({ isOpen, onOpenChange, inviteInfo }: InviteLink
         </div>
         <DialogFooter className="flex-col sm:flex-row sm:justify-start pt-4 gap-2">
           <Button asChild>
-            <a href={getMailtoLink()}>
+            <a href={getMailtoLink()} target="_blank" rel="noopener noreferrer">
               <Mail className="mr-2 h-4 w-4" /> Enviar por E-mail
             </a>
           </Button>

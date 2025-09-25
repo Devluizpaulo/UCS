@@ -29,10 +29,16 @@ import { Loader2 } from 'lucide-react';
 import { useEffect } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
+const e164Regex = /^\+[1-9]\d{1,14}$/;
+
 const userSchema = {
   displayName: z.string().min(3, { message: 'O nome é obrigatório.' }),
   email: z.string().email({ message: 'E-mail inválido.' }),
-  phoneNumber: z.string().optional(),
+  phoneNumber: z.string()
+    .refine(val => val === '' || val === '+55' || e164Regex.test(val), {
+      message: 'Formato inválido. Use o padrão internacional (ex: +5511999998888).',
+    })
+    .optional(),
   disabled: z.boolean().default(false),
 }
 
@@ -90,7 +96,12 @@ export function UserFormModal({ isOpen, onOpenChange, onSubmit, user }: UserForm
   const { isSubmitting } = form.formState;
 
   const handleFormSubmit = async (values: any) => {
-    await onSubmit(values);
+    // Garante que o campo de telefone vazio não seja enviado
+    const processedValues = {
+      ...values,
+      phoneNumber: values.phoneNumber === '+55' ? '' : values.phoneNumber,
+    };
+    await onSubmit(processedValues);
     form.reset();
   };
 
@@ -145,7 +156,7 @@ export function UserFormModal({ isOpen, onOpenChange, onSubmit, user }: UserForm
                         <Input placeholder="+5511999998888" {...field} />
                     </FormControl>
                     <FormDescription>
-                        Use o formato internacional (ex: +5511999998888).
+                        Use o formato internacional E.164 (ex: +5511999998888).
                     </FormDescription>
                     <FormMessage />
                     </FormItem>

@@ -60,7 +60,7 @@ export async function createUser(userData: {
      if (error.code === 'auth/invalid-phone-number') {
       throw new Error('O número de telefone fornecido é inválido. Use o formato E.164 (ex: +5511999998888).');
     }
-    throw new Error('Falha ao criar o usuário.');
+    throw new Error('Falha ao criar o usuário: ' + (error.message || 'Erro desconhecido'));
   }
 }
 
@@ -80,7 +80,7 @@ export async function updateUser(uid: string, userData: {
     const dataToUpdate: any = {
         disabled: userData.disabled,
         displayName: userData.displayName,
-        phoneNumber: userData.phoneNumber,
+        phoneNumber: userData.phoneNumber || undefined, // Envia undefined se for vazio para remover o número
     };
     if (userData.email) dataToUpdate.email = userData.email;
     if (userData.password) dataToUpdate.password = userData.password;
@@ -93,7 +93,7 @@ export async function updateUser(uid: string, userData: {
      if (error.code === 'auth/invalid-phone-number') {
       throw new Error('O número de telefone fornecido é inválido. Use o formato E.164 (ex: +5511999998888).');
     }
-    throw new Error('Falha ao atualizar o usuário.');
+    throw new Error('Falha ao atualizar o usuário: ' + (error.message || 'Erro desconhecido'));
   }
 }
 
