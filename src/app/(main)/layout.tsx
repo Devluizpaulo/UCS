@@ -178,18 +178,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={pathname.startsWith('/assets')}
-                  tooltip={{ children: 'Ativos' }}
-                >
-                  <Link href="/assets">
-                    <Archive />
-                    <span>Ativos</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarContent>
           <div className="mt-auto">
