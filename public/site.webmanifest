@@ -1,0 +1,21 @@
+{
+    "name": "Monitor do Índice UCS",
+    "short_name": "UCS Index",
+    "description": "Plataforma para monitoramento de ativos ambientais, incluindo o Índice de Unidade de Conservação Sustentável (UCS).",
+    "icons": [
+        {
+            "src": "/icons/icon.svg",
+            "sizes": "any",
+            "type": "image/svg+xml"
+        },
+        {
+            "src": "/icons/apple-icon.png",
+            "sizes": "180x180",
+            "type": "image/png"
+        }
+    ],
+    "theme_color": "#ffffff",
+    "background_color": "#ffffff",
+    "display": "standalone",
+    "start_url": "/"
+}
