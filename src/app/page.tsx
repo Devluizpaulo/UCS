@@ -78,43 +78,44 @@ export default function LandingPage() {
                 Transformamos ativos ambientais em oportunidades de investimento seguras e transparentes.
                 </p>
             </div>
-
-            <Carousel
-                plugins={[autoplayPlugin.current]}
-                opts={{
-                    align: "start",
-                    loop: true,
-                }}
-                className="w-full max-w-xs sm:max-w-sm"
-                onMouseEnter={autoplayPlugin.current.stop}
-                onMouseLeave={autoplayPlugin.current.reset}
-                >
-                <CarouselContent>
-                    {indexValues.map(({ currency, value, icon: Icon, conversionRate }) => (
-                    <CarouselItem key={currency}>
-                        <div className="p-1">
-                        <Card className="rounded-xl border border-white/20 bg-white/10 p-4 text-white shadow-lg backdrop-blur-md">
-                            <CardHeader className="p-0 text-center flex-row items-center justify-center gap-2">
-                                <Icon className="h-5 w-5 text-primary" />
-                                <CardTitle className="text-base font-medium">Índice UCS</CardTitle>
-                            </CardHeader>
-                             <CardContent className="p-0 mt-2 text-center">
-                                <span className="text-4xl font-bold tracking-tight">
-                                    {formatCurrency(value, currency, 'ucs_ase')}
-                                </span>
-                                <span className="ml-1 text-base font-medium text-gray-300">{currency}</span>
-                                {conversionRate && (
-                                    <p className="text-xs text-gray-400 mt-1">
-                                        (1 {currency} = {formatCurrency(conversionRate, 'BRL', 'usd')})
-                                    </p>
-                                )}
-                            </CardContent>
-                        </Card>
-                        </div>
-                    </CarouselItem>
-                    ))}
-                </CarouselContent>
-            </Carousel>
+            <div className="w-full flex justify-center">
+              <Carousel
+                  plugins={[autoplayPlugin.current]}
+                  opts={{
+                      align: "start",
+                      loop: true,
+                  }}
+                  className="w-full max-w-xs sm:max-w-sm"
+                  onMouseEnter={autoplayPlugin.current.stop}
+                  onMouseLeave={autoplayPlugin.current.reset}
+                  >
+                  <CarouselContent>
+                      {indexValues.map(({ currency, value, icon: Icon, conversionRate }) => (
+                      <CarouselItem key={currency}>
+                          <div className="p-1">
+                          <Card className="rounded-xl border border-white/20 bg-white/10 p-4 text-white shadow-lg backdrop-blur-md">
+                              <CardHeader className="p-0 text-center flex-row items-center justify-center gap-2">
+                                  <Icon className="h-5 w-5 text-primary" />
+                                  <CardTitle className="text-base font-medium">Índice UCS</CardTitle>
+                              </CardHeader>
+                              <CardContent className="p-0 mt-2 text-center">
+                                  <span className="text-4xl font-bold tracking-tight">
+                                      {formatCurrency(value, currency, 'ucs_ase')}
+                                  </span>
+                                  <span className="ml-1 text-base font-medium text-gray-300">{currency}</span>
+                                  {conversionRate && (
+                                      <p className="text-xs text-gray-400 mt-1">
+                                          (1 {currency} = {formatCurrency(conversionRate, 'BRL', 'usd')})
+                                      </p>
+                                  )}
+                              </CardContent>
+                          </Card>
+                          </div>
+                      </CarouselItem>
+                      ))}
+                  </CarouselContent>
+              </Carousel>
+            </div>
           </div>
           
           <div className="relative z-10 flex flex-col items-center justify-end px-4 py-4 md:px-6">
