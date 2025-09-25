@@ -66,7 +66,7 @@ function getPriceFromQuote(quoteData: any): number {
  * no Firestore não existir.
  */
 const initialCommoditiesConfig: Record<string, Omit<CommodityConfig, 'id'>> = {
-    'ucs_ase': { name: 'UCS ASE', currency: 'BRL', category: 'index', description: 'Índice principal de Unidade de Crédito de Sustentabilidade da Amazônia em pé.', unit: 'Pontos' },
+    'ucs_ase': { name: 'UCS ASE', currency: 'BRL', category: 'index', description: 'Índice principal de Unidade de Crédito de Sustentabilidade.', unit: 'Pontos' },
     'ucs': { name: 'UCS', currency: 'BRL', category: 'index', description: 'Unidade de Crédito de Sustentabilidade.', unit: 'BRL por UCS' },
     'pdm': { name: 'PDM', currency: 'BRL', category: 'index', description: 'Potencial Desflorestador Monetizado.', unit: 'BRL por PDM' },
     'usd': { name: 'Dólar Comercial', currency: 'BRL', category: 'exchange', description: 'Cotação do Dólar Americano (USD) em Reais (BRL).', unit: 'BRL por USD' },
