@@ -3,13 +3,12 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { Briefcase, CheckCircle, Globe, HandCoins, Landmark, Leaf, Repeat, Scale, ShieldCheck, TrendingUp, User, Euro, DollarSign } from "lucide-react";
+import { DollarSign, Euro, Leaf, User } from "lucide-react";
 import Image from 'next/image';
 import Link from 'next/link';
 import { LogoUCS } from "@/components/logo-bvm";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
 import { getCommodityPrices } from "@/lib/data-service";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 import { formatCurrency } from "@/lib/formatters";
@@ -42,7 +41,7 @@ export default function LandingPage() {
   ]
   
   return (
-    <div className="flex min-h-screen w-full flex-col bg-background text-foreground">
+    <div className="flex min-h-screen w-full flex-col overflow-x-hidden bg-background text-foreground">
       <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-sm">
         <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
           <LogoUCS />
@@ -59,7 +58,7 @@ export default function LandingPage() {
       </header>
 
       <main className="flex-1">
-        <section className="relative w-full h-full flex flex-col justify-between text-center">
+        <section className="relative flex h-full flex-col items-center justify-center p-4 text-center">
           <Image
             src="https://picsum.photos/seed/lush-forest/1920/1080"
             alt="Floresta exuberante ao fundo"
@@ -70,7 +69,7 @@ export default function LandingPage() {
           />
           <div className="absolute inset-0 bg-black/60" />
 
-          <div className="relative z-10 flex flex-col items-center gap-4 px-4 pt-12 md:px-6">
+          <div className="relative z-10 flex flex-1 flex-col items-center justify-center gap-4 px-4 pt-12 md:px-6">
             <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl text-white">
               O Futuro do Capital Natural é Digital
             </h1>
@@ -79,7 +78,7 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="relative z-10 flex flex-col items-center justify-center">
+          <div className="relative z-10 flex flex-1 flex-col items-center justify-center">
              <Carousel
                 plugins={[autoplayPlugin.current]}
                 opts={{
@@ -118,7 +117,7 @@ export default function LandingPage() {
             </Carousel>
           </div>
 
-          <div className="relative z-10 px-4 pb-8 md:px-6">
+          <div className="relative z-10 flex flex-1 flex-col items-center justify-end px-4 pb-8 md:px-6">
              <Button size="lg" variant="outline" className="border-primary bg-transparent text-primary hover:bg-primary/10 hover:text-primary-foreground" asChild>
                 <a href="https://bmvdigital.global/" target="_blank" rel="noopener noreferrer">
                   Conheça a BMV Digital
