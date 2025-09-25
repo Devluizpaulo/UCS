@@ -21,7 +21,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { ArrowDown, ArrowUp, Loader2 } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, subDays, isAfter } from 'date-fns';
 
 import type { CommodityPriceData, FirestoreQuote } from '@/lib/types';
 import { getIconForCategory } from '@/lib/icons';
@@ -48,8 +48,8 @@ export function AssetDetailModal({ asset, isOpen, onOpenChange }: AssetDetailMod
   useEffect(() => {
     if (isOpen) {
       setIsLoading(true);
-      // Fetch last 30 days of data for the chart.
-      getCotacoesHistorico(asset.id, 30)
+      // Fetch last 90 days of data for the table.
+      getCotacoesHistorico(asset.id, 90)
         .then((data) => {
           setHistoricalData(data);
           setIsLoading(false);
@@ -62,8 +62,13 @@ export function AssetDetailModal({ asset, isOpen, onOpenChange }: AssetDetailMod
   }, [asset.id, isOpen]);
 
   const chartData = useMemo(() => {
-    // Use last 30 entries for the chart for better readability
+    // Filter for the last 30 days for the chart
+    const thirtyDaysAgo = subDays(new Date(), 30);
     return historicalData
+      .filter(quote => {
+          const quoteDate = typeof quote.timestamp === 'number' ? new Date(quote.timestamp) : parseISO(quote.timestamp as any);
+          return isAfter(quoteDate, thirtyDaysAgo);
+      })
       .map((quote) => {
         const dateObject = typeof quote.timestamp === 'number' ? new Date(quote.timestamp) : parseISO(quote.timestamp as any);
          return {

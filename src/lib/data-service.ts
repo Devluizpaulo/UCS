@@ -183,8 +183,7 @@ export async function getQuoteByDate(assetId: string, date: Date): Promise<Fires
         const data = doc.data();
         return {
           id: doc.id,
-          ...data,
-          timestamp: serializeFirestoreTimestamp(data.timestamp),
+          ...serializeFirestoreTimestamp(data),
         } as FirestoreQuote;
     }
 
@@ -205,8 +204,7 @@ export async function getQuoteByDate(assetId: string, date: Date): Promise<Fires
     const data = doc.data();
     return {
         id: doc.id,
-        ...data,
-        timestamp: serializeFirestoreTimestamp(data.timestamp),
+        ...serializeFirestoreTimestamp(data),
     } as FirestoreQuote;
 }
 
@@ -288,8 +286,7 @@ export async function getLatestQuote(assetId: string): Promise<FirestoreQuote | 
     const data = doc.data();
     return {
         id: doc.id,
-        ...data,
-        timestamp: serializeFirestoreTimestamp(data.timestamp),
+        ...serializeFirestoreTimestamp(data),
     } as FirestoreQuote;
 }
 
@@ -414,8 +411,7 @@ export async function getCotacoesHistorico(assetId: string, days: number): Promi
         const docData = doc.data();
         return {
             id: doc.id,
-            ...docData,
-            timestamp: serializeFirestoreTimestamp(docData.timestamp),
+            ...serializeFirestoreTimestamp(docData),
             ultimo: getPriceFromQuote(docData),
         } as FirestoreQuote;
     });
@@ -457,8 +453,7 @@ export async function getCotacoesHistoricoPorRange(assetId: string, dateRange: D
             const docData = doc.data();
             return {
                 id: doc.id,
-                ...docData,
-                timestamp: serializeFirestoreTimestamp(docData.timestamp),
+                ...serializeFirestoreTimestamp(docData),
                 ultimo: getPriceFromQuote(docData),
             } as FirestoreQuote;
         });
