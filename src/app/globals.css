@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -116,6 +117,19 @@
   }
   .animate-spin-around {
       animation: spin-around 1.5s linear infinite;
+  }
+
+  @keyframes zoom-in {
+      from {
+          transform: scale(1);
+      }
+      to {
+          transform: scale(1.1);
+      }
+  }
+
+  .animate-zoom-in {
+      animation: zoom-in 20s ease-in-out infinite alternate;
   }
 
   /* Custom scrollbar styles */

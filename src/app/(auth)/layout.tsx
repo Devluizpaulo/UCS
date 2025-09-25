@@ -4,6 +4,7 @@
 import { useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import React, { useEffect } from 'react';
+import Image from 'next/image';
 
 export default function AuthLayout({
   children,
@@ -28,8 +29,17 @@ export default function AuthLayout({
   }
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-muted/40 p-4">
-      <div className="w-full max-w-md">
+    <div className="relative flex min-h-screen w-full items-center justify-center p-4">
+      <Image
+        src="https://picsum.photos/seed/login-bg/1920/1080"
+        alt="Floresta exuberante ao fundo"
+        fill
+        className="object-cover animate-zoom-in"
+        data-ai-hint="lush forest"
+        priority
+      />
+      <div className="absolute inset-0 bg-black/50" />
+      <div className="relative z-10 w-full max-w-md">
         {children}
       </div>
     </div>

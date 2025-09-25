@@ -1,10 +1,11 @@
+
 import { LoginForm } from "@/components/auth/login-form";
 import { LogoUCS } from "@/components/logo-bvm";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function LoginPage() {
     return (
-        <Card>
+        <Card className="bg-card/90 backdrop-blur-sm">
             <CardHeader className="text-center">
                  <div className="flex justify-center mb-4">
                     <LogoUCS />
