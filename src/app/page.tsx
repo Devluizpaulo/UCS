@@ -1,6 +1,9 @@
 
+'use client';
+
+import React from 'react';
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Briefcase, CheckCircle, Globe, HandCoins, Landmark, Leaf, Repeat, Scale, ShieldCheck, TrendingUp, User, Euro, DollarSign } from "lucide-react";
+import { Briefcase, CheckCircle, Globe, HandCoins, Landmark, Leaf, Repeat, Scale, ShieldCheck, TrendingUp, User, Euro, DollarSign } from "lucide-react";
 import Image from 'next/image';
 import Link from 'next/link';
 import { LogoUCS } from "@/components/logo-bvm";
@@ -10,67 +13,19 @@ import { cn } from "@/lib/utils";
 import { getCommodityPrices } from "@/lib/data-service";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 import { formatCurrency } from "@/lib/formatters";
+import type { CommodityPriceData } from '@/lib/types';
+import Autoplay from "embla-carousel-autoplay";
 
-const services = [
-  {
-    title: 'Plataforma de Registro',
-    description: 'Registro e gestão de UCS de forma segura e transparente.',
-    icon: Landmark,
-    aiHint: 'digital security',
-  },
-  {
-    title: 'Custódia da UCS',
-    description: 'A BMV DIGITAL mantém a informação de registro da UCS e do valor armazenado em um sistema padronizado.',
-    icon: Briefcase,
-    aiHint: 'financial data',
-  },
-  {
-    title: 'Oferta de UCS',
-    description: 'A BMV DIGITAL oferta as UCS no mercado por vendedor padrão ou credenciado, garantindo a rastreabilidade da operação.',
-    icon: HandCoins,
-    aiHint: 'global market',
-  },
-  {
-    title: 'Liquidação da UCS',
-    description: 'A BMV DIGITAL dará baixa no seu sistema na quantidade vendida e fará a transferência para o comprador.',
-    icon: Repeat,
-    aiHint: 'secure transaction',
-  },
-  {
-    title: 'Certificação pelo uso das UCSs',
-    description: 'A BMV DIGITAL verifica, valida e baixa no sistema a quantidade vendida, transfere as UCS para o comprador com emissão do Selo Sustentabilidade.',
-    icon: CheckCircle,
-    aiHint: 'sustainability certificate',
-  },
-   {
-    title: 'Análise de Ativos',
-    description: 'Plataforma completa para análise de performance, risco e cenários dos ativos ambientais.',
-    icon: TrendingUp,
-    aiHint: 'data analytics',
-  },
-];
-
-const didYouKnow = [
-    {
-        icon: ShieldCheck,
-        title: "Segurança e Futuro",
-        description: "Que a UCS é um produto de necessidade real que assegura o futuro e reduz risco do mercado financeiro e climático?"
-    },
-    {
-        icon: Scale,
-        title: "Inovação Financeira Verde",
-        description: "Que a CPR verde é uma modernização da arquitetura financeira que assegura o retorno financeiro do investidor com sustentabilidade, validada pelo Banco Central?"
-    },
-    {
-        icon: Globe,
-        title: "A Nova Economia Global",
-        description: "Junte-se a nós nessa nova ordem econômica global, a do Capital Natural."
-    }
-];
-
-
-export default async function LandingPage() {
-  const allPrices = await getCommodityPrices();
+export default function LandingPage() {
+  const [allPrices, setAllPrices] = React.useState<CommodityPriceData[]>([]);
+  
+  React.useEffect(() => {
+    getCommodityPrices().then(setAllPrices);
+  }, []);
+  
+  const autoplayPlugin = React.useRef(
+    Autoplay({ delay: 4000, stopOnInteraction: true })
+  );
 
   const ucsAseAsset = allPrices.find(p => p.id === 'ucs_ase');
   const usdAsset = allPrices.find(p => p.id === 'usd');
@@ -124,11 +79,14 @@ export default async function LandingPage() {
             </div>
             
             <Carousel
+                plugins={[autoplayPlugin.current]}
                 opts={{
                     align: "start",
                     loop: true,
                 }}
                 className="w-full max-w-xs sm:max-w-sm"
+                onMouseEnter={autoplayPlugin.current.stop}
+                onMouseLeave={autoplayPlugin.current.reset}
                 >
                 <CarouselContent>
                     {indexValues.map(({ currency, value, icon: Icon, conversionRate }) => (
@@ -157,7 +115,6 @@ export default async function LandingPage() {
                 </CarouselContent>
             </Carousel>
 
-
              <div className="flex flex-col sm:flex-row gap-4">
               <Button size="lg" variant="outline" className="border-primary bg-transparent text-primary hover:bg-primary/10 hover:text-primary-foreground" asChild>
                 <a href="https://bmvdigital.global/" target="_blank" rel="noopener noreferrer">
@@ -185,10 +142,3 @@ export default async function LandingPage() {
     </div>
   );
 }
-
-    
-    
-    
-
-    
-
