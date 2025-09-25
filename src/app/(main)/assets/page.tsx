@@ -97,19 +97,18 @@ export default function AssetsPage() {
                                     <TableHead>Ativo</TableHead>
                                     <TableHead>ID da Coleção</TableHead>
                                     <TableHead>Categoria</TableHead>
-                                    <TableHead className="text-right">Ações</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {loading ? (
                                     <TableRow>
-                                        <TableCell colSpan={4} className="h-24 text-center">
+                                        <TableCell colSpan={3} className="h-24 text-center">
                                             Carregando ativos...
                                         </TableCell>
                                     </TableRow>
                                 ) : error ? (
                                      <TableRow>
-                                        <TableCell colSpan={4} className="h-24 text-center text-destructive">
+                                        <TableCell colSpan={3} className="h-24 text-center text-destructive">
                                             {error}
                                         </TableCell>
                                     </TableRow>
@@ -131,11 +130,6 @@ export default function AssetsPage() {
                                                 </TableCell>
                                                 <TableCell>
                                                     <Badge variant="secondary">{asset.category.toUpperCase()}</Badge>
-                                                </TableCell>
-                                                <TableCell className="text-right">
-                                                    <Button variant="ghost" size="sm" disabled>
-                                                        Editar
-                                                    </Button>
                                                 </TableCell>
                                             </TableRow>
                                         );
