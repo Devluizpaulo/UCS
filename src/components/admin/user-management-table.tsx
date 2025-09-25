@@ -22,8 +22,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Trash2, Edit, CheckCircle, XCircle } from 'lucide-react';
+import { MoreHorizontal, Trash2, Edit } from 'lucide-react';
 import { UserFormModal } from './user-form-modal';
+import { InviteLinkModal } from './invite-link-modal';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,10 +44,16 @@ interface UserManagementTableProps {
   initialUsers: UserRecord[];
 }
 
+interface InviteInfo {
+  email: string;
+  link: string;
+}
+
 export function UserManagementTable({ initialUsers }: UserManagementTableProps) {
   const [users, setUsers] = useState(initialUsers);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserRecord | null>(null);
+  const [inviteInfo, setInviteInfo] = useState<InviteInfo | null>(null);
   const { toast } = useToast();
 
   const refreshUsers = async () => {
@@ -56,9 +63,10 @@ export function UserManagementTable({ initialUsers }: UserManagementTableProps) 
 
   const handleCreate = async (values: UserFormValues) => {
     try {
-      await createUser(values);
-      toast({ title: 'Sucesso', description: 'Usuário criado com sucesso.' });
-      setIsModalOpen(false);
+      const { user, link } = await createUser(values);
+      toast({ title: 'Sucesso', description: `Usuário ${user.email} criado. Compartilhe o link de acesso.` });
+      setIsFormModalOpen(false);
+      setInviteInfo({ email: user.email!, link });
       refreshUsers();
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Erro', description: error.message });
@@ -69,7 +77,7 @@ export function UserManagementTable({ initialUsers }: UserManagementTableProps) 
     try {
       await updateUser(uid, values);
       toast({ title: 'Sucesso', description: 'Usuário atualizado com sucesso.' });
-      setIsModalOpen(false);
+      setIsFormModalOpen(false);
       setEditingUser(null);
       refreshUsers();
     } catch (error: any) {
@@ -96,7 +104,7 @@ export function UserManagementTable({ initialUsers }: UserManagementTableProps) 
               <CardTitle>Usuários Registrados</CardTitle>
               <CardDescription>Lista de todos os usuários com acesso à plataforma.</CardDescription>
             </div>
-            <Button onClick={() => { setEditingUser(null); setIsModalOpen(true); }}>
+            <Button onClick={() => { setEditingUser(null); setIsFormModalOpen(true); }}>
               Adicionar Usuário
             </Button>
           </div>
@@ -142,7 +150,7 @@ export function UserManagementTable({ initialUsers }: UserManagementTableProps) 
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                          <DropdownMenuItem onSelect={() => { setEditingUser(user); setIsModalOpen(true); }}>
+                          <DropdownMenuItem onSelect={() => { setEditingUser(user); setIsFormModalOpen(true); }}>
                             <Edit className="mr-2 h-4 w-4" /> Editar
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
@@ -180,11 +188,19 @@ export function UserManagementTable({ initialUsers }: UserManagementTableProps) 
         </CardContent>
       </Card>
       <UserFormModal
-        isOpen={isModalOpen}
-        onOpenChange={setIsModalOpen}
+        isOpen={isFormModalOpen}
+        onOpenChange={setIsFormModalOpen}
         onSubmit={editingUser ? (values) => handleUpdate(editingUser.uid, values) : handleCreate}
         user={editingUser}
       />
+      {inviteInfo && (
+        <InviteLinkModal
+          isOpen={!!inviteInfo}
+          onOpenChange={() => setInviteInfo(null)}
+          email={inviteInfo.email}
+          inviteLink={inviteInfo.link}
+        />
+      )}
     </>
   );
 }
