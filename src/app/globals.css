@@ -129,7 +129,7 @@
           transform: scale(1);
       }
       50% {
-          transform: scale(1.1);
+          transform: scale(1.05);
       }
       100% {
           transform: scale(1);
@@ -137,7 +137,7 @@
   }
 
   .animate-zoom-in {
-      animation: zoom-in 20s ease-in-out infinite;
+      animation: zoom-in 30s ease-in-out infinite;
   }
 
   /* Custom scrollbar styles */

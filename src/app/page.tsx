@@ -59,7 +59,7 @@ export default function LandingPage() {
       </header>
 
       <main className="flex-1">
-        <section className="relative w-full min-h-[calc(100vh-4rem)] flex flex-col justify-between text-center">
+        <section className="relative w-full h-full flex flex-col justify-between text-center">
           <Image
             src="https://picsum.photos/seed/lush-forest/1920/1080"
             alt="Floresta exuberante ao fundo"
