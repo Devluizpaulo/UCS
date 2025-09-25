@@ -26,16 +26,23 @@ export async function getUsers(): Promise<UserRecord[]> {
  * Cria um novo usuário no Firebase Authentication.
  * @param userData - Dados do usuário (email, senha, etc.).
  */
-export async function createUser(userData: { email: string; password?: string; disabled?: boolean }): Promise<UserRecord> {
+export async function createUser(userData: { email: string; disabled?: boolean }): Promise<UserRecord> {
   try {
-    if (!userData.password) {
-        throw new Error('A senha é obrigatória para criar um novo usuário.');
-    }
+    // Gera uma senha aleatória e segura, pois o campo é obrigatório.
+    // Esta senha não será usada pelo usuário final.
+    const tempPassword = Math.random().toString(36).slice(-10) + 'A1!';
+
     const userRecord = await auth.createUser({
       email: userData.email,
-      password: userData.password,
+      password: tempPassword,
       disabled: userData.disabled || false,
+      emailVerified: false, // Opcional: força o usuário a verificar o e-mail.
     });
+
+    // Gera o link para o usuário definir a própria senha.
+    // O Firebase enviará um e-mail automaticamente se o template estiver ativo no console.
+    await auth.generatePasswordResetLink(userRecord.email as string);
+
     revalidatePath('/admin/users'); // Invalida o cache da página de usuários
     return userRecord;
   } catch (error: any) {
