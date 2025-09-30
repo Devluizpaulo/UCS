@@ -16,6 +16,7 @@ import {
   Award,
   Users,
   PieChart,
+  Network,
 } from 'lucide-react';
 
 export const getIconForCategory = (asset?: CommodityPriceData) => {
@@ -37,6 +38,7 @@ export const getIconForCategory = (asset?: CommodityPriceData) => {
         default:
             switch (asset.category) {
                 case 'index': return Award;
+                case 'sub-index': return Network;
                 case 'exchange': return DollarSign;
                 case 'vus': return LandPlot;
                 case 'vmad': return TreePine;

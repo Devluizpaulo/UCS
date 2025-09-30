@@ -92,9 +92,8 @@ export default function DashboardPage() {
   const { data, isLoading } = useRealtimeData(targetDate);
   
   const { mainIndices, otherAssets } = useMemo(() => {
-    const excludedIndexIds = ['ucs', 'vus', 'vmad', 'crs'];
-    const main = data.filter(d => d.category === 'index' && !excludedIndexIds.includes(d.id)).sort((a, b) => a.name.localeCompare(b.name));
-    const secondary = data.filter(d => d.category !== 'index' || excludedIndexIds.includes(d.id));
+    const main = data.filter(d => d.category === 'index').sort((a, b) => a.name.localeCompare(b.name));
+    const secondary = data.filter(d => d.category !== 'index');
     return { mainIndices: main, otherAssets: secondary };
   }, [data]);
   
@@ -167,10 +166,7 @@ export default function DashboardPage() {
           </>
         ) : (
           <>
-            {ucsAseAsset && <MainIndexCard asset={ucsAseAsset} isMain />}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
-              {mainIndices.map(asset => <MainIndexCard key={asset.id} asset={asset} />)}
-            </div>
+            {mainIndices.map(asset => <MainIndexCard key={asset.id} asset={asset} isMain={asset.id === 'ucs_ase'} />)}
           </>
         )}
         <CommodityPrices 

@@ -57,11 +57,11 @@ function getPriceFromQuote(quoteData: any): number {
 
 const initialCommoditiesConfig: Record<string, Omit<CommodityConfig, 'id'>> = {
     'ucs_ase': { name: 'UCS ASE', currency: 'BRL', category: 'index', description: 'Índice principal de Unidade de Crédito de Sustentabilidade.', unit: 'Pontos' },
-    'ucs': { name: 'UCS', currency: 'BRL', category: 'index', description: 'Unidade de Crédito de Sustentabilidade.', unit: 'BRL por UCS' },
-    'pdm': { name: 'PDM', currency: 'BRL', category: 'index', description: 'Potencial Desflorestador Monetizado.', unit: 'BRL por PDM' },
-    'vus': { name: 'VUS', currency: 'BRL', category: 'index', description: 'Valor de Uso do Solo.', unit: 'BRL por VUS' },
-    'vmad': { name: 'VMAD', currency: 'BRL', category: 'index', description: 'Valor da Madeira.', unit: 'BRL por VMAD' },
-    'crs': { name: 'CRS', currency: 'BRL', category: 'index', description: 'Custo de Responsabilidade Socioambiental.', unit: 'BRL por CRS' },
+    'ucs': { name: 'UCS', currency: 'BRL', category: 'sub-index', description: 'Unidade de Crédito de Sustentabilidade.', unit: 'BRL por UCS' },
+    'pdm': { name: 'PDM', currency: 'BRL', category: 'sub-index', description: 'Potencial Desflorestador Monetizado.', unit: 'BRL por PDM' },
+    'vus': { name: 'VUS', currency: 'BRL', category: 'vus', description: 'Valor de Uso do Solo.', unit: 'BRL por VUS' },
+    'vmad': { name: 'VMAD', currency: 'BRL', category: 'vmad', description: 'Valor da Madeira.', unit: 'BRL por VMAD' },
+    'crs': { name: 'CRS', currency: 'BRL', category: 'crs', description: 'Custo de Responsabilidade Socioambiental.', unit: 'BRL por CRS' },
     'usd': { name: 'Dólar Comercial', currency: 'BRL', category: 'exchange', description: 'Cotação do Dólar Americano (USD) em Reais (BRL).', unit: 'BRL por USD' },
     'eur': { name: 'Euro', currency: 'BRL', category: 'exchange', description: 'Cotação do Euro (EUR) em Reais (BRL).', unit: 'BRL por EUR' },
     'soja': { name: 'Soja', currency: 'USD', category: 'vus', description: 'Preço da saca de 60kg de Soja.', unit: 'USD por saca' },
