@@ -13,12 +13,19 @@ import {
 } from 'recharts';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import type { FirestoreQuote } from '@/lib/types';
-import { getCotacoesHistorico } from '@/lib/data-service';
+import type { FirestoreQuote, CommodityConfig } from '@/lib/types';
+import { getCotacoesHistorico, getCommodityConfigs } from '@/lib/data-service';
 import { formatCurrency } from '@/lib/formatters';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 const ChartSkeleton = () => (
   <div className="h-64 w-full">
@@ -35,15 +42,20 @@ const timeRangeToDays: Record<TimeRange, number> = {
 
 export function TrendChart() {
   const [data, setData] = useState<FirestoreQuote[]>([]);
+  const [assets, setAssets] = useState<CommodityConfig[]>([]);
+  const [selectedAssetId, setSelectedAssetId] = useState<string>('ucs_ase');
   const [isLoading, setIsLoading] = useState(true);
   const [timeRange, setTimeRange] = useState<TimeRange>('90d');
+
+  useEffect(() => {
+    getCommodityConfigs().then(setAssets);
+  }, []);
 
   useEffect(() => {
     setIsLoading(true);
     const days = timeRangeToDays[timeRange];
     
-    // For this example, we focus on the main index 'ucs_ase'
-    getCotacoesHistorico('ucs_ase', days)
+    getCotacoesHistorico(selectedAssetId, days)
       .then((history) => {
         setData(history);
         setIsLoading(false);
@@ -52,7 +64,11 @@ export function TrendChart() {
         setData([]);
         setIsLoading(false);
       });
-  }, [timeRange]);
+  }, [timeRange, selectedAssetId]);
+
+  const selectedAsset = useMemo(() => {
+    return assets.find(a => a.id === selectedAssetId);
+  }, [assets, selectedAssetId]);
 
   const chartData = useMemo(() => {
     return data
@@ -70,24 +86,36 @@ export function TrendChart() {
   return (
     <Card>
       <CardHeader>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <CardTitle>Performance Histórica: Índice UCS ASE</CardTitle>
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+          <div className="flex-1">
+            <CardTitle>Performance Histórica</CardTitle>
             <CardDescription>
-              Evolução do valor do principal índice da plataforma.
+              Evolução do valor do ativo selecionado no período.
             </CardDescription>
           </div>
-          <Tabs 
-            defaultValue={timeRange} 
-            className="w-full sm:w-auto mt-4 sm:mt-0" 
-            onValueChange={(value) => setTimeRange(value as TimeRange)}
-          >
-            <TabsList>
-              <TabsTrigger value="7d">7D</TabsTrigger>
-              <TabsTrigger value="30d">30D</TabsTrigger>
-              <TabsTrigger value="90d">90D</TabsTrigger>
-            </TabsList>
-          </Tabs>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
+             <Select value={selectedAssetId} onValueChange={setSelectedAssetId}>
+              <SelectTrigger className="w-full sm:w-[200px]">
+                <SelectValue placeholder="Selecione um ativo" />
+              </SelectTrigger>
+              <SelectContent>
+                {assets.map(asset => (
+                  <SelectItem key={asset.id} value={asset.id}>{asset.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Tabs 
+              defaultValue={timeRange} 
+              className="w-full sm:w-auto" 
+              onValueChange={(value) => setTimeRange(value as TimeRange)}
+            >
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="7d">7D</TabsTrigger>
+                <TabsTrigger value="30d">30D</TabsTrigger>
+                <TabsTrigger value="90d">90D</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="h-72">
@@ -110,7 +138,7 @@ export function TrendChart() {
                 fontSize={12}
                 tickLine={false}
                 axisLine={false}
-                tickFormatter={(value) => formatCurrency(value as number, 'BRL', 'ucs_ase')}
+                tickFormatter={(value) => formatCurrency(value as number, selectedAsset?.currency || 'BRL', selectedAsset?.id)}
               />
               <Tooltip
                 contentStyle={{
@@ -118,7 +146,7 @@ export function TrendChart() {
                   border: '1px solid hsl(var(--border))',
                   borderRadius: 'var(--radius)',
                 }}
-                formatter={(value: any) => [formatCurrency(Number(value), 'BRL', 'ucs_ase'), 'Valor']}
+                formatter={(value: any) => [formatCurrency(Number(value), selectedAsset?.currency || 'BRL', selectedAsset?.id), selectedAsset?.name || 'Valor']}
               />
               <Line
                 type="monotone"
