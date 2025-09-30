@@ -12,8 +12,16 @@ import { useSearchParams } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CompositionChart } from '@/components/composition-chart';
 
+// Define estaticamente quais são os componentes diretos que formam o índice principal.
+// A lógica busca o valor de cada um desses IDs para compor o gráfico.
 const STATIC_UCS_COMPONENTS = ['ucs', 'pdm'] as const;
 
+/**
+ * Valida uma string de data da URL e a converte para um objeto Date.
+ * Retorna nulo se a data for inválida.
+ * @param dateString A string da data (ex: '2024-08-01').
+ * @returns Um objeto Date ou nulo.
+ */
 function getValidatedDate(dateString?: string | null): Date | null {
   if (dateString) {
     const parsed = parseISO(dateString);
@@ -24,6 +32,12 @@ function getValidatedDate(dateString?: string | null): Date | null {
   return null;
 }
 
+
+/**
+ * Hook customizado para buscar os dados de composição do Índice UCS para uma data específica.
+ * @param targetDate A data para a qual a composição deve ser buscada.
+ * @returns O ativo principal (UCS ASE), os dados de seus componentes e o estado de carregamento.
+ */
 function useUcsComposition(targetDate: Date | null) {
     const [ucsAsset, setUcsAsset] = useState<FirestoreQuote | null>(null);
     const [compositionData, setCompositionData] = useState<any[]>([]);
@@ -39,7 +53,7 @@ function useUcsComposition(targetDate: Date | null) {
 
         const fetchData = async () => {
             try {
-                // 1. Busca a cotação principal do UCS para a data
+                // Etapa 1: Busca a cotação principal do 'ucs_ase' para obter o valor total de referência.
                 const ucsQuote = await getQuoteByDate('ucs_ase', targetDate);
                 setUcsAsset(ucsQuote);
 
@@ -48,7 +62,7 @@ function useUcsComposition(targetDate: Date | null) {
                     return;
                 }
                 
-                // 2. Busca cada componente para obter seu valor
+                // Etapa 2: Busca o valor de cada um dos componentes definidos em STATIC_UCS_COMPONENTS para a mesma data.
                 const componentPromises = STATIC_UCS_COMPONENTS
                     .map(async (componentId) => {
                         const componentQuote = await getQuoteByDate(componentId, targetDate);
@@ -60,6 +74,7 @@ function useUcsComposition(targetDate: Date | null) {
                         };
                     });
 
+                // Aguarda a busca de todos os componentes e filtra aqueles que têm valor.
                 const resolvedComponents = await Promise.all(componentPromises);
                 setCompositionData(resolvedComponents.filter(c => c.value > 0));
 
@@ -76,6 +91,7 @@ function useUcsComposition(targetDate: Date | null) {
         
     }, [targetDate]);
     
+    // Memoiza a transformação do ativo UCS para o formato esperado pelo CompositionChart.
     const ucsAssetForChart: CommodityPriceData | undefined = useMemo(() => {
         if (!ucsAsset) return undefined;
         return {
@@ -103,11 +119,13 @@ export default function CompositionPage() {
 
     const [targetDate, setTargetDate] = useState<Date | null>(null);
 
+    // Efeito para inicializar a data no lado do cliente, evitando erros de hidratação.
     useEffect(() => {
         const initialDate = getValidatedDate(dateParam) || new Date();
         setTargetDate(initialDate);
     }, [dateParam]);
 
+    // Busca os dados de composição usando o hook customizado.
     const { ucsAsset, compositionData, isLoading } = useUcsComposition(targetDate);
     
     const isCurrentDateOrFuture = targetDate ? isToday(targetDate) || isFuture(targetDate) : true;
@@ -115,6 +133,7 @@ export default function CompositionPage() {
         ? "Visualização da composição do Índice UCS em tempo real."
         : `Composição do Índice UCS para a data selecionada.`;
 
+    // Renderiza um loader enquanto a data inicial não é definida no cliente.
     if (!targetDate) {
         return (
              <div className="flex min-h-screen w-full flex-col">
@@ -132,6 +151,7 @@ export default function CompositionPage() {
         );
     }
 
+    // Renderiza a página principal com os dados.
     return (
         <div className="flex min-h-screen w-full flex-col">
             <PageHeader
