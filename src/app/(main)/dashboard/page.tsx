@@ -15,6 +15,7 @@ import type { CommodityPriceData } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 function getValidatedDate(dateString?: string | null): Date | null {
   if (dateString) {
