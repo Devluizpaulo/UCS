@@ -4,10 +4,9 @@
 import { getFirebaseAdmin } from '@/lib/firebase-admin-config';
 import type { CommodityConfig, CommodityPriceData, FirestoreQuote } from '@/lib/types';
 import { getCache, setCache, clearCache as clearMemoryCache } from '@/lib/cache-service';
-import { Timestamp, FieldValue } from 'firebase-admin/firestore';
-import { subDays, format, parse, isValid, startOfDay, parseISO, endOfDay } from 'date-fns';
+import { Timestamp } from 'firebase-admin/firestore';
+import { subDays, format, startOfDay, endOfDay } from 'date-fns';
 import type { DateRange } from 'react-day-picker';
-import { revalidatePath } from 'next/cache';
 
 // --- CONSTANTS ---
 const CACHE_KEY_PRICES = 'commodity_prices_simple';
@@ -45,10 +44,8 @@ function serializeFirestoreTimestamp(data: any): any {
 
 function getPriceFromQuote(quoteData: any): number {
     if (quoteData) {
-        // 'rent_media' é o campo principal para cálculos, se existir.
-        if (typeof quoteData.rent_media === 'number') return quoteData.rent_media;
-        if (typeof quoteData.valor === 'number') return quoteData.valor;
         if (typeof quoteData.ultimo === 'number') return quoteData.ultimo;
+        if (typeof quoteData.valor === 'number') return quoteData.valor;
     }
     return 0;
 }
@@ -56,7 +53,7 @@ function getPriceFromQuote(quoteData: any): number {
 // --- CONFIGURATION MANAGEMENT (CRUD Ativos) ---
 
 const initialCommoditiesConfig: Record<string, Omit<CommodityConfig, 'id'>> = {
-    'ucs_ase': { name: 'UCS ASE', currency: 'BRL', category: 'index', description: 'Índice principal de Unidade de Crédito de Sustentabilidade.', unit: 'Pontos' },
+    'ucs_ase': { name: 'Índice UCS ASE', currency: 'BRL', category: 'index', description: 'Índice principal de Unidade de Crédito de Sustentabilidade.', unit: 'Pontos' },
     'ucs': { name: 'UCS', currency: 'BRL', category: 'sub-index', description: 'Unidade de Crédito de Sustentabilidade.', unit: 'BRL por UCS' },
     'pdm': { name: 'PDM', currency: 'BRL', category: 'sub-index', description: 'Potencial Desflorestador Monetizado.', unit: 'BRL por PDM' },
     'vus': { name: 'VUS', currency: 'BRL', category: 'vus', description: 'Valor de Uso do Solo.', unit: 'BRL por VUS' },
@@ -99,14 +96,12 @@ export async function getCommodityConfigs(): Promise<CommodityConfig[]> {
     const docRef = db.collection(SETTINGS_COLLECTION).doc(COMMODITIES_DOC);
     const doc = await docRef.get();
 
-    let configData: Record<string, Omit<CommodityConfig, 'id'>>;
+    let configData: Record<string, Omit<CommodityConfig, 'id'>> | undefined = doc.data() as any;
 
-    if (!doc.exists) {
-        console.log("Nenhuma configuração de commodity encontrada, usando configuração inicial e criando documento.");
+    if (!doc.exists || !configData) {
+        console.log("Nenhuma configuração de commodity encontrada ou documento vazio, usando configuração inicial e (re)criando documento.");
         configData = initialCommoditiesConfig;
         await docRef.set(configData);
-    } else {
-        configData = doc.data() as Record<string, Omit<CommodityConfig, 'id'>>;
     }
     
     const configsArray = Object.entries(configData).map(([id, config]) => ({
@@ -120,9 +115,6 @@ export async function getCommodityConfigs(): Promise<CommodityConfig[]> {
 
 // --- DATA FETCHING SERVICES ---
 
-/**
- * Busca o documento de cotação completo para um ativo em uma data específica.
- */
 export async function getQuoteByDate(assetId: string, date: Date): Promise<FirestoreQuote | null> {
     const { db } = await getFirebaseAdmin();
     const formattedDate = format(date, 'dd/MM/yyyy');
@@ -155,20 +147,6 @@ export async function getQuoteByDate(assetId: string, date: Date): Promise<Fires
     return serializeFirestoreTimestamp({ id: doc.id, ...data }) as FirestoreQuote;
 }
 
-
-export async function getLatestQuote(assetId: string): Promise<FirestoreQuote | null> {
-    const { db } = await getFirebaseAdmin();
-    const snapshot = await db.collection(assetId)
-        .orderBy('timestamp', 'desc')
-        .limit(1)
-        .get();
-
-    if (snapshot.empty) return null;
-    
-    const doc = snapshot.docs[0];
-    const data = doc.data();
-    return serializeFirestoreTimestamp({ id: doc.id, ...data }) as FirestoreQuote;
-}
 
 export async function getCommodityPricesByDate(date: Date): Promise<CommodityPriceData[]> {
     const cacheKey = `commodity_prices_${date.toISOString().split('T')[0]}`;
@@ -313,5 +291,4 @@ export async function getCotacoesHistoricoPorRange(assetId: string, dateRange: D
 
 export async function clearCacheAndRefresh() {
     clearMemoryCache();
-    // A revalidação do caminho é feita no lado do cliente que chama esta ação.
 }
