@@ -1,10 +1,10 @@
 
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useState, useEffect, useMemo, useTransition } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { CommodityPrices } from '@/components/commodity-prices';
-import { getCommodityPricesByDate, getCommodityPrices } from '@/lib/data-service';
+import { getCommodityPricesByDate, getCommodityPrices, clearCacheAndRefresh } from '@/lib/data-service';
 import { PageHeader } from '@/components/page-header';
 import { addDays, format, parseISO, isValid, isToday, isFuture } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -12,6 +12,9 @@ import { DateNavigator } from '@/components/date-navigator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MainIndexCard } from '@/components/main-index-card';
 import type { CommodityPriceData } from '@/lib/types';
+import { Button } from '@/components/ui/button';
+import { RefreshCw } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 function getValidatedDate(dateString?: string | null): Date | null {
   if (dateString) {
@@ -68,8 +71,11 @@ function useRealtimeData(initialDate: Date | null) {
 
 
 export default function DashboardPage() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const dateParam = searchParams.get('date');
+  const { toast } = useToast();
+  const [isPending, startTransition] = useTransition();
 
   // Initialize state with null to ensure server and client match initially.
   const [targetDate, setTargetDate] = useState<Date | null>(null);
@@ -85,13 +91,24 @@ export default function DashboardPage() {
   const { data, isLoading } = useRealtimeData(targetDate);
   
   const { mainIndices, otherAssets } = useMemo(() => {
-    const excludedIndexIds = ['ucs_ase', 'vus', 'vmad', 'crs'];
+    const excludedIndexIds = ['ucs', 'vus', 'vmad', 'crs'];
     const main = data.filter(d => d.category === 'index' && !excludedIndexIds.includes(d.id)).sort((a, b) => a.name.localeCompare(b.name));
-    const secondary = data.filter(d => d.category !== 'index' || ['vus', 'vmad', 'crs'].includes(d.id));
+    const secondary = data.filter(d => d.category !== 'index' || excludedIndexIds.includes(d.id));
     return { mainIndices: main, otherAssets: secondary };
   }, [data]);
   
   const ucsAseAsset = useMemo(() => data.find(d => d.id === 'ucs_ase'), [data]);
+
+  const handleRefresh = () => {
+    startTransition(async () => {
+      await clearCacheAndRefresh();
+      router.refresh();
+      toast({
+        title: "Dados Atualizados",
+        description: "As cotações foram atualizadas com sucesso.",
+      });
+    });
+  };
 
   // Render a loading skeleton if the date hasn't been set on the client yet.
   if (!targetDate) {
@@ -101,7 +118,10 @@ export default function DashboardPage() {
             title="Painel de Cotações"
             description="Carregando dados..."
           >
-            <Skeleton className="h-9 w-[250px]" />
+            <div className="flex items-center gap-2">
+                <Skeleton className="h-9 w-9" />
+                <Skeleton className="h-9 w-[250px]" />
+            </div>
           </PageHeader>
           <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
               <Skeleton className="h-32 w-full" />
@@ -124,9 +144,16 @@ export default function DashboardPage() {
             : `Exibindo cotações para: ${formattedDate}`
         }
       >
-        <DateNavigator
-          targetDate={targetDate}
-        />
+        <div className="flex items-center gap-2">
+            {isCurrentDateOrFuture && (
+                <Button variant="outline" size="icon" onClick={handleRefresh} disabled={isPending} title="Atualizar Cotações">
+                    <RefreshCw className={cn("h-4 w-4", isPending && "animate-spin")} />
+                </Button>
+            )}
+            <DateNavigator
+              targetDate={targetDate}
+            />
+        </div>
       </PageHeader>
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
         {isLoading && data.length === 0 ? (

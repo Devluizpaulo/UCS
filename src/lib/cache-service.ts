@@ -32,3 +32,11 @@ export function setCache<T>(key: string, value: T, ttlSeconds: number): void {
     cache.set(key, { value, expiry });
     // console.log(`[CacheService] Cache SET for key: ${key} with TTL: ${ttlSeconds}s`);
 }
+
+/**
+ * Clears the entire in-memory cache.
+ */
+export function clearCache(): void {
+    cache.clear();
+    // console.log(`[CacheService] Cache CLEARED.`);
+}

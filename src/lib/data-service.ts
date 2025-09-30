@@ -3,10 +3,11 @@
 
 import { getFirebaseAdmin } from '@/lib/firebase-admin-config';
 import type { CommodityConfig, CommodityPriceData, FirestoreQuote } from '@/lib/types';
-import { getCache, setCache } from '@/lib/cache-service';
+import { getCache, setCache, clearCache as clearMemoryCache } from '@/lib/cache-service';
 import { Timestamp, FieldValue } from 'firebase-admin/firestore';
 import { subDays, format, parse, isValid, startOfDay, parseISO, endOfDay } from 'date-fns';
 import type { DateRange } from 'react-day-picker';
+import { revalidatePath } from 'next/cache';
 
 // --- CONSTANTS ---
 const CACHE_KEY_PRICES = 'commodity_prices_simple';
@@ -394,4 +395,12 @@ export async function getCotacoesHistoricoPorRange(assetId: string, dateRange: D
     }
 }
 
-    
+
+/**
+ * Server Action para limpar o cache de cotações do servidor.
+ * Revalida o caminho do dashboard para forçar o Next.js a buscar novos dados.
+ */
+export async function clearCacheAndRefresh() {
+    clearMemoryCache();
+    revalidatePath('/dashboard');
+}
