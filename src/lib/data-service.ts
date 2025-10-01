@@ -67,10 +67,10 @@ const initialCommoditiesConfig: Record<string, Omit<CommodityConfig, 'id'>> = {
     'custo_agua': { name: 'Custo Água', currency: 'BRL', category: 'sub-index', description: 'Custo do uso da água (7% de CH2O).', unit: 'BRL' },
     'pdm': { name: 'PDM', currency: 'BRL', category: 'sub-index', description: 'Produto Desenvolvido Mundial.', unit: 'Pontos' },
     'ucs': { name: 'UCS', currency: 'BRL', category: 'sub-index', description: 'Universal Carbon Sustainability.', unit: 'Pontos' },
-    'vus': { name: 'VUS', currency: 'BRL', category: 'sub-index', description: 'Valor Universal Sustentável (commodities agrícolas).', unit: 'Pontos' },
-    'vmad': { name: 'Vmad', currency: 'BRL', category: 'sub-index', description: 'Valor da Madeira.', unit: 'Pontos' },
-    'carbono_crs': { name: 'Carbono CRS', currency: 'BRL', category: 'sub-index', description: 'Valor do Carbono.', unit: 'Pontos' },
-    'agua_crs': { name: 'Água CRS', currency: 'BRL', category: 'sub-index', description: 'Valor da Água.', unit: 'Pontos' },
+    'vus': { name: 'VUS', currency: 'BRL', category: 'vus', description: 'Valor Universal Sustentável (commodities agrícolas).', unit: 'Pontos' },
+    'vmad': { name: 'VMAD', currency: 'BRL', category: 'vmad', description: 'Valor da Madeira.', unit: 'Pontos' },
+    'carbono_crs': { name: 'Carbono CRS', currency: 'BRL', category: 'crs', description: 'Valor do Carbono.', unit: 'Pontos' },
+    'agua_crs': { name: 'Água CRS', currency: 'BRL', category: 'crs', description: 'Valor da Água.', unit: 'Pontos' },
     'valor_uso_solo': { name: 'Valor Uso Solo', currency: 'BRL', category: 'sub-index', description: 'Valor total do uso do solo.', unit: 'Pontos' },
     
     // Indice Principal
@@ -110,7 +110,11 @@ export async function getCommodityConfigs(): Promise<CommodityConfig[]> {
     if (!doc.exists || !configData) {
         console.log("Nenhuma configuração de commodity encontrada ou documento vazio, usando configuração inicial e (re)criando documento.");
         configData = initialCommoditiesConfig;
-        await docRef.set(configData);
+        try {
+            await docRef.set(configData);
+        } catch (error) {
+            console.error("Falha ao criar o documento de configuração inicial:", error);
+        }
     }
     
     const configsArray = Object.entries(configData).map(([id, config]) => ({
@@ -143,8 +147,8 @@ export async function getQuoteByDate(assetId: string, date: Date): Promise<Fires
     const endDate = endOfDay(date);
 
     const timestampSnapshot = await db.collection(assetId)
-        .where('timestamp', '>=', Timestamp.fromDate(startDate))
-        .where('timestamp', '<=', Timestamp.fromDate(endDate))
+        .where('timestamp', '>=', startDate.toISOString())
+        .where('timestamp', '<=', endDate.toISOString())
         .orderBy('timestamp', 'desc')
         .limit(1)
         .get();
@@ -223,7 +227,9 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
 
             let lastUpdated = 'N/A';
             if (latestDoc?.timestamp) {
-                lastUpdated = format(serializeFirestoreTimestamp(latestDoc.timestamp), "HH:mm:ss");
+                // If timestamp is a string (ISO format), format it. If it's a number (milliseconds), create a Date object first.
+                const dateToFormat = typeof latestDoc.timestamp === 'string' ? new Date(latestDoc.timestamp) : new Date(serializeFirestoreTimestamp(latestDoc.timestamp));
+                lastUpdated = format(dateToFormat, "HH:mm:ss");
             } else if (latestDoc?.data) {
                 lastUpdated = latestDoc.data;
             }
@@ -255,8 +261,8 @@ export async function getCotacoesHistorico(assetId: string, days: number): Promi
         const startDate = subDays(endDate, days);
         
         const snapshot = await db.collection(assetId)
-            .where('timestamp', '>=', Timestamp.fromDate(startDate))
-            .where('timestamp', '<=', Timestamp.fromDate(endDate))
+            .where('timestamp', '>=', startDate.toISOString())
+            .where('timestamp', '<=', endDate.toISOString())
             .orderBy('timestamp', 'desc')
             .get();
 
@@ -283,8 +289,8 @@ export async function getCotacoesHistoricoPorRange(assetId: string, dateRange: D
         const endDate = endOfDay(dateRange.to);
 
         const snapshot = await db.collection(assetId)
-            .where('timestamp', '>=', Timestamp.fromDate(startDate))
-            .where('timestamp', '<=', Timestamp.fromDate(endDate))
+            .where('timestamp', '>=', startDate.toISOString())
+            .where('timestamp', '<=', endDate.toISOString())
             .orderBy('timestamp', 'desc')
             .get();
         
