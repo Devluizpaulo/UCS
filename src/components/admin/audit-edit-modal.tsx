@@ -52,31 +52,37 @@ export function AuditEditModal({ assetItem, allAssets, isOpen, onOpenChange, onS
     }
   }, [assetItem]);
 
-  const calculateImpact = async (changedAssetId: string, newAssetValue: number) => {
+ const calculateImpact = (changedAssetId: string, newAssetValue: number) => {
     setIsCalculating(true);
-    
-    // 1. Coleta os valores antigos de todos os ativos
+
     const oldValues: Calc.ValueMap = {};
     allAssets.forEach(a => {
-        oldValues[a.id] = a.quote?.valor ?? a.quote?.ultimo ?? 0;
+        // Use a robust way to get the principal value for each asset
+        oldValues[a.id] = a.quote?.valor ?? a.quote?.ultimo ?? (a.quote as any)?.valor_brl ?? 0;
     });
 
-    // 2. Cria uma cópia para os novos valores e aplica a alteração
     const newValues: Calc.ValueMap = { ...oldValues };
     newValues[changedAssetId] = newAssetValue;
 
-    // 3. Recalcula a cascata inteira usando os novos valores
-    const newRentMedia: Calc.ValueMap = {
+    const rentMedia: Calc.ValueMap = {
         boi_gordo: Calc.calculateRentMediaBoi(newValues.boi_gordo),
         milho: Calc.calculateRentMediaMilho(newValues.milho),
         soja: Calc.calculateRentMediaSoja(newValues.soja, newValues.usd),
         carbono: Calc.calculateRentMediaCarbono(newValues.carbono, newValues.eur),
         madeira: Calc.calculateRentMediaMadeira(newValues.madeira, newValues.usd),
     };
+    
+    // Assign rent media to newValues for VUS/VMAD/CRS calculation
+    newValues.rent_media_boi = rentMedia.boi_gordo;
+    newValues.rent_media_milho = rentMedia.milho;
+    newValues.rent_media_soja = rentMedia.soja;
+    newValues.rent_media_carbono = rentMedia.carbono;
+    newValues.rent_media_madeira = rentMedia.madeira;
 
-    newValues.vus = Calc.calculateVUS(newRentMedia);
-    newValues.vmad = Calc.calculateVMAD(newRentMedia);
-    newValues.carbono_crs = Calc.calculateCRS(newRentMedia);
+
+    newValues.vus = Calc.calculateVUS(newValues);
+    newValues.vmad = Calc.calculateVMAD(newValues);
+    newValues.carbono_crs = Calc.calculateCRS(newValues);
     
     newValues.valor_uso_solo = Calc.calculateValorUsoSolo({
         vus: newValues.vus,
@@ -88,23 +94,36 @@ export function AuditEditModal({ assetItem, allAssets, isOpen, onOpenChange, onS
     newValues.ucs = Calc.calculateUCS({ pdm: newValues.pdm });
     newValues.ucs_ase = Calc.calculateUCSASE({ ucs: newValues.ucs });
 
-    // 4. Compara os valores novos com os antigos para encontrar o impacto
     const impacted: ImpactedAsset[] = [];
     for (const id in newValues) {
-        // Verifica se o valor mudou E se não é o ativo que foi editado diretamente
         if (newValues[id] !== oldValues[id] && id !== changedAssetId) {
             const assetConfig = allAssets.find(a => a.id === id);
-            if (assetConfig) {
-                impacted.push({
-                    id,
-                    name: assetConfig.name,
-                    currency: assetConfig.currency,
-                    oldValue: oldValues[id],
-                    newValue: newValues[id],
-                });
+            if (assetConfig && oldValues[id] !== undefined) {
+                 // Check for significant change to avoid floating point noise
+                if (Math.abs(newValues[id] - oldValues[id]) > 1e-9) {
+                    impacted.push({
+                        id,
+                        name: assetConfig.name,
+                        currency: assetConfig.currency,
+                        oldValue: oldValues[id],
+                        newValue: newValues[id],
+                    });
+                }
             }
         }
     }
+    
+    // Sort impacted assets to show main indices first
+    const order = ['ucs_ase', 'ucs', 'pdm', 'valor_uso_solo'];
+    impacted.sort((a, b) => {
+        const indexA = order.indexOf(a.id);
+        const indexB = order.indexOf(b.id);
+        if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+        if (indexA !== -1) return -1;
+        if (indexB !== -1) return 1;
+        return a.name.localeCompare(b.name);
+    });
+
     setImpactedAssets(impacted);
     setIsCalculating(false);
 };
