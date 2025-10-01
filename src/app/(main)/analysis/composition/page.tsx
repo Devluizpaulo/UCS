@@ -147,9 +147,9 @@ export default function CompositionPage() {
                     mainAsset={mainAsset}
                     compositionData={compositionData}
                     isLoading={isLoading}
+                    targetDate={targetDate}
                />
             </main>
         </div>
     );
 }
-
