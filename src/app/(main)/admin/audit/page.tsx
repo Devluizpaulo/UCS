@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useTransition } from 'react';
@@ -267,6 +266,7 @@ export default function AuditPage() {
       </div>
       <AuditEditModal
         assetItem={editingAsset}
+        allAssets={assetItems}
         isOpen={!!editingAsset}
         onOpenChange={() => setEditingAsset(null)}
         onSave={handleValueChange}
