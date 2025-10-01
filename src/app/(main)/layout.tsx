@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -20,6 +19,7 @@ import {
   Sparkles,
   Archive,
   PieChart,
+  History,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -271,6 +271,18 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
                     <Link href="/assets">
                       <Archive />
                       <span>Ativos</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem onClick={handleMenuItemClick}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith('/admin/audit')}
+                    tooltip={{ children: 'Auditoria' }}
+                  >
+                    <Link href="/admin/audit">
+                      <History />
+                      <span>Auditoria</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

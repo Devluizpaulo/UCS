@@ -20,6 +20,7 @@ import {
   Recycle,
   Combine,
   FileText,
+  History,
 } from 'lucide-react';
 
 export const getIconForCategory = (asset?: CommodityPriceData) => {
