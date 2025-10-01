@@ -216,13 +216,42 @@ export default function AuditPage() {
                           <div className="flex items-center justify-center gap-1">
                             {asset.type === 'COTADO' ? (
                               <>
-                                <Tooltip><TooltipTrigger asChild><Button variant="outline" size="icon" onClick={() => setEditingAsset(asset)}><Edit className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent><p>Editar Valor</p></TooltipContent></Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button variant="outline" size="icon" onClick={() => setEditingAsset(asset)}>
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Editar Valor</p>
+                                  </TooltipContent>
+                                </Tooltip>
                                 {asset.sourceUrl && (
-                                  <Tooltip><TooltipTrigger asChild><Button variant="outline" size="icon" asChild><a href={asset.sourceUrl} target="_blank" rel="noopener noreferrer"><ExternalLink className="h-4 w-4" /></a></Button></TooltipTrigger><TooltipContent><p>Ver no site</p></TooltipContent></Tooltip>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button variant="outline" size="icon" asChild>
+                                        <a href={asset.sourceUrl} target="_blank" rel="noopener noreferrer">
+                                          <ExternalLink className="h-4 w-4" />
+                                        </a>
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Ver no site de origem</p>
+                                    </TooltipContent>
+                                  </Tooltip>
                                 )}
                               </>
                             ) : (
-                              <Tooltip><TooltipTrigger asChild><Button variant="outline" size="icon" disabled><Calculator className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent><p>O valor é calculado automaticamente</p></TooltipContent></Tooltip>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button variant="outline" size="icon" disabled>
+                                    <Calculator className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>O valor é calculado automaticamente</p>
+                                </TooltipContent>
+                              </Tooltip>
                             )}
                           </div>
                         </TableCell>
@@ -261,5 +290,3 @@ export default function AuditPage() {
     </TooltipProvider>
   );
 }
-
-    
