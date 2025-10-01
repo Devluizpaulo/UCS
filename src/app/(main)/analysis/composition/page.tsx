@@ -22,10 +22,11 @@ function getValidatedDate(dateString?: string | null): Date | null {
   return null;
 }
 
-const BASE_COMPONENTS = ['vus', 'vmad', 'crs'] as const;
+// Componentes que formam o "Valor Uso Solo" conforme a nova documentação
+const BASE_COMPONENTS = ['vus', 'vmad', 'carbono_crs', 'Agua_CRS'] as const;
 
-function useUcsComposition(targetDate: Date | null) {
-    const [ucsAsset, setUcsAsset] = useState<FirestoreQuote | null>(null);
+function useComposition(targetDate: Date | null) {
+    const [mainAsset, setMainAsset] = useState<FirestoreQuote | null>(null);
     const [compositionData, setCompositionData] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -39,22 +40,22 @@ function useUcsComposition(targetDate: Date | null) {
 
         const fetchData = async () => {
             try {
-                // Busca o UCS_ASE principal para a data
-                const ucsQuote = await getQuoteByDate('ucs_ase', targetDate);
-                setUcsAsset(ucsQuote);
+                // Busca o índice "Valor Uso Solo" para a data
+                const mainQuote = await getQuoteByDate('valor_uso_solo', targetDate);
+                setMainAsset(mainQuote);
 
-                if (!ucsQuote) {
+                if (!mainQuote) {
                     setCompositionData([]);
                     return;
                 }
                 
-                // Busca os dados de cotação para cada componente BASE
+                // Busca os dados de cotação para cada componente
                 const componentPromises = BASE_COMPONENTS
                     .map(async (componentId) => {
                         const componentQuote = await getQuoteByDate(componentId, targetDate);
                         return {
-                            name: componentQuote?.name || componentQuote?.ativo || componentId.toUpperCase(),
-                            value: componentQuote?.ultimo || 0,
+                            name: componentQuote?.ativo || componentQuote?.name || componentId.toUpperCase(),
+                            value: componentQuote?.ultimo || componentQuote?.valor || 0,
                             currency: componentQuote?.moeda || 'BRL',
                             id: componentId,
                         };
@@ -64,9 +65,9 @@ function useUcsComposition(targetDate: Date | null) {
                 setCompositionData(resolvedComponents.filter(c => c.value > 0));
 
             } catch (err) {
-                console.error("Falha ao buscar composição do UCS", err);
+                console.error("Falha ao buscar composição do Valor Uso Solo", err);
                 setCompositionData([]);
-                setUcsAsset(null);
+                setMainAsset(null);
             } finally {
                 setIsLoading(false);
             }
@@ -76,24 +77,24 @@ function useUcsComposition(targetDate: Date | null) {
         
     }, [targetDate]);
     
-    const ucsAssetForChart: CommodityPriceData | undefined = useMemo(() => {
-        if (!ucsAsset) return undefined;
+    const mainAssetForChart: CommodityPriceData | undefined = useMemo(() => {
+        if (!mainAsset) return undefined;
         return {
-            id: 'ucs_ase',
-            name: 'Índice UCS ASE',
-            price: ucsAsset.ultimo,
+            id: 'valor_uso_solo',
+            name: 'Valor Uso Solo',
+            price: mainAsset.valor ?? mainAsset.ultimo,
             currency: 'BRL',
             category: 'index',
-            description: 'Índice principal de Unidade de Crédito de Sustentabilidade.',
-            unit: 'Pontos',
+            description: 'Valor total do uso do solo, composto por VUS, VMAD, Carbono CRS e Água CRS.',
+            unit: 'BRL',
             change: 0,
             absoluteChange: 0,
-            lastUpdated: ucsAsset.data,
+            lastUpdated: mainAsset.data,
         };
-    }, [ucsAsset]);
+    }, [mainAsset]);
 
 
-    return { ucsAsset: ucsAssetForChart, compositionData, isLoading };
+    return { mainAsset: mainAssetForChart, compositionData, isLoading };
 }
 
 
@@ -108,12 +109,12 @@ export default function CompositionPage() {
         setTargetDate(initialDate);
     }, [dateParam]);
 
-    const { ucsAsset, compositionData, isLoading } = useUcsComposition(targetDate);
+    const { mainAsset, compositionData, isLoading } = useComposition(targetDate);
     
     const isCurrentDateOrFuture = targetDate ? isToday(targetDate) || isFuture(targetDate) : true;
     const description = isCurrentDateOrFuture
-        ? "Visualização da composição do Índice UCS ASE em tempo real."
-        : `Composição do Índice UCS ASE para a data selecionada.`;
+        ? "Visualização da composição do Valor de Uso do Solo em tempo real."
+        : `Composição do Valor de Uso do Solo para a data selecionada.`;
 
     if (!targetDate) {
         return (
@@ -135,7 +136,7 @@ export default function CompositionPage() {
     return (
         <div className="flex min-h-screen w-full flex-col">
             <PageHeader
-                title="Análise de Composição do UCS"
+                title="Composição do Valor de Uso do Solo"
                 description={description}
                 icon={PieChart}
             >
@@ -143,7 +144,7 @@ export default function CompositionPage() {
             </PageHeader>
             <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
                <CompositionChart 
-                    ucsAsset={ucsAsset}
+                    mainAsset={mainAsset}
                     compositionData={compositionData}
                     isLoading={isLoading}
                />
@@ -151,3 +152,4 @@ export default function CompositionPage() {
         </div>
     );
 }
+

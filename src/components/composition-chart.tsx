@@ -19,7 +19,7 @@ interface CompositionData {
 }
 
 interface CompositionChartProps {
-    ucsAsset?: CommodityPriceData | null;
+    mainAsset?: CommodityPriceData | null;
     compositionData: CompositionData[];
     isLoading: boolean;
 }
@@ -50,7 +50,7 @@ const ChartLoader = () => (
 );
 
 
-export function CompositionChart({ ucsAsset, compositionData, isLoading }: CompositionChartProps) {
+export function CompositionChart({ mainAsset, compositionData, isLoading }: CompositionChartProps) {
 
     const totalValue = useMemo(() => {
         return compositionData.reduce((sum, item) => sum + item.value, 0);
@@ -77,11 +77,11 @@ export function CompositionChart({ ucsAsset, compositionData, isLoading }: Compo
         );
     }
     
-    if (!ucsAsset || compositionData.length === 0 || ucsAsset.price === 0) {
+    if (!mainAsset || compositionData.length === 0 || mainAsset.price === 0) {
          return (
             <Card>
                 <CardHeader>
-                     <CardTitle>Composição do Índice UCS</CardTitle>
+                     <CardTitle>Composição do Valor de Uso do Solo</CardTitle>
                     <CardDescription>
                         Dados de composição para a data selecionada.
                     </CardDescription>
@@ -98,9 +98,9 @@ export function CompositionChart({ ucsAsset, compositionData, isLoading }: Compo
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Composição do Índice UCS</CardTitle>
+                <CardTitle>Composição do {mainAsset.name}</CardTitle>
                 <CardDescription>
-                    O valor total do índice é <span className="font-bold text-foreground">{formatCurrency(ucsAsset.price, ucsAsset.currency, ucsAsset.id)}</span>, composto pelos seguintes ativos.
+                    O valor total do índice é <span className="font-bold text-foreground">{formatCurrency(mainAsset.price, mainAsset.currency, mainAsset.id)}</span>, composto pelos seguintes ativos.
                 </CardDescription>
             </CardHeader>
             <CardContent>
@@ -162,7 +162,7 @@ export function CompositionChart({ ucsAsset, compositionData, isLoading }: Compo
                                 })}
                                  <TableRow className="font-bold bg-muted/50">
                                     <TableCell>Total</TableCell>
-                                    <TableCell className="text-right font-mono">{formatCurrency(totalValue, 'BRL', 'ucs')}</TableCell>
+                                    <TableCell className="text-right font-mono">{formatCurrency(totalValue, 'BRL', mainAsset.id)}</TableCell>
                                     <TableCell className="text-right font-mono">100.00%</TableCell>
                                 </TableRow>
                             </TableBody>
