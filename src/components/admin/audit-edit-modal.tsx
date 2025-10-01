@@ -54,59 +54,61 @@ export function AuditEditModal({ assetItem, allAssets, isOpen, onOpenChange, onS
 
   const calculateImpact = async (changedAssetId: string, newAssetValue: number) => {
     setIsCalculating(true);
-
-    const values: Calc.ValueMap = {};
-    allAssets.forEach(a => {
-      values[a.id] = a.quote?.valor ?? a.quote?.ultimo ?? 0;
-    });
-    values[changedAssetId] = newAssetValue;
-
-    const oldValues = { ...values };
+    
+    // 1. Coleta os valores antigos de todos os ativos
+    const oldValues: Calc.ValueMap = {};
     allAssets.forEach(a => {
         oldValues[a.id] = a.quote?.valor ?? a.quote?.ultimo ?? 0;
     });
 
-    const rentMedia: Calc.ValueMap = {};
-    rentMedia.boi_gordo = Calc.calculateRentMediaBoi(values.boi_gordo);
-    rentMedia.milho = Calc.calculateRentMediaMilho(values.milho);
-    rentMedia.soja = Calc.calculateRentMediaSoja(values.soja, values.usd);
-    rentMedia.carbono = Calc.calculateRentMediaCarbono(values.carbono, values.eur);
-    rentMedia.madeira = Calc.calculateRentMediaMadeira(values.madeira, values.usd);
+    // 2. Cria uma cópia para os novos valores e aplica a alteração
+    const newValues: Calc.ValueMap = { ...oldValues };
+    newValues[changedAssetId] = newAssetValue;
 
-    values.vus = Calc.calculateVUS(rentMedia);
-    values.vmad = Calc.calculateVMAD(rentMedia);
-    values.carbono_crs = Calc.calculateCRS(rentMedia);
-    
-    const dependencies: Record<string, string[]> = {
-      valor_uso_solo: await getAssetCompositionConfig('valor_uso_solo'),
-      pdm: await getAssetCompositionConfig('pdm'),
-      ucs: await getAssetCompositionConfig('ucs'),
-      ucs_ase: await getAssetCompositionConfig('ucs_ase'),
+    // 3. Recalcula a cascata inteira usando os novos valores
+    const newRentMedia: Calc.ValueMap = {
+        boi_gordo: Calc.calculateRentMediaBoi(newValues.boi_gordo),
+        milho: Calc.calculateRentMediaMilho(newValues.milho),
+        soja: Calc.calculateRentMediaSoja(newValues.soja, newValues.usd),
+        carbono: Calc.calculateRentMediaCarbono(newValues.carbono, newValues.eur),
+        madeira: Calc.calculateRentMediaMadeira(newValues.madeira, newValues.usd),
     };
-    
-    values.valor_uso_solo = Calc.calculateValorUsoSolo({ vus: values.vus, vmad: values.vmad, carbono_crs: values.carbono_crs, Agua_CRS: values.Agua_CRS });
-    values.pdm = Calc.calculatePDM({ valor_uso_solo: values.valor_uso_solo });
-    values.ucs = Calc.calculateUCS({ pdm: values.pdm });
-    values.ucs_ase = Calc.calculateUCSASE({ ucs: values.ucs });
 
+    newValues.vus = Calc.calculateVUS(newRentMedia);
+    newValues.vmad = Calc.calculateVMAD(newRentMedia);
+    newValues.carbono_crs = Calc.calculateCRS(newRentMedia);
+    
+    newValues.valor_uso_solo = Calc.calculateValorUsoSolo({
+        vus: newValues.vus,
+        vmad: newValues.vmad,
+        carbono_crs: newValues.carbono_crs,
+        Agua_CRS: newValues.Agua_CRS,
+    });
+    newValues.pdm = Calc.calculatePDM({ valor_uso_solo: newValues.valor_uso_solo });
+    newValues.ucs = Calc.calculateUCS({ pdm: newValues.pdm });
+    newValues.ucs_ase = Calc.calculateUCSASE({ ucs: newValues.ucs });
+
+    // 4. Compara os valores novos com os antigos para encontrar o impacto
     const impacted: ImpactedAsset[] = [];
-    for (const id in values) {
-      if (values[id] !== oldValues[id] && id !== changedAssetId) {
-        const assetConfig = allAssets.find(a => a.id === id);
-        if (assetConfig) {
-          impacted.push({
-            id,
-            name: assetConfig.name,
-            currency: assetConfig.currency,
-            oldValue: oldValues[id],
-            newValue: values[id],
-          });
+    for (const id in newValues) {
+        // Verifica se o valor mudou E se não é o ativo que foi editado diretamente
+        if (newValues[id] !== oldValues[id] && id !== changedAssetId) {
+            const assetConfig = allAssets.find(a => a.id === id);
+            if (assetConfig) {
+                impacted.push({
+                    id,
+                    name: assetConfig.name,
+                    currency: assetConfig.currency,
+                    oldValue: oldValues[id],
+                    newValue: newValues[id],
+                });
+            }
         }
-      }
     }
     setImpactedAssets(impacted);
     setIsCalculating(false);
-  };
+};
+
   
   useEffect(() => {
     if (!assetItem) return;
