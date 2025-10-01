@@ -275,18 +275,6 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-                <SidebarMenuItem onClick={handleMenuItemClick}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname.startsWith('/admin/audit')}
-                    tooltip={{ children: 'Auditoria' }}
-                  >
-                    <Link href="/admin/audit">
-                      <History />
-                      <span>Auditoria</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
                  <SidebarMenuItem onClick={handleMenuItemClick}>
                   <SidebarMenuButton
                     asChild
@@ -296,6 +284,18 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
                     <Link href="/admin/status">
                       <CheckCheck />
                       <span>Status</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                 <SidebarMenuItem onClick={handleMenuItemClick}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith('/admin/audit')}
+                    tooltip={{ children: 'Auditoria' }}
+                  >
+                    <Link href="/admin/audit">
+                      <History />
+                      <span>Auditoria</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
