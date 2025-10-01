@@ -69,7 +69,7 @@ const initialCommoditiesConfig: Record<string, Omit<CommodityConfig, 'id'>> = {
     // Indices Calculados (conforme documentação)
     'ch2o_agua': { name: 'CH2O Água', currency: 'BRL', category: 'sub-index', description: 'Índice de uso da água.', unit: 'Pontos' },
     'custo_agua': { name: 'Custo Água', currency: 'BRL', category: 'sub-index', description: 'Custo do uso da água (7% de CH2O).', unit: 'BRL' },
-    'pdm': { name: 'PDM', currency: 'BRL', category: 'sub-index', description: 'Produto Desenvolvido Mundial.', unit: 'Pontos' },
+    'pdm': { name: 'PDM', currency: 'BRL', category: 'sub-index', description: 'Potencial Desflorestador Monetizado.', unit: 'BRL por PDM' },
     'ucs': { name: 'UCS', currency: 'BRL', category: 'sub-index', description: 'Universal Carbon Sustainability.', unit: 'Pontos' },
     'vus': { name: 'VUS', currency: 'BRL', category: 'vus', description: 'Valor Universal Sustentável (commodities agrícolas).', unit: 'Pontos' },
     'vmad': { name: 'VMAD', currency: 'BRL', category: 'vmad', description: 'Valor da Madeira.', unit: 'Pontos' },
@@ -78,7 +78,7 @@ const initialCommoditiesConfig: Record<string, Omit<CommodityConfig, 'id'>> = {
     'valor_uso_solo': { name: 'Valor Uso Solo', currency: 'BRL', category: 'sub-index', description: 'Valor total do uso do solo.', unit: 'Pontos' },
     
     // Indice Principal
-    'ucs_ase': { name: 'Índice UCS ASE', currency: 'BRL', category: 'index', description: 'Índice principal de sustentabilidade (amplificado).', unit: 'Pontos' },
+    'ucs_ase': { name: 'Índice UCS ASE', currency: 'BRL', category: 'index', description: 'Índice principal de Unidade de Crédito de Sustentabilidade.', unit: 'Pontos' },
 };
 
 
@@ -243,9 +243,15 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
 
             let lastUpdated = 'N/A';
             if (latestDoc?.timestamp) {
-                 const timestamp = latestDoc.timestamp;
-                const dateToFormat = typeof timestamp === 'string' ? new Date(timestamp.replace(' ', 'T').replace(/\//g, '-')) : new Date(serializeFirestoreTimestamp(timestamp));
-                lastUpdated = format(dateToFormat, "HH:mm:ss");
+                const timestamp = latestDoc.timestamp;
+                const tsAsString = typeof timestamp === 'string' ? timestamp : serializeFirestoreTimestamp(timestamp).toString();
+                const dateToFormat = new Date(tsAsString.replace(' ', 'T').replace(/\//g, '-'));
+
+                if (!isNaN(dateToFormat.getTime())) {
+                    lastUpdated = format(dateToFormat, "HH:mm:ss");
+                } else if (latestDoc?.data) {
+                    lastUpdated = latestDoc.data;
+                }
             } else if (latestDoc?.data) {
                 lastUpdated = latestDoc.data;
             }
