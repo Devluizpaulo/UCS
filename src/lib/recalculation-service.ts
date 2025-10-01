@@ -31,7 +31,7 @@ async function getOrCreateQuote(
     const newDocRef = collectionRef.doc();
     const newQuote: Partial<FirestoreQuote> = {
       data: formattedDate,
-      timestamp: Timestamp.fromDate(startOfDay(targetDate)),
+      timestamp: Timestamp.fromDate(startOfDay(targetDate)).toMillis(),
       ultimo: 0,
       valor: 0,
       status: 'recalculated',
@@ -96,29 +96,29 @@ export async function recalculateAllForDate(targetDate: Date, editedValues: Reco
 
       // 3. Calcular as rentabilidades médias com os valores atualizados
       const rentMedia: ValueMap = {};
-      rentMedia.boi_gordo = await Calc.calculateRentMediaBoi(values.boi_gordo);
-      rentMedia.milho = await Calc.calculateRentMediaMilho(values.milho);
-      rentMedia.soja = await Calc.calculateRentMediaSoja(values.soja, values.usd);
-      rentMedia.carbono = await Calc.calculateRentMediaCarbono(values.carbono, values.eur);
-      rentMedia.madeira = await Calc.calculateRentMediaMadeira(values.madeira, values.usd);
+      rentMedia.boi_gordo = Calc.calculateRentMediaBoi(values.boi_gordo);
+      rentMedia.milho = Calc.calculateRentMediaMilho(values.milho);
+      rentMedia.soja = Calc.calculateRentMediaSoja(values.soja, values.usd);
+      rentMedia.carbono = Calc.calculateRentMediaCarbono(values.carbono, values.eur);
+      rentMedia.madeira = Calc.calculateRentMediaMadeira(values.madeira, values.usd);
       
       // 4. Recalcular todos os índices em cascata
-      values.vus = await Calc.calculateVUS(rentMedia);
-      values.vmad = await Calc.calculateVMAD(rentMedia);
-      values.carbono_crs = await Calc.calculateCRS(rentMedia);
+      values.vus = Calc.calculateVUS(rentMedia);
+      values.vmad = Calc.calculateVMAD(rentMedia);
+      values.carbono_crs = Calc.calculateCRS(rentMedia);
 
       // 'Agua_CRS' é tratado como um valor base, pode ter sido editado
       values.Agua_CRS = values.Agua_CRS; 
 
-      values.valor_uso_solo = await Calc.calculateValorUsoSolo({
+      values.valor_uso_solo = Calc.calculateValorUsoSolo({
           vus: values.vus,
           vmad: values.vmad,
           carbono_crs: values.carbono_crs,
           Agua_CRS: values.Agua_CRS
       });
-      values.pdm = await Calc.calculatePDM({ valor_uso_solo: values.valor_uso_solo });
-      values.ucs = await Calc.calculateUCS({ pdm: values.pdm });
-      values.ucs_ase = await Calc.calculateUCSASE({ ucs: values.ucs });
+      values.pdm = Calc.calculatePDM({ valor_uso_solo: values.valor_uso_solo });
+      values.ucs = Calc.calculateUCS({ pdm: values.pdm });
+      values.ucs_ase = Calc.calculateUCSASE({ ucs: values.ucs });
 
       // 5. Atualizar todos os documentos no Firestore dentro da transação
       for (const assetId of allAssetIds) {

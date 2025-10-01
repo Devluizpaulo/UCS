@@ -1,5 +1,4 @@
 
-'use server';
 
 import { getCommodityConfigs, getQuoteByDate } from '@/lib/data-service';
 import type { CommodityConfig, FirestoreQuote } from '@/lib/types';
@@ -17,28 +16,28 @@ interface CalculationConfig {
 
 // --- Rentabilidade Média (Intermediate Calculations) ---
 
-export async function calculateRentMediaBoi(precoBoi: number): Promise<number> {
+export function calculateRentMediaBoi(precoBoi: number): number {
     return precoBoi * 18;
 }
 
-export async function calculateRentMediaMilho(precoMilho: number): Promise<number> {
+export function calculateRentMediaMilho(precoMilho: number): number {
     const ton = (precoMilho / 60) * 1000;
     return ton * 7.20;
 }
 
-export async function calculateRentMediaSoja(precoSojaUSD: number, cotacaoDolar: number): Promise<number> {
+export function calculateRentMediaSoja(precoSojaUSD: number, cotacaoDolar: number): number {
     const sojaBRL = precoSojaUSD * cotacaoDolar;
     const ton = ((sojaBRL / 60) * 1000) + 0.01990; // Incluindo ajuste fino
     const fatorRentabilidade = (55 * 60) / 1000; // 3.30
     return ton * fatorRentabilidade;
 }
 
-export async function calculateRentMediaCarbono(precoCarbonoEUR: number, cotacaoEuro: number): Promise<number> {
+export function calculateRentMediaCarbono(precoCarbonoEUR: number, cotacaoEuro: number): number {
     const carbonoBRL = precoCarbonoEUR * cotacaoEuro;
     return carbonoBRL * 2.59;
 }
 
-export async function calculateRentMediaMadeira(precoMadeiraUSD: number, cotacaoDolar: number): Promise<number> {
+export function calculateRentMediaMadeira(precoMadeiraUSD: number, cotacaoDolar: number): number {
     const taxaConversao = 37.5620342294117 / 100;
     const madeiraToraUSD = precoMadeiraUSD * taxaConversao;
     const madeiraToraBRL = (madeiraToraUSD * cotacaoDolar) + 0.02; // Incluindo ajuste fino
@@ -49,7 +48,7 @@ export async function calculateRentMediaMadeira(precoMadeiraUSD: number, cotacao
 
 // --- Main Asset Calculation Logic ---
 
-export async function calculateVUS(rentMedia: ValueMap): Promise<number> {
+export function calculateVUS(rentMedia: ValueMap): number {
     const weightedSum = (rentMedia.boi_gordo * VUS_WEIGHTS.boi_gordo) +
                         (rentMedia.milho * VUS_WEIGHTS.milho) +
                         (rentMedia.soja * VUS_WEIGHTS.soja);
@@ -57,19 +56,19 @@ export async function calculateVUS(rentMedia: ValueMap): Promise<number> {
     return intermediateValue * VUS_MULTIPLIER;
 }
 
-export async function calculateVMAD(rentMedia: ValueMap): Promise<number> {
+export function calculateVMAD(rentMedia: ValueMap): number {
     return (rentMedia.madeira || 0) * VMAD_MULTIPLIER;
 }
 
-export async function calculateCRS(rentMedia: ValueMap): Promise<number> {
+export function calculateCRS(rentMedia: ValueMap): number {
     return (rentMedia.carbono || 0) * CRS_MULTIPLIER;
 }
 
-export async function calculateValorUsoSolo(components: ValueMap): Promise<number> {
+export function calculateValorUsoSolo(components: ValueMap): number {
     return (components.vus || 0) + (components.vmad || 0) + (components.carbono_crs || 0) + (components.Agua_CRS || 0);
 }
 
-export async function calculatePDM(components: ValueMap): Promise<number> {
+export function calculatePDM(components: ValueMap): number {
     // No n8n, o PDM é uma soma complexa que é essencialmente o ValorUsoSolo.
     // PDM = (Boi×35%) + (Milho×30%) + (Soja×35%) + Madeira + Carbono + Custo_Água
     // Isso é a soma das rentabilidades, que é a base para VUS, VMAD, CRS... e Custo_Água é 7% de CH2O, que é a mesma base.
@@ -77,11 +76,11 @@ export async function calculatePDM(components: ValueMap): Promise<number> {
     return components.valor_uso_solo || 0;
 }
 
-export async function calculateUCS(components: ValueMap): Promise<number> {
+export function calculateUCS(components: ValueMap): number {
     return (components.pdm / 900) / 2;
 }
 
-export async function calculateUCSASE(components: ValueMap): Promise<number> {
+export function calculateUCSASE(components: ValueMap): number {
     return components.ucs * 2;
 }
 

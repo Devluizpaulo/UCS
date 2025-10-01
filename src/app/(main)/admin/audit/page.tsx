@@ -16,7 +16,7 @@ import { Loader2, History, Edit, ExternalLink, Calculator, Save, AlertTriangle }
 import { useToast } from '@/hooks/use-toast';
 import { getCommodityConfigs, getQuoteByDate } from '@/lib/data-service';
 import { recalculateAllForDate } from '@/lib/recalculation-service';
-import type { CommodityConfig, FirestoreQuote } from '@/lib/types';
+import type { CommodityConfig, CommodityPriceData, FirestoreQuote } from '@/lib/types';
 import { getIconForCategory } from '@/lib/icons';
 import { formatCurrency } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
@@ -191,7 +191,7 @@ export default function AuditPage() {
                       </TableRow>
                     ))
                   ) : assetItems.map((asset) => {
-                    const Icon = getIconForCategory(asset);
+                    const Icon = getIconForCategory(asset as CommodityPriceData);
                     const principalValue = asset.quote?.ultimo ?? asset.quote?.valor ?? 'N/A';
                     const isEdited = editedValues.hasOwnProperty(asset.id);
 
@@ -291,5 +291,3 @@ export default function AuditPage() {
     </TooltipProvider>
   );
 }
-
-    
