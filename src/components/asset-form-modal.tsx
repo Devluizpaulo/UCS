@@ -30,7 +30,7 @@ import type { CommodityConfig } from '@/lib/types';
 const assetSchema = z.object({
   id: z.string().min(2, { message: 'O ID deve ter pelo menos 2 caracteres.' }).regex(/^[a-z0-9_]+$/, 'Use apenas letras minúsculas, números e _'),
   name: z.string().min(3, { message: 'O nome deve ter pelo menos 3 caracteres.' }),
-  category: z.enum(['index', 'sub-index', 'exchange', 'vus', 'vmad', 'crs']),
+  category: z.enum(['index', 'sub-index', 'exchange', 'vus', 'vmad', 'crs', 'agricultural', 'material']),
   currency: z.enum(['BRL', 'USD', 'EUR']),
   unit: z.string().min(1, { message: 'A unidade é obrigatória.' }),
   description: z.string().min(10, { message: 'A descrição deve ter pelo menos 10 caracteres.' }),
@@ -117,9 +117,11 @@ export function AssetFormModal({ isOpen, onOpenChange, onSubmit, asset }: AssetF
                                 <SelectItem value="index">Índice Principal</SelectItem>
                                 <SelectItem value="sub-index">Sub-Índice</SelectItem>
                                 <SelectItem value="exchange">Câmbio</SelectItem>
-                                <SelectItem value="vus">VUS (Commodity Agrícola)</SelectItem>
-                                <SelectItem value="vmad">VMAD (Madeira)</SelectItem>
+                                <SelectItem value="vus">VUS</SelectItem>
+                                <SelectItem value="vmad">VMAD</SelectItem>
                                 <SelectItem value="crs">CRS (Socioambiental)</SelectItem>
+                                <SelectItem value="agricultural">Commodity Agrícola</SelectItem>
+                                <SelectItem value="material">Commodity Material</SelectItem>
                             </SelectContent>
                         </Select>
                     )}
