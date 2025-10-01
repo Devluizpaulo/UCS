@@ -20,6 +20,7 @@ import {
   Archive,
   PieChart,
   History,
+  LandPlot,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -241,6 +242,18 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
                   <Link href="/analysis/composition">
                     <PieChart />
                     <span>Composição</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem onClick={handleMenuItemClick}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname.startsWith('/analysis/profitability')}
+                  tooltip={{ children: 'Análise de Rentabilidade' }}
+                >
+                  <Link href="/analysis/profitability">
+                    <LandPlot />
+                    <span>Rentabilidade</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
