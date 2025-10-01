@@ -1,7 +1,6 @@
-
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useTransition } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -15,11 +14,9 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import type { AssetItem } from '@/app/(main)/admin/audit/page';
 import { formatCurrency } from '@/lib/formatters';
-import * as Calc from '@/lib/calculation-service';
+import { previewRecalculation, type ImpactedAsset } from '@/lib/recalculation-service';
 import { AlertCircle, ArrowRight, Loader2 } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
-import { cn } from '@/lib/utils';
-import { getAssetCompositionConfig } from '@/lib/calculation-service';
 import { Separator } from '../ui/separator';
 
 interface AuditEditModalProps {
@@ -28,20 +25,14 @@ interface AuditEditModalProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   onSave: (assetId: string, newValue: number) => void;
+  targetDate: Date | null;
 }
 
-interface ImpactedAsset {
-  id: string;
-  name: string;
-  currency: string;
-  oldValue: number;
-  newValue: number;
-}
-
-export function AuditEditModal({ assetItem, allAssets, isOpen, onOpenChange, onSave }: AuditEditModalProps) {
+export function AuditEditModal({ assetItem, allAssets, isOpen, onOpenChange, onSave, targetDate }: AuditEditModalProps) {
   const [newValue, setNewValue] = useState('');
   const [impactedAssets, setImpactedAssets] = useState<ImpactedAsset[]>([]);
   const [isCalculating, setIsCalculating] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     if (assetItem?.quote) {
@@ -54,77 +45,36 @@ export function AuditEditModal({ assetItem, allAssets, isOpen, onOpenChange, onS
   }, [assetItem]);
 
  const calculateImpact = (changedAssetId: string, newAssetValue: number) => {
-    setIsCalculating(true);
+    if (!targetDate) return;
 
-    const oldValues: Calc.ValueMap = {};
-    allAssets.forEach(a => {
-        oldValues[a.id] = a.quote?.valor ?? a.quote?.ultimo ?? (a.quote as any)?.valor_brl ?? 0;
-    });
+    startTransition(async () => {
+        setIsCalculating(true);
+        try {
+            const allAssetValues = allAssets.reduce((acc, a) => {
+                acc[a.id] = a.quote?.valor ?? a.quote?.ultimo ?? (a.quote as any)?.valor_brl ?? 0;
+                return acc;
+            }, {} as Record<string, number>);
 
-    const newValues: Calc.ValueMap = { ...oldValues };
-    newValues[changedAssetId] = newAssetValue;
-
-    // Etapa 1: Calcular as rentabilidades médias com os novos valores
-    const rentMedia: Calc.ValueMap = {};
-    rentMedia.boi_gordo = Calc.calculateRentMediaBoi(newValues.boi_gordo);
-    rentMedia.milho = Calc.calculateRentMediaMilho(newValues.milho);
-    rentMedia.soja = Calc.calculateRentMediaSoja(newValues.soja, newValues.usd);
-    rentMedia.carbono = Calc.calculateRentMediaCarbono(newValues.carbono, newValues.eur);
-    rentMedia.madeira = Calc.calculateRentMediaMadeira(newValues.madeira, newValues.usd);
-
-    // Etapa 2: Recalcular os índices baseados nas rentabilidades
-    newValues.vus = Calc.calculateVUS(rentMedia);
-    newValues.vmad = Calc.calculateVMAD(rentMedia);
-    newValues.carbono_crs = Calc.calculateCRS(rentMedia);
-    
-    // Etapa 3: Recalcular os índices subsequentes em cascata
-    newValues.valor_uso_solo = Calc.calculateValorUsoSolo({
-        vus: newValues.vus,
-        vmad: newValues.vmad,
-        carbono_crs: newValues.carbono_crs,
-        Agua_CRS: newValues.Agua_CRS,
-    });
-    newValues.pdm = Calc.calculatePDM({ valor_uso_solo: newValues.valor_uso_solo });
-    newValues.ucs = Calc.calculateUCS({ pdm: newValues.pdm });
-    newValues.ucs_ase = Calc.calculateUCSASE({ ucs: newValues.ucs });
-
-    const impacted: ImpactedAsset[] = [];
-    for (const id in newValues) {
-        if (newValues[id] !== oldValues[id] && id !== changedAssetId) {
-            const assetConfig = allAssets.find(a => a.id === id);
-            if (assetConfig && oldValues[id] !== undefined) {
-                 // Check for significant change to avoid floating point noise
-                if (Math.abs(newValues[id] - oldValues[id]) > 1e-9) {
-                    impacted.push({
-                        id,
-                        name: assetConfig.name,
-                        currency: assetConfig.currency,
-                        oldValue: oldValues[id],
-                        newValue: newValues[id],
-                    });
-                }
-            }
+            const impact = await previewRecalculation({
+                targetDate,
+                editedAssetId: changedAssetId,
+                newValue: newAssetValue,
+                allAssetOriginalValues: allAssetValues,
+                allAssetsConfig: allAssets
+            });
+            setImpactedAssets(impact);
+        } catch (error) {
+            console.error("Failed to preview recalculation:", error);
+            setImpactedAssets([]);
+        } finally {
+            setIsCalculating(false);
         }
-    }
-    
-    // Sort impacted assets to show main indices first
-    const order = ['ucs_ase', 'ucs', 'pdm', 'valor_uso_solo'];
-    impacted.sort((a, b) => {
-        const indexA = order.indexOf(a.id);
-        const indexB = order.indexOf(b.id);
-        if (indexA !== -1 && indexB !== -1) return indexA - indexB;
-        if (indexA !== -1) return -1;
-        if (indexB !== -1) return 1;
-        return a.name.localeCompare(b.name);
     });
-
-    setImpactedAssets(impacted);
-    setIsCalculating(false);
 };
 
   
   useEffect(() => {
-    if (!assetItem) return;
+    if (!assetItem || !isOpen) return;
     const numericValue = parseFloat(newValue.replace(',', '.'));
     if (!isNaN(numericValue)) {
       const timer = setTimeout(() => {
@@ -133,7 +83,7 @@ export function AuditEditModal({ assetItem, allAssets, isOpen, onOpenChange, onS
       return () => clearTimeout(timer);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [newValue, assetItem]);
+  }, [newValue, assetItem, isOpen]);
 
 
   if (!assetItem) return null;
@@ -196,7 +146,7 @@ export function AuditEditModal({ assetItem, allAssets, isOpen, onOpenChange, onS
                     <AlertCircle className="h-4 w-4 text-primary" />
                     Impacto do Recálculo
                 </h4>
-                {isCalculating ? (
+                {isCalculating || isPending ? (
                   <div className="flex items-center justify-center h-24">
                     <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                   </div>

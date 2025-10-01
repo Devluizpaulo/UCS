@@ -49,7 +49,7 @@ export type AssetItem = CommodityConfig & {
 };
 
 // A lista definitiva de IDs de ativos que são calculados pela plataforma.
-const CALCULATED_ASSET_IDS: string[] = ['vus', 'vmad', 'carbono_crs', 'Agua_CRS', 'valor_uso_solo', 'pdm', 'ucs', 'ucs_ase', 'custo_agua', 'ch2o_agua'];
+const CALCULATED_ASSET_IDS: string[] = ['vus', 'vmad', 'carbono_crs', 'valor_uso_solo', 'pdm', 'ucs', 'ucs_ase'];
 
 export default function AuditPage() {
   const searchParams = useSearchParams();
@@ -213,47 +213,47 @@ export default function AuditPage() {
                           <Badge variant={asset.status === 'OK' ? 'outline' : 'destructive'} className={cn(asset.status === 'OK' && 'border-green-500 text-green-600')}>{asset.status}</Badge>
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center justify-center gap-1">
-                            {asset.type === 'COTADO' ? (
-                              <>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button variant="outline" size="icon" onClick={() => setEditingAsset(asset)}>
-                                      <Edit className="h-4 w-4" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>Editar Valor</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                                {asset.sourceUrl && (
-                                  <Tooltip>
+                           <div className="flex items-center justify-center gap-1">
+                                {asset.type === 'COTADO' ? (
+                                <>
+                                    <Tooltip>
                                     <TooltipTrigger asChild>
-                                      <Button variant="outline" size="icon" asChild>
-                                        <a href={asset.sourceUrl} target="_blank" rel="noopener noreferrer">
-                                          <ExternalLink className="h-4 w-4" />
-                                        </a>
-                                      </Button>
+                                        <Button variant="outline" size="icon" onClick={() => setEditingAsset(asset)}>
+                                        <Edit className="h-4 w-4" />
+                                        </Button>
                                     </TooltipTrigger>
                                     <TooltipContent>
-                                      <p>Ver no site de origem</p>
+                                        <p>Editar Valor</p>
                                     </TooltipContent>
-                                  </Tooltip>
+                                    </Tooltip>
+                                    {asset.sourceUrl && (
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                        <Button variant="outline" size="icon" asChild>
+                                            <a href={asset.sourceUrl} target="_blank" rel="noopener noreferrer">
+                                            <ExternalLink className="h-4 w-4" />
+                                            </a>
+                                        </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                        <p>Ver no site de origem</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                    )}
+                                </>
+                                ) : (
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                    <Button variant="outline" size="icon" disabled>
+                                        <Calculator className="h-4 w-4" />
+                                    </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                    <p>O valor é calculado automaticamente</p>
+                                    </TooltipContent>
+                                </Tooltip>
                                 )}
-                              </>
-                            ) : (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button variant="outline" size="icon" disabled>
-                                    <Calculator className="h-4 w-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>O valor é calculado automaticamente</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            )}
-                          </div>
+                            </div>
                         </TableCell>
                       </TableRow>
                     );
@@ -270,6 +270,7 @@ export default function AuditPage() {
         isOpen={!!editingAsset}
         onOpenChange={() => setEditingAsset(null)}
         onSave={handleValueChange}
+        targetDate={targetDate}
       />
       <AlertDialog open={isRecalculateAlertOpen} onOpenChange={setIsRecalculateAlertOpen}>
         <AlertDialogContent>
