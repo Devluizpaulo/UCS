@@ -41,7 +41,7 @@ export const getIconForCategory = (asset?: CommodityPriceData) => {
         case 'carbono_crs': return Recycle;
         case 'ch2o_agua': return Droplets;
         case 'custo_agua': return Droplets;
-        case 'agua_crs': return Droplets;
+        case 'Agua_CRS': return Droplets;
         case 'valor_uso_solo': return FileText;
         default:
             switch (asset.category) {
@@ -51,6 +51,8 @@ export const getIconForCategory = (asset?: CommodityPriceData) => {
                 case 'vus': return LandPlot;
                 case 'vmad': return TreePine;
                 case 'crs': return Shield;
+                case 'agricultural': return Combine;
+                case 'material': return Recycle;
                 default: return HelpCircle;
             }
     }

@@ -1,10 +1,11 @@
 
+
 'use client';
 
 import { useState, useEffect, useMemo, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CommodityPrices } from '@/components/commodity-prices';
-import { getCommodityPricesByDate, getCommodityPrices, clearCacheAndRefresh } from '@/lib/data-service';
+import { getCommodityPricesByDate, getCommodityPrices, clearCacheAndRefresh, reprocessDate } from '@/lib/data-service';
 import { PageHeader } from '@/components/page-header';
 import { addDays, format, parseISO, isValid, isToday, isFuture } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -13,9 +14,20 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { MainIndexCard } from '@/components/main-index-card';
 import type { CommodityPriceData } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, History } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 function getValidatedDate(dateString?: string | null): Date | null {
   if (dateString) {
@@ -78,13 +90,9 @@ export default function DashboardPage() {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
 
-  // Initialize state with null to ensure server and client match initially.
   const [targetDate, setTargetDate] = useState<Date | null>(null);
   
   useEffect(() => {
-    // This effect runs only on the client, after hydration.
-    // It safely sets the initial date based on the URL or defaults to today.
-    // This prevents the hydration mismatch error caused by new Date().
     const initialDate = getValidatedDate(dateParam) || new Date();
     setTargetDate(initialDate);
   }, [dateParam]);
@@ -109,8 +117,31 @@ export default function DashboardPage() {
       });
     });
   };
+  
+  const handleReprocess = async () => {
+      if (!targetDate) return;
+      
+      startTransition(async () => {
+          const result = await reprocessDate(targetDate);
+          if (result.success) {
+              toast({
+                  title: "Reprocessamento Iniciado",
+                  description: result.message,
+              });
+              // Dá um tempo para o n8n processar e depois atualiza
+              setTimeout(() => {
+                router.refresh();
+              }, 5000); 
+          } else {
+               toast({
+                  variant: 'destructive',
+                  title: "Falha no Reprocessamento",
+                  description: result.message,
+              });
+          }
+      });
+  }
 
-  // Render a loading skeleton if the date hasn't been set on the client yet.
   if (!targetDate) {
     return (
        <div className="flex min-h-screen w-full flex-col">
@@ -145,10 +176,32 @@ export default function DashboardPage() {
         }
       >
         <div className="flex items-center gap-2">
-            {isCurrentDateOrFuture && (
+            {isCurrentDateOrFuture ? (
                 <Button variant="outline" size="icon" onClick={handleRefresh} disabled={isPending} title="Atualizar Cotações">
                     <RefreshCw className={cn("h-4 w-4", isPending && "animate-spin")} />
                 </Button>
+            ) : (
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                         <Button variant="outline" size="icon" disabled={isPending} title="Reprocessar dia">
+                            <History className={cn("h-4 w-4", isPending && "animate-spin")} />
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Reprocessar Cálculos do Dia?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Esta ação acionará o n8n para buscar e recalcular todos os dados para o dia <span className="font-bold">{formattedDate}</span>. Isso pode sobrescrever dados existentes. Use caso suspeite de um erro no processamento original.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleReprocess} disabled={isPending}>
+                                Sim, Reprocessar
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             )}
             <DateNavigator
               targetDate={targetDate}

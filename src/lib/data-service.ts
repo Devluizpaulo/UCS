@@ -7,7 +7,7 @@ import type { CommodityConfig, CommodityPriceData, FirestoreQuote } from '@/lib/
 import { getCache, setCache, clearCache as clearMemoryCache } from '@/lib/cache-service';
 import { Timestamp } from 'firebase-admin/firestore';
 import { subDays, format, startOfDay, endOfDay } from 'date-fns';
-import type { DateRange } from 'react-day-picker';
+import { revalidatePath } from 'next/cache';
 
 // --- CONSTANTS ---
 const CACHE_KEY_PRICES = 'commodity_prices_simple';
@@ -55,14 +55,14 @@ function getPriceFromQuote(quoteData: any): number {
 
 const initialCommoditiesConfig: Record<string, Omit<CommodityConfig, 'id'>> = {
     // Commodities Base
-    'milho': { name: 'Milho', currency: 'BRL', category: 'agricultural', description: 'Milho Futuros (convertido para BRL)', unit: 'BRL por saca' },
-    'soja': { name: 'Soja', currency: 'BRL', category: 'agricultural', description: 'Soja Futuros (convertido para BRL)', unit: 'BRL por saca' },
-    'boi_gordo': { name: 'Boi Gordo', currency: 'BRL', category: 'agricultural', description: 'Preço da arroba (15kg) de Boi Gordo.', unit: 'BRL por @' },
-    'madeira': { name: 'Madeira', currency: 'BRL', category: 'material', description: 'Madeira Serrada (convertido para BRL)', unit: 'BRL por m³' },
-    'carbono': { name: 'Carbono', currency: 'BRL', category: 'material', description: 'Crédito de Carbono (convertido para BRL)', unit: 'BRL por Tonelada' },
-    'usd': { name: 'Dólar Americano', currency: 'BRL', category: 'exchange', description: 'Cotação do Dólar Americano (USD) em Reais (BRL).', unit: 'BRL por USD' },
-    'eur': { name: 'Euro', currency: 'BRL', category: 'exchange', description: 'Cotação do Euro (EUR) em Reais (BRL).', unit: 'BRL por EUR' },
-    
+    'milho': { name: 'Milho', currency: 'BRL', category: 'agricultural', description: 'Milho Futuros (convertido para BRL)', unit: 'saca' },
+    'soja': { name: 'Soja', currency: 'BRL', category: 'agricultural', description: 'Soja Futuros (convertido para BRL)', unit: 'saca' },
+    'boi_gordo': { name: 'Boi Gordo', currency: 'BRL', category: 'agricultural', description: 'Preço da arroba (15kg) de Boi Gordo.', unit: '@' },
+    'madeira': { name: 'Madeira', currency: 'BRL', category: 'material', description: 'Madeira Serrada (convertido para BRL)', unit: 'm³' },
+    'carbono': { name: 'Carbono', currency: 'BRL', category: 'material', description: 'Crédito de Carbono (convertido para BRL)', unit: 'Tonelada' },
+    'usd': { name: 'Dólar Americano', currency: 'BRL', category: 'exchange', description: 'Cotação do Dólar Americano (USD) em Reais (BRL).', unit: 'BRL' },
+    'eur': { name: 'Euro', currency: 'BRL', category: 'exchange', description: 'Cotação do Euro (EUR) em Reais (BRL).', unit: 'BRL' },
+
     // Indices Calculados
     'ch2o_agua': { name: 'CH2O Água', currency: 'BRL', category: 'sub-index', description: 'Índice de uso da água.', unit: 'Pontos' },
     'custo_agua': { name: 'Custo Água', currency: 'BRL', category: 'sub-index', description: 'Custo do uso da água (7% de CH2O).', unit: 'BRL' },
@@ -71,7 +71,7 @@ const initialCommoditiesConfig: Record<string, Omit<CommodityConfig, 'id'>> = {
     'vus': { name: 'VUS', currency: 'BRL', category: 'vus', description: 'Valor Universal Sustentável (commodities agrícolas).', unit: 'Pontos' },
     'vmad': { name: 'VMAD', currency: 'BRL', category: 'vmad', description: 'Valor da Madeira.', unit: 'Pontos' },
     'carbono_crs': { name: 'Carbono CRS', currency: 'BRL', category: 'crs', description: 'Valor do Carbono.', unit: 'Pontos' },
-    'agua_crs': { name: 'Água CRS', currency: 'BRL', category: 'crs', description: 'Valor da Água.', unit: 'Pontos' },
+    'Agua_CRS': { name: 'Água CRS', currency: 'BRL', category: 'crs', description: 'Valor da Água.', unit: 'Pontos' },
     'valor_uso_solo': { name: 'Valor Uso Solo', currency: 'BRL', category: 'sub-index', description: 'Valor total do uso do solo.', unit: 'Pontos' },
     
     // Indice Principal
@@ -106,18 +106,18 @@ export async function getCommodityConfigs(): Promise<CommodityConfig[]> {
     const docRef = db.collection(SETTINGS_COLLECTION).doc(COMMODITIES_DOC);
     const doc = await docRef.get();
 
-    let configData: Record<string, Omit<CommodityConfig, 'id'>> | undefined = doc.data() as any;
+    let configData: Record<string, Omit<CommodityConfig, 'id'>>;
 
-    if (!doc.exists || !configData) {
+    if (!doc.exists || !doc.data()) {
         console.log("Nenhuma configuração de commodity encontrada, usando configuração inicial e (re)criando documento se necessário.");
         configData = initialCommoditiesConfig;
-        if (!doc.exists) {
-            try {
-                await docRef.set(configData);
-            } catch (error) {
-                console.error("Falha ao criar o documento de configuração inicial:", error);
-            }
+        try {
+            await docRef.set(configData);
+        } catch (error) {
+            console.error("Falha ao criar o documento de configuração inicial:", error);
         }
+    } else {
+         configData = doc.data() as Record<string, Omit<CommodityConfig, 'id'>>;
     }
     
     const configsArray = Object.entries(configData).map(([id, config]) => ({
@@ -216,7 +216,6 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
 
             let lastUpdated = 'N/A';
             if (latestDoc?.timestamp) {
-                // If timestamp is a string (ISO format), format it. If it's a number (milliseconds), create a Date object first.
                 const dateToFormat = typeof latestDoc.timestamp === 'string' ? new Date(latestDoc.timestamp.replace(' ', 'T').replace(/\//g, '-')) : new Date(serializeFirestoreTimestamp(latestDoc.timestamp));
                 lastUpdated = format(dateToFormat, "HH:mm:ss");
             } else if (latestDoc?.data) {
@@ -249,27 +248,14 @@ export async function getCotacoesHistorico(assetId: string, days: number): Promi
         const endDate = new Date();
         const startDate = subDays(endDate, days);
         
-        // This query is inefficient with the current string format but will work.
-        // It fetches all documents and filters in memory.
-        // A proper fix would require changing the data format in Firestore.
         const snapshot = await db.collection(assetId)
             .orderBy('timestamp', 'desc')
-            .limit(days * 2) // Fetch more to be safe
+            .limit(days)
             .get();
 
         if (snapshot.empty) return [];
         
-        const allQuotes = snapshot.docs.map(doc => serializeFirestoreTimestamp({ id: doc.id, ...doc.data() })) as FirestoreQuote[];
-
-        return allQuotes.filter(quote => {
-            try {
-                const quoteDate = new Date(quote.timestamp.replace(' ', 'T').replace(/\//g, '-'));
-                return quoteDate >= startDate && quoteDate <= endDate;
-            } catch (e) {
-                return false;
-            }
-        }).slice(0, days);
-
+        return snapshot.docs.map(doc => serializeFirestoreTimestamp({ id: doc.id, ...doc.data() })) as FirestoreQuote[];
 
     } catch (error) {
         console.error(`Erro ao buscar histórico de ${days} dias para ${assetId}:`, error);
@@ -277,12 +263,7 @@ export async function getCotacoesHistorico(assetId: string, days: number): Promi
     }
 }
 
-export async function getCotacoesHistoricoPorRange(assetId: string, dateRange: DateRange): Promise<FirestoreQuote[]> {
-    if (!dateRange.from || !dateRange.to) {
-        console.warn('getCotacoesHistoricoPorRange chamada sem um intervalo de datas válido.');
-        return [];
-    }
-
+export async function getCotacoesHistoricoPorRange(assetId: string, dateRange: { from: Date, to: Date }): Promise<FirestoreQuote[]> {
     const { db } = await getFirebaseAdmin();
     
     try {
@@ -290,21 +271,14 @@ export async function getCotacoesHistoricoPorRange(assetId: string, dateRange: D
         const endDate = endOfDay(dateRange.to);
 
         const snapshot = await db.collection(assetId)
+            .where('timestamp', '>=', Timestamp.fromDate(startDate))
+            .where('timestamp', '<=', Timestamp.fromDate(endDate))
             .orderBy('timestamp', 'desc')
             .get();
         
         if (snapshot.empty) return [];
 
-        const allQuotes = snapshot.docs.map(doc => serializeFirestoreTimestamp({ id: doc.id, ...doc.data() })) as FirestoreQuote[];
-
-        return allQuotes.filter(quote => {
-             try {
-                const quoteDate = new Date(quote.timestamp.replace(' ', 'T').replace(/\//g, '-'));
-                return quoteDate >= startDate && quoteDate <= endDate;
-            } catch (e) {
-                return false;
-            }
-        });
+        return snapshot.docs.map(doc => serializeFirestoreTimestamp({ id: doc.id, ...doc.data() })) as FirestoreQuote[];
 
     } catch (error) {
         console.error(`Erro ao buscar histórico por período para ${assetId}:`, error);
@@ -314,4 +288,47 @@ export async function getCotacoesHistoricoPorRange(assetId: string, dateRange: D
 
 export async function clearCacheAndRefresh() {
     clearMemoryCache();
+    revalidatePath('/dashboard');
+}
+
+/**
+ * Aciona um webhook no n8n para reprocessar os dados de uma data específica.
+ * @param date A data a ser reprocessada.
+ */
+export async function reprocessDate(date: Date): Promise<{ success: boolean; message: string }> {
+    const webhookUrl = process.env.N8N_REPROCESS_WEBHOOK_URL;
+    
+    if (!webhookUrl) {
+        const errorMessage = "A URL do webhook de reprocessamento não está configurada no servidor.";
+        console.error(`[reprocessDate] ${errorMessage}`);
+        return { success: false, message: errorMessage };
+    }
+
+    const formattedDate = format(date, 'yyyy-MM-dd');
+
+    try {
+        console.log(`[reprocessDate] Acionando webhook para reprocessar a data: ${formattedDate}`);
+        
+        const response = await fetch(webhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ date: formattedDate }),
+        });
+
+        if (!response.ok) {
+            const errorBody = await response.text();
+            throw new Error(`O webhook respondeu com o status ${response.status}: ${errorBody}`);
+        }
+        
+        // Limpa o cache para forçar a busca dos novos dados reprocessados.
+        clearMemoryCache();
+        revalidatePath('/dashboard');
+
+        const successMessage = `Solicitação de reprocessamento para ${format(date, 'dd/MM/yyyy')} enviada com sucesso.`;
+        return { success: true, message: successMessage };
+
+    } catch (error: any) {
+        console.error(`[reprocessDate] Falha ao acionar o webhook:`, error);
+        return { success: false, message: error.message || "Ocorreu um erro desconhecido ao tentar reprocessar a data." };
+    }
 }
