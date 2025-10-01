@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { getFirebaseAdmin } from '@/lib/firebase-admin-config';
@@ -108,12 +109,14 @@ export async function getCommodityConfigs(): Promise<CommodityConfig[]> {
     let configData: Record<string, Omit<CommodityConfig, 'id'>> | undefined = doc.data() as any;
 
     if (!doc.exists || !configData) {
-        console.log("Nenhuma configuração de commodity encontrada ou documento vazio, usando configuração inicial e (re)criando documento.");
+        console.log("Nenhuma configuração de commodity encontrada, usando configuração inicial e (re)criando documento se necessário.");
         configData = initialCommoditiesConfig;
-        try {
-            await docRef.set(configData);
-        } catch (error) {
-            console.error("Falha ao criar o documento de configuração inicial:", error);
+        if (!doc.exists) {
+            try {
+                await docRef.set(configData);
+            } catch (error) {
+                console.error("Falha ao criar o documento de configuração inicial:", error);
+            }
         }
     }
     
@@ -132,30 +135,16 @@ export async function getQuoteByDate(assetId: string, date: Date): Promise<Fires
     const { db } = await getFirebaseAdmin();
     const formattedDate = format(date, 'dd/MM/yyyy');
     
-    const stringDateSnapshot = await db.collection(assetId)
+    const snapshot = await db.collection(assetId)
         .where('data', '==', formattedDate)
         .limit(1)
         .get();
 
-    if (!stringDateSnapshot.empty) {
-        const doc = stringDateSnapshot.docs[0];
-        const data = doc.data();
-        return serializeFirestoreTimestamp({ id: doc.id, ...data }) as FirestoreQuote;
+    if (snapshot.empty) {
+        return null;
     }
-
-    const startDate = startOfDay(date);
-    const endDate = endOfDay(date);
-
-    const timestampSnapshot = await db.collection(assetId)
-        .where('timestamp', '>=', startDate.toISOString())
-        .where('timestamp', '<=', endDate.toISOString())
-        .orderBy('timestamp', 'desc')
-        .limit(1)
-        .get();
-
-    if (timestampSnapshot.empty) return null;
     
-    const doc = timestampSnapshot.docs[0];
+    const doc = snapshot.docs[0];
     const data = doc.data();
     return serializeFirestoreTimestamp({ id: doc.id, ...data }) as FirestoreQuote;
 }
@@ -228,7 +217,7 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
             let lastUpdated = 'N/A';
             if (latestDoc?.timestamp) {
                 // If timestamp is a string (ISO format), format it. If it's a number (milliseconds), create a Date object first.
-                const dateToFormat = typeof latestDoc.timestamp === 'string' ? new Date(latestDoc.timestamp) : new Date(serializeFirestoreTimestamp(latestDoc.timestamp));
+                const dateToFormat = typeof latestDoc.timestamp === 'string' ? new Date(latestDoc.timestamp.replace(' ', 'T').replace(/\//g, '-')) : new Date(serializeFirestoreTimestamp(latestDoc.timestamp));
                 lastUpdated = format(dateToFormat, "HH:mm:ss");
             } else if (latestDoc?.data) {
                 lastUpdated = latestDoc.data;
@@ -260,15 +249,27 @@ export async function getCotacoesHistorico(assetId: string, days: number): Promi
         const endDate = new Date();
         const startDate = subDays(endDate, days);
         
+        // This query is inefficient with the current string format but will work.
+        // It fetches all documents and filters in memory.
+        // A proper fix would require changing the data format in Firestore.
         const snapshot = await db.collection(assetId)
-            .where('timestamp', '>=', startDate.toISOString())
-            .where('timestamp', '<=', endDate.toISOString())
             .orderBy('timestamp', 'desc')
+            .limit(days * 2) // Fetch more to be safe
             .get();
 
         if (snapshot.empty) return [];
+        
+        const allQuotes = snapshot.docs.map(doc => serializeFirestoreTimestamp({ id: doc.id, ...doc.data() })) as FirestoreQuote[];
 
-        return snapshot.docs.map(doc => serializeFirestoreTimestamp({ id: doc.id, ...doc.data() })) as FirestoreQuote[];
+        return allQuotes.filter(quote => {
+            try {
+                const quoteDate = new Date(quote.timestamp.replace(' ', 'T').replace(/\//g, '-'));
+                return quoteDate >= startDate && quoteDate <= endDate;
+            } catch (e) {
+                return false;
+            }
+        }).slice(0, days);
+
 
     } catch (error) {
         console.error(`Erro ao buscar histórico de ${days} dias para ${assetId}:`, error);
@@ -289,14 +290,21 @@ export async function getCotacoesHistoricoPorRange(assetId: string, dateRange: D
         const endDate = endOfDay(dateRange.to);
 
         const snapshot = await db.collection(assetId)
-            .where('timestamp', '>=', startDate.toISOString())
-            .where('timestamp', '<=', endDate.toISOString())
             .orderBy('timestamp', 'desc')
             .get();
         
         if (snapshot.empty) return [];
 
-        return snapshot.docs.map(doc => serializeFirestoreTimestamp({ id: doc.id, ...doc.data() })) as FirestoreQuote[];
+        const allQuotes = snapshot.docs.map(doc => serializeFirestoreTimestamp({ id: doc.id, ...doc.data() })) as FirestoreQuote[];
+
+        return allQuotes.filter(quote => {
+             try {
+                const quoteDate = new Date(quote.timestamp.replace(' ', 'T').replace(/\//g, '-'));
+                return quoteDate >= startDate && quoteDate <= endDate;
+            } catch (e) {
+                return false;
+            }
+        });
 
     } catch (error) {
         console.error(`Erro ao buscar histórico por período para ${assetId}:`, error);
