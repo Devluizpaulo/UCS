@@ -99,14 +99,14 @@ export default function DashboardPage() {
   
   const { data, isLoading } = useRealtimeData(targetDate);
   
-  const { mainIndices, otherAssets } = useMemo(() => {
-    const main = data.filter(d => d.category === 'index').sort((a, b) => a.name.localeCompare(b.name));
-    const secondary = data.filter(d => d.category !== 'index');
-    return { mainIndices: main, otherAssets: secondary };
+  const { mainIndex, secondaryIndices, currencies, otherAssets } = useMemo(() => {
+    const main = data.find(d => d.id === 'ucs_ase');
+    const secondary = data.filter(d => ['pdm', 'ucs'].includes(d.id)).sort((a, b) => a.name.localeCompare(b.name));
+    const currencyAssets = data.filter(d => ['usd', 'eur'].includes(d.id));
+    const remainingAssets = data.filter(d => !['ucs_ase', 'pdm', 'ucs', 'usd', 'eur'].includes(d.id));
+    return { mainIndex: main, secondaryIndices: secondary, currencies: currencyAssets, otherAssets: remainingAssets };
   }, [data]);
   
-  const ucsAseAsset = useMemo(() => data.find(d => d.id === 'ucs_ase'), [data]);
-
   const handleRefresh = () => {
     startTransition(async () => {
       await clearCacheAndRefresh();
@@ -156,7 +156,10 @@ export default function DashboardPage() {
           </PageHeader>
           <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
               <Skeleton className="h-32 w-full" />
-              <Skeleton className="h-24 w-full" />
+              <div className="grid gap-4 md:grid-cols-2">
+                <Skeleton className="h-32 w-full" />
+                <Skeleton className="h-32 w-full" />
+              </div>
               <Skeleton className="h-96 w-full" />
           </main>
       </div>
@@ -216,10 +219,27 @@ export default function DashboardPage() {
               <Skeleton className="h-32 w-full" />
               <Skeleton className="h-32 w-full" />
             </div>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
+              <Skeleton className="h-32 w-full" />
+              <Skeleton className="h-32 w-full" />
+            </div>
           </>
         ) : (
           <>
-            {mainIndices.map(asset => <MainIndexCard key={asset.id} asset={asset} isMain={asset.id === 'ucs_ase'} />)}
+            {mainIndex && <MainIndexCard asset={mainIndex} isMain={true} />}
+            
+            {secondaryIndices.length > 0 && (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
+                    {secondaryIndices.map(asset => <MainIndexCard key={asset.id} asset={asset} />)}
+                </div>
+            )}
+            
+            {currencies.length > 0 && (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
+                    {currencies.map(asset => <MainIndexCard key={asset.id} asset={asset} />)}
+                </div>
+            )}
+
           </>
         )}
         <CommodityPrices 
