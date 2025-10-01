@@ -14,7 +14,6 @@ import { Button } from './ui/button';
 import { FileDown, FileType, Loader2 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import XlsxPopulate from 'xlsx-populate';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 
@@ -61,7 +60,6 @@ const ChartLoader = () => (
 export function CompositionChart({ mainAsset, compositionData, isLoading, targetDate }: CompositionChartProps) {
     const cardContentRef = useRef<HTMLDivElement>(null);
     const [isExportingPdf, setIsExportingPdf] = useState(false);
-    const [isExportingExcel, setIsExportingExcel] = useState(false);
     const { toast } = useToast();
 
     const totalValue = useMemo(() => {
@@ -107,80 +105,6 @@ export function CompositionChart({ mainAsset, compositionData, isLoading, target
         }
     };
 
-    const handleExportExcel = async () => {
-        if (!mainAsset || compositionData.length === 0) return;
-        setIsExportingExcel(true);
-        try {
-             // Create a new workbook
-            const workbook = await XlsxPopulate.fromBlankAsync();
-            const sheet = workbook.sheet(0);
-            sheet.name(`Composição ${mainAsset.name}`);
-
-            // --- Header ---
-            sheet.range("A1:C1").merge(true).value(`Relatório de Composição - ${mainAsset.name}`).style({ bold: true, fontSize: 16, horizontalAlignment: "center" });
-            sheet.range("A2:C2").merge(true).value(`Data: ${format(targetDate, 'dd/MM/yyyy')} | Valor Total: ${formatCurrency(totalValue, mainAsset.currency, mainAsset.id)}`).style({ italic: true, horizontalAlignment: "center" });
-            sheet.row(2).height(20);
-
-            // --- Table Headers ---
-            sheet.cell("A4").value("Componente").style("bold", true);
-            sheet.cell("B4").value("Valor (BRL)").style("bold", true);
-            sheet.cell("C4").value("Participação (%)").style("bold", true);
-            sheet.range("A4:C4").style("fill", "E0E0E0");
-
-            // --- Table Data ---
-            compositionData.forEach((item, index) => {
-                const row = 5 + index;
-                const percentage = totalValue > 0 ? item.value / totalValue : 0;
-                sheet.cell(`A${row}`).value(item.name);
-                sheet.cell(`B${row}`).value(item.value).style("numberFormat", "R$ #,##0.00");
-                sheet.cell(`C${row}`).value(percentage).style("numberFormat", "0.00%");
-            });
-
-            // --- Total Row ---
-            const totalRowIndex = 5 + compositionData.length;
-            sheet.cell(`A${totalRowIndex}`).value("Total").style("bold", true);
-            sheet.cell(`B${totalRowIndex}`).formula(`SUM(B5:B${totalRowIndex - 1})`).style({ bold: true, numberFormat: "R$ #,##0.00" });
-            sheet.cell(`C${totalRowIndex}`).value(1).style({ bold: true, numberFormat: "0.00%" });
-            sheet.range(`A${totalRowIndex}:C${totalRowIndex}`).style("borderTop", { style: "thin" });
-            
-            // --- Column Widths ---
-            sheet.column("A").width(25);
-            sheet.column("B").width(20);
-            sheet.column("C").width(20);
-
-            // --- Add Chart ---
-             sheet.addChart({
-                type: "pieChart",
-                data: {
-                    labels: sheet.range(`A5:A${totalRowIndex - 1}`),
-                    values: sheet.range(`B5:B${totalRowIndex - 1}`),
-                },
-                drawing: {
-                    topLeftCell: "E4",
-                    bottomRightCell: `L20`,
-                },
-                title: `Composição - ${mainAsset.name}`,
-             });
-
-
-            // --- Generate and Download file ---
-            const blob = await workbook.outputAsync();
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob as Blob);
-            link.download = `composicao_${mainAsset.id}_${format(targetDate, 'yyyy-MM-dd')}.xlsx`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-        } catch (error: any) {
-            console.error("Excel generation error:", error);
-            toast({ variant: "destructive", title: "Erro ao gerar Excel", description: error.message || "Ocorreu uma falha ao exportar a planilha." });
-        } finally {
-            setIsExportingExcel(false);
-        }
-    };
-
-
     if (isLoading) {
         return (
             <Card>
@@ -223,13 +147,9 @@ export function CompositionChart({ mainAsset, compositionData, isLoading, target
                     </CardDescription>
                 </div>
                  <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={handleExportPdf} disabled={isExportingPdf || isExportingExcel}>
+                    <Button variant="outline" size="sm" onClick={handleExportPdf} disabled={isExportingPdf}>
                         {isExportingPdf ? <Loader2 className="animate-spin" /> : <FileDown />}
                         <span className="ml-2 hidden sm:inline">PDF</span>
-                    </Button>
-                     <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={isExportingExcel || isExportingPdf}>
-                        {isExportingExcel ? <Loader2 className="animate-spin" /> : <FileType />}
-                        <span className="ml-2 hidden sm:inline">Excel</span>
                     </Button>
                 </div>
             </CardHeader>
@@ -303,5 +223,7 @@ export function CompositionChart({ mainAsset, compositionData, isLoading, target
         </Card>
     )
 }
+
+    
 
     
