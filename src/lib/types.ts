@@ -7,7 +7,7 @@ export interface CommodityConfig {
     id: string;
     name: string;
     currency: 'USD' | 'BRL' | 'EUR';
-    category: 'exchange' | 'vus' | 'vmad' | 'crs' | 'index' | 'sub-index';
+    category: 'exchange' | 'vus' | 'vmad' | 'crs' | 'index' | 'sub-index' | 'agricultural' | 'material';
     description: string;
     unit: string;
 }
@@ -26,7 +26,7 @@ export interface FirestoreQuote {
     data: string; 
     ultimo: number;
     valor?: number;
-    timestamp: number;
+    timestamp: number | string;
     variacao_pct: number | null;
     [key: string]: any;
 }

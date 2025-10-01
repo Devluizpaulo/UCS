@@ -243,7 +243,8 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
 
             let lastUpdated = 'N/A';
             if (latestDoc?.timestamp) {
-                const dateToFormat = typeof latestDoc.timestamp === 'string' ? new Date(latestDoc.timestamp.replace(' ', 'T').replace(/\//g, '-')) : new Date(serializeFirestoreTimestamp(latestDoc.timestamp));
+                 const timestamp = latestDoc.timestamp;
+                const dateToFormat = typeof timestamp === 'string' ? new Date(timestamp.replace(' ', 'T').replace(/\//g, '-')) : new Date(serializeFirestoreTimestamp(timestamp));
                 lastUpdated = format(dateToFormat, "HH:mm:ss");
             } else if (latestDoc?.data) {
                 lastUpdated = latestDoc.data;
