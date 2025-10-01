@@ -20,6 +20,7 @@ import {
   Archive,
   PieChart,
   History,
+  CheckCheck,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -283,6 +284,18 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
                     <Link href="/admin/audit">
                       <History />
                       <span>Auditoria</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                 <SidebarMenuItem onClick={handleMenuItemClick}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith('/admin/status')}
+                    tooltip={{ children: 'Status' }}
+                  >
+                    <Link href="/admin/status">
+                      <CheckCheck />
+                      <span>Status</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
