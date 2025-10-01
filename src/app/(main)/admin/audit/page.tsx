@@ -72,7 +72,7 @@ export default function AuditPage() {
         configs.map(async (config) => {
           const quote = await getQuoteByDate(config.id, date);
           const localOverride = editedValues[config.id];
-          const finalQuote = localOverride !== undefined && quote ? { ...quote, ultimo: localOverride } : quote;
+          const finalQuote = localOverride !== undefined && quote ? { ...quote, ultimo: localOverride, valor: localOverride } : quote;
 
           return {
             ...config,
@@ -191,7 +191,7 @@ export default function AuditPage() {
                     ))
                   ) : assetItems.map((asset) => {
                     const Icon = getIconForCategory(asset as CommodityPriceData);
-                    const principalValue = asset.quote?.ultimo ?? asset.quote?.valor ?? 'N/A';
+                    const principalValue = asset.quote?.valor ?? asset.quote?.ultimo ?? (asset.quote as any)?.valor_brl ?? 'N/A';
                     const isEdited = editedValues.hasOwnProperty(asset.id);
 
                     return (
