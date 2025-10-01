@@ -211,29 +211,49 @@ export default function DashboardPage() {
 
         const allData = [mainIndex, ...secondaryIndices, ...currencies, ...otherAssets].filter(Boolean) as CommodityPriceData[];
 
-        allData.forEach((asset, index) => {
+        allData.forEach((asset) => {
             const row = worksheet.addRow([
                 asset.name,
                 asset.price,
-                asset.change / 100, // Store as a number for formatting
+                asset.change / 100,
                 asset.absoluteChange,
                 asset.lastUpdated
             ]);
-            row.getCell(2).numFmt = `"${asset.currency}" #,##0.00`;
-            row.getCell(3).numFmt = '0.00%';
-            row.getCell(4).numFmt = `"${asset.currency}" #,##0.00`;
+
+            const priceCell = row.getCell(2);
+            priceCell.numFmt = `"${asset.currency}" #,##0.00`;
+            if (['usd', 'eur'].includes(asset.id)) {
+                priceCell.numFmt = `"${asset.currency}" #,##0.0000`;
+            }
+
+            const changeCell = row.getCell(3);
+            changeCell.numFmt = '0.00%';
+            
+            const absChangeCell = row.getCell(4);
+            absChangeCell.numFmt = `"${asset.currency}" #,##0.00`;
+
         });
         
         worksheet.columns.forEach(column => {
             let maxLength = 0;
-            column.eachCell({ includeEmpty: true }, cell => {
-                let columnLength = cell.value ? cell.value.toString().length : 10;
-                if (columnLength > maxLength) {
-                    maxLength = columnLength;
+            column.eachCell({ includeEmpty: true }, (cell, rowNumber) => {
+                // Apenas considera as linhas com conteúdo para o cálculo da largura
+                if (rowNumber > 2) {
+                    let columnLength = cell.value ? cell.value.toString().length : 10;
+                    if (cell.numFmt && typeof cell.value === 'number') {
+                       // Estima o tamanho formatado
+                       const numStr = cell.value.toFixed(cell.numFmt.includes('0.0000') ? 4 : 2);
+                       const currencyPrefix = cell.numFmt.startsWith('"') ? cell.numFmt.substring(1, cell.numFmt.indexOf('"', 1)) + ' ' : '';
+                       columnLength = (currencyPrefix + numStr).length;
+                    }
+                    if (columnLength > maxLength) {
+                        maxLength = columnLength;
+                    }
                 }
             });
-            column.width = maxLength < 12 ? 12 : maxLength + 2;
+            column.width = maxLength < 12 ? 12 : maxLength + 4;
         });
+
 
         const buffer = await workbook.xlsx.writeBuffer();
         const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
