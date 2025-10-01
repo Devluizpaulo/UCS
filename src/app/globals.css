@@ -33,11 +33,11 @@
     --input: 220 15% 90%;
     --ring: 142 76% 36%;
     
-    --chart-1: 142 76% 36%;
-    --chart-2: 142 60% 45%;
-    --chart-3: 142 50% 55%;
-    --chart-4: 142 40% 65%;
-    --chart-5: 142 30% 75%;
+    --chart-1: 221 83% 53%;   /* Blue */
+    --chart-2: 22 95% 53%;    /* Orange */
+    --chart-3: 142 76% 36%;   /* Green */
+    --chart-4: 45 93% 47%;    /* Yellow */
+    --chart-5: 180 82% 35%;   /* Teal */
     
     --radius: 0.5rem;
     
@@ -80,11 +80,11 @@
     --input: 220 15% 20%;
     --ring: 142 70% 45%;
     
-    --chart-1: 142 70% 45%;
-    --chart-2: 142 60% 55%;
-    --chart-3: 142 50% 65%;
-    --chart-4: 142 40% 75%;
-    --chart-5: 142 30% 85%;
+    --chart-1: 221 83% 65%;   /* Blue */
+    --chart-2: 22 95% 61%;    /* Orange */
+    --chart-3: 142 70% 45%;   /* Green */
+    --chart-4: 45 93% 55%;    /* Yellow */
+    --chart-5: 180 82% 45%;   /* Teal */
 
     --sidebar-background: 220 15% 12%;
     --sidebar-foreground: 220 10% 80%;
