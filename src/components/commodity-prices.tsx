@@ -20,7 +20,7 @@ export function CommodityPrices({ data, displayDate, loading }: CommodityPricesP
             <CardTitle>Ativos Subjacentes</CardTitle>
             <CardDescription>
                 {displayDate === 'Tempo Real'
-                    ? "Cotações de hoje com variação baseada no fechamento anterior."
+                    ? "Cotações de hoje com variação baseada no fechamento do dia anterior."
                     : `Exibindo cotações para ${displayDate}.`
                 }
             </CardDescription>
