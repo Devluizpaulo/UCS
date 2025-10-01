@@ -128,6 +128,18 @@ export async function getCommodityConfigs(): Promise<CommodityConfig[]> {
         id,
         ...config,
     }));
+    
+    // START: Hotfix para garantir as descrições corretas
+    const pdmAsset = configsArray.find(c => c.id === 'pdm');
+    if (pdmAsset) {
+        pdmAsset.description = "Potencial Desflorestador Monetizado.";
+    }
+
+    const ucsAseAsset = configsArray.find(c => c.id === 'ucs_ase');
+    if (ucsAseAsset) {
+        ucsAseAsset.description = "Índice principal de Unidade de Crédito de Sustentabilidade.";
+    }
+    // END: Hotfix
 
     setCache(COMMODITIES_CONFIG_CACHE_KEY, configsArray, CACHE_TTL_SECONDS * 10);
     return configsArray;
@@ -151,24 +163,7 @@ export async function getQuoteByDate(assetId: string, date: Date): Promise<Fires
             return serializeFirestoreTimestamp({ id: doc.id, ...data }) as FirestoreQuote;
         }
 
-        // Fallback: se 'data' falhar, tenta com 'timestamp' (para dados mais antigos ou formatos diferentes)
-        const startOfDayStr = startOfDay(date).toISOString();
-        const endOfDayStr = endOfDay(date).toISOString();
-
-        const snapshotByTimestamp = await db.collection(assetId)
-            .where('timestamp', '>=', startOfDayStr)
-            .where('timestamp', '<=', endOfDayStr)
-            .orderBy('timestamp', 'desc')
-            .limit(1)
-            .get();
-
-        if (snapshotByTimestamp.empty) {
-            return null;
-        }
-
-        const doc = snapshotByTimestamp.docs[0];
-        const data = doc.data();
-        return serializeFirestoreTimestamp({ id: doc.id, ...data }) as FirestoreQuote;
+        return null;
 
     } catch (error) {
         console.error(`Error fetching quote for ${assetId} on ${formattedDate}:`, error);
