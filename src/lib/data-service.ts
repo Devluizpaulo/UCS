@@ -53,21 +53,30 @@ function getPriceFromQuote(quoteData: any): number {
 // --- CONFIGURATION MANAGEMENT (CRUD Ativos) ---
 
 const initialCommoditiesConfig: Record<string, Omit<CommodityConfig, 'id'>> = {
-    'ucs_ase': { name: 'Índice UCS ASE', currency: 'BRL', category: 'index', description: 'Índice principal de Unidade de Crédito de Sustentabilidade.', unit: 'Pontos' },
-    'ucs': { name: 'UCS', currency: 'BRL', category: 'sub-index', description: 'Unidade de Crédito de Sustentabilidade.', unit: 'BRL por UCS' },
-    'pdm': { name: 'PDM', currency: 'BRL', category: 'sub-index', description: 'Potencial Desflorestador Monetizado.', unit: 'BRL por PDM' },
-    'vus': { name: 'VUS', currency: 'BRL', category: 'vus', description: 'Valor de Uso do Solo.', unit: 'BRL por VUS' },
-    'vmad': { name: 'VMAD', currency: 'BRL', category: 'vmad', description: 'Valor da Madeira.', unit: 'BRL por VMAD' },
-    'crs': { name: 'CRS', currency: 'BRL', category: 'crs', description: 'Custo de Responsabilidade Socioambiental.', unit: 'BRL por CRS' },
-    'usd': { name: 'Dólar Comercial', currency: 'BRL', category: 'exchange', description: 'Cotação do Dólar Americano (USD) em Reais (BRL).', unit: 'BRL por USD' },
+    // Commodities Base
+    'milho': { name: 'Milho', currency: 'BRL', category: 'agricultural', description: 'Milho Futuros (convertido para BRL)', unit: 'BRL por saca' },
+    'soja': { name: 'Soja', currency: 'BRL', category: 'agricultural', description: 'Soja Futuros (convertido para BRL)', unit: 'BRL por saca' },
+    'boi_gordo': { name: 'Boi Gordo', currency: 'BRL', category: 'agricultural', description: 'Preço da arroba (15kg) de Boi Gordo.', unit: 'BRL por @' },
+    'madeira': { name: 'Madeira', currency: 'BRL', category: 'material', description: 'Madeira Serrada (convertido para BRL)', unit: 'BRL por m³' },
+    'carbono': { name: 'Carbono', currency: 'BRL', category: 'material', description: 'Crédito de Carbono (convertido para BRL)', unit: 'BRL por Tonelada' },
+    'usd': { name: 'Dólar Americano', currency: 'BRL', category: 'exchange', description: 'Cotação do Dólar Americano (USD) em Reais (BRL).', unit: 'BRL por USD' },
     'eur': { name: 'Euro', currency: 'BRL', category: 'exchange', description: 'Cotação do Euro (EUR) em Reais (BRL).', unit: 'BRL por EUR' },
-    'soja': { name: 'Soja', currency: 'USD', category: 'vus', description: 'Preço da saca de 60kg de Soja.', unit: 'USD por saca' },
-    'milho': { name: 'Milho', currency: 'BRL', category: 'vus', description: 'Preço da saca de 60kg de Milho.', unit: 'BRL por saca' },
-    'boi_gordo': { name: 'Boi Gordo', currency: 'BRL', category: 'vus', description: 'Preço da arroba (15kg) de Boi Gordo.', unit: 'BRL por @' },
-    'carbono': { name: 'Crédito de Carbono', currency: 'EUR', category: 'crs', description: 'Custo da manutenção com a chamada Responsabilidade Social do projeto.', unit: 'EUR por Tonelada' },
-    'custo_agua': { name: 'Crédito de Água', currency: 'BRL', category: 'crs', description: 'Custo da Água para Produção de Alimentos.', unit: 'BRL por m³' },
-    'madeira': { name: 'Madeira Serrada', currency: 'USD', category: 'vmad', description: 'Preço por metro cúbico de madeira serrada.', unit: 'USD por m³' },
+    
+    // Indices Calculados
+    'ch2o_agua': { name: 'CH2O Água', currency: 'BRL', category: 'sub-index', description: 'Índice de uso da água.', unit: 'Pontos' },
+    'custo_agua': { name: 'Custo Água', currency: 'BRL', category: 'sub-index', description: 'Custo do uso da água (7% de CH2O).', unit: 'BRL' },
+    'pdm': { name: 'PDM', currency: 'BRL', category: 'sub-index', description: 'Produto Desenvolvido Mundial.', unit: 'Pontos' },
+    'ucs': { name: 'UCS', currency: 'BRL', category: 'sub-index', description: 'Universal Carbon Sustainability.', unit: 'Pontos' },
+    'vus': { name: 'VUS', currency: 'BRL', category: 'sub-index', description: 'Valor Universal Sustentável (commodities agrícolas).', unit: 'Pontos' },
+    'vmad': { name: 'Vmad', currency: 'BRL', category: 'sub-index', description: 'Valor da Madeira.', unit: 'Pontos' },
+    'carbono_crs': { name: 'Carbono CRS', currency: 'BRL', category: 'sub-index', description: 'Valor do Carbono.', unit: 'Pontos' },
+    'agua_crs': { name: 'Água CRS', currency: 'BRL', category: 'sub-index', description: 'Valor da Água.', unit: 'Pontos' },
+    'valor_uso_solo': { name: 'Valor Uso Solo', currency: 'BRL', category: 'sub-index', description: 'Valor total do uso do solo.', unit: 'Pontos' },
+    
+    // Indice Principal
+    'ucs_ase': { name: 'Índice UCS ASE', currency: 'BRL', category: 'index', description: 'Índice principal de sustentabilidade (amplificado).', unit: 'Pontos' },
 };
+
 
 export async function saveCommodityConfig(id: string, config: Omit<CommodityConfig, 'id'>): Promise<void> {
     const { db } = await getFirebaseAdmin();

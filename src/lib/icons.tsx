@@ -17,6 +17,9 @@ import {
   Users,
   PieChart,
   Network,
+  Recycle,
+  Combine,
+  FileText,
 } from 'lucide-react';
 
 export const getIconForCategory = (asset?: CommodityPriceData) => {
@@ -26,15 +29,20 @@ export const getIconForCategory = (asset?: CommodityPriceData) => {
         case 'ucs_ase': return Award;
         case 'ucs': return Shield;
         case 'pdm': return Leaf;
+        case 'vus': return Combine;
+        case 'vmad': return TreePine;
         case 'eur': return Euro;
         case 'boi_gordo': return Beef;
         case 'milho': return Wheat;
         case 'soja': return Bean;
         case 'usd': return DollarSign;
         case 'madeira': return TreePine;
-        case 'carbono': return Shield;
+        case 'carbono': return Recycle;
+        case 'carbono_crs': return Recycle;
         case 'ch2o_agua': return Droplets;
         case 'custo_agua': return Droplets;
+        case 'agua_crs': return Droplets;
+        case 'valor_uso_solo': return FileText;
         default:
             switch (asset.category) {
                 case 'index': return Award;
