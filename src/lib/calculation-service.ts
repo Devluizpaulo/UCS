@@ -87,7 +87,7 @@ export async function calculateUCSASE(components: ValueMap): Promise<number> {
 
 // --- Configuration ---
 
-export const CALCULATION_CONFIGS: Record<string, CalculationConfig> = {
+const CALCULATION_CONFIGS: Record<string, CalculationConfig> = {
     'vus': {
         components: ['soja', 'milho', 'boi_gordo', 'usd'],
         calculate: (rentMedia) => calculateVUS(rentMedia),
