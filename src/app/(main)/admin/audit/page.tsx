@@ -81,6 +81,7 @@ export default function AuditPage() {
           };
         })
       );
+      // Ordena para que os cotados venham primeiro, melhorando a legibilidade
       items.sort((a, b) => (a.type === 'COTADO' ? -1 : 1));
       setAssetItems(items);
     } catch (err: any) {
@@ -101,7 +102,7 @@ export default function AuditPage() {
     if (targetDate) {
       fetchAssetItems(targetDate);
     }
-  }, [targetDate, toast]);
+  }, [targetDate]);
 
   const handleValueChange = (assetId: string, newValue: number) => {
     setEditedValues(prev => ({ ...prev, [assetId]: newValue }));
@@ -131,6 +132,7 @@ export default function AuditPage() {
         toast({ variant: 'destructive', title: 'Erro no Recálculo', description: result.message });
       }
     });
+    setIsRecalculateAlertOpen(false);
   };
 
   if (!targetDate) {
@@ -192,7 +194,7 @@ export default function AuditPage() {
                     const isEdited = editedValues.hasOwnProperty(asset.id);
 
                     return (
-                      <TableRow key={asset.id} className={isEdited ? 'bg-yellow-500/10' : ''}>
+                      <TableRow key={asset.id} className={cn(isEdited && 'bg-yellow-500/10', asset.type === 'COTADO' ? 'bg-muted/30' : '')}>
                         <TableCell>
                           <div className="flex items-center gap-3">
                             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted"><Icon className="h-4 w-4 text-muted-foreground" /></div>
@@ -214,10 +216,12 @@ export default function AuditPage() {
                             {asset.type === 'COTADO' ? (
                               <>
                                 <Tooltip><TooltipTrigger asChild><Button variant="outline" size="icon" onClick={() => setEditingAsset(asset)}><Edit className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent><p>Editar Valor</p></TooltipContent></Tooltip>
-                                <Tooltip><TooltipTrigger asChild><Button variant="outline" size="icon" asChild><a href={asset.sourceUrl} target="_blank" rel="noopener noreferrer"><ExternalLink className="h-4 w-4" /></a></Button></TooltipTrigger><TooltipContent><p>Ver no site</p></TooltipContent></Tooltip>
+                                {asset.sourceUrl && (
+                                  <Tooltip><TooltipTrigger asChild><Button variant="outline" size="icon" asChild><a href={asset.sourceUrl} target="_blank" rel="noopener noreferrer"><ExternalLink className="h-4 w-4" /></a></Button></TooltipTrigger><TooltipContent><p>Ver no site</p></TooltipContent></Tooltip>
+                                )}
                               </>
                             ) : (
-                              <Tooltip><TooltipTrigger asChild><Button variant="outline" size="icon"><Calculator className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent><p>Ver Fórmula (em breve)</p></TooltipContent></Tooltip>
+                              <Tooltip><TooltipTrigger asChild><Button variant="outline" size="icon" disabled><Calculator className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent><p>O valor é calculado automaticamente</p></TooltipContent></Tooltip>
                             )}
                           </div>
                         </TableCell>
