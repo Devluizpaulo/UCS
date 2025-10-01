@@ -115,13 +115,13 @@ export function CompositionChart({ mainAsset, compositionData, isLoading, target
             const worksheet = workbook.addWorksheet(`Composição ${mainAsset.name}`);
 
             // --- Cabeçalho ---
-            worksheet.mergeCells('A1:D1');
+            worksheet.mergeCells('A1:C1');
             const titleCell = worksheet.getCell('A1');
             titleCell.value = `Relatório de Composição - ${mainAsset.name}`;
             titleCell.font = { size: 16, bold: true };
             titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
 
-            worksheet.mergeCells('A2:D2');
+            worksheet.mergeCells('A2:C2');
             const subtitleCell = worksheet.getCell('A2');
             subtitleCell.value = `Data: ${format(targetDate, 'dd/MM/yyyy')} | Valor Total: ${formatCurrency(totalValue, mainAsset.currency, mainAsset.id)}`;
             subtitleCell.font = { size: 10, italic: true };
@@ -155,33 +155,6 @@ export function CompositionChart({ mainAsset, compositionData, isLoading, target
             totalRow.font = { bold: true };
             totalRow.border = { top: { style: 'thin' } };
             
-            // --- Gráfico ---
-            const chart = worksheet.addChart({
-                type: 'pie',
-                name: `Gráfico de Composição ${mainAsset.name}`,
-                parent: { tl: { col: 5, row: 4 }, br: { col: 12, row: 20 } },
-                series: [{
-                    name: 'Participação',
-                    data: {
-                        from: { col: 3, row: 5 },
-                        to: { col: 3, row: 4 + compositionData.length },
-                    },
-                    labels: {
-                        from: { col: 1, row: 5 },
-                        to: { col: 1, row: 4 + compositionData.length },
-                    },
-                }],
-                legend: {
-                    position: 'r',
-                },
-                 dataLabel: {
-                    showPercent: true,
-                    position: 'outEnd',
-                }
-            });
-            chart.title = `Composição de ${mainAsset.name}`;
-
-
             const buffer = await workbook.xlsx.writeBuffer();
             const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const link = document.createElement('a');
@@ -320,3 +293,5 @@ export function CompositionChart({ mainAsset, compositionData, isLoading, target
         </Card>
     )
 }
+
+    
