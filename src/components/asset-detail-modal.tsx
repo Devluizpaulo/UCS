@@ -42,7 +42,7 @@ export function AssetDetailModal({ asset, isOpen, onOpenChange }: AssetDetailMod
   const [historicalData, setHistoricalData] = useState<FirestoreQuote[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  const isCalculated = asset.category === 'index';
+  const isCalculated = asset.category === 'index' || asset.category === 'sub-index';
 
   useEffect(() => {
     if (isOpen) {

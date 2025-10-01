@@ -16,6 +16,7 @@ import { Button } from './ui/button';
 import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { Skeleton } from './ui/skeleton';
 import { formatCurrency } from '@/lib/formatters';
+import { getAssetCompositionConfig } from '@/lib/calculation-service';
 
 const ITEMS_PER_PAGE = 7;
 
@@ -23,22 +24,11 @@ interface CalculatedAssetDetailsProps {
     asset: CommodityPriceData;
 }
 
-// Este é um fallback estático, já que a lógica de cálculo foi removida do frontend.
-// O ideal é que o backend (n8n) salve os componentes junto com o índice calculado.
-const STATIC_COMPOSITION_CONFIG: Record<string, readonly string[]> = {
-  pdm: ['vmad', 'vus', 'crs'],
-  ucs: ['pdm'],
-  ucs_ase: ['ucs', 'pdm'],
-  vus: ['soja', 'milho', 'boi_gordo', 'usd'],
-  vmad: ['madeira'],
-  crs: ['carbono', 'custo_agua'],
-};
-
 
 export function CalculatedAssetDetails({ asset }: CalculatedAssetDetailsProps) {
   const [compositionHistory, setCompositionHistory] = useState<FirestoreQuote[]>([]);
   const [commoditiesConfig, setCommoditiesConfig] = useState<Record<string, CommodityPriceData>>({});
-  const [componentIds, setComponentIds] = useState<readonly string[]>([]);
+  const [componentIds, setComponentIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   
@@ -46,18 +36,16 @@ export function CalculatedAssetDetails({ asset }: CalculatedAssetDetailsProps) {
     async function fetchData() {
         setIsLoading(true);
         try {
-            const [history, configs] = await Promise.all([
+            const [history, configs, composition] = await Promise.all([
                 getCotacoesHistorico(asset.id, 90),
                 getCommodityConfigs(),
+                getAssetCompositionConfig(asset.id)
             ]);
             
             const configMap = configs.reduce((acc, config) => {
                 acc[config.id] = config as CommodityPriceData;
                 return acc;
             }, {} as Record<string, CommodityPriceData>);
-
-            // Usa a configuração estática para determinar os componentes
-            const composition = STATIC_COMPOSITION_CONFIG[asset.id] || [];
             
             setCompositionHistory(history);
             setCommoditiesConfig(configMap);
@@ -126,7 +114,7 @@ export function CalculatedAssetDetails({ asset }: CalculatedAssetDetailsProps) {
                 <TableCell>{item.data}</TableCell>
                 {componentIds.map(id => {
                   const componentAsset = commoditiesConfig[id];
-                  const value = item[id] ?? 0;
+                  const value = item.componentes?.[id] ?? 0;
                   return (
                     <TableCell key={id} className="text-right font-mono">
                       {value > 0 ? formatCurrency(value, componentAsset?.currency || 'BRL', id) : 'N/A'}
@@ -134,7 +122,7 @@ export function CalculatedAssetDetails({ asset }: CalculatedAssetDetailsProps) {
                   )
                 })}
                 <TableCell className="text-right font-mono font-bold">
-                  {formatCurrency(item.ultimo, asset.currency, asset.id)}
+                  {formatCurrency(item.valor ?? item.ultimo, asset.currency, asset.id)}
                 </TableCell>
               </TableRow>
             )) : (
