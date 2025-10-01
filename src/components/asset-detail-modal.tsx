@@ -31,6 +31,7 @@ import { cn } from '@/lib/utils';
 import { HistoricalPriceTable } from './historical-price-table';
 import { CalculatedAssetDetails } from './calculated-asset-details';
 import { ScrollArea } from './ui/scroll-area';
+import { UcsAseDetails } from './ucs-ase-details';
 
 interface AssetDetailModalProps {
   asset: CommodityPriceData;
@@ -43,9 +44,11 @@ export function AssetDetailModal({ asset, isOpen, onOpenChange }: AssetDetailMod
   const [isLoading, setIsLoading] = useState(true);
   
   const isCalculated = asset.category === 'index' || asset.category === 'sub-index';
+  const isUcsAse = asset.id === 'ucs_ase';
 
   useEffect(() => {
-    if (isOpen) {
+    // Para o UCS ASE, os detalhes são customizados e não precisam do histórico de 90 dias
+    if (isOpen && !isUcsAse) {
       setIsLoading(true);
       // Fetch last 90 days of data for the table.
       getCotacoesHistorico(asset.id, 90)
@@ -57,8 +60,10 @@ export function AssetDetailModal({ asset, isOpen, onOpenChange }: AssetDetailMod
           setHistoricalData([]);
           setIsLoading(false);
         });
+    } else if (isOpen && isUcsAse) {
+        setIsLoading(false);
     }
-  }, [asset.id, isOpen]);
+  }, [asset.id, isOpen, isUcsAse]);
 
   const chartData = useMemo(() => {
     // Filter for the last 30 days for the chart
@@ -137,67 +142,71 @@ export function AssetDetailModal({ asset, isOpen, onOpenChange }: AssetDetailMod
 
             {/* MAIN CONTENT */}
             <div className="flex flex-col md:pl-6">
-                <div className="grid gap-6">
-                    {/* CHART */}
-                    <Card>
-                    <CardHeader>
-                        <CardTitle>Histórico de Preços (Últimos 30 Dias)</CardTitle>
-                    </CardHeader>
-                    <CardContent className="h-64">
-                        {isLoading ? (
-                        <div className="h-full w-full flex items-center justify-center">
-                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                        </div>
-                        ) : (
-                        <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={chartData}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                            <XAxis 
-                                dataKey="date" 
-                                stroke="hsl(var(--muted-foreground))"
-                                fontSize={12}
-                                tickLine={false}
-                                axisLine={false}
-                            />
-                            <YAxis 
-                                stroke="hsl(var(--muted-foreground))"
-                                fontSize={12}
-                                tickLine={false}
-                                axisLine={false}
-                                tickFormatter={(value) => formatCurrency(value as number, asset.currency, asset.id)}
-                            />
-                            <Tooltip
-                                contentStyle={{
-                                    backgroundColor: "hsl(var(--background))",
-                                    border: "1px solid hsl(var(--border))",
-                                    borderRadius: "var(--radius)",
-                                }}
-                                formatter={(value: any) => [formatCurrency(Number(value), asset.currency, asset.id), 'Preço']}
-                            />
-                            <Line
-                                type="monotone"
-                                dataKey="price"
-                                stroke="hsl(var(--primary))"
-                                strokeWidth={2}
-                                dot={false}
-                            />
-                            </LineChart>
-                        </ResponsiveContainer>
-                        )}
-                    </CardContent>
-                    </Card>
+                {isUcsAse ? (
+                    <UcsAseDetails asset={asset} />
+                ) : (
+                    <div className="grid gap-6">
+                        {/* CHART */}
+                        <Card>
+                        <CardHeader>
+                            <CardTitle>Histórico de Preços (Últimos 30 Dias)</CardTitle>
+                        </CardHeader>
+                        <CardContent className="h-64">
+                            {isLoading ? (
+                            <div className="h-full w-full flex items-center justify-center">
+                                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                            </div>
+                            ) : (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <LineChart data={chartData}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                                <XAxis 
+                                    dataKey="date" 
+                                    stroke="hsl(var(--muted-foreground))"
+                                    fontSize={12}
+                                    tickLine={false}
+                                    axisLine={false}
+                                />
+                                <YAxis 
+                                    stroke="hsl(var(--muted-foreground))"
+                                    fontSize={12}
+                                    tickLine={false}
+                                    axisLine={false}
+                                    tickFormatter={(value) => formatCurrency(value as number, asset.currency, asset.id)}
+                                />
+                                <Tooltip
+                                    contentStyle={{
+                                        backgroundColor: "hsl(var(--background))",
+                                        border: "1px solid hsl(var(--border))",
+                                        borderRadius: "var(--radius)",
+                                    }}
+                                    formatter={(value: any) => [formatCurrency(Number(value), asset.currency, asset.id), 'Preço']}
+                                />
+                                <Line
+                                    type="monotone"
+                                    dataKey="price"
+                                    stroke="hsl(var(--primary))"
+                                    strokeWidth={2}
+                                    dot={false}
+                                />
+                                </LineChart>
+                            </ResponsiveContainer>
+                            )}
+                        </CardContent>
+                        </Card>
 
-                    {/* HISTORICAL DATA */}
-                    {isCalculated ? (
-                        <CalculatedAssetDetails asset={asset} />
-                    ) : (
-                        <HistoricalPriceTable 
-                        asset={asset}
-                        historicalData={historicalData} 
-                        isLoading={isLoading} 
-                        />
-                    )}
-                </div>
+                        {/* HISTORICAL DATA */}
+                        {isCalculated ? (
+                            <CalculatedAssetDetails asset={asset} />
+                        ) : (
+                            <HistoricalPriceTable 
+                            asset={asset}
+                            historicalData={historicalData} 
+                            isLoading={isLoading} 
+                            />
+                        )}
+                    </div>
+                )}
             </div>
             </div>
         </ScrollArea>
