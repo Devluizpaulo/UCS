@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { getCommodityConfigs, getQuoteByDate } from '@/lib/data-service';
@@ -69,7 +70,7 @@ export const CALCULATION_CONFIGS: Record<string, CalculationConfig> = {
         components: ['madeira'],
         calculate: calculateVMAD,
     },
-    'crs': {
+    'carbono_crs': {
         components: ['carbono'],
         calculate: calculateCRS,
     },
@@ -99,9 +100,10 @@ export async function getAssetCompositionConfig(assetId: string): Promise<string
     
     // For non-calculable assets, try to find a static config or return empty
     const staticConfigs: Record<string, string[]> = {
-        pdm: ['vmad', 'vus', 'crs'],
+        'valor_uso_solo': ['vus', 'vmad', 'carbono_crs', 'Agua_CRS'],
+        pdm: ['valor_uso_solo'], // Simplified from n8n, PDM is based on Valor Uso Solo
         ucs: ['pdm'],
-        ucs_ase: ['ucs', 'pdm'],
+        ucs_ase: ['ucs'],
     };
 
     if (assetId in staticConfigs) {

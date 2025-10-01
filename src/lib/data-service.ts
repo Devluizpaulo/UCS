@@ -8,6 +8,7 @@ import { getCache, setCache, clearCache as clearMemoryCache } from '@/lib/cache-
 import { Timestamp } from 'firebase-admin/firestore';
 import { subDays, format, startOfDay, endOfDay } from 'date-fns';
 import { revalidatePath } from 'next/cache';
+import { getAssetCompositionConfig } from './calculation-service';
 
 // --- CONSTANTS ---
 const CACHE_KEY_PRICES = 'commodity_prices_simple';
@@ -129,7 +130,6 @@ export async function getCommodityConfigs(): Promise<CommodityConfig[]> {
         ...config,
     }));
     
-    // START: Hotfix para garantir as descrições corretas
     const pdmAsset = configsArray.find(c => c.id === 'pdm');
     if (pdmAsset) {
         pdmAsset.description = "Potencial Desflorestador Monetizado.";
@@ -139,7 +139,6 @@ export async function getCommodityConfigs(): Promise<CommodityConfig[]> {
     if (ucsAseAsset) {
         ucsAseAsset.description = "Índice principal de Unidade de Crédito de Sustentabilidade.";
     }
-    // END: Hotfix
 
     setCache(COMMODITIES_CONFIG_CACHE_KEY, configsArray, CACHE_TTL_SECONDS * 10);
     return configsArray;
@@ -352,7 +351,7 @@ export async function reprocessDate(date: Date): Promise<{ success: boolean; mes
         // Limpa o cache para forçar a busca dos novos dados reprocessados.
         clearMemoryCache();
         revalidatePath('/dashboard');
-        revalidatePath('/admin/audit');
+        revalidatePath('/admin/status');
 
         const successMessage = `Solicitação de reprocessamento para ${format(date, 'dd/MM/yyyy')} enviada com sucesso.`;
         return { success: true, message: successMessage };
