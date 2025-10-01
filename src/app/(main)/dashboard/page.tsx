@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useState, useEffect, useMemo, useTransition } from 'react';
+import { useState, useEffect, useMemo, useTransition, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CommodityPrices } from '@/components/commodity-prices';
 import { getCommodityPricesByDate, getCommodityPrices, clearCacheAndRefresh, reprocessDate } from '@/lib/data-service';
@@ -14,7 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { MainIndexCard } from '@/components/main-index-card';
 import type { CommodityPriceData } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, History } from 'lucide-react';
+import { RefreshCw, History, FileDown, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import {
@@ -28,6 +28,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
+import ExcelJS from 'exceljs';
+import { formatCurrency } from '@/lib/formatters';
+
 
 function getValidatedDate(dateString?: string | null): Date | null {
   if (dateString) {
@@ -89,6 +94,8 @@ export default function DashboardPage() {
   const dateParam = searchParams.get('date');
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
+  const [isExporting, setIsExporting] = useState(false);
+  const dashboardRef = useRef<HTMLDivElement>(null);
 
   const [targetDate, setTargetDate] = useState<Date | null>(null);
   
@@ -142,6 +149,110 @@ export default function DashboardPage() {
       });
   }
 
+  const handleExportPdf = async () => {
+    if (!dashboardRef.current) return;
+    setIsExporting(true);
+    try {
+        const canvas = await html2canvas(dashboardRef.current, { scale: 2, useCORS: true });
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const imgProps = pdf.getImageProperties(imgData);
+        const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
+        
+        let heightLeft = imgHeight;
+        let position = 15;
+
+        pdf.setFontSize(16);
+        pdf.text(`Painel de Cotações - ${format(targetDate!, 'dd/MM/yyyy')}`, pdfWidth / 2, 10, { align: 'center' });
+
+        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+        heightLeft -= pdf.internal.pageSize.getHeight();
+
+        while (heightLeft >= 0) {
+            position = heightLeft - imgHeight;
+            pdf.addPage();
+            pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+            heightLeft -= pdf.internal.pageSize.getHeight();
+        }
+        
+        pdf.save(`painel_cotacoes_${format(targetDate!, 'yyyy-MM-dd')}.pdf`);
+    } catch (error) {
+        toast({ variant: 'destructive', title: 'Erro ao gerar PDF', description: 'Ocorreu uma falha ao exportar o painel.' });
+    } finally {
+        setIsExporting(false);
+    }
+  };
+
+  const handleExportExcel = async () => {
+    setIsExporting(true);
+    try {
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Cotações do Dia');
+
+        worksheet.mergeCells('A1:E1');
+        const titleCell = worksheet.getCell('A1');
+        titleCell.value = `Painel de Cotações - ${format(targetDate!, 'dd/MM/yyyy')}`;
+        titleCell.font = { name: 'Calibri', size: 16, bold: true };
+        titleCell.alignment = { horizontal: 'center' };
+        worksheet.getRow(1).height = 30;
+
+        worksheet.getRow(3).values = ['Ativo', 'Último Preço', 'Variação (24h)', 'Variação Absoluta', 'Última Atualização'];
+        const headerRow = worksheet.getRow(3);
+        headerRow.font = { bold: true };
+        headerRow.eachCell(cell => {
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FFE0E0E0' }
+            };
+            cell.border = { bottom: { style: 'thin' } };
+        });
+
+        const allData = [mainIndex, ...secondaryIndices, ...currencies, ...otherAssets].filter(Boolean) as CommodityPriceData[];
+
+        allData.forEach((asset, index) => {
+            const row = worksheet.addRow([
+                asset.name,
+                asset.price,
+                asset.change / 100, // Store as a number for formatting
+                asset.absoluteChange,
+                asset.lastUpdated
+            ]);
+            row.getCell(2).numFmt = `"${asset.currency}" #,##0.00`;
+            row.getCell(3).numFmt = '0.00%';
+            row.getCell(4).numFmt = `"${asset.currency}" #,##0.00`;
+        });
+        
+        worksheet.columns.forEach(column => {
+            let maxLength = 0;
+            column.eachCell({ includeEmpty: true }, cell => {
+                let columnLength = cell.value ? cell.value.toString().length : 10;
+                if (columnLength > maxLength) {
+                    maxLength = columnLength;
+                }
+            });
+            column.width = maxLength < 12 ? 12 : maxLength + 2;
+        });
+
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `cotacoes_${format(targetDate!, 'yyyy-MM-dd')}.xlsx`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+    } catch (error) {
+        console.error(error);
+        toast({ variant: 'destructive', title: 'Erro ao gerar Excel', description: 'Ocorreu uma falha ao exportar a planilha.' });
+    } finally {
+        setIsExporting(false);
+    }
+  };
+
+
   if (!targetDate) {
     return (
        <div className="flex min-h-screen w-full flex-col">
@@ -178,7 +289,16 @@ export default function DashboardPage() {
             : `Exibindo cotações para: ${formattedDate}`
         }
       >
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+            <Button variant="outline" size="sm" onClick={handleExportPdf} disabled={isExporting}>
+                {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileDown className="mr-2 h-4 w-4" />}
+                PDF
+            </Button>
+             <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={isExporting}>
+                {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileDown className="mr-2 h-4 w-4" />}
+                Excel
+            </Button>
+            <div className="w-px h-8 bg-border mx-2 hidden sm:block" />
             {isCurrentDateOrFuture ? (
                 <Button variant="outline" size="icon" onClick={handleRefresh} disabled={isPending} title="Atualizar Cotações">
                     <RefreshCw className={cn("h-4 w-4", isPending && "animate-spin")} />
@@ -211,7 +331,7 @@ export default function DashboardPage() {
             />
         </div>
       </PageHeader>
-      <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
+      <main ref={dashboardRef} className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
         {isLoading && data.length === 0 ? (
           <>
             <Skeleton className="h-[180px] w-full" />
