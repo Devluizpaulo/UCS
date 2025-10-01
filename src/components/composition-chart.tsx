@@ -14,7 +14,7 @@ import { Button } from './ui/button';
 import { FileDown, FileType, Loader2 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import ExcelJS from 'exceljs';
+import XlsxPopulate from 'xlsx-populate';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 
@@ -111,60 +111,70 @@ export function CompositionChart({ mainAsset, compositionData, isLoading, target
         if (!mainAsset || compositionData.length === 0) return;
         setIsExportingExcel(true);
         try {
-            const workbook = new ExcelJS.Workbook();
-            const worksheet = workbook.addWorksheet(`Composição ${mainAsset.name}`);
+             // Create a new workbook
+            const workbook = await XlsxPopulate.fromBlankAsync();
+            const sheet = workbook.sheet(0);
+            sheet.name(`Composição ${mainAsset.name}`);
 
-            // --- Cabeçalho ---
-            worksheet.mergeCells('A1:C1');
-            const titleCell = worksheet.getCell('A1');
-            titleCell.value = `Relatório de Composição - ${mainAsset.name}`;
-            titleCell.font = { size: 16, bold: true };
-            titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
+            // --- Header ---
+            sheet.range("A1:C1").merge(true).value(`Relatório de Composição - ${mainAsset.name}`).style({ bold: true, fontSize: 16, horizontalAlignment: "center" });
+            sheet.range("A2:C2").merge(true).value(`Data: ${format(targetDate, 'dd/MM/yyyy')} | Valor Total: ${formatCurrency(totalValue, mainAsset.currency, mainAsset.id)}`).style({ italic: true, horizontalAlignment: "center" });
+            sheet.row(2).height(20);
 
-            worksheet.mergeCells('A2:C2');
-            const subtitleCell = worksheet.getCell('A2');
-            subtitleCell.value = `Data: ${format(targetDate, 'dd/MM/yyyy')} | Valor Total: ${formatCurrency(totalValue, mainAsset.currency, mainAsset.id)}`;
-            subtitleCell.font = { size: 10, italic: true };
-            subtitleCell.alignment = { vertical: 'middle', horizontal: 'center' };
-            worksheet.getRow(2).height = 20;
+            // --- Table Headers ---
+            sheet.cell("A4").value("Componente").style("bold", true);
+            sheet.cell("B4").value("Valor (BRL)").style("bold", true);
+            sheet.cell("C4").value("Participação (%)").style("bold", true);
+            sheet.range("A4:C4").style("fill", "E0E0E0");
 
-            worksheet.addRow([]); // Linha em branco
-
-            // --- Tabela de Dados ---
-            const headerRow = worksheet.addRow(['Componente', 'Valor (BRL)', 'Participação (%)']);
-            headerRow.font = { bold: true };
-            headerRow.eachCell(cell => {
-                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE0E0E0' } };
-                cell.border = { bottom: { style: 'thin' } };
-            });
-
-            compositionData.forEach(item => {
+            // --- Table Data ---
+            compositionData.forEach((item, index) => {
+                const row = 5 + index;
                 const percentage = totalValue > 0 ? item.value / totalValue : 0;
-                worksheet.addRow([item.name, item.value, percentage]);
+                sheet.cell(`A${row}`).value(item.name);
+                sheet.cell(`B${row}`).value(item.value).style("numberFormat", "R$ #,##0.00");
+                sheet.cell(`C${row}`).value(percentage).style("numberFormat", "0.00%");
             });
 
-            // --- Formatação da Tabela ---
-            worksheet.getColumn('A').width = 25;
-            worksheet.getColumn('B').width = 20;
-            worksheet.getColumn('C').width = 20;
+            // --- Total Row ---
+            const totalRowIndex = 5 + compositionData.length;
+            sheet.cell(`A${totalRowIndex}`).value("Total").style("bold", true);
+            sheet.cell(`B${totalRowIndex}`).formula(`SUM(B5:B${totalRowIndex - 1})`).style({ bold: true, numberFormat: "R$ #,##0.00" });
+            sheet.cell(`C${totalRowIndex}`).value(1).style({ bold: true, numberFormat: "0.00%" });
+            sheet.range(`A${totalRowIndex}:C${totalRowIndex}`).style("borderTop", { style: "thin" });
+            
+            // --- Column Widths ---
+            sheet.column("A").width(25);
+            sheet.column("B").width(20);
+            sheet.column("C").width(20);
 
-            worksheet.getColumn('B').numFmt = `R$ #,##0.00`;
-            worksheet.getColumn('C').numFmt = `0.00%`;
-            
-            const totalRow = worksheet.addRow(['Total', { formula: `SUM(B5:B${4 + compositionData.length})` }, 1]);
-            totalRow.font = { bold: true };
-            totalRow.border = { top: { style: 'thin' } };
-            
-            const buffer = await workbook.xlsx.writeBuffer();
-            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            // --- Add Chart ---
+             sheet.addChart({
+                type: "pieChart",
+                data: {
+                    labels: sheet.range(`A5:A${totalRowIndex - 1}`),
+                    values: sheet.range(`B5:B${totalRowIndex - 1}`),
+                },
+                drawing: {
+                    topLeftCell: "E4",
+                    bottomRightCell: `L20`,
+                },
+                title: `Composição - ${mainAsset.name}`,
+             });
+
+
+            // --- Generate and Download file ---
+            const blob = await workbook.outputAsync();
             const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
+            link.href = URL.createObjectURL(blob as Blob);
             link.download = `composicao_${mainAsset.id}_${format(targetDate, 'yyyy-MM-dd')}.xlsx`;
+            document.body.appendChild(link);
             link.click();
-
-        } catch (error) {
-            console.error(error);
-            toast({ variant: 'destructive', title: 'Erro ao gerar Excel', description: 'Ocorreu uma falha ao exportar a planilha.' });
+            document.body.removeChild(link);
+            
+        } catch (error: any) {
+            console.error("Excel generation error:", error);
+            toast({ variant: "destructive", title: "Erro ao gerar Excel", description: error.message || "Ocorreu uma falha ao exportar a planilha." });
         } finally {
             setIsExportingExcel(false);
         }
