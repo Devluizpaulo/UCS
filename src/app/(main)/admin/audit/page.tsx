@@ -81,8 +81,7 @@ export default function AuditPage() {
           };
         })
       );
-      // Ordena para que os cotados venham primeiro, melhorando a legibilidade
-      items.sort((a, b) => (a.type === 'COTADO' ? -1 : 1));
+      items.sort((a, b) => (a.type === 'COTADO' && b.type !== 'COTADO') ? -1 : (a.type !== 'COTADO' && b.type === 'COTADO') ? 1 : 0);
       setAssetItems(items);
     } catch (err: any) {
       toast({ variant: 'destructive', title: 'Erro ao buscar dados', description: err.message });
@@ -102,6 +101,7 @@ export default function AuditPage() {
     if (targetDate) {
       fetchAssetItems(targetDate);
     }
+     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [targetDate]);
 
   const handleValueChange = (assetId: string, newValue: number) => {

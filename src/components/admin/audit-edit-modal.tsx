@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
 import {
   Dialog,
   DialogContent,
@@ -13,7 +12,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Loader2 } from 'lucide-react';
 import type { AssetItem } from '@/app/(main)/admin/audit/page';
 import { formatCurrency } from '@/lib/formatters';
 
@@ -54,7 +52,7 @@ export function AuditEditModal({ assetItem, isOpen, onOpenChange, onSave }: Audi
         <DialogHeader>
           <DialogTitle>Editar Valor de Cotação</DialogTitle>
           <DialogDescription>
-            Alterando o valor para <span className="font-bold">{assetItem.name}</span>. Essa ação irá disparar um recálculo.
+            Alterando o valor para <span className="font-bold">{assetItem.name}</span>. Essa ação será aplicada após clicar em "Salvar e Recalcular".
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
@@ -81,12 +79,13 @@ export function AuditEditModal({ assetItem, isOpen, onOpenChange, onSave }: Audi
               type="text"
               inputMode="decimal"
               placeholder="Digite o novo valor"
+              autoFocus
             />
           </div>
         </div>
         <DialogFooter>
             <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={handleSave}>Salvar e Recalcular</Button>
+          <Button onClick={handleSave}>Salvar Alteração</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

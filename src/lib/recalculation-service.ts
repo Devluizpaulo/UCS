@@ -2,6 +2,7 @@
 
 import { getFirebaseAdmin } from './firebase-admin-config';
 import { format, startOfDay } from 'date-fns';
+import type { firestore as adminFirestore } from 'firebase-admin';
 import { Timestamp } from 'firebase-admin/firestore';
 import * as Calc from './calculation-service';
 import type { FirestoreQuote, CommodityConfig } from './types';
@@ -11,10 +12,10 @@ type QuoteMap = Record<string, FirestoreQuote>;
 type ValueMap = Record<string, number>;
 
 async function getOrCreateQuote(
-  db: admin.firestore.Firestore,
+  db: adminFirestore.Firestore,
   assetId: string,
   targetDate: Date,
-  transaction: admin.firestore.Transaction
+  transaction: adminFirestore.Transaction
 ): Promise<FirestoreQuote> {
   const formattedDate = format(targetDate, 'dd/MM/yyyy');
   const collectionRef = db.collection(assetId);
@@ -23,7 +24,8 @@ async function getOrCreateQuote(
 
   if (!snapshot.empty) {
     const doc = snapshot.docs[0];
-    return { id: doc.id, ...doc.data() } as FirestoreQuote;
+    const data = doc.data();
+    return { id: doc.id, ...data, timestamp: serializeFirestoreTimestamp(data.timestamp) } as FirestoreQuote;
   } else {
     // Create a new empty quote document for that day
     const newDocRef = collectionRef.doc();
@@ -34,21 +36,35 @@ async function getOrCreateQuote(
       valor: 0,
       status: 'recalculated',
       fonte: 'Cálculo Manual via Auditoria',
+      componentes: {},
     };
     transaction.set(newDocRef, newQuote);
-    return { id: newDocRef.id, ...newQuote } as FirestoreQuote;
+    return { id: newDocRef.id, ...newQuote, timestamp: startOfDay(targetDate).getTime() } as FirestoreQuote;
   }
 }
 
+function serializeFirestoreTimestamp(data: any): any {
+    if (data instanceof Timestamp) {
+        return data.toMillis();
+    }
+     if (data && typeof data.toDate === 'function') {
+        return data.toDate().getTime();
+    }
+    return data;
+}
+
+
 async function updateQuote(
-  db: admin.firestore.Firestore,
+  db: adminFirestore.Firestore,
   assetId: string,
   quoteId: string,
   data: Partial<FirestoreQuote>,
-  transaction: admin.firestore.Transaction
+  transaction: adminFirestore.Transaction
 ) {
   const docRef = db.collection(assetId).doc(quoteId);
-  transaction.update(docRef, data);
+  // Remove o ID para não tentar salvá-lo no documento
+  const { id, ...updateData } = data;
+  transaction.update(docRef, updateData);
 }
 
 export async function recalculateAllForDate(targetDate: Date, editedValues: Record<string, number>) {
@@ -59,51 +75,69 @@ export async function recalculateAllForDate(targetDate: Date, editedValues: Reco
   try {
     await db.runTransaction(async (transaction) => {
       const quotes: QuoteMap = {};
-      const baseAssetIds = configs.filter(c => c.category !== 'index' && c.category !== 'sub-index').map(c => c.id);
+      const allAssetIds = configs.map(c => c.id);
       
-      for (const assetId of baseAssetIds) {
+      // 1. Obter ou criar todos os documentos de cotação para o dia
+      for (const assetId of allAssetIds) {
         quotes[assetId] = await getOrCreateQuote(db, assetId, targetDate, transaction);
       }
       
       const values: ValueMap = {};
-      for (const assetId of baseAssetIds) {
+      
+      // 2. Preencher os valores iniciais (editados e do banco)
+      for (const assetId of allAssetIds) {
         if (editedValues.hasOwnProperty(assetId)) {
-          const newValue = editedValues[assetId];
-          values[assetId] = newValue;
-          await updateQuote(db, assetId, quotes[assetId].id, { ultimo: newValue, valor: newValue }, transaction);
+          values[assetId] = editedValues[assetId];
         } else {
-          values[assetId] = quotes[assetId]?.ultimo ?? 0;
+          // Usa 'valor' para calculados e 'ultimo' para cotados como fallback
+          values[assetId] = quotes[assetId]?.valor ?? quotes[assetId]?.ultimo ?? 0;
         }
       }
-      
+
+      // 3. Calcular as rentabilidades médias com os valores atualizados
       const rentMedia: ValueMap = {};
-      rentMedia.boi_gordo = Calc.calculateRentMediaBoi(values.boi_gordo);
-      rentMedia.milho = Calc.calculateRentMediaMilho(values.milho);
-      rentMedia.soja = Calc.calculateRentMediaSoja(values.soja, values.usd);
-      rentMedia.carbono = Calc.calculateRentMediaCarbono(values.carbono, values.eur);
-      rentMedia.madeira = Calc.calculateRentMediaMadeira(values.madeira, values.usd);
+      rentMedia.boi_gordo = await Calc.calculateRentMediaBoi(values.boi_gordo);
+      rentMedia.milho = await Calc.calculateRentMediaMilho(values.milho);
+      rentMedia.soja = await Calc.calculateRentMediaSoja(values.soja, values.usd);
+      rentMedia.carbono = await Calc.calculateRentMediaCarbono(values.carbono, values.eur);
+      rentMedia.madeira = await Calc.calculateRentMediaMadeira(values.madeira, values.usd);
       
-      const intermediateValues: ValueMap = {};
-      intermediateValues.vus = Calc.calculateVUS(rentMedia);
-      intermediateValues.vmad = Calc.calculateVMAD(rentMedia);
-      intermediateValues.carbono_crs = Calc.calculateCRS(rentMedia);
+      // 4. Recalcular todos os índices em cascata
+      values.vus = await Calc.calculateVUS(rentMedia);
+      values.vmad = await Calc.calculateVMAD(rentMedia);
+      values.carbono_crs = await Calc.calculateCRS(rentMedia);
 
-      // Assuming Agua_CRS is manually edited or comes from a source
-      const aguaCrsQuote = await getOrCreateQuote(db, 'Agua_CRS', targetDate, transaction);
-      intermediateValues.Agua_CRS = editedValues.hasOwnProperty('Agua_CRS') ? editedValues.Agua_CRS : (aguaCrsQuote.ultimo ?? 0);
-      values['Agua_CRS'] = intermediateValues.Agua_CRS; // Add to main values map
-      await updateQuote(db, 'Agua_CRS', aguaCrsQuote.id, { ultimo: intermediateValues.Agua_CRS, valor: intermediateValues.Agua_CRS }, transaction);
+      // 'Agua_CRS' é tratado como um valor base, pode ter sido editado
+      values.Agua_CRS = values.Agua_CRS; 
 
+      values.valor_uso_solo = await Calc.calculateValorUsoSolo({
+          vus: values.vus,
+          vmad: values.vmad,
+          carbono_crs: values.carbono_crs,
+          Agua_CRS: values.Agua_CRS
+      });
+      values.pdm = await Calc.calculatePDM({ valor_uso_solo: values.valor_uso_solo });
+      values.ucs = await Calc.calculateUCS({ pdm: values.pdm });
+      values.ucs_ase = await Calc.calculateUCSASE({ ucs: values.ucs });
 
-      intermediateValues.valor_uso_solo = Calc.calculateValorUsoSolo(intermediateValues);
-      intermediateValues.pdm = Calc.calculatePDM(intermediateValues);
-      intermediateValues.ucs = Calc.calculateUCS(intermediateValues);
-      intermediateValues.ucs_ase = Calc.calculateUCSASE(intermediateValues);
+      // 5. Atualizar todos os documentos no Firestore dentro da transação
+      for (const assetId of allAssetIds) {
+        const dataToUpdate: Partial<FirestoreQuote> = {
+            ultimo: values[assetId],
+            valor: values[assetId]
+        };
 
-      const allCalculatedAssets = ['vus', 'vmad', 'carbono_crs', 'valor_uso_solo', 'pdm', 'ucs', 'ucs_ase'];
-      for (const assetId of allCalculatedAssets) {
-        const quote = await getOrCreateQuote(db, assetId, targetDate, transaction);
-        await updateQuote(db, assetId, quote.id, { valor: intermediateValues[assetId] }, transaction);
+        // Adiciona os componentes para os índices calculados
+        if (assetId === 'valor_uso_solo') {
+            dataToUpdate.componentes = {
+                vus: values.vus,
+                vmad: values.vmad,
+                carbono_crs: values.carbono_crs,
+                Agua_CRS: values.Agua_CRS
+            };
+        }
+        
+        await updateQuote(db, assetId, quotes[assetId].id, dataToUpdate, transaction);
       }
     });
 
