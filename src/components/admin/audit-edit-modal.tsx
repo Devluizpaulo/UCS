@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -44,7 +45,7 @@ export function AuditEditModal({ assetItem, allAssets, isOpen, onOpenChange, onS
 
   useEffect(() => {
     if (assetItem?.quote) {
-      const currentValue = assetItem.quote.ultimo ?? assetItem.quote.valor ?? '';
+      const currentValue = assetItem.quote.valor ?? assetItem.quote.ultimo ?? (assetItem.quote as any)?.valor_brl ?? '';
       setNewValue(String(currentValue));
       setImpactedAssets([]); // Reset on new asset
     } else {
@@ -57,33 +58,26 @@ export function AuditEditModal({ assetItem, allAssets, isOpen, onOpenChange, onS
 
     const oldValues: Calc.ValueMap = {};
     allAssets.forEach(a => {
-        // Use a robust way to get the principal value for each asset
         oldValues[a.id] = a.quote?.valor ?? a.quote?.ultimo ?? (a.quote as any)?.valor_brl ?? 0;
     });
 
     const newValues: Calc.ValueMap = { ...oldValues };
     newValues[changedAssetId] = newAssetValue;
 
-    const rentMedia: Calc.ValueMap = {
-        boi_gordo: Calc.calculateRentMediaBoi(newValues.boi_gordo),
-        milho: Calc.calculateRentMediaMilho(newValues.milho),
-        soja: Calc.calculateRentMediaSoja(newValues.soja, newValues.usd),
-        carbono: Calc.calculateRentMediaCarbono(newValues.carbono, newValues.eur),
-        madeira: Calc.calculateRentMediaMadeira(newValues.madeira, newValues.usd),
-    };
-    
-    // Assign rent media to newValues for VUS/VMAD/CRS calculation
-    newValues.rent_media_boi = rentMedia.boi_gordo;
-    newValues.rent_media_milho = rentMedia.milho;
-    newValues.rent_media_soja = rentMedia.soja;
-    newValues.rent_media_carbono = rentMedia.carbono;
-    newValues.rent_media_madeira = rentMedia.madeira;
+    // Etapa 1: Calcular as rentabilidades médias com os novos valores
+    const rentMedia: Calc.ValueMap = {};
+    rentMedia.boi_gordo = Calc.calculateRentMediaBoi(newValues.boi_gordo);
+    rentMedia.milho = Calc.calculateRentMediaMilho(newValues.milho);
+    rentMedia.soja = Calc.calculateRentMediaSoja(newValues.soja, newValues.usd);
+    rentMedia.carbono = Calc.calculateRentMediaCarbono(newValues.carbono, newValues.eur);
+    rentMedia.madeira = Calc.calculateRentMediaMadeira(newValues.madeira, newValues.usd);
 
-
-    newValues.vus = Calc.calculateVUS(newValues);
-    newValues.vmad = Calc.calculateVMAD(newValues);
-    newValues.carbono_crs = Calc.calculateCRS(newValues);
+    // Etapa 2: Recalcular os índices baseados nas rentabilidades
+    newValues.vus = Calc.calculateVUS(rentMedia);
+    newValues.vmad = Calc.calculateVMAD(rentMedia);
+    newValues.carbono_crs = Calc.calculateCRS(rentMedia);
     
+    // Etapa 3: Recalcular os índices subsequentes em cascata
     newValues.valor_uso_solo = Calc.calculateValorUsoSolo({
         vus: newValues.vus,
         vmad: newValues.vmad,
@@ -152,7 +146,7 @@ export function AuditEditModal({ assetItem, allAssets, isOpen, onOpenChange, onS
     }
   };
 
-  const principalValue = assetItem.quote?.ultimo ?? assetItem.quote?.valor;
+  const principalValue = assetItem.quote?.valor ?? assetItem.quote?.ultimo ?? (assetItem.quote as any)?.valor_brl;
   const numericNewValue = parseFloat(newValue.replace(',', '.'));
   const hasValidChange = !isNaN(numericNewValue) && numericNewValue !== principalValue;
 
