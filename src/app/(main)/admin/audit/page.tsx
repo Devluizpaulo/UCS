@@ -49,7 +49,8 @@ export type AssetItem = CommodityConfig & {
   type: 'COTADO' | 'CALCULADO';
 };
 
-const CALCULATED_CATEGORIES: CommodityConfig['category'][] = ['index', 'sub-index', 'vus', 'vmad', 'crs'];
+// A lista definitiva de IDs de ativos que são calculados pela plataforma.
+const CALCULATED_ASSET_IDS: string[] = ['vus', 'vmad', 'carbono_crs', 'Agua_CRS', 'valor_uso_solo', 'pdm', 'ucs', 'ucs_ase', 'custo_agua', 'ch2o_agua'];
 
 export default function AuditPage() {
   const searchParams = useSearchParams();
@@ -78,7 +79,7 @@ export default function AuditPage() {
             ...config,
             quote: finalQuote,
             status: quote ? ('OK' as const) : ('FALTANDO' as const),
-            type: CALCULATED_CATEGORIES.includes(config.category) ? ('CALCULADO' as const) : ('COTADO' as const),
+            type: CALCULATED_ASSET_IDS.includes(config.id) ? ('CALCULADO' as const) : ('COTADO' as const),
           };
         })
       );
