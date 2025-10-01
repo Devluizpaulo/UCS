@@ -45,11 +45,14 @@ function serializeFirestoreTimestamp(data: any): any {
 
 function getPriceFromQuote(quoteData: any): number {
     if (quoteData) {
+        if (typeof quoteData.resultado_final_brl === 'number') return quoteData.resultado_final_brl;
+        if (typeof quoteData.valor_brl === 'number') return quoteData.valor_brl;
         if (typeof quoteData.ultimo === 'number') return quoteData.ultimo;
         if (typeof quoteData.valor === 'number') return quoteData.valor;
     }
     return 0;
 }
+
 
 // --- CONFIGURATION MANAGEMENT (CRUD Ativos) ---
 
@@ -63,7 +66,7 @@ const initialCommoditiesConfig: Record<string, Omit<CommodityConfig, 'id'>> = {
     'usd': { name: 'Dólar Americano', currency: 'BRL', category: 'exchange', description: 'Cotação do Dólar Americano (USD) em Reais (BRL).', unit: 'BRL' },
     'eur': { name: 'Euro', currency: 'BRL', category: 'exchange', description: 'Cotação do Euro (EUR) em Reais (BRL).', unit: 'BRL' },
 
-    // Indices Calculados
+    // Indices Calculados (conforme documentação)
     'ch2o_agua': { name: 'CH2O Água', currency: 'BRL', category: 'sub-index', description: 'Índice de uso da água.', unit: 'Pontos' },
     'custo_agua': { name: 'Custo Água', currency: 'BRL', category: 'sub-index', description: 'Custo do uso da água (7% de CH2O).', unit: 'BRL' },
     'pdm': { name: 'PDM', currency: 'BRL', category: 'sub-index', description: 'Produto Desenvolvido Mundial.', unit: 'Pontos' },
@@ -117,7 +120,8 @@ export async function getCommodityConfigs(): Promise<CommodityConfig[]> {
             console.error("Falha ao criar o documento de configuração inicial:", error);
         }
     } else {
-         configData = doc.data() as Record<string, Omit<CommodityConfig, 'id'>>;
+         const data = doc.data();
+         configData = data ? (data as Record<string, Omit<CommodityConfig, 'id'>>) : initialCommoditiesConfig;
     }
     
     const configsArray = Object.entries(configData).map(([id, config]) => ({
@@ -135,18 +139,41 @@ export async function getQuoteByDate(assetId: string, date: Date): Promise<Fires
     const { db } = await getFirebaseAdmin();
     const formattedDate = format(date, 'dd/MM/yyyy');
     
-    const snapshot = await db.collection(assetId)
-        .where('data', '==', formattedDate)
-        .limit(1)
-        .get();
+    try {
+        const snapshot = await db.collection(assetId)
+            .where('data', '==', formattedDate)
+            .limit(1)
+            .get();
 
-    if (snapshot.empty) {
+        if (!snapshot.empty) {
+            const doc = snapshot.docs[0];
+            const data = doc.data();
+            return serializeFirestoreTimestamp({ id: doc.id, ...data }) as FirestoreQuote;
+        }
+
+        // Fallback: se 'data' falhar, tenta com 'timestamp' (para dados mais antigos ou formatos diferentes)
+        const startOfDayStr = startOfDay(date).toISOString();
+        const endOfDayStr = endOfDay(date).toISOString();
+
+        const snapshotByTimestamp = await db.collection(assetId)
+            .where('timestamp', '>=', startOfDayStr)
+            .where('timestamp', '<=', endOfDayStr)
+            .orderBy('timestamp', 'desc')
+            .limit(1)
+            .get();
+
+        if (snapshotByTimestamp.empty) {
+            return null;
+        }
+
+        const doc = snapshotByTimestamp.docs[0];
+        const data = doc.data();
+        return serializeFirestoreTimestamp({ id: doc.id, ...data }) as FirestoreQuote;
+
+    } catch (error) {
+        console.error(`Error fetching quote for ${assetId} on ${formattedDate}:`, error);
         return null;
     }
-    
-    const doc = snapshot.docs[0];
-    const data = doc.data();
-    return serializeFirestoreTimestamp({ id: doc.id, ...data }) as FirestoreQuote;
 }
 
 
