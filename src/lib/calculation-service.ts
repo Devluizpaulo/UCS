@@ -4,7 +4,7 @@
 
 import { getCommodityConfigs, getQuoteByDate } from '@/lib/data-service';
 import type { CommodityConfig, FirestoreQuote } from '@/lib/types';
-import { VUS_WEIGHTS, VUS_ADJUSTMENT_FACTOR, VUS_MULTIPLIER, VMAD_MULTIPLIER, CRS_MULTIPLIER } from './constants';
+import { VUS_WEIGHTS, VUS_INTERMEDIATE_MULTIPLIER, VUS_MULTIPLIER, VMAD_MULTIPLIER, CRS_MULTIPLIER } from './constants';
 
 // --- Type Definitions ---
 
@@ -19,7 +19,7 @@ interface CalculationConfig {
 
 /**
  * Calculates the VUS (Valor de Uso do Solo) based on its components.
- * Formula: SOMA(((rent_media boi*35% + rent_media milho*30% + rent_media soja*35%) - (soma ponderada)*4,80%)) * 25
+ * Formula from n8n: ( ( (rent_media_boi * 0.35) + (rent_media_milho * 0.30) + (rent_media_soja * 0.35) ) * 4.80 ) * 25
  * @param components A record containing the 'rent_media' of boi_gordo, milho, and soja.
  * @returns The calculated VUS value.
  */
@@ -28,9 +28,9 @@ function calculateVUS(components: Record<string, number>): number {
                         (components.milho * VUS_WEIGHTS.milho) +
                         (components.soja * VUS_WEIGHTS.soja);
     
-    const adjustedSum = weightedSum * (1 - VUS_ADJUSTMENT_FACTOR);
+    const intermediateValue = weightedSum * VUS_INTERMEDIATE_MULTIPLIER;
     
-    return adjustedSum * VUS_MULTIPLIER;
+    return intermediateValue * VUS_MULTIPLIER;
 }
 
 

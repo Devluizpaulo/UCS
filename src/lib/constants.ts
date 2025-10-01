@@ -16,10 +16,10 @@ export const VUS_WEIGHTS = {
 };
 
 /**
- * The adjustment factor to be subtracted from the weighted sum in the VUS calculation.
- * A value of 0.048 corresponds to 4.80%.
+ * The intermediate multiplier applied to the weighted sum in the VUS calculation.
+ * This value (4.80) is based on the n8n workflow.
  */
-export const VUS_ADJUSTMENT_FACTOR = 0.048; // 4.80%
+export const VUS_INTERMEDIATE_MULTIPLIER = 4.80;
 
 /**
  * The final multiplier applied in the VUS calculation.
