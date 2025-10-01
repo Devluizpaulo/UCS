@@ -1,9 +1,8 @@
-
 'use client';
 
 import { useState, useEffect, useTransition } from 'react';
 import { PageHeader } from '@/components/page-header';
-import { History, Info, Loader2 } from 'lucide-react';
+import { History, Info, Loader2, ExternalLink } from 'lucide-react';
 import { DateNavigator } from '@/components/date-navigator';
 import { Button } from '@/components/ui/button';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -21,9 +20,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { reprocessDate } from '@/lib/data-service';
+import { reprocessDate, getCommodityPricesByDate } from '@/lib/data-service';
 import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Skeleton } from '@/components/ui/skeleton';
+import { formatCurrency } from '@/lib/formatters';
+import type { CommodityPriceData } from '@/lib/types';
+import { getIconForCategory } from '@/lib/icons';
 
 function getValidatedDate(dateString?: string | null): Date | null {
   if (dateString) {
@@ -40,27 +43,41 @@ export default function AuditPage() {
     const searchParams = useSearchParams();
     const dateParam = searchParams.get('date');
     const { toast } = useToast();
-    const [isPending, startTransition] = useTransition();
+    const [isReprocessing, startReprocessingTransition] = useTransition();
 
     const [targetDate, setTargetDate] = useState<Date | null>(null);
+    const [dailyData, setDailyData] = useState<CommodityPriceData[]>([]);
+    const [isLoadingData, setIsLoadingData] = useState(true);
 
-     useEffect(() => {
+    useEffect(() => {
         const initialDate = getValidatedDate(dateParam) || new Date();
         setTargetDate(initialDate);
     }, [dateParam]);
+
+    useEffect(() => {
+        if (targetDate) {
+            setIsLoadingData(true);
+            getCommodityPricesByDate(targetDate)
+                .then(setDailyData)
+                .catch(err => {
+                    toast({ variant: 'destructive', title: 'Erro ao buscar dados', description: err.message });
+                    setDailyData([]);
+                })
+                .finally(() => setIsLoadingData(false));
+        }
+    }, [targetDate, toast]);
 
 
     const handleReprocess = async () => {
         if (!targetDate) return;
 
-        startTransition(async () => {
+        startReprocessingTransition(async () => {
             const result = await reprocessDate(targetDate);
             if (result.success) {
                 toast({
                     title: "Reprocessamento Iniciado",
                     description: result.message,
                 });
-                // Aguarda um pouco e redireciona para a página do painel para ver os resultados
                  setTimeout(() => {
                     const formattedDate = format(targetDate, 'yyyy-MM-dd');
                     router.push(`/dashboard?date=${formattedDate}`);
@@ -90,7 +107,7 @@ export default function AuditPage() {
         <div className="flex min-h-screen w-full flex-col">
             <PageHeader
                 title="Auditoria de Dados"
-                description="Ferramenta para corrigir e recalcular dados históricos."
+                description="Ferramenta para verificar e recalcular dados históricos."
                 icon={History}
             >
                 <DateNavigator targetDate={targetDate} />
@@ -98,33 +115,35 @@ export default function AuditPage() {
             <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
                  <Alert>
                     <Info className="h-4 w-4" />
-                    <AlertTitle>Como usar a ferramenta de auditoria</AlertTitle>
+                    <AlertTitle>Fluxo de Correção de Dados</AlertTitle>
                     <AlertDescription>
-                        Esta página permite acionar um recálculo completo dos dados para uma data específica. Isso é útil para corrigir erros de importação (n8n).
+                        Use esta ferramenta para corrigir dados que foram importados incorretamente pelo n8n.
                         <ol className="list-decimal pl-5 mt-2 space-y-1">
-                            <li><b>Selecione a data</b> que precisa ser corrigida no navegador de datas acima.</li>
-                            <li><b>Altere o valor manualmente no seu banco de dados</b> (ex: via Console do Firebase) para o ativo que foi importado incorretamente.</li>
-                            <li>Clique no botão <b>"Reprocessar Cálculos do Dia"</b> abaixo.</li>
+                            <li><b>Selecione a data</b> que precisa ser corrigida no navegador acima.</li>
+                            <li>Use o link "Ver Fonte" na tabela para conferir o valor correto do ativo no site de origem.</li>
+                            <li><b>Altere o valor manualmente no seu banco de dados</b> (ex: via Console do Firebase) para o ativo incorreto.</li>
+                            <li>Clique no botão <b>"Reprocessar Cálculos do Dia"</b>.</li>
                             <li>A plataforma irá acionar o n8n para recalcular todos os índices dependentes com base no novo valor que você inseriu.</li>
                         </ol>
                     </AlertDescription>
                 </Alert>
 
                 <Card>
-                    <CardHeader>
-                        <CardTitle>Reprocessar Dados para {formattedDate}</CardTitle>
-                        <CardDescription>
-                            Esta ação irá disparar o fluxo de trabalho do n8n para buscar novamente as cotações-base e recalcular todos os índices e valores para o dia selecionado. Quaisquer dados existentes para este dia serão sobrescritos.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
+                    <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between">
+                        <div>
+                            <CardTitle>Auditoria de Dados para {formattedDate}</CardTitle>
+                            <CardDescription>
+                                Verifique os valores registrados para cada ativo e inicie um recálculo se necessário.
+                            </CardDescription>
+                        </div>
                          <AlertDialog>
                             <AlertDialogTrigger asChild>
                                 <Button 
                                     variant="destructive"
-                                    disabled={isPending || isCurrentOrFuture}
+                                    disabled={isReprocessing || isCurrentOrFuture}
+                                    className="mt-4 md:mt-0"
                                 >
-                                    {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <History className="mr-2 h-4 w-4" />}
+                                    {isReprocessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <History className="mr-2 h-4 w-4" />}
                                     Reprocessar Cálculos do Dia
                                 </Button>
                             </AlertDialogTrigger>
@@ -145,13 +164,69 @@ export default function AuditPage() {
                                     <AlertDialogAction 
                                         className="bg-destructive hover:bg-destructive/90"
                                         onClick={handleReprocess} 
-                                        disabled={isPending}
+                                        disabled={isReprocessing}
                                     >
                                         Sim, Entendi e Quero Reprocessar
                                     </AlertDialogAction>
                                 </AlertDialogFooter>
                             </AlertDialogContent>
                         </AlertDialog>
+                    </CardHeader>
+                    <CardContent>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Ativo</TableHead>
+                                    <TableHead className="text-right">Valor Registrado</TableHead>
+                                    <TableHead className="text-center">Ações</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {isLoadingData ? (
+                                    Array.from({ length: 5 }).map((_, i) => (
+                                        <TableRow key={i}>
+                                            <TableCell><Skeleton className="h-6 w-32" /></TableCell>
+                                            <TableCell className="text-right"><Skeleton className="h-6 w-24 ml-auto" /></TableCell>
+                                            <TableCell className="text-center"><Skeleton className="h-8 w-20 mx-auto" /></TableCell>
+                                        </TableRow>
+                                    ))
+                                ) : dailyData.length > 0 ? (
+                                    dailyData.map((asset) => {
+                                        const Icon = getIconForCategory(asset);
+                                        return (
+                                        <TableRow key={asset.id}>
+                                            <TableCell>
+                                                <div className="flex items-center gap-3">
+                                                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+                                                        <Icon className="h-4 w-4 text-muted-foreground" />
+                                                    </div>
+                                                    <div className="font-medium">{asset.name}</div>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="text-right font-mono">
+                                                {formatCurrency(asset.price, asset.currency, asset.id)}
+                                            </TableCell>
+                                            <TableCell className="text-center">
+                                                {asset.sourceUrl && (
+                                                    <Button variant="outline" size="sm" asChild>
+                                                        <a href={asset.sourceUrl} target="_blank" rel="noopener noreferrer">
+                                                            <ExternalLink className="mr-2 h-4 w-4" /> Ver Fonte
+                                                        </a>
+                                                    </Button>
+                                                )}
+                                            </TableCell>
+                                        </TableRow>
+                                        );
+                                    })
+                                ) : (
+                                    <TableRow>
+                                        <TableCell colSpan={3} className="h-24 text-center">
+                                            Nenhum dado encontrado para esta data.
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
                     </CardContent>
                 </Card>
             </main>

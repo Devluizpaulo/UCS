@@ -10,6 +10,7 @@ export interface CommodityConfig {
     category: 'exchange' | 'vus' | 'vmad' | 'crs' | 'index' | 'sub-index' | 'agricultural' | 'material';
     description: string;
     unit: string;
+    sourceUrl?: string;
 }
 
 // Defines the structure for commodity data to be displayed
