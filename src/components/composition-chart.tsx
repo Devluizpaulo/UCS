@@ -62,7 +62,7 @@ export function CompositionChart({ mainAsset, compositionData, isLoading, target
     const { toast } = useToast();
 
     // The mainAsset.price already holds the total value from the database.
-    const totalValue = mainAsset?.price || 0;
+    const totalValue = mainAsset?.price ?? 0;
 
     const chartData = useMemo(() => {
         return compositionData.map(item => ({
@@ -117,7 +117,7 @@ export function CompositionChart({ mainAsset, compositionData, isLoading, target
         );
     }
     
-    if (!mainAsset || compositionData.length === 0 || mainAsset.price === 0) {
+    if (!mainAsset || compositionData.length === 0 || totalValue === 0) {
          return (
             <Card>
                 <CardHeader>

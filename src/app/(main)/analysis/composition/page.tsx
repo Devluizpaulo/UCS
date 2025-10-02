@@ -23,7 +23,7 @@ function getValidatedDate(dateString?: string | null): Date | null {
 }
 
 function useComposition(targetDate: Date | null) {
-    const [mainAsset, setMainAsset] = useState<FirestoreQuote | null>(null);
+    const [mainQuote, setMainQuote] = useState<FirestoreQuote | null>(null);
     const [compositionData, setCompositionData] = useState<any[]>([]);
     const [allConfigs, setAllConfigs] = useState<Record<string, CommodityConfig>>({});
     const [isLoading, setIsLoading] = useState(true);
@@ -49,16 +49,16 @@ function useComposition(targetDate: Date | null) {
         const fetchData = async () => {
             try {
                 // Busca o índice "Valor Uso Solo" para a data
-                const mainQuote = await getQuoteByDate('valor_uso_solo', targetDate);
-                setMainAsset(mainQuote);
+                const quote = await getQuoteByDate('valor_uso_solo', targetDate);
+                setMainQuote(quote);
 
-                if (!mainQuote || !mainQuote.componentes) {
+                if (!quote || !quote.componentes) {
                     setCompositionData([]);
                     return;
                 }
                 
                 // Transforma o mapa de componentes em um array para o gráfico
-                const components = mainQuote.componentes;
+                const components = quote.componentes;
                 const resolvedComponents = Object.keys(components).map(componentId => {
                     const config = allConfigs[componentId];
                     return {
@@ -74,7 +74,7 @@ function useComposition(targetDate: Date | null) {
             } catch (err) {
                 console.error("Falha ao buscar composição do Valor Uso Solo", err);
                 setCompositionData([]);
-                setMainAsset(null);
+                setMainQuote(null);
             } finally {
                 setIsLoading(false);
             }
@@ -84,24 +84,25 @@ function useComposition(targetDate: Date | null) {
         
     }, [targetDate, allConfigs]);
     
-    const mainAssetForChart: CommodityPriceData | undefined = useMemo(() => {
-        if (!mainAsset) return undefined;
+    const mainAsset: CommodityPriceData | undefined = useMemo(() => {
+        if (!mainQuote) return undefined;
+        const config = allConfigs['valor_uso_solo'];
         return {
             id: 'valor_uso_solo',
-            name: 'Valor Uso Solo',
-            price: mainAsset.valor ?? mainAsset.ultimo,
-            currency: 'BRL',
-            category: 'index',
-            description: 'Valor total do uso do solo, composto por VUS, VMAD, Carbono CRS e Água CRS.',
-            unit: 'BRL',
+            name: config?.name || 'Valor Uso Solo',
+            price: mainQuote.valor ?? mainQuote.ultimo,
+            currency: config?.currency || 'BRL',
+            category: config?.category || 'index',
+            description: config?.description || 'Valor total do uso do solo, composto por VUS, VMAD, Carbono CRS e Água CRS.',
+            unit: config?.unit || 'BRL',
             change: 0,
             absoluteChange: 0,
-            lastUpdated: mainAsset.data,
+            lastUpdated: mainQuote.data,
         };
-    }, [mainAsset]);
+    }, [mainQuote, allConfigs]);
 
 
-    return { mainAsset: mainAssetForChart, compositionData, isLoading };
+    return { mainAsset, compositionData, isLoading };
 }
 
 
