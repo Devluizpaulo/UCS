@@ -1,3 +1,4 @@
+
 'use server';
 
 import { getFirebaseAdmin } from '@/lib/firebase-admin-config';
@@ -81,6 +82,7 @@ function extractPriceFromQuote(quoteData: any): PriceExtractionResult {
 
   // Ordem de prioridade para extração do preço
   const priceFields = [
+    { field: 'valor_brl', source: 'valor_brl' }, // Para UCS ASE
     { field: 'valor', source: 'valor' },
     { field: 'resultado_final', source: 'resultado_final' },
     { field: 'ultimo', source: 'ultimo' },
@@ -94,6 +96,7 @@ function extractPriceFromQuote(quoteData: any): PriceExtractionResult {
 
   return { price: 0, source: 'none' };
 }
+
 
 /**
  * Gera chave de cache para dados por data
