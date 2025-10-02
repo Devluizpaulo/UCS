@@ -207,15 +207,15 @@ export default function AuditPage() {
   }
 
   const { baseAssets, indices } = useMemo(() => {
-    const baseAssetIds = new Set(['milho', 'soja', 'boi_gordo', 'madeira', 'carbono', 'Agua_CRS', 'usd', 'eur']);
-    const calculatedAssets = data.filter(asset => !baseAssetIds.has(asset.id));
+    const calculatedAssetIds = new Set(['vus', 'vmad', 'carbono_crs', 'valor_uso_solo', 'pdm', 'ucs', 'ucs_ase']);
+    const allBaseAssets = data.filter(asset => !calculatedAssetIds.has(asset.id));
+    const calculatedAssets = data.filter(asset => calculatedAssetIds.has(asset.id));
 
     const dataMap = new Map(data.map(item => [item.id, item.price]));
     const usdPrice = dataMap.get('usd') || 0;
     const eurPrice = dataMap.get('eur') || 0;
     
-    const enrichedBaseAssets = data
-        .filter(asset => baseAssetIds.has(asset.id))
+    const enrichedBaseAssets = allBaseAssets
         .map(asset => {
             let rentMediaCalculada: number | undefined;
             switch(asset.id) {
@@ -318,5 +318,3 @@ export default function AuditPage() {
     </>
   );
 }
-
-    
