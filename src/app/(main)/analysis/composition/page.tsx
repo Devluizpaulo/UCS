@@ -36,7 +36,7 @@ const componentConfig: Record<string, { name: string, currency: string }> = {
     'vus': { name: 'VUS', currency: 'BRL' },
     'vmad': { name: 'VMAD', currency: 'BRL' },
     'carbono_crs': { name: 'Carbono CRS', currency: 'BRL' },
-    'agua_crs': { name: 'Água CRS', currency: 'BRL' },
+    'Agua_CRS': { name: 'Água CRS', currency: 'BRL' },
 };
 
 
