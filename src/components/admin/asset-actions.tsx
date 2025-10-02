@@ -14,7 +14,7 @@ interface AssetActionsProps {
 
 export function AssetActions({ asset, onEdit }: AssetActionsProps) {
   
-  // Permite edição para qualquer ativo que seja uma commodity base ou moeda.
+  // Ativos cotados que podem ser editados. Exclui índices e sub-índices.
   const canEdit = asset.category === 'agricultural' || asset.category === 'exchange' || asset.category === 'material' || asset.id === 'Agua_CRS' ;
 
   return (

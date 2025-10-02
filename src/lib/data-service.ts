@@ -66,6 +66,7 @@ const initialCommoditiesConfig: Record<string, Omit<CommodityConfig, 'id'>> = {
     'carbono': { name: 'Carbono', currency: 'BRL', category: 'material', description: 'Crédito de Carbono (convertido para BRL)', unit: 'Tonelada', sourceUrl: 'https://br.investing.com/commodities/carbon-emissions-historical-data' },
     'usd': { name: 'Dólar Americano', currency: 'BRL', category: 'exchange', description: 'Cotação do Dólar Americano (USD) em Reais (BRL).', unit: 'BRL', sourceUrl: 'https://br.investing.com/currencies/usd-brl-historical-data' },
     'eur': { name: 'Euro', currency: 'BRL', category: 'exchange', description: 'Cotação do Euro (EUR) em Reais (BRL).', unit: 'BRL', sourceUrl: 'https://br.investing.com/currencies/eur-brl-historical-data' },
+    'Agua_CRS': { name: 'Água CRS', currency: 'BRL', category: 'crs', description: 'Valor da Água.', unit: 'Pontos' },
 
     // Indices Calculados (conforme documentação)
     'ch2o_agua': { name: 'CH2O Água', currency: 'BRL', category: 'sub-index', description: 'Índice de uso da água.', unit: 'Pontos' },
@@ -75,7 +76,6 @@ const initialCommoditiesConfig: Record<string, Omit<CommodityConfig, 'id'>> = {
     'vus': { name: 'VUS', currency: 'BRL', category: 'vus', description: 'Valor Universal Sustentável (commodities agrícolas).', unit: 'Pontos' },
     'vmad': { name: 'VMAD', currency: 'BRL', category: 'vmad', description: 'Valor da Madeira.', unit: 'Pontos' },
     'carbono_crs': { name: 'Carbono CRS', currency: 'BRL', category: 'crs', description: 'Valor do Carbono.', unit: 'Pontos' },
-    'Agua_CRS': { name: 'Água CRS', currency: 'BRL', category: 'crs', description: 'Valor da Água.', unit: 'Pontos' },
     'valor_uso_solo': { name: 'Valor Uso Solo', currency: 'BRL', category: 'sub-index', description: 'Valor total do uso do solo.', unit: 'Pontos' },
     
     // Indice Principal
