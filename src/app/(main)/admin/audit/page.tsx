@@ -1,19 +1,34 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useTransition } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { History, Loader2 } from 'lucide-react';
+import { History, Loader2, Save } from 'lucide-react';
 import { getCommodityPricesByDate } from '@/lib/data-service';
 import type { CommodityPriceData } from '@/lib/types';
 import * as Calc from '@/lib/calculation-service';
+import { recalculateAllForDate } from '@/lib/recalculation-service';
 import { isValid, parseISO } from 'date-fns';
 import { DateNavigator } from '@/components/date-navigator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { formatCurrency } from '@/lib/formatters';
 import { useToast } from '@/hooks/use-toast';
 import { AssetActions } from '@/components/admin/asset-actions';
+import { AssetEditModal } from '@/components/admin/asset-edit-modal';
+import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { cn } from '@/lib/utils';
 
 
 function getValidatedDate(dateString?: string | null): Date {
@@ -26,7 +41,15 @@ function getValidatedDate(dateString?: string | null): Date {
   return new Date();
 }
 
-const AssetActionTable = ({ assets }: { assets: (CommodityPriceData & { rentMediaCalculada?: number })[] }) => {
+const AssetActionTable = ({ 
+    assets, 
+    onEdit, 
+    editedValues 
+}: { 
+    assets: (CommodityPriceData & { rentMediaCalculada?: number })[];
+    onEdit: (asset: CommodityPriceData) => void;
+    editedValues: Record<string, number>;
+}) => {
   if (assets.length === 0) {
     return (
       <div className="text-center text-sm text-muted-foreground p-4">
@@ -49,7 +72,10 @@ const AssetActionTable = ({ assets }: { assets: (CommodityPriceData & { rentMedi
       </TableHeader>
       <TableBody>
         {assets.map((asset) => (
-          <TableRow key={asset.id}>
+          <TableRow 
+            key={asset.id} 
+            className={cn(editedValues[asset.id] !== undefined && 'bg-yellow-500/10 hover:bg-yellow-500/20')}
+          >
             <TableCell className="font-medium">{asset.name}</TableCell>
             <TableCell className="text-right font-mono">
               {formatCurrency(asset.price, asset.currency, asset.id)}
@@ -63,7 +89,7 @@ const AssetActionTable = ({ assets }: { assets: (CommodityPriceData & { rentMedi
                 </TableCell>
             )}
             <TableCell className="flex justify-center">
-              <AssetActions asset={asset} />
+              <AssetActions asset={asset} onEdit={() => onEdit(asset)} />
             </TableCell>
           </TableRow>
         ))}
@@ -72,7 +98,7 @@ const AssetActionTable = ({ assets }: { assets: (CommodityPriceData & { rentMedi
   );
 };
 
-const IndexTable = ({ assets }: { assets: CommodityPriceData[] }) => {
+const IndexTable = ({ assets, editedValues }: { assets: CommodityPriceData[], editedValues: Record<string, number> }) => {
   if (assets.length === 0) {
     return (
       <div className="text-center text-sm text-muted-foreground p-4">
@@ -91,7 +117,10 @@ const IndexTable = ({ assets }: { assets: CommodityPriceData[] }) => {
       </TableHeader>
       <TableBody>
         {assets.map((asset) => (
-          <TableRow key={asset.id}>
+           <TableRow 
+            key={asset.id} 
+            className={cn(editedValues[asset.id] !== undefined && 'bg-yellow-500/10 hover:bg-yellow-500/20')}
+          >
             <TableCell className="font-medium">{asset.name}</TableCell>
             <TableCell className="text-right font-mono">
               {formatCurrency(asset.price, asset.currency, asset.id)}
@@ -112,15 +141,29 @@ export default function AuditPage() {
   const [targetDate, setTargetDate] = useState<Date>(() => getValidatedDate(dateParam));
   const [data, setData] = useState<CommodityPriceData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isPending, startTransition] = useTransition();
+
+  const [editingAsset, setEditingAsset] = useState<CommodityPriceData | null>(null);
+  const [editedValues, setEditedValues] = useState<Record<string, number>>({});
 
   useEffect(() => {
-    setTargetDate(getValidatedDate(dateParam));
-  }, [dateParam]);
+    const newDate = getValidatedDate(dateParam);
+    if (newDate.getTime() !== targetDate.getTime()) {
+      setTargetDate(newDate);
+      setEditedValues({}); // Reseta edições ao mudar de data
+    }
+  }, [dateParam, targetDate]);
 
   useEffect(() => {
     setIsLoading(true);
     getCommodityPricesByDate(targetDate)
-      .then(setData)
+      .then((fetchedData) => {
+        const dataWithEdits = fetchedData.map(asset => ({
+            ...asset,
+            price: editedValues[asset.id] ?? asset.price,
+        }));
+        setData(dataWithEdits);
+      })
       .catch((err) => {
         console.error(err);
         toast({
@@ -131,11 +174,43 @@ export default function AuditPage() {
         setData([]);
       })
       .finally(() => setIsLoading(false));
-  }, [targetDate, toast]);
+  }, [targetDate, toast, editedValues]);
+
+  const handleEdit = (asset: CommodityPriceData) => {
+    setEditingAsset(asset);
+  };
+  
+  const handleSaveEdit = (assetId: string, newPrice: number) => {
+    setEditedValues(prev => ({ ...prev, [assetId]: newPrice }));
+    setEditingAsset(null);
+    toast({
+        title: "Valor Alterado",
+        description: `O valor de ${assetId} foi atualizado localmente. Clique em 'Salvar e Recalcular' para persistir.`,
+    });
+  }
+
+  const handleRecalculate = async () => {
+    startTransition(async () => {
+        const result = await recalculateAllForDate(targetDate, editedValues);
+        if (result.success) {
+            toast({
+                title: "Sucesso!",
+                description: result.message
+            });
+            setEditedValues({}); // Limpa os valores editados após o sucesso
+        } else {
+            toast({
+                variant: 'destructive',
+                title: "Erro no Recálculo",
+                description: result.message
+            });
+        }
+    });
+  }
 
   const { currencies, baseCommodities, indices } = useMemo(() => {
     const currencyIds = ['usd', 'eur'];
-    const commodityIds = ['milho', 'soja', 'boi_gordo', 'madeira', 'carbono'];
+    const commodityIds = ['milho', 'soja', 'boi_gordo', 'madeira', 'carbono', 'Agua_CRS'];
     
     const dataMap = new Map(data.map(item => [item.id, item.price]));
     const usdPrice = dataMap.get('usd') || 0;
@@ -164,60 +239,90 @@ export default function AuditPage() {
     return { currencies, baseCommodities, indices };
   }, [data]);
 
+  const hasEdits = Object.keys(editedValues).length > 0;
+
   return (
-    <div className="flex min-h-screen w-full flex-col">
-      <PageHeader
-        title="Auditoria de Dados"
-        description="Verifique os dados históricos da plataforma para a data selecionada."
-        icon={History}
-      >
-        <DateNavigator targetDate={targetDate} />
-      </PageHeader>
-      <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
-        {isLoading ? (
-          <div className="flex justify-center items-center h-64">
-            <Loader2 className="h-10 w-10 animate-spin text-primary" />
+    <>
+      <div className="flex min-h-screen w-full flex-col">
+        <PageHeader
+          title="Auditoria de Dados"
+          description="Verifique, corrija e recalcule os dados históricos da plataforma."
+          icon={History}
+        >
+          <div className="flex items-center gap-2">
+            {hasEdits && (
+                 <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                         <Button disabled={isPending}>
+                            <Save className="mr-2 h-4 w-4" />
+                            Salvar e Recalcular
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Confirmar Recálculo?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Você está prestes a sobrescrever os dados para <span className="font-bold">{formatCurrency(targetDate, 'dd/MM/yyyy')}</span> com base nas suas edições. Esta ação não pode ser desfeita. Todos os índices dependentes serão recalculados. Deseja continuar?
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleRecalculate} disabled={isPending}>
+                               {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
+                                Sim, Salvar e Recalcular
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            )}
+            <DateNavigator targetDate={targetDate} />
           </div>
-        ) : data.length === 0 ? (
-           <Card>
-              <CardContent className="p-6">
-                 <p className="text-center text-muted-foreground">Nenhum dado encontrado para esta data.</p>
-              </CardContent>
-           </Card>
-        ) : (
-          <div className="grid gap-6">
+        </PageHeader>
+        <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
+          {isLoading ? (
+            <div className="flex justify-center items-center h-64">
+              <Loader2 className="h-10 w-10 animate-spin text-primary" />
+            </div>
+          ) : data.length === 0 ? (
             <Card>
-              <CardHeader>
-                <CardTitle>Moedas</CardTitle>
-                <CardDescription>Cotações de câmbio usadas nos cálculos.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <AssetActionTable assets={currencies} />
-              </CardContent>
+                <CardContent className="p-6">
+                  <p className="text-center text-muted-foreground">Nenhum dado encontrado para esta data.</p>
+                </CardContent>
             </Card>
+          ) : (
+            <div className="grid gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Moedas e Ativos Base</CardTitle>
+                  <CardDescription>Cotações de câmbio e commodities primárias que servem de entrada para os cálculos. <span className="font-semibold text-primary">Estes são os únicos valores editáveis.</span></CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <AssetActionTable assets={currencies} onEdit={handleEdit} editedValues={editedValues} />
+                  <AssetActionTable assets={baseCommodities} onEdit={handleEdit} editedValues={editedValues} />
+                </CardContent>
+              </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Commodities Base</CardTitle>
-                <CardDescription>Valores de mercado das commodities primárias.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <AssetActionTable assets={baseCommodities} />
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Índices Calculados</CardTitle>
-                <CardDescription>Resultados dos índices e sub-índices da plataforma.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <IndexTable assets={indices} />
-              </CardContent>
-            </Card>
-          </div>
-        )}
-      </main>
-    </div>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Índices Calculados</CardTitle>
+                  <CardDescription>Resultados dos índices e sub-índices da plataforma. Estes valores são recalculados automaticamente com base nos ativos base.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <IndexTable assets={indices} editedValues={editedValues} />
+                </CardContent>
+              </Card>
+            </div>
+          )}
+        </main>
+      </div>
+      {editingAsset && (
+        <AssetEditModal
+          asset={editingAsset}
+          isOpen={!!editingAsset}
+          onOpenChange={() => setEditingAsset(null)}
+          onSave={handleSaveEdit}
+        />
+      )}
+    </>
   );
 }

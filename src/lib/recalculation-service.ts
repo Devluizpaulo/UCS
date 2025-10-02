@@ -117,6 +117,7 @@ export async function recalculateAllForDate(targetDate: Date, editedValues: Reco
       for (const assetId of configs) {
         const quote = await getOrCreateQuote(db, assetId, targetDate, transaction);
         quotes[assetId] = quote;
+        // Usa o valor do documento, que pode ser 'valor', 'ultimo', ou 'valor_brl'
         initialValues[assetId] = quote?.valor ?? quote?.ultimo ?? (quote as any)?.valor_brl ?? 0;
       }
       
