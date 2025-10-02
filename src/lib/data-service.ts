@@ -162,6 +162,19 @@ export async function getQuoteByDate(assetId: string, date: Date): Promise<Fires
             return serializeFirestoreTimestamp({ id: doc.id, ...data }) as FirestoreQuote;
         }
 
+        // If no document for the specific date, try fetching the most recent one before it.
+        const historicalSnapshot = await db.collection(assetId)
+            .where('timestamp', '<', Timestamp.fromDate(date))
+            .orderBy('timestamp', 'desc')
+            .limit(1)
+            .get();
+        
+        if(!historicalSnapshot.empty) {
+            const doc = historicalSnapshot.docs[0];
+            const data = doc.data();
+            return serializeFirestoreTimestamp({ id: doc.id, ...data }) as FirestoreQuote;
+        }
+        
         return null;
 
     } catch (error) {
