@@ -2,20 +2,19 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
-import Link from 'next/link';
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { History, PlayCircle, Loader2, ExternalLink } from 'lucide-react';
+import { History, Loader2 } from 'lucide-react';
 import { getCommodityPricesByDate } from '@/lib/data-service';
 import type { CommodityPriceData } from '@/lib/types';
 import * as Calc from '@/lib/calculation-service';
 import { isValid, parseISO } from 'date-fns';
 import { DateNavigator } from '@/components/date-navigator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
 import { formatCurrency } from '@/lib/formatters';
 import { useToast } from '@/hooks/use-toast';
-import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { AssetActions } from '@/components/admin/asset-actions';
+
 
 function getValidatedDate(dateString?: string | null): Date {
   if (dateString) {
@@ -28,15 +27,6 @@ function getValidatedDate(dateString?: string | null): Date {
 }
 
 const AssetActionTable = ({ assets }: { assets: (CommodityPriceData & { rentMediaCalculada?: number })[] }) => {
-  const { toast } = useToast();
-
-  const handleTestAction = (assetName: string) => {
-    toast({
-      title: 'Ação de Teste Disparada',
-      description: `Botão para o ativo "${assetName}" foi clicado.`,
-    });
-  };
-
   if (assets.length === 0) {
     return (
       <div className="text-center text-sm text-muted-foreground p-4">
@@ -72,31 +62,8 @@ const AssetActionTable = ({ assets }: { assets: (CommodityPriceData & { rentMedi
                     }
                 </TableCell>
             )}
-            <TableCell className="text-center flex justify-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleTestAction(asset.name)}
-              >
-                <PlayCircle className="mr-2 h-4 w-4" />
-                Testar
-              </Button>
-              {asset.sourceUrl && (
-                  <TooltipProvider>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button variant="outline" size="icon" asChild>
-                                <Link href={asset.sourceUrl} target="_blank">
-                                    <ExternalLink className="h-4 w-4" />
-                                </Link>
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>Ver fonte no investing.com</p>
-                        </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-              )}
+            <TableCell className="flex justify-center">
+              <AssetActions asset={asset} />
             </TableCell>
           </TableRow>
         ))}
