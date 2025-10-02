@@ -14,13 +14,10 @@ import {
 import {
   LayoutDashboard,
   TrendingUp,
-  ShieldAlert,
   Users,
   LogOut,
   Sparkles,
-  Archive,
   History,
-  LandPlot,
   PieChart,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -219,18 +216,6 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
                   <Link href="/analysis/trends">
                     <TrendingUp />
                     <span>Tendências</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem onClick={handleMenuItemClick}>
-                <SidebarMenuButton
-                  asChild
-                  isActive={pathname.startsWith('/analysis/risk')}
-                  tooltip={{ children: 'Análise de Risco' }}
-                >
-                  <Link href="/analysis/risk">
-                    <ShieldAlert />
-                    <span>Risco</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
