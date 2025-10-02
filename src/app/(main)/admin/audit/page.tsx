@@ -27,7 +27,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 
@@ -90,7 +89,7 @@ const AssetActionTable = ({
                 </TableCell>
             )}
             <TableCell className="flex justify-center">
-              <AssetActions asset={asset} onEdit={onEdit} />
+                <AssetActions asset={asset} onEdit={onEdit} />
             </TableCell>
           </TableRow>
         ))}
@@ -320,4 +319,3 @@ export default function AuditPage() {
     </>
   );
 }
-
