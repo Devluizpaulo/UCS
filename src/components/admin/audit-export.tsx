@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -396,7 +397,7 @@ export function AuditExport({ currentDate, currentData, auditLogs }: AuditExport
                     }}
                     disabled={(date) => 
                       date > new Date() || 
-                      (exportOptions.startDate && date < exportOptions.startDate)
+                      (!!exportOptions.startDate && date < exportOptions.startDate)
                     }
                     initialFocus
                     locale={ptBR}

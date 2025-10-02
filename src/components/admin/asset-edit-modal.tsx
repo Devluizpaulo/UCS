@@ -75,17 +75,13 @@ export function AssetEditModal({ isOpen, onOpenChange, onSave, asset, allAssets 
   const form = useForm<EditFormData>({
     resolver: zodResolver(editSchema),
     defaultValues: {
-      // Inicializa com o valor formatado no padrão brasileiro (vírgula)
-      price: asset.price.toLocaleString('pt-BR', { 
-        minimumFractionDigits: 2, 
-        maximumFractionDigits: 4 
-      }),
+      price: asset.price,
     },
   });
 
   const { isSubmitting } = form.formState;
 
-  const handleFormSubmit = async (values: EditFormData) => {
+  const handleFormSubmit = (values: EditFormData) => {
     setShowConfirmation(true);
   };
 
@@ -107,7 +103,7 @@ export function AssetEditModal({ isOpen, onOpenChange, onSave, asset, allAssets 
   
   // Função para calcular impactos em tempo real
   const calculateRealTimeImpacts = (newValue: number) => {
-    if (!allAssets.length || isNaN(newValue) || newValue <= 0) {
+    if (!allAssets.length || isNaN(newValue) || newValue < 0) {
       setCalculationResults([]);
       return;
     }
@@ -169,24 +165,12 @@ export function AssetEditModal({ isOpen, onOpenChange, onSave, asset, allAssets 
     else if (cleanValue.includes(',') && !cleanValue.includes('.')) {
       cleanValue = cleanValue.replace(',', '.');
     }
-    // Se tem apenas ponto, pode ser decimal ou separador de milhares
-    // Assumimos que é decimal se há no máximo 3 dígitos após o ponto
-    else if (cleanValue.includes('.')) {
-      const parts = cleanValue.split('.');
-      if (parts.length === 2 && parts[1].length <= 4) {
-        // É decimal (ex: 22.33)
-        cleanValue = cleanValue;
-      } else {
-        // Pode ser separador de milhares, remove pontos
-        cleanValue = cleanValue.replace(/\./g, '');
-      }
-    }
     
     const parsed = parseFloat(cleanValue);
     return isNaN(parsed) ? 0 : parsed;
   };
   
-  const numericPrice = parsePrice(currentPrice);
+  const numericPrice = typeof currentPrice === 'string' ? parsePrice(currentPrice) : currentPrice;
   const hasChanges = numericPrice !== asset.price;
   const affectedAssets = calculateAffectedAssets([asset.id]);
   const currentDate = new Date().toLocaleString('pt-BR');
@@ -261,7 +245,7 @@ export function AssetEditModal({ isOpen, onOpenChange, onSave, asset, allAssets 
                   <FormControl>
                     <Input 
                                 placeholder="Insira o novo valor (ex: 22,33)" 
-                                value={field.value || ''}
+                                value={typeof field.value === 'number' ? field.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 4 }) : field.value || ''}
                         onChange={(e) => {
                             const rawValue = e.target.value;
                             field.onChange(rawValue);
@@ -502,7 +486,7 @@ export function AssetEditModal({ isOpen, onOpenChange, onSave, asset, allAssets 
             </AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleConfirmSave}
-              disabled={isSaving || calculationResults.length === 0}
+              disabled={isSaving || (calculationResults.length === 0 && hasChanges)}
               className="flex-1 sm:flex-none bg-green-600 hover:bg-green-700 disabled:bg-gray-400"
             >
               {isSaving ? (

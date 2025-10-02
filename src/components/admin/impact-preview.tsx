@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo } from 'react';
@@ -5,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { TrendingUp, TrendingDown, Minus, AlertTriangle } from 'lucide-react';
-import { calculateAffectedAssets, getAssetDependencyInfo, ASSET_DEPENDENCIES } from '@/lib/dependency-service';
+import { calculateAffectedAssets, getAssetDependency, ASSET_DEPENDENCIES } from '@/lib/dependency-service';
 import { formatCurrency } from '@/lib/formatters';
 import type { CommodityPriceData } from '@/lib/types';
 import { runCompleteSimulation, type SimulationInput, type CalculationResult } from '@/lib/real-calculation-service';
@@ -23,60 +24,10 @@ interface ImpactedAsset {
   estimatedNewValue: number;
   percentageChange: number;
   currency: string;
-  type: 'base' | 'calculated' | 'index' | 'sub-index';
-}
-
-// Funções de cálculo simplificadas (baseadas no fluxo N8N)
-function calculateRentMediaSoja(sojaPrice: number, usdRate: number): number {
-  return (sojaPrice / 60 * 1000) * usdRate * 3.3;
-}
-
-function calculateRentMediaBoi(boiPrice: number): number {
-  return boiPrice * 18;
-}
-
-function calculateRentMediaMilho(milhoPrice: number): number {
-  return (milhoPrice / 60 * 1000) * 7.20;
-}
-
-function calculateRentMediaCarbono(carbonoPrice: number, eurRate: number): number {
-  return carbonoPrice * eurRate * 2.59;
-}
-
-function calculateRentMediaMadeira(madeiraPrice: number, usdRate: number): number {
-  return madeiraPrice * usdRate * 1196.54547720813 * 0.10;
-}
-
-function calculateVUS(rentMediaBoi: number, rentMediaMilho: number, rentMediaSoja: number): number {
-  return ((rentMediaBoi * 25 * 0.35) + (rentMediaMilho * 25 * 0.30) + (rentMediaSoja * 25 * 0.35)) * (1 - 0.048);
-}
-
-function calculateVMAD(rentMediaMadeira: number): number {
-  return rentMediaMadeira * 5;
-}
-
-function calculateCarbonooCRS(rentMediaCarbono: number): number {
-  return rentMediaCarbono * 25;
-}
-
-function calculateCH2OAgua(rentMediaBoi: number, rentMediaMilho: number, rentMediaSoja: number, rentMediaMadeira: number, rentMediaCarbono: number): number {
-  return (rentMediaBoi * 0.35) + (rentMediaMilho * 0.30) + (rentMediaSoja * 0.35) + rentMediaMadeira + rentMediaCarbono;
-}
-
-function calculateValorUsoSolo(vus: number, vmad: number, carbonoCrs: number, aguaCrs: number): number {
-  return vus + vmad + carbonoCrs + aguaCrs;
-}
-
-function calculatePDM(ch2oAgua: number, custoAgua: number): number {
-  return ch2oAgua + custoAgua;
-}
-
-function calculateUCS(pdm: number): number {
-  return (pdm / 900) / 2;
-}
-
-function calculateUCSASE(ucs: number): number {
-  return ucs * 2;
+  type: 'base' | 'calculated' | 'index' | 'credit' | 'main-index' | 'sub-index';
+  formula?: string;
+  components?: Record<string, number>;
+  conversions?: Record<string, string>;
 }
 
 export function ImpactPreview({ editedAsset, newValue, allAssets }: ImpactPreviewProps) {
@@ -101,6 +52,7 @@ export function ImpactPreview({ editedAsset, newValue, allAssets }: ImpactPrevie
       current_carbono_crs: getAssetValue('carbono_crs'),
       current_ch2o_agua: getAssetValue('ch2o_agua'),
       current_custo_agua: getAssetValue('custo_agua'),
+      current_agua_crs: getAssetValue('Agua_CRS'),
       current_valor_uso_solo: getAssetValue('valor_uso_solo'),
       current_pdm: getAssetValue('pdm'),
       current_ucs: getAssetValue('ucs'),
@@ -130,18 +82,18 @@ export function ImpactPreview({ editedAsset, newValue, allAssets }: ImpactPrevie
     const affectedResults = results.filter(result => {
       const percentageChange = result.currentValue !== 0 
         ? ((result.newValue - result.currentValue) / result.currentValue) * 100 
-        : 0;
+        : (result.newValue !== 0 ? 100 : 0);
       return Math.abs(percentageChange) > 0.001; // Só mostra se mudança > 0.001%
     });
     
-    return affectedResults.map(result => ({
+    return affectedResults.map((result): ImpactedAsset => ({
       id: result.id,
       name: result.name,
       currentValue: result.currentValue,
       estimatedNewValue: result.newValue,
       percentageChange: result.currentValue !== 0 
         ? ((result.newValue - result.currentValue) / result.currentValue) * 100 
-        : 0,
+        : (result.newValue !== 0 ? 100 : 0),
       currency: 'BRL',
       type: ASSET_DEPENDENCIES[result.id]?.calculationType || 'calculated',
       formula: result.formula,
@@ -150,7 +102,7 @@ export function ImpactPreview({ editedAsset, newValue, allAssets }: ImpactPrevie
     }));
   }, [editedAsset, newValue, allAssets]);
   
-  const { asset: assetInfo } = getAssetDependencyInfo(editedAsset.id);
+  const assetInfo = getAssetDependency(editedAsset.id);
   
   if (simulationResults.length === 0) {
     return (

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -6,17 +7,19 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, Clock, RefreshCw, AlertCircle, Database, Calculator, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import type { AssetDependency } from '@/lib/dependency-service';
 
 export interface RecalculationStep {
   id: string;
   name: string;
-  type: 'validation' | 'base_calculation' | 'index_calculation' | 'n8n_trigger' | 'cache_update';
+  type: AssetDependency['calculationType'] | 'validation' | 'n8n_trigger' | 'cache_update';
   description: string;
   dependsOn: string[];
   formula?: string;
   status: 'pending' | 'in_progress' | 'completed' | 'error';
   duration?: number;
   n8nWebhook?: string;
+  order: number;
 }
 
 interface RecalculationProgressProps {
@@ -44,9 +47,12 @@ function getStatusIcon(step: RecalculationStep) {
   switch (step.type) {
     case 'validation':
       return <CheckCircle className="h-4 w-4 text-gray-400" />;
-    case 'base_calculation':
+    case 'base':
       return <Database className="h-4 w-4 text-gray-400" />;
-    case 'index_calculation':
+    case 'calculated':
+    case 'index':
+    case 'main-index':
+    case 'credit':
       return <Calculator className="h-4 w-4 text-gray-400" />;
     case 'n8n_trigger':
       return <Zap className="h-4 w-4 text-gray-400" />;
@@ -83,18 +89,16 @@ function getStatusBadge(step: RecalculationStep) {
 
 function getTypeLabel(type: RecalculationStep['type']) {
   switch (type) {
-    case 'validation':
-      return 'Validação';
-    case 'base_calculation':
-      return 'Cálculo Base';
-    case 'index_calculation':
+    case 'validation': return 'Validação';
+    case 'base': return 'Cálculo Base';
+    case 'calculated': return 'Calculado';
+    case 'index':
+    case 'main-index':
+    case 'credit':
       return 'Índice';
-    case 'n8n_trigger':
-      return 'N8N Sync';
-    case 'cache_update':
-      return 'Cache';
-    default:
-      return 'Processamento';
+    case 'n8n_trigger': return 'N8N Sync';
+    case 'cache_update': return 'Cache';
+    default: return 'Processamento';
   }
 }
 
@@ -277,56 +281,74 @@ export function createRecalculationSteps(editedAssets: string[]): RecalculationS
     {
       id: 'validate',
       name: 'Validação de Dados',
+      type: 'validation',
       description: 'Verificando consistência dos valores editados',
-      status: 'pending'
+      status: 'pending',
+      dependsOn: [],
+      order: 1,
     },
     {
       id: 'backup',
       name: 'Backup de Segurança',
+      type: 'validation',
       description: 'Criando backup dos valores atuais',
-      status: 'pending'
+      status: 'pending',
+      dependsOn: [],
+      order: 2,
     },
     {
       id: 'rent_media',
       name: 'Rentabilidades Médias',
+      type: 'base',
       description: 'Calculando rentabilidades médias dos ativos base',
       status: 'pending',
-      dependencies: ['validate', 'backup']
+      dependsOn: ['validate', 'backup'],
+      order: 3,
     },
     {
       id: 'indices_composition',
       name: 'Índices de Composição',
+      type: 'calculated',
       description: 'Recalculando VUS, VMAD e CRS',
       status: 'pending',
-      dependencies: ['rent_media']
+      dependsOn: ['rent_media'],
+      order: 4,
     },
     {
       id: 'valor_uso_solo',
       name: 'Valor de Uso do Solo',
+      type: 'index',
       description: 'Calculando índice agregador principal',
       status: 'pending',
-      dependencies: ['indices_composition']
+      dependsOn: ['indices_composition'],
+      order: 5,
     },
     {
       id: 'final_indices',
       name: 'Índices Finais',
+      type: 'main-index',
       description: 'Calculando PDM, UCS e UCS ASE',
       status: 'pending',
-      dependencies: ['valor_uso_solo']
+      dependsOn: ['valor_uso_solo'],
+      order: 6,
     },
     {
       id: 'persist',
       name: 'Persistência',
+      type: 'cache_update',
       description: 'Salvando dados no banco de dados',
       status: 'pending',
-      dependencies: ['final_indices']
+      dependsOn: ['final_indices'],
+      order: 7,
     },
     {
       id: 'audit_log',
       name: 'Log de Auditoria',
+      type: 'cache_update',
       description: 'Registrando alterações no histórico',
       status: 'pending',
-      dependencies: ['persist']
+      dependsOn: ['persist'],
+      order: 8,
     }
   ];
 

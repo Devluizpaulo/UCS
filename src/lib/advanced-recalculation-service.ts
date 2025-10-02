@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -19,8 +20,8 @@ import {
   getCalculationOrder,
   generateRecalculationSteps,
   estimateRecalculationTime,
-  type RecalculationStep
 } from './dependency-service';
+import type { RecalculationStep } from '@/components/admin/recalculation-progress';
 import { triggerN8NRecalculation } from './n8n-actions';
 import type { FirestoreQuote } from './types';
 
@@ -301,13 +302,15 @@ function calculateAssetValue(
   
   switch (assetId) {
     case 'ch2o_agua':
-      return (
-        (allValues.boi_gordo || 0) * 18 * 0.35 +
-        ((allValues.milho || 0) / 60 * 1000 * 7.20) * 0.30 +
-        (((allValues.soja || 0) / 60 * 1000) * (allValues.usd || 5.33) * 3.3) * 0.35 +
-        calculateRentabilidadeMedia('madeira', allValues.madeira || 0, allValues) +
-        calculateRentabilidadeMedia('carbono', allValues.carbono || 0, allValues)
-      );
+        const rentMediaMadeiraCH2O = calculateRentabilidadeMedia('madeira', allValues.madeira || 0, allValues) || 0;
+        const rentMediaCarbonoCH2O = calculateRentabilidadeMedia('carbono', allValues.carbono || 0, allValues) || 0;
+        return (
+          (allValues.boi_gordo || 0) * 18 * 0.35 +
+          ((allValues.milho || 0) / 60 * 1000 * 7.20) * 0.30 +
+          (((allValues.soja || 0) / 60 * 1000) * (allValues.usd || 5.33) * 3.3) * 0.35 +
+          rentMediaMadeiraCH2O +
+          rentMediaCarbonoCH2O
+        );
       
     case 'custo_agua':
       const ch2oValue = calculateAssetValue('ch2o_agua', allValues) || 0;

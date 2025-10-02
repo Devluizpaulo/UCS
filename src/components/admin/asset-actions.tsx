@@ -28,7 +28,7 @@ export function AssetActions({ asset, onEdit }: AssetActionsProps) {
   const canEdit = isKnownQuotedAsset || !isCalculatedAsset;
   
   // Lógica para determinar se tem fonte externa
-  const hasExternalSource = Boolean(asset.sourceUrl) && asset.sourceUrl.trim() !== '';
+  const hasExternalSource = Boolean(asset.sourceUrl) && (asset.sourceUrl || '').trim() !== '';
   
   // URLs padrão para ativos conhecidos
   const defaultSourceUrls: Record<string, string> = {
@@ -42,7 +42,7 @@ export function AssetActions({ asset, onEdit }: AssetActionsProps) {
   };
   
   const finalSourceUrl = asset.sourceUrl || (isKnownQuotedAsset ? defaultSourceUrls[asset.id] : null);
-  const shouldShowSourceLink = hasExternalSource || isKnownQuotedAsset;
+  const shouldShowSourceLink = hasExternalSource || (isKnownQuotedAsset && !!finalSourceUrl);
 
   console.log(`[AssetActions] ${asset.name} (${asset.id}):`, {
     category: asset.category,

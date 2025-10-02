@@ -1,3 +1,4 @@
+
 /**
  * Serviço de Cálculo Real - Baseado nas fórmulas EXATAS do N8N
  * 
@@ -301,7 +302,7 @@ export function runCompleteSimulation(input: SimulationInput): CalculationResult
     const ucsAseData = calculateUCSASE(ucs, input.usd, input.eur);
 
     // 4. Comparar com valores atuais e gerar resultados
-    const calculatedValues = {
+    const calculatedValues: Record<string, { current: number; new: number; formula: string; components?: Record<string, number>; conversions?: Record<string, string> }> = {
       vus: { 
         current: input.current_vus || 0, 
         new: vus, 
@@ -384,10 +385,10 @@ export function runCompleteSimulation(input: SimulationInput): CalculationResult
 
     // 5. Gerar resultados apenas para valores que mudaram significativamente
     Object.entries(calculatedValues).forEach(([assetId, data]) => {
-      const percentChange = data.current > 0 ? Math.abs((data.new - data.current) / data.current) : 1;
+      const percentChange = data.current > 0 ? Math.abs((data.new - data.current) / data.current) : (data.new > 0 ? 1 : 0);
       
       // Só inclui se a mudança for > 0.01% ou se o valor atual for 0
-      if (percentChange > 0.0001 || data.current === 0) {
+      if (percentChange > 0.0001 || (data.current === 0 && data.new !== 0)) {
         results.push({
           id: assetId,
           name: getAssetDisplayName(assetId),

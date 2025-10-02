@@ -17,7 +17,7 @@ import {
 import { 
   calculateAffectedAssets, 
   estimateRecalculationTime,
-  getAssetDependencyInfo 
+  getAssetDependency 
 } from '@/lib/dependency-service';
 import { updateCalculatedValuesDirectly } from '@/lib/direct-update-service';
 import { isValid, parseISO, format } from 'date-fns';
@@ -1154,5 +1154,3 @@ export default function AuditPage() {
     </>
   );
 }
-
-    

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo } from 'react';
@@ -5,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { TrendingUp, AlertTriangle, Info } from 'lucide-react';
-import { calculateAffectedAssets, getAssetDependencyInfo, ASSET_DEPENDENCIES } from '@/lib/dependency-service';
+import { calculateAffectedAssets, getAssetDependency, ASSET_DEPENDENCIES } from '@/lib/dependency-service';
 import { formatCurrency } from '@/lib/formatters';
 import type { CommodityPriceData } from '@/lib/types';
 
@@ -19,7 +20,7 @@ export function SimpleImpactPreview({ editedAsset, newValue, allAssets }: Simple
   const impactInfo = useMemo(() => {
     const affectedIds = calculateAffectedAssets([editedAsset.id]);
     const currentValue = editedAsset.price;
-    const valueChange = ((newValue - currentValue) / currentValue) * 100;
+    const valueChange = currentValue > 0 ? ((newValue - currentValue) / currentValue) * 100 : (newValue > 0 ? 100 : 0);
     
     const affectedAssets = affectedIds.map(assetId => {
       const assetDep = ASSET_DEPENDENCIES[assetId];
@@ -42,12 +43,12 @@ export function SimpleImpactPreview({ editedAsset, newValue, allAssets }: Simple
         // Prioriza dependências diretas
         if (a.isDirectlyDependent && !b.isDirectlyDependent) return -1;
         if (!a.isDirectlyDependent && b.isDirectlyDependent) return 1;
-        return 0;
+        return a.name.localeCompare(b.name);
       })
     };
   }, [editedAsset, newValue, allAssets]);
   
-  const { asset: assetInfo } = getAssetDependencyInfo(editedAsset.id);
+  const assetInfo = getAssetDependency(editedAsset.id);
   
   if (impactInfo.affectedAssets.length === 0) {
     return (
@@ -119,8 +120,8 @@ export function SimpleImpactPreview({ editedAsset, newValue, allAssets }: Simple
                 <div className="flex items-center gap-2 mb-1">
                   <span className="font-medium text-sm">{asset.name}</span>
                   <Badge variant="outline" className="text-xs">
-                    {asset.type === 'index' ? 'Índice' : 
-                     asset.type === 'sub-index' ? 'Sub-índice' : 
+                    {asset.type === 'index' || asset.type === 'main-index' ? 'Índice' : 
+                     asset.type === 'credit' ? 'Crédito' : 
                      asset.type === 'calculated' ? 'Calculado' : 'Base'}
                   </Badge>
                   {asset.isDirectlyDependent && (

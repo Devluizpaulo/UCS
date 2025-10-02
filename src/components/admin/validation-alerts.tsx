@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -117,7 +118,7 @@ export function ValidationAlerts({ alerts, onDismiss, onAcceptSuggestion }: Vali
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => onAcceptSuggestion(alert.id, alert.suggestedValue)}
+                    onClick={() => onAcceptSuggestion(alert.id, alert.suggestedValue as number)}
                     className="text-xs"
                   >
                     Aceitar Sugestão
@@ -168,7 +169,7 @@ export function generateValidationAlerts(
     if (editedValue === undefined) continue;
 
     const originalValue = asset.price;
-    const percentageChange = ((editedValue - originalValue) / originalValue) * 100;
+    const percentageChange = originalValue > 0 ? ((editedValue - originalValue) / originalValue) * 100 : (editedValue > 0 ? 100 : 0);
 
     // Alerta para mudanças extremas (>50%)
     if (Math.abs(percentageChange) > 50) {
@@ -220,7 +221,7 @@ export function generateValidationAlerts(
     if (historicalData && historicalData[asset.id]) {
       const historical = historicalData[asset.id];
       const average = historical.reduce((a, b) => a + b, 0) / historical.length;
-      const deviation = Math.abs(editedValue - average) / average * 100;
+      const deviation = average > 0 ? Math.abs(editedValue - average) / average * 100 : 0;
 
       if (deviation > 30) {
         alerts.push({
@@ -232,7 +233,7 @@ export function generateValidationAlerts(
           assetName: asset.name,
           currentValue: editedValue,
           suggestedValue: average,
-          percentageChange: ((editedValue - average) / average) * 100,
+          percentageChange: average > 0 ? ((editedValue - average) / average) * 100 : 0,
           canDismiss: true
         });
       }

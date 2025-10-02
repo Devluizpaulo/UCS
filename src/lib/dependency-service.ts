@@ -1,3 +1,4 @@
+
 /**
  * Serviço de Dependências para Recálculo Automático
  * 
@@ -8,26 +9,17 @@
 import { getFirebaseAdmin } from './firebase-admin-config';
 import { format } from 'date-fns';
 import type { CommodityPriceData } from './types';
+import type { RecalculationStep } from '@/components/admin/recalculation-progress';
 
 // --- TYPES ---
 export interface AssetDependency {
   id: string;
   name: string;
   dependsOn: string[];
-  calculationType: 'base' | 'calculated' | 'index' | 'credit' | 'main-index';
+  calculationType: 'base' | 'calculated' | 'index' | 'credit' | 'main-index' | 'sub-index';
   formula?: string;
   n8nCollection?: string;
   description?: string;
-}
-
-export interface RecalculationStep {
-  id: string;
-  name: string;
-  description: string;
-  dependsOn: string[];
-  status: 'pending' | 'in_progress' | 'completed' | 'error';
-  duration?: number;
-  order: number;
 }
 
 // --- ASSET DEPENDENCIES MAPPING ---
@@ -126,9 +118,9 @@ export const ASSET_DEPENDENCIES: Record<string, AssetDependency> = {
   'pdm': {
     id: 'pdm',
     name: 'PDM',
-    dependsOn: ['ch2o_agua'],
+    dependsOn: ['ch2o_agua', 'custo_agua'],
     calculationType: 'calculated',
-    formula: 'ch2o_agua * 0.15',
+    formula: 'ch2o_agua + custo_agua',
     n8nCollection: 'pdm',
     description: 'Potencial Desflorestador Monetizado'
   },
@@ -137,36 +129,36 @@ export const ASSET_DEPENDENCIES: Record<string, AssetDependency> = {
   'ucs': {
     id: 'ucs',
     name: 'UCS',
-    dependsOn: ['ch2o_agua', 'custo_agua', 'pdm'],
+    dependsOn: ['pdm'],
     calculationType: 'calculated',
-    formula: 'ch2o_agua + custo_agua + pdm',
+    formula: '(pdm / 900) / 2',
     n8nCollection: 'ucs',
     description: 'Universal Carbon Sustainability'
   },
   'vus': {
     id: 'vus',
     name: 'VUS',
-    dependsOn: ['milho', 'soja', 'boi_gordo'],
-    calculationType: 'calculated',
-    formula: '(Milho×40%) + (Soja×35%) + (Boi×25%)',
+    dependsOn: ['milho', 'soja', 'boi_gordo', 'usd'],
+    calculationType: 'sub-index',
+    formula: '((Boi*25*35%) + (Milho*25*30%) + (Soja*25*35%)) * (1-4.8%)',
     n8nCollection: 'vus',
     description: 'Valor Universal Sustentável (commodities agrícolas)'
   },
   'vmad': {
     id: 'vmad',
     name: 'VMAD',
-    dependsOn: ['madeira'],
-    calculationType: 'calculated',
-    formula: 'madeira * 6000',
+    dependsOn: ['madeira', 'usd'],
+    calculationType: 'sub-index',
+    formula: 'rent_media_madeira * 5',
     n8nCollection: 'vmad',
     description: 'Valor da Madeira'
   },
   'valor_uso_solo': {
     id: 'valor_uso_solo',
     name: 'Valor Uso Solo',
-    dependsOn: ['vus', 'vmad'],
-    calculationType: 'calculated',
-    formula: 'vus + vmad',
+    dependsOn: ['vus', 'vmad', 'carbono_crs', 'Agua_CRS'],
+    calculationType: 'index',
+    formula: 'VUS + Vmad + Carbono_CRS + Agua_CRS',
     n8nCollection: 'valor_uso_solo',
     description: 'Valor total do uso do solo'
   },
@@ -175,9 +167,9 @@ export const ASSET_DEPENDENCIES: Record<string, AssetDependency> = {
   'carbono_crs': {
     id: 'carbono_crs',
     name: 'Carbono CRS',
-    dependsOn: ['carbono'],
+    dependsOn: ['carbono', 'eur'],
     calculationType: 'credit',
-    formula: 'carbono * 400',
+    formula: 'rent_media_carbono * 25',
     n8nCollection: 'carbono_crs',
     description: 'Crédito de Carbono para Sustentabilidade'
   },
@@ -186,7 +178,7 @@ export const ASSET_DEPENDENCIES: Record<string, AssetDependency> = {
     name: 'Água CRS',
     dependsOn: ['ch2o_agua'],
     calculationType: 'credit',
-    formula: 'ch2o_agua * 1000',
+    formula: 'valor_CH2O',
     n8nCollection: 'Agua_CRS',
     description: 'Crédito de Água para Sustentabilidade'
   },
@@ -197,7 +189,7 @@ export const ASSET_DEPENDENCIES: Record<string, AssetDependency> = {
     name: 'Índice UCS ASE',
     dependsOn: ['ucs', 'usd', 'eur'],
     calculationType: 'main-index',
-    formula: 'ucs * cotacao_usd * 0.5 + ucs * cotacao_eur * 0.5',
+    formula: '(UCS_BRL / cotacao_dolar) + (UCS_BRL / cotacao_euro)',
     n8nCollection: 'ucs_ase',
     description: 'Índice principal de Unidade de Crédito de Sustentabilidade'
   }
@@ -213,20 +205,19 @@ export function calculateAffectedAssets(editedAssetIds: string[]): string[] {
   const toProcess = [...editedAssetIds];
 
   while (toProcess.length > 0) {
-    const currentAsset = toProcess.shift();
-    if (!currentAsset || affected.has(currentAsset)) continue;
+    const currentAssetId = toProcess.shift();
+    if (!currentAssetId) continue;
 
-    affected.add(currentAsset);
-
-    // Encontra todos os ativos que dependem do atual
-    Object.values(ASSET_DEPENDENCIES).forEach(asset => {
-      if (asset.dependsOn.includes(currentAsset) && !affected.has(asset.id)) {
+    // Adiciona dependências diretas e indiretas
+    for (const asset of Object.values(ASSET_DEPENDENCIES)) {
+      if (asset.dependsOn.includes(currentAssetId) && !affected.has(asset.id)) {
+        affected.add(asset.id);
         toProcess.push(asset.id);
       }
-    });
+    }
   }
 
-  return Array.from(affected).filter(id => !editedAssetIds.includes(id));
+  return Array.from(affected);
 }
 
 /**
@@ -238,8 +229,7 @@ export function getCalculationOrder(assetIds: string[]): string[] {
 
   function visit(assetId: string) {
     if (visited.has(assetId)) return;
-    visited.add(assetId);
-
+    
     const asset = ASSET_DEPENDENCIES[assetId];
     if (asset) {
       // Visita dependências primeiro
@@ -250,7 +240,10 @@ export function getCalculationOrder(assetIds: string[]): string[] {
       });
     }
 
-    result.push(assetId);
+    if (!visited.has(assetId)) {
+        visited.add(assetId);
+        result.push(assetId);
+    }
   }
 
   assetIds.forEach(visit);
@@ -264,21 +257,71 @@ export function generateRecalculationSteps(
   editedAssetIds: string[], 
   targetDate: Date
 ): RecalculationStep[] {
-  const affectedAssets = calculateAffectedAssets(editedAssetIds);
-  const allAssets = [...editedAssetIds, ...affectedAssets];
-  const calculationOrder = getCalculationOrder(allAssets);
+  const steps: RecalculationStep[] = [];
+  let order = 0;
 
-  return calculationOrder.map((assetId, index) => {
-    const asset = ASSET_DEPENDENCIES[assetId];
-    return {
-      id: `calc_${assetId}`,
-      name: asset?.name || assetId,
-      description: asset?.description || `Recálculo de ${assetId}`,
-      dependsOn: asset?.dependsOn || [],
+  steps.push({
+      id: 'validation',
+      name: 'Validação de Dados',
+      type: 'validation',
+      description: 'Verificando consistência dos valores editados',
       status: 'pending',
-      order: index + 1
-    };
+      dependsOn: [],
+      order: order++,
   });
+
+  const affectedAssets = calculateAffectedAssets(editedAssetIds);
+  const allToRecalculate = getCalculationOrder(affectedAssets);
+  
+  editedAssetIds.forEach(assetId => {
+      const asset = ASSET_DEPENDENCIES[assetId];
+      steps.push({
+          id: `update_${assetId}`,
+          name: `Atualizar ${asset?.name || assetId}`,
+          type: 'base',
+          description: `Aplicando novo valor para ${asset?.name || assetId}`,
+          status: 'pending',
+          dependsOn: ['validation'],
+          order: order++,
+      });
+  });
+
+  allToRecalculate.forEach(assetId => {
+    const asset = ASSET_DEPENDENCIES[assetId];
+    if (asset) {
+        steps.push({
+            id: `calc_${assetId}`,
+            name: `Recalcular ${asset.name}`,
+            type: asset.calculationType,
+            description: asset.description || `Recalculando ${asset.name}`,
+            status: 'pending',
+            dependsOn: asset.dependsOn,
+            order: order++,
+        });
+    }
+  });
+
+  steps.push({
+      id: 'n8n_sync',
+      name: 'Sincronização N8N',
+      type: 'n8n_trigger',
+      description: 'Disparando webhook N8N para sincronização completa',
+      status: 'pending',
+      dependsOn: allToRecalculate,
+      order: order++,
+  });
+  
+  steps.push({
+      id: 'cache_update',
+      name: 'Atualização de Cache',
+      type: 'cache_update',
+      description: 'Limpando cache da aplicação para refletir alterações',
+      status: 'pending',
+      dependsOn: ['n8n_sync'],
+      order: order++,
+  });
+  
+  return steps;
 }
 
 /**
@@ -310,7 +353,7 @@ export function getAssetDependency(assetId: string): AssetDependency | null {
 /**
  * Lista todos os ativos de uma categoria específica
  */
-export function getAssetsByCategory(category: string): AssetDependency[] {
+export function getAssetsByCategory(category: AssetDependency['calculationType']): AssetDependency[] {
   return Object.values(ASSET_DEPENDENCIES).filter(asset => 
     asset.calculationType === category
   );
@@ -330,91 +373,4 @@ export function getCalculatedAssets(): AssetDependency[] {
   return Object.values(ASSET_DEPENDENCIES).filter(asset => 
     asset.calculationType !== 'base'
   );
-}
-
-/**
- * Verifica se há dependências circulares
- */
-export function detectCircularDependencies(): string[] {
-  const visited = new Set<string>();
-  const recursionStack = new Set<string>();
-  const circularDeps: string[] = [];
-
-  function dfs(assetId: string, path: string[]): void {
-    if (recursionStack.has(assetId)) {
-      const cycleStart = path.indexOf(assetId);
-      circularDeps.push(...path.slice(cycleStart));
-      return;
-    }
-
-    if (visited.has(assetId)) return;
-
-    visited.add(assetId);
-    recursionStack.add(assetId);
-
-    const asset = ASSET_DEPENDENCIES[assetId];
-    if (asset) {
-      asset.dependsOn.forEach(depId => {
-        dfs(depId, [...path, assetId]);
-      });
-    }
-
-    recursionStack.delete(assetId);
-  }
-
-  Object.keys(ASSET_DEPENDENCIES).forEach(assetId => {
-    if (!visited.has(assetId)) {
-      dfs(assetId, []);
-    }
-  });
-
-  return [...new Set(circularDeps)];
-}
-
-/**
- * Obtém estatísticas das dependências
- */
-export function getDependencyStats(): {
-  totalAssets: number;
-  baseAssets: number;
-  calculatedAssets: number;
-  creditAssets: number;
-  mainIndexAssets: number;
-  maxDepth: number;
-  circularDependencies: string[];
-} {
-  const allAssets = Object.values(ASSET_DEPENDENCIES);
-  const baseAssets = allAssets.filter(a => a.calculationType === 'base').length;
-  const calculatedAssets = allAssets.filter(a => a.calculationType === 'calculated').length;
-  const creditAssets = allAssets.filter(a => a.calculationType === 'credit').length;
-  const mainIndexAssets = allAssets.filter(a => a.calculationType === 'main-index').length;
-  
-  const circularDeps = detectCircularDependencies();
-  
-  // Calcula profundidade máxima
-  let maxDepth = 0;
-  function calculateDepth(assetId: string, visited = new Set<string>()): number {
-    if (visited.has(assetId)) return 0;
-    visited.add(assetId);
-    
-    const asset = ASSET_DEPENDENCIES[assetId];
-    if (!asset || asset.dependsOn.length === 0) return 1;
-    
-    const depths = asset.dependsOn.map(depId => calculateDepth(depId, new Set(visited)));
-    return 1 + Math.max(...depths, 0);
-  }
-  
-  Object.keys(ASSET_DEPENDENCIES).forEach(assetId => {
-    maxDepth = Math.max(maxDepth, calculateDepth(assetId));
-  });
-
-  return {
-    totalAssets: allAssets.length,
-    baseAssets,
-    calculatedAssets,
-    creditAssets,
-    mainIndexAssets,
-    maxDepth,
-    circularDependencies: circularDeps
-  };
 }
