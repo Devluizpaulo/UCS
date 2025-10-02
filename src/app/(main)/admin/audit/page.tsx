@@ -321,20 +321,16 @@ export default function AuditPage() {
 
   useEffect(() => {
     const newDate = getValidatedDate(dateParam);
-    if (newDate.getTime() !== targetDate.getTime()) {
-      setTargetDate(newDate);
-      setEditedValues({}); // Reseta edições ao mudar de data
-    }
-  }, [dateParam, targetDate]);
-
-  useEffect(() => {
+    setTargetDate(newDate);
+    setEditedValues({});
+    
     setIsLoading(true);
     setIsLoadingLogs(true);
     
-    getCommodityPricesByDate(targetDate)
+    getCommodityPricesByDate(newDate)
       .then((fetchedData) => {
         setData(fetchedData);
-        setValidationAlerts(generateValidationAlerts(fetchedData, editedValues));
+        setValidationAlerts(generateValidationAlerts(fetchedData, {}));
       })
       .catch((err) => {
         console.error(err);
@@ -343,7 +339,7 @@ export default function AuditPage() {
       })
       .finally(() => setIsLoading(false));
 
-    getAuditLogsForDate(targetDate)
+    getAuditLogsForDate(newDate)
       .then((logs) => {
         setAuditLogs(logs);
       })
@@ -352,7 +348,8 @@ export default function AuditPage() {
         setAuditLogs([]);
       })
       .finally(() => setIsLoadingLogs(false));
-  }, [targetDate]);
+  }, [dateParam]);
+
 
   const handleEdit = (asset: CommodityPriceData) => {
     setEditingAsset(asset);
