@@ -334,6 +334,9 @@ export default function AuditPage() {
     getCommodityPricesByDate(targetDate)
       .then((fetchedData) => {
         setData(fetchedData);
+        // Gera alertas de validação após buscar os dados
+        const alerts = generateValidationAlerts(fetchedData, editedValues);
+        setValidationAlerts(alerts);
       })
       .catch((err) => {
         console.error(err);
@@ -350,7 +353,7 @@ export default function AuditPage() {
         setAuditLogs([]);
       })
       .finally(() => setIsLoadingLogs(false));
-  }, [targetDate]);
+  }, [targetDate, editedValues]);
 
   const handleEdit = (asset: CommodityPriceData) => {
     setEditingAsset(asset);
@@ -368,10 +371,6 @@ export default function AuditPage() {
     setData(currentData => currentData.map(asset => 
       asset.id === assetId ? { ...asset, price: newPrice } : asset
     ));
-    
-    // Gera alertas de validação
-    const alerts = generateValidationAlerts(data, newEditedValues);
-    setValidationAlerts(alerts);
     
     toast({
         title: "Valor Alterado",
@@ -1155,3 +1154,5 @@ export default function AuditPage() {
     </>
   );
 }
+
+    
