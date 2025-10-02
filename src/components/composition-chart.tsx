@@ -146,7 +146,7 @@ export function CompositionChart({ mainAsset, compositionData, isLoading, target
                 </div>
                  <div className="flex items-center gap-2">
                     <Button variant="outline" size="sm" onClick={handleExportPdf} disabled={isExportingPdf}>
-                        {isExportingPdf ? <Loader2 className="animate-spin mr-2" /> : <FileDown className="mr-2" />}
+                        {isExportingPdf ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <FileDown className="mr-2 h-4 w-4" />}
                         <span className="hidden sm:inline">Exportar PDF</span>
                     </Button>
                 </div>
@@ -209,8 +209,7 @@ export function CompositionChart({ mainAsset, compositionData, isLoading, target
                                 })}
                                  <TableRow className="font-bold bg-muted/50">
                                     <TableCell>Total</TableCell>
-                                    <TableCell className="text-right font-mono">{formatCurrency(totalValue, mainAsset.currency, mainAsset.id)}</TableCell>
-                                    <TableCell className="text-right font-mono">100.00%</TableCell>
+                                    <TableCell className="text-right font-mono" colSpan={2}>{formatCurrency(totalValue, mainAsset.currency, mainAsset.id)}</TableCell>
                                 </TableRow>
                             </TableBody>
                         </Table>
