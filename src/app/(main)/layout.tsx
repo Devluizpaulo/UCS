@@ -246,18 +246,6 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              <SidebarMenuItem onClick={handleMenuItemClick}>
-                <SidebarMenuButton
-                  asChild
-                  isActive={pathname.startsWith('/analysis/profitability')}
-                  tooltip={{ children: 'Análise de Rentabilidade' }}
-                >
-                  <Link href="/analysis/profitability">
-                    <LandPlot />
-                    <span>Rentabilidade</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
             </SidebarMenu>
             {isAdmin && (
               <SidebarMenu>
