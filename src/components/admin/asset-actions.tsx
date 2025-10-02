@@ -19,8 +19,8 @@ export function AssetActions({ asset, onEdit }: AssetActionsProps) {
 
   return (
     <div className="flex items-center justify-center gap-2">
-      {canEdit && (
-        <TooltipProvider>
+      <TooltipProvider>
+        {canEdit && (
             <Tooltip>
                 <TooltipTrigger asChild>
                     <Button
@@ -38,10 +38,8 @@ export function AssetActions({ asset, onEdit }: AssetActionsProps) {
                     <p>Editar valor</p>
                 </TooltipContent>
             </Tooltip>
-        </TooltipProvider>
-      )}
-      {asset.sourceUrl && (
-          <TooltipProvider>
+        )}
+        {asset.sourceUrl && (
             <Tooltip>
                 <TooltipTrigger asChild>
                     <Button variant="outline" size="icon" asChild onClick={(e) => e.stopPropagation()}>
@@ -54,8 +52,8 @@ export function AssetActions({ asset, onEdit }: AssetActionsProps) {
                     <p>Ver fonte no investing.com</p>
                 </TooltipContent>
             </Tooltip>
-          </TooltipProvider>
-      )}
+        )}
+      </TooltipProvider>
     </div>
   );
 }
