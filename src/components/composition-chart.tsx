@@ -62,6 +62,7 @@ export function CompositionChart({ mainAsset, compositionData, isLoading, target
     const [isExportingPdf, setIsExportingPdf] = useState(false);
     const { toast } = useToast();
 
+    // O valor total vem diretamente do `mainAsset`, que já contém o valor correto do banco de dados.
     const totalValue = mainAsset?.price ?? 0;
 
     const chartData = useMemo(() => {
@@ -202,8 +203,8 @@ export function CompositionChart({ mainAsset, compositionData, isLoading, target
                                                     <span>{item.name}</span>
                                                 </div>
                                             </TableCell>
-                                            <TableCell className="text-right font-mono">{formatCurrency(item.value, 'BRL', item.id)}</TableCell>
-                                            <TableCell className="text-right font-mono">{item.percentage.toFixed(2)}%</TableCell>
+                                            <TableCell className="text-right font-mono">{item.value > 0 ? formatCurrency(item.value, item.currency, item.id) : 'N/A'}</TableCell>
+                                            <TableCell className="text-right font-mono">{item.percentage > 0 ? `${item.percentage.toFixed(2)}%` : 'N/A'}</TableCell>
                                         </TableRow>
                                     );
                                 })}

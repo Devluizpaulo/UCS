@@ -5,8 +5,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { PageHeader } from '@/components/page-header';
 import { PieChart, Loader2 } from 'lucide-react';
 import { DateNavigator } from '@/components/date-navigator';
-import { getQuoteByDate, getCommodityConfigs } from '@/lib/data-service';
-import type { CommodityPriceData, FirestoreQuote, CommodityConfig } from '@/lib/types';
+import { getQuoteByDate } from '@/lib/data-service';
+import type { CommodityPriceData, FirestoreQuote } from '@/lib/types';
 import { isToday, isFuture, parseISO, isValid } from 'date-fns';
 import { useSearchParams } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -31,24 +31,22 @@ interface CompositionData {
 }
 
 
+// Mapeamento estático para nomes e IDs dos componentes
+const componentConfig: Record<string, { name: string, currency: string }> = {
+    'vus': { name: 'VUS', currency: 'BRL' },
+    'vmad': { name: 'VMAD', currency: 'BRL' },
+    'carbono_crs': { name: 'Carbono CRS', currency: 'BRL' },
+    'agua_crs': { name: 'Água CRS', currency: 'BRL' },
+};
+
+
 function useComposition(targetDate: Date | null) {
     const [mainQuote, setMainQuote] = useState<FirestoreQuote | null>(null);
     const [compositionData, setCompositionData] = useState<CompositionData[]>([]);
-    const [allConfigs, setAllConfigs] = useState<Record<string, CommodityConfig>>({});
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        getCommodityConfigs().then(configs => {
-            const configMap = configs.reduce((acc, config) => {
-                acc[config.id] = config;
-                return acc;
-            }, {} as Record<string, CommodityConfig>);
-            setAllConfigs(configMap);
-        });
-    }, []);
-
-    useEffect(() => {
-        if (!targetDate || Object.keys(allConfigs).length === 0) {
+        if (!targetDate) {
             setIsLoading(false);
             return;
         }
@@ -68,16 +66,19 @@ function useComposition(targetDate: Date | null) {
                 const components = quote.componentes;
                 const percentages = quote.porcentagens || {};
 
-                const resolvedComponents = Object.keys(components).map(componentId => {
-                    const config = allConfigs[componentId];
-                    return {
-                        name: config?.name || componentId.toUpperCase(),
-                        value: components[componentId] || 0,
-                        currency: config?.currency || 'BRL',
-                        id: componentId,
-                        percentage: percentages[componentId] || 0,
-                    };
-                });
+                // Mapeia diretamente dos dados do documento, sem buscar configs externas
+                const resolvedComponents = Object.keys(components)
+                    .filter(id => componentConfig[id]) // Garante que apenas componentes conhecidos sejam processados
+                    .map(componentId => {
+                        const config = componentConfig[componentId];
+                        return {
+                            name: config.name,
+                            value: components[componentId] || 0,
+                            currency: config.currency,
+                            id: componentId,
+                            percentage: percentages[componentId] || 0,
+                        };
+                    });
                 
                 setCompositionData(resolvedComponents.filter(c => c.value > 0));
 
@@ -92,24 +93,24 @@ function useComposition(targetDate: Date | null) {
 
         fetchData();
         
-    }, [targetDate, allConfigs]);
+    }, [targetDate]);
     
     const mainAsset: CommodityPriceData | undefined = useMemo(() => {
         if (!mainQuote) return undefined;
-        const config = allConfigs['valor_uso_solo'];
+        // Usa o valor total direto do campo `valor` do documento
         return {
             id: 'valor_uso_solo',
-            name: config?.name || 'Valor Uso Solo',
+            name: 'Valor Uso Solo',
             price: mainQuote.valor ?? mainQuote.ultimo,
-            currency: config?.currency || 'BRL',
-            category: config?.category || 'index',
-            description: config?.description || 'Valor total do uso do solo, composto por VUS, VMAD, Carbono CRS e Água CRS.',
-            unit: config?.unit || 'BRL',
+            currency: 'BRL',
+            category: 'sub-index',
+            description: 'Valor total do uso do solo, composto por VUS, VMAD, Carbono CRS e Água CRS.',
+            unit: 'Pontos',
             change: 0,
             absoluteChange: 0,
             lastUpdated: mainQuote.data,
         };
-    }, [mainQuote, allConfigs]);
+    }, [mainQuote]);
 
 
     return { mainAsset, compositionData, isLoading };
