@@ -333,11 +333,7 @@ export default function AuditPage() {
     
     getCommodityPricesByDate(targetDate)
       .then((fetchedData) => {
-        const dataWithEdits = fetchedData.map(asset => ({
-            ...asset,
-            price: editedValues[asset.id] ?? asset.price,
-        }));
-        setData(dataWithEdits);
+        setData(fetchedData);
       })
       .catch((err) => {
         console.error(err);
@@ -354,7 +350,7 @@ export default function AuditPage() {
         setAuditLogs([]);
       })
       .finally(() => setIsLoadingLogs(false));
-  }, [targetDate, JSON.stringify(editedValues)]);
+  }, [targetDate]);
 
   const handleEdit = (asset: CommodityPriceData) => {
     setEditingAsset(asset);
@@ -367,6 +363,11 @@ export default function AuditPage() {
     const newEditedValues = { ...editedValues, [assetId]: newPrice };
     setEditedValues(newEditedValues);
     setEditingAsset(null);
+
+    // Update local data immediately for UI responsiveness
+    setData(currentData => currentData.map(asset => 
+      asset.id === assetId ? { ...asset, price: newPrice } : asset
+    ));
     
     // Gera alertas de validação
     const alerts = generateValidationAlerts(data, newEditedValues);
@@ -555,12 +556,17 @@ export default function AuditPage() {
   }
 
   const { baseAssets, indices, filteredBaseAssets, filteredIndices } = useMemo(() => {
+    const dataWithEdits = data.map(asset => ({
+        ...asset,
+        price: editedValues[asset.id] ?? asset.price,
+    }));
+    
     const calculatedAssetIds = new Set(['vus', 'vmad', 'carbono_crs', 'Agua_CRS', 'valor_uso_solo', 'pdm', 'ucs', 'ucs_ase', 'ch2o_agua', 'custo_agua']);
     
-    const allBaseAssets = data.filter(asset => !calculatedAssetIds.has(asset.id));
-    const calculatedAssets = data.filter(asset => calculatedAssetIds.has(asset.id));
+    const allBaseAssets = dataWithEdits.filter(asset => !calculatedAssetIds.has(asset.id));
+    const calculatedAssets = dataWithEdits.filter(asset => calculatedAssetIds.has(asset.id));
     
-    const dataMap = new Map(data.map(item => [item.id, item.price]));
+    const dataMap = new Map(dataWithEdits.map(item => [item.id, item.price]));
     const usdPrice = dataMap.get('usd') || 0;
     const eurPrice = dataMap.get('eur') || 0;
     
