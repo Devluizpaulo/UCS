@@ -111,7 +111,7 @@ export function CalculatedAssetDetails({ asset }: CalculatedAssetDetailsProps) {
           </TableHeader>
           <TableBody>
             {paginatedData.length > 0 ? paginatedData.map((item) => (
-              <TableRow key={item.timestamp}>
+              <TableRow key={item.id}>
                 <TableCell>{item.data}</TableCell>
                 {componentIds.map(id => {
                   const componentAsset = commoditiesConfig[id];
