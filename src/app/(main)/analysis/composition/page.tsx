@@ -22,9 +22,18 @@ function getValidatedDate(dateString?: string | null): Date | null {
   return null;
 }
 
+interface CompositionData {
+    name: string;
+    value: number;
+    currency: string;
+    id: string;
+    percentage: number;
+}
+
+
 function useComposition(targetDate: Date | null) {
     const [mainQuote, setMainQuote] = useState<FirestoreQuote | null>(null);
-    const [compositionData, setCompositionData] = useState<any[]>([]);
+    const [compositionData, setCompositionData] = useState<CompositionData[]>([]);
     const [allConfigs, setAllConfigs] = useState<Record<string, CommodityConfig>>({});
     const [isLoading, setIsLoading] = useState(true);
 
@@ -48,7 +57,6 @@ function useComposition(targetDate: Date | null) {
 
         const fetchData = async () => {
             try {
-                // Busca o índice "Valor Uso Solo" para a data
                 const quote = await getQuoteByDate('valor_uso_solo', targetDate);
                 setMainQuote(quote);
 
@@ -57,8 +65,9 @@ function useComposition(targetDate: Date | null) {
                     return;
                 }
                 
-                // Transforma o mapa de componentes em um array para o gráfico
                 const components = quote.componentes;
+                const percentages = quote.porcentagens || {};
+
                 const resolvedComponents = Object.keys(components).map(componentId => {
                     const config = allConfigs[componentId];
                     return {
@@ -66,6 +75,7 @@ function useComposition(targetDate: Date | null) {
                         value: components[componentId] || 0,
                         currency: config?.currency || 'BRL',
                         id: componentId,
+                        percentage: percentages[componentId] || 0,
                     };
                 });
                 

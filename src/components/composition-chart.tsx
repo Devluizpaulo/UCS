@@ -21,6 +21,7 @@ interface CompositionData {
     value: number;
     currency: string;
     id: string;
+    percentage: number;
 }
 
 interface CompositionChartProps {
@@ -61,7 +62,6 @@ export function CompositionChart({ mainAsset, compositionData, isLoading, target
     const [isExportingPdf, setIsExportingPdf] = useState(false);
     const { toast } = useToast();
 
-    // The mainAsset.price already holds the total value from the database.
     const totalValue = mainAsset?.price ?? 0;
 
     const chartData = useMemo(() => {
@@ -192,7 +192,6 @@ export function CompositionChart({ mainAsset, compositionData, isLoading, target
                             </TableHeader>
                             <TableBody>
                                 {compositionData.map((item, index) => {
-                                    const percentage = totalValue > 0 ? (item.value / totalValue) * 100 : 0;
                                     const Icon = getIconForCategory({ id: item.id } as CommodityPriceData);
                                     return (
                                         <TableRow key={item.name}>
@@ -204,7 +203,7 @@ export function CompositionChart({ mainAsset, compositionData, isLoading, target
                                                 </div>
                                             </TableCell>
                                             <TableCell className="text-right font-mono">{formatCurrency(item.value, 'BRL', item.id)}</TableCell>
-                                            <TableCell className="text-right font-mono">{percentage.toFixed(2)}%</TableCell>
+                                            <TableCell className="text-right font-mono">{item.percentage.toFixed(2)}%</TableCell>
                                         </TableRow>
                                     );
                                 })}
