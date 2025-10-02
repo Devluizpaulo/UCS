@@ -12,7 +12,7 @@ import { getAssetCompositionConfig } from './calculation-service';
 
 // --- CONSTANTS ---
 const CACHE_KEY_PRICES = 'commodity_prices_simple';
-const CACHE_TTL_SECONDS = 30; // Cache de 30 segundos para dados "tempo real"
+const CACHE_TTL_SECONDS = 120; // Cache de 2 minutos para dados "tempo real"
 const SETTINGS_COLLECTION = 'settings';
 const COMMODITIES_DOC = 'commodities';
 const COMMODITIES_CONFIG_CACHE_KEY = 'commodities_config';
@@ -361,3 +361,4 @@ export async function reprocessDate(date: Date): Promise<{ success: boolean; mes
         return { success: false, message: error.message || "Ocorreu um erro desconhecido ao tentar reprocessar a data." };
     }
 }
+
