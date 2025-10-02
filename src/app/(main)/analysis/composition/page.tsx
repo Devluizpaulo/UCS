@@ -5,8 +5,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { PageHeader } from '@/components/page-header';
 import { PieChart, Loader2 } from 'lucide-react';
 import { DateNavigator } from '@/components/date-navigator';
-import { getQuoteByDate } from '@/lib/data-service';
-import type { CommodityPriceData, FirestoreQuote } from '@/lib/types';
+import { getQuoteByDate, getCommodityConfigs } from '@/lib/data-service';
+import type { CommodityPriceData, FirestoreQuote, CommodityConfig } from '@/lib/types';
 import { isToday, isFuture, parseISO, isValid } from 'date-fns';
 import { useSearchParams } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -22,16 +22,24 @@ function getValidatedDate(dateString?: string | null): Date | null {
   return null;
 }
 
-// Componentes que formam o "Valor Uso Solo" conforme a nova documentação
-const BASE_COMPONENTS = ['vus', 'vmad', 'carbono_crs', 'Agua_CRS'] as const;
-
 function useComposition(targetDate: Date | null) {
     const [mainAsset, setMainAsset] = useState<FirestoreQuote | null>(null);
     const [compositionData, setCompositionData] = useState<any[]>([]);
+    const [allConfigs, setAllConfigs] = useState<Record<string, CommodityConfig>>({});
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        if (!targetDate) {
+        getCommodityConfigs().then(configs => {
+            const configMap = configs.reduce((acc, config) => {
+                acc[config.id] = config;
+                return acc;
+            }, {} as Record<string, CommodityConfig>);
+            setAllConfigs(configMap);
+        });
+    }, []);
+
+    useEffect(() => {
+        if (!targetDate || Object.keys(allConfigs).length === 0) {
             setIsLoading(false);
             return;
         }
@@ -44,24 +52,23 @@ function useComposition(targetDate: Date | null) {
                 const mainQuote = await getQuoteByDate('valor_uso_solo', targetDate);
                 setMainAsset(mainQuote);
 
-                if (!mainQuote) {
+                if (!mainQuote || !mainQuote.componentes) {
                     setCompositionData([]);
                     return;
                 }
                 
-                // Busca os dados de cotação para cada componente
-                const componentPromises = BASE_COMPONENTS
-                    .map(async (componentId) => {
-                        const componentQuote = await getQuoteByDate(componentId, targetDate);
-                        return {
-                            name: componentQuote?.ativo || componentQuote?.name || componentId.toUpperCase(),
-                            value: componentQuote?.ultimo || componentQuote?.valor || 0,
-                            currency: componentQuote?.moeda || 'BRL',
-                            id: componentId,
-                        };
-                    });
-
-                const resolvedComponents = await Promise.all(componentPromises);
+                // Transforma o mapa de componentes em um array para o gráfico
+                const components = mainQuote.componentes;
+                const resolvedComponents = Object.keys(components).map(componentId => {
+                    const config = allConfigs[componentId];
+                    return {
+                        name: config?.name || componentId.toUpperCase(),
+                        value: components[componentId] || 0,
+                        currency: config?.currency || 'BRL',
+                        id: componentId,
+                    };
+                });
+                
                 setCompositionData(resolvedComponents.filter(c => c.value > 0));
 
             } catch (err) {
@@ -75,7 +82,7 @@ function useComposition(targetDate: Date | null) {
 
         fetchData();
         
-    }, [targetDate]);
+    }, [targetDate, allConfigs]);
     
     const mainAssetForChart: CommodityPriceData | undefined = useMemo(() => {
         if (!mainAsset) return undefined;

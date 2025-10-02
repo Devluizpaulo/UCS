@@ -8,10 +8,9 @@ import type { CommodityPriceData } from '@/lib/types';
 import { formatCurrency } from '@/lib/formatters';
 import { Skeleton } from './ui/skeleton';
 import { useMemo, useRef, useState } from 'react';
-import { cn } from '@/lib/utils';
 import { getIconForCategory } from '@/lib/icons';
 import { Button } from './ui/button';
-import { FileDown, FileType, Loader2 } from 'lucide-react';
+import { FileDown, Loader2 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { format } from 'date-fns';
@@ -148,8 +147,8 @@ export function CompositionChart({ mainAsset, compositionData, isLoading, target
                 </div>
                  <div className="flex items-center gap-2">
                     <Button variant="outline" size="sm" onClick={handleExportPdf} disabled={isExportingPdf}>
-                        {isExportingPdf ? <Loader2 className="animate-spin" /> : <FileDown />}
-                        <span className="ml-2 hidden sm:inline">PDF</span>
+                        {isExportingPdf ? <Loader2 className="animate-spin mr-2" /> : <FileDown className="mr-2" />}
+                        <span className="hidden sm:inline">Exportar PDF</span>
                     </Button>
                 </div>
             </CardHeader>
@@ -223,7 +222,3 @@ export function CompositionChart({ mainAsset, compositionData, isLoading, target
         </Card>
     )
 }
-
-    
-
-    
