@@ -150,7 +150,7 @@ export default function AuditPage() {
       setTargetDate(newDate);
       setEditedValues({}); // Reseta edições ao mudar de data
     }
-  }, [dateParam]);
+  }, [dateParam, targetDate]);
 
   useEffect(() => {
     setIsLoading(true);
@@ -207,17 +207,15 @@ export default function AuditPage() {
   }
 
   const { baseAssets, indices } = useMemo(() => {
-    const currencyIds = ['usd', 'eur'];
-    const commodityIds = ['milho', 'soja', 'boi_gordo', 'madeira', 'carbono', 'Agua_CRS'];
-    
+    const baseAssetIds = new Set(['milho', 'soja', 'boi_gordo', 'madeira', 'carbono', 'Agua_CRS', 'usd', 'eur']);
+    const calculatedAssets = data.filter(asset => !baseAssetIds.has(asset.id));
+
     const dataMap = new Map(data.map(item => [item.id, item.price]));
     const usdPrice = dataMap.get('usd') || 0;
     const eurPrice = dataMap.get('eur') || 0;
-
-    const currencies = data.filter((asset) => currencyIds.includes(asset.id));
     
-    const baseCommodities = data
-        .filter((asset) => commodityIds.includes(asset.id))
+    const enrichedBaseAssets = data
+        .filter(asset => baseAssetIds.has(asset.id))
         .map(asset => {
             let rentMediaCalculada: number | undefined;
             switch(asset.id) {
@@ -226,17 +224,12 @@ export default function AuditPage() {
                 case 'boi_gordo': rentMediaCalculada = Calc.calculateRentMediaBoi(asset.price); break;
                 case 'madeira': rentMediaCalculada = Calc.calculateRentMediaMadeira(asset.price, usdPrice); break;
                 case 'carbono': rentMediaCalculada = Calc.calculateRentMediaCarbono(asset.price, eurPrice); break;
+                default: rentMediaCalculada = undefined;
             }
             return { ...asset, rentMediaCalculada };
         });
 
-    const baseAssets = [...currencies, ...baseCommodities];
-    
-    const indices = data.filter(
-      (asset) => !currencyIds.includes(asset.id) && !commodityIds.includes(asset.id)
-    );
-
-    return { baseAssets, indices };
+    return { baseAssets: enrichedBaseAssets, indices: calculatedAssets };
   }, [data]);
 
   const hasEdits = Object.keys(editedValues).length > 0;
@@ -325,3 +318,5 @@ export default function AuditPage() {
     </>
   );
 }
+
+    

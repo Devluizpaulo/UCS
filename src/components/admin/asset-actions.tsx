@@ -14,8 +14,8 @@ interface AssetActionsProps {
 
 export function AssetActions({ asset, onEdit }: AssetActionsProps) {
   
-  // Ativos cotados que podem ser editados. Exclui índices e sub-índices.
-  const canEdit = asset.category === 'agricultural' || asset.category === 'exchange' || asset.category === 'material' || asset.id === 'Agua_CRS' ;
+  // Ativos que não são calculados (índices) são considerados editáveis.
+  const canEdit = asset.category !== 'index' && asset.category !== 'sub-index';
 
   return (
     <div className="flex items-center justify-center gap-2">
@@ -26,7 +26,10 @@ export function AssetActions({ asset, onEdit }: AssetActionsProps) {
                     <Button
                         variant="outline"
                         size="icon"
-                        onClick={() => onEdit(asset)}
+                        onClick={(e) => {
+                            e.stopPropagation(); // Impede que o clique na linha seja acionado
+                            onEdit(asset);
+                        }}
                     >
                         <Edit className="h-4 w-4" />
                     </Button>
@@ -41,7 +44,7 @@ export function AssetActions({ asset, onEdit }: AssetActionsProps) {
           <TooltipProvider>
             <Tooltip>
                 <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon" asChild>
+                    <Button variant="outline" size="icon" asChild onClick={(e) => e.stopPropagation()}>
                         <Link href={asset.sourceUrl} target="_blank">
                             <ExternalLink className="h-4 w-4" />
                         </Link>
@@ -56,3 +59,5 @@ export function AssetActions({ asset, onEdit }: AssetActionsProps) {
     </div>
   );
 }
+
+    
