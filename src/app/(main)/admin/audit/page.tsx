@@ -179,7 +179,7 @@ const IndexTable = ({ assets }: { assets: CommodityPriceData[] }) => {
   }
 
     // Identificar sub-índices do Valor Uso Solo
-    const valorUsoSoloSubIndices = new Set(['vus', 'Vmad', 'carbono_crs', 'Agua_CRS']);
+    const valorUsoSoloSubIndices = new Set(['vus', 'vmad', 'carbono_crs', 'Agua_CRS']);
   
   // Identificar hierarquia UCS: PDM → UCS → UCS ASE
   const ucsHierarchy = new Set(['pdm', 'ucs', 'ucs_ase']);
@@ -353,7 +353,7 @@ export default function AuditPage() {
         setAuditLogs([]);
       })
       .finally(() => setIsLoadingLogs(false));
-  }, [targetDate, editedValues]);
+  }, [targetDate]);
 
   const handleEdit = (asset: CommodityPriceData) => {
     setEditingAsset(asset);
