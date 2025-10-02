@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo, useTransition } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { History, Loader2, Save } from 'lucide-react';
+import { History, Loader2, Save, ExternalLink, Edit } from 'lucide-react';
 import { getCommodityPricesByDate } from '@/lib/data-service';
 import type { CommodityPriceData } from '@/lib/types';
 import * as Calc from '@/lib/calculation-service';
@@ -29,6 +29,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
+import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 
 function getValidatedDate(dateString?: string | null): Date {
@@ -171,7 +173,6 @@ export default function AuditPage() {
         setData([]);
       })
       .finally(() => setIsLoading(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [targetDate, toast, JSON.stringify(editedValues)]);
 
   const handleEdit = (asset: CommodityPriceData) => {
@@ -207,7 +208,8 @@ export default function AuditPage() {
   }
 
   const { baseAssets, indices } = useMemo(() => {
-    const calculatedAssetIds = new Set(['vus', 'vmad', 'carbono_crs', 'valor_uso_solo', 'pdm', 'ucs', 'ucs_ase']);
+    const calculatedAssetIds = new Set(['vus', 'vmad', 'carbono_crs', 'valor_uso_solo', 'pdm', 'ucs', 'ucs_ase', 'ch2o_agua', 'custo_agua']);
+    
     const allBaseAssets = data.filter(asset => !calculatedAssetIds.has(asset.id));
     const calculatedAssets = data.filter(asset => calculatedAssetIds.has(asset.id));
 
