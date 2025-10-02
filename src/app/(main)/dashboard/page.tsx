@@ -235,7 +235,9 @@ export default function DashboardPage() {
         });
         
         worksheet.columns.forEach(column => {
-            if (!column) return;
+            if (!column) {
+              return;
+            }
             let maxLength = 0;
             column.eachCell({ includeEmpty: true }, (cell, rowNumber) => {
                 // Apenas considera as linhas com conteúdo para o cálculo da largura
