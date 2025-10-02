@@ -9,7 +9,7 @@ import type { CommodityPriceData } from '@/lib/types';
 
 interface AssetActionsProps {
   asset: CommodityPriceData;
-  onEdit: () => void;
+  onEdit: (asset: CommodityPriceData) => void;
 }
 
 export function AssetActions({ asset, onEdit }: AssetActionsProps) {
@@ -26,7 +26,7 @@ export function AssetActions({ asset, onEdit }: AssetActionsProps) {
                     <Button
                         variant="outline"
                         size="icon"
-                        onClick={onEdit}
+                        onClick={() => onEdit(asset)}
                     >
                         <Edit className="h-4 w-4" />
                     </Button>

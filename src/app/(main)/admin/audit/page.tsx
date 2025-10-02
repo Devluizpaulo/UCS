@@ -90,7 +90,7 @@ const AssetActionTable = ({
                 </TableCell>
             )}
             <TableCell className="flex justify-center">
-              <AssetActions asset={asset} onEdit={() => onEdit(asset)} />
+              <AssetActions asset={asset} onEdit={onEdit} />
             </TableCell>
           </TableRow>
         ))}
@@ -99,7 +99,7 @@ const AssetActionTable = ({
   );
 };
 
-const IndexTable = ({ assets, editedValues }: { assets: CommodityPriceData[], editedValues: Record<string, number> }) => {
+const IndexTable = ({ assets }: { assets: CommodityPriceData[] }) => {
   if (assets.length === 0) {
     return (
       <div className="text-center text-sm text-muted-foreground p-4">
@@ -118,10 +118,7 @@ const IndexTable = ({ assets, editedValues }: { assets: CommodityPriceData[], ed
       </TableHeader>
       <TableBody>
         {assets.map((asset) => (
-           <TableRow 
-            key={asset.id} 
-            className={cn(editedValues[asset.id] !== undefined && 'bg-yellow-500/10 hover:bg-yellow-500/20')}
-          >
+           <TableRow key={asset.id}>
             <TableCell className="font-medium">{asset.name}</TableCell>
             <TableCell className="text-right font-mono">
               {formatCurrency(asset.price, asset.currency, asset.id)}
@@ -310,7 +307,7 @@ export default function AuditPage() {
                   <CardDescription>Resultados dos índices e sub-índices da plataforma. Estes valores são recalculados automaticamente com base nos ativos base.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <IndexTable assets={indices} editedValues={editedValues} />
+                  <IndexTable assets={indices} />
                 </CardContent>
               </Card>
             </div>
