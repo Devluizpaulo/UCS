@@ -174,7 +174,10 @@ export default function AuditPage() {
         setData([]);
       })
       .finally(() => setIsLoading(false));
-  }, [targetDate, toast, editedValues]);
+  // The 'editedValues' dependency causes re-fetching, which is intended
+  // to reflect the local changes in the UI before they are saved.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [targetDate, toast, JSON.stringify(editedValues)]);
 
   const handleEdit = (asset: CommodityPriceData) => {
     setEditingAsset(asset);
