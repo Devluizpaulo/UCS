@@ -331,7 +331,6 @@ export default function AuditPage() {
     setIsLoading(true);
     setIsLoadingLogs(true);
     
-    // Carrega dados dos ativos
     getCommodityPricesByDate(targetDate)
       .then((fetchedData) => {
         const dataWithEdits = fetchedData.map(asset => ({
@@ -342,16 +341,10 @@ export default function AuditPage() {
       })
       .catch((err) => {
         console.error(err);
-        toast({
-          variant: 'destructive',
-          title: 'Erro ao buscar dados',
-          description: 'Não foi possível carregar as cotações para a data selecionada.',
-        });
         setData([]);
       })
       .finally(() => setIsLoading(false));
 
-    // Carrega logs de auditoria
     getAuditLogsForDate(targetDate)
       .then((logs) => {
         setAuditLogs(logs);
@@ -564,22 +557,9 @@ export default function AuditPage() {
   const { baseAssets, indices, filteredBaseAssets, filteredIndices } = useMemo(() => {
     const calculatedAssetIds = new Set(['vus', 'vmad', 'carbono_crs', 'Agua_CRS', 'valor_uso_solo', 'pdm', 'ucs', 'ucs_ase', 'ch2o_agua', 'custo_agua']);
     
-    // Sub-índices do Valor Uso Solo
-    const valorUsoSoloSubIndices = new Set(['vus', 'vmad', 'carbono_crs', 'Agua_CRS']);
-    
-    // Hierarquia UCS: PDM → UCS → UCS ASE
-    const ucsHierarchy = new Set(['pdm', 'ucs', 'ucs_ase']);
-    
     const allBaseAssets = data.filter(asset => !calculatedAssetIds.has(asset.id));
     const calculatedAssets = data.filter(asset => calculatedAssetIds.has(asset.id));
     
-    // Separar índices principais dos sub-índices e hierarquia UCS
-    const mainIndices = calculatedAssets.filter(asset => 
-      !valorUsoSoloSubIndices.has(asset.id) && !ucsHierarchy.has(asset.id)
-    );
-    const valorUsoSoloSubs = calculatedAssets.filter(asset => valorUsoSoloSubIndices.has(asset.id));
-    const ucsHierarchyAssets = calculatedAssets.filter(asset => ucsHierarchy.has(asset.id));
-
     const dataMap = new Map(data.map(item => [item.id, item.price]));
     const usdPrice = dataMap.get('usd') || 0;
     const eurPrice = dataMap.get('eur') || 0;
@@ -617,26 +597,20 @@ export default function AuditPage() {
       });
     };
 
-    // Ordenar hierarquia UCS: PDM → UCS → UCS ASE
-    const sortedUcsHierarchy = ucsHierarchyAssets.sort((a, b) => {
-      const order = ['pdm', 'ucs', 'ucs_ase'];
-      return order.indexOf(a.id) - order.indexOf(b.id);
+    // Ordenar hierarquia UCS: PDM → UCS → UCS ASE e outros
+    const sortedIndices = [...calculatedAssets].sort((a, b) => {
+      const order = ['valor_uso_solo', 'vus', 'vmad', 'carbono_crs', 'Agua_CRS', 'ch2o_agua', 'custo_agua', 'pdm', 'ucs', 'ucs_ase'];
+      const indexA = order.indexOf(a.id);
+      const indexB = order.indexOf(b.id);
+      
+      if (indexA === -1 && indexB === -1) return a.name.localeCompare(b.name);
+      if (indexA === -1) return 1;
+      if (indexB === -1) return -1;
+      return indexA - indexB;
     });
 
-    // Agrupar índices: principais + hierarquias organizadas
-    const groupedIndices = [
-      // Índices principais (exceto Valor Uso Solo)
-      ...mainIndices.filter(asset => asset.id !== 'valor_uso_solo'),
-      // Hierarquia UCS: PDM → UCS → UCS ASE
-      ...sortedUcsHierarchy,
-      // Valor Uso Solo (índice principal)
-      ...mainIndices.filter(asset => asset.id === 'valor_uso_solo'),
-      // Sub-índices do Valor Uso Solo
-      ...valorUsoSoloSubs
-    ];
-
     const filteredBaseAssets = filterAssets(enrichedBaseAssets);
-    const filteredIndices = groupedIndices.filter(asset => {
+    const filteredIndices = sortedIndices.filter(asset => {
       const matchesSearch = searchTerm === '' || 
         asset.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         asset.id.toLowerCase().includes(searchTerm.toLowerCase());
@@ -651,7 +625,7 @@ export default function AuditPage() {
 
     return { 
       baseAssets: enrichedBaseAssets, 
-      indices: groupedIndices,
+      indices: sortedIndices,
       filteredBaseAssets,
       filteredIndices
     };
