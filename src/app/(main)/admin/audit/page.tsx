@@ -325,7 +325,7 @@ export default function AuditPage() {
       setTargetDate(newDate);
       setEditedValues({}); // Reseta edições ao mudar de data
     }
-  }, [dateParam]);
+  }, [dateParam, targetDate]);
 
   useEffect(() => {
     setIsLoading(true);
@@ -361,7 +361,7 @@ export default function AuditPage() {
         setAuditLogs([]);
       })
       .finally(() => setIsLoadingLogs(false));
-  }, [targetDate, toast, JSON.stringify(editedValues)]);
+  }, [targetDate, JSON.stringify(editedValues)]);
 
   const handleEdit = (asset: CommodityPriceData) => {
     setEditingAsset(asset);
@@ -871,77 +871,6 @@ export default function AuditPage() {
               </CardContent>
             </Card>
           </div>
-
-          {/* Botão temporário para diagnosticar VMAD */}
-          <Card className="border-blue-200 bg-gradient-to-r from-blue-50 to-cyan-50 shadow-lg">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-blue-800 flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5" />
-                Diagnóstico VMAD
-              </CardTitle>
-              <CardDescription className="text-blue-700">
-                Clique para verificar o valor do VMAD e diagnosticar a discrepância.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button 
-                onClick={async () => {
-                  try {
-                    setIsLoading(true);
-                    console.log('=== DIAGNÓSTICO VMAD ===');
-                    
-                    // 1. Buscar dados do VMAD diretamente
-                    const { getQuoteByDate } = await import('@/lib/data-service');
-                    const vmadQuote = await getQuoteByDate('Vmad', targetDate);
-                    console.log('VMAD Quote:', vmadQuote);
-                    
-                    // 2. Verificar configuração
-                    const { getCommodityConfigs } = await import('@/lib/data-service');
-                    const configs = await getCommodityConfigs();
-                    const vmadConfig = configs.find(c => c.id === 'Vmad');
-                    console.log('VMAD Config:', vmadConfig);
-                    
-                    // 3. Verificar dados carregados na página
-                    const vmadAsset = data.find(asset => asset.id === 'Vmad');
-                    console.log('VMAD Asset na página:', vmadAsset);
-                    
-                    // 4. Recarregar dados
-                    const newData = await getCommodityPricesByDate(targetDate);
-                    setData(newData);
-                    
-                    const newVmadAsset = newData.find(asset => asset.id === 'Vmad');
-                    console.log('VMAD Asset após reload:', newVmadAsset);
-                    
-                    toast({
-                      title: "Diagnóstico VMAD Completo",
-                      description: newVmadAsset 
-                        ? `VMAD: ${formatCurrency(newVmadAsset.price, 'BRL', 'Vmad')}` 
-                        : "VMAD não encontrado",
-                    });
-                  } catch (error) {
-                    console.error('Erro no diagnóstico VMAD:', error);
-                    toast({
-                      title: "Erro no Diagnóstico VMAD",
-                      description: "Verifique o console para detalhes do erro.",
-                      variant: "destructive",
-                    });
-                  } finally {
-                    setIsLoading(false);
-                  }
-                }}
-                disabled={isLoading}
-                variant="outline"
-                className="border-blue-300 text-blue-800 hover:bg-blue-100"
-              >
-                {isLoading ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                )}
-                Diagnosticar VMAD
-              </Button>
-            </CardContent>
-          </Card>
 
           {/* Seção de Filtros */}
           <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl">
