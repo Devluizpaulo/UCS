@@ -10,7 +10,7 @@ import { getCommodityPricesByDate } from '@/lib/data-service';
 import type { CommodityPriceData } from '@/lib/types';
 import * as Calc from '@/lib/calculation-service';
 import { recalculateAllForDate } from '@/lib/recalculation-service';
-import { isValid, parseISO } from 'date-fns';
+import { isValid, parseISO, format } from 'date-fns';
 import { DateNavigator } from '@/components/date-navigator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { formatCurrency } from '@/lib/formatters';
@@ -150,7 +150,7 @@ export default function AuditPage() {
       setTargetDate(newDate);
       setEditedValues({}); // Reseta edições ao mudar de data
     }
-  }, [dateParam, targetDate]);
+  }, [dateParam]);
 
   useEffect(() => {
     setIsLoading(true);
@@ -172,6 +172,7 @@ export default function AuditPage() {
         setData([]);
       })
       .finally(() => setIsLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [targetDate, toast, JSON.stringify(editedValues)]);
 
   const handleEdit = (asset: CommodityPriceData) => {
@@ -242,7 +243,7 @@ export default function AuditPage() {
           description="Verifique, corrija e recalcule os dados históricos da plataforma."
           icon={History}
         >
-          <div className="flex items-center gap-2">
+          <div className="flex w-full items-center justify-end gap-2">
             {hasEdits && (
                  <AlertDialog>
                     <AlertDialogTrigger asChild>
@@ -255,7 +256,7 @@ export default function AuditPage() {
                         <AlertDialogHeader>
                             <AlertDialogTitle>Confirmar Recálculo?</AlertDialogTitle>
                             <AlertDialogDescription>
-                                Você está prestes a sobrescrever os dados para <span className="font-bold">{formatCurrency(targetDate, 'dd/MM/yyyy')}</span> com base nas suas edições. Esta ação não pode ser desfeita. Todos os índices dependentes serão recalculados. Deseja continuar?
+                                Você está prestes a sobrescrever os dados para <span className="font-bold">{format(targetDate, 'dd/MM/yyyy')}</span> com base nas suas edições. Esta ação não pode ser desfeita. Todos os índices dependentes serão recalculados. Deseja continuar?
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -268,6 +269,7 @@ export default function AuditPage() {
                     </AlertDialogContent>
                 </AlertDialog>
             )}
+            <div className="flex-grow" />
             <DateNavigator targetDate={targetDate} />
           </div>
         </PageHeader>
@@ -318,3 +320,4 @@ export default function AuditPage() {
     </>
   );
 }
+
