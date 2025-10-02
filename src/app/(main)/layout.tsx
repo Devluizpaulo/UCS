@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -18,7 +19,6 @@ import {
   LogOut,
   Sparkles,
   Archive,
-  PieChart,
   History,
   LandPlot,
 } from 'lucide-react';
@@ -230,18 +230,6 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
                   <Link href="/analysis/risk">
                     <ShieldAlert />
                     <span>Risco</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem onClick={handleMenuItemClick}>
-                <SidebarMenuButton
-                  asChild
-                  isActive={pathname.startsWith('/analysis/composition')}
-                  tooltip={{ children: 'Composição do Índice' }}
-                >
-                  <Link href="/analysis/composition">
-                    <PieChart />
-                    <span>Composição</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
