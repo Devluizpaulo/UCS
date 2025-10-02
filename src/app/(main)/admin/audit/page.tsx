@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo, useTransition } from 'react';
@@ -70,8 +69,9 @@ function getAssetStatus(asset: CommodityPriceData, editedValues: Record<string, 
   if (asset.price === 0) {
     return 'zero';
   }
-  if (asset.category === 'index' || asset.category === 'sub-index') {
-    return 'calculated';
+  const calculatedCategories = ['index', 'sub-index', 'vus', 'vmad', 'crs'];
+  if (calculatedCategories.includes(asset.category)) {
+      return 'calculated';
   }
   return 'normal';
 }
@@ -169,7 +169,7 @@ const AssetActionTable = ({
   );
 };
 
-const IndexTable = ({ assets }: { assets: CommodityPriceData[] }) => {
+const IndexTable = ({ assets, editedValues }: { assets: CommodityPriceData[], editedValues: Record<string, number> }) => {
   if (assets.length === 0) {
     return (
       <div className="text-center text-sm text-muted-foreground p-4">
@@ -288,7 +288,7 @@ export default function AuditPage() {
   const dateParam = searchParams.get('date');
   const { toast } = useToast();
 
-  const [targetDate, setTargetDate] = useState<Date>(() => getValidatedDate(dateParam));
+  const [targetDate, setTargetDate] = useState<Date>(new Date());
   const [data, setData] = useState<CommodityPriceData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
@@ -685,14 +685,15 @@ export default function AuditPage() {
                     <AlertDialogContent className="max-w-2xl">
                         <AlertDialogHeader>
                             <AlertDialogTitle className="flex items-center gap-2">
-                                {useAdvancedRecalculation ? (
+                                {(useAdvancedRecalculation === true || useAdvancedRecalculation === null) ? (
                                   <Zap className="h-5 w-5 text-blue-600" />
                                 ) : (
                                   <RefreshCw className="h-5 w-5 text-gray-600" />
                                 )}
                                 Confirmar Recálculo
                             </AlertDialogTitle>
-                            <AlertDialogDescription className="space-y-4">
+                            <AlertDialogDescription asChild>
+                                <div className="space-y-4">
                                 <div>
                                   Você editou <strong>{Object.keys(editedValues).length} ativo(s)</strong> para <span className="font-bold">{format(targetDate, 'dd/MM/yyyy')}</span>. 
                                   Isso irá recalcular automaticamente todos os índices dependentes.
@@ -788,6 +789,7 @@ export default function AuditPage() {
                                 
                                 <div className="text-xs text-amber-600">
                                   ⚠️ Esta ação não pode ser desfeita.
+                                </div>
                                 </div>
                             </AlertDialogDescription>
                         </AlertDialogHeader>
@@ -1107,7 +1109,7 @@ export default function AuditPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="p-6">
-                  <IndexTable assets={filteredIndices} />
+                  <IndexTable assets={filteredIndices} editedValues={editedValues} />
                   {filteredIndices.length === 0 && indices.length > 0 && (
                     <div className="text-center text-sm text-muted-foreground p-4">
                       Nenhum índice encontrado com os filtros aplicados.

@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -6,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Edit, Globe, Database } from 'lucide-react';
 import type { CommodityPriceData } from '@/lib/types';
+import { ASSET_DEPENDENCIES } from '@/lib/dependency-service';
 
 interface AssetActionsProps {
   asset: CommodityPriceData;
@@ -14,23 +14,11 @@ interface AssetActionsProps {
 
 export function AssetActions({ asset, onEdit }: AssetActionsProps) {
   
-  // Lógica melhorada para determinar se é editável
-  const isCalculatedAsset = asset.category === 'index' || 
-                           asset.category === 'sub-index' || 
-                           asset.category === 'vus' || 
-                           asset.category === 'vmad' || 
-                           asset.category === 'crs';
+  const assetInfo = ASSET_DEPENDENCIES[asset.id];
+  const canEdit = assetInfo?.calculationType === 'base';
   
-  // Ativos cotados conhecidos são SEMPRE editáveis, independente da categoria
-  const knownQuotedAssets = ['usd', 'eur', 'soja', 'milho', 'boi_gordo', 'carbono', 'madeira'];
-  const isKnownQuotedAsset = knownQuotedAssets.includes(asset.id);
-  
-  const canEdit = isKnownQuotedAsset || !isCalculatedAsset;
-  
-  // Lógica para determinar se tem fonte externa
   const hasExternalSource = Boolean(asset.sourceUrl) && (asset.sourceUrl || '').trim() !== '';
   
-  // URLs padrão para ativos conhecidos
   const defaultSourceUrls: Record<string, string> = {
     'usd': 'https://br.investing.com/currencies/usd-brl-historical-data',
     'eur': 'https://br.investing.com/currencies/eur-brl-historical-data',
@@ -41,18 +29,8 @@ export function AssetActions({ asset, onEdit }: AssetActionsProps) {
     'madeira': 'https://br.investing.com/commodities/lumber-historical-data'
   };
   
-  const finalSourceUrl = asset.sourceUrl || (isKnownQuotedAsset ? defaultSourceUrls[asset.id] : null);
-  const shouldShowSourceLink = hasExternalSource || (isKnownQuotedAsset && !!finalSourceUrl);
-
-  console.log(`[AssetActions] ${asset.name} (${asset.id}):`, {
-    category: asset.category,
-    canEdit,
-    hasExternalSource,
-    isKnownQuotedAsset,
-    shouldShowSourceLink,
-    sourceUrl: asset.sourceUrl,
-    finalSourceUrl
-  });
+  const finalSourceUrl = asset.sourceUrl || defaultSourceUrls[asset.id];
+  const shouldShowSourceLink = hasExternalSource || (canEdit && !!finalSourceUrl);
 
   return (
     <div className="flex items-center justify-center gap-1">
@@ -106,7 +84,7 @@ export function AssetActions({ asset, onEdit }: AssetActionsProps) {
         )}
         
         {/* Indicador para ativos calculados (apenas para os que NÃO são editáveis) */}
-        {isCalculatedAsset && !canEdit && (
+        {!canEdit && (
           <Tooltip>
             <TooltipTrigger asChild>
               <Button 
