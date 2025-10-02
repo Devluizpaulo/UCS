@@ -1,181 +1,308 @@
-
 'use client';
 
-import { useState } from 'react';
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+  Sidebar,
+  SidebarContent,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
+  SidebarProvider,
+  SidebarInset,
+} from '@/components/ui/sidebar';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Loader2 } from 'lucide-react';
-import type { CommodityConfig } from '@/lib/types';
+  LayoutDashboard,
+  TrendingUp,
+  ShieldAlert,
+  Users,
+  LogOut,
+  Sparkles,
+  Archive,
+  History,
+  LandPlot,
+  PieChart,
+} from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { LogoUCS } from '@/components/logo-bvm';
+import { useAuth, useUser, useSidebar } from '@/firebase';
+import { useRouter } from 'next/navigation';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Skeleton } from '@/components/ui/skeleton';
+import React, { useState, useEffect } from 'react';
+import type { UserRecord } from 'firebase-admin/auth';
+import { UserFormModal, type UserFormValues } from '@/components/admin/user-form-modal';
+import { useToast } from '@/hooks/use-toast';
+import { updateUser } from '@/lib/admin-actions';
+import { doc, getDoc } from 'firebase/firestore';
+import { useFirestore } from '@/firebase';
 
-const assetSchema = z.object({
-  id: z.string().min(2, { message: 'O ID deve ter pelo menos 2 caracteres.' }).regex(/^[a-z0-9_]+$/, 'Use apenas letras minúsculas, números e _'),
-  name: z.string().min(3, { message: 'O nome deve ter pelo menos 3 caracteres.' }),
-  category: z.enum(['index', 'sub-index', 'exchange', 'vus', 'vmad', 'crs', 'agricultural', 'material']),
-  currency: z.enum(['BRL', 'USD', 'EUR']),
-  unit: z.string().min(1, { message: 'A unidade é obrigatória.' }),
-  description: z.string().min(10, { message: 'A descrição deve ter pelo menos 10 caracteres.' }),
-});
 
-type AssetFormData = z.infer<typeof assetSchema>;
+function UserProfile() {
+    const { user, isUserLoading } = useUser();
+    const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+    const { toast } = useToast();
+    const firestore = useFirestore();
+    const [isAdmin, setIsAdmin] = useState(false);
 
-interface AssetFormModalProps {
-  isOpen: boolean;
-  onOpenChange: (isOpen: boolean) => void;
-  onSubmit: (values: AssetFormData) => Promise<void>;
-  asset?: CommodityConfig | null;
+     useEffect(() => {
+        if (user) {
+            const checkAdmin = async () => {
+                const adminRef = doc(firestore, `roles_admin/${user.uid}`);
+                const adminSnap = await getDoc(adminRef);
+                setIsAdmin(adminSnap.exists());
+            };
+            checkAdmin();
+        }
+    }, [user, firestore]);
+
+    const handleProfileUpdate = async (values: UserFormValues) => {
+        if (!user) return;
+        try {
+            await updateUser(user.uid, values);
+            toast({ title: 'Sucesso', description: 'Seu perfil foi atualizado.' });
+            setIsProfileModalOpen(false);
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Erro', description: error.message });
+        }
+    }
+    
+    if (isUserLoading) {
+        return (
+            <div className="flex items-center gap-2 p-2">
+                <Skeleton className="h-10 w-10 rounded-full" />
+                <div className="flex-1 space-y-1">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-3 w-16" />
+                </div>
+            </div>
+        );
+    }
+
+    if (!user) {
+        return null;
+    }
+    
+    const getInitials = (email: string | null) => {
+        if (!email) return '..';
+        const nameParts = user.displayName?.split(' ') || [email];
+        if (nameParts.length > 1) {
+            return `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`.toUpperCase();
+        }
+        return email.substring(0, 2).toUpperCase();
+    }
+
+    return (
+        <>
+            <div 
+                className="flex flex-col items-start gap-2 p-2 group-data-[collapsible=icon]:items-center cursor-pointer hover:bg-sidebar-accent/50 rounded-md"
+                onClick={() => setIsProfileModalOpen(true)}
+            >
+                <div className="flex w-full items-center gap-2">
+                    <Avatar>
+                        <AvatarFallback>{getInitials(user.email)}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 truncate group-data-[collapsible=icon]:hidden">
+                        <p className="font-semibold text-sm truncate">{user.displayName || user.email}</p>
+                        <p className="text-xs text-muted-foreground">{isAdmin ? 'Admin' : 'Usuário'}</p>
+                    </div>
+                </div>
+            </div>
+             <UserFormModal
+                isOpen={isProfileModalOpen}
+                onOpenChange={setIsProfileModalOpen}
+                onSubmit={handleProfileUpdate}
+                user={user as unknown as UserRecord}
+                isSelfEdit={true}
+            />
+        </>
+    );
 }
 
-export function AssetFormModal({ isOpen, onOpenChange, onSubmit, asset }: AssetFormModalProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const isEditing = !!asset;
+function MainLayoutContent({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const { user, isUserLoading } = useUser();
+  const router = useRouter();
+  const auth = useAuth();
+  const firestore = useFirestore();
+  const { isMobile, setOpenMobile } = useSidebar();
+  const [isAdmin, setIsAdmin] = useState(false);
 
-  const {
-    control,
-    register,
-    handleSubmit,
-    formState: { errors },
-    reset,
-  } = useForm<AssetFormData>({
-    resolver: zodResolver(assetSchema),
-    defaultValues: asset ? asset : {
-      id: '',
-      name: '',
-      category: 'vus',
-      currency: 'BRL',
-      unit: '',
-      description: '',
-    },
-  });
-
-  const handleOpenChange = (open: boolean) => {
-    if (!open) {
-      reset(); // Reseta o formulário ao fechar
+  useEffect(() => {
+    if (user) {
+      const checkAdminStatus = async () => {
+        const adminDocRef = doc(firestore, 'roles_admin', user.uid);
+        const docSnap = await getDoc(adminDocRef);
+        setIsAdmin(docSnap.exists());
+      };
+      checkAdminStatus();
+    } else {
+      setIsAdmin(false);
     }
-    onOpenChange(open);
+  }, [user, firestore]);
+
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+      router.replace('/login');
+    }
+  }, [isUserLoading, user, router]);
+
+  const handleSignOut = async () => {
+    await auth.signOut();
+    router.push('/');
   };
 
-  const processSubmit = async (data: AssetFormData) => {
-    setIsSubmitting(true);
-    await onSubmit(data);
-    setIsSubmitting(false);
+  const handleMenuItemClick = () => {
+    if (isMobile && setOpenMobile) {
+      setOpenMobile(false);
+    }
   };
+
+  if (isUserLoading || !user) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>{isEditing ? 'Editar Ativo' : 'Adicionar Novo Ativo'}</DialogTitle>
-          <DialogDescription>
-            Preencha os detalhes do ativo que será monitorado pela plataforma.
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit(processSubmit)} className="grid gap-4 py-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="name">Nome do Ativo</Label>
-              <Input id="name" {...register('name')} />
-              {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
+    <>
+      <Sidebar>
+        <div className="flex flex-col h-full">
+          <SidebarHeader>
+            <div className="flex h-10 items-center justify-center p-2 group-data-[collapsible=icon]:hidden">
+              <LogoUCS className="h-8 w-auto" />
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="id">ID da Coleção</Label>
-              <Input id="id" {...register('id')} disabled={isEditing} placeholder="ex: meu_ativo_novo" />
-              {errors.id && <p className="text-sm text-destructive">{errors.id.message}</p>}
+            <div className="hidden h-10 items-center justify-center p-2 group-data-[collapsible=icon]:flex">
+              <LogoUCS className="h-8 w-auto" isIcon />
             </div>
+          </SidebarHeader>
+          <SidebarContent className="flex-grow">
+            <SidebarMenu>
+              <SidebarMenuItem onClick={handleMenuItemClick}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname === '/dashboard'}
+                  tooltip={{ children: 'Painel' }}
+                >
+                  <Link href="/dashboard">
+                    <LayoutDashboard />
+                    <span>Painel</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem onClick={handleMenuItemClick}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname.startsWith('/reports')}
+                  tooltip={{ children: 'Relatórios IA' }}
+                >
+                  <Link href="/reports">
+                    <Sparkles />
+                    <span>Relatórios IA</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+            <SidebarMenu>
+              <p className="px-4 py-2 text-xs font-semibold text-muted-foreground/50 tracking-wider group-data-[collapsible=icon]:text-center">
+                Análise
+              </p>
+              <SidebarMenuItem onClick={handleMenuItemClick}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname.startsWith('/analysis/trends')}
+                  tooltip={{ children: 'Análise de Tendências' }}
+                >
+                  <Link href="/analysis/trends">
+                    <TrendingUp />
+                    <span>Tendências</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem onClick={handleMenuItemClick}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname.startsWith('/analysis/risk')}
+                  tooltip={{ children: 'Análise de Risco' }}
+                >
+                  <Link href="/analysis/risk">
+                    <ShieldAlert />
+                    <span>Risco</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+               <SidebarMenuItem onClick={handleMenuItemClick}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname.startsWith('/analysis/composition')}
+                  tooltip={{ children: 'Análise de Composição' }}
+                >
+                  <Link href="/analysis/composition">
+                    <PieChart />
+                    <span>Composição</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+            {isAdmin && (
+              <SidebarMenu>
+                <p className="px-4 py-2 text-xs font-semibold text-muted-foreground/50 tracking-wider group-data-[collapsible=icon]:text-center">
+                  Admin
+                </p>
+                <SidebarMenuItem onClick={handleMenuItemClick}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith('/admin/users')}
+                    tooltip={{ children: 'Usuários' }}
+                  >
+                    <Link href="/admin/users">
+                      <Users />
+                      <span>Usuários</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                 <SidebarMenuItem onClick={handleMenuItemClick}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith('/admin/audit')}
+                    tooltip={{ children: 'Auditoria' }}
+                  >
+                    <Link href="/admin/audit">
+                      <History />
+                      <span>Auditoria</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            )}
+          </SidebarContent>
+          <div className="mt-auto">
+            <SidebarContent className="!flex-grow-0 border-t">
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton onClick={handleSignOut} tooltip={{ children: 'Sair' }}>
+                    <LogOut />
+                    <span>Sair</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+              <UserProfile />
+            </SidebarContent>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-             <div className="grid gap-2">
-                <Label htmlFor="category">Categoria</Label>
-                <Controller
-                    name="category"
-                    control={control}
-                    render={({ field }) => (
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Selecione a categoria" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="index">Índice Principal</SelectItem>
-                                <SelectItem value="sub-index">Sub-Índice</SelectItem>
-                                <SelectItem value="exchange">Câmbio</SelectItem>
-                                <SelectItem value="vus">VUS</SelectItem>
-                                <SelectItem value="vmad">VMAD</SelectItem>
-                                <SelectItem value="crs">CRS (Socioambiental)</SelectItem>
-                                <SelectItem value="agricultural">Commodity Agrícola</SelectItem>
-                                <SelectItem value="material">Commodity Material</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    )}
-                />
-                 {errors.category && <p className="text-sm text-destructive">{errors.category.message}</p>}
-            </div>
-             <div className="grid gap-2">
-              <Label htmlFor="currency">Moeda</Label>
-               <Controller
-                    name="currency"
-                    control={control}
-                    render={({ field }) => (
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Selecione a moeda" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="BRL">BRL (Real)</SelectItem>
-                                <SelectItem value="USD">USD (Dólar Americano)</SelectItem>
-                                <SelectItem value="EUR">EUR (Euro)</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    )}
-                />
-              {errors.currency && <p className="text-sm text-destructive">{errors.currency.message}</p>}
-            </div>
-             <div className="grid gap-2">
-              <Label htmlFor="unit">Unidade</Label>
-              <Input id="unit" {...register('unit')} placeholder="ex: saca, @, Pontos" />
-              {errors.unit && <p className="text-sm text-destructive">{errors.unit.message}</p>}
-            </div>
-          </div>
-           <div className="grid gap-2">
-              <Label htmlFor="description">Descrição</Label>
-              <Textarea id="description" {...register('description')} placeholder="Descrição curta do ativo..." />
-              {errors.description && <p className="text-sm text-destructive">{errors.description.message}</p>}
-            </div>
-          <DialogFooter className="pt-4">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Salvando...
-                </>
-              ) : (
-                'Salvar Ativo'
-              )}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+        </div>
+      </Sidebar>
+      <SidebarInset>{children}</SidebarInset>
+    </>
+  );
+}
+
+
+export default function MainLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <SidebarProvider>
+      <MainLayoutContent>{children}</MainLayoutContent>
+    </SidebarProvider>
   );
 }

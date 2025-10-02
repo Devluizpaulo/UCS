@@ -1,150 +1,308 @@
-
 'use client';
 
-import { useState, useEffect } from 'react';
-import { PageHeader } from '@/components/page-header';
-import { Archive } from 'lucide-react';
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { getCommodityConfigs, saveCommodityConfig } from '@/lib/data-service';
-import { getIconForCategory } from '@/lib/icons';
-import { Button } from '@/components/ui/button';
-import { AssetFormModal } from '@/components/asset-form-modal';
-import type { CommodityConfig, CommodityPriceData } from '@/lib/types';
+  Sidebar,
+  SidebarContent,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
+  SidebarProvider,
+  SidebarInset,
+} from '@/components/ui/sidebar';
+import {
+  LayoutDashboard,
+  TrendingUp,
+  ShieldAlert,
+  Users,
+  LogOut,
+  Sparkles,
+  Archive,
+  History,
+  LandPlot,
+  PieChart,
+} from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { LogoUCS } from '@/components/logo-bvm';
+import { useAuth, useUser, useSidebar } from '@/firebase';
+import { useRouter } from 'next/navigation';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Skeleton } from '@/components/ui/skeleton';
+import React, { useState, useEffect } from 'react';
+import type { UserRecord } from 'firebase-admin/auth';
+import { UserFormModal, type UserFormValues } from '@/components/admin/user-form-modal';
 import { useToast } from '@/hooks/use-toast';
+import { updateUser } from '@/lib/admin-actions';
+import { doc, getDoc } from 'firebase/firestore';
+import { useFirestore } from '@/firebase';
 
-function useAssets() {
-    const [assets, setAssets] = useState<CommodityConfig[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
 
-    const fetchAssets = async () => {
-        setLoading(true);
-        try {
-            const data = await getCommodityConfigs();
-            setAssets(data);
-            setError(null);
-        } catch (err) {
-            setError('Falha ao carregar os ativos.');
-            console.error(err);
-        } finally {
-            setLoading(false);
+function UserProfile() {
+    const { user, isUserLoading } = useUser();
+    const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+    const { toast } = useToast();
+    const firestore = useFirestore();
+    const [isAdmin, setIsAdmin] = useState(false);
+
+     useEffect(() => {
+        if (user) {
+            const checkAdmin = async () => {
+                const adminRef = doc(firestore, `roles_admin/${user.uid}`);
+                const adminSnap = await getDoc(adminRef);
+                setIsAdmin(adminSnap.exists());
+            };
+            checkAdmin();
         }
-    };
+    }, [user, firestore]);
 
-    useEffect(() => {
-        fetchAssets();
-    }, []);
+    const handleProfileUpdate = async (values: UserFormValues) => {
+        if (!user) return;
+        try {
+            await updateUser(user.uid, values);
+            toast({ title: 'Sucesso', description: 'Seu perfil foi atualizado.' });
+            setIsProfileModalOpen(false);
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Erro', description: error.message });
+        }
+    }
+    
+    if (isUserLoading) {
+        return (
+            <div className="flex items-center gap-2 p-2">
+                <Skeleton className="h-10 w-10 rounded-full" />
+                <div className="flex-1 space-y-1">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-3 w-16" />
+                </div>
+            </div>
+        );
+    }
 
-    return { assets, loading, error, refresh: fetchAssets };
+    if (!user) {
+        return null;
+    }
+    
+    const getInitials = (email: string | null) => {
+        if (!email) return '..';
+        const nameParts = user.displayName?.split(' ') || [email];
+        if (nameParts.length > 1) {
+            return `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`.toUpperCase();
+        }
+        return email.substring(0, 2).toUpperCase();
+    }
+
+    return (
+        <>
+            <div 
+                className="flex flex-col items-start gap-2 p-2 group-data-[collapsible=icon]:items-center cursor-pointer hover:bg-sidebar-accent/50 rounded-md"
+                onClick={() => setIsProfileModalOpen(true)}
+            >
+                <div className="flex w-full items-center gap-2">
+                    <Avatar>
+                        <AvatarFallback>{getInitials(user.email)}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 truncate group-data-[collapsible=icon]:hidden">
+                        <p className="font-semibold text-sm truncate">{user.displayName || user.email}</p>
+                        <p className="text-xs text-muted-foreground">{isAdmin ? 'Admin' : 'Usuário'}</p>
+                    </div>
+                </div>
+            </div>
+             <UserFormModal
+                isOpen={isProfileModalOpen}
+                onOpenChange={setIsProfileModalOpen}
+                onSubmit={handleProfileUpdate}
+                user={user as unknown as UserRecord}
+                isSelfEdit={true}
+            />
+        </>
+    );
+}
+
+function MainLayoutContent({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const { user, isUserLoading } = useUser();
+  const router = useRouter();
+  const auth = useAuth();
+  const firestore = useFirestore();
+  const { isMobile, setOpenMobile } = useSidebar();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      const checkAdminStatus = async () => {
+        const adminDocRef = doc(firestore, 'roles_admin', user.uid);
+        const docSnap = await getDoc(adminDocRef);
+        setIsAdmin(docSnap.exists());
+      };
+      checkAdminStatus();
+    } else {
+      setIsAdmin(false);
+    }
+  }, [user, firestore]);
+
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+      router.replace('/login');
+    }
+  }, [isUserLoading, user, router]);
+
+  const handleSignOut = async () => {
+    await auth.signOut();
+    router.push('/');
+  };
+
+  const handleMenuItemClick = () => {
+    if (isMobile && setOpenMobile) {
+      setOpenMobile(false);
+    }
+  };
+
+  if (isUserLoading || !user) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <Sidebar>
+        <div className="flex flex-col h-full">
+          <SidebarHeader>
+            <div className="flex h-10 items-center justify-center p-2 group-data-[collapsible=icon]:hidden">
+              <LogoUCS className="h-8 w-auto" />
+            </div>
+            <div className="hidden h-10 items-center justify-center p-2 group-data-[collapsible=icon]:flex">
+              <LogoUCS className="h-8 w-auto" isIcon />
+            </div>
+          </SidebarHeader>
+          <SidebarContent className="flex-grow">
+            <SidebarMenu>
+              <SidebarMenuItem onClick={handleMenuItemClick}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname === '/dashboard'}
+                  tooltip={{ children: 'Painel' }}
+                >
+                  <Link href="/dashboard">
+                    <LayoutDashboard />
+                    <span>Painel</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem onClick={handleMenuItemClick}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname.startsWith('/reports')}
+                  tooltip={{ children: 'Relatórios IA' }}
+                >
+                  <Link href="/reports">
+                    <Sparkles />
+                    <span>Relatórios IA</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+            <SidebarMenu>
+              <p className="px-4 py-2 text-xs font-semibold text-muted-foreground/50 tracking-wider group-data-[collapsible=icon]:text-center">
+                Análise
+              </p>
+              <SidebarMenuItem onClick={handleMenuItemClick}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname.startsWith('/analysis/trends')}
+                  tooltip={{ children: 'Análise de Tendências' }}
+                >
+                  <Link href="/analysis/trends">
+                    <TrendingUp />
+                    <span>Tendências</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem onClick={handleMenuItemClick}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname.startsWith('/analysis/risk')}
+                  tooltip={{ children: 'Análise de Risco' }}
+                >
+                  <Link href="/analysis/risk">
+                    <ShieldAlert />
+                    <span>Risco</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+               <SidebarMenuItem onClick={handleMenuItemClick}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname.startsWith('/analysis/composition')}
+                  tooltip={{ children: 'Análise de Composição' }}
+                >
+                  <Link href="/analysis/composition">
+                    <PieChart />
+                    <span>Composição</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+            {isAdmin && (
+              <SidebarMenu>
+                <p className="px-4 py-2 text-xs font-semibold text-muted-foreground/50 tracking-wider group-data-[collapsible=icon]:text-center">
+                  Admin
+                </p>
+                <SidebarMenuItem onClick={handleMenuItemClick}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith('/admin/users')}
+                    tooltip={{ children: 'Usuários' }}
+                  >
+                    <Link href="/admin/users">
+                      <Users />
+                      <span>Usuários</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                 <SidebarMenuItem onClick={handleMenuItemClick}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith('/admin/audit')}
+                    tooltip={{ children: 'Auditoria' }}
+                  >
+                    <Link href="/admin/audit">
+                      <History />
+                      <span>Auditoria</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            )}
+          </SidebarContent>
+          <div className="mt-auto">
+            <SidebarContent className="!flex-grow-0 border-t">
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton onClick={handleSignOut} tooltip={{ children: 'Sair' }}>
+                    <LogOut />
+                    <span>Sair</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+              <UserProfile />
+            </SidebarContent>
+          </div>
+        </div>
+      </Sidebar>
+      <SidebarInset>{children}</SidebarInset>
+    </>
+  );
 }
 
 
-export default function AssetsPage() {
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const { assets, loading, error, refresh } = useAssets();
-    const { toast } = useToast();
-
-
-    const handleAssetCreate = async (values: Omit<CommodityConfig, 'price' | 'change' | 'absoluteChange' | 'lastUpdated'>) => {
-        try {
-            await saveCommodityConfig(values.id, values);
-            toast({
-                title: "Ativo Salvo com Sucesso!",
-                description: `O ativo "${values.name}" foi adicionado.`,
-            });
-            setIsModalOpen(false);
-            refresh();
-        } catch (err: any) {
-            console.error("Falha ao criar ativo:", err);
-            toast({
-                variant: 'destructive',
-                title: "Erro ao Salvar Ativo",
-                description: err.message || "Não foi possível adicionar o ativo. Tente novamente.",
-            });
-        }
-    };
-
-    return (
-        <div className="flex min-h-screen w-full flex-col">
-            <PageHeader 
-                title="Gerenciar Ativos"
-                description="Adicione, edite ou remova os ativos monitorados pela plataforma."
-                icon={Archive}
-            >
-                <Button onClick={() => setIsModalOpen(true)}>Adicionar Novo Ativo</Button>
-            </PageHeader>
-            <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Ativos Configurados</CardTitle>
-                        <CardDescription>
-                            A lista de todos os ativos, incluindo commodities e índices, que estão configurados no sistema.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="p-0">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Ativo</TableHead>
-                                    <TableHead>ID da Coleção</TableHead>
-                                    <TableHead>Categoria</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {loading ? (
-                                    <TableRow>
-                                        <TableCell colSpan={3} className="h-24 text-center">
-                                            Carregando ativos...
-                                        </TableCell>
-                                    </TableRow>
-                                ) : error ? (
-                                     <TableRow>
-                                        <TableCell colSpan={3} className="h-24 text-center text-destructive">
-                                            {error}
-                                        </TableCell>
-                                    </TableRow>
-                                ) : (
-                                    assets.map((asset) => {
-                                        const Icon = getIconForCategory(asset as CommodityPriceData);
-                                        return (
-                                            <TableRow key={asset.id}>
-                                                <TableCell>
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
-                                                            <Icon className="h-4 w-4 text-muted-foreground" />
-                                                        </div>
-                                                        <div className="font-medium">{asset.name}</div>
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Badge variant="outline">{asset.id}</Badge>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Badge variant="secondary">{asset.category.toUpperCase()}</Badge>
-                                                </TableCell>
-                                            </TableRow>
-                                        );
-                                    })
-                                )}
-                            </TableBody>
-                        </Table>
-                    </CardContent>
-                </Card>
-            </main>
-            <AssetFormModal 
-                isOpen={isModalOpen}
-                onOpenChange={setIsModalOpen}
-                onSubmit={handleAssetCreate}
-            />
-        </div>
-    );
+export default function MainLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <SidebarProvider>
+      <MainLayoutContent>{children}</MainLayoutContent>
+    </SidebarProvider>
+  );
 }

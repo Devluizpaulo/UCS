@@ -264,18 +264,6 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-                <SidebarMenuItem onClick={handleMenuItemClick}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname.startsWith('/assets')}
-                    tooltip={{ children: 'Ativos' }}
-                  >
-                    <Link href="/assets">
-                      <Archive />
-                      <span>Ativos</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
                  <SidebarMenuItem onClick={handleMenuItemClick}>
                   <SidebarMenuButton
                     asChild
