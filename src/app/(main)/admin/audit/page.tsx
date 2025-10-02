@@ -368,9 +368,13 @@ export default function AuditPage() {
     setEditingAsset(null);
 
     // Update local data immediately for UI responsiveness
-    setData(currentData => currentData.map(asset => 
+    const updatedData = data.map(asset => 
       asset.id === assetId ? { ...asset, price: newPrice } : asset
-    ));
+    );
+    setData(updatedData);
+    
+    const alerts = generateValidationAlerts(updatedData, newEditedValues);
+    setValidationAlerts(alerts);
     
     toast({
         title: "Valor Alterado",
@@ -649,8 +653,14 @@ export default function AuditPage() {
       const newEditedValues = { ...editedValues, [alert.assetId]: suggestedValue };
       setEditedValues(newEditedValues);
       
-      // Remove o alerta atual e regenera os alertas
-      const newAlerts = generateValidationAlerts(data, newEditedValues);
+      // Update local data immediately
+      const updatedData = data.map(asset => 
+        asset.id === alert.assetId ? { ...asset, price: suggestedValue } : asset
+      );
+      setData(updatedData);
+      
+      // Regenerate alerts with the new data
+      const newAlerts = generateValidationAlerts(updatedData, newEditedValues);
       setValidationAlerts(newAlerts);
       
       toast({
