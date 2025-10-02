@@ -334,13 +334,12 @@ export default function AuditPage() {
     getCommodityPricesByDate(targetDate)
       .then((fetchedData) => {
         setData(fetchedData);
-        // Gera alertas de validação após buscar os dados
-        const alerts = generateValidationAlerts(fetchedData, editedValues);
-        setValidationAlerts(alerts);
+        setValidationAlerts(generateValidationAlerts(fetchedData, editedValues));
       })
       .catch((err) => {
         console.error(err);
         setData([]);
+        setValidationAlerts([]);
       })
       .finally(() => setIsLoading(false));
 
@@ -373,8 +372,7 @@ export default function AuditPage() {
     );
     setData(updatedData);
     
-    const alerts = generateValidationAlerts(updatedData, newEditedValues);
-    setValidationAlerts(alerts);
+    setValidationAlerts(generateValidationAlerts(updatedData, newEditedValues));
     
     toast({
         title: "Valor Alterado",
