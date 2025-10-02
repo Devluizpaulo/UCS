@@ -150,7 +150,7 @@ export default function AuditPage() {
       setTargetDate(newDate);
       setEditedValues({}); // Reseta edições ao mudar de data
     }
-  }, [dateParam]);
+  }, [dateParam, targetDate]);
 
   useEffect(() => {
     setIsLoading(true);
