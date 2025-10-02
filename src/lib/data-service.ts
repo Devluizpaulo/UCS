@@ -374,7 +374,3 @@ export async function reprocessDate(date: Date): Promise<{ success: boolean; mes
         return { success: false, message: error.message || "Ocorreu um erro desconhecido ao tentar reprocessar a data." };
     }
 }
-
-
-
-    

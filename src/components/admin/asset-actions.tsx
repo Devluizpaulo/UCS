@@ -59,5 +59,3 @@ export function AssetActions({ asset, onEdit }: AssetActionsProps) {
     </div>
   );
 }
-
-    
