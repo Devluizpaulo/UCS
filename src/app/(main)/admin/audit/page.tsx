@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo, useTransition } from 'react';
@@ -152,7 +153,7 @@ export default function AuditPage() {
       setTargetDate(newDate);
       setEditedValues({}); // Reseta edições ao mudar de data
     }
-  }, [dateParam, targetDate]);
+  }, [dateParam]);
 
   useEffect(() => {
     setIsLoading(true);
@@ -300,8 +301,7 @@ export default function AuditPage() {
                   <CardDescription>Cotações de câmbio e commodities primárias que servem de entrada para os cálculos. <span className="font-semibold text-primary">Estes são os únicos valores editáveis.</span></CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <AssetActionTable assets={currencies} onEdit={handleEdit} editedValues={editedValues} />
-                  <AssetActionTable assets={baseCommodities} onEdit={handleEdit} editedValues={editedValues} />
+                  <AssetActionTable assets={[...currencies, ...baseCommodities]} onEdit={handleEdit} editedValues={editedValues} />
                 </CardContent>
               </Card>
 
