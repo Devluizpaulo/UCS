@@ -25,7 +25,7 @@ function getValidatedDate(dateString?: string | null): Date {
   return new Date();
 }
 
-const AssetTable = ({ assets }: { assets: CommodityPriceData[] }) => {
+const AssetActionTable = ({ assets }: { assets: CommodityPriceData[] }) => {
   const { toast } = useToast();
 
   const handleTestAction = (assetName: string) => {
@@ -75,6 +75,38 @@ const AssetTable = ({ assets }: { assets: CommodityPriceData[] }) => {
     </Table>
   );
 };
+
+const IndexTable = ({ assets }: { assets: CommodityPriceData[] }) => {
+  if (assets.length === 0) {
+    return (
+      <div className="text-center text-sm text-muted-foreground p-4">
+        Nenhum ativo nesta categoria.
+      </div>
+    );
+  }
+
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Ativo</TableHead>
+          <TableHead className="text-right">Valor</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {assets.map((asset) => (
+          <TableRow key={asset.id}>
+            <TableCell className="font-medium">{asset.name}</TableCell>
+            <TableCell className="text-right font-mono">
+              {formatCurrency(asset.price, asset.currency, asset.id)}
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+};
+
 
 export default function AuditPage() {
   const searchParams = useSearchParams();
@@ -146,7 +178,7 @@ export default function AuditPage() {
                 <CardDescription>Cotações de câmbio usadas nos cálculos.</CardDescription>
               </CardHeader>
               <CardContent>
-                <AssetTable assets={currencies} />
+                <AssetActionTable assets={currencies} />
               </CardContent>
             </Card>
 
@@ -156,7 +188,7 @@ export default function AuditPage() {
                 <CardDescription>Valores de mercado das commodities primárias.</CardDescription>
               </CardHeader>
               <CardContent>
-                <AssetTable assets={baseCommodities} />
+                <AssetActionTable assets={baseCommodities} />
               </CardContent>
             </Card>
 
@@ -166,7 +198,7 @@ export default function AuditPage() {
                 <CardDescription>Resultados dos índices e sub-índices da plataforma.</CardDescription>
               </CardHeader>
               <CardContent>
-                <AssetTable assets={indices} />
+                <IndexTable assets={indices} />
               </CardContent>
             </Card>
           </div>
