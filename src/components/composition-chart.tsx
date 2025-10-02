@@ -61,9 +61,8 @@ export function CompositionChart({ mainAsset, compositionData, isLoading, target
     const [isExportingPdf, setIsExportingPdf] = useState(false);
     const { toast } = useToast();
 
-    const totalValue = useMemo(() => {
-        return compositionData.reduce((sum, item) => sum + item.value, 0);
-    }, [compositionData]);
+    // The mainAsset.price already holds the total value from the database.
+    const totalValue = mainAsset?.price || 0;
 
     const chartData = useMemo(() => {
         return compositionData.map(item => ({
@@ -142,7 +141,7 @@ export function CompositionChart({ mainAsset, compositionData, isLoading, target
                 <div>
                     <CardTitle>Composição do {mainAsset.name}</CardTitle>
                     <CardDescription>
-                        O valor total do índice é <span className="font-bold text-foreground">{formatCurrency(mainAsset.price, mainAsset.currency, mainAsset.id)}</span>, composto pelos seguintes ativos.
+                        O valor total do índice é <span className="font-bold text-foreground">{formatCurrency(totalValue, mainAsset.currency, mainAsset.id)}</span>, composto pelos seguintes ativos.
                     </CardDescription>
                 </div>
                  <div className="flex items-center gap-2">
@@ -211,7 +210,7 @@ export function CompositionChart({ mainAsset, compositionData, isLoading, target
                                 })}
                                  <TableRow className="font-bold bg-muted/50">
                                     <TableCell>Total</TableCell>
-                                    <TableCell className="text-right font-mono">{formatCurrency(totalValue, 'BRL', mainAsset.id)}</TableCell>
+                                    <TableCell className="text-right font-mono">{formatCurrency(totalValue, mainAsset.currency, mainAsset.id)}</TableCell>
                                     <TableCell className="text-right font-mono">100.00%</TableCell>
                                 </TableRow>
                             </TableBody>
