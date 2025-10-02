@@ -175,9 +175,6 @@ export default function AuditPage() {
         setData([]);
       })
       .finally(() => setIsLoading(false));
-  // The 'editedValues' dependency causes re-fetching, which is intended
-  // to reflect the local changes in the UI before they are saved.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [targetDate, toast, JSON.stringify(editedValues)]);
 
   const handleEdit = (asset: CommodityPriceData) => {
@@ -212,7 +209,7 @@ export default function AuditPage() {
     });
   }
 
-  const { currencies, baseCommodities, indices } = useMemo(() => {
+  const { baseAssets, indices } = useMemo(() => {
     const currencyIds = ['usd', 'eur'];
     const commodityIds = ['milho', 'soja', 'boi_gordo', 'madeira', 'carbono', 'Agua_CRS'];
     
@@ -236,11 +233,13 @@ export default function AuditPage() {
             return { ...asset, rentMediaCalculada };
         });
 
+    const baseAssets = [...currencies, ...baseCommodities];
+    
     const indices = data.filter(
       (asset) => !currencyIds.includes(asset.id) && !commodityIds.includes(asset.id)
     );
 
-    return { currencies, baseCommodities, indices };
+    return { baseAssets, indices };
   }, [data]);
 
   const hasEdits = Object.keys(editedValues).length > 0;
@@ -301,7 +300,7 @@ export default function AuditPage() {
                   <CardDescription>Cotações de câmbio e commodities primárias que servem de entrada para os cálculos. <span className="font-semibold text-primary">Estes são os únicos valores editáveis.</span></CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <AssetActionTable assets={[...currencies, ...baseCommodities]} onEdit={handleEdit} editedValues={editedValues} />
+                  <AssetActionTable assets={baseAssets} onEdit={handleEdit} editedValues={editedValues} />
                 </CardContent>
               </Card>
 
