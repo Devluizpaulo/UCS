@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -18,12 +18,13 @@ import { formatCurrency } from '@/lib/formatters';
 
 interface AuditEditModalProps {
   assetItem: AssetItem | null;
+  allAssets: AssetItem[];
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   onSave: (assetId: string, newValue: number) => void;
 }
 
-export function AuditEditModal({ assetItem, isOpen, onOpenChange, onSave }: AuditEditModalProps) {
+export function AuditEditModal({ assetItem, allAssets, isOpen, onOpenChange, onSave }: AuditEditModalProps) {
   const [newValue, setNewValue] = useState('');
 
   useEffect(() => {

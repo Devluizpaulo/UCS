@@ -49,8 +49,9 @@ export type AssetItem = CommodityConfig & {
   type: 'COTADO' | 'CALCULADO';
 };
 
-// A lista definitiva de IDs de ativos que são calculados pela plataforma.
-const CALCULATED_ASSET_IDS: string[] = ['vus', 'vmad', 'carbono_crs', 'valor_uso_solo', 'pdm', 'ucs', 'ucs_ase', 'custo_agua', 'ch2o_agua'];
+const CALCULATED_ASSET_IDS: string[] = ['vus', 'vmad', 'carbono_crs', 'Agua_CRS', 'valor_uso_solo', 'pdm', 'ucs', 'ucs_ase', 'custo_agua', 'ch2o_agua'];
+const CURRENCY_ASSET_IDS = ['usd', 'eur'];
+const BASE_ASSET_IDS = ['boi_gordo', 'milho', 'soja', 'madeira', 'carbono', 'ch2o_agua', 'custo_agua'];
 
 export default function AuditPage() {
   const searchParams = useSearchParams();
@@ -83,7 +84,23 @@ export default function AuditPage() {
           };
         })
       );
-      items.sort((a, b) => (a.type === 'COTADO' && b.type !== 'COTADO') ? -1 : (a.type !== 'COTADO' && b.type === 'COTADO') ? 1 : 0);
+      
+      const getGroup = (id: string) => {
+        if (CURRENCY_ASSET_IDS.includes(id)) return 0; // Câmbio
+        if (BASE_ASSET_IDS.includes(id)) return 1; // Ativos Base
+        if (CALCULATED_ASSET_IDS.includes(id)) return 2; // Calculados
+        return 3; // Outros
+      };
+
+      items.sort((a, b) => {
+        const groupA = getGroup(a.id);
+        const groupB = getGroup(b.id);
+        if (groupA !== groupB) {
+            return groupA - groupB;
+        }
+        return a.name.localeCompare(b.name);
+      });
+      
       setAssetItems(items);
     } catch (err: any) {
       toast({ variant: 'destructive', title: 'Erro ao buscar dados', description: err.message });
@@ -169,10 +186,11 @@ export default function AuditPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
+             <div className="relative w-full overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Ativo</TableHead>
+                    <TableHead className="min-w-[200px]">Ativo</TableHead>
                     <TableHead>Tipo</TableHead>
                     <TableHead className="text-right">Valor Registrado</TableHead>
                     <TableHead>Status</TableHead>
@@ -261,12 +279,14 @@ export default function AuditPage() {
                   })}
                 </TableBody>
               </Table>
+             </div>
             </CardContent>
           </Card>
         </main>
       </div>
       <AuditEditModal
         assetItem={editingAsset}
+        allAssets={assetItems}
         isOpen={!!editingAsset}
         onOpenChange={() => setEditingAsset(null)}
         onSave={handleValueChange}
