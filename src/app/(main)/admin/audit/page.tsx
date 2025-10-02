@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,6 +24,57 @@ function getValidatedDate(dateString?: string | null): Date {
   }
   return new Date();
 }
+
+const AssetTable = ({ assets }: { assets: CommodityPriceData[] }) => {
+  const { toast } = useToast();
+
+  const handleTestAction = (assetName: string) => {
+    toast({
+      title: 'Ação de Teste Disparada',
+      description: `Botão para o ativo "${assetName}" foi clicado.`,
+    });
+  };
+
+  if (assets.length === 0) {
+    return (
+      <div className="text-center text-sm text-muted-foreground p-4">
+        Nenhum ativo nesta categoria.
+      </div>
+    );
+  }
+
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Ativo</TableHead>
+          <TableHead className="text-right">Valor</TableHead>
+          <TableHead className="text-center w-[150px]">Ações</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {assets.map((asset) => (
+          <TableRow key={asset.id}>
+            <TableCell className="font-medium">{asset.name}</TableCell>
+            <TableCell className="text-right font-mono">
+              {formatCurrency(asset.price, asset.currency, asset.id)}
+            </TableCell>
+            <TableCell className="text-center">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleTestAction(asset.name)}
+              >
+                <PlayCircle className="mr-2 h-4 w-4" />
+                Só pra testar
+              </Button>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+};
 
 export default function AuditPage() {
   const searchParams = useSearchParams();
@@ -53,77 +104,73 @@ export default function AuditPage() {
       })
       .finally(() => setIsLoading(false));
   }, [targetDate, toast]);
-  
-  const handleTestAction = (assetName: string) => {
-    toast({
-        title: "Ação de Teste Disparada",
-        description: `Botão para o ativo "${assetName}" foi clicado.`,
-    })
-  }
+
+  const { currencies, baseCommodities, indices } = useMemo(() => {
+    const currencyIds = ['usd', 'eur'];
+    const commodityIds = ['milho', 'soja', 'boi_gordo', 'madeira', 'carbono'];
+
+    const currencies = data.filter((asset) => currencyIds.includes(asset.id));
+    const baseCommodities = data.filter((asset) => commodityIds.includes(asset.id));
+    const indices = data.filter(
+      (asset) => !currencyIds.includes(asset.id) && !commodityIds.includes(asset.id)
+    );
+
+    return { currencies, baseCommodities, indices };
+  }, [data]);
 
   return (
     <div className="flex min-h-screen w-full flex-col">
       <PageHeader
         title="Auditoria de Dados"
-        description="Verifique e edite os dados históricos da plataforma."
+        description="Verifique os dados históricos da plataforma para a data selecionada."
         icon={History}
       >
         <DateNavigator targetDate={targetDate} />
       </PageHeader>
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Cotações do Dia</CardTitle>
-            <CardDescription>
-              Lista de todos os ativos e seus valores de fechamento para a data selecionada.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="flex justify-center items-center h-64">
-                <Loader2 className="h-10 w-10 animate-spin text-primary" />
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Ativo</TableHead>
-                    <TableHead className="text-right">Valor</TableHead>
-                    <TableHead className="text-center w-[150px]">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {data.length > 0 ? (
-                    data.map((asset) => (
-                      <TableRow key={asset.id}>
-                        <TableCell className="font-medium">{asset.name}</TableCell>
-                        <TableCell className="text-right font-mono">
-                          {formatCurrency(asset.price, asset.currency, asset.id)}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleTestAction(asset.name)}
-                          >
-                            <PlayCircle className="mr-2 h-4 w-4" />
-                            Só pra testar
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={3} className="h-24 text-center">
-                        Nenhum dado encontrado para esta data.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
+        {isLoading ? (
+          <div className="flex justify-center items-center h-64">
+            <Loader2 className="h-10 w-10 animate-spin text-primary" />
+          </div>
+        ) : data.length === 0 ? (
+           <Card>
+              <CardContent className="p-6">
+                 <p className="text-center text-muted-foreground">Nenhum dado encontrado para esta data.</p>
+              </CardContent>
+           </Card>
+        ) : (
+          <div className="grid gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Moedas</CardTitle>
+                <CardDescription>Cotações de câmbio usadas nos cálculos.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <AssetTable assets={currencies} />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Commodities Base</CardTitle>
+                <CardDescription>Valores de mercado das commodities primárias.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <AssetTable assets={baseCommodities} />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Índices Calculados</CardTitle>
+                <CardDescription>Resultados dos índices e sub-índices da plataforma.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <AssetTable assets={indices} />
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </main>
     </div>
   );
