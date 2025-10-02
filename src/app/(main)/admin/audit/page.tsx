@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { History, PlayCircle, Loader2 } from 'lucide-react';
 import { getCommodityPricesByDate } from '@/lib/data-service';
 import type { CommodityPriceData } from '@/lib/types';
+import * as Calc from '@/lib/calculation-service';
 import { isValid, parseISO } from 'date-fns';
 import { DateNavigator } from '@/components/date-navigator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -25,7 +26,7 @@ function getValidatedDate(dateString?: string | null): Date {
   return new Date();
 }
 
-const AssetActionTable = ({ assets }: { assets: CommodityPriceData[] }) => {
+const AssetActionTable = ({ assets }: { assets: (CommodityPriceData & { rentMediaCalculada?: number })[] }) => {
   const { toast } = useToast();
 
   const handleTestAction = (assetName: string) => {
@@ -43,12 +44,15 @@ const AssetActionTable = ({ assets }: { assets: CommodityPriceData[] }) => {
     );
   }
 
+  const hasRentMedia = assets.some(a => a.rentMediaCalculada !== undefined);
+
   return (
     <Table>
       <TableHeader>
         <TableRow>
           <TableHead>Ativo</TableHead>
           <TableHead className="text-right">Valor</TableHead>
+          {hasRentMedia && <TableHead className="text-right">Rentabilidade Média</TableHead>}
           <TableHead className="text-center w-[150px]">Ações</TableHead>
         </TableRow>
       </TableHeader>
@@ -59,6 +63,14 @@ const AssetActionTable = ({ assets }: { assets: CommodityPriceData[] }) => {
             <TableCell className="text-right font-mono">
               {formatCurrency(asset.price, asset.currency, asset.id)}
             </TableCell>
+            {hasRentMedia && (
+                <TableCell className="text-right font-mono">
+                    {asset.rentMediaCalculada !== undefined 
+                        ? formatCurrency(asset.rentMediaCalculada, 'BRL', 'rentabilidade') 
+                        : 'N/A'
+                    }
+                </TableCell>
+            )}
             <TableCell className="text-center">
               <Button
                 variant="outline"
@@ -140,9 +152,27 @@ export default function AuditPage() {
   const { currencies, baseCommodities, indices } = useMemo(() => {
     const currencyIds = ['usd', 'eur'];
     const commodityIds = ['milho', 'soja', 'boi_gordo', 'madeira', 'carbono'];
+    
+    const dataMap = new Map(data.map(item => [item.id, item.price]));
+    const usdPrice = dataMap.get('usd') || 0;
+    const eurPrice = dataMap.get('eur') || 0;
 
     const currencies = data.filter((asset) => currencyIds.includes(asset.id));
-    const baseCommodities = data.filter((asset) => commodityIds.includes(asset.id));
+    
+    const baseCommodities = data
+        .filter((asset) => commodityIds.includes(asset.id))
+        .map(asset => {
+            let rentMediaCalculada: number | undefined;
+            switch(asset.id) {
+                case 'soja': rentMediaCalculada = Calc.calculateRentMediaSoja(asset.price, usdPrice); break;
+                case 'milho': rentMediaCalculada = Calc.calculateRentMediaMilho(asset.price); break;
+                case 'boi_gordo': rentMediaCalculada = Calc.calculateRentMediaBoi(asset.price); break;
+                case 'madeira': rentMediaCalculada = Calc.calculateRentMediaMadeira(asset.price, usdPrice); break;
+                case 'carbono': rentMediaCalculada = Calc.calculateRentMediaCarbono(asset.price, eurPrice); break;
+            }
+            return { ...asset, rentMediaCalculada };
+        });
+
     const indices = data.filter(
       (asset) => !currencyIds.includes(asset.id) && !commodityIds.includes(asset.id)
     );
