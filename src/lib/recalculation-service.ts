@@ -8,6 +8,7 @@ import { Timestamp } from 'firebase-admin/firestore';
 import * as Calc from './calculation-service';
 import type { FirestoreQuote } from './types';
 import { revalidatePath } from 'next/cache';
+import { createRecalculationLog } from './audit-log-service';
 
 type ValueMap = Record<string, number>;
 
@@ -103,13 +104,21 @@ async function updateQuote(
   transaction.update(docRef, updateData);
 }
 
-export async function recalculateAllForDate(targetDate: Date, editedValues: Record<string, number>) {
+export async function recalculateAllForDate(
+  targetDate: Date, 
+  editedValues: Record<string, number>,
+  user: string = 'Sistema'
+) {
   const { db } = await getFirebaseAdmin();
 
   try {
+    let editedAssets: Record<string, { name: string; oldValue: number; newValue: number }> = {};
+    let affectedAssets: string[] = [];
+
     await db.runTransaction(async (transaction) => {
       const quoteDocs = await db.collection('settings').doc('commodities').get();
       const configs = Object.keys(quoteDocs.data() || {});
+      const commoditySettings = quoteDocs.data() || {};
 
       const initialValues: ValueMap = {};
       const quotes: Record<string, FirestoreQuote> = {};
@@ -121,8 +130,26 @@ export async function recalculateAllForDate(targetDate: Date, editedValues: Reco
         initialValues[assetId] = quote?.valor ?? quote?.ultimo ?? (quote as any)?.valor_brl ?? 0;
       }
       
+      // Prepara dados para o log de auditoria
+      for (const [assetId, newValue] of Object.entries(editedValues)) {
+        const oldValue = initialValues[assetId] || 0;
+        const assetName = commoditySettings[assetId]?.name || assetId;
+        editedAssets[assetId] = {
+          name: assetName,
+          oldValue,
+          newValue
+        };
+      }
+      
       const valuesWithEdits = { ...initialValues, ...editedValues };
       const finalValues = runCalculationCascade(valuesWithEdits);
+
+      // Identifica todos os ativos que foram afetados pelo recálculo
+      for (const assetId of configs) {
+        if (initialValues[assetId] !== finalValues[assetId]) {
+          affectedAssets.push(assetId);
+        }
+      }
 
       for (const assetId of configs) {
         const dataToUpdate: Partial<FirestoreQuote> = {
@@ -142,6 +169,11 @@ export async function recalculateAllForDate(targetDate: Date, editedValues: Reco
         await updateQuote(db, assetId, quotes[assetId].id, dataToUpdate, transaction);
       }
     });
+
+    // Cria logs de auditoria após o sucesso da transação
+    if (Object.keys(editedAssets).length > 0) {
+      await createRecalculationLog(targetDate, editedAssets, affectedAssets, user);
+    }
 
     console.log(`[Recalculation] Successfully recalculated all assets for ${format(targetDate, 'dd/MM/yyyy')}`);
     revalidatePath('/admin/audit', 'page');

@@ -45,10 +45,38 @@ function serializeFirestoreTimestamp(data: any): any {
 
 function getPriceFromQuote(quoteData: any): number {
     if (quoteData) {
-        if (typeof quoteData.resultado_final_brl === 'number') return quoteData.resultado_final_brl;
-        if (typeof quoteData.valor_brl === 'number') return quoteData.valor_brl;
-        if (typeof quoteData.ultimo === 'number') return quoteData.ultimo;
-        if (typeof quoteData.valor === 'number') return quoteData.valor;
+        // 1. Prioridade para ativos calculados (como Agua_CRS, VMAD, etc.)
+        if (typeof quoteData.valor === 'number') {
+            // Log para VMAD para debug
+            if (quoteData.id === 'Vmad' || quoteData.valor === 733555.1) {
+                console.log(`[getPriceFromQuote] VMAD - Usando valor:`, quoteData.valor);
+            }
+            return quoteData.valor;
+        }
+        
+        // 2. Para UCS ASE e outros com resultado final
+        if (typeof quoteData.resultado_final_brl === 'number') {
+            if (quoteData.id === 'Vmad') {
+                console.log(`[getPriceFromQuote] VMAD - Usando resultado_final_brl:`, quoteData.resultado_final_brl);
+            }
+            return quoteData.resultado_final_brl;
+        }
+        
+        // 3. Para ativos cotados (moedas, commodities)
+        if (typeof quoteData.ultimo === 'number') {
+            if (quoteData.id === 'Vmad') {
+                console.log(`[getPriceFromQuote] VMAD - Usando ultimo:`, quoteData.ultimo);
+            }
+            return quoteData.ultimo;
+        }
+        
+        // 4. Fallback para valor_brl (caso exista)
+        if (typeof quoteData.valor_brl === 'number') {
+            if (quoteData.id === 'Vmad') {
+                console.log(`[getPriceFromQuote] VMAD - Usando valor_brl:`, quoteData.valor_brl);
+            }
+            return quoteData.valor_brl;
+        }
     }
     return 0;
 }
@@ -99,9 +127,32 @@ export async function saveCommodityConfig(id: string, config: Omit<CommodityConf
     setCache(COMMODITIES_CONFIG_CACHE_KEY, null, 0);
 }
 
+/**
+ * Força a atualização completa da configuração dos ativos calculados
+ */
+export async function updateCalculatedAssetsConfig(): Promise<void> {
+    const { db } = await getFirebaseAdmin();
+    const docRef = db.collection(SETTINGS_COLLECTION).doc(COMMODITIES_DOC);
+
+    console.log('Atualizando configuração completa dos ativos...');
+    
+    try {
+        await docRef.set(initialCommoditiesConfig);
+        setCache(COMMODITIES_CONFIG_CACHE_KEY, null, 0);
+        console.log('✅ Configuração completa dos ativos atualizada com sucesso');
+    } catch (error) {
+        console.error('❌ Erro ao atualizar configuração dos ativos:', error);
+        throw error;
+    }
+}
+
+
+
+
 export async function getCommodityConfigs(): Promise<CommodityConfig[]> {
     const cachedConfigs = getCache<CommodityConfig[]>(COMMODITIES_CONFIG_CACHE_KEY);
     if (cachedConfigs) {
+        console.log('[getCommodityConfigs] Usando configurações do cache:', cachedConfigs.length, 'assets');
         return cachedConfigs;
     }
     
@@ -112,22 +163,31 @@ export async function getCommodityConfigs(): Promise<CommodityConfig[]> {
     let configData: Record<string, Omit<CommodityConfig, 'id'>>;
 
     if (!doc.exists || !doc.data()) {
-        console.log("Nenhuma configuração de commodity encontrada, usando configuração inicial e (re)criando documento se necessário.");
+        console.log("[getCommodityConfigs] Nenhuma configuração de commodity encontrada, usando configuração inicial e (re)criando documento se necessário.");
         configData = initialCommoditiesConfig;
         try {
             await docRef.set(configData);
+            console.log("[getCommodityConfigs] Documento de configuração inicial criado com sucesso");
         } catch (error) {
             console.error("Falha ao criar o documento de configuração inicial:", error);
         }
     } else {
          const data = doc.data();
          configData = data ? (data as Record<string, Omit<CommodityConfig, 'id'>>) : initialCommoditiesConfig;
+         console.log("[getCommodityConfigs] Configurações carregadas do Firestore:", Object.keys(configData).length, "assets");
     }
     
     const configsArray = Object.entries(configData).map(([id, config]) => ({
         id,
         ...config,
     }));
+    
+    // Verificar se Agua_CRS está nas configurações
+    const aguaConfig = configsArray.find(c => c.id === 'Agua_CRS');
+    console.log("[getCommodityConfigs] Agua_CRS encontrado:", aguaConfig ? 'SIM' : 'NÃO');
+    if (aguaConfig) {
+        console.log("[getCommodityConfigs] Configuração Agua_CRS:", aguaConfig);
+    }
     
     const pdmAsset = configsArray.find(c => c.id === 'pdm');
     if (pdmAsset) {
@@ -139,6 +199,7 @@ export async function getCommodityConfigs(): Promise<CommodityConfig[]> {
         ucsAseAsset.description = "Índice principal de Unidade de Crédito de Sustentabilidade.";
     }
 
+    console.log("[getCommodityConfigs] Total de configurações finais:", configsArray.length);
     setCache(COMMODITIES_CONFIG_CACHE_KEY, configsArray, CACHE_TTL_SECONDS * 10);
     return configsArray;
 }
@@ -149,15 +210,34 @@ export async function getQuoteByDate(assetId: string, date: Date): Promise<Fires
     const { db } = await getFirebaseAdmin();
     const formattedDate = format(date, 'dd/MM/yyyy');
     
+    // Log específico para Agua_CRS e VMAD
+    if (assetId === 'Agua_CRS' || assetId === 'vmad') {
+        console.log(`[getQuoteByDate] Buscando ${assetId} para data ${formattedDate}`);
+    }
+    
     try {
         const snapshot = await db.collection(assetId)
             .where('data', '==', formattedDate)
             .limit(1)
             .get();
 
+        if (assetId === 'Agua_CRS' || assetId === 'vmad') {
+            console.log(`[getQuoteByDate] ${assetId} - Documentos encontrados para data exata:`, snapshot.size);
+        }
+
         if (!snapshot.empty) {
             const doc = snapshot.docs[0];
             const data = doc.data();
+            if (assetId === 'Agua_CRS' || assetId === 'Vmad') {
+                console.log(`[getQuoteByDate] ${assetId} - Documento encontrado:`, {
+                    id: doc.id,
+                    valor: data.valor,
+                    ultimo: data.ultimo,
+                    resultado_final_brl: data.resultado_final_brl,
+                    resultado_final: data.resultado_final,
+                    campos: Object.keys(data)
+                });
+            }
             return serializeFirestoreTimestamp({ id: doc.id, ...data }) as FirestoreQuote;
         }
 
@@ -168,10 +248,28 @@ export async function getQuoteByDate(assetId: string, date: Date): Promise<Fires
             .limit(1)
             .get();
         
+        if (assetId === 'Agua_CRS' || assetId === 'Vmad') {
+            console.log(`[getQuoteByDate] ${assetId} - Documentos históricos encontrados:`, historicalSnapshot.size);
+        }
+        
         if(!historicalSnapshot.empty) {
             const doc = historicalSnapshot.docs[0];
             const data = doc.data();
+            if (assetId === 'Agua_CRS' || assetId === 'Vmad') {
+                console.log(`[getQuoteByDate] ${assetId} - Documento histórico encontrado:`, {
+                    id: doc.id,
+                    valor: data.valor,
+                    ultimo: data.ultimo,
+                    resultado_final_brl: data.resultado_final_brl,
+                    resultado_final: data.resultado_final,
+                    campos: Object.keys(data)
+                });
+            }
             return serializeFirestoreTimestamp({ id: doc.id, ...data }) as FirestoreQuote;
+        }
+        
+        if (assetId === 'Agua_CRS' || assetId === 'Vmad') {
+            console.log(`[getQuoteByDate] ${assetId} - Nenhum documento encontrado`);
         }
         
         return null;
@@ -191,34 +289,34 @@ export async function getCommodityPricesByDate(date: Date): Promise<CommodityPri
     const previousDate = subDays(date, 1);
     const displayDate = format(date, 'dd/MM/yyyy');
 
-    try {
-        const configs = await getCommodityConfigs();
-        
-        const assetPromises = configs.map(async (config) => {
-            const [latestDoc, previousDoc] = await Promise.all([
-                getQuoteByDate(config.id, date),
-                getQuoteByDate(config.id, previousDate)
-            ]);
+        try {
+            const configs = await getCommodityConfigs();
             
-            const latestPrice = getPriceFromQuote(latestDoc);
-            const previousPrice = getPriceFromQuote(previousDoc);
-        
-            const absoluteChange = latestPrice - previousPrice;
-            const change = (previousPrice !== 0) ? (absoluteChange / previousPrice) * 100 : 0;
+            const assetPromises = configs.map(async (config) => {
+                const [latestDoc, previousDoc] = await Promise.all([
+                    getQuoteByDate(config.id, date),
+                    getQuoteByDate(config.id, previousDate)
+                ]);
+                
+                const latestPrice = getPriceFromQuote(latestDoc);
+                const previousPrice = getPriceFromQuote(previousDoc);
             
-            return { 
-                ...config, 
-                price: latestPrice, 
-                change, 
-                absoluteChange, 
-                lastUpdated: displayDate
-            };
-        });
+                const absoluteChange = latestPrice - previousPrice;
+                const change = (previousPrice !== 0) ? (absoluteChange / previousPrice) * 100 : 0;
+                
+                return { 
+                    ...config, 
+                    price: latestPrice, 
+                    change, 
+                    absoluteChange, 
+                    lastUpdated: displayDate
+                };
+            });
 
-        const results = await Promise.all(assetPromises);
+            const results = await Promise.all(assetPromises);
 
-        setCache(cacheKey, results, CACHE_TTL_SECONDS * 12 * 24); // Cache de 1 dia
-        return results;
+            setCache(cacheKey, results, CACHE_TTL_SECONDS * 12 * 24); // Cache de 1 dia
+            return results;
 
     } catch (error) {
         console.error("Erro ao buscar preços por data:", error);
@@ -328,7 +426,8 @@ export async function getCotacoesHistoricoPorRange(assetId: string, dateRange: {
 
 export async function clearCacheAndRefresh() {
     clearMemoryCache();
-    revalidatePath('/dashboard');
+    revalidatePath('/admin/audit', 'page');
+    revalidatePath('/dashboard', 'page');
 }
 
 /**
