@@ -1,3 +1,4 @@
+
 'use server';
 
 import { getFirebaseAdmin } from './firebase-admin-config';
@@ -5,16 +6,8 @@ import { format, startOfDay } from 'date-fns';
 import type { firestore as adminFirestore } from 'firebase-admin';
 import { Timestamp } from 'firebase-admin/firestore';
 import * as Calc from './calculation-service';
-import type { FirestoreQuote, CommodityConfig } from './types';
+import type { FirestoreQuote } from './types';
 import { revalidatePath } from 'next/cache';
-
-export interface ImpactedAsset {
-  id: string;
-  name: string;
-  currency: string;
-  oldValue: number;
-  newValue: number;
-}
 
 type ValueMap = Record<string, number>;
 
@@ -53,53 +46,6 @@ function runCalculationCascade(initialValues: ValueMap): ValueMap {
 
   return newValues;
 }
-
-/**
- * Server Action to preview the impact of a value change without saving.
- */
-export async function previewRecalculation(params: {
-  targetDate: Date;
-  editedAssetId: string;
-  newValue: number;
-  allAssetOriginalValues: ValueMap;
-  allAssetsConfig: CommodityConfig[];
-}): Promise<ImpactedAsset[]> {
-    const { editedAssetId, newValue, allAssetOriginalValues, allAssetsConfig } = params;
-
-    const newInitialValues = { ...allAssetOriginalValues, [editedAssetId]: newValue };
-    const calculatedNewValues = runCalculationCascade(newInitialValues);
-
-    const impacted: ImpactedAsset[] = [];
-    for (const assetConfig of allAssetsConfig) {
-        const id = assetConfig.id;
-        const oldValue = allAssetOriginalValues[id];
-        const aNewValue = calculatedNewValues[id];
-
-        if (oldValue !== undefined && aNewValue !== undefined && Math.abs(aNewValue - oldValue) > 1e-9) {
-             impacted.push({
-                id,
-                name: assetConfig.name,
-                currency: assetConfig.currency,
-                oldValue: oldValue,
-                newValue: aNewValue,
-            });
-        }
-    }
-    
-    // Sort impacted assets to show main indices first
-    const order = ['ucs_ase', 'ucs', 'pdm', 'valor_uso_solo'];
-    impacted.sort((a, b) => {
-        const indexA = order.indexOf(a.id);
-        const indexB = order.indexOf(b.id);
-        if (indexA !== -1 && indexB !== -1) return indexA - indexB;
-        if (indexA !== -1) return -1;
-        if (indexB !== -1) return 1;
-        return a.name.localeCompare(b.name);
-    });
-
-    return impacted;
-}
-
 
 // --- Firestore Interaction ---
 
@@ -171,7 +117,7 @@ export async function recalculateAllForDate(targetDate: Date, editedValues: Reco
       for (const assetId of configs) {
         const quote = await getOrCreateQuote(db, assetId, targetDate, transaction);
         quotes[assetId] = quote;
-        initialValues[assetId] = quote?.valor ?? quote?.ultimo ?? 0;
+        initialValues[assetId] = quote?.valor ?? quote?.ultimo ?? (quote as any)?.valor_brl ?? 0;
       }
       
       const valuesWithEdits = { ...initialValues, ...editedValues };

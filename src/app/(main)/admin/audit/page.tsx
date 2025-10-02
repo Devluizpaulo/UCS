@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useTransition } from 'react';
@@ -49,7 +50,7 @@ export type AssetItem = CommodityConfig & {
 };
 
 // A lista definitiva de IDs de ativos que são calculados pela plataforma.
-const CALCULATED_ASSET_IDS: string[] = ['vus', 'vmad', 'carbono_crs', 'valor_uso_solo', 'pdm', 'ucs', 'ucs_ase'];
+const CALCULATED_ASSET_IDS: string[] = ['vus', 'vmad', 'carbono_crs', 'valor_uso_solo', 'pdm', 'ucs', 'ucs_ase', 'custo_agua', 'ch2o_agua'];
 
 export default function AuditPage() {
   const searchParams = useSearchParams();
@@ -266,11 +267,9 @@ export default function AuditPage() {
       </div>
       <AuditEditModal
         assetItem={editingAsset}
-        allAssets={assetItems}
         isOpen={!!editingAsset}
         onOpenChange={() => setEditingAsset(null)}
         onSave={handleValueChange}
-        targetDate={targetDate}
       />
       <AlertDialog open={isRecalculateAlertOpen} onOpenChange={setIsRecalculateAlertOpen}>
         <AlertDialogContent>
