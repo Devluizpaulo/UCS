@@ -59,13 +59,13 @@ function getPriceFromQuote(quoteData: any): number {
 
 const initialCommoditiesConfig: Record<string, Omit<CommodityConfig, 'id'>> = {
     // Commodities Base
-    'milho': { name: 'Milho', currency: 'BRL', category: 'agricultural', description: 'Milho Futuros (convertido para BRL)', unit: 'saca', sourceUrl: 'https://br.investing.com/commodities/us-corn-futures' },
-    'soja': { name: 'Soja', currency: 'BRL', category: 'agricultural', description: 'Soja Futuros (convertido para BRL)', unit: 'saca', sourceUrl: 'https://br.investing.com/commodities/us-soybeans-futures' },
-    'boi_gordo': { name: 'Boi Gordo', currency: 'BRL', category: 'agricultural', description: 'Preço da arroba (15kg) de Boi Gordo.', unit: '@', sourceUrl: 'https://br.investing.com/commodities/live-cattle-futures' },
-    'madeira': { name: 'Madeira', currency: 'BRL', category: 'material', description: 'Madeira Serrada (convertido para BRL)', unit: 'm³', sourceUrl: 'https://br.investing.com/commodities/lumber-futures' },
-    'carbono': { name: 'Carbono', currency: 'BRL', category: 'material', description: 'Crédito de Carbono (convertido para BRL)', unit: 'Tonelada', sourceUrl: 'https://br.investing.com/commodities/carbon-emissions-futures' },
-    'usd': { name: 'Dólar Americano', currency: 'BRL', category: 'exchange', description: 'Cotação do Dólar Americano (USD) em Reais (BRL).', unit: 'BRL', sourceUrl: 'https://br.investing.com/currencies/usd-brl' },
-    'eur': { name: 'Euro', currency: 'BRL', category: 'exchange', description: 'Cotação do Euro (EUR) em Reais (BRL).', unit: 'BRL', sourceUrl: 'https://br.investing.com/currencies/eur-brl' },
+    'milho': { name: 'Milho', currency: 'BRL', category: 'agricultural', description: 'Milho Futuros (convertido para BRL)', unit: 'saca', sourceUrl: 'https://br.investing.com/commodities/us-corn-historical-data?cid=964522' },
+    'soja': { name: 'Soja', currency: 'BRL', category: 'agricultural', description: 'Soja Futuros (convertido para BRL)', unit: 'saca', sourceUrl: 'https://br.investing.com/commodities/us-soybeans-historical-data?cid=964523' },
+    'boi_gordo': { name: 'Boi Gordo', currency: 'BRL', category: 'agricultural', description: 'Preço da arroba (15kg) de Boi Gordo.', unit: '@', sourceUrl: 'https://br.investing.com/commodities/live-cattle-historical-data?cid=964528' },
+    'madeira': { name: 'Madeira', currency: 'BRL', category: 'material', description: 'Madeira Serrada (convertido para BRL)', unit: 'm³', sourceUrl: 'https://br.investing.com/commodities/lumber-historical-data' },
+    'carbono': { name: 'Carbono', currency: 'BRL', category: 'material', description: 'Crédito de Carbono (convertido para BRL)', unit: 'Tonelada', sourceUrl: 'https://br.investing.com/commodities/carbon-emissions-historical-data' },
+    'usd': { name: 'Dólar Americano', currency: 'BRL', category: 'exchange', description: 'Cotação do Dólar Americano (USD) em Reais (BRL).', unit: 'BRL', sourceUrl: 'https://br.investing.com/currencies/usd-brl-historical-data' },
+    'eur': { name: 'Euro', currency: 'BRL', category: 'exchange', description: 'Cotação do Euro (EUR) em Reais (BRL).', unit: 'BRL', sourceUrl: 'https://br.investing.com/currencies/eur-brl-historical-data' },
 
     // Indices Calculados (conforme documentação)
     'ch2o_agua': { name: 'CH2O Água', currency: 'BRL', category: 'sub-index', description: 'Índice de uso da água.', unit: 'Pontos' },
@@ -362,3 +362,6 @@ export async function reprocessDate(date: Date): Promise<{ success: boolean; mes
     }
 }
 
+
+
+    

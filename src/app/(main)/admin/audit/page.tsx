@@ -3,9 +3,10 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { History, PlayCircle, Loader2 } from 'lucide-react';
+import { History, PlayCircle, Loader2, ExternalLink } from 'lucide-react';
 import { getCommodityPricesByDate } from '@/lib/data-service';
 import type { CommodityPriceData } from '@/lib/types';
 import * as Calc from '@/lib/calculation-service';
@@ -15,6 +16,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { formatCurrency } from '@/lib/formatters';
 import { useToast } from '@/hooks/use-toast';
+import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 function getValidatedDate(dateString?: string | null): Date {
   if (dateString) {
@@ -71,15 +73,31 @@ const AssetActionTable = ({ assets }: { assets: (CommodityPriceData & { rentMedi
                     }
                 </TableCell>
             )}
-            <TableCell className="text-center">
+            <TableCell className="text-center flex justify-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => handleTestAction(asset.name)}
               >
                 <PlayCircle className="mr-2 h-4 w-4" />
-                Só pra testar
+                Testar
               </Button>
+              {asset.sourceUrl && (
+                  <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button variant="outline" size="icon" asChild>
+                                <Link href={asset.sourceUrl} target="_blank">
+                                    <ExternalLink className="h-4 w-4" />
+                                </Link>
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Ver fonte no investing.com</p>
+                        </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+              )}
             </TableCell>
           </TableRow>
         ))}
@@ -237,3 +255,5 @@ export default function AuditPage() {
     </div>
   );
 }
+
+    
