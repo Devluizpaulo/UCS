@@ -32,7 +32,7 @@ import { User } from 'firebase/auth';
 
 const e164Regex = /^\+[1-9]\d{1,14}$/;
 
-const userSchema = {
+const userSchemaBase = {
   displayName: z.string().min(3, { message: 'O nome é obrigatório.' }),
   email: z.string().email({ message: 'E-mail inválido.' }),
   phoneNumber: z.string()
@@ -41,13 +41,16 @@ const userSchema = {
     })
     .optional(),
   disabled: z.boolean().default(false),
-}
+};
 
-const createUserSchema = z.object(userSchema);
+const createUserSchema = z.object(userSchemaBase);
 
 const updateUserSchema = z.object({
-  ...userSchema,
-  password: z.string().optional().describe('Deixe em branco para não alterar'),
+  ...userSchemaBase,
+  password: z.string().optional().refine(
+    (val) => val === '' || !val || val.length >= 6,
+    { message: 'A nova senha deve ter pelo menos 6 caracteres.' }
+  ),
 });
 
 export type UserFormValues = z.infer<typeof createUserSchema> & { password?: string };
@@ -60,7 +63,6 @@ interface UserFormModalProps {
   isSelfEdit?: boolean;
 }
 
-// Type guard to check if the user object is a server-side UserRecord
 function isUserRecord(user: any): user is UserRecord {
   return user && 'metadata' in user && 'creationTime' in user.metadata;
 }
@@ -88,7 +90,6 @@ export function UserFormModal({ isOpen, onOpenChange, onSubmit, user, isSelfEdit
         email: user.email || '',
         phoneNumber: user.phoneNumber || '+55',
         password: '',
-        // The 'disabled' property only exists on the server-side UserRecord
         disabled: isUserRecord(user) ? user.disabled : false,
       });
     } else {
@@ -105,7 +106,6 @@ export function UserFormModal({ isOpen, onOpenChange, onSubmit, user, isSelfEdit
   const { isSubmitting } = form.formState;
 
   const handleFormSubmit = async (values: any) => {
-    // Garante que o campo de telefone vazio não seja enviado
     const processedValues = {
       ...values,
       phoneNumber: values.phoneNumber === '+55' ? '' : values.phoneNumber,
@@ -154,7 +154,7 @@ export function UserFormModal({ isOpen, onOpenChange, onSubmit, user, isSelfEdit
                     <FormItem>
                     <FormLabel>E-mail</FormLabel>
                     <FormControl>
-                        <Input placeholder="usuario@exemplo.com" {...field} />
+                        <Input placeholder="usuario@exemplo.com" {...field} disabled={isEditing} />
                     </FormControl>
                     <FormMessage />
                     </FormItem>
@@ -198,6 +198,9 @@ export function UserFormModal({ isOpen, onOpenChange, onSubmit, user, isSelfEdit
                                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                             </Button>
                         </div>
+                        <FormDescription>
+                            A senha deve ter no mínimo 6 caracteres.
+                        </FormDescription>
                         <FormMessage />
                         </FormItem>
                     )}
