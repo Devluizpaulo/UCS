@@ -7,7 +7,7 @@ export interface CommodityConfig {
     id: string;
     name: string;
     currency: 'USD' | 'BRL' | 'EUR';
-    category: 'exchange' | 'vus' | 'vmad' | 'crs' | 'index' | 'sub-index' | 'agricultural' | 'material';
+    category: 'exchange' | 'agricultural' | 'material' | 'sustainability' | 'calculated' | 'credit' | 'main-index' | 'vus' | 'vmad' | 'crs' | 'index' | 'sub-index';
     description: string;
     unit: string;
     sourceUrl?: string;

@@ -1,7 +1,6 @@
-
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -17,14 +16,16 @@ import {
   Tooltip,
   ResponsiveContainer,
   CartesianGrid,
+  ReferenceLine,
 } from 'recharts';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { ArrowDown, ArrowUp, Loader2 } from 'lucide-react';
-import { format, parseISO, subDays, isAfter } from 'date-fns';
+import { ArrowDown, ArrowUp, Loader2, AlertCircle, RefreshCw, TrendingUp, TrendingDown } from 'lucide-react';
+import { format, parseISO, subDays, isAfter, isValid } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 import type { CommodityPriceData, FirestoreQuote } from '@/lib/types';
-import { getIconForCategory } from '@/lib/icons';
+import { AssetIcon } from '@/lib/icons';
 import { getCotacoesHistorico } from '@/lib/data-service';
 import { formatCurrency } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
@@ -32,185 +33,450 @@ import { HistoricalPriceTable } from './historical-price-table';
 import { CalculatedAssetDetails } from './calculated-asset-details';
 import { ScrollArea } from './ui/scroll-area';
 import { UcsAseDetails } from './ucs-ase-details';
+import { Button } from './ui/button';
+import { Alert, AlertDescription } from './ui/alert';
 
+// --- TYPES ---
 interface AssetDetailModalProps {
   asset: CommodityPriceData;
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
 }
 
-export function AssetDetailModal({ asset, isOpen, onOpenChange }: AssetDetailModalProps) {
-  const [historicalData, setHistoricalData] = useState<FirestoreQuote[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  
-  const isCalculated = asset.category === 'index' || asset.category === 'sub-index';
-  const isUcsAse = asset.id === 'ucs_ase';
+interface ChartDataPoint {
+  date: string;
+  price: number;
+  timestamp: number;
+}
 
-  useEffect(() => {
-    // Para o UCS ASE, os detalhes são customizados e não precisam do histórico de 90 dias
-    if (isOpen && !isUcsAse) {
-      setIsLoading(true);
-      // Fetch last 90 days of data for the table.
-      getCotacoesHistorico(asset.id, 90)
-        .then((data) => {
-          setHistoricalData(data);
-          setIsLoading(false);
-        })
-        .catch(() => {
-          setHistoricalData([]);
-          setIsLoading(false);
-        });
-    } else if (isOpen && isUcsAse) {
-        setIsLoading(false);
-    }
-  }, [asset.id, isOpen, isUcsAse]);
+interface LoadingState {
+  isLoading: boolean;
+  error: string | null;
+  retryCount: number;
+}
 
+// --- CONSTANTS ---
+const CHART_DAYS = 30;
+const TABLE_DAYS = 90;
+const MAX_RETRY_ATTEMPTS = 3;
+const RETRY_DELAY = 1000;
+
+// --- UTILITY FUNCTIONS ---
+
+/**
+ * Extrai preço de uma cotação com fallback inteligente
+ */
+function extractPrice(quote: FirestoreQuote): number {
+  return quote.valor ?? quote.ultimo ?? quote.resultado_final_brl ?? 0;
+}
+
+/**
+ * Converte timestamp para Date de forma segura
+ */
+function parseTimestamp(timestamp: any): Date {
+  if (typeof timestamp === 'number') {
+    return new Date(timestamp);
+  }
+  if (typeof timestamp === 'string') {
+    const parsed = parseISO(timestamp);
+    return isValid(parsed) ? parsed : new Date();
+  }
+  return new Date();
+}
+
+/**
+ * Determina se um ativo é calculado
+ */
+function isCalculatedAsset(asset: CommodityPriceData): boolean {
+  return ['index', 'sub-index', 'vus', 'vmad', 'crs'].includes(asset.category);
+}
+
+/**
+ * Determina se é o UCS ASE
+ */
+function isUcsAseAsset(asset: CommodityPriceData): boolean {
+  return asset.id === 'ucs_ase';
+}
+
+// --- COMPONENTS ---
+
+/**
+ * Componente de loading otimizado
+ */
+const LoadingSpinner = memo<{ size?: number; className?: string }>(({ 
+  size = 8, 
+  className 
+}) => (
+  <div className={cn("flex items-center justify-center", className)}>
+    <Loader2 className={cn("animate-spin text-primary", `h-${size} w-${size}`)} />
+  </div>
+));
+
+LoadingSpinner.displayName = 'LoadingSpinner';
+
+/**
+ * Componente de erro com retry
+ */
+const ErrorState = memo<{
+  error: string;
+  onRetry: () => void;
+  retryCount: number;
+  maxRetries: number;
+}>(({ error, onRetry, retryCount, maxRetries }) => (
+  <Alert variant="destructive" className="m-4">
+    <AlertCircle className="h-4 w-4" />
+    <AlertDescription className="flex items-center justify-between">
+      <span>{error}</span>
+      {retryCount < maxRetries && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onRetry}
+          className="ml-2"
+        >
+          <RefreshCw className="h-3 w-3 mr-1" />
+          Tentar Novamente
+        </Button>
+      )}
+    </AlertDescription>
+  </Alert>
+));
+
+ErrorState.displayName = 'ErrorState';
+
+/**
+ * Componente de informações do ativo
+ */
+const AssetInfo = memo<{
+  asset: CommodityPriceData;
+  isLoading: boolean;
+}>(({ asset, isLoading }) => {
+  const changeColor = asset.change >= 0 ? 'text-emerald-600' : 'text-red-600';
+  const ChangeIcon = asset.change >= 0 ? ArrowUp : ArrowDown;
+  const TrendIcon = asset.change >= 0 ? TrendingUp : TrendingDown;
+
+  return (
+    <div className="flex flex-col gap-6 border-b md:border-b-0 md:border-r md:pr-6 pb-6 mb-6 md:pb-0 md:mb-0">
+      {/* Preço Principal */}
+      <div className="flex flex-col gap-4">
+        <div className="flex items-baseline gap-2">
+          <span className="text-3xl font-bold font-mono">
+            {isLoading ? (
+              <div className="h-8 w-32 bg-muted animate-pulse rounded" />
+            ) : (
+              formatCurrency(asset.price, asset.currency, asset.id)
+            )}
+          </span>
+          <span className="text-sm text-muted-foreground">{asset.unit}</span>
+        </div>
+
+        {/* Mudança de Preço */}
+        <div className="flex items-center gap-2">
+          <div className={cn('flex items-center text-sm font-semibold', changeColor)}>
+            <ChangeIcon className="h-4 w-4 mr-1" aria-hidden="true" />
+            <span>{asset.change.toFixed(2)}%</span>
+            <span className="mx-1" aria-hidden="true">/</span>
+            <span>{formatCurrency(asset.absoluteChange, asset.currency, asset.id)}</span>
+            <span className="text-xs text-muted-foreground ml-1">(24h)</span>
+          </div>
+          <TrendIcon className={cn("h-4 w-4", changeColor)} aria-hidden="true" />
+        </div>
+      </div>
+
+      {/* Informações do Ativo */}
+      <div className="space-y-3 text-sm text-muted-foreground mt-auto">
+        <div className="flex items-center gap-2">
+          <span className="font-semibold text-foreground">Categoria:</span>
+          <Badge variant="secondary" className="capitalize">
+            {asset.category}
+          </Badge>
+        </div>
+        
+        {isCalculatedAsset(asset) && (
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-foreground">Tipo:</span>
+            <Badge variant="outline">Índice Calculado</Badge>
+          </div>
+        )}
+        
+        <div className="flex items-center gap-2">
+          <span className="font-semibold text-foreground">Moeda:</span>
+          <span className="font-mono">{asset.currency}</span>
+        </div>
+
+        {asset.lastUpdated && asset.lastUpdated !== 'N/A' && (
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-foreground">Última Atualização:</span>
+            <span className="font-mono text-xs">{asset.lastUpdated}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+});
+
+AssetInfo.displayName = 'AssetInfo';
+
+/**
+ * Componente do gráfico otimizado
+ */
+const PriceChart = memo<{
+  data: ChartDataPoint[];
+  asset: CommodityPriceData;
+  isLoading: boolean;
+}>(({ data, asset, isLoading }) => {
   const chartData = useMemo(() => {
-    // Filter for the last 30 days for the chart
-    const thirtyDaysAgo = subDays(new Date(), 30);
+    if (!data.length) return [];
+    
+    // Adiciona linha de referência para o preço atual
+    const currentPrice = asset.price;
+    return data.map(point => ({
+      ...point,
+      currentPrice
+    }));
+  }, [data, asset.price]);
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Histórico de Preços (Últimos {CHART_DAYS} Dias)</CardTitle>
+        </CardHeader>
+        <CardContent className="h-64">
+          <LoadingSpinner className="h-full" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!chartData.length) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Histórico de Preços (Últimos {CHART_DAYS} Dias)</CardTitle>
+        </CardHeader>
+        <CardContent className="h-64">
+          <div className="h-full flex items-center justify-center text-muted-foreground">
+            <AlertCircle className="h-8 w-8 mr-2" />
+            Nenhum dado disponível
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Histórico de Preços (Últimos {CHART_DAYS} Dias)</CardTitle>
+      </CardHeader>
+      <CardContent className="h-64">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={chartData}>
+            <CartesianGrid 
+              strokeDasharray="3 3" 
+              stroke="hsl(var(--border))" 
+              opacity={0.3}
+            />
+            <XAxis 
+              dataKey="date" 
+              stroke="hsl(var(--muted-foreground))"
+              fontSize={12}
+              tickLine={false}
+              axisLine={false}
+              tickFormatter={(value) => value}
+            />
+            <YAxis 
+              stroke="hsl(var(--muted-foreground))"
+              fontSize={12}
+              tickLine={false}
+              axisLine={false}
+              tickFormatter={(value) => formatCurrency(value as number, asset.currency, asset.id)}
+            />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: "hsl(var(--background))",
+                border: "1px solid hsl(var(--border))",
+                borderRadius: "var(--radius)",
+                boxShadow: "var(--shadow-lg)",
+              }}
+              formatter={(value: any) => [
+                formatCurrency(Number(value), asset.currency, asset.id), 
+                'Preço'
+              ]}
+              labelFormatter={(label) => `Data: ${label}`}
+            />
+            <ReferenceLine 
+              y={asset.price} 
+              stroke="hsl(var(--primary))" 
+              strokeDasharray="2 2"
+              opacity={0.5}
+            />
+            <Line
+              type="monotone"
+              dataKey="price"
+              stroke="hsl(var(--primary))"
+              strokeWidth={2}
+              dot={false}
+              activeDot={{ r: 4, stroke: "hsl(var(--primary))", strokeWidth: 2 }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </CardContent>
+    </Card>
+  );
+});
+
+PriceChart.displayName = 'PriceChart';
+
+// --- MAIN COMPONENT ---
+
+export const AssetDetailModal = memo<AssetDetailModalProps>(({ 
+  asset, 
+  isOpen, 
+  onOpenChange 
+}) => {
+  const [historicalData, setHistoricalData] = useState<FirestoreQuote[]>([]);
+  const [loadingState, setLoadingState] = useState<LoadingState>({
+    isLoading: true,
+    error: null,
+    retryCount: 0
+  });
+
+  const isCalculated = isCalculatedAsset(asset);
+  const isUcsAse = isUcsAseAsset(asset);
+
+  // Função para buscar dados históricos com retry
+  const fetchHistoricalData = useCallback(async (retryCount = 0) => {
+    if (isUcsAse) {
+      setLoadingState({ isLoading: false, error: null, retryCount: 0 });
+      return;
+    }
+
+    setLoadingState(prev => ({ ...prev, isLoading: true, error: null }));
+
+    try {
+      const data = await getCotacoesHistorico(asset.id, TABLE_DAYS);
+      setHistoricalData(data);
+      setLoadingState({ isLoading: false, error: null, retryCount: 0 });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao carregar dados históricos';
+      
+      if (retryCount < MAX_RETRY_ATTEMPTS) {
+        setTimeout(() => {
+          fetchHistoricalData(retryCount + 1);
+        }, RETRY_DELAY * (retryCount + 1));
+      }
+      
+      setLoadingState({
+        isLoading: false,
+        error: errorMessage,
+        retryCount
+      });
+    }
+  }, [asset.id, isUcsAse]);
+
+  // Effect para buscar dados quando modal abre
+  useEffect(() => {
+    if (isOpen) {
+      fetchHistoricalData();
+    } else {
+      // Reset state quando modal fecha
+      setHistoricalData([]);
+      setLoadingState({ isLoading: true, error: null, retryCount: 0 });
+    }
+  }, [isOpen, fetchHistoricalData]);
+
+  // Dados do gráfico otimizados
+  const chartData = useMemo((): ChartDataPoint[] => {
+    if (!historicalData.length) return [];
+
+    const thirtyDaysAgo = subDays(new Date(), CHART_DAYS);
+    
     return historicalData
       .filter(quote => {
-          const quoteDate = typeof quote.timestamp === 'number' ? new Date(quote.timestamp) : parseISO(quote.timestamp as any);
-          return isAfter(quoteDate, thirtyDaysAgo);
+        const quoteDate = parseTimestamp(quote.timestamp);
+        return isAfter(quoteDate, thirtyDaysAgo);
       })
       .map((quote) => {
-        const dateObject = typeof quote.timestamp === 'number' ? new Date(quote.timestamp) : parseISO(quote.timestamp as any);
-         return {
-            date: format(dateObject, 'dd/MM'),
-            price: quote.valor ?? quote.ultimo,
-         }
+        const dateObject = parseTimestamp(quote.timestamp);
+        return {
+          date: format(dateObject, 'dd/MM', { locale: ptBR }),
+          price: extractPrice(quote),
+          timestamp: dateObject.getTime()
+        };
       })
-      .reverse(); // Ensure chronological order for the chart
+      .sort((a, b) => a.timestamp - b.timestamp); // Ordem cronológica
   }, [historicalData]);
 
-  const Icon = getIconForCategory(asset);
-  const changeColor = asset.change >= 0 ? 'text-primary' : 'text-destructive';
-  const ChangeIcon = asset.change >= 0 ? ArrowUp : ArrowDown;
-  
+  // Função de retry
+  const handleRetry = useCallback(() => {
+    fetchHistoricalData(0);
+  }, [fetchHistoricalData]);
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl w-full p-0 grid grid-rows-[auto_minmax(0,1fr)] max-h-[90svh]">
-         <DialogHeader className="p-6 pb-0">
-            <div className="flex items-center gap-3 mb-1">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted border">
-                    <Icon className="h-5 w-5 text-muted-foreground" />
-                </div>
-                <DialogTitle className="text-xl font-bold">{asset.name}</DialogTitle>
+      <DialogContent 
+        className="max-w-5xl w-full p-0 grid grid-rows-[auto_minmax(0,1fr)] max-h-[95vh]"
+        aria-describedby="asset-description"
+      >
+        <DialogHeader className="p-6 pb-0">
+          <div className="flex items-center gap-3 mb-1">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-muted border">
+              <AssetIcon asset={asset} className="h-6 w-6 text-muted-foreground" />
             </div>
-            <DialogDescription>{asset.description}</DialogDescription>
-         </DialogHeader>
+            <div>
+              <DialogTitle className="text-2xl font-bold">{asset.name}</DialogTitle>
+              <DialogDescription id="asset-description" className="text-base">
+                {asset.description}
+              </DialogDescription>
+            </div>
+          </div>
+        </DialogHeader>
 
         <ScrollArea className="w-full">
-            <div className="grid md:grid-cols-[280px_1fr] h-full p-6 pt-2">
-            {/* ASSET INFO SIDEBAR */}
-            <div className="flex flex-col gap-6 border-b md:border-b-0 md:border-r md:pr-6 pb-6 mb-6 md:pb-0 md:mb-0">
-                <div className="flex flex-col gap-4">
-                <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-bold font-mono">
-                    {formatCurrency(asset.price, asset.currency, asset.id)}
-                    </span>
-                    <span className="text-sm text-muted-foreground">{asset.unit}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                    <div className={cn('flex items-center text-sm font-semibold', changeColor)}>
-                    <ChangeIcon className="h-4 w-4 mr-1" />
-                    <span>{asset.change.toFixed(2)}%</span>
-                    <span className="mx-1">/</span>
-                    <span>{formatCurrency(asset.absoluteChange, asset.currency, asset.id)}</span>
-                    <span className="text-xs text-muted-foreground ml-1">(24h)</span>
-                    </div>
-                </div>
-                </div>
+          <div className="grid lg:grid-cols-[320px_1fr] h-full p-6 pt-2">
+            {/* SIDEBAR DE INFORMAÇÕES */}
+            <AssetInfo asset={asset} isLoading={loadingState.isLoading} />
 
-                <div className="space-y-2 text-sm text-muted-foreground mt-auto">
-                    <div className="flex items-center gap-2">
-                    <span className="font-semibold text-foreground">Categoria:</span> 
-                    <Badge variant="secondary">{asset.category.toUpperCase()}</Badge>
-                    </div>
-                    {isCalculated && (
-                        <div className="flex items-center gap-2">
-                            <span className="font-semibold text-foreground">Tipo:</span>
-                            <Badge variant="outline">Índice Calculado</Badge>
-                        </div>
-                    )}
-                    <div className="flex items-center gap-2">
-                    <span className="font-semibold text-foreground">Moeda:</span>
-                    <span>{asset.currency}</span>
-                    </div>
+            {/* CONTEÚDO PRINCIPAL */}
+            <div className="flex flex-col lg:pl-6">
+              {loadingState.error ? (
+                <ErrorState
+                  error={loadingState.error}
+                  onRetry={handleRetry}
+                  retryCount={loadingState.retryCount}
+                  maxRetries={MAX_RETRY_ATTEMPTS}
+                />
+              ) : isUcsAse ? (
+                <UcsAseDetails asset={asset} />
+              ) : (
+                <div className="grid gap-6">
+                  {/* GRÁFICO */}
+                  <PriceChart 
+                    data={chartData} 
+                    asset={asset} 
+                    isLoading={loadingState.isLoading} 
+                  />
+
+                  {/* TABELA HISTÓRICA OU DETALHES CALCULADOS */}
+                  {isCalculated ? (
+                    <CalculatedAssetDetails asset={asset} />
+                  ) : (
+                    <HistoricalPriceTable 
+                      asset={asset}
+                      historicalData={historicalData} 
+                      isLoading={loadingState.isLoading} 
+                    />
+                  )}
                 </div>
+              )}
             </div>
-
-            {/* MAIN CONTENT */}
-            <div className="flex flex-col md:pl-6">
-                {isUcsAse ? (
-                    <UcsAseDetails asset={asset} />
-                ) : (
-                    <div className="grid gap-6">
-                        {/* CHART */}
-                        <Card>
-                        <CardHeader>
-                            <CardTitle>Histórico de Preços (Últimos 30 Dias)</CardTitle>
-                        </CardHeader>
-                        <CardContent className="h-64">
-                            {isLoading ? (
-                            <div className="h-full w-full flex items-center justify-center">
-                                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                            </div>
-                            ) : (
-                            <ResponsiveContainer width="100%" height="100%">
-                                <LineChart data={chartData}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                                <XAxis 
-                                    dataKey="date" 
-                                    stroke="hsl(var(--muted-foreground))"
-                                    fontSize={12}
-                                    tickLine={false}
-                                    axisLine={false}
-                                />
-                                <YAxis 
-                                    stroke="hsl(var(--muted-foreground))"
-                                    fontSize={12}
-                                    tickLine={false}
-                                    axisLine={false}
-                                    tickFormatter={(value) => formatCurrency(value as number, asset.currency, asset.id)}
-                                />
-                                <Tooltip
-                                    contentStyle={{
-                                        backgroundColor: "hsl(var(--background))",
-                                        border: "1px solid hsl(var(--border))",
-                                        borderRadius: "var(--radius)",
-                                    }}
-                                    formatter={(value: any) => [formatCurrency(Number(value), asset.currency, asset.id), 'Preço']}
-                                />
-                                <Line
-                                    type="monotone"
-                                    dataKey="price"
-                                    stroke="hsl(var(--primary))"
-                                    strokeWidth={2}
-                                    dot={false}
-                                />
-                                </LineChart>
-                            </ResponsiveContainer>
-                            )}
-                        </CardContent>
-                        </Card>
-
-                        {/* HISTORICAL DATA */}
-                        {isCalculated ? (
-                            <CalculatedAssetDetails asset={asset} />
-                        ) : (
-                            <HistoricalPriceTable 
-                            asset={asset}
-                            historicalData={historicalData} 
-                            isLoading={isLoading} 
-                            />
-                        )}
-                    </div>
-                )}
-            </div>
-            </div>
+          </div>
         </ScrollArea>
       </DialogContent>
     </Dialog>
   );
-}
+});
+
+AssetDetailModal.displayName = 'AssetDetailModal';

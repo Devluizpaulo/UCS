@@ -14,7 +14,7 @@ import type { CommodityPriceData } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Skeleton } from './ui/skeleton';
 import { formatCurrency } from '@/lib/formatters';
-import { getIconForCategory } from '@/lib/icons';
+import { AssetIcon } from '@/lib/icons';
 import { AssetDetailModal } from './asset-detail-modal';
 import { Card } from './ui/card';
 import { usePriceChangeAnimation } from '@/hooks/use-price-change-animation';
@@ -59,7 +59,6 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
                 <TableBody>
                     {data && data.length > 0 ? (
                     data.map((asset) => {
-                        const Icon = getIconForCategory(asset);
                         const priceFormatted = formatCurrency(asset.price, asset.currency, asset.id);
                         const changeColor = asset.change >= 0 ? 'text-primary' : 'text-destructive';
                         const animationClass = animationClasses[asset.id];
@@ -73,7 +72,7 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
                                 <TableCell>
                                 <div className="flex items-center gap-3">
                                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
-                                    <Icon className="h-4 w-4 text-muted-foreground" />
+                                    <AssetIcon asset={asset} className="h-4 w-4 text-muted-foreground" />
                                     </div>
                                     <div className="font-medium">{asset.name}</div>
                                 </div>
@@ -114,7 +113,6 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
         <div className="md:hidden p-4 space-y-3">
             {data && data.length > 0 ? (
                 data.map((asset) => {
-                    const Icon = getIconForCategory(asset);
                     const priceFormatted = formatCurrency(asset.price, asset.currency, asset.id);
                     const changeColor = asset.change >= 0 ? 'text-primary' : 'text-destructive';
                     const animationClass = animationClasses[asset.id];
@@ -128,7 +126,7 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
                             <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
                                 <div className="flex items-center gap-2">
                                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-                                        <Icon className="h-5 w-5 text-muted-foreground" />
+                                        <AssetIcon asset={asset} className="h-5 w-5 text-muted-foreground" />
                                     </div>
                                     <div>
                                         <p className="font-semibold truncate max-w-[150px] sm:max-w-xs">{asset.name}</p>

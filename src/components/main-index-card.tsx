@@ -6,7 +6,7 @@ import { ArrowDown, ArrowUp } from 'lucide-react';
 import { formatCurrency } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
 import type { CommodityPriceData } from '@/lib/types';
-import { getIconForCategory } from '@/lib/icons';
+import { AssetIcon } from '@/lib/icons';
 import { AssetDetailModal } from './asset-detail-modal';
 import { useState } from 'react';
 
@@ -18,7 +18,6 @@ interface MainIndexCardProps {
 export function MainIndexCard({ asset, isMain = false }: MainIndexCardProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   
-  const Icon = getIconForCategory(asset);
   const changeColor = asset.change >= 0 ? 'text-primary' : 'text-destructive';
   const ChangeIcon = asset.change >= 0 ? ArrowUp : ArrowDown;
 
@@ -37,7 +36,7 @@ export function MainIndexCard({ asset, isMain = false }: MainIndexCardProps) {
                     "flex h-10 w-10 items-center justify-center rounded-lg",
                      isMain ? "bg-primary/20 text-primary" : "bg-muted"
                 )}>
-                    <Icon className="h-5 w-5" />
+                    <AssetIcon asset={asset} className="h-5 w-5" />
                 </div>
                 <CardTitle className={cn("text-lg", isMain && "text-xl")}>{asset.name}</CardTitle>
             </div>
