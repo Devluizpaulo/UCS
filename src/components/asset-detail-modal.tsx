@@ -21,14 +21,14 @@ import {
   ReferenceLine,
 } from 'recharts';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { ArrowDown, ArrowUp, Loader2, AlertCircle, RefreshCw, TrendingUp, TrendingDown } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
+import { ArrowDown, ArrowUp, Loader2, AlertCircle, RefreshCw, TrendingUp, TrendingDown, Info } from 'lucide-react';
 import { format, parseISO, subDays, isAfter, isValid } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 import type { CommodityPriceData, FirestoreQuote } from '@/lib/types';
 import { AssetIcon } from '@/lib/icons';
-import { getCotacoesHistorico } from '@/lib/data-service';
+import { getCotacoesHistorico, getQuoteByDate } from '@/lib/data-service';
 import { formatCurrency } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
 import { HistoricalPriceTable } from './historical-price-table';
@@ -36,6 +36,7 @@ import { CalculatedAssetDetails } from './calculated-asset-details';
 import { UcsAseDetails } from './ucs-ase-details';
 import { Button } from './ui/button';
 import { Alert, AlertDescription } from './ui/alert';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 // --- TYPES ---
 interface AssetDetailModalProps {
@@ -82,6 +83,9 @@ function parseTimestamp(timestamp: any): Date {
     const parsed = parseISO(timestamp);
     return isValid(parsed) ? parsed : new Date();
   }
+  if (timestamp && typeof timestamp.toDate === 'function') {
+      return timestamp.toDate();
+  }
   return new Date();
 }
 
@@ -89,7 +93,7 @@ function parseTimestamp(timestamp: any): Date {
  * Determina se um ativo é calculado
  */
 function isCalculatedAsset(asset: CommodityPriceData): boolean {
-  return ['index', 'sub-index', 'vus', 'vmad', 'crs'].includes(asset.category);
+  return ['index', 'sub-index', 'vus', 'vmad', 'crs', 'calculated'].includes(asset.category);
 }
 
 /**
@@ -99,7 +103,53 @@ function isUcsAseAsset(asset: CommodityPriceData): boolean {
   return asset.id === 'ucs_ase';
 }
 
-// --- COMPONENTS ---
+// --- SUB-COMPONENTS ---
+
+const DetailRow = ({ label, value, unit, isHighlighted }: { label: string; value: React.ReactNode; unit?: string; isHighlighted?: boolean }) => (
+  <TableRow className={cn(isHighlighted && "bg-primary/5")}>
+    <TableCell className="font-medium text-muted-foreground">{label}</TableCell>
+    <TableCell className="text-right font-mono">
+      {value} {unit && <span className="text-xs text-muted-foreground ml-1">{unit}</span>}
+    </TableCell>
+  </TableRow>
+);
+
+
+const MilhoDetails = ({ quote }: { quote: FirestoreQuote }) => (
+  <Card>
+    <CardHeader>
+      <CardTitle>Detalhes do Ativo: Milho</CardTitle>
+      <CardDescription>Informações detalhadas da cotação para a data selecionada.</CardDescription>
+    </CardHeader>
+    <CardContent>
+      <Table>
+        <TableBody>
+          <DetailRow label="Preço (Último)" value={formatCurrency(quote.ultimo, 'BRL')} unit="BRL/saca" />
+          <DetailRow label="Abertura" value={formatCurrency(quote.abertura, 'BRL')} />
+          <DetailRow label="Máxima do Dia" value={formatCurrency(quote.maxima, 'BRL')} />
+          <DetailRow label="Mínima do Dia" value={formatCurrency(quote.minima, 'BRL')} />
+          <DetailRow label="Valor em Toneladas" value={formatCurrency(quote.ton, 'BRL')} unit="/ton" />
+          <DetailRow label="Rentabilidade Média" value={formatCurrency(quote.rent_media, 'BRL')} unit="/ha" isHighlighted />
+        </TableBody>
+      </Table>
+    </CardContent>
+  </Card>
+);
+
+const AssetSpecificDetails = ({ asset, quote }: { asset: CommodityPriceData; quote: FirestoreQuote | null }) => {
+  if (!quote) return null;
+
+  switch (asset.id) {
+    case 'milho':
+      return <MilhoDetails quote={quote} />;
+    // Adicionar outros casos aqui no futuro
+    // case 'soja':
+    //   return <SojaDetails quote={quote} />;
+    default:
+      return null;
+  }
+};
+
 
 /**
  * Componente de loading otimizado
@@ -338,6 +388,7 @@ export const AssetDetailModal = memo<AssetDetailModalProps>(({
   onOpenChange 
 }) => {
   const [historicalData, setHistoricalData] = useState<FirestoreQuote[]>([]);
+  const [latestQuote, setLatestQuote] = useState<FirestoreQuote | null>(null);
   const [loadingState, setLoadingState] = useState<LoadingState>({
     isLoading: true,
     error: null,
@@ -349,16 +400,16 @@ export const AssetDetailModal = memo<AssetDetailModalProps>(({
 
   // Função para buscar dados históricos com retry
   const fetchHistoricalData = useCallback(async (retryCount = 0) => {
-    if (isUcsAse) {
-      setLoadingState({ isLoading: false, error: null, retryCount: 0 });
-      return;
-    }
-
     setLoadingState(prev => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      const data = await getCotacoesHistorico(asset.id, TABLE_DAYS);
-      setHistoricalData(data);
+      // Busca a cotação mais recente para os detalhes e o histórico para o gráfico
+      const [latest, history] = await Promise.all([
+        getQuoteByDate(asset.id, new Date()),
+        isUcsAse ? Promise.resolve([]) : getCotacoesHistorico(asset.id, TABLE_DAYS)
+      ]);
+      setLatestQuote(latest);
+      setHistoricalData(history);
       setLoadingState({ isLoading: false, error: null, retryCount: 0 });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Erro ao carregar dados históricos';
@@ -384,6 +435,7 @@ export const AssetDetailModal = memo<AssetDetailModalProps>(({
     } else {
       // Reset state quando modal fecha
       setHistoricalData([]);
+      setLatestQuote(null);
       setLoadingState({ isLoading: true, error: null, retryCount: 0 });
     }
   }, [isOpen, fetchHistoricalData]);
@@ -415,6 +467,44 @@ export const AssetDetailModal = memo<AssetDetailModalProps>(({
     fetchHistoricalData(0);
   }, [fetchHistoricalData]);
 
+  const renderContent = () => {
+    if (loadingState.isLoading && !latestQuote) {
+        return <div className="h-96 flex items-center justify-center"><LoadingSpinner /></div>;
+    }
+    
+    if (loadingState.error) {
+       return (
+        <ErrorState
+            error={loadingState.error}
+            onRetry={handleRetry}
+            retryCount={loadingState.retryCount}
+            maxRetries={MAX_RETRY_ATTEMPTS}
+        />
+       );
+    }
+    
+    if (isUcsAse) {
+      return <UcsAseDetails asset={asset} />;
+    }
+
+    return (
+      <div className="grid gap-6">
+        <PriceChart data={chartData} asset={asset} isLoading={loadingState.isLoading} />
+        <AssetSpecificDetails asset={asset} quote={latestQuote} />
+        {isCalculated && !isUcsAse ? (
+            <CalculatedAssetDetails asset={asset} />
+        ) : (
+            !AssetSpecificDetails({ asset, quote: latestQuote }) &&
+            <HistoricalPriceTable 
+              asset={asset}
+              historicalData={historicalData} 
+              isLoading={loadingState.isLoading} 
+            />
+        )}
+      </div>
+    );
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent 
@@ -437,41 +527,9 @@ export const AssetDetailModal = memo<AssetDetailModalProps>(({
 
         <DialogBody>
           <div className="grid lg:grid-cols-[320px_1fr] h-full">
-            {/* SIDEBAR DE INFORMAÇÕES */}
-            <AssetInfo asset={asset} isLoading={loadingState.isLoading} />
-
-            {/* CONTEÚDO PRINCIPAL */}
+            <AssetInfo asset={asset} isLoading={loadingState.isLoading && !latestQuote} />
             <div className="flex flex-col lg:pl-6">
-              {loadingState.error ? (
-                <ErrorState
-                  error={loadingState.error}
-                  onRetry={handleRetry}
-                  retryCount={loadingState.retryCount}
-                  maxRetries={MAX_RETRY_ATTEMPTS}
-                />
-              ) : isUcsAse ? (
-                <UcsAseDetails asset={asset} />
-              ) : (
-                <div className="grid gap-6">
-                  {/* GRÁFICO */}
-                  <PriceChart 
-                    data={chartData} 
-                    asset={asset} 
-                    isLoading={loadingState.isLoading} 
-                  />
-
-                  {/* TABELA HISTÓRICA OU DETALHES CALCULADOS */}
-                  {isCalculated ? (
-                    <CalculatedAssetDetails asset={asset} />
-                  ) : (
-                    <HistoricalPriceTable 
-                      asset={asset}
-                      historicalData={historicalData} 
-                      isLoading={loadingState.isLoading} 
-                    />
-                  )}
-                </div>
-              )}
+              {renderContent()}
             </div>
           </div>
         </DialogBody>
@@ -481,3 +539,4 @@ export const AssetDetailModal = memo<AssetDetailModalProps>(({
 });
 
 AssetDetailModal.displayName = 'AssetDetailModal';
+
