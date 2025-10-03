@@ -320,7 +320,7 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
             </div>
           </div>
         </Sidebar>
-        <SidebarInset>{children}</SidebarInset>
+        <SidebarInset className="flex flex-col">{children}</SidebarInset>
       </div>
     </>
   );
@@ -334,5 +334,3 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     </SidebarProvider>
   );
 }
-
-    

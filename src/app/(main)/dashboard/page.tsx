@@ -277,7 +277,7 @@ export default function DashboardPage() {
 
   if (!targetDate) {
     return (
-       <div className="flex flex-col h-screen overflow-hidden">
+       <>
           <PageHeader 
             title="Painel de Cotações"
             description="Carregando dados..."
@@ -287,7 +287,7 @@ export default function DashboardPage() {
                 <Skeleton className="h-9 w-[250px]" />
             </div>
           </PageHeader>
-          <main className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-8">
+          <main className="flex-1 p-4 md:p-6 space-y-4 md:space-y-8">
               <Skeleton className="h-32 w-full" />
               <div className="grid gap-4 md:grid-cols-2">
                 <Skeleton className="h-32 w-full" />
@@ -295,7 +295,7 @@ export default function DashboardPage() {
               </div>
               <Skeleton className="h-96 w-full" />
           </main>
-      </div>
+      </>
     );
   }
 
@@ -303,7 +303,7 @@ export default function DashboardPage() {
   const formattedDate = format(targetDate, 'dd/MM/yyyy');
   
   return (
-    <div className="flex flex-col h-screen overflow-hidden">
+    <>
       <PageHeader 
         title="Painel de Cotações"
         description={isCurrentDateOrFuture 
@@ -389,6 +389,6 @@ export default function DashboardPage() {
           </div>
         )}
       </main>
-    </div>
+    </>
   );
 }
