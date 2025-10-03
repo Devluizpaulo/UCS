@@ -35,11 +35,27 @@ const e164Regex = /^\+[1-9]\d{1,14}$/;
 const userSchemaBase = {
   displayName: z.string().min(3, { message: 'O nome é obrigatório.' }),
   email: z.string().email({ message: 'E-mail inválido.' }),
-  phoneNumber: z.string()
-    .refine(val => val === '' || val === '+55' || e164Regex.test(val), {
-      message: 'Formato inválido. Use o padrão internacional (ex: +5511999998888).',
-    })
-    .optional(),
+  phoneNumber: z.preprocess(
+    (val) => {
+      if (typeof val !== 'string') return val;
+      // Remove espaços, traços, parênteses e garante que comece com '+'
+      let processed = val.replace(/[\s-()]/g, '');
+      if (processed.length > 0 && !processed.startsWith('+')) {
+        // Assume DDI do Brasil se não houver um '+'
+        if (!['55'].includes(processed.substring(0,2))) {
+            processed = `+55${processed}`;
+        } else {
+            processed = `+${processed}`;
+        }
+      }
+      return processed;
+    },
+    z.string()
+      .refine(val => val === '' || val === '+' || val === '+55' || e164Regex.test(val), {
+        message: 'Formato inválido. Use o padrão internacional (ex: +5511999998888).',
+      })
+      .optional()
+  ),
   disabled: z.boolean().default(false),
 };
 
@@ -167,7 +183,7 @@ export function UserFormModal({ isOpen, onOpenChange, onSubmit, user, isSelfEdit
                     <FormItem>
                     <FormLabel>WhatsApp (Opcional)</FormLabel>
                     <FormControl>
-                        <Input placeholder="+5511999998888" {...field} />
+                        <Input placeholder="+55 11 99999-8888" {...field} />
                     </FormControl>
                     <FormDescription>
                         Use o formato internacional E.164 (ex: +5511999998888).
