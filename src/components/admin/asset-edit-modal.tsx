@@ -340,7 +340,7 @@ export function AssetEditModal({ isOpen, onOpenChange, onSave, asset, allAssets 
             <div className="space-y-6">
               <div className="bg-muted p-4 rounded-lg space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Valor Atual:</span>
+                  <span className="text-sm text-muted-foreground">Valor Anterior:</span>
                   <span className="font-mono font-medium">{formatCurrency(asset.price, asset.currency, asset.id)}</span>
                 </div>
                 <div className="flex justify-between items-center">
@@ -355,7 +355,7 @@ export function AssetEditModal({ isOpen, onOpenChange, onSave, asset, allAssets 
                   <div className="text-sm">
                     <p className="font-medium text-blue-900">Registro de Auditoria</p>
                     <p className="text-blue-700 mt-1">
-                      Esta alteração será registrada com seu usuário ({currentUser}) e timestamp ({currentDate}) para auditoria completa do sistema.
+                      Esta alteração será registrada com o usuário <span className="font-semibold">({currentUser})</span> e o carimbo de data e hora <span className="font-semibold">({currentDate})</span>, garantindo a rastreabilidade e a auditoria completa do sistema.
                     </p>
                   </div>
                 </div>
@@ -446,3 +446,5 @@ export function AssetEditModal({ isOpen, onOpenChange, onSave, asset, allAssets 
     </>
   );
 }
+
+    
