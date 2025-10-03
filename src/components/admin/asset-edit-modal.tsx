@@ -307,15 +307,14 @@ export function AssetEditModal({ isOpen, onOpenChange, onSave, asset, allAssets 
               </div>
           </DialogBody>
           
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="flex-1 sm:flex-none">
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
             <Button 
               type="submit" 
               form="asset-edit-form" 
               disabled={isSubmitting || !hasChanges}
-              className="flex-1 sm:flex-none"
             >
               {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
               {hasChanges ? 'Revisar Alteração' : 'Nenhuma Alteração'}
@@ -377,6 +376,7 @@ export function AssetEditModal({ isOpen, onOpenChange, onSave, asset, allAssets 
                   <TableHeader>
                     <TableRow>
                       <TableHead>Ativo</TableHead>
+                      <TableHead className="text-right">Valor Anterior</TableHead>
                       <TableHead className="text-right">Novo Valor</TableHead>
                       <TableHead className="text-right">Variação</TableHead>
                     </TableRow>
@@ -392,6 +392,7 @@ export function AssetEditModal({ isOpen, onOpenChange, onSave, asset, allAssets 
                         return (
                           <TableRow key={result.id}>
                             <TableCell className="py-2 font-medium text-sm text-gray-800">{result.name}</TableCell>
+                            <TableCell className="py-2 text-right font-mono text-sm text-muted-foreground">{formatCurrency(result.currentValue, 'BRL', result.id)}</TableCell>
                             <TableCell className="py-2 text-right font-mono text-sm">{formatCurrency(result.newValue, 'BRL', result.id)}</TableCell>
                             <TableCell className={cn(
                               "py-2 text-right font-mono text-xs font-semibold",
@@ -407,7 +408,7 @@ export function AssetEditModal({ isOpen, onOpenChange, onSave, asset, allAssets 
                       })
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
+                        <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
                           Calculando impacto...
                         </TableCell>
                       </TableRow>
@@ -419,13 +420,13 @@ export function AssetEditModal({ isOpen, onOpenChange, onSave, asset, allAssets 
           </div>
 
           <AlertDialogFooter className="gap-2 sm:gap-0 mt-6">
-            <AlertDialogCancel disabled={isSaving} className="flex-1 sm:flex-none">
+            <AlertDialogCancel disabled={isSaving}>
               Cancelar
             </AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleConfirmSave}
               disabled={isSaving || (calculationResults.length === 0 && hasChanges)}
-              className="flex-1 sm:flex-none bg-green-600 hover:bg-green-700 disabled:bg-gray-400"
+              className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400"
             >
               {isSaving ? (
                 <>
