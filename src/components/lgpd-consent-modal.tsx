@@ -48,7 +48,7 @@ export function LgpdConsentModal({ isOpen, onAccept, onReject }: LgpdConsentModa
                 </p>
                 <p>
                     Garantimos que seus dados serão tratados com confidencialidade e segurança. Para mais detalhes, consulte nossa{' '}
-                    <Link href="/privacy-policy" target="_blank" className="underline text-primary font-semibold hover:text-primary/80">
+                    <Link href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="underline text-primary font-semibold hover:text-primary/80">
                         Política de Privacidade completa
                     </Link>.
                 </p>
