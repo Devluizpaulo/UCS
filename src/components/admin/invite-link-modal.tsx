@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogBody,
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -88,14 +89,16 @@ export function InviteLinkModal({ isOpen, onOpenChange, inviteInfo }: InviteLink
             O usuário <span className="font-bold">{inviteInfo.name} ({inviteInfo.email})</span> foi criado. Envie o link abaixo para que ele possa definir a senha e acessar a plataforma.
           </DialogDescription>
         </DialogHeader>
-        <div className="flex items-center space-x-2">
-          <div className="grid flex-1 gap-2">
-            <Input id="link" defaultValue={inviteInfo.link} readOnly />
-          </div>
-          <Button type="button" size="icon" onClick={handleCopy}>
-            {hasCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-          </Button>
-        </div>
+        <DialogBody>
+            <div className="flex items-center space-x-2">
+            <div className="grid flex-1 gap-2">
+                <Input id="link" defaultValue={inviteInfo.link} readOnly />
+            </div>
+            <Button type="button" size="icon" onClick={handleCopy}>
+                {hasCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+            </Button>
+            </div>
+        </DialogBody>
         <DialogFooter className="flex-col gap-2 pt-4 sm:flex-row sm:flex-wrap sm:justify-start">
             <Button asChild>
                 <a href={getMailtoLink()} target="_blank" rel="noopener noreferrer">
