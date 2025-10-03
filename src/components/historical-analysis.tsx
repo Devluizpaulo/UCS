@@ -15,7 +15,7 @@ import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import type { jsPDF as jsPDFWithAutoTable } from 'jspdf-autotable';
+import type { jsPDF as jsPDFWithAutoTableType } from 'jspdf-autotable';
 
 import type { FirestoreQuote, CommodityConfig, CommodityPriceData } from '@/lib/types';
 import { getCotacoesHistorico, getCommodityConfigs } from '@/lib/data-service';
@@ -39,8 +39,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from './ui/button';
-import { ChevronLeft, ChevronRight, Info, FileDown, Loader2 } from 'lucide-react';
-import { ScrollArea, ScrollBar } from './ui/scroll-area';
+import { Info, FileDown, Loader2 } from 'lucide-react';
 import { AssetDetailModal } from './asset-detail-modal';
 
 
@@ -63,153 +62,58 @@ const timeRangeToDays: Record<TimeRange, number> = {
   '90d': 90,
 };
 
-const ITEMS_PER_PAGE = 10;
+function DailyDetailsTable({ quote, asset }: { quote: FirestoreQuote | null, asset?: CommodityConfig }) {
+    if (!quote) return null;
 
-function HistoricalDataTable({ 
-    data, 
-    asset, 
-    isLoading,
-    onRowClick,
-}: { 
-    data: FirestoreQuote[], 
-    asset?: CommodityPriceData, 
-    isLoading: boolean,
-    onRowClick: (asset: CommodityPriceData, quote: FirestoreQuote) => void,
-}) {
-    const [currentPage, setCurrentPage] = useState(1);
+    const details = [
+        { label: 'Fechamento Anterior', value: quote.fechamento_anterior, type: 'currency' },
+        { label: 'Abertura', value: quote.abertura, type: 'currency' },
+        { label: 'Máxima do Dia', value: quote.maxima, type: 'currency' },
+        { label: 'Mínima do Dia', value: quote.minima, type: 'currency' },
+        { label: 'Volume', value: quote.volume, type: 'number' },
+        { label: 'Variação (%)', value: quote.variacao_pct, type: 'percentage' },
+        { label: 'Rentabilidade Média', value: quote.rent_media, type: 'currency' },
+        { label: 'Valor em Toneladas', value: quote.ton, type: 'currency' },
+    ];
 
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [data]);
-    
-    // Dynamically determine columns from all keys in the dataset
-    const columns = useMemo(() => {
-        if (data.length === 0) return [];
-        const allKeys = new Set<string>();
-        data.forEach(item => {
-            Object.keys(item).forEach(key => allKeys.add(key));
-        });
-        
-        // Define a preferred order
-        const preferredOrder = ['data', 'ultimo', 'valor', 'abertura', 'maxima', 'minima', 'variacao_pct', 'fechamento_anterior', 'rent_media', 'ton', 'volume'];
-        
-        // Filter out keys we don't want to show and sort
-        const filteredKeys = Array.from(allKeys).filter(key => !['id', 'timestamp', 'componentes', 'conversoes', 'valores_originais', 'moedas', 'ativo', 'fonte', 'status', 'formula'].includes(key));
-        
-        filteredKeys.sort((a, b) => {
-            const indexA = preferredOrder.indexOf(a);
-            const indexB = preferredOrder.indexOf(b);
-            if (indexA !== -1 && indexB !== -1) return indexA - indexB;
-            if (indexA !== -1) return -1;
-            if (indexB !== -1) return 1;
-            return a.localeCompare(b);
-        });
-
-        return filteredKeys;
-    }, [data]);
-
-    const totalPages = Math.ceil(data.length / ITEMS_PER_PAGE);
-    const paginatedData = useMemo(() => {
-        const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-        return data.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-    }, [data, currentPage]);
-    
-    const formatValue = (value: any, key: string) => {
+    const formatValue = (value: any, type: string) => {
         if (value === null || value === undefined) return 'N/A';
-        if (key === 'data') return String(value);
-
-        if (key.includes('pct')) {
-            return typeof value === 'number' ? `${value.toFixed(2)}%` : 'N/A';
-        }
-        
-        if (typeof value === 'number') {
-            return formatCurrency(value, asset?.currency || 'BRL');
-        }
-
-        if (typeof value === 'object' && value.seconds) { // Firestore Timestamp
-             return format(new Date(value.seconds * 1000), 'dd/MM/yyyy HH:mm');
-        }
-
-        if (typeof value === 'string' && !isNaN(Date.parse(value))) {
-             return format(new Date(value), 'dd/MM/yyyy HH:mm');
-        }
-        
-        if (typeof value === 'object') {
-            return JSON.stringify(value);
-        }
-
+        if (type === 'currency') return formatCurrency(value, asset?.currency || 'BRL');
+        if (type === 'percentage') return `${Number(value).toFixed(2)}%`;
+        if (type === 'number') return Number(value).toLocaleString('pt-BR');
         return String(value);
-    }
-    
-    if (isLoading) {
-        return <TableSkeleton />;
-    }
-
-    if (data.length === 0) {
-        return <p className="text-center text-muted-foreground py-8">Nenhum dado histórico encontrado para este período.</p>;
-    }
-    
-    const handleRowClick = (quote: FirestoreQuote) => {
-        if (!asset) return;
-        const assetData: CommodityPriceData = {
-            ...asset,
-            price: quote.valor ?? quote.ultimo,
-            change: quote.variacao_pct ?? 0,
-            absoluteChange: 0, // Not available in historical, can be calculated if needed
-            lastUpdated: quote.data,
-        };
-        onRowClick(assetData, quote);
     };
 
+    const midPoint = Math.ceil(details.length / 2);
+    const firstHalf = details.slice(0, midPoint);
+    const secondHalf = details.slice(midPoint);
+
     return (
-        <div className="w-full">
-            <ScrollArea className="w-full whitespace-nowrap rounded-md border">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            {columns.map(key => <TableHead key={key}>{key}</TableHead>)}
+        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
+            <Table>
+                <TableBody>
+                    {firstHalf.map(item => item.value !== null && (
+                        <TableRow key={item.label}>
+                            <TableCell className="font-medium text-muted-foreground">{item.label}</TableCell>
+                            <TableCell className="text-right font-mono">{formatValue(item.value, item.type)}</TableCell>
                         </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {paginatedData.map(quote => (
-                            <TableRow key={quote.id} onClick={() => handleRowClick(quote)} className="cursor-pointer">
-                                {columns.map(key => (
-                                    <TableCell key={key} className="whitespace-nowrap font-mono text-xs">
-                                        {formatValue((quote as any)[key], key)}
-                                    </TableCell>
-                                ))}
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-                <ScrollBar orientation="horizontal" />
-            </ScrollArea>
-            {totalPages > 1 && (
-                <div className="flex items-center justify-between p-4 border-t">
-                    <span className="text-sm text-muted-foreground">Página {currentPage} de {totalPages}</span>
-                    <div className="flex items-center gap-2">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
-                            disabled={currentPage === 1}
-                        >
-                            <ChevronLeft className="h-4 w-4 mr-1" /> Anterior
-                        </Button>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
-                            disabled={currentPage === totalPages}
-                        >
-                            Próximo <ChevronRight className="h-4 w-4 ml-1" />
-                        </Button>
-                    </div>
-                </div>
-            )}
+                    ))}
+                </TableBody>
+            </Table>
+             <Table>
+                <TableBody>
+                    {secondHalf.map(item => item.value !== null && (
+                        <TableRow key={item.label}>
+                            <TableCell className="font-medium text-muted-foreground">{item.label}</TableCell>
+                            <TableCell className="text-right font-mono">{formatValue(item.value, item.type)}</TableCell>
+                        </TableRow>
+                    ))}
+                </TableBody>
+            </Table>
         </div>
     );
 }
+
 
 export function HistoricalAnalysis() {
   const [data, setData] = useState<FirestoreQuote[]>([]);
@@ -245,8 +149,14 @@ export function HistoricalAnalysis() {
     return assets.find(a => a.id === selectedAssetId);
   }, [assets, selectedAssetId]);
 
-  const chartData = useMemo(() => {
-    return data
+  const { chartData, latestQuote } = useMemo(() => {
+    const sortedData = [...data].sort((a, b) => {
+        const dateA = typeof a.timestamp === 'number' ? a.timestamp : parseISO(a.timestamp as any).getTime();
+        const dateB = typeof b.timestamp === 'number' ? b.timestamp : parseISO(b.timestamp as any).getTime();
+        return dateA - dateB;
+    });
+
+    const chartPoints = sortedData
       .map((quote) => {
         const dateObject = typeof quote.timestamp === 'number' ? new Date(quote.timestamp) : parseISO(quote.timestamp as any);
         let dateFormat = timeRange === '90d' ? 'MMM' : 'dd/MM';
@@ -254,8 +164,11 @@ export function HistoricalAnalysis() {
            date: format(dateObject, dateFormat, { locale: ptBR }),
            value: quote.valor ?? quote.ultimo,
         }
-      })
-      .reverse(); // Ensure chronological order for the chart
+      });
+      
+    const latest = data.length > 0 ? data[0] : null;
+
+    return { chartData: chartPoints, latestQuote: latest };
   }, [data, timeRange]);
   
   const handleRowClick = (assetData: CommodityPriceData) => {
@@ -263,101 +176,99 @@ export function HistoricalAnalysis() {
   };
 
   const handleExportPdf = () => {
-    if (!selectedAssetConfig || data.length === 0) return;
+    if (!selectedAssetConfig || !latestQuote) return;
     setIsExporting(true);
     
-    const doc = new jsPDF() as jsPDFWithAutoTable;
+    const doc = new jsPDF() as jsPDFWithAutoTableType;
     const timeRangeText = { '7d': 'Últimos 7 dias', '30d': 'Últimos 30 dias', '90d': 'Últimos 90 dias' }[timeRange];
     const generationDate = format(new Date(), "dd 'de' MMMM 'de' yyyy, HH:mm", { locale: ptBR });
+    const quoteDate = latestQuote.data;
 
     // --- Header ---
     doc.setFontSize(18);
     doc.setTextColor(40);
     doc.setFont('helvetica', 'bold');
-    doc.text(`Relatório Histórico: ${selectedAssetConfig.name}`, 14, 22);
+    doc.text(`Relatório de Ativo: ${selectedAssetConfig.name}`, 14, 22);
 
     doc.setFontSize(11);
     doc.setTextColor(100);
     doc.setFont('helvetica', 'normal');
-    doc.text(`Período: ${timeRangeText}`, 14, 28);
-    doc.text(`Gerado em: ${generationDate}`, 14, 34);
+    doc.text(`Dados para o dia: ${quoteDate}`, 14, 28);
+    doc.text(`Gráfico de referência: ${timeRangeText}`, 14, 34);
+    doc.text(`Gerado em: ${generationDate}`, 14, 40);
 
     // --- Table ---
-    const tableColumn = ["Data", "Preço", "Variação (%)"];
-    const tableRows = data.map(quote => {
-        const price = quote.valor ?? quote.ultimo;
-        const change = quote.variacao_pct ?? 0;
-        return [
-            quote.data,
-            formatCurrency(price, selectedAssetConfig.currency, selectedAssetConfig.id),
-            `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`
-        ];
-    });
+    const details = [
+        { label: 'Fechamento Anterior', value: latestQuote.fechamento_anterior, type: 'currency' },
+        { label: 'Abertura', value: latestQuote.abertura, type: 'currency' },
+        { label: 'Máxima do Dia', value: latestQuote.maxima, type: 'currency' },
+        { label: 'Mínima do Dia', value: latestQuote.minima, type: 'currency' },
+        { label: 'Volume', value: latestQuote.volume, type: 'number' },
+        { label: 'Variação (%)', value: latestQuote.variacao_pct, type: 'percentage' },
+    ].filter(item => item.value !== null && item.value !== undefined);
+    
+    const formatValue = (value: any, type: string) => {
+        if (value === null || value === undefined) return 'N/A';
+        if (type === 'currency') return formatCurrency(value, selectedAssetConfig?.currency || 'BRL');
+        if (type === 'percentage') return `${Number(value).toFixed(2)}%`;
+        if (type === 'number') return Number(value).toLocaleString('pt-BR');
+        return String(value);
+    };
+
+    const tableBody = details.map(item => [item.label, formatValue(item.value, item.type)]);
 
     doc.autoTable({
         startY: 50,
-        head: [tableColumn],
-        body: tableRows,
+        head: [['Detalhe', 'Valor']],
+        body: tableBody,
         theme: 'grid',
         headStyles: { fillColor: [22, 160, 133] },
-        didDrawCell: (data) => {
-            if (data.section === 'body' && data.column.index === 2) { // Change % column
-                const text = data.cell.text[0];
-                if (text.includes('+')) {
-                    doc.setTextColor(39, 174, 96); // Green
-                } else if (text.includes('-')) {
-                    doc.setTextColor(192, 57, 43); // Red
-                }
-            }
-        },
     });
     
-    doc.save(`relatorio_${selectedAssetConfig.id}_${timeRange}.pdf`);
+    doc.save(`relatorio_${selectedAssetConfig.id}_${quoteDate.replace(/\//g, '-')}.pdf`);
     setIsExporting(false);
   };
 
   return (
     <>
         <Card>
-            <CardHeader>
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div className="flex-1">
-                        <Select value={selectedAssetId} onValueChange={setSelectedAssetId}>
-                            <SelectTrigger className="w-full sm:w-[280px]">
-                                <SelectValue placeholder="Selecione um ativo" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {assets.map(asset => (
-                                <SelectItem key={asset.id} value={asset.id}>{asset.name}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <Tabs 
-                            defaultValue={timeRange} 
-                            className="w-full sm:w-auto" 
-                            onValueChange={(value) => setTimeRange(value as TimeRange)}
-                        >
-                            <TabsList className="grid w-full grid-cols-3">
-                                <TabsTrigger value="7d">7D</TabsTrigger>
-                                <TabsTrigger value="30d">30D</TabsTrigger>
-                                <TabsTrigger value="90d">90D</TabsTrigger>
-                            </TabsList>
-                        </Tabs>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={handleExportPdf}
-                          disabled={isLoading || isExporting || data.length === 0}
-                        >
-                          {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
-                        </Button>
-                    </div>
+            <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex-1">
+                    <Select value={selectedAssetId} onValueChange={setSelectedAssetId}>
+                        <SelectTrigger className="w-full sm:w-[280px]">
+                            <SelectValue placeholder="Selecione um ativo" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {assets.map(asset => (
+                            <SelectItem key={asset.id} value={asset.id}>{asset.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Tabs 
+                        defaultValue={timeRange} 
+                        className="w-full sm:w-auto" 
+                        onValueChange={(value) => setTimeRange(value as TimeRange)}
+                    >
+                        <TabsList className="grid w-full grid-cols-3">
+                            <TabsTrigger value="7d">7D</TabsTrigger>
+                            <TabsTrigger value="30d">30D</TabsTrigger>
+                            <TabsTrigger value="90d">90D</TabsTrigger>
+                        </TabsList>
+                    </Tabs>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={handleExportPdf}
+                      disabled={isLoading || isExporting || data.length === 0}
+                    >
+                      {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
+                    </Button>
                 </div>
             </CardHeader>
             <CardContent className="flex flex-col gap-8">
-                <div className="h-72">
+                <div className="h-72" style={{ marginLeft: '-10px' }}>
                 {isLoading ? (
                     <ChartSkeleton />
                 ) : (
@@ -400,17 +311,12 @@ export function HistoricalAnalysis() {
                 )}
                 </div>
                 <div>
-                     <h3 className="text-lg font-semibold mb-2">Dados Históricos Detalhados</h3>
+                     <h3 className="text-lg font-semibold mb-2">Detalhes do Dia Selecionado ({latestQuote?.data || 'N/A'})</h3>
                      <div className="flex items-start gap-2 p-3 mb-4 text-sm text-blue-800 bg-blue-50 border border-blue-200 rounded-lg">
                         <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                        <p>Clique em uma linha da tabela para ver os detalhes completos da cotação daquele dia.</p>
+                        <p>A tabela abaixo mostra os dados detalhados para o dia mais recente do período selecionado.</p>
                      </div>
-                    <HistoricalDataTable 
-                        data={data} 
-                        asset={selectedAssetConfig as CommodityPriceData} 
-                        isLoading={isLoading} 
-                        onRowClick={handleRowClick}
-                    />
+                    {isLoading ? <TableSkeleton /> : <DailyDetailsTable quote={latestQuote} asset={selectedAssetConfig} />}
                 </div>
             </CardContent>
         </Card>
