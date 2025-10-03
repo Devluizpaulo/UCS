@@ -44,16 +44,25 @@ export interface SimulationInput {
 // ============= FÓRMULAS DE RENTABILIDADE MÉDIA (EXATAS DO N8N) =============
 
 /**
- * Calcula a rentabilidade média da Soja
- * Fórmula N8N: tonBRLCalculado * fatorRentabilidade
- * onde tonBRLCalculado = (preco / 60) * 1000 * cotacao_dolar
- * e fatorRentabilidade = (55 * 60) / 1000 = 3.3
+ * Calcula a rentabilidade média da Soja em BRL/ha a partir do preço da saca em USD.
+ *
+ * A fórmula segue 3 passos para transformar o preço da saca (60kg) em USD para BRL/ha:
+ * 1.  **Conversão para BRL:** O preço da saca em USD é multiplicado pela cotação do dólar (USD/BRL) para obter o preço da saca em BRL.
+ *     `sojaBRL = sojaPrice * usdRate`
+ *
+ * 2.  **Conversão para Tonelada:** O preço da saca em BRL é dividido por 60 (para obter o preço por kg) e multiplicado por 1000 (para obter o preço por tonelada).
+ *     Um ajuste fino de `+ 0.01990` é adicionado para espelhar o comportamento da planilha de referência.
+ *     `tonBRL = ((sojaBRL / 60) * 1000) + 0.01990`
+ *
+ * 3.  **Cálculo da Rentabilidade:** O preço por tonelada em BRL é multiplicado por um "fator de rentabilidade" fixo de `3.3`. Este fator representa a produtividade (toneladas por hectare).
+ *     `rentMedia = tonBRL * 3.3`
+ *
+ * O resultado final é a rentabilidade média em Reais por Hectare.
  */
 export function calculateRentMediaSoja(sojaPrice: number, usdRate: number): number {
   const sojaBRL = sojaPrice * usdRate;
   const tonBRL = ((sojaBRL / 60) * 1000) + 0.01990; // Ajuste fino da planilha
   const fatorRentabilidade = 3.3;
-  // Truncar para 4 casas decimais em vez de arredondar para corresponder à planilha
   const rentMedia = tonBRL * fatorRentabilidade;
   return rentMedia;
 }
@@ -114,7 +123,7 @@ export function calculateRentMediaMadeira(madeiraPrice: number, usdRate: number)
 
 /**
  * Calcula o VUS (Valor de Uso do Solo)
- * Fórmula N8N: ((rentBoi*25*0.35) + (rentMilho*25*0.3) + (rentSoja*25*0.35)) * (1-0.048)
+ * Fórmula N8N: ((rentBoi*25*0.35) + (rentMilho*25*0.30) + (rentSoja*25*0.35)) * (1-0.048)
  */
 export function calculateVUS(rentMediaBoi: number, rentMediaMilho: number, rentMediaSoja: number): number {
   const precise = (num: number, decimals: number = 4) => {
@@ -379,17 +388,14 @@ export function runCompleteSimulation(input: SimulationInput): CalculationResult
 
     // 5. Gerar resultados para todos os ativos calculados, mesmo que a mudança seja 0
     Object.entries(calculatedValues).forEach(([assetId, data]) => {
-        const percentageChange = data.current > 0 ? Math.abs((data.new - data.current) / data.current) : (data.new > 0 ? 1 : 0);
-        
-        // Inclui todos os ativos na lista de resultados
         results.push({
           id: assetId,
           name: getAssetDisplayName(assetId),
           currentValue: data.current,
           newValue: data.new,
           formula: data.formula,
-          components: data.components || {},
-          conversions: data.conversions || {}
+          components: data.components,
+          conversions: data.conversions
         });
     });
 
@@ -424,6 +430,7 @@ function getAssetDisplayName(assetId: string): string {
   };
   return names[assetId] || assetId;
 }
+
 
 
 
