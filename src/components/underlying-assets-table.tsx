@@ -107,8 +107,10 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
             {groupedData.map(([category, assets]) => (
                 <AccordionItem value={category} key={category}>
                     <AccordionTrigger className="px-4 py-3 text-base font-semibold hover:bg-muted/50 hover:no-underline">
-                        {categoryGroups[category as CategoryKey] || category}
-                        <Badge variant="secondary" className="ml-2">{assets.length}</Badge>
+                        <span className="flex-1 text-left">{categoryGroups[category as CategoryKey] || category}</span>
+                        <div className="flex items-center gap-4">
+                            <Badge variant="secondary">{assets.length}</Badge>
+                        </div>
                     </AccordionTrigger>
                     <AccordionContent className="p-0">
                         <div className="overflow-x-auto">
