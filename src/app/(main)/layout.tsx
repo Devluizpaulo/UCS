@@ -19,6 +19,7 @@ import {
   Sparkles,
   History,
   PieChart,
+  LandPlot,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -182,11 +183,11 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
                 <SidebarMenuButton
                   asChild
                   isActive={pathname === '/dashboard'}
-                  tooltip={{ children: 'Painel' }}
+                  tooltip={{ children: 'Dashboard' }}
                 >
                   <Link href="/dashboard">
                     <LayoutDashboard />
-                    <span>Painel</span>
+                    <span>Dashboard</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -194,7 +195,7 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
                 <SidebarMenuButton
                   asChild
                   isActive={pathname.startsWith('/reports')}
-                  tooltip={{ children: 'Relatórios IA' }}
+                  tooltip={{ children: 'Relatórios com IA' }}
                 >
                   <Link href="/reports">
                     <Sparkles />
@@ -210,12 +211,12 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
               <SidebarMenuItem onClick={handleMenuItemClick}>
                 <SidebarMenuButton
                   asChild
-                  isActive={pathname.startsWith('/analysis/trends')}
-                  tooltip={{ children: 'Análise de Tendências' }}
+                  isActive={pathname.startsWith('/analysis/profitability')}
+                  tooltip={{ children: 'Análise de Rentabilidade' }}
                 >
-                  <Link href="/analysis/trends">
-                    <TrendingUp />
-                    <span>Tendências</span>
+                  <Link href="/analysis/profitability">
+                    <LandPlot />
+                    <span>Rentabilidade</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -241,7 +242,7 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
                   <SidebarMenuButton
                     asChild
                     isActive={pathname.startsWith('/admin/users')}
-                    tooltip={{ children: 'Usuários' }}
+                    tooltip={{ children: 'Gerenciar Usuários' }}
                   >
                     <Link href="/admin/users">
                       <Users />
@@ -253,7 +254,7 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
                   <SidebarMenuButton
                     asChild
                     isActive={pathname.startsWith('/admin/audit')}
-                    tooltip={{ children: 'Auditoria' }}
+                    tooltip={{ children: 'Auditoria de Dados' }}
                   >
                     <Link href="/admin/audit">
                       <History />
