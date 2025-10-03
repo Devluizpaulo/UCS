@@ -1,7 +1,8 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, type UseFormReturn } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import {
@@ -39,13 +40,11 @@ import { Loader2, AlertTriangle, Save, TrendingUp, User, Calendar } from 'lucide
 import type { CommodityPriceData } from '@/lib/types';
 import { formatCurrency } from '@/lib/formatters';
 import { runCompleteSimulation, type SimulationInput, type CalculationResult } from '@/lib/real-calculation-service';
-import { calculateAffectedAssets } from '@/lib/dependency-service';
 
 const editSchema = z.object({
   price: z.preprocess(
     (val) => {
         if(typeof val === 'string') {
-            // Converte o formato '1.234,56' para '1234.56'
             return parseFloat(val.replace(/\./g, '').replace(',', '.'));
         }
         return val;
@@ -71,7 +70,7 @@ export function AssetEditModal({ isOpen, onOpenChange, onSave, asset, allAssets 
   const [isSaving, setIsSaving] = useState(false);
   const [calculationResults, setCalculationResults] = useState<CalculationResult[]>([]);
 
-  const form = useForm<EditFormData>({
+  const form: UseFormReturn<EditFormData> = useForm<EditFormData>({
     resolver: zodResolver(editSchema),
     defaultValues: {
       price: asset.price,
@@ -98,86 +97,38 @@ export function AssetEditModal({ isOpen, onOpenChange, onSave, asset, allAssets 
     }
   };
 
-  const currentPrice = form.watch('price');
+  const currentPriceString = form.watch('price');
+  const numericPrice = typeof currentPriceString === 'string' 
+    ? parseFloat(currentPriceString.replace(/\./g, '').replace(',', '.')) 
+    : currentPriceString;
   
-  // Função para calcular impactos em tempo real
-  const calculateRealTimeImpacts = (newValue: number) => {
-    if (!allAssets.length || isNaN(newValue) || newValue < 0) {
-      setCalculationResults([]);
-      return;
-    }
-
-    try {
-      // Preparar dados atuais de todos os ativos
+  const hasChanges = numericPrice !== asset.price;
+  const currentDate = new Date().toLocaleString('pt-BR');
+  
+  // Calcular impactos em tempo real
+  useEffect(() => {
+    if (hasChanges && !isNaN(numericPrice) && numericPrice >= 0) {
       const currentValues: Record<string, number> = {};
       allAssets.forEach(a => {
         currentValues[a.id] = a.price;
       });
 
-      // Preparar input para simulação
       const simulationInput: SimulationInput = {
-        usd: currentValues.usd || 0,
-        eur: currentValues.eur || 0,
-        soja: currentValues.soja || 0,
-        milho: currentValues.milho || 0,
-        boi_gordo: currentValues.boi_gordo || 0,
-        carbono: currentValues.carbono || 0,
+        usd: currentValues.usd || 0, eur: currentValues.eur || 0,
+        soja: currentValues.soja || 0, milho: currentValues.milho || 0,
+        boi_gordo: currentValues.boi_gordo || 0, carbono: currentValues.carbono || 0,
         madeira: currentValues.madeira || 0,
-        current_vus: currentValues.vus || 0,
-        current_vmad: currentValues.vmad || 0,
-        current_carbono_crs: currentValues.carbono_crs || 0,
-        current_ch2o_agua: currentValues.ch2o_agua || 0,
-        current_custo_agua: currentValues.custo_agua || 0,
-        current_agua_crs: currentValues.Agua_CRS || 0,
-        current_valor_uso_solo: currentValues.valor_uso_solo || 0,
-        current_pdm: currentValues.pdm || 0,
-        current_ucs: currentValues.ucs || 0,
-        current_ucs_ase: currentValues.ucs_ase || 0,
+        current_vus: currentValues.vus || 0, current_vmad: currentValues.vmad || 0,
+        current_carbono_crs: currentValues.carbono_crs || 0, current_ch2o_agua: currentValues.ch2o_agua || 0,
+        current_custo_agua: currentValues.custo_agua || 0, current_agua_crs: currentValues.Agua_CRS || 0,
+        current_valor_uso_solo: currentValues.valor_uso_solo || 0, current_pdm: currentValues.pdm || 0,
+        current_ucs: currentValues.ucs || 0, current_ucs_ase: currentValues.ucs_ase || 0,
       };
 
-      // Aplicar o novo valor editado
-      (simulationInput as any)[asset.id] = newValue;
+      (simulationInput as any)[asset.id] = numericPrice;
 
-      // Executar simulação
       const results = runCompleteSimulation(simulationInput);
       setCalculationResults(results);
-    } catch (error) {
-      console.error('Erro no cálculo em tempo real:', error);
-      setCalculationResults([]);
-    }
-  };
-  
-  // Função para converter valor brasileiro para número
-  const parsePrice = (value: string | number): number => {
-    if (typeof value === 'number') return value;
-    if (!value) return 0;
-    
-    // Remove espaços e caracteres especiais, exceto vírgula e ponto
-    let cleanValue = value.toString().trim();
-    
-    // Se tem vírgula e ponto, assume formato brasileiro (1.234,56)
-    if (cleanValue.includes(',') && cleanValue.includes('.')) {
-      // Remove pontos (separadores de milhares) e troca vírgula por ponto
-      cleanValue = cleanValue.replace(/\./g, '').replace(',', '.');
-    }
-    // Se tem apenas vírgula, assume que é decimal brasileiro
-    else if (cleanValue.includes(',') && !cleanValue.includes('.')) {
-      cleanValue = cleanValue.replace(',', '.');
-    }
-    
-    const parsed = parseFloat(cleanValue);
-    return isNaN(parsed) ? 0 : parsed;
-  };
-  
-  const numericPrice = typeof currentPrice === 'string' ? parsePrice(currentPrice) : currentPrice;
-  const hasChanges = numericPrice !== asset.price;
-  const affectedAssets = calculateAffectedAssets([asset.id]);
-  const currentDate = new Date().toLocaleString('pt-BR');
-  
-  // Calcular impactos em tempo real quando o valor muda
-  useEffect(() => {
-    if (hasChanges) {
-      calculateRealTimeImpacts(numericPrice);
     } else {
       setCalculationResults([]);
     }
@@ -201,7 +152,6 @@ export function AssetEditModal({ isOpen, onOpenChange, onSave, asset, allAssets 
           <div className="flex-1 overflow-hidden">
             <ScrollArea className="h-full pr-4">
               <div className="space-y-6">
-                {/* Informações do Usuário e Data */}
                 <div className="flex flex-col sm:flex-row gap-4 p-4 bg-muted/50 rounded-lg">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <User className="h-4 w-4" />
@@ -213,7 +163,6 @@ export function AssetEditModal({ isOpen, onOpenChange, onSave, asset, allAssets 
                   </div>
                 </div>
 
-                {/* Informações do Banco de Dados */}
                 <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
                   <div className="flex items-start gap-3">
                     <div className="bg-blue-100 p-1 rounded">
@@ -222,8 +171,7 @@ export function AssetEditModal({ isOpen, onOpenChange, onSave, asset, allAssets 
                     <div className="text-sm">
                       <p className="font-medium text-blue-900">Formato do Banco de Dados</p>
                       <p className="text-blue-700 mt-1">
-                        Valor atual no banco: <code className="bg-blue-100 px-1 rounded font-mono">{asset.price}</code> 
-                        (formato decimal com ponto)
+                        Valor atual no banco: <code className="bg-blue-100 px-1 rounded font-mono">{asset.price}</code> (formato decimal com ponto)
                       </p>
                       <p className="text-blue-600 text-xs mt-1">
                         O sistema converte automaticamente entre vírgula (exibição) e ponto (armazenamento)
@@ -232,27 +180,23 @@ export function AssetEditModal({ isOpen, onOpenChange, onSave, asset, allAssets 
                   </div>
                 </div>
 
-                {/* Formulário */}
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4" id="asset-edit-form">
-            <FormField
-              control={form.control}
-              name="price"
-              render={({ field }) => (
-                <FormItem>
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4" id="asset-edit-form">
+                    <FormField
+                      control={form.control}
+                      name="price"
+                      render={({ field }) => (
+                        <FormItem>
                           <FormLabel className="text-base font-medium">Novo Valor</FormLabel>
-                  <FormControl>
-                    <Input 
+                          <FormControl>
+                            <Input 
                                 placeholder="Insira o novo valor (ex: 22,33)" 
-                                value={typeof field.value === 'number' ? field.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 4 }) : field.value || ''}
-                        onChange={(e) => {
-                            const rawValue = e.target.value;
-                            field.onChange(rawValue);
-                        }}
+                                value={typeof field.value === 'number' ? field.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 4 }) : (field.value || '')}
+                                onChange={(e) => field.onChange(e.target.value)}
                                 className="text-lg h-12 font-mono"
-                    />
-                  </FormControl>
-                  <FormMessage />
+                            />
+                          </FormControl>
+                          <FormMessage />
                           <div className="text-xs text-muted-foreground mt-1">
                             💡 Use vírgula para decimais (ex: 22,33) ou ponto (ex: 22.33) - ambos funcionam
                           </div>
@@ -262,13 +206,12 @@ export function AssetEditModal({ isOpen, onOpenChange, onSave, asset, allAssets 
                               <span>Alteração detectada: {formatCurrency(asset.price, asset.currency, asset.id)} → {formatCurrency(numericPrice, asset.currency, asset.id)}</span>
                             </div>
                           )}
-                </FormItem>
-              )}
-            />
-          </form>
-        </Form>
+                        </FormItem>
+                      )}
+                    />
+                  </form>
+                </Form>
                 
-                {/* Análise de Impacto em Tempo Real */}
                 {hasChanges && (
                   <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
                     <div className="flex items-center gap-2 mb-4">
@@ -298,7 +241,7 @@ export function AssetEditModal({ isOpen, onOpenChange, onSave, asset, allAssets 
                         <div className="text-sm text-blue-800">
                           <p className="font-medium">⚠️ Cálculos em Tempo Real</p>
                           <p className="mt-1">
-                            Os valores mostrados são calculados usando as fórmulas exatas do N8N. 
+                            Os valores são calculados usando as fórmulas exatas do N8N. 
                             Esta prévia mostra os cálculos que serão aplicados ao salvar.
                           </p>
                         </div>
@@ -310,7 +253,7 @@ export function AssetEditModal({ isOpen, onOpenChange, onSave, asset, allAssets 
                         {calculationResults.map((result, index) => {
                           const percentChange = result.currentValue > 0 
                             ? ((result.newValue - result.currentValue) / result.currentValue) * 100 
-                            : (result.newValue > 0 ? 100 : 0); // Se era zero e agora tem valor, mostra como +100%
+                            : (result.newValue > 0 ? 100 : 0);
 
                           return (
                             <div key={result.id}>
@@ -379,7 +322,6 @@ export function AssetEditModal({ isOpen, onOpenChange, onSave, asset, allAssets 
       </DialogContent>
     </Dialog>
 
-      {/* Modal de Confirmação */}
       <AlertDialog open={showConfirmation} onOpenChange={setShowConfirmation}>
         <AlertDialogContent className="w-[95vw] max-w-2xl">
           <AlertDialogHeader>
@@ -407,7 +349,6 @@ export function AssetEditModal({ isOpen, onOpenChange, onSave, asset, allAssets 
                   </div>
                 </div>
 
-                {/* Resumo dos Cálculos */}
                 {calculationResults.length > 0 && (
                   <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 p-4 rounded-lg">
                     <h4 className="font-medium text-green-900 mb-3 flex items-center gap-2">

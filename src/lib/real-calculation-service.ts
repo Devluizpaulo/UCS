@@ -1,11 +1,9 @@
 
 /**
- * Serviço de Cálculo Real - Baseado nas fórmulas EXATAS do N8N
+ * Serviço de Cálculo Real - Baseado nas fórmulas EXATAS do N8N e do documento FORMULAS_AND_CASCADE.md
  * 
- * Este serviço implementa as fórmulas reais usadas pelo N8N para permitir
- * simulação e correção manual de valores no painel de auditoria.
- * 
- * Todas as fórmulas foram extraídas dos arquivos N8N fornecidos pelo usuário.
+ * Este serviço implementa as fórmulas reais para permitir simulação e correção manual 
+ * de valores no painel de auditoria.
  */
 
 export interface CalculationResult {
@@ -41,369 +39,228 @@ export interface SimulationInput {
   current_ucs_ase?: number;
 }
 
-// ============= FÓRMULAS DE RENTABILIDADE MÉDIA (EXATAS DO N8N) =============
+
+// ===================================================================================
+// NÍVEL 2: RENTABILIDADES MÉDIAS (BRL/HA) - Fórmulas exatas do documento
+// ===================================================================================
 
 /**
- * Calcula a rentabilidade média da Soja em BRL/ha a partir do preço da saca em USD.
- *
- * A fórmula segue 3 passos para transformar o preço da saca (60kg) em USD para BRL/ha:
- * 1.  **Conversão para BRL:** O preço da saca em USD é multiplicado pela cotação do dólar (USD/BRL) para obter o preço da saca em BRL.
- *     `sojaBRL = sojaPrice * usdRate`
- *
- * 2.  **Conversão para Tonelada:** O preço da saca em BRL é dividido por 60 (para obter o preço por kg) e multiplicado por 1000 (para obter o preço por tonelada).
- *     Um ajuste fino de `+ 0.01990` é adicionado para espelhar o comportamento da planilha de referência.
- *     `tonBRL = ((sojaBRL / 60) * 1000) + 0.01990`
- *
- * 3.  **Cálculo da Rentabilidade:** O preço por tonelada em BRL é multiplicado por um "fator de rentabilidade" fixo de `3.3`. Este fator representa a produtividade (toneladas por hectare).
- *     `rentMedia = tonBRL * 3.3`
- *
- * O resultado final é a rentabilidade média em Reais por Hectare.
+ * Converte soja USD/saca para BRL/ha.
+ * Fórmula: ((((sojaPrice * usdRate) / 60) * 1000) + 0.01990) * 3.3
  */
 export function calculateRentMediaSoja(sojaPrice: number, usdRate: number): number {
   const sojaBRL = sojaPrice * usdRate;
-  const tonBRL = ((sojaBRL / 60) * 1000) + 0.01990; // Ajuste fino da planilha
-  const fatorRentabilidade = 3.3;
-  const rentMedia = tonBRL * fatorRentabilidade;
-  return rentMedia;
+  const tonBRL = ((sojaBRL / 60) * 1000) + 0.01990;
+  return tonBRL * 3.3;
 }
 
-
 /**
- * Calcula a rentabilidade média do Milho
- * Fórmula N8N: tonCalc * 7.20
- * onde tonCalc = (preco / 60) * 1000
+ * Converte milho BRL/saca para BRL/ha.
+ * Fórmula: ((milhoPrice / 60) * 1000) * 7.20
  */
 export function calculateRentMediaMilho(milhoPrice: number): number {
-  const tonCalc = (milhoPrice / 60) * 1000;
-  const rentMediaCalc = tonCalc * 7.20;
-  return Math.round(rentMediaCalc * 100) / 100;
+  const tonBRL = (milhoPrice / 60) * 1000;
+  return tonBRL * 7.20;
 }
 
 /**
- * Calcula a rentabilidade média do Boi Gordo
- * Fórmula N8N: preco * 18
+ * Converte boi gordo BRL/arroba para BRL/ha.
+ * Fórmula: boiPrice * 18
  */
 export function calculateRentMediaBoi(boiPrice: number): number {
-  return parseFloat((boiPrice * 18).toFixed(2));
+  return boiPrice * 18;
 }
 
 /**
- * Calcula a rentabilidade média do Carbono
- * Fórmula N8N: carbonoBRL * 2.59
- * onde carbonoBRL = preco * cotacao_euro
- * Mantém 4 casas decimais como na planilha
+ * Converte madeira USD para BRL/ha.
+ * Fórmula: (((madeiraPrice * 0.375620342) * usdRate) + 0.02) * 1196.54547720813 * 0.10
+ */
+export function calculateRentMediaMadeira(madeiraPrice: number, usdRate: number): number {
+  const madeiraToraUSD = madeiraPrice * 0.375620342;
+  const madeiraToraBRL = (madeiraToraUSD * usdRate) + 0.02;
+  return madeiraToraBRL * 1196.54547720813 * 0.10;
+}
+
+/**
+ * Converte carbono EUR para BRL/ha.
+ * Fórmula: (carbonoPrice * eurRate) * 2.59
  */
 export function calculateRentMediaCarbono(carbonoPrice: number, eurRate: number): number {
   const carbonoBRL = carbonoPrice * eurRate;
-  const rentMediaBruta = carbonoBRL * 2.59;
-  return Math.floor(rentMediaBruta * 10000) / 10000; // Truncamento para 4 casas
+  return carbonoBRL * 2.59;
 }
 
-/**
- * Calcula a rentabilidade média da Madeira
- * Fórmula N8N: madeiraToraBRL * fatorRentMedia * percentual
- * onde madeiraToraBRL = madeiraToraUSD * cotacao_dolar
- * madeiraToraUSD = preco * taxaConversao (0.375620342)
- * fatorRentMedia = 1196.54547720813
- * percentual = 0.10
- */
-export function calculateRentMediaMadeira(madeiraPrice: number, usdRate: number): number {
-  const taxaConversao = 0.375620342;
-  const fatorRentMedia = 1196.54547720813;
-  const percentual = 0.10;
-  
-  const madeiraToraUSD = madeiraPrice * taxaConversao;
-  const madeiraToraBRL = (madeiraToraUSD * usdRate) + 0.02; // Ajuste fino da planilha
-  const rentMediaCalculada = madeiraToraBRL * fatorRentMedia * percentual;
-  
-  return Math.round(rentMediaCalculada * 100) / 100;
-}
 
-// ============= FÓRMULAS DE ÍNDICES (EXATAS DO N8N) =============
+// ===================================================================================
+// NÍVEL 3: ÍNDICES DE COMPOSIÇÃO - Fórmulas exatas do documento
+// ===================================================================================
 
 /**
- * Calcula o VUS (Valor de Uso do Solo)
- * Fórmula N8N: ((rentBoi*25*0.35) + (rentMilho*25*0.30) + (rentSoja*25*0.35)) * (1-0.048)
+ * Calcula o VUS (Valor de Uso do Solo).
+ * Fórmula: ((rentBoi * 0.35) + (rentMilho * 0.30) + (rentSoja * 0.35)) * (1 - 0.048) * 25
  */
 export function calculateVUS(rentMediaBoi: number, rentMediaMilho: number, rentMediaSoja: number): number {
-  const precise = (num: number, decimals: number = 4) => {
-    return Math.round(num * Math.pow(10, decimals)) / Math.pow(10, decimals);
-  };
-
-  const componenteBoi = precise((rentMediaBoi * 25) * 0.35);
-  const componenteMilho = precise((rentMediaMilho * 25) * 0.30);
-  const componenteSoja = precise((rentMediaSoja * 25) * 0.35);
-  
-  const somaComponentes = precise(componenteBoi + componenteMilho + componenteSoja);
-  const descontoArrendamento = precise(somaComponentes * 0.048);
-  const vusBruto = somaComponentes - descontoArrendamento;
-
-  return precise(vusBruto, 2);
+  const somaPonderada = (rentMediaBoi * 0.35) + (rentMediaMilho * 0.30) + (rentMediaSoja * 0.35);
+  return somaPonderada * (1 - 0.048) * 25;
 }
 
 /**
- * Calcula o Vmad
- * Fórmula N8N: rent_media_madeira * 5
+ * Calcula o VMAD (Valor da Madeira).
+ * Fórmula: rent_media_madeira * 5
  */
 export function calculateVMAD(rentMediaMadeira: number): number {
-  const vmad = rentMediaMadeira * 5;
-  return Math.floor(vmad * 100) / 100; // Truncamento
+  return rentMediaMadeira * 5;
 }
 
 /**
- * Calcula o Carbono_CRS
- * Fórmula N8N: rent_media_carbono * 25
+ * Calcula o Carbono CRS.
+ * Fórmula: rent_media_carbono * 25
  */
 export function calculateCarbonoCRS(rentMediaCarbono: number): number {
-  const carbonoCRS = rentMediaCarbono * 25;
-  return Math.floor(carbonoCRS * 100) / 100; // Truncamento
+  return rentMediaCarbono * 25;
 }
 
 /**
- * Calcula o CH2O Água
- * Fórmula N8N: (rentBoi*0.35) + (rentMilho*0.30) + (rentSoja*0.35) + rentMadeira + rentCarbono
+ * Calcula o CH2O Água (índice intermediário).
+ * Fórmula: (rentBoi*0.35) + (rentMilho*0.30) + (rentSoja*0.35) + rentMadeira + rentCarbono
  */
 export function calculateCH2OAgua(
-  rentMediaBoi: number,
-  rentMediaMilho: number,
-  rentMediaSoja: number,
-  rentMediaMadeira: number,
-  rentMediaCarbono: number
+  rentMediaBoi: number, rentMediaMilho: number, rentMediaSoja: number,
+  rentMediaMadeira: number, rentMediaCarbono: number
 ): number {
-  const componentes = {
-    boi_gordo_35: Math.floor(rentMediaBoi * 0.35 * 100 + 0.0000001) / 100,
-    milho_30: Math.round(rentMediaMilho * 0.30 * 100) / 100,
-    soja_35: Math.round(rentMediaSoja * 0.35 * 100) / 100,
-    madeira_100: Math.round(rentMediaMadeira * 100) / 100,
-    carbono_100: Math.round(rentMediaCarbono * 100) / 100
-  };
-
-  const ch2oAgua = componentes.boi_gordo_35 + componentes.milho_30 + componentes.soja_35 + componentes.madeira_100 + componentes.carbono_100;
-  return Math.round(ch2oAgua * 100) / 100;
+  return (rentMediaBoi * 0.35) + (rentMediaMilho * 0.30) + (rentMediaSoja * 0.35) + rentMediaMadeira + rentMediaCarbono;
 }
 
+
+// ===================================================================================
+// NÍVEL 4: ÍNDICES FINAIS (CASCATA) - Fórmulas exatas do documento
+// ===================================================================================
+
 /**
- * Calcula o Custo_Água
- * Fórmula N8N: baseCalculo * 0.07
- * onde baseCalculo = (rentBoi*0.35) + (rentMilho*0.30) + (rentSoja*0.35) + rentMadeira + rentCarbono
+ * Calcula o Custo Água.
+ * Fórmula: ch2o_agua * 0.07
  */
-export function calculateCustoAgua(
-  rentMediaBoi: number,
-  rentMediaMilho: number,
-  rentMediaSoja: number,
-  rentMediaMadeira: number,
-  rentMediaCarbono: number
-): number {
-  const baseCalculo = (rentMediaBoi * 0.35) + (rentMediaMilho * 0.30) + (rentMediaSoja * 0.35) + rentMediaMadeira + rentMediaCarbono;
-  const custoAgua = baseCalculo * 0.07;
-  return Math.round(custoAgua * 100) / 100;
+export function calculateCustoAgua(ch2oAgua: number): number {
+  return ch2oAgua * 0.07;
 }
 
 /**
- * Calcula o Agua_CRS
- * Fórmula N8N: valor_CH2O (que já é a rentabilidade média)
+ * Calcula o PDM (Potencial Desflorestador Monetizado).
+ * Fórmula: ch2o_agua + custo_agua
  */
-export function calculateAguaCRS(ch2oAgua: number): number {
-  return Math.round(ch2oAgua * 100) / 100;
+export function calculatePDM(ch2oAgua: number, custoAgua: number): number {
+  return ch2oAgua + custoAgua;
 }
 
 /**
- * Calcula o Valor_Uso_Solo
- * Fórmula N8N: VUS + Vmad + Carbono_CRS + Agua_CRS
- */
-export function calculateValorUsoSolo(vus: number, vmad: number, carbonoCrs: number, aguaCrs: number): number {
-  const valorUsoSolo = vus + vmad + carbonoCrs + aguaCrs;
-  return Math.round(valorUsoSolo * 100) / 100;
-}
-
-/**
- * Calcula o PDM
- * Fórmula N8N: (rentBoi*0.35) + (rentMilho*0.30) + (rentSoja*0.35) + rentMadeira + rentCarbono + custoAgua
- */
-export function calculatePDM(
-  rentMediaBoi: number,
-  rentMediaMilho: number,
-  rentMediaSoja: number,
-  rentMediaMadeira: number,
-  rentMediaCarbono: number,
-  valorCustoAgua: number
-): number {
-  const pdm = (rentMediaBoi * 0.35) + (rentMediaMilho * 0.30) + (rentMediaSoja * 0.35) + rentMediaMadeira + rentMediaCarbono + valorCustoAgua;
-  return Math.round(pdm * 100) / 100;
-}
-
-/**
- * Calcula o UCS
- * Fórmula N8N: (PDM ÷ 900) ÷ 2
+ * Calcula o UCS (Unidade de Crédito de Sustentabilidade).
+ * Fórmula: (pdm / 900) / 2
  */
 export function calculateUCS(pdm: number): number {
-  const ucs = (pdm / 900) / 2;
-  return Math.round(ucs * 100) / 100;
+  return (pdm / 900) / 2;
 }
 
 /**
- * Calcula o UCS ASE
- * Fórmula N8N: UCS × 2
- * Com conversões para USD e EUR
+ * Calcula o UCS ASE (Índice Final) e suas conversões.
+ * Fórmula: ucs * 2
  */
 export function calculateUCSASE(ucs: number, cotacaoUSD: number, cotacaoEUR: number): {
-  valor_brl: number;
-  valor_usd: number;
-  valor_eur: number;
-  componentes: Record<string, number>;
-  conversoes: Record<string, string>;
+  valor_brl: number; valor_usd: number; valor_eur: number;
+  componentes: Record<string, number>; conversions: Record<string, string>;
 } {
   const ucsASEBRL = ucs * 2;
-  const ucsASEUSD = cotacaoUSD > 0 ? Math.round((ucsASEBRL / cotacaoUSD) * 100) / 100 : 0;
-  const ucsASEEUR = cotacaoEUR > 0 ? Math.round((ucsASEBRL / cotacaoEUR) * 100) / 100 : 0;
+  const ucsASEUSD = cotacaoUSD > 0 ? ucsASEBRL / cotacaoUSD : 0;
+  const ucsASEEUR = cotacaoEUR > 0 ? ucsASEBRL / cotacaoEUR : 0;
 
   return {
-    valor_brl: Math.round(ucsASEBRL * 100) / 100,
+    valor_brl: ucsASEBRL,
     valor_usd: ucsASEUSD,
     valor_eur: ucsASEEUR,
     componentes: {
       ucs_original_brl: ucs,
-      resultado_final_brl: Math.round(ucsASEBRL * 100) / 100,
+      resultado_final_brl: ucsASEBRL,
       resultado_final_usd: ucsASEUSD,
       resultado_final_eur: ucsASEEUR
     },
-    conversoes: {
-      brl_para_usd: `${ucsASEBRL} ÷ ${cotacaoUSD} = ${ucsASEUSD}`,
-      brl_para_eur: `${ucsASEBRL} ÷ ${cotacaoEUR} = ${ucsASEEUR}`
+    conversions: {
+      brl_para_usd: `${ucsASEBRL.toFixed(4)} / ${cotacaoUSD.toFixed(4)} = ${ucsASEUSD.toFixed(4)}`,
+      brl_para_eur: `${ucsASEBRL.toFixed(4)} / ${cotacaoEUR.toFixed(4)} = ${ucsASEEUR.toFixed(4)}`
     }
   };
 }
 
+
 // ============= SIMULAÇÃO COMPLETA COM FÓRMULAS REAIS =============
 
 /**
- * Executa simulação completa usando as fórmulas EXATAS do N8N
+ * Executa simulação completa usando as fórmulas EXATAS do documento.
  */
 export function runCompleteSimulation(input: SimulationInput): CalculationResult[] {
-  const results: CalculationResult[] = [];
-
   try {
-    // 1. Calcular rentabilidades médias dos ativos base
+    // Nível 2: Calcular rentabilidades médias
     const rentMediaSoja = calculateRentMediaSoja(input.soja, input.usd);
     const rentMediaMilho = calculateRentMediaMilho(input.milho);
     const rentMediaBoi = calculateRentMediaBoi(input.boi_gordo);
     const rentMediaCarbono = calculateRentMediaCarbono(input.carbono, input.eur);
     const rentMediaMadeira = calculateRentMediaMadeira(input.madeira, input.usd);
 
-    // 2. Calcular índices derivados
+    // Nível 3: Calcular índices de composição
     const vus = calculateVUS(rentMediaBoi, rentMediaMilho, rentMediaSoja);
     const vmad = calculateVMAD(rentMediaMadeira);
     const carbonoCrs = calculateCarbonoCRS(rentMediaCarbono);
     const ch2oAgua = calculateCH2OAgua(rentMediaBoi, rentMediaMilho, rentMediaSoja, rentMediaMadeira, rentMediaCarbono);
-    const custoAgua = calculateCustoAgua(rentMediaBoi, rentMediaMilho, rentMediaSoja, rentMediaMadeira, rentMediaCarbono);
-    const aguaCrs = calculateAguaCRS(ch2oAgua);
 
-    // 3. Calcular índices compostos
-    const valorUsoSolo = calculateValorUsoSolo(vus, vmad, carbonoCrs, aguaCrs);
-    const pdm = calculatePDM(rentMediaBoi, rentMediaMilho, rentMediaSoja, rentMediaMadeira, rentMediaCarbono, custoAgua);
+    // Nível 4: Calcular índices finais (Cascata)
+    const custoAgua = calculateCustoAgua(ch2oAgua);
+    const pdm = calculatePDM(ch2oAgua, custoAgua);
     const ucs = calculateUCS(pdm);
     const ucsAseData = calculateUCSASE(ucs, input.usd, input.eur);
+    
+    // O documento menciona um ativo `Agua_CRS` que é derivado. 
+    // Com base na fórmula `valor_uso_solo`, Agua_CRS é o próprio `ch2o_agua`.
+    const aguaCrs = ch2oAgua;
+    const valorUsoSolo = vus + vmad + carbonoCrs + aguaCrs;
 
-    // 4. Comparar com valores atuais e gerar resultados
-    const calculatedValues: Record<string, { current: number; new: number; formula: string; components?: Record<string, number>; conversions?: Record<string, string> }> = {
-      vus: { 
-        current: input.current_vus || 0, 
-        new: vus, 
-        formula: '((Boi×25×35%) + (Milho×25×30%) + (Soja×25×35%)) × (1-4.8%)',
-        components: {
-          boi_component: Math.round((rentMediaBoi * 25 * 0.35) * 100) / 100,
-          milho_component: Math.round((rentMediaMilho * 25 * 0.3) * 100) / 100,
-          soja_component: Math.round((rentMediaSoja * 25 * 0.35) * 100) / 100
-        }
-      },
-      vmad: { 
-        current: input.current_vmad || 0, 
-        new: vmad, 
-        formula: 'rent_media_madeira × 5',
-        components: { rent_media_madeira: rentMediaMadeira }
-      },
-      carbono_crs: { 
-        current: input.current_carbono_crs || 0, 
-        new: carbonoCrs, 
-        formula: 'rent_media_carbono × 25',
-        components: { rent_media_carbono: rentMediaCarbono }
-      },
-      ch2o_agua: { 
-        current: input.current_ch2o_agua || 0, 
-        new: ch2oAgua, 
-        formula: '(Boi×35%) + (Milho×30%) + (Soja×35%) + Madeira + Carbono',
-        components: {
-          boi_35: Math.round(rentMediaBoi * 0.35 * 100) / 100,
-          milho_30: Math.round(rentMediaMilho * 0.30 * 100) / 100,
-          soja_35: Math.round(rentMediaSoja * 0.35 * 100) / 100,
-          madeira_100: Math.round(rentMediaMadeira * 100) / 100,
-          carbono_100: Math.round(rentMediaCarbono * 100) / 100
-        }
-      },
-      custo_agua: { 
-        current: input.current_custo_agua || 0, 
-        new: custoAgua, 
-        formula: 'CH2O × 7%',
-        components: { base_calculo: ch2oAgua }
-      },
-      Agua_CRS: { 
-        current: input.current_agua_crs || 0, 
-        new: aguaCrs, 
-        formula: 'valor_CH2O (rentabilidade média)',
-        components: { ch2o_agua: ch2oAgua }
-      },
-      valor_uso_solo: { 
-        current: input.current_valor_uso_solo || 0, 
-        new: valorUsoSolo, 
-        formula: 'VUS + Vmad + Carbono_CRS + Agua_CRS',
-        components: { vus, vmad, carbono_crs: carbonoCrs, Agua_CRS: aguaCrs }
-      },
-      pdm: { 
-        current: input.current_pdm || 0, 
-        new: pdm, 
-        formula: '(Boi×35%) + (Milho×30%) + (Soja×35%) + Madeira + Carbono + Custo_Água',
-        components: {
-          boi_35: Math.round(rentMediaBoi * 0.35 * 100) / 100,
-          milho_30: Math.round(rentMediaMilho * 0.30 * 100) / 100,
-          soja_35: Math.round(rentMediaSoja * 0.35 * 100) / 100,
-          madeira_100: Math.round(rentMediaMadeira * 100) / 100,
-          carbono_100: Math.round(rentMediaCarbono * 100) / 100,
-          custo_agua: custoAgua
-        }
-      },
-      ucs: { 
-        current: input.current_ucs || 0, 
-        new: ucs, 
-        formula: '(PDM ÷ 900) ÷ 2',
-        components: { pdm }
-      },
-      ucs_ase: { 
-        current: input.current_ucs_ase || 0, 
-        new: ucsAseData.valor_brl, 
-        formula: 'UCS × 2',
-        components: ucsAseData.componentes,
-        conversions: ucsAseData.conversoes
-      }
+
+    // Estrutura para armazenar todos os valores calculados
+    const calculatedValues = {
+      vus, vmad, carbono_crs: carbonoCrs, ch2o_agua: ch2oAgua, custo_agua: custoAgua, 
+      Agua_CRS: aguaCrs, valor_uso_solo: valorUsoSolo, pdm, ucs, ucs_ase: ucsAseData.valor_brl
+    };
+    
+    // Mapeamento de Fórmulas para Exibição
+    const formulas: Record<string, string> = {
+      vus: '((rentBoi * 0.35) + (rentMilho * 0.30) + (rentSoja * 0.35)) * (1 - 0.048) * 25',
+      vmad: 'rent_media_madeira * 5',
+      carbono_crs: 'rent_media_carbono * 25',
+      ch2o_agua: '(rentBoi*35%)+(rentMilho*30%)+(rentSoja*35%)+Madeira+Carbono',
+      custo_agua: 'ch2o_agua * 0.07',
+      Agua_CRS: 'valor_CH2O',
+      valor_uso_solo: 'VUS + Vmad + Carbono_CRS + Agua_CRS',
+      pdm: 'ch2o_agua + custo_agua',
+      ucs: '(PDM / 900) / 2',
+      ucs_ase: 'UCS * 2',
     };
 
-    // 5. Gerar resultados para todos os ativos calculados, mesmo que a mudança seja 0
-    Object.entries(calculatedValues).forEach(([assetId, data]) => {
-        results.push({
-          id: assetId,
-          name: getAssetDisplayName(assetId),
-          currentValue: data.current,
-          newValue: data.new,
-          formula: data.formula,
-          components: data.components,
-          conversions: data.conversions
-        });
-    });
-
-    // Ordena os resultados para que os mais impactados apareçam primeiro
-    return results.sort((a, b) => {
-        const changeA = a.currentValue > 0 ? Math.abs((a.newValue - a.currentValue) / a.currentValue) : (a.newValue > 0 ? 1 : 0);
-        const changeB = b.currentValue > 0 ? Math.abs((b.newValue - b.currentValue) / b.currentValue) : (b.newValue > 0 ? 1 : 0);
-        return changeB - changeA;
+    // Gera o resultado final
+    return Object.entries(calculatedValues).map(([assetId, newValue]) => {
+      const currentValueKey = `current_${assetId}` as keyof SimulationInput;
+      const currentValue = input[currentValueKey] as number || 0;
+      
+      let result: CalculationResult = {
+        id: assetId,
+        name: getAssetDisplayName(assetId),
+        currentValue: currentValue,
+        newValue: newValue,
+        formula: formulas[assetId] || 'N/A',
+      };
+      
+      if(assetId === 'ucs_ase') {
+        result.components = ucsAseData.componentes;
+        result.conversions = ucsAseData.conversions;
+      }
+      
+      return result;
     });
 
   } catch (error) {
@@ -412,25 +269,11 @@ export function runCompleteSimulation(input: SimulationInput): CalculationResult
   }
 }
 
-/**
- * Retorna o nome de exibição do ativo
- */
 function getAssetDisplayName(assetId: string): string {
   const names: Record<string, string> = {
-    vus: 'VUS',
-    vmad: 'Vmad',
-    carbono_crs: 'Carbono_CRS',
-    ch2o_agua: 'CH2O Água',
-    custo_agua: 'Custo_Água',
-    Agua_CRS: 'Agua_CRS',
-    valor_uso_solo: 'Valor_Uso_Solo',
-    pdm: 'PDM',
-    ucs: 'UCS',
-    ucs_ase: 'UCS ASE'
+    vus: 'VUS', vmad: 'VMAD', carbono_crs: 'Carbono CRS', ch2o_agua: 'CH2O Água',
+    custo_agua: 'Custo Água', Agua_CRS: 'Água CRS', valor_uso_solo: 'Valor Uso Solo',
+    pdm: 'PDM', ucs: 'UCS', ucs_ase: 'UCS ASE'
   };
   return names[assetId] || assetId;
 }
-
-
-
-
