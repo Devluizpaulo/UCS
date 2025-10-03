@@ -3,7 +3,6 @@
 
 import { useState, useMemo } from 'react';
 import type { CommodityPriceData, FirestoreQuote } from '@/lib/types';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import {
   Table,
   TableBody,
@@ -25,7 +24,7 @@ interface HistoricalPriceTableProps {
   isLoading: boolean;
 }
 
-const ITEMS_PER_PAGE = 7;
+const ITEMS_PER_PAGE = 10;
 
 export function HistoricalPriceTable({ asset, historicalData, isLoading }: HistoricalPriceTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
@@ -38,43 +37,51 @@ export function HistoricalPriceTable({ asset, historicalData, isLoading }: Histo
   
   const totalPages = Math.ceil(historicalData.length / ITEMS_PER_PAGE);
 
+  const getCleanedQuote = (quote: FirestoreQuote) => {
+    const cleaned: Record<string, any> = {};
+    const excludeKeys = ['fonte', 'status', 'formula', 'id', 'ativo', 'moeda'];
+    for (const key in quote) {
+      if (!excludeKeys.includes(key)) {
+        cleaned[key] = quote[key as keyof FirestoreQuote];
+      }
+    }
+    return cleaned;
+  }
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Dados Históricos (Últimos 90 dias)</CardTitle>
-      </CardHeader>
-      <CardContent className="p-0">
-        {isLoading ? (
-          <div className="space-y-2 p-6">
-            {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-8 w-full" />)}
-          </div>
-        ) : (
-          <>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Data</TableHead>
-                  <TableHead className="text-right">Preço</TableHead>
-                  <TableHead className="text-right">Variação</TableHead>
+    <div className="border rounded-lg">
+      {isLoading ? (
+        <div className="space-y-2 p-6">
+          {Array.from({ length: ITEMS_PER_PAGE }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
+        </div>
+      ) : (
+        <>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Data</TableHead>
+                <TableHead className="text-right">Preço</TableHead>
+                <TableHead className="text-right">Variação</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paginatedData.map((quote) => (
+                <TableRow key={quote.id}>
+                  <TableCell>{quote.data || format(new Date(quote.timestamp), 'dd/MM/yyyy')}</TableCell>
+                  <TableCell className="text-right font-mono">
+                    {formatCurrency(quote.valor ?? quote.ultimo, asset.currency, asset.id)}
+                  </TableCell>
+                  <TableCell className={cn(
+                    "text-right font-mono",
+                    (Number(quote.variacao_pct) ?? 0) >= 0 ? "text-primary" : "text-destructive"
+                  )}>
+                    {quote.variacao_pct !== null && quote.variacao_pct !== undefined ? `${Number(quote.variacao_pct).toFixed(2)}%` : 'N/A'}
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedData.map((quote) => (
-                  <TableRow key={quote.id}>
-                    <TableCell>{quote.data || format(new Date(quote.timestamp), 'dd/MM/yyyy')}</TableCell>
-                    <TableCell className="text-right font-mono">
-                      {formatCurrency(quote.valor ?? quote.ultimo, asset.currency, asset.id)}
-                    </TableCell>
-                    <TableCell className={cn(
-                      "text-right font-mono",
-                      (Number(quote.variacao_pct) ?? 0) >= 0 ? "text-primary" : "text-destructive"
-                    )}>
-                      {quote.variacao_pct !== null && quote.variacao_pct !== undefined ? `${Number(quote.variacao_pct).toFixed(2)}%` : 'N/A'}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+              ))}
+            </TableBody>
+          </Table>
+          {totalPages > 1 && (
             <div className="flex items-center justify-between p-4 border-t">
               <span className="text-sm text-muted-foreground">
                 Página {currentPage} de {totalPages}
@@ -100,9 +107,10 @@ export function HistoricalPriceTable({ asset, historicalData, isLoading }: Histo
                 </Button>
               </div>
             </div>
-          </>
-        )}
-      </CardContent>
-    </Card>
+          )}
+        </>
+      )}
+    </div>
   );
 }
+
