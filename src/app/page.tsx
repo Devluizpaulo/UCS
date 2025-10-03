@@ -17,15 +17,79 @@ import Autoplay from "embla-carousel-autoplay";
 import { getCommodityPrices } from '@/lib/data-service';
 
 const lastros = [
-    { icon: Search, title: "Monitoramento", description: "Imagens de satélite em tempo real para verificação contínua da área preservada." },
-    { icon: Trees, title: "Real", description: "Vinculação direta à área de floresta, garantindo que o ativo é lastreado em recursos naturais." },
-    { icon: GitBranch, title: "Tecnológico", description: "Sistemas digitais de controle que oferecem rastreabilidade e transparência total." },
-    { icon: Banknote, title: "Financeiro", description: "Integração com mecanismos de mercado e garantias para liquidez e valorização." },
-    { icon: ShieldCheck, title: "Auditoria", description: "Certificação por órgãos independentes, assegurando credibilidade e verificação externa." },
-    { icon: Microscope, title: "Científico", description: "Metodologia validada por instituições de pesquisa, com base técnica e científica sólida." },
-    { icon: BarChart3, title: "Técnico", description: "Relatórios e métricas ambientais que fornecem dados verificáveis e precisos." },
-    { icon: Scale, title: "Jurídico", description: "Conformidade legal assegurada, proporcionando segurança jurídica nas transações." },
-    { icon: FileText, title: "Regulatório", description: "Aderência às normas e decretos vigentes, garantindo enquadramento legal preciso." },
+    { 
+        icon: Globe, 
+        title: "Lastro Monitoramento", 
+        details: ["Acesso por imagem satélite em tempo real"] 
+    },
+    { 
+        icon: Trees, 
+        title: "Lastro Real", 
+        details: ["Tangível pela vegetação nativa mantida"] 
+    },
+    { 
+        icon: GitBranch, 
+        title: "Lastro Tecnológico", 
+        details: [
+            "Registro Blockchain na aposentadoria/consumo das UCS",
+            "Registro Blockchain na origem das UCS"
+        ] 
+    },
+    { 
+        icon: Banknote, 
+        title: "Lastro Financeiro", 
+        details: [
+            "Identificação Internacional, código ISIN (International Securities Identification Number)",
+            "Instrumento Financeiro regulado para cooperação no mercado de capitais",
+            "Registro na bolsa brasileira (B3)"
+        ] 
+    },
+    { 
+        icon: ShieldCheck, 
+        title: "Lastro Auditoria Independente", 
+        details: [
+            "Verificação por terceira parte independente com notoriedade internacional",
+            "Validação por terceira parte independente com notoriedade internacional"
+        ] 
+    },
+    { 
+        icon: Microscope, 
+        title: "Lastro Científico", 
+        details: [
+            "Diretrizes do IPCC (Intergovernmental Panel on Climate Change)",
+            "Diretrizes das ISOs (International Organization for Standardization)"
+        ] 
+    },
+    { 
+        icon: BarChart3, 
+        title: "Lastro Técnico", 
+        details: [
+            "Análise laboratorial internacional",
+            "Análise laboratorial nacional",
+            "Análise de campo (27 serviços ecossistêmicos)"
+        ] 
+    },
+    { 
+        icon: Scale, 
+        title: "Lastro Jurídico", 
+        details: [
+            "Definição do produto",
+            "Definição da atividade econômica",
+            "Registro em cartório da propriedade",
+            "Contrato de Parceria Rural e adesão"
+        ] 
+    },
+    { 
+        icon: FileText, 
+        title: "Lastro Regulatório", 
+        details: [
+            "Internacional: Regulação União Europeia 2020/852",
+            "Pactos globais: Acordo de Paris (artigo 5), Acordo de Montreal (Biodiversidade)",
+            "Política Nacional de Mudanças Climáticas",
+            "Constituição Brasileira, Direito de Propriedade, Direito Ambiental",
+            "Código Florestal Brasileiro"
+        ] 
+    },
 ];
 
 const stakeholders = [
@@ -150,7 +214,7 @@ export default function LandingPage() {
                     <div className="animate-fade-in-right">
                         <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">O que é o USC Crédito de Sustentabilidade?</h2>
                         <p className="mt-4 text-lg text-muted-foreground">
-                            O USC é um produto financeiro inovador, lastreado na atividade rural de conservação de florestas nativas. Fundamentado no BMV Standard, ele converte a preservação ambiental em um ativo econômico tangível e legalmente reconhecido.
+                            O USC (Crédito de Sustentabilidade) é um produto financeiro inovador, lastreado na atividade rural de conservação de florestas nativas. Fundamentado no BMV Standard, ele converte a preservação ambiental em um ativo econômico tangível e legalmente reconhecido.
                         </p>
                         <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-6">
                             {stakeholders.map((stakeholder) => (
@@ -185,7 +249,7 @@ export default function LandingPage() {
                  <div className="mx-auto max-w-4xl text-center mb-12 animate-fade-in-up">
                     <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Por que o USC é um Investimento Seguro e Inovador?</h2>
                     <p className="mt-4 text-lg text-muted-foreground">
-                        Nossa metodologia incorpora 9 pilares de lastro que garantem transparência, segurança e confiabilidade em cada crédito emitido.
+                        Nossa metodologia incorpora múltiplos pilares de lastro que garantem transparência, segurança e confiabilidade em cada crédito emitido.
                     </p>
                 </div>
                 
@@ -201,7 +265,14 @@ export default function LandingPage() {
                                 </div>
                             </CardHeader>
                             <CardContent className="flex-grow">
-                                <p className="text-sm text-muted-foreground">{lastro.description}</p>
+                                <ul className="space-y-2 text-sm text-muted-foreground">
+                                    {lastro.details.map((detail, i) => (
+                                        <li key={i} className="flex items-start gap-2">
+                                            <CheckCircle className="h-4 w-4 text-primary flex-shrink-0 mt-1" />
+                                            <span>{detail}</span>
+                                        </li>
+                                    ))}
+                                </ul>
                             </CardContent>
                         </Card>
                     ))}
@@ -251,7 +322,7 @@ export default function LandingPage() {
                 <div className="mx-auto max-w-4xl text-center animate-fade-in-up">
                     <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Resumo: Conservação que Gera Valor</h2>
                     <p className="mt-4 text-lg text-muted-foreground">
-                       O USC Crédito de Sustentabilidade representa a evolução do mercado de capitais verde no Brasil.
+                       O Crédito de Sustentabilidade transforma a conservação de florestas em um ativo financeiro transparente, auditável e seguro, que gera valor econômico sem comprometer o equilíbrio ambiental.
                     </p>
                 </div>
                 <div className="mx-auto mt-12 grid max-w-4xl grid-cols-1 gap-6 sm:grid-cols-2 animate-fade-in-up animation-delay-200">
@@ -260,7 +331,7 @@ export default function LandingPage() {
                       'Oferece transparência total através de múltiplos lastros', 
                       'Garante segurança jurídica e regulatória', 
                       'Gera retorno econômico sem comprometer o meio ambiente', 
-                      'Conecta produtores, investidores e instituições'
+                      'Conecta produtores, investidores e instituições em um ciclo virtuoso'
                     ].map(item => (
                     <div key={item} className="flex items-center gap-3">
                       <CheckCircle className="h-5 w-5 flex-shrink-0 text-primary" />
