@@ -17,10 +17,10 @@ export function CommodityPrices({ data, displayDate, loading }: CommodityPricesP
     <>
       <Card className="shadow-sm">
         <CardHeader>
-            <CardTitle>Ativos Subjacentes</CardTitle>
+            <CardTitle>Cotações</CardTitle>
             <CardDescription>
                 {displayDate === 'Tempo Real'
-                    ? "Cotações de hoje com variação baseada no fechamento do dia anterior."
+                    ? "Variação baseada no fechamento do dia anterior."
                     : `Exibindo cotações para ${displayDate}.`
                 }
             </CardDescription>
