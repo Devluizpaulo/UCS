@@ -14,6 +14,7 @@ import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carouse
 import { formatCurrency } from "@/lib/formatters";
 import type { CommodityPriceData } from '@/lib/types';
 import Autoplay from "embla-carousel-autoplay";
+import { getCommodityPrices } from '@/lib/data-service';
 
 export default function LandingPage() {
   const [allPrices, setAllPrices] = React.useState<CommodityPriceData[]>([]);
