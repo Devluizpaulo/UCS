@@ -26,7 +26,7 @@ export default function PublicLayout({
 
   if (isUserLoading || user) {
     return (
-      <div className="flex h-screen w-full items-center justify-center">
+      <div className="flex h-screen w-full items-center justify-center bg-background">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
     );
@@ -63,7 +63,8 @@ export default function PublicLayout({
                 {children}
             </div>
         </main>
-        <footer className="border-t">
+        
+        <footer className="border-t bg-background">
             <div className="container mx-auto flex flex-col items-center justify-between gap-4 px-4 py-8 md:flex-row md:px-6">
                 <div className="flex flex-col items-center gap-2 text-center md:flex-row md:gap-4 md:text-left">
                     <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} UCS Index. Todos os direitos reservados.</p>
