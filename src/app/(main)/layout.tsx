@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -216,18 +217,6 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
                   <Link href="/analysis/trends">
                     <TrendingUp />
                     <span>Análise Histórica</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem onClick={handleMenuItemClick}>
-                <SidebarMenuButton
-                  asChild
-                  isActive={pathname.startsWith('/analysis/profitability')}
-                  tooltip={{ children: 'Análise de Rentabilidade' }}
-                >
-                  <Link href="/analysis/profitability">
-                    <LandPlot />
-                    <span>Rentabilidade</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
