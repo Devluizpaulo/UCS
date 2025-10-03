@@ -9,6 +9,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogBody,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import {
   LineChart,
@@ -515,6 +516,7 @@ export const AssetDetailModal = memo<AssetDetailModalProps>(({
                 {renderContent()}
             </div>
         </DialogBody>
+        <DialogFooter />
       </DialogContent>
     </Dialog>
   );
