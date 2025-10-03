@@ -151,11 +151,11 @@ export default function LandingPage() {
         {/* HERO SECTION */}
         <section className="relative flex h-[80vh] min-h-[500px] flex-col items-center justify-center p-4 text-center">
           <Image
-            src="/image/login.png"
+            src="https://picsum.photos/seed/forest-sun/1920/1080"
             alt="Floresta exuberante com um caminho de luz"
             fill
             className="object-cover"
-            data-ai-hint="lush forest path"
+            data-ai-hint="lush forest sunbeam"
             priority
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent" />
@@ -232,7 +232,7 @@ export default function LandingPage() {
                     </div>
                     <div className="relative h-64 md:h-full w-full rounded-xl overflow-hidden shadow-xl animate-fade-in-left">
                         <Image
-                            src="https://picsum.photos/seed/satellite-view/800/600"
+                            src="https://picsum.photos/seed/satellite-forest/800/600"
                             alt="Visão de satélite de uma floresta densa"
                             layout="fill"
                             objectFit="cover"
@@ -286,7 +286,7 @@ export default function LandingPage() {
                 <div className="grid md:grid-cols-2 gap-12 items-center">
                     <div className="relative h-64 md:h-full w-full rounded-xl overflow-hidden shadow-xl animate-fade-in-right">
                          <Image
-                            src="https://picsum.photos/seed/drone-forest/800/600"
+                            src="https://picsum.photos/seed/drone-over-forest/800/600"
                             alt="Drone sobrevoando uma floresta"
                             layout="fill"
                             objectFit="cover"
@@ -321,11 +321,8 @@ export default function LandingPage() {
             <div className="container mx-auto px-4 md:px-6">
                 <div className="mx-auto max-w-4xl text-center animate-fade-in-up">
                     <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Conservação que Gera Valor</h2>
-                    <p className="mt-4 text-lg text-muted-foreground">
-                       O Crédito de Sustentabilidade transforma a conservação de florestas em um ativo financeiro transparente, auditável e seguro, que gera valor econômico sem comprometer o equilíbrio ambiental.
-                    </p>
                 </div>
-                <div className="mx-auto mt-12 grid max-w-4xl grid-cols-1 gap-6 sm:grid-cols-2 animate-fade-in-up animation-delay-200">
+                <div className="mx-auto mt-8 grid max-w-4xl grid-cols-1 gap-6 sm:grid-cols-2 animate-fade-in-up animation-delay-200">
                   {[
                       'Transforma conservação ambiental em ativo financeiro', 
                       'Oferece transparência total através de múltiplos lastros', 
@@ -363,3 +360,5 @@ export default function LandingPage() {
     </div>
   );
 }
+
+    
