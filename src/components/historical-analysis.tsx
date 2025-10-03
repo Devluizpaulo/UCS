@@ -356,7 +356,7 @@ export function HistoricalAnalysis() {
                     </div>
                 </div>
             </CardHeader>
-            <CardContent className="space-y-8">
+            <CardContent className="flex flex-col gap-8">
                 <div className="h-72">
                 {isLoading ? (
                     <ChartSkeleton />
