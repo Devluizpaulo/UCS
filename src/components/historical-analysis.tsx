@@ -206,22 +206,18 @@ export function HistoricalAnalysis() {
 
         let finalY = 45 + imgHeight + 10;
 
-        // Tabela de Detalhes
+        // Tabela de Detalhes do Dia
         if (latestQuote) {
             const details = [
                 { label: 'Fechamento Anterior', value: latestQuote.fechamento_anterior, type: 'currency' },
                 { label: 'Abertura', value: latestQuote.abertura, type: 'currency' },
                 { label: 'Máxima do Dia', value: latestQuote.maxima, type: 'currency' },
                 { label: 'Mínima do Dia', value: latestQuote.minima, type: 'currency' },
-                { label: 'Volume', value: latestQuote.volume, type: 'number' },
-                { label: 'Variação (%)', value: latestQuote.variacao_pct, type: 'percentage' },
             ].filter(item => item.value !== null && item.value !== undefined);
 
             const formatValue = (value: any, type: string) => {
                 if (value === null || value === undefined) return 'N/A';
                 if (type === 'currency') return formatCurrency(value, selectedAssetConfig?.currency || 'BRL');
-                if (type === 'percentage') return `${Number(value).toFixed(2)}%`;
-                if (type === 'number') return Number(value).toLocaleString('pt-BR');
                 return String(value);
             };
 
@@ -232,8 +228,67 @@ export function HistoricalAnalysis() {
                 head: [[`Detalhes do Dia (${latestQuote.data})`, 'Valor']],
                 body: tableBody,
                 theme: 'striped',
-                headStyles: { fillColor: [34, 47, 62] }, // Azul escuro
+                headStyles: { fillColor: [34, 47, 62] },
             });
+            finalY = (doc as any).lastAutoTable.finalY + 10;
+        }
+
+        // Seção Específica para UCS ASE
+        if (selectedAssetConfig.id === 'ucs_ase' && latestQuote) {
+            const componentes = latestQuote.componentes || {};
+            const valoresOriginais = latestQuote.valores_originais || {};
+            const conversoes = latestQuote.conversoes || {};
+            
+            // Tabela de Composição
+            doc.autoTable({
+                startY: finalY,
+                head: [['Composição do Valor Final', '']],
+                body: [
+                    ['UCS Original (BRL)', formatCurrency(componentes.ucs_original_brl || 0, 'BRL', 'ucs')],
+                    ['Fórmula Aplicada', latestQuote.formula || 'UCS × 2'],
+                    ['Resultado Final (BRL)', formatCurrency(componentes.resultado_final_brl || 0, 'BRL', 'ucs_ase')]
+                ],
+                theme: 'grid',
+                headStyles: { fillColor: [34, 47, 62] },
+                styles: { fontStyle: 'bold', cellPadding: 2 },
+                bodyStyles: { fontStyle: 'normal' },
+                didParseCell: (data) => {
+                    if(data.row.index === 2) {
+                       data.cell.styles.fontStyle = 'bold';
+                       data.cell.styles.fillColor = '#f0f9ff';
+                    }
+                }
+            });
+            finalY = (doc as any).lastAutoTable.finalY + 10;
+            
+            // Tabelas de Conversão
+            const conversionBodyUSD = [
+                ['Cotação (USD/BRL)', formatCurrency(valoresOriginais.cotacao_usd || 0, 'BRL', 'usd')],
+                ['Valor Final (USD)', formatCurrency(componentes.resultado_final_usd || 0, 'USD', 'ucs_ase')],
+                ['Cálculo', conversoes.brl_para_usd || 'N/A']
+            ];
+             const conversionBodyEUR = [
+                ['Cotação (EUR/BRL)', formatCurrency(valoresOriginais.cotacao_eur || 0, 'BRL', 'eur')],
+                ['Valor Final (EUR)', formatCurrency(componentes.resultado_final_eur || 0, 'EUR', 'ucs_ase')],
+                ['Cálculo', conversoes.brl_para_eur || 'N/A']
+            ];
+
+            doc.autoTable({
+                startY: finalY,
+                head: [['Conversão para Dólar (USD)', '']],
+                body: conversionBodyUSD,
+                theme: 'grid',
+                headStyles: { fillColor: [39, 174, 96] }, // Verde
+            });
+            doc.autoTable({
+                startY: finalY,
+                head: [['Conversão para Euro (EUR)', '']],
+                body: conversionBodyEUR,
+                theme: 'grid',
+                headStyles: { fillColor: [41, 128, 185] }, // Azul
+                margin: { left: doc.internal.pageSize.getWidth() / 2 + 5 },
+            });
+
         }
         
         doc.save(`relatorio_${selectedAssetConfig.id}_${format(new Date(), 'yyyyMMdd')}.pdf`);
@@ -248,7 +303,7 @@ export function HistoricalAnalysis() {
   return (
     <>
     <Card>
-      <CardHeader className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+      <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 border-b">
         <div className="flex-1">
           <Select value={selectedAssetId} onValueChange={setSelectedAssetId}>
             <SelectTrigger className="w-full sm:w-[280px]">
@@ -284,8 +339,8 @@ export function HistoricalAnalysis() {
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="flex flex-col gap-8">
-        <div ref={chartRef} className="h-72 w-full bg-background p-4" style={{ marginLeft: '-10px' }}>
+      <CardContent className="flex flex-col gap-8 p-4">
+        <div ref={chartRef} className="h-72 w-full bg-background pt-4 pr-4" style={{ marginLeft: '-10px' }}>
           {isLoading ? (
             <ChartSkeleton />
           ) : (
@@ -334,19 +389,16 @@ export function HistoricalAnalysis() {
             <TabsTrigger value="overview">Visão Geral</TabsTrigger>
             <TabsTrigger value="history">Dados Históricos</TabsTrigger>
           </TabsList>
-          <TabsContent value="overview">
-            <div className="mt-4">
-              <h3 className="text-lg font-semibold mb-2">Detalhes do Dia ({latestQuote?.data || 'N/A'})</h3>
-              <div className="flex items-start gap-2 p-3 mb-4 text-sm text-blue-800 bg-blue-50 border border-blue-200 rounded-lg">
-                <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                <p>A tabela abaixo mostra os dados detalhados para o dia mais recente do período selecionado.</p>
-              </div>
-              {isLoading ? <TableSkeleton /> : <DailyDetailsTable quote={latestQuote} asset={selectedAssetConfig} />}
+          <TabsContent value="overview" className="pt-4">
+            <h3 className="text-lg font-semibold mb-2">Detalhes do Dia ({latestQuote?.data || 'N/A'})</h3>
+            <div className="flex items-start gap-2 p-3 mb-4 text-sm text-blue-800 bg-blue-50 border border-blue-200 rounded-lg">
+              <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
+              <p>A tabela abaixo mostra os dados detalhados para o dia mais recente do período selecionado.</p>
             </div>
+            {isLoading ? <TableSkeleton /> : <DailyDetailsTable quote={latestQuote} asset={selectedAssetConfig} />}
           </TabsContent>
-          <TabsContent value="history">
-             <div className="mt-4">
-              <HistoricalPriceTable 
+          <TabsContent value="history" className="pt-4">
+             <HistoricalPriceTable 
                 asset={selectedAssetConfig!}
                 historicalData={data} 
                 isLoading={isLoading} 
@@ -357,7 +409,6 @@ export function HistoricalAnalysis() {
                     }
                 }}
               />
-            </div>
           </TabsContent>
         </Tabs>
       </CardContent>
