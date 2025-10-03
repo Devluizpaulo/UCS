@@ -16,16 +16,13 @@ import { headers } from 'next/headers';
  * @returns A URL base (ex: https://ucsindex.vercel.app)
  */
 function getBaseUrl() {
-  // Se a variável de ambiente VERCEL_URL estiver definida (padrão em deploys da Vercel), use-a.
+  // Em produção (na Vercel), a variável de ambiente VERCEL_URL é definida.
   if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`;
+    return 'https://ucsindex.vercel.app';
   }
 
-  // Fallback para o ambiente de desenvolvimento local ou outros ambientes
-  const reqHeaders = headers();
-  const host = reqHeaders.get('host');
-  const protocol = reqHeaders.get('x-forwarded-proto') || 'http';
-  return `${protocol}://${host}`;
+  // Fallback para o ambiente de desenvolvimento local.
+  return 'http://localhost:9002';
 }
 
 /**
