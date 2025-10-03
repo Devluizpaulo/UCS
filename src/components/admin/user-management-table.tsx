@@ -21,7 +21,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Trash2, Edit, ShieldCheck, UserCheck } from 'lucide-react';
+import { MoreHorizontal, Trash2, Edit, ShieldCheck, UserCheck, Mail } from 'lucide-react';
 import { UserFormModal } from './user-form-modal';
 import { InviteLinkModal } from './invite-link-modal';
 import {
@@ -36,7 +36,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { createUser, updateUser, deleteUser, getUsers, setAdminRole, removeAdminRole } from '@/lib/admin-actions';
+import { createUser, updateUser, deleteUser, getUsers, setAdminRole, removeAdminRole, resetUserPassword } from '@/lib/admin-actions';
 import type { UserFormValues } from './user-form-modal';
 import type { AppUserRecord } from '@/lib/types';
 import { useUser } from '@/firebase';
@@ -115,6 +115,21 @@ export function UserManagementTable({ initialUsers }: UserManagementTableProps) 
         toast({ title: 'Sucesso', description: `${user.displayName || user.email} agora é um administrador.` });
       }
       refreshUsers();
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'Erro', description: error.message });
+    }
+  };
+
+  const handleResetPassword = async (user: AppUserRecord) => {
+    try {
+      const { link } = await resetUserPassword(user.uid);
+      setInviteInfo({
+        name: user.displayName || 'Usuário',
+        email: user.email!,
+        phoneNumber: user.phoneNumber,
+        link
+      });
+      toast({ title: 'Sucesso', description: 'Novo link de redefinição de senha gerado.' });
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Erro', description: error.message });
     }
@@ -200,6 +215,9 @@ export function UserManagementTable({ initialUsers }: UserManagementTableProps) 
                                     ? <><UserCheck className="mr-2 h-4 w-4" /> Remover Acesso Admin</> 
                                     : <><ShieldCheck className="mr-2 h-4 w-4" /> Promover a Admin</>
                                 }
+                            </DropdownMenuItem>
+                             <DropdownMenuItem onSelect={() => handleResetPassword(user)}>
+                                <Mail className="mr-2 h-4 w-4" /> Resetar Senha
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <AlertDialogTrigger asChild>

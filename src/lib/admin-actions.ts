@@ -75,7 +75,7 @@ export async function createUser(userData: {
         throw new Error('Este e-mail já está em uso por outro usuário.');
     }
      if (error.code === 'auth/invalid-phone-number') {
-      throw new Error('O número de telefone fornecido é inválido. Use o formato E.164 (ex: +5511999998888).');
+      throw new Error('O número de telefone fornecido é inválido. Use o padrão internacional (ex: +5511999998888).');
     }
      if (error.code === 'auth/phone-number-already-exists') {
       throw new Error('Este número de telefone já está em uso por outro usuário.');
@@ -131,6 +131,25 @@ export async function deleteUser(uid: string): Promise<void> {
   } catch (error) {
     console.error(`Error deleting user ${uid}:`, error);
     throw new Error('Falha ao excluir o usuário.');
+  }
+}
+
+/**
+ * Gera um novo link de reset de senha para um usuário.
+ * @param uid - O UID do usuário.
+ */
+export async function resetUserPassword(uid: string): Promise<{ link: string }> {
+  const { auth } = await getFirebaseAdmin();
+  try {
+    const userRecord = await auth.getUser(uid);
+    if (!userRecord.email) {
+      throw new Error('O usuário não possui um e-mail cadastrado para redefinir a senha.');
+    }
+    const link = await auth.generatePasswordResetLink(userRecord.email);
+    return { link };
+  } catch (error: any) {
+    console.error(`Error generating password reset link for user ${uid}:`, error);
+    throw new Error('Falha ao gerar o link de redefinição de senha.');
   }
 }
 
