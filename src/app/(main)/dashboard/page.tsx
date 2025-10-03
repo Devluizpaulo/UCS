@@ -234,26 +234,25 @@ export default function DashboardPage() {
         });
         
         worksheet.columns.forEach(column => {
-            if (!column) {
-              return;
+            if (column) {
+                let maxLength = 0;
+                column.eachCell({ includeEmpty: true }, (cell, rowNumber) => {
+                    // Apenas considera as linhas com conteúdo para o cálculo da largura
+                    if (rowNumber > 2) {
+                        let columnLength = cell.value ? cell.value.toString().length : 10;
+                        if (cell.numFmt && typeof cell.value === 'number') {
+                           // Estima o tamanho formatado
+                           const numStr = cell.value.toFixed(cell.numFmt.includes('0.0000') ? 4 : 2);
+                           const currencyPrefix = cell.numFmt.startsWith('"') ? cell.numFmt.substring(1, cell.numFmt.indexOf('"', 1)) + ' ' : '';
+                           columnLength = (currencyPrefix + numStr).length;
+                        }
+                        if (columnLength > maxLength) {
+                            maxLength = columnLength;
+                        }
+                    }
+                });
+                column.width = maxLength < 12 ? 12 : maxLength + 4;
             }
-            let maxLength = 0;
-            column.eachCell({ includeEmpty: true }, (cell, rowNumber) => {
-                // Apenas considera as linhas com conteúdo para o cálculo da largura
-                if (rowNumber > 2) {
-                    let columnLength = cell.value ? cell.value.toString().length : 10;
-                    if (cell.numFmt && typeof cell.value === 'number') {
-                       // Estima o tamanho formatado
-                       const numStr = cell.value.toFixed(cell.numFmt.includes('0.0000') ? 4 : 2);
-                       const currencyPrefix = cell.numFmt.startsWith('"') ? cell.numFmt.substring(1, cell.numFmt.indexOf('"', 1)) + ' ' : '';
-                       columnLength = (currencyPrefix + numStr).length;
-                    }
-                    if (columnLength > maxLength) {
-                        maxLength = columnLength;
-                    }
-                }
-            });
-            column.width = maxLength < 12 ? 12 : maxLength + 4;
         });
 
 

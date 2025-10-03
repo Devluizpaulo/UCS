@@ -14,9 +14,10 @@ import { headers } from 'next/headers';
  * Helper para obter a URL base da requisição atual.
  * @returns A URL base (ex: https://seu-dominio.com)
  */
-function getBaseUrl() {
-  const host = headers().get('host');
-  const protocol = headers().get('x-forwarded-proto') || 'http';
+async function getBaseUrl() {
+  const reqHeaders = await headers();
+  const host = reqHeaders.get('host');
+  const protocol = reqHeaders.get('x-forwarded-proto') || 'http';
   return `${protocol}://${host}`;
 }
 
@@ -79,8 +80,9 @@ export async function createUser(userData: {
     const userRecord = await auth.createUser(userPayload);
     
     // Constrói a URL de ação dinamicamente
+    const baseUrl = await getBaseUrl();
     const actionCodeSettings = {
-        url: `${getBaseUrl()}/login`, // URL para onde o usuário volta após redefinir
+        url: `${baseUrl}/login`, // URL para onde o usuário volta após redefinir
         handleCodeInApp: true,
     };
 
@@ -166,8 +168,9 @@ export async function resetUserPassword(uid: string): Promise<{ link: string }> 
     }
     
     // Constrói a URL de ação dinamicamente
+    const baseUrl = await getBaseUrl();
     const actionCodeSettings = {
-        url: `${getBaseUrl()}/login`, // URL para onde o usuário volta após redefinir
+        url: `${baseUrl}/login`, // URL para onde o usuário volta após redefinir
         handleCodeInApp: true,
     };
     const link = await auth.generatePasswordResetLink(userRecord.email, actionCodeSettings);
