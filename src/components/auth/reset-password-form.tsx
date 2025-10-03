@@ -21,10 +21,11 @@ import { useAuth } from '@/firebase';
 import { confirmPasswordReset } from 'firebase/auth';
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { LogoUCS } from '../logo-bvm';
 
 const formSchema = z.object({
-  password: z.string().min(6, { message: 'A senha deve ter pelo menos 6 caracteres.' }),
+  password: z.string().min(6, { message: 'A senha deve ter no mínimo 6 caracteres.' }),
   confirmPassword: z.string()
 }).refine(data => data.password === data.confirmPassword, {
   message: 'As senhas não correspondem.',
@@ -33,21 +34,21 @@ const formSchema = z.object({
 
 type ResetPasswordFormValues = z.infer<typeof formSchema>;
 
-export function ResetPasswordForm() {
+export function ResetPasswordModal() {
   const auth = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
+  
   const [isSuccess, setIsSuccess] = useState(false);
-  const [oobCode, setOobCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(true);
+  
+  const oobCode = searchParams.get('oobCode');
+  const mode = searchParams.get('mode');
 
   useEffect(() => {
-    const code = searchParams.get('oobCode');
-    const mode = searchParams.get('mode');
-
-    if (mode !== 'resetPassword' || !code) {
+    if (mode !== 'resetPassword' || !oobCode) {
         setError('O link utilizado é inválido ou expirou. Por favor, solicite um novo link de redefinição de senha.');
         toast({
             variant: 'destructive',
@@ -55,12 +56,12 @@ export function ResetPasswordForm() {
             description: 'O link de redefinição de senha está incompleto ou é inválido.',
         });
         setIsVerifying(false);
+        // Redirect to login if the link is bad
+        router.push('/login');
         return;
     }
-    setOobCode(code);
     setIsVerifying(false);
-
-  }, [searchParams, toast]);
+  }, [searchParams, toast, router, mode, oobCode]);
 
   const form = useForm<ResetPasswordFormValues>({
     resolver: zodResolver(formSchema),
@@ -106,26 +107,23 @@ export function ResetPasswordForm() {
     }
   };
 
-  if (isVerifying) {
-    return (
-        <Card className="bg-card/90 backdrop-blur-sm border-white/20 text-card-foreground">
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      router.push('/login');
+    }
+  };
+  
+  const renderContent = () => {
+      if (isVerifying) {
+        return (
             <CardContent className="p-6 text-center space-y-4">
                 <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
                 <p className="text-sm text-muted-foreground">Verificando link...</p>
             </CardContent>
-        </Card>
-    );
-  }
-
-  if (error) {
-     return (
-        <Card className="bg-card/90 backdrop-blur-sm border-white/20 text-card-foreground">
-            <CardHeader className="text-center">
-                <div className="flex justify-center mb-4">
-                    <LogoUCS />
-                </div>
-                <CardTitle>Erro no Link</CardTitle>
-            </CardHeader>
+        );
+      }
+      if (error) {
+        return (
             <CardContent>
                 <p className="text-center text-destructive">{error}</p>
                  <div className="mt-4 text-center">
@@ -134,36 +132,21 @@ export function ResetPasswordForm() {
                     </Button>
                 </div>
             </CardContent>
-        </Card>
-    );
-  }
-
-  if (isSuccess) {
-    return (
-      <Card className="bg-card/90 backdrop-blur-sm border-white/20 text-card-foreground">
-        <CardContent className="p-8 text-center space-y-4">
-            <CheckCircle className="h-12 w-12 text-green-500 mx-auto" />
-            <h3 className="text-xl font-semibold">Senha alterada com sucesso!</h3>
-            <p className="text-sm text-muted-foreground">
-            Você será redirecionado para a página de login para entrar com sua nova senha.
-            </p>
-            <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
-        </CardContent>
-      </Card>
-    );
-  }
-
-  return (
-    <Card className="bg-card/90 backdrop-blur-sm border-white/20 text-card-foreground">
-        <CardHeader className="text-center">
-            <div className="flex justify-center mb-4">
-                <LogoUCS />
-            </div>
-            <CardTitle className="text-2xl">Redefinir Senha</CardTitle>
-            <CardDescription className="text-muted-foreground">
-                Crie uma nova senha para sua conta.
-            </CardDescription>
-        </CardHeader>
+        );
+      }
+      if (isSuccess) {
+        return (
+            <CardContent className="p-8 text-center space-y-4">
+                <CheckCircle className="h-12 w-12 text-green-500 mx-auto" />
+                <h3 className="text-xl font-semibold">Senha alterada com sucesso!</h3>
+                <p className="text-sm text-muted-foreground">
+                Você será redirecionado para a página de login para entrar com sua nova senha.
+                </p>
+                <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
+            </CardContent>
+        );
+      }
+      return (
         <CardContent>
             <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -206,6 +189,25 @@ export function ResetPasswordForm() {
             </form>
             </Form>
         </CardContent>
-    </Card>
+      );
+  }
+
+  return (
+    <Dialog open={true} onOpenChange={handleOpenChange}>
+      <DialogContent className="p-0 border-none bg-transparent shadow-none" hideCloseButton>
+        <Card className="bg-card/90 backdrop-blur-sm border-white/20 text-card-foreground">
+            <CardHeader className="text-center">
+                <div className="flex justify-center mb-4">
+                    <LogoUCS />
+                </div>
+                <CardTitle className="text-2xl">Redefinir Senha</CardTitle>
+                <CardDescription className="text-muted-foreground">
+                    Crie uma nova senha para sua conta.
+                </CardDescription>
+            </CardHeader>
+            {renderContent()}
+        </Card>
+      </DialogContent>
+    </Dialog>
   );
 }
