@@ -102,8 +102,8 @@ export function AssetEditModal({ isOpen, onOpenChange, onSave, asset, allAssets 
   };
 
   const currentPriceString = form.watch('price');
-  const numericPrice = typeof currentPriceString === 'string' 
-    ? parseFloat(currentPriceString.replace(/\./g, '').replace(',', '.')) 
+  const numericPrice = typeof currentPriceString === 'string'
+    ? parseFloat(String(currentPriceString).replace(/\./g, '').replace(',', '.'))
     : Number(currentPriceString);
   
   const hasChanges = numericPrice !== asset.price;
