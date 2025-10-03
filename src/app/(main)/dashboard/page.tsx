@@ -277,7 +277,7 @@ export default function DashboardPage() {
 
   if (!targetDate) {
     return (
-       <div className="flex min-h-screen w-full flex-col">
+       <div className="flex flex-col h-screen overflow-hidden">
           <PageHeader 
             title="Painel de Cotações"
             description="Carregando dados..."
@@ -287,7 +287,7 @@ export default function DashboardPage() {
                 <Skeleton className="h-9 w-[250px]" />
             </div>
           </PageHeader>
-          <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
+          <main className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-8">
               <Skeleton className="h-32 w-full" />
               <div className="grid gap-4 md:grid-cols-2">
                 <Skeleton className="h-32 w-full" />
@@ -303,7 +303,7 @@ export default function DashboardPage() {
   const formattedDate = format(targetDate, 'dd/MM/yyyy');
   
   return (
-    <div className="flex min-h-screen w-full flex-col">
+    <div className="flex flex-col h-screen overflow-hidden">
       <PageHeader 
         title="Painel de Cotações"
         description={isCurrentDateOrFuture 
@@ -353,9 +353,9 @@ export default function DashboardPage() {
             />
         </div>
       </PageHeader>
-      <main ref={dashboardRef} className="flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6 overflow-y-auto">
+      <main ref={dashboardRef} className="flex-1 overflow-y-auto p-4 md:p-6">
         {isLoading && data.length === 0 ? (
-          <>
+          <div className="space-y-4 md:space-y-8">
             <Skeleton className="h-[180px] w-full" />
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
               <Skeleton className="h-32 w-full" />
@@ -365,7 +365,7 @@ export default function DashboardPage() {
               <Skeleton className="h-32 w-full" />
               <Skeleton className="h-32 w-full" />
             </div>
-          </>
+          </div>
         ) : (
           <div className="flex flex-col gap-4 md:gap-8">
             {mainIndex && <MainIndexCard asset={mainIndex} isMain={true} />}
