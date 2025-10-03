@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -24,6 +23,10 @@ import {
   TableRow,
 } from '@/components/ui/table';
 
+interface CompositionAnalysisProps {
+  targetDate: Date;
+}
+
 const COLORS = [
   'hsl(var(--chart-1))',
   'hsl(var(--chart-2))',
@@ -36,24 +39,25 @@ const componentNames: Record<string, string> = {
   vus: 'VUS (Uso do Solo)',
   vmad: 'VMAD (Madeira)',
   carbono_crs: 'Carbono CRS',
-  agua_crs: 'Água CRS',
+  Agua_CRS: 'Água CRS',
 };
 
 const RADIAN = Math.PI / 180;
 const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
+  if (percent === 0) return null;
   const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
 
   return (
-    <text x={x} y={y} fill="white" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central">
+    <text x={x} y={y} fill="white" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" className="text-xs font-bold">
       {`${(percent * 100).toFixed(0)}%`}
     </text>
   );
 };
 
 
-export function CompositionAnalysis() {
+export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
   const [data, setData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -61,7 +65,7 @@ export function CompositionAnalysis() {
     async function fetchData() {
       setIsLoading(true);
       try {
-        const result = await getQuoteByDate('valor_uso_solo', new Date());
+        const result = await getQuoteByDate('valor_uso_solo', targetDate);
         setData(result);
       } catch (error) {
         console.error("Failed to fetch composition data:", error);
@@ -71,16 +75,18 @@ export function CompositionAnalysis() {
       }
     }
     fetchData();
-  }, []);
+  }, [targetDate]);
 
   const chartData = useMemo(() => {
     if (!data?.componentes) return [];
 
-    return Object.entries(data.componentes).map(([key, value]) => ({
-      name: componentNames[key] || key,
-      value: value as number,
-      percentage: data.porcentagens?.[key] || 0,
-    }));
+    return Object.entries(data.componentes)
+      .map(([key, value]) => ({
+        name: componentNames[key] || key,
+        value: value as number,
+        percentage: data.porcentagens?.[key] || (((value as number) / data.valor) * 100),
+      }))
+      .filter(item => item.value > 0); // Não mostra componentes com valor zero no gráfico
   }, [data]);
 
   if (isLoading) {
@@ -111,17 +117,17 @@ export function CompositionAnalysis() {
     );
   }
 
-  if (!data) {
+  if (!data || chartData.length === 0) {
     return (
       <Card>
         <CardHeader>
           <CardTitle>Dados Indisponíveis</CardTitle>
-          <CardDescription>Não foi possível carregar os dados de composição.</CardDescription>
+          <CardDescription>Não foi possível carregar os dados de composição para a data selecionada.</CardDescription>
         </CardHeader>
         <CardContent className="flex items-center justify-center h-72 text-muted-foreground">
           <div className="text-center">
             <AlertCircle className="h-12 w-12 mx-auto mb-2" />
-            <p>Falha ao buscar as informações. Tente novamente mais tarde.</p>
+            <p>Nenhuma composição encontrada para {targetDate.toLocaleDateString('pt-BR')}.</p>
           </div>
         </CardContent>
       </Card>
