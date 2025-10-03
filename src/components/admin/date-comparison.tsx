@@ -19,6 +19,8 @@ import type { CommodityPriceData } from '@/lib/types';
 import ExcelJS from 'exceljs';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { ASSET_DEPENDENCIES, type AssetDependency } from '@/lib/dependency-service';
+
 
 interface ComparisonData {
   assetId: string;
@@ -28,6 +30,7 @@ interface ComparisonData {
   absoluteChange: number;
   percentageChange: number;
   currency: string;
+  type: AssetDependency['calculationType'];
 }
 
 interface DateComparisonProps {
@@ -36,9 +39,9 @@ interface DateComparisonProps {
 }
 
 function getTrendIcon(percentageChange: number) {
-  if (percentageChange > 0) {
+  if (percentageChange > 0.01) {
     return <TrendingUp className="h-4 w-4 text-green-600" />;
-  } else if (percentageChange < 0) {
+  } else if (percentageChange < -0.01) {
     return <TrendingDown className="h-4 w-4 text-red-600" />;
   } else {
     return <Minus className="h-4 w-4 text-gray-500" />;
@@ -48,14 +51,14 @@ function getTrendIcon(percentageChange: number) {
 function getTrendBadge(percentageChange: number) {
   if (percentageChange > 5) {
     return <Badge variant="default" className="bg-green-100 text-green-800">Alta Significativa</Badge>;
-  } else if (percentageChange > 0) {
+  } else if (percentageChange > 0.01) {
     return <Badge variant="outline" className="text-green-700">Alta</Badge>;
   } else if (percentageChange < -5) {
     return <Badge variant="destructive">Queda Significativa</Badge>;
-  } else if (percentageChange < 0) {
+  } else if (percentageChange < -0.01) {
     return <Badge variant="outline" className="text-red-700">Queda</Badge>;
   } else {
-    return <Badge variant="secondary">Sem Alteração</Badge>;
+    return <Badge variant="secondary">Estável</Badge>;
   }
 }
 
@@ -100,8 +103,9 @@ export function DateComparison({ currentDate, currentData }: DateComparisonProps
       
       currentData.forEach(currentAsset => {
         const compareAsset = compareMap.get(currentAsset.id);
+        const assetInfo = ASSET_DEPENDENCIES[currentAsset.id];
         
-        if (compareAsset) {
+        if (compareAsset && assetInfo) {
           const absoluteChange = currentAsset.price - compareAsset.price;
           const percentageChange = compareAsset.price !== 0 
             ? (absoluteChange / compareAsset.price) * 100 
@@ -114,7 +118,8 @@ export function DateComparison({ currentDate, currentData }: DateComparisonProps
             compareValue: compareAsset.price,
             absoluteChange,
             percentageChange,
-            currency: currentAsset.currency
+            currency: currentAsset.currency,
+            type: assetInfo.calculationType
           });
         }
       });
@@ -240,89 +245,86 @@ export function DateComparison({ currentDate, currentData }: DateComparisonProps
       const doc = new jsPDF() as jsPDFWithAutoTable;
       const currentDateFormatted = format(currentDate, 'dd/MM/yyyy');
       const compareDateFormatted = format(compareDate, 'dd/MM/yyyy');
+      const generationDate = format(new Date(), "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
 
-      // Cabeçalho do Documento
+      // --- Cabeçalho do Documento ---
       doc.setFontSize(18);
+      doc.setTextColor(34, 47, 62); // Cor escura (quase preto)
+      doc.setFont('helvetica', 'bold');
       doc.text('Relatório Comparativo de Ativos', doc.internal.pageSize.getWidth() / 2, 22, { align: 'center' });
+      
       doc.setFontSize(11);
-      doc.setTextColor(100);
-      doc.text(`Período: ${compareDateFormatted} vs ${currentDateFormatted}`, doc.internal.pageSize.getWidth() / 2, 29, { align: 'center' });
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(108, 122, 137); // Cinza
+      doc.text(`Análise do período de ${compareDateFormatted} a ${currentDateFormatted}`, doc.internal.pageSize.getWidth() / 2, 29, { align: 'center' });
+      doc.text(`Gerado em: ${generationDate}`, doc.internal.pageSize.getWidth() / 2, 35, { align: 'center' });
 
-      // Resumo de KPIs
-      const summary = {
-          up: comparisonResults.filter(r => r.percentageChange > 0).length,
-          down: comparisonResults.filter(r => r.percentageChange < 0).length,
-          maxChange: Math.max(...comparisonResults.map(r => Math.abs(r.percentageChange))),
-          avgChange: comparisonResults.reduce((sum, r) => sum + r.percentageChange, 0) / comparisonResults.length,
-      };
-      
-      const startY = 40;
-      doc.setFontSize(10);
-      doc.setFillColor(240, 240, 240); // Fundo cinza claro
-      doc.rect(14, startY, doc.internal.pageSize.getWidth() - 28, 20, 'F');
-      
-      const kpiX = 25;
-      const kpiY = startY + 8;
-      doc.setTextColor(30, 144, 255); // Azul
-      doc.text('Ativos em Alta:', kpiX, kpiY);
-      doc.setTextColor(0, 0, 0);
-      doc.text(`${summary.up}`, kpiX + 30, kpiY);
-      
-      doc.setTextColor(220, 20, 60); // Vermelho
-      doc.text('Ativos em Queda:', kpiX, kpiY + 7);
-      doc.setTextColor(0, 0, 0);
-      doc.text(`${summary.down}`, kpiX + 30, kpiY + 7);
-      
-      const kpiX2 = doc.internal.pageSize.getWidth() / 2 + 10;
-      doc.setTextColor(0, 0, 0);
-      doc.text('Maior Variação (%):', kpiX2, kpiY);
-      doc.text(`${summary.maxChange.toFixed(2)}%`, kpiX2 + 35, kpiY);
-      doc.text('Variação Média (%):', kpiX2, kpiY + 7);
-      doc.text(`${summary.avgChange.toFixed(2)}%`, kpiX2 + 35, kpiY + 7);
+      // Separa os ativos
+      const baseAssets = comparisonResults.filter(r => r.type === 'base');
+      const calculatedAssets = comparisonResults.filter(r => r.type !== 'base');
 
-      // Tabela de Dados
-      const tableColumn = ["Ativo", `Valor (${compareDateFormatted})`, `Valor (${currentDateFormatted})`, "Variação Absoluta", "Variação (%)"];
-      const tableRows = comparisonResults.map(item => [
-          item.assetName,
-          formatCurrency(item.compareValue, item.currency, item.assetId),
-          formatCurrency(item.currentValue, item.currency, item.assetId),
-          `${item.absoluteChange >= 0 ? '+' : ''}${formatCurrency(item.absoluteChange, item.currency, item.assetId)}`,
-          `${item.percentageChange >= 0 ? '+' : ''}${item.percentageChange.toFixed(2)}%`
-      ]);
+      // --- Função para gerar tabela ---
+      const generateTable = (title: string, subtitle: string, data: ComparisonData[], startY: number, headerColor: [number, number, number]): number => {
+          doc.setFontSize(14);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(34, 47, 62);
+          doc.text(title, 14, startY);
+          
+          doc.setFontSize(10);
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(108, 122, 137);
+          doc.text(subtitle, 14, startY + 5);
 
-      doc.autoTable({
-          startY: startY + 25,
-          head: [tableColumn],
-          body: tableRows,
-          theme: 'striped',
-          headStyles: { fillColor: [22, 160, 133] }, // Verde-azulado para cabeçalho
-          didDrawCell: (data) => {
-              if (data.section === 'body' && data.column.index === 4) {
-                  const text = data.cell.text[0];
-                  if (text.includes('+')) {
-                      doc.setTextColor(76, 175, 80); // Verde
-                  } else if (text.includes('-')) {
-                      doc.setTextColor(244, 67, 54); // Vermelho
+          const tableColumn = ["Ativo", `Valor (${compareDateFormatted})`, `Valor (${currentDateFormatted})`, "Variação Absoluta", "Variação (%)"];
+          const tableRows = data.map(item => [
+              item.assetName,
+              formatCurrency(item.compareValue, item.currency, item.assetId),
+              formatCurrency(item.currentValue, item.currency, item.assetId),
+              `${item.absoluteChange >= 0 ? '+' : ''}${formatCurrency(item.absoluteChange, item.currency, item.assetId)}`,
+              `${item.percentageChange >= 0 ? '+' : ''}${item.percentageChange.toFixed(2)}%`
+          ]);
+
+          doc.autoTable({
+              startY: startY + 10,
+              head: [tableColumn],
+              body: tableRows,
+              theme: 'grid',
+              headStyles: { fillColor: headerColor, textColor: 255, fontStyle: 'bold' },
+              didDrawCell: (data) => {
+                  if (data.section === 'body' && data.column.index === 4) { // Coluna de Variação %
+                      const text = data.cell.text[0];
+                      if (text.includes('+')) {
+                          doc.setTextColor(39, 174, 96); // Verde
+                          doc.setFont('helvetica', 'bold');
+                      } else if (text.includes('-')) {
+                          doc.setTextColor(192, 57, 43); // Vermelho
+                          doc.setFont('helvetica', 'bold');
+                      }
                   }
-              }
-          },
-      });
+              },
+          });
+          return (doc as any).lastAutoTable.finalY;
+      };
 
-      // Rodapé
+      // --- Gera as seções ---
+      let finalY = generateTable('Ativos Base', 'Valores de mercado que servem como entrada para os cálculos.', baseAssets, 50, [44, 62, 80]); // Azul escuro
+      finalY = generateTable('Índices Calculados', 'Resultados dos índices e sub-índices da plataforma.', calculatedAssets, finalY + 15, [22, 160, 133]); // Verde-azulado
+
+      // --- Rodapé ---
       const pageCount = doc.internal.pages.length;
-      doc.setFontSize(10);
-      doc.setTextColor(150);
       for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
+        doc.setFontSize(9);
+        doc.setTextColor(150);
         doc.text(
-          `Página ${i} de ${pageCount}`,
+          `Página ${i} de ${pageCount} | Monitor do Índice UCS`,
           doc.internal.pageSize.getWidth() / 2,
           doc.internal.pageSize.getHeight() - 10,
           { align: 'center' }
         );
       }
 
-      doc.save(`comparativo_detalhado_${format(currentDate, 'yyyy-MM-dd')}.pdf`);
+      doc.save(`relatorio_comparativo_${format(currentDate, 'yyyy-MM-dd')}.pdf`);
     } catch (error) {
       console.error("PDF generation error:", error);
     } finally {
@@ -477,8 +479,8 @@ export function DateComparison({ currentDate, currentData }: DateComparisonProps
                             <div className="space-y-1">
                             <div className={cn(
                                 "font-mono text-sm",
-                                result.percentageChange > 0 && "text-green-600",
-                                result.percentageChange < 0 && "text-red-600"
+                                result.percentageChange > 0.01 && "text-green-600",
+                                result.percentageChange < -0.01 && "text-red-600"
                             )}>
                                 {result.percentageChange > 0 ? '+' : ''}{result.percentageChange.toFixed(2)}%
                             </div>
@@ -519,4 +521,6 @@ export function DateComparison({ currentDate, currentData }: DateComparisonProps
     </Card>
   );
 }
+    
+
     
