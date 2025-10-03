@@ -220,7 +220,7 @@ const AssetInfo = memo<{
         <div className="flex items-center gap-4">
           <div className={cn('flex items-center text-sm font-semibold', changeColor)}>
             <ChangeIcon className="h-4 w-4 mr-1" />
-            <span>{asset.change.toFixed(2)}%</span>
+            <span>{typeof asset.change === 'number' ? `${asset.change.toFixed(2)}%` : 'N/A'}</span>
             <span className="mx-1">/</span>
             <span>{formatCurrency(asset.absoluteChange, asset.currency, asset.id)}</span>
             <span className="text-xs text-muted-foreground ml-1">(24h)</span>
