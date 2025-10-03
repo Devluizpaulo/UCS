@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { CalendarIcon, TrendingUp, TrendingDown, Minus, BarChart3, RefreshCw, Download } from 'lucide-react';
+import { CalendarIcon, TrendingUp, TrendingDown, Minus, BarChart3, RefreshCw, Download, FileText } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -17,6 +17,8 @@ import { formatCurrency } from '@/lib/formatters';
 import { getCommodityPricesByDate } from '@/lib/data-service';
 import type { CommodityPriceData } from '@/lib/types';
 import ExcelJS from 'exceljs';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 interface ComparisonData {
   assetId: string;
@@ -64,6 +66,8 @@ export function DateComparison({ currentDate, currentData }: DateComparisonProps
   const [isLoading, setIsLoading] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const comparisonContentRef = useRef<HTMLDivElement>(null);
+
 
   const handleDateSelect = async (date: Date | undefined) => {
     if (!date) return;
@@ -118,7 +122,7 @@ export function DateComparison({ currentDate, currentData }: DateComparisonProps
     }
   }, [currentData, compareData]);
   
-  const handleExport = async () => {
+  const handleExportExcel = async () => {
     if (comparisonResults.length === 0 || !compareDate) return;
     
     setIsExporting(true);
@@ -130,48 +134,147 @@ export function DateComparison({ currentDate, currentData }: DateComparisonProps
       const currentDateFormatted = format(currentDate, 'dd/MM/yyyy');
       const compareDateFormatted = format(compareDate, 'dd/MM/yyyy');
 
-      worksheet.addRow(['Comparação de Ativos']);
-      worksheet.addRow([`Período: ${compareDateFormatted} vs ${currentDateFormatted}`]);
-      worksheet.addRow([]);
+      // Título
+      worksheet.mergeCells('A1:E1');
+      const titleCell = worksheet.getCell('A1');
+      titleCell.value = 'Relatório Comparativo de Ativos';
+      titleCell.font = { name: 'Calibri', size: 16, bold: true };
+      titleCell.alignment = { horizontal: 'center' };
 
-      worksheet.columns = [
-        { header: 'Ativo', key: 'name', width: 25 },
-        { header: `Valor (${currentDateFormatted})`, key: 'current', width: 20 },
-        { header: `Valor (${compareDateFormatted})`, key: 'previous', width: 20 },
-        { header: 'Variação Absoluta', key: 'abs', width: 20 },
-        { header: 'Variação (%)', key: 'pct', width: 15 },
-      ];
+      // Subtítulo
+      worksheet.mergeCells('A2:E2');
+      const subtitleCell = worksheet.getCell('A2');
+      subtitleCell.value = `Período: ${compareDateFormatted} vs ${currentDateFormatted}`;
+      subtitleCell.font = { name: 'Calibri', size: 12 };
+      subtitleCell.alignment = { horizontal: 'center' };
+      
+      worksheet.addRow([]); // Linha em branco
 
-      worksheet.getRow(4).font = { bold: true };
+      // Cabeçalhos
+      const headerRow = worksheet.addRow([
+        'Ativo',
+        `Valor (${currentDateFormatted})`,
+        `Valor (${compareDateFormatted})`,
+        'Variação Absoluta',
+        'Variação (%)',
+      ]);
 
-      comparisonResults.forEach(item => {
-        worksheet.addRow({
-          name: item.assetName,
-          current: item.currentValue,
-          previous: item.compareValue,
-          abs: item.absoluteChange,
-          pct: item.percentageChange / 100
-        });
+      headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      headerRow.eachCell((cell) => {
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FF0070F3' } // Azul
+        };
+        cell.alignment = { horizontal: 'center' };
       });
       
-      worksheet.getColumn('current').numFmt = '"R$" #,##0.00';
-      worksheet.getColumn('previous').numFmt = '"R$" #,##0.00';
-      worksheet.getColumn('abs').numFmt = '"R$" #,##0.00';
-      worksheet.getColumn('pct').numFmt = '0.00%';
+      // Dados
+      comparisonResults.forEach(item => {
+        const row = worksheet.addRow([
+          item.assetName,
+          item.currentValue,
+          item.compareValue,
+          item.absoluteChange,
+          item.percentageChange / 100
+        ]);
 
-      const buffer = await workbook.csv.writeBuffer();
-      const blob = new Blob([buffer], { type: 'text/csv;charset=utf-8;' });
+        // Formatação de moeda
+        row.getCell(2).numFmt = `"${item.currency}" #,##0.00`;
+        row.getCell(3).numFmt = `"${item.currency}" #,##0.00`;
+        row.getCell(4).numFmt = `"${item.currency}" #,##0.00`;
+        // Formatação de porcentagem
+        row.getCell(5).numFmt = '0.00%';
+        
+        // Colore a variação
+        if (item.percentageChange > 0) {
+            row.getCell(5).font = { color: { argb: 'FF008000' } }; // Verde
+        } else if (item.percentageChange < 0) {
+            row.getCell(5).font = { color: { argb: 'FFFF0000' } }; // Vermelho
+        }
+      });
+      
+      // Ajuste de largura das colunas
+      worksheet.columns.forEach(column => {
+        if (column.values) {
+          let maxLength = 0;
+          column.values.forEach(value => {
+            if (value) {
+                const columnLength = value.toString().length;
+                if (columnLength > maxLength) {
+                    maxLength = columnLength;
+                }
+            }
+          });
+          column.width = maxLength < 15 ? 15 : maxLength + 2;
+        }
+      });
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.setAttribute('href', url);
-      link.setAttribute('download', `comparacao_${format(currentDate, 'yyyy-MM-dd')}_vs_${format(compareDate, 'yyyy-MM-dd')}.csv`);
-      link.style.visibility = 'hidden';
+      link.href = url;
+      link.download = `comparacao_${format(currentDate, 'yyyy-MM-dd')}_vs_${format(compareDate, 'yyyy-MM-dd')}.xlsx`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       
     } catch (error) {
       console.error('Export error:', error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleExportPdf = async () => {
+    if (!comparisonContentRef.current || !compareDate) return;
+
+    setIsExporting(true);
+    try {
+      const canvas = await html2canvas(comparisonContentRef.current, {
+        scale: 2,
+        useCORS: true
+      });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const margin = 15;
+      
+      const imgProps = pdf.getImageProperties(imgData);
+      const imgWidth = pdfWidth - (margin * 2);
+      const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+      
+      // Adicionar cabeçalho
+      pdf.setFontSize(18);
+      pdf.text('Relatório Comparativo de Ativos', pdfWidth / 2, margin, { align: 'center' });
+      pdf.setFontSize(12);
+      pdf.setTextColor(100);
+      pdf.text(
+        `Período: ${format(compareDate, 'dd/MM/yyyy')} vs ${format(currentDate, 'dd/MM/yyyy')}`,
+        pdfWidth / 2,
+        margin + 8,
+        { align: 'center' }
+      );
+
+      let heightLeft = imgHeight;
+      let position = margin + 20;
+
+      pdf.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight);
+      heightLeft -= (pdfHeight - position - margin);
+
+      while (heightLeft > 0) {
+        position = -imgHeight + heightLeft;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight);
+        heightLeft -= pdfHeight;
+      }
+      
+      pdf.save(`comparativo_${format(currentDate, 'yyyy-MM-dd')}.pdf`);
+    } catch (error) {
+      console.error("PDF export error:", error);
     } finally {
       setIsExporting(false);
     }
@@ -192,20 +295,17 @@ export function DateComparison({ currentDate, currentData }: DateComparisonProps
                 Compare os valores dos ativos entre diferentes datas para análise de variações.
               </CardDescription>
             </div>
-            {comparisonResults.length > 0 && (
-                <Button
-                    onClick={handleExport}
-                    disabled={isExporting}
-                    variant="outline"
-                    size="sm"
-                >
-                    {isExporting ? (
-                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                        <Download className="h-4 w-4 mr-2" />
-                    )}
-                    Exportar (CSV)
-                </Button>
+             {comparisonResults.length > 0 && (
+                <div className="flex items-center gap-2">
+                    <Button onClick={handleExportExcel} disabled={isExporting} variant="outline" size="sm">
+                        {isExporting ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+                        Exportar (XLSX)
+                    </Button>
+                    <Button onClick={handleExportPdf} disabled={isExporting} variant="outline" size="sm">
+                        {isExporting ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : <FileText className="h-4 w-4 mr-2" />}
+                        Exportar (PDF)
+                    </Button>
+                </div>
             )}
         </div>
       </CardHeader>
@@ -267,89 +367,90 @@ export function DateComparison({ currentDate, currentData }: DateComparisonProps
             </span>
           </div>
         )}
+        <div ref={comparisonContentRef}>
+            {comparisonResults.length > 0 && !isLoading && (
+            <div className="space-y-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-muted/50 rounded-lg">
+                <div className="text-center">
+                    <div className="font-semibold text-lg text-green-600">
+                    {comparisonResults.filter(r => r.percentageChange > 0).length}
+                    </div>
+                    <div className="text-xs text-muted-foreground">Ativos em Alta</div>
+                </div>
+                <div className="text-center">
+                    <div className="font-semibold text-lg text-red-600">
+                    {comparisonResults.filter(r => r.percentageChange < 0).length}
+                    </div>
+                    <div className="text-xs text-muted-foreground">Ativos em Queda</div>
+                </div>
+                <div className="text-center">
+                    <div className="font-semibold text-lg text-blue-600">
+                    {Math.max(...comparisonResults.map(r => Math.abs(r.percentageChange))).toFixed(1)}%
+                    </div>
+                    <div className="text-xs text-muted-foreground">Maior Variação</div>
+                </div>
+                <div className="text-center">
+                    <div className="font-semibold text-lg">
+                    {(comparisonResults.reduce((sum, r) => sum + r.percentageChange, 0) / comparisonResults.length).toFixed(1)}%
+                    </div>
+                    <div className="text-xs text-muted-foreground">Variação Média</div>
+                </div>
+                </div>
 
-        {comparisonResults.length > 0 && !isLoading && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-muted/50 rounded-lg">
-              <div className="text-center">
-                <div className="font-semibold text-lg text-green-600">
-                  {comparisonResults.filter(r => r.percentageChange > 0).length}
-                </div>
-                <div className="text-xs text-muted-foreground">Ativos em Alta</div>
-              </div>
-              <div className="text-center">
-                <div className="font-semibold text-lg text-red-600">
-                  {comparisonResults.filter(r => r.percentageChange < 0).length}
-                </div>
-                <div className="text-xs text-muted-foreground">Ativos em Queda</div>
-              </div>
-              <div className="text-center">
-                <div className="font-semibold text-lg text-blue-600">
-                  {Math.max(...comparisonResults.map(r => Math.abs(r.percentageChange))).toFixed(1)}%
-                </div>
-                <div className="text-xs text-muted-foreground">Maior Variação</div>
-              </div>
-              <div className="text-center">
-                <div className="font-semibold text-lg">
-                  {(comparisonResults.reduce((sum, r) => sum + r.percentageChange, 0) / comparisonResults.length).toFixed(1)}%
-                </div>
-                <div className="text-xs text-muted-foreground">Variação Média</div>
-              </div>
-            </div>
-
-            <ScrollArea className="h-[400px]">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Ativo</TableHead>
-                    <TableHead className="text-right">Valor Atual</TableHead>
-                    <TableHead className="text-right">Valor Anterior</TableHead>
-                    <TableHead className="text-right">Variação</TableHead>
-                    <TableHead className="text-center">Tendência</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {comparisonResults.map((result) => (
-                    <TableRow key={result.assetId}>
-                      <TableCell className="font-medium">
-                        {result.assetName}
-                        <div className="text-xs text-muted-foreground">
-                          {result.assetId}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right font-mono">
-                        {formatCurrency(result.currentValue, result.currency, result.assetId)}
-                      </TableCell>
-                      <TableCell className="text-right font-mono">
-                        {formatCurrency(result.compareValue, result.currency, result.assetId)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="space-y-1">
-                          <div className={cn(
-                            "font-mono text-sm",
-                            result.percentageChange > 0 && "text-green-600",
-                            result.percentageChange < 0 && "text-red-600"
-                          )}>
-                            {result.percentageChange > 0 ? '+' : ''}{result.percentageChange.toFixed(2)}%
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {result.absoluteChange > 0 ? '+' : ''}{formatCurrency(result.absoluteChange, result.currency, result.assetId)}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <div className="flex items-center justify-center gap-2">
-                          {getTrendIcon(result.percentageChange)}
-                          {getTrendBadge(result.percentageChange)}
-                        </div>
-                      </TableCell>
+                <ScrollArea className="h-[400px]">
+                <Table>
+                    <TableHeader>
+                    <TableRow>
+                        <TableHead>Ativo</TableHead>
+                        <TableHead className="text-right">Valor Atual</TableHead>
+                        <TableHead className="text-right">Valor Anterior</TableHead>
+                        <TableHead className="text-right">Variação</TableHead>
+                        <TableHead className="text-center">Tendência</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </ScrollArea>
-          </div>
-        )}
+                    </TableHeader>
+                    <TableBody>
+                    {comparisonResults.map((result) => (
+                        <TableRow key={result.assetId}>
+                        <TableCell className="font-medium">
+                            {result.assetName}
+                            <div className="text-xs text-muted-foreground">
+                            {result.assetId}
+                            </div>
+                        </TableCell>
+                        <TableCell className="text-right font-mono">
+                            {formatCurrency(result.currentValue, result.currency, result.assetId)}
+                        </TableCell>
+                        <TableCell className="text-right font-mono">
+                            {formatCurrency(result.compareValue, result.currency, result.assetId)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                            <div className="space-y-1">
+                            <div className={cn(
+                                "font-mono text-sm",
+                                result.percentageChange > 0 && "text-green-600",
+                                result.percentageChange < 0 && "text-red-600"
+                            )}>
+                                {result.percentageChange > 0 ? '+' : ''}{result.percentageChange.toFixed(2)}%
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                                {result.absoluteChange > 0 ? '+' : ''}{formatCurrency(result.absoluteChange, result.currency, result.assetId)}
+                            </div>
+                            </div>
+                        </TableCell>
+                        <TableCell className="text-center">
+                            <div className="flex items-center justify-center gap-2">
+                            {getTrendIcon(result.percentageChange)}
+                            {getTrendBadge(result.percentageChange)}
+                            </div>
+                        </TableCell>
+                        </TableRow>
+                    ))}
+                    </TableBody>
+                </Table>
+                </ScrollArea>
+            </div>
+            )}
+        </div>
 
         {!compareDate && (
           <div className="text-center text-sm text-muted-foreground p-8">
@@ -368,3 +469,5 @@ export function DateComparison({ currentDate, currentData }: DateComparisonProps
     </Card>
   );
 }
+
+    
