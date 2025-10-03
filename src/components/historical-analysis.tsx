@@ -295,6 +295,7 @@ export function HistoricalAnalysis() {
                     <Line
                         type="monotone"
                         dataKey="value"
+                        name=" "
                         stroke="hsl(var(--primary))"
                         strokeWidth={2}
                         dot={false}
