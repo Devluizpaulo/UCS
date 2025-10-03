@@ -88,10 +88,10 @@ function HistoricalDataTable({
         });
         
         // Define a preferred order
-        const preferredOrder = ['data', 'ultimo', 'valor', 'abertura', 'maxima', 'minima', 'variacao_pct', 'fechamento_anterior', 'rent_media', 'ton', 'volume', 'fonte', 'status'];
+        const preferredOrder = ['data', 'ultimo', 'valor', 'abertura', 'maxima', 'minima', 'variacao_pct', 'fechamento_anterior', 'rent_media', 'ton', 'volume'];
         
         // Filter out keys we don't want to show and sort
-        const filteredKeys = Array.from(allKeys).filter(key => !['id', 'timestamp', 'componentes', 'conversoes', 'valores_originais', 'moedas', 'ativo'].includes(key));
+        const filteredKeys = Array.from(allKeys).filter(key => !['id', 'timestamp', 'componentes', 'conversoes', 'valores_originais', 'moedas', 'ativo', 'fonte', 'status', 'formula'].includes(key));
         
         filteredKeys.sort((a, b) => {
             const indexA = preferredOrder.indexOf(a);
