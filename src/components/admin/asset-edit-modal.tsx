@@ -112,21 +112,29 @@ export function AssetEditModal({ isOpen, onOpenChange, onSave, asset, allAssets 
   // Calcular impactos em tempo real
   useEffect(() => {
     if (hasChanges && !isNaN(numericPrice) && numericPrice >= 0) {
-      const currentValues: Record<string, number> = {};
+      const allCurrentValues: Record<string, number> = {};
       allAssets.forEach(a => {
-        currentValues[a.id] = a.price;
+        allCurrentValues[a.id] = a.price;
       });
 
       const simulationInput: SimulationInput = {
-        usd: currentValues.usd || 0, eur: currentValues.eur || 0,
-        soja: currentValues.soja || 0, milho: currentValues.milho || 0,
-        boi_gordo: currentValues.boi_gordo || 0, carbono: currentValues.carbono || 0,
-        madeira: currentValues.madeira || 0,
-        current_vus: currentValues.vus || 0, current_vmad: currentValues.vmad || 0,
-        current_carbono_crs: currentValues.carbono_crs || 0, current_ch2o_agua: currentValues.ch2o_agua || 0,
-        current_custo_agua: currentValues.custo_agua || 0, current_agua_crs: currentValues.Agua_CRS || 0,
-        current_valor_uso_solo: currentValues.valor_uso_solo || 0, current_pdm: currentValues.pdm || 0,
-        current_ucs: currentValues.ucs || 0, current_ucs_ase: currentValues.ucs_ase || 0,
+        usd: allCurrentValues.usd || 0,
+        eur: allCurrentValues.eur || 0,
+        soja: allCurrentValues.soja || 0,
+        milho: allCurrentValues.milho || 0,
+        boi_gordo: allCurrentValues.boi_gordo || 0,
+        carbono: allCurrentValues.carbono || 0,
+        madeira: allCurrentValues.madeira || 0,
+        current_vus: allCurrentValues.vus || 0,
+        current_vmad: allCurrentValues.vmad || 0,
+        current_carbono_crs: allCurrentValues.carbono_crs || 0,
+        current_ch2o_agua: allCurrentValues.ch2o_agua || 0,
+        current_custo_agua: allCurrentValues.custo_agua || 0,
+        current_Agua_CRS: allCurrentValues.Agua_CRS || 0,
+        current_valor_uso_solo: allCurrentValues.valor_uso_solo || 0,
+        current_pdm: allCurrentValues.pdm || 0,
+        current_ucs: allCurrentValues.ucs || 0,
+        current_ucs_ase: allCurrentValues.ucs_ase || 0,
       };
 
       (simulationInput as any)[asset.id] = numericPrice;
@@ -355,7 +363,7 @@ export function AssetEditModal({ isOpen, onOpenChange, onSave, asset, allAssets 
                   <div className="text-sm">
                     <p className="font-medium text-blue-900">Registro de Auditoria</p>
                     <p className="text-blue-700 mt-1">
-                      Esta alteração será registrada com o usuário <span className="font-semibold">({currentUser})</span> e o carimbo de data e hora <span className="font-semibold">({currentDate})</span>, garantindo a rastreabilidade e a auditoria completa do sistema.
+                      Esta alteração será registrada com o usuário ({currentUser}) e o carimbo de data e hora ({currentDate}), garantindo a rastreabilidade e a auditoria completa do sistema.
                     </p>
                   </div>
                 </div>
