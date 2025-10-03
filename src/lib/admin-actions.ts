@@ -12,10 +12,17 @@ import { headers } from 'next/headers';
 
 /**
  * Helper para obter a URL base da requisição atual.
- * @returns A URL base (ex: https://seu-dominio.com)
+ * Prioriza o domínio de produção da Vercel se disponível.
+ * @returns A URL base (ex: https://ucsindex.vercel.app)
  */
-async function getBaseUrl() {
-  const reqHeaders = await headers();
+function getBaseUrl() {
+  // Se a variável de ambiente VERCEL_URL estiver definida (padrão em deploys da Vercel), use-a.
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+
+  // Fallback para o ambiente de desenvolvimento local ou outros ambientes
+  const reqHeaders = headers();
   const host = reqHeaders.get('host');
   const protocol = reqHeaders.get('x-forwarded-proto') || 'http';
   return `${protocol}://${host}`;
@@ -80,7 +87,7 @@ export async function createUser(userData: {
     const userRecord = await auth.createUser(userPayload);
     
     // Constrói a URL de ação dinamicamente
-    const baseUrl = await getBaseUrl();
+    const baseUrl = getBaseUrl();
     const actionCodeSettings = {
         url: `${baseUrl}/login`, // URL para onde o usuário volta após redefinir
         handleCodeInApp: true,
@@ -168,7 +175,7 @@ export async function resetUserPassword(uid: string): Promise<{ link: string }> 
     }
     
     // Constrói a URL de ação dinamicamente
-    const baseUrl = await getBaseUrl();
+    const baseUrl = getBaseUrl();
     const actionCodeSettings = {
         url: `${baseUrl}/login`, // URL para onde o usuário volta após redefinir
         handleCodeInApp: true,
