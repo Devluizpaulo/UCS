@@ -13,10 +13,14 @@ import {
 } from 'recharts';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import type { FirestoreQuote, CommodityConfig } from '@/lib/types';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import type { jsPDF as jsPDFWithAutoTable } from 'jspdf-autotable';
+
+import type { FirestoreQuote, CommodityConfig, CommodityPriceData } from '@/lib/types';
 import { getCotacoesHistorico, getCommodityConfigs } from '@/lib/data-service';
 import { formatCurrency } from '@/lib/formatters';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Card, CardContent, CardHeader } from './ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -35,10 +39,9 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from './ui/button';
-import { ChevronLeft, ChevronRight, Info } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Info, FileDown, Loader2 } from 'lucide-react';
 import { ScrollArea, ScrollBar } from './ui/scroll-area';
 import { AssetDetailModal } from './asset-detail-modal';
-import type { CommodityPriceData } from '@/lib/types';
 
 
 const ChartSkeleton = () => (
@@ -213,6 +216,7 @@ export function HistoricalAnalysis() {
   const [assets, setAssets] = useState<CommodityConfig[]>([]);
   const [selectedAssetId, setSelectedAssetId] = useState<string>('ucs_ase');
   const [isLoading, setIsLoading] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
   const [timeRange, setTimeRange] = useState<TimeRange>('90d');
 
   // State for the modal
@@ -258,32 +262,98 @@ export function HistoricalAnalysis() {
     setSelectedAssetForModal(assetData);
   };
 
+  const handleExportPdf = () => {
+    if (!selectedAssetConfig || data.length === 0) return;
+    setIsExporting(true);
+    
+    const doc = new jsPDF() as jsPDFWithAutoTable;
+    const timeRangeText = { '7d': 'Últimos 7 dias', '30d': 'Últimos 30 dias', '90d': 'Últimos 90 dias' }[timeRange];
+    const generationDate = format(new Date(), "dd 'de' MMMM 'de' yyyy, HH:mm", { locale: ptBR });
+
+    // --- Header ---
+    doc.setFontSize(18);
+    doc.setTextColor(40);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Relatório Histórico: ${selectedAssetConfig.name}`, 14, 22);
+
+    doc.setFontSize(11);
+    doc.setTextColor(100);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Período: ${timeRangeText}`, 14, 28);
+    doc.text(`Gerado em: ${generationDate}`, 14, 34);
+
+    // --- Table ---
+    const tableColumn = ["Data", "Preço", "Variação (%)"];
+    const tableRows = data.map(quote => {
+        const price = quote.valor ?? quote.ultimo;
+        const change = quote.variacao_pct ?? 0;
+        return [
+            quote.data,
+            formatCurrency(price, selectedAssetConfig.currency, selectedAssetConfig.id),
+            `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`
+        ];
+    });
+
+    doc.autoTable({
+        startY: 50,
+        head: [tableColumn],
+        body: tableRows,
+        theme: 'grid',
+        headStyles: { fillColor: [22, 160, 133] },
+        didDrawCell: (data) => {
+            if (data.section === 'body' && data.column.index === 2) { // Change % column
+                const text = data.cell.text[0];
+                if (text.includes('+')) {
+                    doc.setTextColor(39, 174, 96); // Green
+                } else if (text.includes('-')) {
+                    doc.setTextColor(192, 57, 43); // Red
+                }
+            }
+        },
+    });
+    
+    doc.save(`relatorio_${selectedAssetConfig.id}_${timeRange}.pdf`);
+    setIsExporting(false);
+  };
+
   return (
     <>
         <Card>
             <CardHeader>
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <Select value={selectedAssetId} onValueChange={setSelectedAssetId}>
-                    <SelectTrigger className="w-full sm:w-[280px]">
-                        <SelectValue placeholder="Selecione um ativo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {assets.map(asset => (
-                        <SelectItem key={asset.id} value={asset.id}>{asset.name}</SelectItem>
-                        ))}
-                    </SelectContent>
-                    </Select>
-                    <Tabs 
-                        defaultValue={timeRange} 
-                        className="w-full sm:w-auto" 
-                        onValueChange={(value) => setTimeRange(value as TimeRange)}
-                    >
-                        <TabsList className="grid w-full grid-cols-3">
-                            <TabsTrigger value="7d">7D</TabsTrigger>
-                            <TabsTrigger value="30d">30D</TabsTrigger>
-                            <TabsTrigger value="90d">90D</TabsTrigger>
-                        </TabsList>
-                    </Tabs>
+                    <div className="flex-1">
+                        <Select value={selectedAssetId} onValueChange={setSelectedAssetId}>
+                            <SelectTrigger className="w-full sm:w-[280px]">
+                                <SelectValue placeholder="Selecione um ativo" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {assets.map(asset => (
+                                <SelectItem key={asset.id} value={asset.id}>{asset.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Tabs 
+                            defaultValue={timeRange} 
+                            className="w-full sm:w-auto" 
+                            onValueChange={(value) => setTimeRange(value as TimeRange)}
+                        >
+                            <TabsList className="grid w-full grid-cols-3">
+                                <TabsTrigger value="7d">7D</TabsTrigger>
+                                <TabsTrigger value="30d">30D</TabsTrigger>
+                                <TabsTrigger value="90d">90D</TabsTrigger>
+                            </TabsList>
+                        </Tabs>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={handleExportPdf}
+                          disabled={isLoading || isExporting || data.length === 0}
+                        >
+                          {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
+                        </Button>
+                    </div>
                 </div>
             </CardHeader>
             <CardContent className="space-y-8">
