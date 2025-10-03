@@ -229,16 +229,9 @@ export function HistoricalAnalysis() {
   return (
     <Card>
         <CardHeader>
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-            <div className="flex-1">
-                <CardTitle>Performance Histórica do Ativo</CardTitle>
-                <CardDescription>
-                Selecione um ativo e um período para visualizar a evolução do valor e os dados detalhados.
-                </CardDescription>
-            </div>
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <Select value={selectedAssetId} onValueChange={setSelectedAssetId}>
-                <SelectTrigger className="w-full sm:w-[200px]">
+                <SelectTrigger className="w-full sm:w-[280px]">
                     <SelectValue placeholder="Selecione um ativo" />
                 </SelectTrigger>
                 <SelectContent>
@@ -248,17 +241,16 @@ export function HistoricalAnalysis() {
                 </SelectContent>
                 </Select>
                 <Tabs 
-                defaultValue={timeRange} 
-                className="w-full sm:w-auto" 
-                onValueChange={(value) => setTimeRange(value as TimeRange)}
+                    defaultValue={timeRange} 
+                    className="w-full sm:w-auto" 
+                    onValueChange={(value) => setTimeRange(value as TimeRange)}
                 >
-                <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="7d">7D</TabsTrigger>
-                    <TabsTrigger value="30d">30D</TabsTrigger>
-                    <TabsTrigger value="90d">90D</TabsTrigger>
-                </TabsList>
+                    <TabsList className="grid w-full grid-cols-3">
+                        <TabsTrigger value="7d">7D</TabsTrigger>
+                        <TabsTrigger value="30d">30D</TabsTrigger>
+                        <TabsTrigger value="90d">90D</TabsTrigger>
+                    </TabsList>
                 </Tabs>
-            </div>
             </div>
         </CardHeader>
         <CardContent className="space-y-8">
@@ -290,7 +282,7 @@ export function HistoricalAnalysis() {
                         border: '1px solid hsl(var(--border))',
                         borderRadius: 'var(--radius)',
                         }}
-                        formatter={(value: any) => [formatCurrency(Number(value), selectedAsset?.currency || 'BRL', selectedAsset?.id), selectedAsset?.name || 'Valor']}
+                        formatter={(value: any) => [formatCurrency(Number(value), selectedAsset?.currency || 'BRL', selectedAsset?.id), ' ']}
                     />
                     <Line
                         type="monotone"
