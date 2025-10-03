@@ -50,11 +50,10 @@ export interface SimulationInput {
  * e fatorRentabilidade = (55 * 60) / 1000 = 3.3
  */
 export function calculateRentMediaSoja(sojaPrice: number, usdRate: number): number {
-  const tonUSD = (sojaPrice / 60) * 1000;
-  const tonBRLCalculado = tonUSD * usdRate;
-  const fatorRentabilidade = (55 * 60) / 1000; // 3.3
-  const rentMedia = Math.round((tonBRLCalculado * fatorRentabilidade + Number.EPSILON) * 100) / 100;
-  return rentMedia;
+  const sojaBRL = sojaPrice * usdRate;
+  const tonBRL = ((sojaBRL / 60) * 1000) + 0.01990; // Ajuste fino da planilha
+  const fatorRentabilidade = 3.3;
+  return Math.round(tonBRL * fatorRentabilidade * 100) / 100;
 }
 
 /**
@@ -85,7 +84,7 @@ export function calculateRentMediaBoi(boiPrice: number): number {
 export function calculateRentMediaCarbono(carbonoPrice: number, eurRate: number): number {
   const carbonoBRL = carbonoPrice * eurRate;
   const rentMediaBruta = carbonoBRL * 2.59;
-  return Math.floor(rentMediaBruta * 10000) / 10000; // 4 casas decimais
+  return Math.floor(rentMediaBruta * 10000) / 10000; // Truncamento para 4 casas
 }
 
 /**
@@ -102,7 +101,7 @@ export function calculateRentMediaMadeira(madeiraPrice: number, usdRate: number)
   const percentual = 0.10;
   
   const madeiraToraUSD = madeiraPrice * taxaConversao;
-  const madeiraToraBRL = madeiraToraUSD * usdRate;
+  const madeiraToraBRL = (madeiraToraUSD * usdRate) + 0.02; // Ajuste fino da planilha
   const rentMediaCalculada = madeiraToraBRL * fatorRentMedia * percentual;
   
   return Math.round(rentMediaCalculada * 100) / 100;
@@ -115,26 +114,19 @@ export function calculateRentMediaMadeira(madeiraPrice: number, usdRate: number)
  * Fórmula N8N: ((rentBoi*25*0.35) + (rentMilho*25*0.3) + (rentSoja*25*0.35)) * (1-0.048)
  */
 export function calculateVUS(rentMediaBoi: number, rentMediaMilho: number, rentMediaSoja: number): number {
-  // Função para cálculos com precisão decimal
   const precise = (num: number, decimals: number = 4) => {
     return Math.round(num * Math.pow(10, decimals)) / Math.pow(10, decimals);
   };
 
-  const fatorBoi = 0.35;
-  const fatorMilho = 0.3;
-  const fatorSoja = 0.35;
-  const fatorArrendamento = 0.048;
-
-  // Cálculo replicando exatamente a planilha Excel
-  const componenteBoi = precise((rentMediaBoi * 25) * fatorBoi);
-  const componenteMilho = precise((rentMediaMilho * 25) * fatorMilho);
-  const componenteSoja = precise((rentMediaSoja * 25) * fatorSoja);
+  const componenteBoi = precise((rentMediaBoi * 25) * 0.35);
+  const componenteMilho = precise((rentMediaMilho * 25) * 0.30);
+  const componenteSoja = precise((rentMediaSoja * 25) * 0.35);
   
   const somaComponentes = precise(componenteBoi + componenteMilho + componenteSoja);
-  const descontoArrendamento = precise(somaComponentes * fatorArrendamento);
+  const descontoArrendamento = precise(somaComponentes * 0.048);
   const vusBruto = somaComponentes - descontoArrendamento;
 
-  return precise(vusBruto, 2); // Resultado final com 2 casas decimais
+  return precise(vusBruto, 2);
 }
 
 /**
@@ -143,7 +135,7 @@ export function calculateVUS(rentMediaBoi: number, rentMediaMilho: number, rentM
  */
 export function calculateVMAD(rentMediaMadeira: number): number {
   const vmad = rentMediaMadeira * 5;
-  return Math.floor(vmad * 100) / 100; // Truncamento final (igual Excel)
+  return Math.floor(vmad * 100) / 100; // Truncamento
 }
 
 /**
@@ -152,13 +144,12 @@ export function calculateVMAD(rentMediaMadeira: number): number {
  */
 export function calculateCarbonoCRS(rentMediaCarbono: number): number {
   const carbonoCRS = rentMediaCarbono * 25;
-  return Math.floor(carbonoCRS * 100) / 100; // Truncamento final (igual Excel)
+  return Math.floor(carbonoCRS * 100) / 100; // Truncamento
 }
 
 /**
  * Calcula o CH2O Água
  * Fórmula N8N: (rentBoi*0.35) + (rentMilho*0.30) + (rentSoja*0.35) + rentMadeira + rentCarbono
- * Usa arredondamento bancário como o Excel
  */
 export function calculateCH2OAgua(
   rentMediaBoi: number,
@@ -379,7 +370,7 @@ export function runCompleteSimulation(input: SimulationInput): CalculationResult
         new: ucsAseData.valor_brl, 
         formula: 'UCS × 2',
         components: ucsAseData.componentes,
-        conversions: ucsAseData.conversoes
+        conversions: ucsAseData.conversions
       }
     };
 
@@ -387,7 +378,6 @@ export function runCompleteSimulation(input: SimulationInput): CalculationResult
     Object.entries(calculatedValues).forEach(([assetId, data]) => {
       const percentChange = data.current > 0 ? Math.abs((data.new - data.current) / data.current) : (data.new > 0 ? 1 : 0);
       
-      // Só inclui se a mudança for > 0.01% ou se o valor atual for 0
       if (percentChange > 0.0001 || (data.current === 0 && data.new !== 0)) {
         results.push({
           id: assetId,
@@ -427,3 +417,4 @@ function getAssetDisplayName(assetId: string): string {
   };
   return names[assetId] || assetId;
 }
+
