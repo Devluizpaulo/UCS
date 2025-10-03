@@ -173,7 +173,7 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
         setLgpdConsent({ checked: true, required: false });
         toast({ title: 'Obrigado!', description: 'Consentimento aceito. Bem-vindo à plataforma!' });
     } catch (error: any) {
-        toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível salvar seu consentimento.' });
+        toast({ variant: 'destructive', title: 'Erro', description: error.message });
     }
   };
 

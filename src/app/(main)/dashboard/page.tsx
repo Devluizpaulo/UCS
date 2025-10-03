@@ -353,7 +353,7 @@ export default function DashboardPage() {
             />
         </div>
       </PageHeader>
-      <main ref={dashboardRef} className="overflow-y-auto p-4 md:p-6">
+      <main ref={dashboardRef} className="flex-1 overflow-y-auto p-4 md:p-6">
         {isLoading && data.length === 0 ? (
           <div className="space-y-4 md:space-y-8">
             <Skeleton className="h-[180px] w-full" />
