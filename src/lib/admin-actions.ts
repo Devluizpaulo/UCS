@@ -6,8 +6,19 @@ import type { UserRecord } from 'firebase-admin/auth';
 import type { AppUserRecord } from '@/lib/types';
 import { revalidatePath } from 'next/cache';
 import { Timestamp } from 'firebase-admin/firestore';
+import { headers } from 'next/headers';
 
 // --- AÇÕES DE USUÁRIO ---
+
+/**
+ * Helper para obter a URL base da requisição atual.
+ * @returns A URL base (ex: https://seu-dominio.com)
+ */
+function getBaseUrl() {
+  const host = headers().get('host');
+  const protocol = headers().get('x-forwarded-proto') || 'http';
+  return `${protocol}://${host}`;
+}
 
 /**
  * Busca todos os usuários do Firebase Authentication e verifica se são admins.
@@ -66,7 +77,14 @@ export async function createUser(userData: {
     }
 
     const userRecord = await auth.createUser(userPayload);
-    const link = await auth.generatePasswordResetLink(userRecord.email as string);
+    
+    // Constrói a URL de ação dinamicamente
+    const actionCodeSettings = {
+        url: `${getBaseUrl()}/login`, // URL para onde o usuário volta após redefinir
+        handleCodeInApp: true,
+    };
+
+    const link = await auth.generatePasswordResetLink(userRecord.email as string, actionCodeSettings);
 
     revalidatePath('/admin/users');
     return { user: userRecord.toJSON() as UserRecord, link };
@@ -146,7 +164,14 @@ export async function resetUserPassword(uid: string): Promise<{ link: string }> 
     if (!userRecord.email) {
       throw new Error('O usuário não possui um e-mail cadastrado para redefinir a senha.');
     }
-    const link = await auth.generatePasswordResetLink(userRecord.email);
+    
+    // Constrói a URL de ação dinamicamente
+    const actionCodeSettings = {
+        url: `${getBaseUrl()}/login`, // URL para onde o usuário volta após redefinir
+        handleCodeInApp: true,
+    };
+    const link = await auth.generatePasswordResetLink(userRecord.email, actionCodeSettings);
+
     return { link };
   } catch (error: any) {
     console.error(`Error generating password reset link for user ${uid}:`, error);
