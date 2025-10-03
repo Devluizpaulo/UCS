@@ -33,6 +33,15 @@
           "type": "string",
           "description": "The timestamp when the user was last updated.",
           "format": "date-time"
+        },
+        "lgpdAccepted": {
+            "type": "boolean",
+            "description": "Indicates whether the user has accepted the LGPD terms."
+        },
+        "lgpdAcceptedAt": {
+            "type": "string",
+            "description": "The timestamp when the user accepted the LGPD terms.",
+            "format": "date-time"
         }
       },
       "required": [
@@ -244,3 +253,4 @@
     "reasoning": "The Firestore structure is designed to support the UCS Index Tracker application, focusing on secure user management, commodity data, UCS index calculations, and alert configurations.  Authorization Independence is achieved by using path-based ownership for user-related data (alerts) and a dedicated admin role collection.  \n\nSegregation is implemented by separating user data, commodity definitions, UCS index values, and alert configurations into distinct collections, each with specific security rules.\n\nQAPs are supported by:\n\n*   Path-based ownership (`/users/{userId}/alerts/{alertId}`) which allows secure listing of alerts for a specific user.\n*   Admin role collection (`/roles_admin/{userId}`) enabling secure listing of admins.\n*   Commodities and UCS Indices are global, but CRUD operations are restricted to admins.\n\nInvariants such as ownership and timestamps can be enforced using security rules within each collection."
   }
 }
+    
