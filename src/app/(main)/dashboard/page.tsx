@@ -353,7 +353,7 @@ export default function DashboardPage() {
             />
         </div>
       </PageHeader>
-      <main ref={dashboardRef} className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
+      <main ref={dashboardRef} className="flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6 overflow-y-auto">
         {isLoading && data.length === 0 ? (
           <>
             <Skeleton className="h-[180px] w-full" />
@@ -367,7 +367,7 @@ export default function DashboardPage() {
             </div>
           </>
         ) : (
-          <>
+          <div className="flex flex-col gap-4 md:gap-8">
             {mainIndex && <MainIndexCard asset={mainIndex} isMain={true} />}
             
             {secondaryIndices.length > 0 && (
@@ -381,14 +381,13 @@ export default function DashboardPage() {
                     {currencies.map(asset => <MainIndexCard key={asset.id} asset={asset} />)}
                 </div>
             )}
-
-          </>
+            <CommodityPrices 
+              data={otherAssets} 
+              displayDate={isCurrentDateOrFuture ? 'Tempo Real' : formattedDate} 
+              loading={isLoading && otherAssets.length === 0}
+            />
+          </div>
         )}
-        <CommodityPrices 
-          data={otherAssets} 
-          displayDate={isCurrentDateOrFuture ? 'Tempo Real' : formattedDate} 
-          loading={isLoading && otherAssets.length === 0}
-        />
       </main>
     </div>
   );
