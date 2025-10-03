@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -8,13 +9,14 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { CalendarIcon, TrendingUp, TrendingDown, Minus, BarChart3, RefreshCw } from 'lucide-react';
+import { CalendarIcon, TrendingUp, TrendingDown, Minus, BarChart3, RefreshCw, Download } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/formatters';
 import { getCommodityPricesByDate } from '@/lib/data-service';
 import type { CommodityPriceData } from '@/lib/types';
+import ExcelJS from 'exceljs';
 
 interface ComparisonData {
   assetId: string;
@@ -60,6 +62,7 @@ export function DateComparison({ currentDate, currentData }: DateComparisonProps
   const [compareData, setCompareData] = useState<CommodityPriceData[]>([]);
   const [comparisonResults, setComparisonResults] = useState<ComparisonData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
   const handleDateSelect = async (date: Date | undefined) => {
@@ -84,7 +87,6 @@ export function DateComparison({ currentDate, currentData }: DateComparisonProps
     if (compareData.length > 0 && currentData.length > 0) {
       const results: ComparisonData[] = [];
       
-      // Cria um mapa dos dados de comparação para acesso rápido
       const compareMap = new Map(compareData.map(item => [item.id, item]));
       
       currentData.forEach(currentAsset => {
@@ -94,7 +96,7 @@ export function DateComparison({ currentDate, currentData }: DateComparisonProps
           const absoluteChange = currentAsset.price - compareAsset.price;
           const percentageChange = compareAsset.price !== 0 
             ? (absoluteChange / compareAsset.price) * 100 
-            : 0;
+            : (currentAsset.price !== 0 ? 100 : 0);
 
           results.push({
             assetId: currentAsset.id,
@@ -108,7 +110,6 @@ export function DateComparison({ currentDate, currentData }: DateComparisonProps
         }
       });
 
-      // Ordena por maior variação percentual (em valor absoluto)
       results.sort((a, b) => Math.abs(b.percentageChange) - Math.abs(a.percentageChange));
       
       setComparisonResults(results);
@@ -116,22 +117,99 @@ export function DateComparison({ currentDate, currentData }: DateComparisonProps
       setComparisonResults([]);
     }
   }, [currentData, compareData]);
+  
+  const handleExport = async () => {
+    if (comparisonResults.length === 0 || !compareDate) return;
+    
+    setIsExporting(true);
+
+    try {
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Comparação de Datas');
+      
+      const currentDateFormatted = format(currentDate, 'dd/MM/yyyy');
+      const compareDateFormatted = format(compareDate, 'dd/MM/yyyy');
+
+      worksheet.addRow(['Comparação de Ativos']);
+      worksheet.addRow([`Período: ${compareDateFormatted} vs ${currentDateFormatted}`]);
+      worksheet.addRow([]);
+
+      worksheet.columns = [
+        { header: 'Ativo', key: 'name', width: 25 },
+        { header: `Valor (${currentDateFormatted})`, key: 'current', width: 20 },
+        { header: `Valor (${compareDateFormatted})`, key: 'previous', width: 20 },
+        { header: 'Variação Absoluta', key: 'abs', width: 20 },
+        { header: 'Variação (%)', key: 'pct', width: 15 },
+      ];
+
+      worksheet.getRow(4).font = { bold: true };
+
+      comparisonResults.forEach(item => {
+        worksheet.addRow({
+          name: item.assetName,
+          current: item.currentValue,
+          previous: item.compareValue,
+          abs: item.absoluteChange,
+          pct: item.percentageChange / 100
+        });
+      });
+      
+      worksheet.getColumn('current').numFmt = '"R$" #,##0.00';
+      worksheet.getColumn('previous').numFmt = '"R$" #,##0.00';
+      worksheet.getColumn('abs').numFmt = '"R$" #,##0.00';
+      worksheet.getColumn('pct').numFmt = '0.00%';
+
+      const buffer = await workbook.csv.writeBuffer();
+      const blob = new Blob([buffer], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `comparacao_${format(currentDate, 'yyyy-MM-dd')}_vs_${format(compareDate, 'yyyy-MM-dd')}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+    } catch (error) {
+      console.error('Export error:', error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const daysDifference = compareDate ? Math.abs(differenceInDays(currentDate, compareDate)) : 0;
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <BarChart3 className="h-5 w-5" />
-          Comparação entre Datas
-        </CardTitle>
-        <CardDescription>
-          Compare os valores dos ativos entre diferentes datas para análise de variações.
-        </CardDescription>
+        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5" />
+                Comparação entre Datas
+              </CardTitle>
+              <CardDescription>
+                Compare os valores dos ativos entre diferentes datas para análise de variações.
+              </CardDescription>
+            </div>
+            {comparisonResults.length > 0 && (
+                <Button
+                    onClick={handleExport}
+                    disabled={isExporting}
+                    variant="outline"
+                    size="sm"
+                >
+                    {isExporting ? (
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                        <Download className="h-4 w-4 mr-2" />
+                    )}
+                    Exportar (CSV)
+                </Button>
+            )}
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Seletor de Data */}
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium">Data Atual:</span>
@@ -181,7 +259,6 @@ export function DateComparison({ currentDate, currentData }: DateComparisonProps
           )}
         </div>
 
-        {/* Loading State */}
         {isLoading && (
           <div className="flex justify-center items-center h-32">
             <RefreshCw className="h-6 w-6 animate-spin text-primary" />
@@ -191,10 +268,8 @@ export function DateComparison({ currentDate, currentData }: DateComparisonProps
           </div>
         )}
 
-        {/* Resultados da Comparação */}
         {comparisonResults.length > 0 && !isLoading && (
           <div className="space-y-4">
-            {/* Resumo Estatístico */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-muted/50 rounded-lg">
               <div className="text-center">
                 <div className="font-semibold text-lg text-green-600">
@@ -222,7 +297,6 @@ export function DateComparison({ currentDate, currentData }: DateComparisonProps
               </div>
             </div>
 
-            {/* Tabela de Comparação */}
             <ScrollArea className="h-[400px]">
               <Table>
                 <TableHeader>
@@ -277,7 +351,6 @@ export function DateComparison({ currentDate, currentData }: DateComparisonProps
           </div>
         )}
 
-        {/* Estado Vazio */}
         {!compareDate && (
           <div className="text-center text-sm text-muted-foreground p-8">
             <BarChart3 className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
