@@ -22,11 +22,12 @@ interface HistoricalPriceTableProps {
   asset: CommodityPriceData;
   historicalData: FirestoreQuote[];
   isLoading: boolean;
+  onRowClick: (assetId: string) => void;
 }
 
 const ITEMS_PER_PAGE = 10;
 
-export function HistoricalPriceTable({ asset, historicalData, isLoading }: HistoricalPriceTableProps) {
+export function HistoricalPriceTable({ asset, historicalData, isLoading, onRowClick }: HistoricalPriceTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
 
   const paginatedData = useMemo(() => {
@@ -66,7 +67,7 @@ export function HistoricalPriceTable({ asset, historicalData, isLoading }: Histo
             </TableHeader>
             <TableBody>
               {paginatedData.map((quote) => (
-                <TableRow key={quote.id}>
+                <TableRow key={quote.id} onClick={() => onRowClick(asset.id)} className="cursor-pointer">
                   <TableCell>{quote.data || format(new Date(quote.timestamp), 'dd/MM/yyyy')}</TableCell>
                   <TableCell className="text-right font-mono">
                     {formatCurrency(quote.valor ?? quote.ultimo, asset.currency, asset.id)}
@@ -113,4 +114,3 @@ export function HistoricalPriceTable({ asset, historicalData, isLoading }: Histo
     </div>
   );
 }
-

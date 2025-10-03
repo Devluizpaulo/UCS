@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import {
   LineChart,
   Line,
@@ -16,6 +16,7 @@ import { ptBR } from 'date-fns/locale';
 import jsPDF from 'jspdf';
 import type { jsPDF as jsPDFWithAutoTableType } from 'jspdf-autotable';
 import 'jspdf-autotable';
+import html2canvas from 'html2canvas';
 
 import type { FirestoreQuote, CommodityConfig } from '@/lib/types';
 import { getCotacoesHistorico, getCommodityConfigs } from '@/lib/data-service';
@@ -39,6 +40,8 @@ import {
 import { Button } from './ui/button';
 import { Info, FileDown, Loader2 } from 'lucide-react';
 import { HistoricalPriceTable } from './historical-price-table';
+import { AssetDetailModal } from './asset-detail-modal';
+import { cn } from '@/lib/utils';
 
 const ChartSkeleton = () => (
   <div className="h-72 w-full">
@@ -122,6 +125,8 @@ export function HistoricalAnalysis() {
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
   const [timeRange, setTimeRange] = useState<TimeRange>('90d');
+  const [selectedAssetForModal, setSelectedAssetForModal] = useState<CommodityConfig | null>(null);
+  const chartRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     getCommodityConfigs().then(setAssets);
@@ -168,63 +173,82 @@ export function HistoricalAnalysis() {
     return { chartData: chartPoints, latestQuote: latest };
   }, [data, timeRange]);
   
-  const handleExportPdf = () => {
-    if (!selectedAssetConfig || !latestQuote) return;
+  const handleExportPdf = async () => {
+    if (!selectedAssetConfig || !chartRef.current) return;
     setIsExporting(true);
-    
-    const doc = new jsPDF() as jsPDFWithAutoTableType;
-    const timeRangeText = { '7d': 'Últimos 7 dias', '30d': 'Últimos 30 dias', '90d': 'Últimos 90 dias' }[timeRange];
-    const generationDate = format(new Date(), "dd 'de' MMMM 'de' yyyy, HH:mm", { locale: ptBR });
-    const quoteDate = latestQuote.data;
 
-    doc.setFontSize(18);
-    doc.setTextColor(40);
-    doc.setFont('helvetica', 'bold');
-    doc.text(`Relatório de Ativo: ${selectedAssetConfig.name}`, 14, 22);
+    try {
+        const canvas = await html2canvas(chartRef.current, { scale: 2, useCORS: true });
+        const imgData = canvas.toDataURL('image/png');
+        
+        const doc = new jsPDF() as jsPDFWithAutoTableType;
+        const timeRangeText = { '7d': 'Últimos 7 dias', '30d': 'Últimos 30 dias', '90d': 'Últimos 90 dias' }[timeRange];
+        const generationDate = format(new Date(), "dd 'de' MMMM 'de' yyyy, HH:mm", { locale: ptBR });
 
-    doc.setFontSize(11);
-    doc.setTextColor(100);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Dados para o dia: ${quoteDate}`, 14, 28);
-    doc.text(`Período de referência do gráfico: ${timeRangeText}`, 14, 34);
-    doc.text(`Gerado em: ${generationDate}`, 14, 40);
+        // Cabeçalho
+        doc.setFontSize(18);
+        doc.setTextColor(40);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`Relatório de Ativo: ${selectedAssetConfig.name}`, 14, 22);
 
-    const details = [
-        { label: 'Fechamento Anterior', value: latestQuote.fechamento_anterior, type: 'currency' },
-        { label: 'Abertura', value: latestQuote.abertura, type: 'currency' },
-        { label: 'Máxima do Dia', value: latestQuote.maxima, type: 'currency' },
-        { label: 'Mínima do Dia', value: latestQuote.minima, type: 'currency' },
-        { label: 'Volume', value: latestQuote.volume, type: 'number' },
-        { label: 'Variação (%)', value: latestQuote.variacao_pct, type: 'percentage' },
-        { label: 'Rentabilidade Média', value: latestQuote.rent_media, type: 'currency' },
-        { label: 'Valor em Toneladas', value: latestQuote.ton, type: 'currency' },
-    ].filter(item => item.value !== null && item.value !== undefined);
-    
-    const formatValue = (value: any, type: string) => {
-        if (value === null || value === undefined) return 'N/A';
-        if (type === 'currency') return formatCurrency(value, selectedAssetConfig?.currency || 'BRL');
-        if (type === 'percentage') return `${Number(value).toFixed(2)}%`;
-        if (type === 'number') return Number(value).toLocaleString('pt-BR');
-        return String(value);
-    };
+        doc.setFontSize(11);
+        doc.setTextColor(100);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Período de referência: ${timeRangeText}`, 14, 28);
+        doc.text(`Gerado em: ${generationDate}`, 14, 34);
 
-    const tableBody = details.map(item => [item.label, formatValue(item.value, item.type)]);
+        // Imagem do Gráfico
+        const imgProps = doc.getImageProperties(imgData);
+        const pdfWidth = doc.internal.pageSize.getWidth();
+        const imgWidth = pdfWidth - 28; // Margens de 14 de cada lado
+        const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+        doc.addImage(imgData, 'PNG', 14, 45, imgWidth, imgHeight);
 
-    doc.autoTable({
-        startY: 50,
-        head: [['Detalhe do Dia', 'Valor']],
-        body: tableBody,
-        theme: 'grid',
-        headStyles: { fillColor: [22, 160, 133] }, // Um verde-azulado
-    });
-    
-    doc.save(`relatorio_${selectedAssetConfig.id}_${quoteDate.replace(/\//g, '-')}.pdf`);
-    setIsExporting(false);
+        let finalY = 45 + imgHeight + 10;
+
+        // Tabela de Detalhes
+        if (latestQuote) {
+            const details = [
+                { label: 'Fechamento Anterior', value: latestQuote.fechamento_anterior, type: 'currency' },
+                { label: 'Abertura', value: latestQuote.abertura, type: 'currency' },
+                { label: 'Máxima do Dia', value: latestQuote.maxima, type: 'currency' },
+                { label: 'Mínima do Dia', value: latestQuote.minima, type: 'currency' },
+                { label: 'Volume', value: latestQuote.volume, type: 'number' },
+                { label: 'Variação (%)', value: latestQuote.variacao_pct, type: 'percentage' },
+            ].filter(item => item.value !== null && item.value !== undefined);
+
+            const formatValue = (value: any, type: string) => {
+                if (value === null || value === undefined) return 'N/A';
+                if (type === 'currency') return formatCurrency(value, selectedAssetConfig?.currency || 'BRL');
+                if (type === 'percentage') return `${Number(value).toFixed(2)}%`;
+                if (type === 'number') return Number(value).toLocaleString('pt-BR');
+                return String(value);
+            };
+
+            const tableBody = details.map(item => [item.label, formatValue(item.value, item.type)]);
+
+             doc.autoTable({
+                startY: finalY,
+                head: [[`Detalhes do Dia (${latestQuote.data})`, 'Valor']],
+                body: tableBody,
+                theme: 'striped',
+                headStyles: { fillColor: [34, 47, 62] }, // Azul escuro
+            });
+        }
+        
+        doc.save(`relatorio_${selectedAssetConfig.id}_${format(new Date(), 'yyyyMMdd')}.pdf`);
+    } catch (error) {
+        console.error("PDF generation error:", error);
+    } finally {
+        setIsExporting(false);
+    }
   };
 
+
   return (
+    <>
     <Card>
-      <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <CardHeader className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="flex-1">
           <Select value={selectedAssetId} onValueChange={setSelectedAssetId}>
             <SelectTrigger className="w-full sm:w-[280px]">
@@ -261,7 +285,7 @@ export function HistoricalAnalysis() {
         </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-8">
-        <div className="h-72" style={{ marginLeft: '-10px' }}>
+        <div ref={chartRef} className="h-72 w-full bg-background p-4" style={{ marginLeft: '-10px' }}>
           {isLoading ? (
             <ChartSkeleton />
           ) : (
@@ -326,11 +350,25 @@ export function HistoricalAnalysis() {
                 asset={selectedAssetConfig!}
                 historicalData={data} 
                 isLoading={isLoading} 
+                onRowClick={(assetId) => {
+                    const asset = assets.find(a => a.id === assetId);
+                    if (asset) {
+                        setSelectedAssetForModal(asset);
+                    }
+                }}
               />
             </div>
           </TabsContent>
         </Tabs>
       </CardContent>
     </Card>
+    {selectedAssetForModal && (
+        <AssetDetailModal
+            asset={selectedAssetForModal as any}
+            isOpen={!!selectedAssetForModal}
+            onOpenChange={() => setSelectedAssetForModal(null)}
+        />
+    )}
+    </>
   );
 }
