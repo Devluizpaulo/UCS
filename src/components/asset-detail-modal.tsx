@@ -539,4 +539,3 @@ export const AssetDetailModal = memo<AssetDetailModalProps>(({
 });
 
 AssetDetailModal.displayName = 'AssetDetailModal';
-

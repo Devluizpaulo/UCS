@@ -109,6 +109,9 @@ export async function isCalculableAsset(assetId: string): Promise<boolean> {
         'pdm': [],
         'ucs': [],
         'ucs_ase': [],
+        'custo_agua': [],
+        'ch2o_agua': [],
+        'Agua_CRS': [],
     };
     return assetId in CALCULATION_CONFIGS || assetId in staticConfigs;
 }
@@ -120,7 +123,10 @@ export async function getAssetCompositionConfig(assetId: string): Promise<string
     
     const staticConfigs: Record<string, string[]> = {
         'valor_uso_solo': ['vus', 'vmad', 'carbono_crs', 'Agua_CRS'],
-        pdm: ['valor_uso_solo'],
+        'custo_agua': ['ch2o_agua'],
+        'ch2o_agua': ['boi_gordo', 'milho', 'soja', 'madeira', 'carbono'],
+        'Agua_CRS': ['ch2o_agua'],
+        pdm: ['ch2o_agua', 'custo_agua'],
         ucs: ['pdm'],
         ucs_ase: ['ucs'],
     };
