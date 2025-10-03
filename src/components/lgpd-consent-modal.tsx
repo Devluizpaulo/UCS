@@ -75,5 +75,3 @@ export function LgpdConsentModal({ isOpen, onAccept, onReject }: LgpdConsentModa
     </Dialog>
   );
 }
-
-    
