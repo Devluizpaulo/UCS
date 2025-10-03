@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -60,13 +61,16 @@ const ITEMS_PER_PAGE = 10;
 function HistoricalDataTable({ data, asset, isLoading }: { data: FirestoreQuote[], asset?: CommodityConfig, isLoading: boolean }) {
     const [currentPage, setCurrentPage] = useState(1);
 
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [data]);
+
     const totalPages = Math.ceil(data.length / ITEMS_PER_PAGE);
     const paginatedData = useMemo(() => {
         const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
         return data.slice(startIndex, startIndex + ITEMS_PER_PAGE);
     }, [data, currentPage]);
     
-    // Define all possible columns based on your provided example
     const columns = [
         { key: 'data', label: 'Data' },
         { key: 'ultimo', label: 'Último' },
@@ -83,13 +87,24 @@ function HistoricalDataTable({ data, asset, isLoading }: { data: FirestoreQuote[
 
     const formatValue = (value: any, key: string) => {
         if (value === null || value === undefined) return 'N/A';
+        if (key === 'data') return String(value);
+
+        if (key.includes('pct')) {
+            return typeof value === 'number' ? `${value.toFixed(2)}%` : 'N/A';
+        }
+        
         if (typeof value === 'number') {
-            if (key.includes('pct')) return `${value.toFixed(2)}%`;
             return formatCurrency(value, asset?.currency || 'BRL');
         }
-        if (value instanceof Date) {
-            return format(value, 'dd/MM/yyyy HH:mm');
+
+        if (typeof value === 'object' && value.seconds) { // Firestore Timestamp
+             return format(new Date(value.seconds * 1000), 'dd/MM/yyyy HH:mm');
         }
+
+        if (typeof value === 'string' && !isNaN(Date.parse(value))) {
+             return format(new Date(value), 'dd/MM/yyyy HH:mm');
+        }
+
         return String(value);
     }
     
