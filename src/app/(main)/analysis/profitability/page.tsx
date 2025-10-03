@@ -1,125 +1,293 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { PageHeader } from '@/components/page-header';
-import { LandPlot, Loader2, Wheat, Bean, Beef, TreePine } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { getQuoteByDate } from '@/lib/data-service';
-import * as Calc from '@/lib/calculation-service';
-import { formatCurrency } from '@/lib/formatters';
-import type { FirestoreQuote } from '@/lib/types';
-
-interface ProfitabilityData {
-    soja: number;
-    milho: number;
-    boi: number;
-    madeira: number;
-}
-
-const ProfitabilityCard = ({ title, value, icon: Icon }: { title: string; value: number; icon: React.ElementType }) => (
-    <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{title}</CardTitle>
-            <Icon className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(value, 'BRL', 'rentabilidade')}</div>
-            <p className="text-xs text-muted-foreground">em BRL/hectare</p>
-        </CardContent>
-    </Card>
-);
-
-function useProfitability() {
-    const [profitability, setProfitability] = useState<ProfitabilityData | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        const fetchAndCalculate = async () => {
-            setIsLoading(true);
-            try {
-                const today = new Date();
-                const requiredAssets = ['soja', 'milho', 'boi_gordo', 'madeira', 'usd'];
-                
-                const quotePromises = requiredAssets.map(id => getQuoteByDate(id, today));
-                const quotes = await Promise.all(quotePromises);
-                
-                const quoteMap = requiredAssets.reduce((acc, id, index) => {
-                    acc[id] = quotes[index];
-                    return acc;
-                }, {} as Record<string, FirestoreQuote | null>);
-
-                const values = {
-                    soja: quoteMap['soja']?.ultimo ?? 0,
-                    milho: quoteMap['milho']?.ultimo ?? 0,
-                    boi_gordo: quoteMap['boi_gordo']?.ultimo ?? 0,
-                    madeira: quoteMap['madeira']?.ultimo ?? 0,
-                    usd: quoteMap['usd']?.ultimo ?? 0,
-                };
-                
-                const rentSoja = Calc.calculateRentMediaSoja(values.soja, values.usd);
-                const rentMilho = Calc.calculateRentMediaMilho(values.milho);
-                const rentBoi = Calc.calculateRentMediaBoi(values.boi_gordo);
-                const rentMadeira = Calc.calculateRentMediaMadeira(values.madeira, values.usd);
-
-                setProfitability({
-                    soja: rentSoja,
-                    milho: rentMilho,
-                    boi: rentBoi,
-                    madeira: rentMadeira,
-                });
-
-            } catch (err) {
-                console.error("Failed to calculate profitability:", err);
-                setProfitability(null);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchAndCalculate();
-    }, []);
-
-    return { profitability, isLoading };
-}
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
+  SidebarProvider,
+  SidebarInset,
+} from '@/components/ui/sidebar';
+import {
+  LayoutDashboard,
+  TrendingUp,
+  Users,
+  LogOut,
+  Sparkles,
+  History,
+  PieChart,
+} from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { LogoUCS } from '@/components/logo-bvm';
+import { useAuth, useUser, useSidebar } from '@/firebase';
+import { useRouter } from 'next/navigation';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Skeleton } from '@/components/ui/skeleton';
+import React, { useState, useEffect } from 'react';
+import type { UserRecord } from 'firebase-admin/auth';
+import { UserFormModal, type UserFormValues } from '@/components/admin/user-form-modal';
+import { useToast } from '@/hooks/use-toast';
+import { updateUser } from '@/lib/admin-actions';
+import { doc, getDoc } from 'firebase/firestore';
+import { useFirestore } from '@/firebase';
 
 
-export default function ProfitabilityPage() {
-    const { profitability, isLoading } = useProfitability();
+function UserProfile() {
+    const { user, isUserLoading } = useUser();
+    const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+    const { toast } = useToast();
+    const firestore = useFirestore();
+    const [isAdmin, setIsAdmin] = useState(false);
+
+     useEffect(() => {
+        if (user) {
+            const checkAdmin = async () => {
+                const adminRef = doc(firestore, `roles_admin/${user.uid}`);
+                const adminSnap = await getDoc(adminRef);
+                setIsAdmin(adminSnap.exists());
+            };
+            checkAdmin();
+        }
+    }, [user, firestore]);
+
+    const handleProfileUpdate = async (values: UserFormValues) => {
+        if (!user) return;
+        try {
+            await updateUser(user.uid, values);
+            toast({ title: 'Sucesso', description: 'Seu perfil foi atualizado.' });
+            setIsProfileModalOpen(false);
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Erro', description: error.message });
+        }
+    }
+    
+    if (isUserLoading) {
+        return (
+            <div className="flex items-center gap-2 p-2">
+                <Skeleton className="h-10 w-10 rounded-full" />
+                <div className="flex-1 space-y-1">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-3 w-16" />
+                </div>
+            </div>
+        );
+    }
+
+    if (!user) {
+        return null;
+    }
+    
+    const getInitials = (email: string | null) => {
+        if (!email) return '..';
+        const nameParts = user.displayName?.split(' ') || [email];
+        if (nameParts.length > 1) {
+            return `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`.toUpperCase();
+        }
+        return email.substring(0, 2).toUpperCase();
+    }
 
     return (
-        <div className="flex min-h-screen w-full flex-col">
-            <PageHeader
-                title="Análise de Rentabilidade Média"
-                description="Compare a performance econômica das principais atividades por hectare."
-                icon={LandPlot}
+        <>
+            <div 
+                className="flex flex-col items-start gap-2 p-2 group-data-[collapsible=icon]:items-center cursor-pointer hover:bg-sidebar-accent/50 rounded-md"
+                onClick={() => setIsProfileModalOpen(true)}
+            >
+                <div className="flex w-full items-center gap-2">
+                    <Avatar>
+                        <AvatarFallback>{getInitials(user.email)}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 truncate group-data-[collapsible=icon]:hidden">
+                        <p className="font-semibold text-sm truncate">{user.displayName || user.email}</p>
+                        <p className="text-xs text-muted-foreground">{isAdmin ? 'Admin' : 'Usuário'}</p>
+                    </div>
+                </div>
+            </div>
+             <UserFormModal
+                isOpen={isProfileModalOpen}
+                onOpenChange={setIsProfileModalOpen}
+                onSubmit={handleProfileUpdate}
+                user={user as unknown as UserRecord}
+                isSelfEdit={true}
             />
-            <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
-                {isLoading ? (
-                    <div className="flex justify-center items-center h-64">
-                        <Loader2 className="h-16 w-16 animate-spin text-primary" />
-                    </div>
-                ) : profitability ? (
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                        <ProfitabilityCard title="Rentabilidade da Soja" value={profitability.soja} icon={Bean} />
-                        <ProfitabilityCard title="Rentabilidade do Milho" value={profitability.milho} icon={Wheat} />
-                        <ProfitabilityCard title="Rentabilidade do Boi" value={profitability.boi} icon={Beef} />
-                        <ProfitabilityCard title="Rentabilidade da Madeira" value={profitability.madeira} icon={TreePine} />
-                    </div>
-                ) : (
-                     <div className="flex justify-center items-center h-64">
-                        <p className="text-muted-foreground">Não foi possível calcular a rentabilidade. Verifique se os dados de hoje estão disponíveis.</p>
-                    </div>
-                )}
-                 <Card className="mt-8">
-                    <CardHeader>
-                        <CardTitle>Sobre a Rentabilidade Média</CardTitle>
-                    </CardHeader>
-                    <CardContent className="text-sm text-muted-foreground space-y-2">
-                        <p>A "Rentabilidade Média" é um cálculo intermediário que normaliza o valor de mercado de diferentes commodities para uma unidade comum: <span className="font-semibold text-foreground">Reais (BRL) por Hectare</span>.</p>
-                        <p>Isso permite uma comparação direta da performance econômica de cada cultura, independentemente de suas unidades de medida originais (saca, arroba, m³, etc.). Este valor é a base para o cálculo dos índices `VUS` e `VMAD`.</p>
-                    </CardContent>
-                </Card>
-            </main>
-        </div>
+        </>
     );
+}
+
+function MainLayoutContent({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const { user, isUserLoading } = useUser();
+  const router = useRouter();
+  const auth = useAuth();
+  const firestore = useFirestore();
+  const { isMobile, setOpenMobile } = useSidebar();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      const checkAdminStatus = async () => {
+        const adminDocRef = doc(firestore, 'roles_admin', user.uid);
+        const docSnap = await getDoc(adminDocRef);
+        setIsAdmin(docSnap.exists());
+      };
+      checkAdminStatus();
+    } else {
+      setIsAdmin(false);
+    }
+  }, [user, firestore]);
+
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+      router.replace('/login');
+    }
+  }, [isUserLoading, user, router]);
+
+  const handleSignOut = async () => {
+    await auth.signOut();
+    router.push('/');
+  };
+
+  const handleMenuItemClick = () => {
+    if (isMobile && setOpenMobile) {
+      setOpenMobile(false);
+    }
+  };
+
+  if (isUserLoading || !user) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <Sidebar>
+        <div className="flex flex-col h-full">
+          <SidebarHeader>
+            <div className="flex h-10 items-center justify-center p-2 group-data-[collapsible=icon]:hidden">
+              <LogoUCS className="h-8 w-auto" />
+            </div>
+            <div className="hidden h-10 items-center justify-center p-2 group-data-[collapsible=icon]:flex">
+              <LogoUCS className="h-8 w-auto" isIcon />
+            </div>
+          </SidebarHeader>
+          <SidebarContent className="flex-grow">
+            <SidebarMenu>
+              <SidebarMenuItem onClick={handleMenuItemClick}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname === '/dashboard'}
+                  tooltip={{ children: 'Dashboard' }}
+                >
+                  <Link href="/dashboard">
+                    <LayoutDashboard />
+                    <span>Dashboard</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem onClick={handleMenuItemClick}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname.startsWith('/reports')}
+                  tooltip={{ children: 'Relatórios com IA' }}
+                >
+                  <Link href="/reports">
+                    <Sparkles />
+                    <span>Relatórios IA</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+            <SidebarMenu>
+              <p className="px-4 py-2 text-xs font-semibold text-muted-foreground/50 tracking-wider group-data-[collapsible=icon]:text-center">
+                Análise
+              </p>
+               <SidebarMenuItem onClick={handleMenuItemClick}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname.startsWith('/analysis/trends')}
+                  tooltip={{ children: 'Análise Histórica' }}
+                >
+                  <Link href="/analysis/trends">
+                    <TrendingUp />
+                    <span>Análise Histórica</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+               <SidebarMenuItem onClick={handleMenuItemClick}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname.startsWith('/analysis/composition')}
+                  tooltip={{ children: 'Análise de Composição' }}
+                >
+                  <Link href="/analysis/composition">
+                    <PieChart />
+                    <span>Composição</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+            {isAdmin && (
+              <SidebarMenu>
+                <p className="px-4 py-2 text-xs font-semibold text-muted-foreground/50 tracking-wider group-data-[collapsible=icon]:text-center">
+                  Admin
+                </p>
+                <SidebarMenuItem onClick={handleMenuItemClick}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith('/admin/users')}
+                    tooltip={{ children: 'Gerenciar Usuários' }}
+                  >
+                    <Link href="/admin/users">
+                      <Users />
+                      <span>Usuários</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                 <SidebarMenuItem onClick={handleMenuItemClick}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith('/admin/audit')}
+                    tooltip={{ children: 'Auditoria de Dados' }}
+                  >
+                    <Link href="/admin/audit">
+                      <History />
+                      <span>Auditoria</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            )}
+          </SidebarContent>
+          <div className="mt-auto">
+            <SidebarContent className="!flex-grow-0 border-t">
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton onClick={handleSignOut} tooltip={{ children: 'Sair' }}>
+                    <LogOut />
+                    <span>Sair</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+              <UserProfile />
+            </SidebarContent>
+          </div>
+        </div>
+      </Sidebar>
+      <SidebarInset>{children}</SidebarInset>
+    </>
+  );
+}
+
+
+export default function MainLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <SidebarProvider>
+      <MainLayoutContent>{children}</MainLayoutContent>
+    </SidebarProvider>
+  );
 }

@@ -19,7 +19,6 @@ import {
   Sparkles,
   History,
   PieChart,
-  LandPlot,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
