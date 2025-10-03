@@ -232,11 +232,11 @@ export default function LandingPage() {
                     </div>
                     <div className="relative h-64 md:h-full w-full rounded-xl overflow-hidden shadow-xl animate-fade-in-left">
                         <Image
-                            src="https://picsum.photos/seed/satellite-forest/800/600"
-                            alt="Visão de satélite de uma floresta densa"
+                            src="https://picsum.photos/seed/river-forest/800/600"
+                            alt="Rio serpenteando por uma floresta densa"
                             layout="fill"
                             objectFit="cover"
-                            data-ai-hint="satellite view forest"
+                            data-ai-hint="river forest"
                         />
                     </div>
                 </div>
@@ -286,11 +286,11 @@ export default function LandingPage() {
                 <div className="grid md:grid-cols-2 gap-12 items-center">
                     <div className="relative h-64 md:h-full w-full rounded-xl overflow-hidden shadow-xl animate-fade-in-right">
                          <Image
-                            src="https://picsum.photos/seed/drone-over-forest/800/600"
-                            alt="Drone sobrevoando uma floresta"
+                            src="https://picsum.photos/seed/forest-waterfall/800/600"
+                            alt="Cachoeira em meio a uma floresta verde"
                             layout="fill"
                             objectFit="cover"
-                            data-ai-hint="drone forest"
+                            data-ai-hint="forest waterfall"
                         />
                     </div>
                     <div className="animate-fade-in-left">
