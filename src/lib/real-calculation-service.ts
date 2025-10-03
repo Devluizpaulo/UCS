@@ -53,8 +53,11 @@ export function calculateRentMediaSoja(sojaPrice: number, usdRate: number): numb
   const sojaBRL = sojaPrice * usdRate;
   const tonBRL = ((sojaBRL / 60) * 1000) + 0.01990; // Ajuste fino da planilha
   const fatorRentabilidade = 3.3;
-  return Math.round(tonBRL * fatorRentabilidade * 100) / 100;
+  // Truncar para 2 casas decimais em vez de arredondar para corresponder à planilha
+  const rentMedia = tonBRL * fatorRentabilidade;
+  return Math.floor(rentMedia * 100) / 100;
 }
+
 
 /**
  * Calcula a rentabilidade média do Milho
@@ -417,4 +420,5 @@ function getAssetDisplayName(assetId: string): string {
   };
   return names[assetId] || assetId;
 }
+
 
