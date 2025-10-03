@@ -17,15 +17,15 @@ import Autoplay from "embla-carousel-autoplay";
 import { getCommodityPrices } from '@/lib/data-service';
 
 const lastros = [
-    { icon: Search, title: "Monitoramento", description: "Imagens de satélite em tempo real", benefit: "Verificação contínua da área preservada" },
-    { icon: Trees, title: "Real", description: "Vinculação direta à área de floresta", benefit: "Ativo lastreado em recursos naturais reais" },
-    { icon: GitBranch, title: "Tecnológico", description: "Sistemas digitais de controle", benefit: "Rastreabilidade e transparência total" },
-    { icon: Banknote, title: "Financeiro", description: "Integração com mecanismos de mercado", benefit: "Liquidez e valorização no mercado" },
-    { icon: ShieldCheck, title: "Auditoria", description: "Certificação por órgãos independentes", benefit: "Credibilidade e verificação externa" },
-    { icon: Microscope, title: "Científico", description: "Metodologia validada por instituições de pesquisa", benefit: "Base técnica e científica sólida" },
-    { icon: BarChart3, title: "Técnico", description: "Relatórios e métricas ambientais", benefit: "Dados verificáveis e precisos" },
-    { icon: Scale, title: "Jurídico", description: "Conformidade legal assegurada", benefit: "Segurança jurídica nas transações" },
-    { icon: FileText, title: "Regulatório", description: "Aderência às normas e decretos vigentes", benefit: "Enquadramento legal preciso" },
+    { icon: Search, title: "Monitoramento", description: "Imagens de satélite em tempo real para verificação contínua da área preservada." },
+    { icon: Trees, title: "Real", description: "Vinculação direta à área de floresta, garantindo que o ativo é lastreado em recursos naturais." },
+    { icon: GitBranch, title: "Tecnológico", description: "Sistemas digitais de controle que oferecem rastreabilidade e transparência total." },
+    { icon: Banknote, title: "Financeiro", description: "Integração com mecanismos de mercado e garantias para liquidez e valorização." },
+    { icon: ShieldCheck, title: "Auditoria", description: "Certificação por órgãos independentes, assegurando credibilidade e verificação externa." },
+    { icon: Microscope, title: "Científico", description: "Metodologia validada por instituições de pesquisa, com base técnica e científica sólida." },
+    { icon: BarChart3, title: "Técnico", description: "Relatórios e métricas ambientais que fornecem dados verificáveis e precisos." },
+    { icon: Scale, title: "Jurídico", description: "Conformidade legal assegurada, proporcionando segurança jurídica nas transações." },
+    { icon: FileText, title: "Regulatório", description: "Aderência às normas e decretos vigentes, garantindo enquadramento legal preciso." },
 ];
 
 const stakeholders = [
@@ -33,6 +33,12 @@ const stakeholders = [
     { icon: Building, title: 'Investidores', description: 'Adquirem créditos que representam benefícios ambientais mensuráveis.' },
     { icon: Landmark, title: 'Instituições Financeiras', description: 'Participam de um mercado sustentável e regulamentado.' },
     { icon: Globe, title: 'Meio Ambiente', description: 'Ganha com a proteção efetiva de ecossistemas florestais.' },
+];
+
+const legalBasis = [
+    { icon: FileText, title: 'CNAE 0220-9/06', description: 'Reconhece a atividade rural de conservação de floresta nativa.' },
+    { icon: Landmark, title: 'Lei 13.986/2020', description: 'Estabelece que produtos rurais podem ser gerados por atividades de conservação.' },
+    { icon: FileJson, title: 'Decreto 10.828/2021', description: 'Regulamenta a CPR Verde, integrando a conservação como ativo econômico.' },
 ]
 
 export default function LandingPage() {
@@ -79,95 +85,104 @@ export default function LandingPage() {
 
       <main className="flex-1">
         {/* HERO SECTION */}
-        <section className="relative flex flex-1 flex-col p-4 text-center">
+        <section className="relative flex h-[80vh] min-h-[500px] flex-col items-center justify-center p-4 text-center">
           <Image
-            src="https://picsum.photos/seed/lush-forest/1920/1080"
-            alt="Floresta exuberante ao fundo"
+            src="https://picsum.photos/seed/forest-path/1920/1080"
+            alt="Floresta exuberante com um caminho de luz"
             fill
-            className="object-cover animate-zoom-in"
-            data-ai-hint="lush forest"
+            className="object-cover"
+            data-ai-hint="lush forest path"
             priority
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-black/40" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent" />
 
-          <div className="relative z-10 flex flex-1 flex-col items-center justify-center gap-8 py-20">
+          <div className="relative z-10 flex flex-col items-center gap-8 py-12">
             <div className="flex flex-col items-center gap-4 px-4 md:px-6">
-                <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl text-white">
-                USC: O Crédito que Transforma Florestas Preservadas em Ativos Financeiros
+                <h1 className="text-4xl font-extrabold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl text-white drop-shadow-lg animate-fade-in-down">
+                    USC: O Crédito que Transforma Florestas Preservadas em Ativos Financeiros
                 </h1>
-                <p className="mx-auto max-w-3xl text-lg text-gray-200 md:text-xl">
-                Uma inovação baseada no BMV Standard que reconhece economicamente a conservação ambiental e gera valor para produtores rurais, investidores e para o planeta.
+                <p className="mx-auto max-w-3xl text-lg text-gray-200 md:text-xl drop-shadow-md animate-fade-in-up">
+                    Uma inovação baseada no BMV Standard que reconhece economicamente a conservação ambiental e gera valor para produtores rurais, investidores e para o planeta.
                 </p>
             </div>
-            <div className="w-full flex justify-center">
-              <Carousel
-                  plugins={[autoplayPlugin.current]}
-                  opts={{
-                      align: "start",
-                      loop: true,
-                  }}
-                  className="w-full max-w-xs sm:max-w-sm"
-                  onMouseEnter={autoplayPlugin.current.stop}
-                  onMouseLeave={autoplayPlugin.current.reset}
-                  >
-                  <CarouselContent>
-                      {indexValues.map(({ currency, value, icon: Icon, conversionRate }) => (
-                      <CarouselItem key={currency}>
-                          <div className="p-1">
-                          <Card className="rounded-xl border border-white/20 bg-white/10 p-4 text-white shadow-lg backdrop-blur-md">
-                              <CardHeader className="p-0 text-center flex-row items-center justify-center gap-2">
-                                  <Icon className="h-5 w-5 text-primary" />
-                                  <CardTitle className="text-base font-medium">Índice UCS</CardTitle>
-                              </CardHeader>
-                              <CardContent className="p-0 mt-2 text-center">
-                                  <span className="text-4xl font-bold tracking-tight">
-                                      {formatCurrency(value, currency, 'ucs_ase')}
-                                  </span>
-                                  <span className="ml-1 text-base font-medium text-gray-300">{currency}</span>
-                                  {conversionRate && (
-                                      <p className="text-xs text-gray-400 mt-1">
-                                          (1 {currency} = {formatCurrency(conversionRate, 'BRL', 'usd')})
-                                      </p>
-                                  )}
-                              </CardContent>
-                          </Card>
-                          </div>
-                      </CarouselItem>
-                      ))}
-                  </CarouselContent>
-              </Carousel>
+            <div className="w-full flex justify-center animate-fade-in-up animation-delay-300">
+                <Carousel
+                    plugins={[autoplayPlugin.current]}
+                    opts={{ align: "start", loop: true }}
+                    className="w-full max-w-xs sm:max-w-sm"
+                    onMouseEnter={autoplayPlugin.current.stop}
+                    onMouseLeave={autoplayPlugin.current.reset}
+                >
+                    <CarouselContent>
+                        {indexValues.map(({ currency, value, icon: Icon, conversionRate }) => (
+                            <CarouselItem key={currency}>
+                                <div className="p-1">
+                                    <Card className="rounded-xl border border-white/20 bg-white/10 p-4 text-white shadow-lg backdrop-blur-md">
+                                        <CardHeader className="p-0 text-center flex-row items-center justify-center gap-2">
+                                            <Icon className="h-5 w-5 text-primary" />
+                                            <CardTitle className="text-base font-medium">Índice UCS</CardTitle>
+                                        </CardHeader>
+                                        <CardContent className="p-0 mt-2 text-center">
+                                            <span className="text-4xl font-bold tracking-tight">
+                                                {formatCurrency(value, currency, 'ucs_ase')}
+                                            </span>
+                                            <span className="ml-1 text-base font-medium text-gray-300">{currency}</span>
+                                            {conversionRate && (
+                                                <p className="text-xs text-gray-400 mt-1">
+                                                    (1 {currency} = {formatCurrency(conversionRate, 'BRL', 'usd')})
+                                                </p>
+                                            )}
+                                        </CardContent>
+                                    </Card>
+                                </div>
+                            </CarouselItem>
+                        ))}
+                    </CarouselContent>
+                </Carousel>
             </div>
           </div>
         </section>
 
         {/* EXPLANATORY SECTION */}
         <section className="py-16 md:py-24 bg-muted/30">
-          <div className="container mx-auto px-4 md:px-6">
-            <div className="mx-auto max-w-4xl text-center">
-              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">O que é o USC Crédito de Sustentabilidade?</h2>
-              <p className="mt-4 text-lg text-muted-foreground">
-                O USC (Crédito de Sustentabilidade) é um produto financeiro inovador, lastreado na atividade rural de conservação de florestas nativas. Fundamentado no BMV Standard, ele converte a preservação ambiental em um ativo econômico tangível e legalmente reconhecido.
-              </p>
-            </div>
-
-            <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
-              {stakeholders.map((stakeholder) => (
-                <div key={stakeholder.title} className="flex flex-col items-center text-center">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-                    <stakeholder.icon className="h-6 w-6" />
-                  </div>
-                  <h3 className="mt-4 text-lg font-semibold">{stakeholder.title}</h3>
-                  <p className="mt-2 text-sm text-muted-foreground">{stakeholder.description}</p>
+            <div className="container mx-auto px-4 md:px-6">
+                <div className="grid md:grid-cols-2 gap-12 items-center">
+                    <div className="animate-fade-in-right">
+                        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">O que é o USC Crédito de Sustentabilidade?</h2>
+                        <p className="mt-4 text-lg text-muted-foreground">
+                            O USC é um produto financeiro inovador, lastreado na atividade rural de conservação de florestas nativas. Fundamentado no BMV Standard, ele converte a preservação ambiental em um ativo econômico tangível e legalmente reconhecido.
+                        </p>
+                        <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            {stakeholders.map((stakeholder) => (
+                                <div key={stakeholder.title} className="flex gap-4">
+                                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary flex-shrink-0">
+                                        <stakeholder.icon className="h-5 w-5" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-base font-semibold">{stakeholder.title}</h3>
+                                        <p className="mt-1 text-sm text-muted-foreground">{stakeholder.description}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    <div className="relative h-64 md:h-full w-full rounded-xl overflow-hidden shadow-xl animate-fade-in-left">
+                        <Image
+                            src="https://picsum.photos/seed/satellite-view/800/600"
+                            alt="Visão de satélite de uma floresta densa"
+                            layout="fill"
+                            objectFit="cover"
+                            data-ai-hint="satellite view forest"
+                        />
+                    </div>
                 </div>
-              ))}
             </div>
-          </div>
         </section>
 
         {/* DIFFERENTIALS SECTION */}
         <section className="py-16 md:py-24">
             <div className="container mx-auto px-4 md:px-6">
-                 <div className="mx-auto max-w-4xl text-center mb-12">
+                 <div className="mx-auto max-w-4xl text-center mb-12 animate-fade-in-up">
                     <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Por que o USC é um Investimento Seguro e Inovador?</h2>
                     <p className="mt-4 text-lg text-muted-foreground">
                         Nossa metodologia incorpora 9 pilares de lastro que garantem transparência, segurança e confiabilidade em cada crédito emitido.
@@ -175,19 +190,18 @@ export default function LandingPage() {
                 </div>
                 
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                    {lastros.map((lastro) => (
-                        <Card key={lastro.title} className="flex flex-col">
+                    {lastros.map((lastro, index) => (
+                        <Card key={lastro.title} className="flex flex-col hover:shadow-lg transition-shadow animate-fade-in-up" style={{ animationDelay: `${index * 100}ms` }}>
                             <CardHeader>
-                                <div className="flex items-center gap-3">
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                                        <lastro.icon className="h-5 w-5" />
+                                <div className="flex items-center gap-4">
+                                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                                        <lastro.icon className="h-6 w-6" />
                                     </div>
-                                    <CardTitle className="text-md font-bold">{lastro.title}</CardTitle>
+                                    <CardTitle className="text-lg font-bold">{lastro.title}</CardTitle>
                                 </div>
                             </CardHeader>
-                            <CardContent className="flex-grow space-y-2">
-                                <p className="text-sm text-muted-foreground"><strong className="text-foreground">Descrição:</strong> {lastro.description}</p>
-                                <p className="text-sm text-muted-foreground"><strong className="text-foreground">Benefício:</strong> {lastro.benefit}</p>
+                            <CardContent className="flex-grow">
+                                <p className="text-sm text-muted-foreground">{lastro.description}</p>
                             </CardContent>
                         </Card>
                     ))}
@@ -197,56 +211,69 @@ export default function LandingPage() {
 
         {/* LEGAL BASIS SECTION */}
         <section className="py-16 md:py-24 bg-muted/30">
-          <div className="container mx-auto px-4 md:px-6">
-            <div className="mx-auto max-w-4xl text-center">
-              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Amparo Legal Sólido e Inovador</h2>
-              <p className="mt-4 text-lg text-muted-foreground">
-                O USC Crédito de Sustentabilidade está ancorado em um marco regulatório robusto que lhe confere segurança e validade jurídica.
-              </p>
+            <div className="container mx-auto px-4 md:px-6">
+                <div className="grid md:grid-cols-2 gap-12 items-center">
+                    <div className="relative h-64 md:h-full w-full rounded-xl overflow-hidden shadow-xl animate-fade-in-right">
+                         <Image
+                            src="https://picsum.photos/seed/drone-forest/800/600"
+                            alt="Drone sobrevoando uma floresta"
+                            layout="fill"
+                            objectFit="cover"
+                            data-ai-hint="drone forest"
+                        />
+                    </div>
+                    <div className="animate-fade-in-left">
+                        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Amparo Legal Sólido e Inovador</h2>
+                        <p className="mt-4 text-lg text-muted-foreground">
+                            O USC Crédito de Sustentabilidade está ancorado em um marco regulatório robusto que lhe confere segurança e validade jurídica.
+                        </p>
+                        <div className="mt-8 space-y-6">
+                            {legalBasis.map((item) => (
+                                <div key={item.title} className="flex items-start gap-4">
+                                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary flex-shrink-0">
+                                        <item.icon className="h-5 w-5" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-base font-semibold">{item.title}</h3>
+                                        <p className="mt-1 text-sm text-muted-foreground">{item.description}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-3">
-              <div className="flex flex-col items-center text-center p-6 bg-background rounded-lg shadow-sm">
-                <FileText className="h-8 w-8 text-primary" />
-                <h3 className="mt-4 text-lg font-semibold">CNAE 0220-9/06</h3>
-                <p className="mt-2 text-sm text-muted-foreground">Reconhece a atividade rural de conservação de floresta nativa.</p>
-              </div>
-              <div className="flex flex-col items-center text-center p-6 bg-background rounded-lg shadow-sm">
-                <Landmark className="h-8 w-8 text-primary" />
-                <h3 className="mt-4 text-lg font-semibold">Lei 13.986/2020</h3>
-                <p className="mt-2 text-sm text-muted-foreground">Estabelece que produtos rurais podem ser gerados por atividades de conservação.</p>
-              </div>
-              <div className="flex flex-col items-center text-center p-6 bg-background rounded-lg shadow-sm">
-                <FileJson className="h-8 w-8 text-primary" />
-                <h3 className="mt-4 text-lg font-semibold">Decreto 10.828/2021</h3>
-                <p className="mt-2 text-sm text-muted-foreground">Regulamenta a CPR Verde, integrando a conservação como ativo econômico.</p>
-              </div>
-            </div>
-          </div>
         </section>
 
         {/* FINAL SUMMARY & CTA */}
         <section className="py-16 md:py-24">
             <div className="container mx-auto px-4 md:px-6">
-                <div className="mx-auto max-w-4xl text-center">
+                <div className="mx-auto max-w-4xl text-center animate-fade-in-up">
                     <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Resumo: Conservação que Gera Valor</h2>
                     <p className="mt-4 text-lg text-muted-foreground">
                        O USC Crédito de Sustentabilidade representa a evolução do mercado de capitais verde no Brasil.
                     </p>
                 </div>
-                <div className="mx-auto mt-12 grid max-w-2xl grid-cols-1 gap-6 sm:grid-cols-2">
-                  {['Transforma conservação ambiental em ativo financeiro', 'Oferece transparência total através de múltiplos lastros', 'Garante segurança jurídica e regulatória', 'Gera retorno econômico sem comprometer o meio ambiente', 'Conecta produtores, investidores e instituições financeiras em um ciclo virtuoso'].map(item => (
+                <div className="mx-auto mt-12 grid max-w-4xl grid-cols-1 gap-6 sm:grid-cols-2 animate-fade-in-up animation-delay-200">
+                  {[
+                      'Transforma conservação ambiental em ativo financeiro', 
+                      'Oferece transparência total através de múltiplos lastros', 
+                      'Garante segurança jurídica e regulatória', 
+                      'Gera retorno econômico sem comprometer o meio ambiente', 
+                      'Conecta produtores, investidores e instituições'
+                    ].map(item => (
                     <div key={item} className="flex items-center gap-3">
                       <CheckCircle className="h-5 w-5 flex-shrink-0 text-primary" />
-                      <span className="text-sm text-muted-foreground">{item}</span>
+                      <span className="text-base text-muted-foreground">{item}</span>
                     </div>
                   ))}
                 </div>
-                <div className="mt-16 text-center">
+                <div className="mt-16 text-center animate-fade-in-up animation-delay-400">
                     <h3 className="text-2xl font-bold">Interessado em Saber Mais?</h3>
                     <p className="mt-2 text-muted-foreground">Junte-se à nova economia verde que valoriza a floresta em pé!</p>
-                     <Button size="lg" className="mt-6" asChild>
+                     <Button size="lg" className="mt-8 text-lg" asChild>
                         <a href="https://bmvdigital.global/" target="_blank" rel="noopener noreferrer">
-                          Visite a BMV Digital <ChevronRight className="ml-2 h-4 w-4" />
+                          Visite a BMV Digital <ChevronRight className="ml-2 h-5 w-5" />
                         </a>
                       </Button>
                 </div>
