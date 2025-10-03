@@ -166,7 +166,7 @@ export default function LandingPage() {
                     USC: O Crédito que Transforma Florestas Preservadas em Ativos Financeiros
                 </h1>
                 <p className="mx-auto max-w-3xl text-lg text-gray-200 md:text-xl drop-shadow-md animate-fade-in-up">
-                    Uma inovação baseada no BMV Standard que reconhece economicamente a conservação ambiental e gera valor para produtores rurais, investidores e para o planeta.
+                    Uma inovação que reconhece economicamente a conservação ambiental e gera valor para produtores rurais, investidores e para o planeta.
                 </p>
             </div>
             <div className="w-full flex justify-center animate-fade-in-up animation-delay-300">
@@ -214,7 +214,7 @@ export default function LandingPage() {
                     <div className="animate-fade-in-right">
                         <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">O que é o USC Crédito de Sustentabilidade?</h2>
                         <p className="mt-4 text-lg text-muted-foreground">
-                            O USC (Crédito de Sustentabilidade) é um produto financeiro inovador, lastreado na atividade rural de conservação de florestas nativas. Fundamentado no BMV Standard, ele converte a preservação ambiental em um ativo econômico tangível e legalmente reconhecido.
+                            O USC (Crédito de Sustentabilidade) é um produto financeiro inovador, lastreado na atividade rural de conservação de florestas nativas. Ele converte a preservação ambiental em um ativo econômico tangível e legalmente reconhecido.
                         </p>
                         <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-6">
                             {stakeholders.map((stakeholder) => (
