@@ -35,8 +35,11 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from './ui/button';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Info } from 'lucide-react';
 import { ScrollArea, ScrollBar } from './ui/scroll-area';
+import { AssetDetailModal } from './asset-detail-modal';
+import type { CommodityPriceData } from '@/lib/types';
+
 
 const ChartSkeleton = () => (
   <div className="h-72 w-full">
@@ -59,7 +62,17 @@ const timeRangeToDays: Record<TimeRange, number> = {
 
 const ITEMS_PER_PAGE = 10;
 
-function HistoricalDataTable({ data, asset, isLoading }: { data: FirestoreQuote[], asset?: CommodityConfig, isLoading: boolean }) {
+function HistoricalDataTable({ 
+    data, 
+    asset, 
+    isLoading,
+    onRowClick,
+}: { 
+    data: FirestoreQuote[], 
+    asset?: CommodityPriceData, 
+    isLoading: boolean,
+    onRowClick: (asset: CommodityPriceData, quote: FirestoreQuote) => void,
+}) {
     const [currentPage, setCurrentPage] = useState(1);
 
     useEffect(() => {
@@ -132,6 +145,18 @@ function HistoricalDataTable({ data, asset, isLoading }: { data: FirestoreQuote[
     if (data.length === 0) {
         return <p className="text-center text-muted-foreground py-8">Nenhum dado histórico encontrado para este período.</p>;
     }
+    
+    const handleRowClick = (quote: FirestoreQuote) => {
+        if (!asset) return;
+        const assetData: CommodityPriceData = {
+            ...asset,
+            price: quote.valor ?? quote.ultimo,
+            change: quote.variacao_pct ?? 0,
+            absoluteChange: 0, // Not available in historical, can be calculated if needed
+            lastUpdated: quote.data,
+        };
+        onRowClick(assetData, quote);
+    };
 
     return (
         <div className="w-full">
@@ -144,7 +169,7 @@ function HistoricalDataTable({ data, asset, isLoading }: { data: FirestoreQuote[
                     </TableHeader>
                     <TableBody>
                         {paginatedData.map(quote => (
-                            <TableRow key={quote.id}>
+                            <TableRow key={quote.id} onClick={() => handleRowClick(quote)} className="cursor-pointer">
                                 {columns.map(key => (
                                     <TableCell key={key} className="whitespace-nowrap font-mono text-xs">
                                         {formatValue((quote as any)[key], key)}
@@ -190,6 +215,9 @@ export function HistoricalAnalysis() {
   const [isLoading, setIsLoading] = useState(true);
   const [timeRange, setTimeRange] = useState<TimeRange>('90d');
 
+  // State for the modal
+  const [selectedAssetForModal, setSelectedAssetForModal] = useState<CommodityPriceData | null>(null);
+
   useEffect(() => {
     getCommodityConfigs().then(setAssets);
   }, []);
@@ -209,7 +237,7 @@ export function HistoricalAnalysis() {
       });
   }, [timeRange, selectedAssetId]);
 
-  const selectedAsset = useMemo(() => {
+  const selectedAssetConfig = useMemo(() => {
     return assets.find(a => a.id === selectedAssetId);
   }, [assets, selectedAssetId]);
 
@@ -225,83 +253,109 @@ export function HistoricalAnalysis() {
       })
       .reverse(); // Ensure chronological order for the chart
   }, [data, timeRange]);
+  
+  const handleRowClick = (assetData: CommodityPriceData) => {
+    setSelectedAssetForModal(assetData);
+  };
 
   return (
-    <Card>
-        <CardHeader>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <Select value={selectedAssetId} onValueChange={setSelectedAssetId}>
-                <SelectTrigger className="w-full sm:w-[280px]">
-                    <SelectValue placeholder="Selecione um ativo" />
-                </SelectTrigger>
-                <SelectContent>
-                    {assets.map(asset => (
-                    <SelectItem key={asset.id} value={asset.id}>{asset.name}</SelectItem>
-                    ))}
-                </SelectContent>
-                </Select>
-                <Tabs 
-                    defaultValue={timeRange} 
-                    className="w-full sm:w-auto" 
-                    onValueChange={(value) => setTimeRange(value as TimeRange)}
-                >
-                    <TabsList className="grid w-full grid-cols-3">
-                        <TabsTrigger value="7d">7D</TabsTrigger>
-                        <TabsTrigger value="30d">30D</TabsTrigger>
-                        <TabsTrigger value="90d">90D</TabsTrigger>
-                    </TabsList>
-                </Tabs>
-            </div>
-        </CardHeader>
-        <CardContent className="space-y-8">
-            <div className="h-72">
-            {isLoading ? (
-                <ChartSkeleton />
-            ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis
-                        dataKey="date"
-                        stroke="hsl(var(--muted-foreground))"
-                        fontSize={12}
-                        tickLine={false}
-                        axisLine={false}
-                        interval="preserveStartEnd"
+    <>
+        <Card>
+            <CardHeader>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <Select value={selectedAssetId} onValueChange={setSelectedAssetId}>
+                    <SelectTrigger className="w-full sm:w-[280px]">
+                        <SelectValue placeholder="Selecione um ativo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {assets.map(asset => (
+                        <SelectItem key={asset.id} value={asset.id}>{asset.name}</SelectItem>
+                        ))}
+                    </SelectContent>
+                    </Select>
+                    <Tabs 
+                        defaultValue={timeRange} 
+                        className="w-full sm:w-auto" 
+                        onValueChange={(value) => setTimeRange(value as TimeRange)}
+                    >
+                        <TabsList className="grid w-full grid-cols-3">
+                            <TabsTrigger value="7d">7D</TabsTrigger>
+                            <TabsTrigger value="30d">30D</TabsTrigger>
+                            <TabsTrigger value="90d">90D</TabsTrigger>
+                        </TabsList>
+                    </Tabs>
+                </div>
+            </CardHeader>
+            <CardContent className="space-y-8">
+                <div className="h-72">
+                {isLoading ? (
+                    <ChartSkeleton />
+                ) : (
+                    <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                        <XAxis
+                            dataKey="date"
+                            stroke="hsl(var(--muted-foreground))"
+                            fontSize={12}
+                            tickLine={false}
+                            axisLine={false}
+                            interval="preserveStartEnd"
+                        />
+                        <YAxis
+                            stroke="hsl(var(--muted-foreground))"
+                            fontSize={12}
+                            tickLine={false}
+                            axisLine={false}
+                            tickFormatter={(value) => formatCurrency(value as number, selectedAssetConfig?.currency || 'BRL', selectedAssetConfig?.id)}
+                        />
+                        <Tooltip
+                            contentStyle={{
+                            backgroundColor: 'hsl(var(--background))',
+                            border: '1px solid hsl(var(--border))',
+                            borderRadius: 'var(--radius)',
+                            }}
+                            formatter={(value: any) => [formatCurrency(Number(value), selectedAssetConfig?.currency || 'BRL', selectedAssetConfig?.id), ' ']}
+                        />
+                        <Line
+                            type="monotone"
+                            dataKey="value"
+                            name=" "
+                            stroke="hsl(var(--primary))"
+                            strokeWidth={2}
+                            dot={false}
+                        />
+                        </LineChart>
+                    </ResponsiveContainer>
+                )}
+                </div>
+                <div>
+                     <h3 className="text-lg font-semibold mb-2">Dados Históricos Detalhados</h3>
+                     <div className="flex items-start gap-2 p-3 mb-4 text-sm text-blue-800 bg-blue-50 border border-blue-200 rounded-lg">
+                        <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                        <p>Clique em uma linha da tabela para ver os detalhes completos da cotação daquele dia.</p>
+                     </div>
+                    <HistoricalDataTable 
+                        data={data} 
+                        asset={selectedAssetConfig as CommodityPriceData} 
+                        isLoading={isLoading} 
+                        onRowClick={handleRowClick}
                     />
-                    <YAxis
-                        stroke="hsl(var(--muted-foreground))"
-                        fontSize={12}
-                        tickLine={false}
-                        axisLine={false}
-                        tickFormatter={(value) => formatCurrency(value as number, selectedAsset?.currency || 'BRL', selectedAsset?.id)}
-                    />
-                    <Tooltip
-                        contentStyle={{
-                        backgroundColor: 'hsl(var(--background))',
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: 'var(--radius)',
-                        }}
-                        formatter={(value: any) => [formatCurrency(Number(value), selectedAsset?.currency || 'BRL', selectedAsset?.id), ' ']}
-                    />
-                    <Line
-                        type="monotone"
-                        dataKey="value"
-                        name=" "
-                        stroke="hsl(var(--primary))"
-                        strokeWidth={2}
-                        dot={false}
-                    />
-                    </LineChart>
-                </ResponsiveContainer>
-            )}
-            </div>
-            <div>
-                 <h3 className="text-lg font-semibold mb-2">Dados Históricos Detalhados</h3>
-                 <p className="text-sm text-muted-foreground mb-4">Tabela completa com todos os dados diários para o ativo <span className="font-bold">{selectedAsset?.name || 'selecionado'}</span>.</p>
-                <HistoricalDataTable data={data} asset={selectedAsset} isLoading={isLoading} />
-            </div>
-        </CardContent>
-    </Card>
+                </div>
+            </CardContent>
+        </Card>
+
+        {selectedAssetForModal && (
+            <AssetDetailModal
+                asset={selectedAssetForModal}
+                isOpen={!!selectedAssetForModal}
+                onOpenChange={(isOpen) => {
+                    if (!isOpen) {
+                        setSelectedAssetForModal(null);
+                    }
+                }}
+            />
+        )}
+    </>
   );
 }
