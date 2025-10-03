@@ -151,7 +151,7 @@ export default function LandingPage() {
         {/* HERO SECTION */}
         <section className="relative flex h-[80vh] min-h-[500px] flex-col items-center justify-center p-4 text-center">
           <Image
-            src="https://picsum.photos/seed/forest-path/1920/1080"
+            src="/image/login.png"
             alt="Floresta exuberante com um caminho de luz"
             fill
             className="object-cover"
@@ -320,7 +320,7 @@ export default function LandingPage() {
         <section className="py-16 md:py-24">
             <div className="container mx-auto px-4 md:px-6">
                 <div className="mx-auto max-w-4xl text-center animate-fade-in-up">
-                    <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Resumo: Conservação que Gera Valor</h2>
+                    <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Conservação que Gera Valor</h2>
                     <p className="mt-4 text-lg text-muted-foreground">
                        O Crédito de Sustentabilidade transforma a conservação de florestas em um ativo financeiro transparente, auditável e seguro, que gera valor econômico sem comprometer o equilíbrio ambiental.
                     </p>
