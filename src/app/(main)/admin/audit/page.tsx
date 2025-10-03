@@ -860,130 +860,111 @@ export default function AuditPage() {
 
           {/* Seção de Filtros */}
           <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl">
-            <CardHeader className="bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-t-lg">
-              <CardTitle className="text-xl font-bold flex items-center gap-3">
-                <Filter className="h-6 w-6" />
-                Filtros e Busca
-              </CardTitle>
-              <CardDescription className="text-purple-100">
-                Use os filtros abaixo para encontrar ativos específicos ou filtrar por status.
-              </CardDescription>
+            <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 border-b">
+                <CardTitle className="text-xl font-bold flex items-center gap-3 text-gray-800 dark:text-gray-200">
+                    <Filter className="h-6 w-6 text-primary" />
+                    Filtros e Busca
+                </CardTitle>
+                <CardDescription className="text-gray-600 dark:text-gray-400">
+                    Use os filtros abaixo para encontrar ativos específicos ou filtrar por status.
+                </CardDescription>
             </CardHeader>
             <CardContent className="p-6">
-              <div className="space-y-6">
-                {/* Busca */}
-                <div className="space-y-2">
-                  <label htmlFor="search" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                    <Search className="h-4 w-4" />
-                    Buscar Ativo
-                  </label>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <Input
-                      id="search"
-                      placeholder="Digite o nome ou ID do ativo..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10 border-gray-200 focus:border-purple-500 focus:ring-purple-500"
-                    />
-                  </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {/* Busca */}
+                    <div className="col-span-1 md:col-span-2 space-y-2">
+                        <label htmlFor="search" className="text-sm font-semibold text-gray-700 dark:text-gray-300">Buscar Ativo</label>
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                            <Input
+                                id="search"
+                                placeholder="Digite o nome ou ID do ativo..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="pl-10 border-gray-300 dark:border-gray-700 focus:border-primary focus:ring-primary"
+                            />
+                        </div>
+                    </div>
+                    {/* Categoria */}
+                    <div className="space-y-2">
+                        <label htmlFor="category-filter" className="text-sm font-semibold text-gray-700 dark:text-gray-300">Categoria</label>
+                        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                            <SelectTrigger className="border-gray-300 dark:border-gray-700 focus:border-primary focus:ring-primary">
+                                <SelectValue placeholder="Todas" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">Todas as categorias</SelectItem>
+                                <SelectItem value="exchange">Moedas</SelectItem>
+                                <SelectItem value="agricultural">Commodities</SelectItem>
+                                <SelectItem value="material">Materiais</SelectItem>
+                                <SelectItem value="index">Índices</SelectItem>
+                                <SelectItem value="sub-index">Sub-índices</SelectItem>
+                                <SelectItem value="crs">CRS</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    {/* Status */}
+                    <div className="space-y-2">
+                        <label htmlFor="status-filter" className="text-sm font-semibold text-gray-700 dark:text-gray-300">Status</label>
+                        <Select value={statusFilter} onValueChange={setStatusFilter}>
+                            <SelectTrigger className="border-gray-300 dark:border-gray-700 focus:border-primary focus:ring-primary">
+                                <SelectValue placeholder="Todos" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">Todos os status</SelectItem>
+                                <SelectItem value="normal">Normal</SelectItem>
+                                <SelectItem value="edited">Editado</SelectItem>
+                                <SelectItem value="zero">Valor Zero</SelectItem>
+                                <SelectItem value="calculated">Calculado</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
                 </div>
-
-                {/* Filtros */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div className="space-y-2">
-                    <label htmlFor="category-filter" className="text-sm font-semibold text-gray-700 block">
-                      Categoria
-                    </label>
-                    <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                      <SelectTrigger className="border-gray-200 focus:border-purple-500 focus:ring-purple-500">
-                        <SelectValue placeholder="Todas as categorias" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Todas as categorias</SelectItem>
-                        <SelectItem value="exchange">Moedas</SelectItem>
-                        <SelectItem value="agricultural">Commodities</SelectItem>
-                        <SelectItem value="material">Materiais</SelectItem>
-                        <SelectItem value="index">Índices</SelectItem>
-                        <SelectItem value="sub-index">Sub-índices</SelectItem>
-                        <SelectItem value="crs">CRS</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <label htmlFor="status-filter" className="text-sm font-semibold text-gray-700 block">
-                      Status
-                    </label>
-                    <Select value={statusFilter} onValueChange={setStatusFilter}>
-                      <SelectTrigger className="border-gray-200 focus:border-purple-500 focus:ring-purple-500">
-                        <SelectValue placeholder="Todos os status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Todos os status</SelectItem>
-                        <SelectItem value="normal">Normal</SelectItem>
-                        <SelectItem value="edited">Editado</SelectItem>
-                        <SelectItem value="zero">Valor Zero</SelectItem>
-                        <SelectItem value="calculated">Calculado</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="flex items-end">
-                    <Button 
-                      variant="outline" 
-                      onClick={() => {
-                        setSearchTerm('');
-                        setCategoryFilter('all');
-                        setStatusFilter('all');
-                      }}
-                      className="w-full border-gray-200 hover:border-purple-500 hover:text-purple-600"
-                    >
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                      Limpar Filtros
-                    </Button>
-                  </div>
-
-                  <div className="flex items-end">
-                    <div className="w-full bg-gray-50 rounded-lg p-3 text-center">
-                      <div className="text-sm text-gray-600">Total de Ativos</div>
-                      <div className="text-lg font-bold text-gray-900">
-                        {filteredBaseAssets.length + filteredIndices.length}
-                      </div>
+                {/* Botão de Limpar e Resumo Estatístico */}
+                <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="md:col-span-1 flex items-center">
+                        <Button 
+                          variant="outline" 
+                          onClick={() => {
+                            setSearchTerm('');
+                            setCategoryFilter('all');
+                            setStatusFilter('all');
+                          }}
+                          className="w-full"
+                        >
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                          Limpar Filtros
+                        </Button>
                     </div>
-                  </div>
+                    {!isLoading && data.length > 0 && (
+                        <div className="md:col-span-2 grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-muted/50 rounded-lg">
+                            <div className="text-center">
+                                <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                                    {filteredBaseAssets.length + filteredIndices.length}
+                                </div>
+                                <div className="text-xs text-muted-foreground">Ativos Exibidos</div>
+                            </div>
+                            <div className="text-center">
+                                <div className="text-lg font-bold text-yellow-600">
+                                    {[...filteredBaseAssets, ...filteredIndices].filter(a => getAssetStatus(a, editedValues) === 'edited').length}
+                                </div>
+                                <div className="text-xs text-muted-foreground">Editados</div>
+                            </div>
+                            <div className="text-center">
+                                <div className="text-lg font-bold text-red-600">
+                                    {[...filteredBaseAssets, ...filteredIndices].filter(a => getAssetStatus(a, editedValues) === 'zero').length}
+                                </div>
+                                <div className="text-xs text-muted-foreground">Valor Zero</div>
+                            </div>
+                            <div className="text-center">
+                                <div className="text-lg font-bold text-green-600">
+                                    {[...filteredBaseAssets, ...filteredIndices].filter(a => getAssetStatus(a, editedValues) === 'normal').length}
+                                </div>
+                                <div className="text-xs text-muted-foreground">Normais</div>
+                            </div>
+                        </div>
+                    )}
                 </div>
-              </div>
-              
-              {/* Resumo Estatístico */}
-              {!isLoading && data.length > 0 && (
-                <div className="mt-4 p-4 bg-muted/50 rounded-lg">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                    <div className="text-center">
-                      <div className="font-semibold text-lg">{filteredBaseAssets.length + filteredIndices.length}</div>
-                      <div className="text-muted-foreground">Ativos Exibidos</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="font-semibold text-lg text-yellow-600">
-                        {[...filteredBaseAssets, ...filteredIndices].filter(a => getAssetStatus(a, editedValues) === 'edited').length}
-                      </div>
-                      <div className="text-muted-foreground">Editados</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="font-semibold text-lg text-red-600">
-                        {[...filteredBaseAssets, ...filteredIndices].filter(a => getAssetStatus(a, editedValues) === 'zero').length}
-                      </div>
-                      <div className="text-muted-foreground">Valor Zero</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="font-semibold text-lg text-green-600">
-                        {[...filteredBaseAssets, ...filteredIndices].filter(a => getAssetStatus(a, editedValues) === 'normal').length}
-                      </div>
-                      <div className="text-muted-foreground">Normais</div>
-                    </div>
-                  </div>
-                </div>
-              )}
             </CardContent>
           </Card>
 
@@ -1159,3 +1140,5 @@ export default function AuditPage() {
     </>
   );
 }
+
+    
