@@ -1,5 +1,6 @@
 import type { ElementType, ReactNode } from 'react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
+import { cn } from '@/lib/utils';
 
 type PageHeaderProps = {
   title: string;
@@ -10,7 +11,10 @@ type PageHeaderProps = {
 
 export function PageHeader({ title, description, icon: Icon, children }: PageHeaderProps) {
   return (
-    <header className="flex h-auto min-h-16 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b bg-background/95 px-4 sticky top-0 z-30 sm:px-6 py-3">
+    <header className={cn(
+        "flex h-auto min-h-16 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b bg-background/95 px-4 py-3 sm:px-6",
+        "sticky top-0 z-30"
+      )}>
       <div className="flex flex-1 items-center gap-3 min-w-0">
         <SidebarTrigger className="md:hidden" />
         {Icon && <Icon className="h-6 w-6 text-muted-foreground hidden sm:block" />}
