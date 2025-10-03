@@ -18,7 +18,7 @@ import type { jsPDF as jsPDFWithAutoTableType } from 'jspdf-autotable';
 import 'jspdf-autotable';
 import html2canvas from 'html2canvas';
 
-import type { FirestoreQuote, CommodityConfig } from '@/lib/types';
+import type { FirestoreQuote, CommodityConfig, CommodityPriceData } from '@/lib/types';
 import { getCotacoesHistorico, getCommodityConfigs } from '@/lib/data-service';
 import { formatCurrency } from '@/lib/formatters';
 import { Card, CardContent, CardHeader } from './ui/card';
@@ -38,7 +38,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from './ui/button';
-import { Info, FileDown, Loader2 } from 'lucide-react';
+import { Info, FileDown, Loader2, TrendingUp, TrendingDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { HistoricalPriceTable } from './historical-price-table';
 import { AssetDetailModal } from './asset-detail-modal';
 import { cn } from '@/lib/utils';
@@ -62,7 +62,7 @@ const timeRangeToDays: Record<TimeRange, number> = {
   '90d': 90,
 };
 
-function DailyDetailsTable({ quote, asset }: { quote: FirestoreQuote | null, asset?: CommodityConfig }) {
+function DailyDetailsTable({ quote, asset }: { quote: FirestoreQuote | null, asset?: CommodityPriceData }) {
     if (!quote) return null;
 
     const details = [
@@ -151,7 +151,7 @@ export function HistoricalAnalysis() {
     return assets.find(a => a.id === selectedAssetId);
   }, [assets, selectedAssetId]);
 
-  const { chartData, latestQuote } = useMemo(() => {
+  const { chartData, latestQuote, mainAssetData } = useMemo(() => {
     const sortedData = [...data].sort((a, b) => {
         const dateA = typeof a.timestamp === 'number' ? a.timestamp : parseISO(a.timestamp as any).getTime();
         const dateB = typeof b.timestamp === 'number' ? b.timestamp : parseISO(b.timestamp as any).getTime();
@@ -170,11 +170,19 @@ export function HistoricalAnalysis() {
       
     const latest = data.length > 0 ? data[0] : null;
 
-    return { chartData: chartPoints, latestQuote: latest };
-  }, [data, timeRange]);
+    const mainAsset = selectedAssetConfig && latest ? {
+        ...selectedAssetConfig,
+        price: latest.valor ?? latest.ultimo,
+        change: latest.variacao_pct ?? 0,
+        absoluteChange: (latest.valor ?? latest.ultimo) - (latest.fechamento_anterior ?? (latest.valor ?? latest.ultimo)),
+        lastUpdated: latest.data,
+    } : null;
+
+    return { chartData: chartPoints, latestQuote: latest, mainAssetData: mainAsset };
+  }, [data, timeRange, selectedAssetConfig]);
   
   const handleExportPdf = async () => {
-    if (!selectedAssetConfig || !chartRef.current) return;
+    if (!selectedAssetConfig || !chartRef.current || !latestQuote || !mainAssetData) return;
     setIsExporting(true);
 
     try {
@@ -184,111 +192,113 @@ export function HistoricalAnalysis() {
         const doc = new jsPDF() as jsPDFWithAutoTableType;
         const timeRangeText = { '7d': 'Últimos 7 dias', '30d': 'Últimos 30 dias', '90d': 'Últimos 90 dias' }[timeRange];
         const generationDate = format(new Date(), "dd 'de' MMMM 'de' yyyy, HH:mm", { locale: ptBR });
+        const changeColor = mainAssetData.change >= 0 ? [39, 174, 96] : [192, 57, 43];
 
-        // Cabeçalho
+        // --- CABEÇALHO DO DOCUMENTO ---
         doc.setFontSize(18);
-        doc.setTextColor(40);
+        doc.setTextColor(34, 47, 62);
         doc.setFont('helvetica', 'bold');
-        doc.text(`Relatório de Ativo: ${selectedAssetConfig.name}`, 14, 22);
+        doc.text(`${selectedAssetConfig.name} (${selectedAssetConfig.id.toUpperCase()})`, 14, 22);
 
-        doc.setFontSize(11);
-        doc.setTextColor(100);
-        doc.setFont('helvetica', 'normal');
-        doc.text(`Período de referência: ${timeRangeText}`, 14, 28);
-        doc.text(`Gerado em: ${generationDate}`, 14, 34);
+        doc.setFontSize(22);
+        doc.setFont('helvetica', 'bold');
+        doc.text(formatCurrency(mainAssetData.price, mainAssetData.currency, mainAssetData.id), 14, 32);
 
-        // Imagem do Gráfico
+        doc.setFontSize(12);
+        doc.setTextColor(changeColor[0], changeColor[1], changeColor[2]);
+        doc.text(
+            `${mainAssetData.absoluteChange >= 0 ? '+' : ''}${formatCurrency(mainAssetData.absoluteChange, mainAssetData.currency, mainAssetData.id)} (${mainAssetData.change >= 0 ? '+' : ''}${mainAssetData.change.toFixed(2)}%)`, 
+            14, 
+            40
+        );
+
+        doc.setFontSize(9);
+        doc.setTextColor(108, 122, 137);
+        doc.text(`Dados de ${latestQuote.data} | Fonte: Investing.com`, 14, 45);
+
+
+        // --- IMAGEM DO GRÁFICO ---
         const imgProps = doc.getImageProperties(imgData);
         const pdfWidth = doc.internal.pageSize.getWidth();
-        const imgWidth = pdfWidth - 28; // Margens de 14 de cada lado
+        const imgWidth = pdfWidth - 28;
         const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
-        doc.addImage(imgData, 'PNG', 14, 45, imgWidth, imgHeight);
+        doc.addImage(imgData, 'PNG', 14, 55, imgWidth, imgHeight);
 
-        let finalY = 45 + imgHeight + 10;
+        let finalY = 55 + imgHeight + 10;
+        
+        // --- TABELA DE DETALHES DO DIA ---
+        const detailsToExport = [
+            { label: 'Fechamento Anterior', value: latestQuote.fechamento_anterior },
+            { label: 'Abertura', value: latestQuote.abertura },
+            { label: 'Variação Diária', value: `${formatCurrency(latestQuote.minima, mainAssetData.currency)} - ${formatCurrency(latestQuote.maxima, mainAssetData.currency)}` },
+            { label: 'Volume', value: latestQuote.volume?.toLocaleString('pt-BR') },
+            { label: 'Rentabilidade Média', value: formatCurrency(latestQuote.rent_media, 'BRL') },
+            { label: 'Valor (tonelada)', value: formatCurrency(latestQuote.ton, 'BRL') },
+        ].filter(item => item.value !== null && item.value !== undefined && item.value !== 'N/A');
 
-        // Tabela de Detalhes do Dia
-        if (latestQuote) {
-            const details = [
-                { label: 'Fechamento Anterior', value: latestQuote.fechamento_anterior, type: 'currency' },
-                { label: 'Abertura', value: latestQuote.abertura, type: 'currency' },
-                { label: 'Máxima do Dia', value: latestQuote.maxima, type: 'currency' },
-                { label: 'Mínima do Dia', value: latestQuote.minima, type: 'currency' },
-            ].filter(item => item.value !== null && item.value !== undefined);
+        if (detailsToExport.length > 0) {
+            const tableBody = detailsToExport.map(item => [item.label, item.value]);
+            const half = Math.ceil(tableBody.length / 2);
+            const firstHalf = tableBody.slice(0, half);
+            const secondHalf = tableBody.slice(half);
 
-            const formatValue = (value: any, type: string) => {
-                if (value === null || value === undefined) return 'N/A';
-                if (type === 'currency') return formatCurrency(value, selectedAssetConfig?.currency || 'BRL');
-                return String(value);
-            };
-
-            const tableBody = details.map(item => [item.label, formatValue(item.value, item.type)]);
+            doc.autoTable({
+                startY: finalY,
+                body: firstHalf,
+                theme: 'plain',
+                styles: { fontSize: 10, cellPadding: 2 },
+                columnStyles: { 0: { fontStyle: 'bold' }, 1: { halign: 'right' } }
+            });
 
              doc.autoTable({
                 startY: finalY,
-                head: [[`Detalhes do Dia (${latestQuote.data})`, 'Valor']],
-                body: tableBody,
-                theme: 'striped',
-                headStyles: { fillColor: [34, 47, 62] },
+                body: secondHalf,
+                theme: 'plain',
+                styles: { fontSize: 10, cellPadding: 2 },
+                columnStyles: { 0: { fontStyle: 'bold' }, 1: { halign: 'right' } },
+                margin: { left: doc.internal.pageSize.getWidth() / 2 + 5 },
             });
             finalY = (doc as any).lastAutoTable.finalY + 10;
         }
 
+
         // Seção Específica para UCS ASE
-        if (selectedAssetConfig.id === 'ucs_ase' && latestQuote) {
-            const componentes = latestQuote.componentes || {};
-            const valoresOriginais = latestQuote.valores_originais || {};
-            const conversoes = latestQuote.conversoes || {};
-            
-            // Tabela de Composição
+        if (selectedAssetConfig.id === 'ucs_ase' && latestQuote.componentes) {
             doc.autoTable({
                 startY: finalY,
-                head: [['Composição do Valor Final', '']],
+                head: [['Composição do Valor Final (BRL)', '']],
                 body: [
-                    ['UCS Original (BRL)', formatCurrency(componentes.ucs_original_brl || 0, 'BRL', 'ucs')],
+                    ['UCS Original', formatCurrency(latestQuote.valores_originais?.ucs || 0, 'BRL', 'ucs')],
                     ['Fórmula Aplicada', latestQuote.formula || 'UCS × 2'],
-                    ['Resultado Final (BRL)', formatCurrency(componentes.resultado_final_brl || 0, 'BRL', 'ucs_ase')]
+                    ['Resultado Final', formatCurrency(latestQuote.componentes.resultado_final_brl || 0, 'BRL', 'ucs_ase')]
                 ],
                 theme: 'grid',
                 headStyles: { fillColor: [34, 47, 62] },
-                styles: { fontStyle: 'bold', cellPadding: 2 },
-                bodyStyles: { fontStyle: 'normal' },
-                didParseCell: (data) => {
-                    if(data.row.index === 2) {
-                       data.cell.styles.fontStyle = 'bold';
-                       data.cell.styles.fillColor = '#f0f9ff';
-                    }
-                }
             });
-            finalY = (doc as any).lastAutoTable.finalY + 10;
-            
-            // Tabelas de Conversão
-            const conversionBodyUSD = [
-                ['Cotação (USD/BRL)', formatCurrency(valoresOriginais.cotacao_usd || 0, 'BRL', 'usd')],
-                ['Valor Final (USD)', formatCurrency(componentes.resultado_final_usd || 0, 'USD', 'ucs_ase')],
-                ['Cálculo', conversoes.brl_para_usd || 'N/A']
-            ];
-             const conversionBodyEUR = [
-                ['Cotação (EUR/BRL)', formatCurrency(valoresOriginais.cotacao_eur || 0, 'BRL', 'eur')],
-                ['Valor Final (EUR)', formatCurrency(componentes.resultado_final_eur || 0, 'EUR', 'ucs_ase')],
-                ['Cálculo', conversoes.brl_para_eur || 'N/A']
-            ];
+            finalY = (doc as any).lastAutoTable.finalY;
 
             doc.autoTable({
                 startY: finalY,
-                head: [['Conversão para Dólar (USD)', '']],
-                body: conversionBodyUSD,
+                head: [['Conversão para USD', '']],
+                body: [
+                  ['Cotação USD/BRL', formatCurrency(latestQuote.valores_originais?.cotacao_usd || 0, 'BRL', 'usd')],
+                  ['Valor Final (USD)', formatCurrency(latestQuote.componentes.resultado_final_usd || 0, 'USD', 'ucs_ase')],
+                ],
                 theme: 'grid',
                 headStyles: { fillColor: [39, 174, 96] }, // Verde
             });
-            doc.autoTable({
+
+             doc.autoTable({
                 startY: finalY,
-                head: [['Conversão para Euro (EUR)', '']],
-                body: conversionBodyEUR,
+                head: [['Conversão para EUR', '']],
+                body: [
+                   ['Cotação EUR/BRL', formatCurrency(latestQuote.valores_originais?.cotacao_eur || 0, 'BRL', 'eur')],
+                   ['Valor Final (EUR)', formatCurrency(latestQuote.componentes.resultado_final_eur || 0, 'EUR', 'ucs_ase')],
+                ],
                 theme: 'grid',
                 headStyles: { fillColor: [41, 128, 185] }, // Azul
                 margin: { left: doc.internal.pageSize.getWidth() / 2 + 5 },
             });
-
         }
         
         doc.save(`relatorio_${selectedAssetConfig.id}_${format(new Date(), 'yyyyMMdd')}.pdf`);
@@ -360,6 +370,7 @@ export function HistoricalAnalysis() {
                   fontSize={12}
                   tickLine={false}
                   axisLine={false}
+                  domain={['dataMin', 'dataMax']}
                   tickFormatter={(value) => formatCurrency(value as number, selectedAssetConfig?.currency || 'BRL', selectedAssetConfig?.id)}
                 />
                 <Tooltip
@@ -395,7 +406,7 @@ export function HistoricalAnalysis() {
               <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
               <p>A tabela abaixo mostra os dados detalhados para o dia mais recente do período selecionado.</p>
             </div>
-            {isLoading ? <TableSkeleton /> : <DailyDetailsTable quote={latestQuote} asset={selectedAssetConfig} />}
+            {isLoading ? <TableSkeleton /> : <DailyDetailsTable quote={latestQuote} asset={mainAssetData!} />}
           </TabsContent>
           <TabsContent value="history" className="pt-4">
              <HistoricalPriceTable 
@@ -404,8 +415,15 @@ export function HistoricalAnalysis() {
                 isLoading={isLoading} 
                 onRowClick={(assetId) => {
                     const asset = assets.find(a => a.id === assetId);
-                    if (asset) {
-                        setSelectedAssetForModal(asset);
+                    if (asset && mainAssetData) {
+                        const fullAssetData = {
+                            ...asset,
+                            price: mainAssetData.price,
+                            change: mainAssetData.change,
+                            absoluteChange: mainAssetData.absoluteChange,
+                            lastUpdated: mainAssetData.lastUpdated,
+                        };
+                        setSelectedAssetForModal(fullAssetData);
                     }
                 }}
               />
