@@ -200,65 +200,57 @@ ErrorState.displayName = 'ErrorState';
  */
 const AssetInfo = memo<{
   asset: CommodityPriceData;
-  isLoading: boolean;
-}>(({ asset, isLoading }) => {
+}>(({ asset }) => {
   const changeColor = asset.change >= 0 ? 'text-emerald-600' : 'text-red-600';
   const ChangeIcon = asset.change >= 0 ? ArrowUp : ArrowDown;
   const TrendIcon = asset.change >= 0 ? TrendingUp : TrendingDown;
 
   return (
-    <div className="flex flex-col gap-6 border-b md:border-b-0 md:border-r md:pr-6 pb-6 mb-6 md:pb-0 md:mb-0">
-      {/* Preço Principal */}
-      <div className="flex flex-col gap-4">
+    <div className="space-y-6">
+      {/* Bloco de Preço Principal */}
+      <div className="flex flex-col gap-2">
         <div className="flex items-baseline gap-2">
-          <span className="text-3xl font-bold font-mono">
-            {isLoading ? (
-              <div className="h-8 w-32 bg-muted animate-pulse rounded" />
-            ) : (
-              formatCurrency(asset.price, asset.currency, asset.id)
-            )}
+          <span className="text-4xl font-bold font-mono">
+            {formatCurrency(asset.price, asset.currency, asset.id)}
           </span>
           <span className="text-sm text-muted-foreground">{asset.unit}</span>
         </div>
 
-        {/* Mudança de Preço */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4">
           <div className={cn('flex items-center text-sm font-semibold', changeColor)}>
-            <ChangeIcon className="h-4 w-4 mr-1" aria-hidden="true" />
+            <ChangeIcon className="h-4 w-4 mr-1" />
             <span>{asset.change.toFixed(2)}%</span>
-            <span className="mx-1" aria-hidden="true">/</span>
+            <span className="mx-1">/</span>
             <span>{formatCurrency(asset.absoluteChange, asset.currency, asset.id)}</span>
             <span className="text-xs text-muted-foreground ml-1">(24h)</span>
           </div>
-          <TrendIcon className={cn("h-4 w-4", changeColor)} aria-hidden="true" />
+          <TrendIcon className={cn("h-5 w-5", changeColor)} />
         </div>
       </div>
 
-      {/* Informações do Ativo */}
-      <div className="space-y-3 text-sm text-muted-foreground mt-auto">
-        <div className="flex items-center gap-2">
-          <span className="font-semibold text-foreground">Categoria:</span>
-          <Badge variant="secondary" className="capitalize">
-            {asset.category}
-          </Badge>
+      {/* Bloco de Informações Adicionais */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm text-muted-foreground border-t pt-4">
+        <div className="space-y-1">
+          <p className="font-semibold text-foreground">Categoria</p>
+          <Badge variant="secondary" className="capitalize">{asset.category}</Badge>
         </div>
         
         {isCalculatedAsset(asset) && (
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-foreground">Tipo:</span>
+          <div className="space-y-1">
+            <p className="font-semibold text-foreground">Tipo</p>
             <Badge variant="outline">Índice Calculado</Badge>
           </div>
         )}
         
-        <div className="flex items-center gap-2">
-          <span className="font-semibold text-foreground">Moeda:</span>
-          <span className="font-mono">{asset.currency}</span>
+        <div className="space-y-1">
+          <p className="font-semibold text-foreground">Moeda</p>
+          <p className="font-mono">{asset.currency}</p>
         </div>
 
         {asset.lastUpdated && asset.lastUpdated !== 'N/A' && (
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-foreground">Última Atualização:</span>
-            <span className="font-mono text-xs">{asset.lastUpdated}</span>
+          <div className="space-y-1">
+            <p className="font-semibold text-foreground">Atualização</p>
+            <p className="font-mono text-xs">{asset.lastUpdated}</p>
           </div>
         )}
       </div>
@@ -279,7 +271,6 @@ const PriceChart = memo<{
   const chartData = useMemo(() => {
     if (!data.length) return [];
     
-    // Adiciona linha de referência para o preço atual
     const currentPrice = asset.price;
     return data.map(point => ({
       ...point,
@@ -349,7 +340,6 @@ const PriceChart = memo<{
                 backgroundColor: "hsl(var(--background))",
                 border: "1px solid hsl(var(--border))",
                 borderRadius: "var(--radius)",
-                boxShadow: "var(--shadow-lg)",
               }}
               formatter={(value: any) => [
                 formatCurrency(Number(value), asset.currency, asset.id), 
@@ -398,12 +388,10 @@ export const AssetDetailModal = memo<AssetDetailModalProps>(({
   const isCalculated = isCalculatedAsset(asset);
   const isUcsAse = isUcsAseAsset(asset);
 
-  // Função para buscar dados históricos com retry
   const fetchHistoricalData = useCallback(async (retryCount = 0) => {
     setLoadingState(prev => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      // Busca a cotação mais recente para os detalhes e o histórico para o gráfico
       const [latest, history] = await Promise.all([
         getQuoteByDate(asset.id, new Date()),
         isUcsAse ? Promise.resolve([]) : getCotacoesHistorico(asset.id, TABLE_DAYS)
@@ -428,19 +416,16 @@ export const AssetDetailModal = memo<AssetDetailModalProps>(({
     }
   }, [asset.id, isUcsAse]);
 
-  // Effect para buscar dados quando modal abre
   useEffect(() => {
     if (isOpen) {
       fetchHistoricalData();
     } else {
-      // Reset state quando modal fecha
       setHistoricalData([]);
       setLatestQuote(null);
       setLoadingState({ isLoading: true, error: null, retryCount: 0 });
     }
   }, [isOpen, fetchHistoricalData]);
 
-  // Dados do gráfico otimizados
   const chartData = useMemo((): ChartDataPoint[] => {
     if (!historicalData.length) return [];
 
@@ -459,10 +444,9 @@ export const AssetDetailModal = memo<AssetDetailModalProps>(({
           timestamp: dateObject.getTime()
         };
       })
-      .sort((a, b) => a.timestamp - b.timestamp); // Ordem cronológica
+      .sort((a, b) => a.timestamp - b.timestamp);
   }, [historicalData]);
 
-  // Função de retry
   const handleRetry = useCallback(() => {
     fetchHistoricalData(0);
   }, [fetchHistoricalData]);
@@ -508,11 +492,11 @@ export const AssetDetailModal = memo<AssetDetailModalProps>(({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent 
-        className="max-w-5xl w-full"
+        className="max-w-4xl w-full"
         aria-describedby="asset-description"
       >
         <DialogHeader>
-          <div className="flex items-center gap-3 mb-1">
+          <div className="flex items-center gap-4 mb-2">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-muted border">
               <AssetIcon asset={asset} className="h-6 w-6 text-muted-foreground" />
             </div>
@@ -526,12 +510,10 @@ export const AssetDetailModal = memo<AssetDetailModalProps>(({
         </DialogHeader>
 
         <DialogBody>
-          <div className="grid lg:grid-cols-[320px_1fr] h-full">
-            <AssetInfo asset={asset} isLoading={loadingState.isLoading && !latestQuote} />
-            <div className="flex flex-col lg:pl-6">
-              {renderContent()}
+            <div className="space-y-6">
+                <AssetInfo asset={asset} />
+                {renderContent()}
             </div>
-          </div>
         </DialogBody>
       </DialogContent>
     </Dialog>
