@@ -104,7 +104,7 @@ export function AssetEditModal({ isOpen, onOpenChange, onSave, asset, allAssets 
   const currentPriceString = form.watch('price');
   const numericPrice = typeof currentPriceString === 'string' 
     ? parseFloat(currentPriceString.replace(/\./g, '').replace(',', '.')) 
-    : currentPriceString;
+    : Number(currentPriceString);
   
   const hasChanges = numericPrice !== asset.price;
   const currentDate = new Date().toLocaleString('pt-BR');
@@ -130,7 +130,7 @@ export function AssetEditModal({ isOpen, onOpenChange, onSave, asset, allAssets 
         current_carbono_crs: allCurrentValues.carbono_crs || 0,
         current_ch2o_agua: allCurrentValues.ch2o_agua || 0,
         current_custo_agua: allCurrentValues.custo_agua || 0,
-        current_Agua_CRS: allCurrentValues.Agua_CRS || 0,
+        current_agua_crs: allCurrentValues.Agua_CRS || 0,
         current_valor_uso_solo: allCurrentValues.valor_uso_solo || 0,
         current_pdm: allCurrentValues.pdm || 0,
         current_ucs: allCurrentValues.ucs || 0,

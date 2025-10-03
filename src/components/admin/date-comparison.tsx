@@ -290,7 +290,7 @@ export function DateComparison({ currentDate, currentData }: DateComparisonProps
               body: tableRows,
               theme: 'grid',
               headStyles: { fillColor: headerColor, textColor: 255, fontStyle: 'bold' },
-              didDrawCell: (data) => {
+              didDrawCell: (data: any) => {
                   if (data.section === 'body' && data.column.index === 4) { // Coluna de Variação %
                       const text = data.cell.text[0];
                       if (text.includes('+')) {
