@@ -16,7 +16,7 @@ import type { FirestoreQuote, CommodityConfig } from '@/lib/types';
 import { getCotacoesHistorico, getCommodityConfigs } from '@/lib/data-service';
 import { formatCurrency } from '@/lib/formatters';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Select,
@@ -194,45 +194,45 @@ export function HistoricalAnalysis() {
   }, [data, timeRange]);
 
   return (
-    <div className="space-y-6">
-        <Card>
-            <CardHeader>
-                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                <div className="flex-1">
-                    <CardTitle>Performance Histórica</CardTitle>
-                    <CardDescription>
-                    Evolução do valor do ativo selecionado no período.
-                    </CardDescription>
-                </div>
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
-                    <Select value={selectedAssetId} onValueChange={setSelectedAssetId}>
-                    <SelectTrigger className="w-full sm:w-[200px]">
-                        <SelectValue placeholder="Selecione um ativo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {assets.map(asset => (
-                        <SelectItem key={asset.id} value={asset.id}>{asset.name}</SelectItem>
-                        ))}
-                    </SelectContent>
-                    </Select>
-                    <Tabs 
-                    defaultValue={timeRange} 
-                    className="w-full sm:w-auto" 
-                    onValueChange={(value) => setTimeRange(value as TimeRange)}
-                    >
-                    <TabsList className="grid w-full grid-cols-3">
-                        <TabsTrigger value="7d">7D</TabsTrigger>
-                        <TabsTrigger value="30d">30D</TabsTrigger>
-                        <TabsTrigger value="90d">90D</TabsTrigger>
-                    </TabsList>
-                    </Tabs>
-                </div>
-                </div>
-            </CardHeader>
-            <CardContent className="h-72">
-                {isLoading ? (
+    <Card>
+        <CardHeader>
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+            <div className="flex-1">
+                <CardTitle>Performance Histórica do Ativo</CardTitle>
+                <CardDescription>
+                Selecione um ativo e um período para visualizar a evolução do valor e os dados detalhados.
+                </CardDescription>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
+                <Select value={selectedAssetId} onValueChange={setSelectedAssetId}>
+                <SelectTrigger className="w-full sm:w-[200px]">
+                    <SelectValue placeholder="Selecione um ativo" />
+                </SelectTrigger>
+                <SelectContent>
+                    {assets.map(asset => (
+                    <SelectItem key={asset.id} value={asset.id}>{asset.name}</SelectItem>
+                    ))}
+                </SelectContent>
+                </Select>
+                <Tabs 
+                defaultValue={timeRange} 
+                className="w-full sm:w-auto" 
+                onValueChange={(value) => setTimeRange(value as TimeRange)}
+                >
+                <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="7d">7D</TabsTrigger>
+                    <TabsTrigger value="30d">30D</TabsTrigger>
+                    <TabsTrigger value="90d">90D</TabsTrigger>
+                </TabsList>
+                </Tabs>
+            </div>
+            </div>
+        </CardHeader>
+        <CardContent className="space-y-8">
+            <div className="h-72">
+            {isLoading ? (
                 <ChartSkeleton />
-                ) : (
+            ) : (
                 <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -268,21 +268,14 @@ export function HistoricalAnalysis() {
                     />
                     </LineChart>
                 </ResponsiveContainer>
-                )}
-            </CardContent>
-        </Card>
-
-        <Card>
-            <CardHeader>
-                <CardTitle>Dados Históricos Detalhados</CardTitle>
-                <CardDescription>
-                    Tabela completa com todos os dados diários para o ativo <span className="font-bold">{selectedAsset?.name || 'selecionado'}</span>.
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
+            )}
+            </div>
+            <div>
+                 <h3 className="text-lg font-semibold mb-2">Dados Históricos Detalhados</h3>
+                 <p className="text-sm text-muted-foreground mb-4">Tabela completa com todos os dados diários para o ativo <span className="font-bold">{selectedAsset?.name || 'selecionado'}</span>.</p>
                 <HistoricalDataTable data={data} asset={selectedAsset} isLoading={isLoading} />
-            </CardContent>
-        </Card>
-    </div>
+            </div>
+        </CardContent>
+    </Card>
   );
 }
