@@ -207,7 +207,7 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
         onReject={handleSignOut}
       />
       <div className={lgpdConsent.required && !lgpdConsent.checked ? 'blur-sm pointer-events-none' : ''}>
-        <Sidebar>
+        <Sidebar variant="inset">
           <div className="flex flex-col h-full">
             <SidebarHeader>
               <div className="flex h-10 items-center justify-center p-2 group-data-[collapsible=icon]:hidden">
