@@ -37,20 +37,20 @@ export function LgpdConsentModal({ isOpen, onAccept, onReject }: LgpdConsentModa
                 <Shield className="h-8 w-8 text-primary" />
             </div>
           </div>
-          <DialogTitle className="text-center text-2xl font-bold">Termos de Uso e Privacidade</DialogTitle>
+          <DialogTitle className="text-center text-2xl font-bold">Termos de Uso e Privacidade da BMV</DialogTitle>
           <DialogDescription className="text-center text-muted-foreground pt-2">
-            Para continuar, você precisa ler e aceitar nossos termos de uso e política de privacidade de dados, em conformidade com a LGPD.
+            Para continuar, você precisa ler e aceitar nossa política de privacidade e tratamento de dados, em conformidade com a LGPD.
           </DialogDescription>
         </DialogHeader>
         
         <div className="py-4 text-sm text-muted-foreground space-y-3">
             <p>
-                Ao usar esta plataforma, você concorda com a coleta e uso de suas informações, como nome e e-mail, para fins de autenticação, segurança e comunicação.
+                Ao usar esta plataforma, você concorda com a coleta e uso de suas informações pela BMV para fins de autenticação, segurança, comunicação e melhoria contínua dos nossos serviços.
             </p>
             <p>
                 Garantimos que seus dados serão tratados com confidencialidade e segurança. Para mais detalhes, consulte nossa{' '}
-                <Link href="/privacy-policy" target="_blank" className="underline text-primary">
-                    Política de Privacidade
+                <Link href="/privacy-policy" target="_blank" className="underline text-primary font-semibold">
+                    Política de Privacidade completa
                 </Link>.
             </p>
         </div>
