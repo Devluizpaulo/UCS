@@ -113,6 +113,13 @@
 }
 
 @layer utilities {
+  .animate-flash-green {
+    animation: flash-green 1.5s ease-out;
+  }
+  .animate-flash-red {
+    animation: flash-red 1.5s ease-out;
+  }
+
   @keyframes spin-around {
       from {
           transform: rotate(0deg);
