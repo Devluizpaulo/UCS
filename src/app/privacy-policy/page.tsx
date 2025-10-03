@@ -1,9 +1,14 @@
 
+'use client';
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Shield } from "lucide-react";
-import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Shield, ArrowLeft } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export default function PrivacyPolicyPage() {
+  const router = useRouter();
+
   return (
     <div className="flex items-center justify-center min-h-screen bg-muted/40 p-4">
         <div className="w-full max-w-4xl py-12">
@@ -77,7 +82,7 @@ export default function PrivacyPolicyPage() {
                     <section>
                         <h2 className="text-foreground font-semibold">7. Uso de Cookies</h2>
                         <p>
-                            Nossa plataforma utiliza cookies essenciais para o funcionamento, como os de autenticação e segurança. Também usamos cookies para análise de tráfego, que nos ajudam a melhorar o serviço. Você pode gerenciar suas preferências de cookies através do nosso <Link href="/#cookie-banner" className="text-primary">banner de consentimento</Link>.
+                            Nossa plataforma utiliza cookies essenciais para o funcionamento, como os de autenticação e segurança. Também usamos cookies para análise de tráfego, que nos ajudam a melhorar o serviço. Você pode gerenciar suas preferências de cookies através do nosso banner de consentimento.
                         </p>
                     </section>
                     
@@ -94,6 +99,13 @@ export default function PrivacyPolicyPage() {
                             Se você tiver alguma dúvida sobre esta Política de Privacidade, entre em contato conosco pelo e-mail: <a href="mailto:privacidade@bmv.digital" className="text-primary">privacidade@bmv.digital</a>.
                         </p>
                     </section>
+
+                    <div className="pt-8 flex justify-center">
+                        <Button onClick={() => router.back()}>
+                            <ArrowLeft className="mr-2 h-4 w-4" />
+                            Voltar
+                        </Button>
+                    </div>
                 </CardContent>
             </Card>
         </div>
