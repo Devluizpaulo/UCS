@@ -580,6 +580,24 @@ export default function AuditPage() {
     const allBaseAssets = dataWithEdits.filter(asset => !calculatedAssetIds.has(asset.id));
     const calculatedAssets = dataWithEdits.filter(asset => calculatedAssetIds.has(asset.id));
     
+    // Custom sort order for base assets
+    const sortOrder = ['usd', 'eur'];
+    allBaseAssets.sort((a, b) => {
+      const aIndex = sortOrder.indexOf(a.id);
+      const bIndex = sortOrder.indexOf(b.id);
+
+      if (aIndex !== -1 && bIndex !== -1) {
+        return aIndex - bIndex; // Both are in sortOrder
+      }
+      if (aIndex !== -1) {
+        return -1; // a is in sortOrder, b is not
+      }
+      if (bIndex !== -1) {
+        return 1; // b is in sortOrder, a is not
+      }
+      return a.name.localeCompare(b.name); // Neither are in sortOrder, sort alphabetically
+    });
+
     const dataMap = new Map(dataWithEdits.map(item => [item.id, item.price]));
     const usdPrice = dataMap.get('usd') || 0;
     const eurPrice = dataMap.get('eur') || 0;
@@ -1144,5 +1162,3 @@ export default function AuditPage() {
     </>
   );
 }
-
-    
