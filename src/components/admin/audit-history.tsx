@@ -161,7 +161,7 @@ export function AuditHistory({ targetDate, logs, isLoading = false }: AuditHisto
                             </span>
                           </div>
                           <div className="text-xs text-muted-foreground">
-                            Variação: {((log.newValue - log.oldValue) / log.oldValue * 100).toFixed(2)}%
+                            Variação: {((log.newValue - log.oldValue) / (log.oldValue || 1) * 100).toFixed(2)}%
                           </div>
                         </div>
                       ) : (

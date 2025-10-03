@@ -1134,8 +1134,6 @@ export default function AuditPage() {
               {/* Exportação de Dados */}
               <AuditExport 
                 currentDate={targetDate}
-                currentData={data}
-                auditLogs={auditLogs}
               />
 
               {/* Histórico de Auditoria */}

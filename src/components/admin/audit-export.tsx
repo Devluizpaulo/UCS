@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -12,33 +11,30 @@ import { Download, FileText, Table, CalendarIcon, Loader2 } from 'lucide-react';
 import { format, subDays, startOfMonth, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { formatCurrency } from '@/lib/formatters';
 import type { CommodityPriceData } from '@/lib/types';
 import type { AuditLogEntry } from './audit-history';
+import { getCommodityPricesByDate } from '@/lib/data-service';
+import { getAuditLogsForPeriod } from '@/lib/audit-log-service';
 
 interface ExportOptions {
   format: 'csv' | 'json' | 'pdf';
   includeAssetData: boolean;
   includeAuditLogs: boolean;
   includeCalculations: boolean;
-  dateRange: 'single' | 'range' | 'month';
   startDate?: Date;
   endDate?: Date;
 }
 
 interface AuditExportProps {
   currentDate: Date;
-  currentData: CommodityPriceData[];
-  auditLogs: AuditLogEntry[];
 }
 
-export function AuditExport({ currentDate, currentData, auditLogs }: AuditExportProps) {
+export function AuditExport({ currentDate }: AuditExportProps) {
   const [exportOptions, setExportOptions] = useState<ExportOptions>({
     format: 'csv',
     includeAssetData: true,
     includeAuditLogs: true,
     includeCalculations: false,
-    dateRange: 'single',
     startDate: currentDate,
     endDate: currentDate
   });
@@ -61,153 +57,120 @@ export function AuditExport({ currentDate, currentData, auditLogs }: AuditExport
           downloadJSON(exportData);
           break;
         case 'pdf':
-          await generatePDF(exportData);
+          // PDF generation can be implemented here
+          alert('Exportação em PDF será implementada em breve.');
           break;
       }
     } catch (error) {
       console.error('Export error:', error);
+      alert('Ocorreu um erro durante a exportação.');
     } finally {
       setIsExporting(false);
     }
   };
 
   const generateExportData = async () => {
+    const { startDate, endDate } = exportOptions;
+    if (!startDate || !endDate) return {};
+
     const data: any = {
       exportDate: new Date().toISOString(),
       dateRange: {
-        start: exportOptions.startDate?.toISOString(),
-        end: exportOptions.endDate?.toISOString(),
-        type: exportOptions.dateRange
+        start: startDate.toISOString(),
+        end: endDate.toISOString(),
       }
     };
 
-    if (exportOptions.includeAssetData) {
-      data.assets = currentData.map(asset => ({
-        id: asset.id,
-        name: asset.name,
-        price: asset.price,
-        currency: asset.currency,
-        category: asset.category,
-        sourceUrl: asset.sourceUrl,
-        lastUpdated: asset.lastUpdated
-      }));
+    if (exportOptions.includeAssetData || exportOptions.includeCalculations) {
+      const dateArray: Date[] = [];
+      let currentDate = new Date(startDate);
+      while (currentDate <= endDate) {
+        dateArray.push(new Date(currentDate));
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+      
+      const pricePromises = dateArray.map(date => getCommodityPricesByDate(date));
+      const pricesByDate = await Promise.all(pricePromises);
+      
+      if (exportOptions.includeAssetData) {
+        data.asset_data = pricesByDate.flat();
+      }
+      if (exportOptions.includeCalculations) {
+        data.calculated_indices = pricesByDate.flat().filter(
+          asset => asset.category === 'index' || asset.category === 'sub-index' || asset.category === 'main-index'
+        );
+      }
     }
 
     if (exportOptions.includeAuditLogs) {
-      data.auditLogs = auditLogs.map(log => ({
-        id: log.id,
-        timestamp: log.timestamp.toISOString(),
-        action: log.action,
-        assetId: log.assetId,
-        assetName: log.assetName,
-        oldValue: log.oldValue,
-        newValue: log.newValue,
-        user: log.user,
-        details: log.details,
-        affectedAssets: log.affectedAssets
-      }));
-    }
-
-    if (exportOptions.includeCalculations) {
-      // Adiciona dados de cálculos e rentabilidades
-      const calculatedAssets = currentData.filter(asset => 
-        asset.category === 'index' || asset.category === 'sub-index'
-      );
-      
-      data.calculations = calculatedAssets.map(asset => ({
-        id: asset.id,
-        name: asset.name,
-        value: asset.price,
-        currency: asset.currency,
-        category: asset.category
-      }));
+      data.audit_logs = await getAuditLogsForPeriod(startDate, endDate);
     }
 
     return data;
   };
 
   const downloadCSV = (data: any) => {
-    let csvContent = '';
+    let csvContent = 'data:text/csv;charset=utf-8,';
     
-    if (exportOptions.includeAssetData && data.assets) {
+    if (exportOptions.includeAssetData && data.asset_data) {
       csvContent += 'DADOS DOS ATIVOS\n';
-      csvContent += 'ID,Nome,Valor,Moeda,Categoria,Fonte,Última Atualização\n';
+      csvContent += 'Data,ID,Nome,Valor,Moeda,Categoria\n';
       
-      data.assets.forEach((asset: any) => {
-        csvContent += `${asset.id},${asset.name},${asset.price},${asset.currency},${asset.category},${asset.sourceUrl || ''},${asset.lastUpdated || ''}\n`;
+      data.asset_data.forEach((asset: CommodityPriceData) => {
+        csvContent += `${asset.lastUpdated},${asset.id},"${asset.name}",${asset.price},${asset.currency},${asset.category}\n`;
       });
       
       csvContent += '\n';
     }
 
-    if (exportOptions.includeAuditLogs && data.auditLogs) {
+    if (exportOptions.includeAuditLogs && data.audit_logs) {
       csvContent += 'LOGS DE AUDITORIA\n';
-      csvContent += 'ID,Data/Hora,Ação,ID do Ativo,Nome do Ativo,Valor Anterior,Novo Valor,Usuário,Detalhes\n';
+      csvContent += 'Data/Hora,Ação,ID do Ativo,Nome do Ativo,Valor Anterior,Novo Valor,Usuário,Detalhes\n';
       
-      data.auditLogs.forEach((log: any) => {
-        csvContent += `${log.id},${log.timestamp},${log.action},${log.assetId},${log.assetName},${log.oldValue || ''},${log.newValue || ''},${log.user},${log.details || ''}\n`;
+      data.audit_logs.forEach((log: AuditLogEntry) => {
+        csvContent += `${log.timestamp.toISOString()},${log.action},${log.assetId},"${log.assetName}",${log.oldValue || ''},${log.newValue || ''},"${log.user}","${log.details || ''}"\n`;
       });
     }
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `auditoria_${format(currentDate, 'yyyy-MM-dd')}.csv`);
-    link.style.visibility = 'hidden';
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `auditoria_${format(new Date(), 'yyyy-MM-dd')}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
   const downloadJSON = (data: any) => {
-    const jsonString = JSON.stringify(data, null, 2);
-    const blob = new Blob([jsonString], { type: 'application/json' });
+    const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
+      JSON.stringify(data, null, 2)
+    )}`;
     const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `auditoria_${format(currentDate, 'yyyy-MM-dd')}.json`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
+    link.href = jsonString;
+    link.download = `auditoria_${format(new Date(), 'yyyy-MM-dd')}.json`;
+
     link.click();
-    document.body.removeChild(link);
+    link.remove();
   };
 
-  const generatePDF = async (data: any) => {
-    // Para implementação futura com uma biblioteca de PDF como jsPDF
-    console.log('PDF generation not implemented yet', data);
-    alert('Exportação em PDF será implementada em breve. Use CSV ou JSON por enquanto.');
-  };
-
-  const setDateRange = (range: string) => {
+  const setDateRangePreset = (range: 'today' | 'week' | 'month') => {
     const today = new Date();
+    let start = today;
     
     switch (range) {
-      case 'today':
-        setExportOptions(prev => ({
-          ...prev,
-          dateRange: 'single',
-          startDate: today,
-          endDate: today
-        }));
-        break;
       case 'week':
-        setExportOptions(prev => ({
-          ...prev,
-          dateRange: 'range',
-          startDate: subDays(today, 7),
-          endDate: today
-        }));
+        start = subDays(today, 7);
         break;
       case 'month':
-        setExportOptions(prev => ({
-          ...prev,
-          dateRange: 'range',
-          startDate: startOfMonth(today),
-          endDate: endOfMonth(today)
-        }));
+        start = startOfMonth(today);
         break;
     }
+    
+    setExportOptions(prev => ({
+      ...prev,
+      startDate: start,
+      endDate: today
+    }));
   };
 
   return (
@@ -222,7 +185,6 @@ export function AuditExport({ currentDate, currentData, auditLogs }: AuditExport
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Formato de Exportação */}
         <div className="space-y-2">
           <label className="text-sm font-medium">Formato de Exportação</label>
           <Select
@@ -257,7 +219,6 @@ export function AuditExport({ currentDate, currentData, auditLogs }: AuditExport
           </Select>
         </div>
 
-        {/* Conteúdo a Incluir */}
         <div className="space-y-3">
           <label className="text-sm font-medium">Conteúdo a Incluir</label>
           
@@ -303,35 +264,33 @@ export function AuditExport({ currentDate, currentData, auditLogs }: AuditExport
           </div>
         </div>
 
-        {/* Período de Dados */}
         <div className="space-y-3">
           <label className="text-sm font-medium">Período de Dados</label>
           
           <div className="flex gap-2 mb-3">
             <Button
-              variant={exportOptions.dateRange === 'single' ? 'default' : 'outline'}
+              variant={format(currentDate, 'yyyy-MM-dd') === format(exportOptions.startDate || new Date(), 'yyyy-MM-dd') ? 'default' : 'outline'}
               size="sm"
-              onClick={() => setDateRange('today')}
+              onClick={() => setDateRangePreset('today')}
             >
               Hoje
             </Button>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setDateRange('week')}
+              onClick={() => setDateRangePreset('week')}
             >
               Última Semana
             </Button>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setDateRange('month')}
+              onClick={() => setDateRangePreset('month')}
             >
               Este Mês
             </Button>
           </div>
 
-          {/* Seletores de Data Customizados */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-xs text-muted-foreground">Data Inicial</label>
@@ -340,7 +299,7 @@ export function AuditExport({ currentDate, currentData, auditLogs }: AuditExport
                   <Button
                     variant="outline"
                     className={cn(
-                      "justify-start text-left font-normal",
+                      "w-full justify-start text-left font-normal",
                       !exportOptions.startDate && "text-muted-foreground"
                     )}
                   >
@@ -375,7 +334,7 @@ export function AuditExport({ currentDate, currentData, auditLogs }: AuditExport
                   <Button
                     variant="outline"
                     className={cn(
-                      "justify-start text-left font-normal",
+                      "w-full justify-start text-left font-normal",
                       !exportOptions.endDate && "text-muted-foreground"
                     )}
                   >
@@ -408,7 +367,6 @@ export function AuditExport({ currentDate, currentData, auditLogs }: AuditExport
           </div>
         </div>
 
-        {/* Botão de Exportação */}
         <div className="pt-4 border-t">
           <Button
             onClick={handleExport}
