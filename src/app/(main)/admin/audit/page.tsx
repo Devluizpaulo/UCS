@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo, useTransition } from 'react';
@@ -50,6 +51,7 @@ import { RecalculationProgress, type RecalculationStep } from '@/components/admi
 import { ValidationAlerts, generateValidationAlerts, type ValidationAlert } from '@/components/admin/validation-alerts';
 import { DateComparison } from '@/components/admin/date-comparison';
 import { AuditExport } from '@/components/admin/audit-export';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 
 function getValidatedDate(dateString?: string | null): Date {
@@ -169,116 +171,130 @@ const AssetActionTable = ({
   );
 };
 
-const IndexTable = ({ assets, editedValues }: { assets: CommodityPriceData[], editedValues: Record<string, number> }) => {
-  if (assets.length === 0) {
+const IndexTable = ({ indices, editedValues }: { indices: CommodityPriceData[], editedValues: Record<string, number> }) => {
+  if (indices.length === 0) {
     return (
       <div className="text-center text-sm text-muted-foreground p-4">
-        Nenhum ativo nesta categoria.
+        Nenhum índice nesta categoria.
       </div>
     );
   }
 
-    // Identificar sub-índices do Valor Uso Solo
-    const valorUsoSoloSubIndices = new Set(['vus', 'vmad', 'carbono_crs', 'Agua_CRS']);
+  const getAsset = (id: string) => indices.find(i => i.id === id);
+
+  const valorUsoSolo = getAsset('valor_uso_solo');
+  const valorUsoSoloSubIndices = ['vus', 'vmad', 'carbono_crs', 'Agua_CRS']
+    .map(getAsset)
+    .filter((a): a is CommodityPriceData => !!a);
+
+  const ch2oAgua = getAsset('ch2o_agua');
+  const custoAgua = getAsset('custo_agua');
   
-  // Identificar hierarquia UCS: PDM → UCS → UCS ASE
-  const ucsHierarchy = new Set(['pdm', 'ucs', 'ucs_ase']);
+  const pdm = getAsset('pdm');
+  const ucs = getAsset('ucs');
+  const ucsAse = getAsset('ucs_ase');
+  
+  const pdmHierarchy = [ucs, ucsAse].filter((a): a is CommodityPriceData => !!a);
+
+  const renderIndexRow = (asset: CommodityPriceData, indent: string, badge?: React.ReactNode) => (
+    <TableRow key={asset.id}>
+      <TableCell className="font-medium">
+        <div className="flex items-center gap-2">
+          {indent && <span className="text-muted-foreground">{indent}</span>}
+          <span>{asset.name}</span>
+          {badge}
+        </div>
+      </TableCell>
+      <TableCell className="text-right font-mono">{formatCurrency(asset.price, asset.currency, asset.id)}</TableCell>
+      <TableCell className="text-right">
+        <Badge variant="outline" className={cn(
+          asset.change > 0 && "text-green-600 bg-green-50",
+          asset.change < 0 && "text-red-600 bg-red-50",
+        )}>
+          {asset.change ? `${asset.change.toFixed(2)}%` : 'N/A'}
+        </Badge>
+      </TableCell>
+      <TableCell className="flex justify-center">
+        <AssetActions asset={asset} onEdit={() => {}} />
+      </TableCell>
+    </TableRow>
+  );
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Índice</TableHead>
-          <TableHead className="text-right">Valor</TableHead>
-          <TableHead className="text-right">Mudança (%)</TableHead>
-          <TableHead className="text-center">Ações</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {assets.map((asset) => {
-          const isSubIndex = valorUsoSoloSubIndices.has(asset.id);
-          const isUcsHierarchy = ucsHierarchy.has(asset.id);
-          const isUcsAse = asset.id === 'ucs_ase';
-          const isUcs = asset.id === 'ucs';
-          
-          // Determinar o nível da hierarquia UCS
-          let hierarchyLevel = 0;
-          let hierarchySymbol = '';
-          if (asset.id === 'ucs_ase') {
-            hierarchyLevel = 2;
-            hierarchySymbol = '└─';
-          } else if (asset.id === 'ucs') {
-            hierarchyLevel = 1;
-            hierarchySymbol = '├─';
-          }
-          
-          return (
-            <TableRow 
-              key={asset.id}
-              className={cn(
-                isSubIndex && 'bg-blue-50/30 border-l-4 border-l-blue-300',
-                isUcsHierarchy && !isUcsAse && 'bg-green-50/30 border-l-4 border-l-green-300',
-                isUcsAse && 'bg-purple-50/30 border-l-4 border-l-purple-300'
-              )}
-            >
-              <TableCell className="font-medium">
-                <div className="flex items-center gap-2">
-                  {isSubIndex && (
-                    <span className="text-blue-600 text-sm">└─</span>
-                  )}
-                  {isUcsHierarchy && hierarchySymbol && (
-                    <span className={cn(
-                      "text-sm",
-                      asset.id === 'ucs' && 'text-green-600',
-                      asset.id === 'ucs_ase' && 'text-purple-600'
-                    )}>{hierarchySymbol}</span>
-                  )}
-                  <span className={cn(
-                    isSubIndex && 'text-blue-800 font-medium',
-                    isUcs && 'text-green-800 font-medium',
-                    isUcsAse && 'text-purple-800 font-bold'
-                  )}>
-                    {asset.name}
-                  </span>
-                  {isSubIndex && (
-                    <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700">
-                      Sub-índice
-                    </Badge>
-                  )}
-                  {isUcs && (
-                    <Badge variant="secondary" className="text-xs bg-green-100 text-green-700">
-                      Base UCS
-                    </Badge>
-                  )}
-                  {isUcsAse && (
-                    <Badge variant="secondary" className="text-xs bg-purple-100 text-purple-700">
-                      Índice Final
-                    </Badge>
-                  )}
-                </div>
-              </TableCell>
-            <TableCell className="text-right font-mono">
-              {formatCurrency(asset.price, asset.currency, asset.id)}
-            </TableCell>
-              <TableCell className="text-right">
-                <Badge 
-                  variant="outline" 
-                  className={cn(
-                    asset.change && asset.change > 0 && 'text-green-600 bg-green-50',
-                    asset.change && asset.change < 0 && 'text-red-600 bg-red-50'
-                  )}
-                >
-                  {asset.change ? `${asset.change.toFixed(2)}%` : 'N/A'}
+    <Accordion type="multiple" defaultValue={['valor_uso_solo', 'pdm_hierarchy']} className="w-full">
+      {/* Grupo Valor Uso Solo */}
+      {valorUsoSolo && (
+        <AccordionItem value="valor_uso_solo">
+          <AccordionTrigger className="hover:no-underline font-semibold text-base px-4 py-3 bg-muted/30 rounded-t-lg">
+            <div className="flex justify-between items-center w-full">
+              <span className="flex items-center gap-2">{valorUsoSolo.name}</span>
+              <div className="flex items-center gap-4">
+                <span className="font-mono text-lg">{formatCurrency(valorUsoSolo.price, valorUsoSolo.currency, valorUsoSolo.id)}</span>
+                <Badge variant="outline" className={cn(
+                  valorUsoSolo.change > 0 && "text-green-600 bg-green-50",
+                  valorUsoSolo.change < 0 && "text-red-600 bg-red-50",
+                )}>
+                  {valorUsoSolo.change ? `${valorUsoSolo.change.toFixed(2)}%` : 'N/A'}
                 </Badge>
-              </TableCell>
-              <TableCell className="flex justify-center">
-                <AssetActions asset={asset} onEdit={() => {}} />
-            </TableCell>
-          </TableRow>
-          );
-        })}
-      </TableBody>
-    </Table>
+              </div>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent>
+            <Table>
+              <TableBody>
+                {valorUsoSoloSubIndices.map(subIndex =>
+                  renderIndexRow(subIndex, '└─', <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700">Sub-índice</Badge>)
+                )}
+              </TableBody>
+            </Table>
+          </AccordionContent>
+        </AccordionItem>
+      )}
+      
+      {/* Linhas independentes */}
+      <Table>
+        <TableBody>
+          {ch2oAgua && renderIndexRow(ch2oAgua, '')}
+          {custoAgua && renderIndexRow(custoAgua, '')}
+        </TableBody>
+      </Table>
+      
+      {/* Grupo PDM, UCS, UCS ASE */}
+      {pdm && (
+        <AccordionItem value="pdm_hierarchy">
+           <AccordionTrigger className="hover:no-underline font-semibold text-base px-4 py-3 bg-muted/30">
+            <div className="flex justify-between items-center w-full">
+              <span className="flex items-center gap-2">{pdm.name}</span>
+              <div className="flex items-center gap-4">
+                <span className="font-mono text-lg">{formatCurrency(pdm.price, pdm.currency, pdm.id)}</span>
+                <Badge variant="outline" className={cn(
+                  pdm.change > 0 && "text-green-600 bg-green-50",
+                  pdm.change < 0 && "text-red-600 bg-red-50",
+                )}>
+                  {pdm.change ? `${pdm.change.toFixed(2)}%` : 'N/A'}
+                </Badge>
+              </div>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent>
+             <Table>
+              <TableBody>
+                {pdmHierarchy.map(item =>
+                  renderIndexRow(
+                    item,
+                    item.id === 'ucs' ? '├─' : '└─',
+                    item.id === 'ucs'
+                      ? <Badge variant="secondary" className="text-xs bg-green-100 text-green-700">Base UCS</Badge>
+                      : <Badge variant="secondary" className="text-xs bg-purple-100 text-purple-700">Índice Final</Badge>
+                  )
+                )}
+              </TableBody>
+            </Table>
+          </AccordionContent>
+        </AccordionItem>
+      )}
+
+    </Accordion>
   );
 };
 
@@ -601,20 +617,8 @@ export default function AuditPage() {
       });
     };
 
-    // Ordenar hierarquia UCS: PDM → UCS → UCS ASE e outros
-    const sortedIndices = [...calculatedAssets].sort((a, b) => {
-      const order = ['valor_uso_solo', 'vus', 'vmad', 'carbono_crs', 'Agua_CRS', 'ch2o_agua', 'custo_agua', 'pdm', 'ucs', 'ucs_ase'];
-      const indexA = order.indexOf(a.id);
-      const indexB = order.indexOf(b.id);
-      
-      if (indexA === -1 && indexB === -1) return a.name.localeCompare(b.name);
-      if (indexA === -1) return 1;
-      if (indexB === -1) return -1;
-      return indexA - indexB;
-    });
-
     const filteredBaseAssets = filterAssets(enrichedBaseAssets);
-    const filteredIndices = sortedIndices.filter(asset => {
+    const filteredIndices = calculatedAssets.filter(asset => {
       const matchesSearch = searchTerm === '' || 
         asset.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         asset.id.toLowerCase().includes(searchTerm.toLowerCase());
@@ -629,7 +633,7 @@ export default function AuditPage() {
 
     return { 
       baseAssets: enrichedBaseAssets, 
-      indices: sortedIndices,
+      indices: calculatedAssets,
       filteredBaseAssets,
       filteredIndices
     };
@@ -1089,8 +1093,8 @@ export default function AuditPage() {
                     Resultados dos índices e sub-índices da plataforma. Estes valores são recalculados automaticamente com base nos ativos base.
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="p-6">
-                  <IndexTable assets={filteredIndices} editedValues={editedValues} />
+                <CardContent className="p-0">
+                  <IndexTable indices={filteredIndices} editedValues={editedValues} />
                   {filteredIndices.length === 0 && indices.length > 0 && (
                     <div className="text-center text-sm text-muted-foreground p-4">
                       Nenhum índice encontrado com os filtros aplicados.
