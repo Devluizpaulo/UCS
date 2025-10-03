@@ -55,7 +55,7 @@ export function calculateRentMediaSoja(sojaPrice: number, usdRate: number): numb
   const fatorRentabilidade = 3.3;
   // Truncar para 4 casas decimais em vez de arredondar para corresponder à planilha
   const rentMedia = tonBRL * fatorRentabilidade;
-  return Math.floor(rentMedia * 10000) / 10000;
+  return rentMedia;
 }
 
 
@@ -373,12 +373,15 @@ export function runCompleteSimulation(input: SimulationInput): CalculationResult
         new: ucsAseData.valor_brl, 
         formula: 'UCS × 2',
         components: ucsAseData.componentes,
-        conversions: ucsAseData.conversions
+        conversions: ucsAseData.conversoes
       }
     };
 
     // 5. Gerar resultados para todos os ativos calculados, mesmo que a mudança seja 0
     Object.entries(calculatedValues).forEach(([assetId, data]) => {
+        const percentageChange = data.current > 0 ? Math.abs((data.new - data.current) / data.current) : (data.new > 0 ? 1 : 0);
+        
+        // Inclui todos os ativos na lista de resultados
         results.push({
           id: assetId,
           name: getAssetDisplayName(assetId),
@@ -390,13 +393,12 @@ export function runCompleteSimulation(input: SimulationInput): CalculationResult
         });
     });
 
-    // Filtra apenas os que realmente mudaram para ordenar
-    const changedResults = results.filter(r => {
-        const percentageChange = r.currentValue > 0 ? Math.abs((r.newValue - r.currentValue) / r.currentValue) : (r.newValue > 0 ? 1 : 0);
-        return percentageChange > 0.0001 || (r.currentValue === 0 && r.newValue !== 0);
+    // Ordena os resultados para que os mais impactados apareçam primeiro
+    return results.sort((a, b) => {
+        const changeA = a.currentValue > 0 ? Math.abs((a.newValue - a.currentValue) / a.currentValue) : (a.newValue > 0 ? 1 : 0);
+        const changeB = b.currentValue > 0 ? Math.abs((b.newValue - b.currentValue) / b.currentValue) : (b.newValue > 0 ? 1 : 0);
+        return changeB - changeA;
     });
-
-    return changedResults.sort((a, b) => Math.abs(b.newValue - b.currentValue) - Math.abs(a.newValue - a.currentValue));
 
   } catch (error) {
     console.error('Erro na simulação completa:', error);
@@ -422,5 +424,6 @@ function getAssetDisplayName(assetId: string): string {
   };
   return names[assetId] || assetId;
 }
+
 
 
