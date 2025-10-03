@@ -1,7 +1,7 @@
 'use client';
 
 import { PageHeader } from '@/components/page-header';
-import { TrendChart } from '@/components/trend-chart';
+import { HistoricalAnalysis } from '@/components/historical-analysis';
 import { TrendingUp } from 'lucide-react';
 
 export default function TrendAnalysisPage() {
@@ -13,7 +13,7 @@ export default function TrendAnalysisPage() {
         icon={TrendingUp}
       />
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
-        <TrendChart />
+        <HistoricalAnalysis />
       </main>
     </div>
   );
