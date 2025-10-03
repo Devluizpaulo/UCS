@@ -82,7 +82,7 @@ function extractPriceFromQuote(quoteData: any): PriceExtractionResult {
 
   // Ordem de prioridade para extração do preço
   const priceFields = [
-    { field: 'valor_brl', source: 'valor_brl' }, // Para UCS ASE
+    { field: 'valor_brl', source: 'valor_brl' }, // Prioridade para UCS ASE
     { field: 'valor', source: 'valor' },
     { field: 'resultado_final', source: 'resultado_final' },
     { field: 'ultimo', source: 'ultimo' },
@@ -92,6 +92,11 @@ function extractPriceFromQuote(quoteData: any): PriceExtractionResult {
     if (typeof quoteData[field] === 'number' && quoteData[field] !== 0) {
       return { price: quoteData[field], source };
     }
+  }
+
+  // Fallback para o campo `valor_brl` mesmo que seja 0, se ele existir
+  if (typeof quoteData['valor_brl'] === 'number') {
+      return { price: quoteData['valor_brl'], source: 'valor_brl_fallback' };
   }
 
   return { price: 0, source: 'none' };

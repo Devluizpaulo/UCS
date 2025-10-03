@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -122,4 +121,3 @@ export function UcsAseDetails({ asset }: UcsAseDetailsProps) {
         </div>
     );
 }
-
