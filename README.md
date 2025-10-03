@@ -1,161 +1,179 @@
-# Monitor do Índice UCS - Documentação Técnica
+# Monitor do Índice UCS - Documentação Técnica Completa
 
 ## 1. Visão Geral do Projeto
 
-O **Monitor do Índice UCS** é uma aplicação web completa, desenvolvida para calcular, monitorar e analisar o "Índice de Unidade de Conservação Sustentável" (UCS) e seus ativos componentes. A plataforma oferece um dashboard em tempo real, ferramentas de análise estratégica, geração de relatórios com IA e um sistema de configuração flexível para os ativos.
+### 1.1. Objetivo
+O **Monitor do Índice UCS** é uma plataforma analítica desenvolvida para calcular, monitorar e analisar o "Índice de Unidade de Conservação Sustentável" (UCS) e seus ativos componentes. O sistema resolve o problema da falta de uma visão unificada e em tempo real sobre o valor econômico de ativos ambientais e agrícolas.
 
-O objetivo é fornecer a gestores, analistas e produtores rurais uma ferramenta poderosa para entender a performance econômica de ativos ambientais e agrícolas de forma unificada. Os principais índices são a **UCS (Unidade de Crédito de Sustentabilidade)** e o **PDM (Potencial Desflorestador Monetizado)**.
+### 1.2. Público-Alvo
+- **Gestores e Diretores:** Para tomada de decisão estratégica baseada em dados consolidados.
+- **Analistas Financeiros e de Risco:** Para análise de tendências, volatilidade e composição de índices.
+- **Auditores e Administradores:** Para garantir a integridade dos dados através de ferramentas de correção e recálculo.
 
-## 2. Funcionalidades Principais
+---
 
-- **Dashboard Principal:** Visualização em tempo real do valor do Índice UCS, com gráficos históricos e uma tabela de cotações dos ativos que o compõem. Permite a navegação para dias anteriores.
-- **Análise Estratégica:**
-  - **Análise de Tendências:** Gráficos interativos para analisar a performance histórica do índice em diferentes períodos (7, 30 e 90 dias).
-  - **Análise de Risco:** Ferramenta para calcular e exibir métricas de volatilidade (desvio padrão, coeficiente de variação, etc.) para qualquer ativo em um período selecionado.
-- **Geração de Relatórios com IA:**
-  - Ferramenta para gerar uma análise executiva sobre a performance de um ativo em um período específico.
-  - A IA (via Genkit) atua como uma analista financeira sênior, baseando-se nos dados históricos reais do ativo, que são buscados do banco de dados no momento da geração.
-  - O usuário pode fornecer observações adicionais para guiar a análise da IA.
-  - **Exportação para PDF:** Permite baixar a análise gerada pela IA em um arquivo PDF.
-- **Administração:**
-  - **Gerenciamento de Usuários:** Interface completa de **CRUD** (Adicionar, Editar, Desativar, Remover) para os usuários da plataforma, com um fluxo de convite que gera um link para o novo usuário definir sua senha.
-  - **Promoção de Administradores:** Administradores podem promover outros usuários a administradores diretamente pela interface.
-  - **Gerenciamento de Ativos:** Interface para visualizar a lista de todos os ativos e **adicionar novos**, salvando as configurações diretamente no banco de dados.
-- **Autenticação:**
-  - Sistema de login com e-mail e senha.
-  - Fluxo de **recuperação de senha** através de um link enviado por e-mail.
-  - Perfil de usuário editável (nome, senha, telefone).
+## 2. Arquitetura do Sistema
 
-## 3. Arquitetura e Stack Tecnológica
+### 2.1. Diagrama de Fluxo de Dados
 
-- **Frontend:**
-  - **Framework:** [Next.js](https://nextjs.org/) (com App Router)
-  - **Linguagem:** [TypeScript](https://www.typescriptlang.org/)
-  - **UI:** [React](https://react.dev/), [ShadCN UI](https://ui.shadcn.com/), [Tailwind CSS](https://tailwindcss.com/)
-  - **Gráficos:** [Recharts](https://recharts.org/)
-  - **Ícones:** [Lucide React](https://lucide.dev/)
-  - **Estatísticas:** [simple-statistics](https://simplestatistics.org/)
-  - **Exportação PDF:** [jsPDF](https://github.com/parallax/jsPDF) & [html2canvas](https://html2canvas.hertzen.com/)
+```mermaid
+graph TD
+    subgraph Fontes Externas
+        A[Investing.com]
+    end
 
-- **Backend & IA:**
-  - **Orquestração de IA:** [Genkit (Google AI)](https://firebase.google.com/docs/genkit)
-  - **Banco de Dados:** [Cloud Firestore](https://firebase.google.com/docs/firestore)
-  - **Autenticação:** [Firebase Authentication](https://firebase.google.com/docs/auth)
+    subgraph Automação
+        B(N8N)
+        A -- Coleta Diária --> B
+    end
 
-- **Fonte de Dados Externa:**
-  - **Automação de Dados:** Processos externos (como [n8n](https://n8n.io/)) são usados para coletar dados de mercado do [investing.com.br](https://br.investing.com/) e inseri-los no Firestore diariamente. A aplicação apenas lê esses dados.
+    subgraph Backend & Persistência
+        C[Cloud Firestore]
+        D(Firebase Auth)
+        E{Genkit (Google AI)}
+        F[Serviços de Cálculo]
 
-## 4. Camada de Abstração de Dados
+        B -- Grava Cotações --> C
+        G[Admin UI] -- Login --> D
+        G -- Lê/Grava Dados --> F
+        F -- Interage com --> C
+        F -- Interage com --> E
+        E -- Gera Análises --> G
+    end
 
-Um dos princípios de design mais importantes desta aplicação é a **abstração da camada de dados**.
+    subgraph Frontend
+        G[Next.js App]
+    end
 
-- **Ponto Central:** Todas as interações com o banco de dados (leitura e escrita) estão centralizadas no arquivo `src/lib/data-service.ts`. Nenhum outro arquivo na aplicação (seja componente de UI ou fluxo de IA) acessa o Firestore diretamente.
-- **Objetivo:** Isolar a lógica de negócio da tecnologia específica do banco de dados. Os componentes pedem "me dê os preços dos ativos", e o `data-service` é o único responsável por saber *como* buscar esses dados no Firestore.
-
-### **Previsão para Migração de Banco de Dados**
-Esta arquitetura foi pensada para facilitar uma futura migração do Cloud Firestore para outro banco de dados (ex: PostgreSQL, MongoDB, etc.).
-
-Para realizar a migração:
-1. A equipe de backend precisará criar um novo serviço com a mesma "interface" de funções que o `data-service.ts` atual (ex: `getCommodityPrices`, `getCotacoesHistorico`, etc.).
-2. A implementação dessas funções será específica para o novo banco de dados (usando SQL, um ORM, ou queries NoSQL).
-3. Uma vez que o novo serviço esteja pronto, basta substituir a implementação interna do `data-service.ts`.
-
-**Nenhuma alteração será necessária nos componentes de UI, fluxos de IA ou lógica de apresentação**, pois eles dependem do "contrato" (as funções exportadas) do serviço de dados, e não de sua implementação interna. Para mais detalhes, consulte o arquivo `DATA_ABSTRACTION.md`.
-
-## 5. Estrutura de Pastas do Projeto
-```
-/
-├── src/
-│   ├── app/                # Rotas da aplicação (Next.js App Router)
-│   │   ├── (main)/         # Layout e páginas principais (dashboard, análise, admin)
-│   │   ├── (public)/       # Layout e páginas públicas (landing, login, etc.)
-│   │   ├── page.tsx        # Landing Page (página inicial pública)
-│   │   └── api/            # Endpoints de API (se necessário)
-│   │
-│   ├── components/         # Componentes React reutilizáveis
-│   │   ├── ui/             # Componentes base do ShadCN
-│   │   ├── admin/          # Componentes para a área de administração
-│   │   └── *.tsx           # Componentes de lógica da aplicação
-│   │
-│   ├── lib/                # Funções utilitárias, serviços e configurações
-│   │   ├── data-service.ts # <<< PONTO CENTRAL DE ACESSO AO BANCO DE DADOS
-│   │   ├── admin-actions.ts# Funções de servidor para ações de admin (CRUD de usuários)
-│   │   └── firebase-admin-config.ts # Configuração do Firebase Admin SDK
-│   │
-│   ├── ai/                 # Lógica de Inteligência Artificial com Genkit
-│   │   ├── flows/          # Fluxos de IA (ex: geração de relatório)
-│   │   └── genkit.ts       # Configuração e inicialização do Genkit
-│   │
-│   ├── hooks/              # Hooks React customizados
-│   ├── firebase/           # Configuração, providers e hooks do Firebase Client SDK
-│
-├── public/                 # Arquivos estáticos (imagens, etc.)
-│
-├── .env                    # Arquivo para variáveis de ambiente
-├── next.config.ts          # Configuração do Next.js
-└── tailwind.config.ts      # Configuração do Tailwind CSS
+    style B fill:#FFC400,stroke:#333
+    style C fill:#FFA000,stroke:#333
+    style E fill:#4285F4,stroke:#FFF
+    style G fill:#0070F3,stroke:#FFF
 ```
 
-## 6. Fluxos de Dados e Processos
+### 2.2. Componentes da Arquitetura
+- **Frontend (Next.js):** Interface reativa construída com React, ShadCN UI e TailwindCSS, hospedada na Vercel.
+- **Automação (N8N):** Processo externo responsável por coletar dados de mercado (ex: `investing.com.br`) e popular o banco de dados. A aplicação **não** depende do N8N para funcionar, mas sim dos dados que ele gera.
+- **Banco de Dados (Cloud Firestore):** Banco NoSQL gerenciado pelo Google, utilizado para armazenar cotações históricas, configurações de ativos e dados de usuários.
+- **Autenticação (Firebase Authentication):** Gerencia o acesso de usuários (login, senha, perfis).
+- **Inteligência Artificial (Genkit):** Orquestra chamadas para a API do Google (Gemini) para gerar análises e relatórios.
 
-### 6.1. Coleta e Exibição de Dados
+---
 
-1.  **Coleta de Dados (externa):** Um processo `n8n` busca as cotações mais recentes do `investing.com.br`.
-2.  **Armazenamento:** O `n8n` salva os dados brutos em coleções separadas no Firestore para cada ativo (ex: coleção `soja`, `milho`, etc.), incluindo um `timestamp`.
-3.  **Leitura pela Aplicação:** Quando um usuário acessa o dashboard, o `data-service.ts` é chamado.
-4.  **Exibição:** O `data-service` busca os dados do Firestore, os processa (calculando variações) e os retorna para os componentes React, que os renderizam em tabelas e gráficos. A aplicação implementa um cache em memória para otimizar as leituras repetidas.
+## 3. Banco de Dados
 
-### 6.2. Geração de Relatório com IA
+### 3.1. Estrutura Atual (Firestore)
+- **Coleções de Ativos:** Cada ativo (ex: `soja`, `milho`, `ucs_ase`) possui sua própria coleção, onde cada documento representa a cotação para um dia específico.
+- **`settings/commodities`:** Documento central que armazena a configuração de todos os ativos (ID, nome, categoria, etc.).
+- **`users`:** Coleção para dados de perfil dos usuários (gerenciado pelo Firebase Auth).
+- **`roles_admin`:** Coleção usada para controle de acesso. A existência de um documento com o UID do usuário como ID o designa como administrador.
+- **`audit_logs`:** Coleção para registrar todas as edições e recálculos feitos na plataforma.
 
-1.  **Interface do Usuário:** O usuário seleciona um ativo, um período e (opcionalmente) digita uma observação no componente `ReportGenerator`.
-2.  **Chamada do Fluxo:** O componente chama a função `generateReport` no `report-flow.ts`.
-3.  **Busca de Dados Reais:** O fluxo de IA primeiro usa o `data-service` para buscar no Firestore todo o histórico de cotações para o ativo e período selecionados.
-4.  **Invocação da IA:** O fluxo envia os dados históricos e as instruções (o *prompt*) para a API do Google AI via Genkit.
-5.  **Retorno Estruturado:** A IA retorna a análise em um formato JSON estruturado (resumo, tendências, etc.).
-6.  **Exibição:** O componente `ReportGenerator` recebe o JSON e exibe a análise formatada para o usuário.
+### 3.2. Proposta de Migração (Ex: PostgreSQL)
+A aplicação foi projetada com uma **Camada de Abstração de Dados** (`src/lib/data-service.ts`), o que significa que **nenhum componente da UI ou fluxo de IA acessa o Firestore diretamente**. Isso torna uma futura migração para um banco relacional como o PostgreSQL um processo controlado:
+1.  **Não há impacto na UI:** Nenhuma alteração nos componentes React é necessária.
+2.  **Reimplementação Centralizada:** Apenas as funções dentro de `data-service.ts` precisariam ser reescritas para usar SQL em vez de chamadas do Firestore.
+3.  **Benefícios:** Maior poder de consulta (JOINs, agregações complexas), integridade referencial e potencial redução de custos em cenários de leitura intensiva.
 
-## 7. Configuração e Variáveis de Ambiente
+### 3.3. Backup e Restore
+- **Firestore:** Utiliza os mecanismos nativos do Google Cloud. Backups podem ser automatizados através do console do GCP para recuperação de desastres (Point-in-Time Recovery).
+- **Exportação Manual:** A ferramenta de Auditoria permite exportar dados em formato CSV ou JSON como um backup funcional.
 
-Para executar a aplicação, configure as seguintes variáveis de ambiente no arquivo `.env`.
+### 3.4. Segurança e Permissões
+- O acesso ao Firestore é controlado por **Firestore Security Rules**, que restringem a leitura e escrita com base no status de autenticação e no papel do usuário (admin/usuário comum).
+- Acesso de administrador é verificado tanto no cliente (para exibir/ocultar elementos de UI) quanto no servidor (para proteger ações críticas como edição de usuários).
 
-**Configurações do Firebase Admin SDK (Lado do Servidor):**
-- `FIREBASE_SERVICE_ACCOUNT_BASE64`: O conteúdo completo do seu arquivo JSON de conta de serviço Firebase, codificado em Base64. (Instruções em `VERCEL_SETUP.md`)
+---
 
-**Configurações da IA (Gemini):**
-- `GEMINI_API_KEY`: Sua chave de API do Google AI Studio (ou Google Cloud).
+## 4. Controle de Versão (GitHub)
 
-**Exemplo de arquivo `.env`:**
-```
-# Firebase Admin SDK
-FIREBASE_SERVICE_ACCOUNT_BASE64="COLE_SUA_STRING_BASE64_AQUI"
+- **Repositório Centralizado:** Todo o código-fonte está em um único repositório no GitHub.
+- **Branch Strategy:**
+    - `main`: Reflete o ambiente de produção. Apenas merges de `develop` são permitidos.
+    - `develop`: Branch de integração. Novas funcionalidades são mergidas aqui para testes antes de irem para `main`.
+    - `feature/...`: Branches para novas funcionalidades (ex: `feature/risk-analysis`).
+    - `fix/...`: Branches para correções de bugs (ex: `fix/audit-modal-spacing`).
+- **Tags e Deploy:** Cada deploy para produção a partir da branch `main` deve gerar uma tag de versão (ex: `v1.0.0`, `v1.1.0`), facilitando o rollback se necessário.
 
-# Google AI
-GEMINI_API_KEY=sua_gemini_api_key
-```
+---
 
-### 7.1. Trocando o Projeto Firebase
+## 5. Serviços e Dependências
 
-Caso seja necessário conectar a aplicação a um projeto Firebase diferente, siga estes passos:
+- **Frameworks:** Next.js (React), Tailwind CSS.
+- **UI:** ShadCN UI, Recharts (gráficos), Lucide React (ícones).
+- **IA:** Genkit (Google AI), Zod (validação de schemas).
+- **Firebase:** `firebase` (client SDK), `firebase-admin` (server-side).
+- **Utilitários:** `date-fns` (manipulação de datas), `jspdf` & `html2canvas` (exportação PDF), `exceljs` (exportação Excel).
+- **Serviços Externos:**
+    - **N8N:** Para automação da coleta de dados. **A aplicação não o consome diretamente**, apenas lê os dados que ele produz no Firestore.
+    - **Google Cloud / Firebase:** Para hospedagem do banco de dados e autenticação.
+    - **Vercel:** Para hospedagem do frontend Next.js.
 
-1.  **Gere uma Nova Chave de Serviço:** No console do **novo** projeto Firebase, vá para "Configurações do Projeto" > "Contas de Serviço" e gere uma nova chave privada. Um arquivo JSON será baixado.
-2.  **Codifique a Chave em Base64:** Converta todo o conteúdo do arquivo JSON para uma única string em Base64. Você pode usar um site como o [Base64 Encode](https://www.base64encode.org/).
-3.  **Atualize as Variáveis de Ambiente:** Substitua o valor da variável `FIREBASE_SERVICE_ACCOUNT_BASE64` pela nova string Base64 que você gerou.
-    -   **Localmente:** Altere o valor no seu arquivo `.env`.
-    -   **Em Produção (Vercel, etc.):** Altere o valor nas configurações de variáveis de ambiente do seu provedor de hospedagem.
-4.  **Reinicie a Aplicação:** Para que as alterações tenham efeito, reinicie seu servidor de desenvolvimento local ou faça um novo deploy em produção.
+---
 
-## 8. Como Executar Localmente
+## 6. Configuração de Domínios e Servidores
 
-1.  **Instalar Dependências:**
-    ```bash
-    npm install
-    ```
-2.  **Configurar Variáveis de Ambiente:**
-    - Crie um arquivo `.env` na raiz do projeto.
-    - Configure as variáveis do Firebase e Gemini conforme o exemplo acima.
-3.  **Executar o Servidor de Desenvolvimento:**
-    ```bash
-    npm run dev
-    ```
-4.  **Acessar a Aplicação:**
-    - Abra `http://localhost:9002` em seu navegador.
+### 6.1. Frontend (Vercel)
+- **Domínio:** O domínio da aplicação deve ser configurado no painel da Vercel.
+- **SSL:** Gerenciado automaticamente pela Vercel.
+- **Variáveis de Ambiente:**
+    - `FIREBASE_SERVICE_ACCOUNT_BASE64`: Credenciais do Firebase para acesso do lado do servidor.
+    - `GEMINI_API_KEY`: Chave da API do Google AI.
+    - `N8N_WEBHOOK_URL`: (Opcional) URL para acionar fluxos de recálculo no N8N.
+
+### 6.2. N8N (VPS Sugerida)
+Para um ambiente de produção robusto e seguro:
+1.  **Provisionar VPS:** Em um provedor como DigitalOcean, AWS EC2, etc.
+2.  **Configurar Domínio/Subdomínio:** Apontar um subdomínio (ex: `n8n.suaempresa.com`) para o IP da VPS.
+3.  **Instalar Docker e Docker Compose.**
+4.  **Configurar N8N com Docker:** Usar um `docker-compose.yml` para rodar o N8N.
+5.  **Configurar Reverse Proxy (Nginx):** Para gerenciar o tráfego e aplicar SSL.
+6.  **Instalar Certificado SSL:** Usar Let's Encrypt para gerar um certificado SSL gratuito.
+7.  **Configurar Firewall:** Liberar apenas as portas necessárias (80, 443, 22).
+8.  **Deploy Seguro:** Manter as credenciais do N8N (API keys, etc.) como variáveis de ambiente no `docker-compose.yml`.
+
+---
+
+## 7. LGPD e Segurança
+
+- **Dados Pessoais Armazenados:** Apenas dados essenciais são coletados (Nome, E-mail, Telefone opcional). Nenhum dado sensível é armazenado.
+- **Logs de Auditoria:** A coleção `audit_logs` no Firestore registra todas as alterações de dados críticos (quem, o quê, quando, valor antigo e novo), garantindo a rastreabilidade exigida pela LGPD.
+- **Controle de Acesso:** Acesso aos dados é estritamente controlado por papéis (admin vs. usuário), conforme definido nas regras de segurança do Firebase.
+- **Política de Privacidade e Cookies:** O sistema inclui um banner de consentimento de cookies e deve ser complementado por uma página de Política de Privacidade detalhando o uso dos dados.
+
+---
+
+## 8. Funcionalidades do Sistema
+
+- **Dashboard:** Visualização em tempo real do índice UCS ASE e seus componentes.
+- **Auditoria:** Ferramenta administrativa para visualizar, editar e recalcular dados históricos de qualquer dia.
+- **Gerenciamento de Usuários:** CRUD completo de usuários com sistema de convite e promoção para administrador.
+- **Análise de Composição:** Gráfico interativo que detalha a participação de cada componente no índice "Valor de Uso do Solo".
+- **Geração de Relatórios com IA:** Ferramenta que utiliza a IA do Google para gerar análises financeiras sobre o desempenho de um ativo em um período, com base em dados reais.
+
+---
+
+## 9. Escalabilidade
+
+- **Aplicação (Vercel):** A arquitetura serverless da Vercel escala automaticamente com o tráfego.
+- **Banco de Dados (Firestore):** Escala horizontalmente de forma nativa. O design de coleções separadas por ativo ajuda a distribuir as operações de escrita e leitura.
+- **N8N Escalável:** Para alto volume de automações, a arquitetura do N8N pode evoluir:
+    - **Workers Distribuídos:** Configurar múltiplos workers para processar execuções em paralelo.
+    - **Fila de Tarefas:** Usar um sistema de fila (como Redis ou RabbitMQ) para gerenciar o agendamento de fluxos de trabalho.
+    - **Containerização:** Usar Docker/Kubernetes para gerenciar e escalar os workers do N8N de forma eficiente.
+
+---
+
+## 10. Procedimentos Operacionais
+
+- **Iniciar o Sistema (Desenvolvimento):**
+    1.  Preencher o arquivo `.env` com as credenciais necessárias.
+    2.  Rodar `npm install` para instalar as dependências.
+    3.  Rodar `npm run dev` para iniciar o servidor local.
+- **Atualizações:**
+    1.  Seguir o `branch strategy` (merge para `develop`, depois para `main`).
+    2.  A Vercel fará o deploy automaticamente a cada push na branch `main`.
+- **Manutenção e Monitoramento:**
+    - **Vercel:** Monitorar a saúde da aplicação e os logs no painel da Vercel.
+    - **Firebase:** Monitorar o uso e os custos do Firestore e Auth no console do Firebase.
+    - **N8N:** Verificar os logs de execução no painel do N8N para garantir que a coleta de dados está funcionando.
