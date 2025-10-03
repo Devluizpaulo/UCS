@@ -36,6 +36,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from './ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ScrollArea, ScrollBar } from './ui/scroll-area';
 
 const ChartSkeleton = () => (
   <div className="h-72 w-full">
@@ -64,6 +65,32 @@ function HistoricalDataTable({ data, asset, isLoading }: { data: FirestoreQuote[
     useEffect(() => {
         setCurrentPage(1);
     }, [data]);
+    
+    // Dynamically determine columns from all keys in the dataset
+    const columns = useMemo(() => {
+        if (data.length === 0) return [];
+        const allKeys = new Set<string>();
+        data.forEach(item => {
+            Object.keys(item).forEach(key => allKeys.add(key));
+        });
+        
+        // Define a preferred order
+        const preferredOrder = ['data', 'ultimo', 'valor', 'abertura', 'maxima', 'minima', 'variacao_pct', 'fechamento_anterior', 'rent_media', 'ton', 'volume', 'fonte', 'status'];
+        
+        // Filter out keys we don't want to show and sort
+        const filteredKeys = Array.from(allKeys).filter(key => !['id', 'timestamp', 'componentes', 'conversoes', 'valores_originais', 'moedas', 'ativo'].includes(key));
+        
+        filteredKeys.sort((a, b) => {
+            const indexA = preferredOrder.indexOf(a);
+            const indexB = preferredOrder.indexOf(b);
+            if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+            if (indexA !== -1) return -1;
+            if (indexB !== -1) return 1;
+            return a.localeCompare(b);
+        });
+
+        return filteredKeys;
+    }, [data]);
 
     const totalPages = Math.ceil(data.length / ITEMS_PER_PAGE);
     const paginatedData = useMemo(() => {
@@ -71,20 +98,6 @@ function HistoricalDataTable({ data, asset, isLoading }: { data: FirestoreQuote[
         return data.slice(startIndex, startIndex + ITEMS_PER_PAGE);
     }, [data, currentPage]);
     
-    const columns = [
-        { key: 'data', label: 'Data' },
-        { key: 'ultimo', label: 'Último' },
-        { key: 'abertura', label: 'Abertura' },
-        { key: 'maxima', label: 'Máxima' },
-        { key: 'minima', label: 'Mínima' },
-        { key: 'variacao_pct', label: 'Variação (%)' },
-        { key: 'rent_media', label: 'Rent. Média' },
-        { key: 'fechamento_anterior', label: 'Fech. Anterior' },
-        { key: 'ton', label: 'Toneladas' },
-        { key: 'volume', label: 'Volume' },
-        { key: 'fonte', label: 'Fonte' },
-    ];
-
     const formatValue = (value: any, key: string) => {
         if (value === null || value === undefined) return 'N/A';
         if (key === 'data') return String(value);
@@ -104,6 +117,10 @@ function HistoricalDataTable({ data, asset, isLoading }: { data: FirestoreQuote[
         if (typeof value === 'string' && !isNaN(Date.parse(value))) {
              return format(new Date(value), 'dd/MM/yyyy HH:mm');
         }
+        
+        if (typeof value === 'object') {
+            return JSON.stringify(value);
+        }
 
         return String(value);
     }
@@ -118,26 +135,27 @@ function HistoricalDataTable({ data, asset, isLoading }: { data: FirestoreQuote[
 
     return (
         <div className="w-full">
-            <div className="overflow-x-auto">
+            <ScrollArea className="w-full whitespace-nowrap rounded-md border">
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            {columns.map(col => <TableHead key={col.key}>{col.label}</TableHead>)}
+                            {columns.map(key => <TableHead key={key}>{key}</TableHead>)}
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {paginatedData.map(quote => (
                             <TableRow key={quote.id}>
-                                {columns.map(col => (
-                                    <TableCell key={col.key} className="whitespace-nowrap font-mono text-xs">
-                                        {formatValue((quote as any)[col.key], col.key)}
+                                {columns.map(key => (
+                                    <TableCell key={key} className="whitespace-nowrap font-mono text-xs">
+                                        {formatValue((quote as any)[key], key)}
                                     </TableCell>
                                 ))}
                             </TableRow>
                         ))}
                     </TableBody>
                 </Table>
-            </div>
+                <ScrollBar orientation="horizontal" />
+            </ScrollArea>
             {totalPages > 1 && (
                 <div className="flex items-center justify-between p-4 border-t">
                     <span className="text-sm text-muted-foreground">Página {currentPage} de {totalPages}</span>
