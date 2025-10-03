@@ -53,9 +53,9 @@ export function calculateRentMediaSoja(sojaPrice: number, usdRate: number): numb
   const sojaBRL = sojaPrice * usdRate;
   const tonBRL = ((sojaBRL / 60) * 1000) + 0.01990; // Ajuste fino da planilha
   const fatorRentabilidade = 3.3;
-  // Truncar para 2 casas decimais em vez de arredondar para corresponder à planilha
+  // Truncar para 4 casas decimais em vez de arredondar para corresponder à planilha
   const rentMedia = tonBRL * fatorRentabilidade;
-  return Math.floor(rentMedia * 100) / 100;
+  return Math.floor(rentMedia * 10000) / 10000;
 }
 
 
@@ -377,11 +377,8 @@ export function runCompleteSimulation(input: SimulationInput): CalculationResult
       }
     };
 
-    // 5. Gerar resultados apenas para valores que mudaram significativamente
+    // 5. Gerar resultados para todos os ativos calculados, mesmo que a mudança seja 0
     Object.entries(calculatedValues).forEach(([assetId, data]) => {
-      const percentChange = data.current > 0 ? Math.abs((data.new - data.current) / data.current) : (data.new > 0 ? 1 : 0);
-      
-      if (percentChange > 0.0001 || (data.current === 0 && data.new !== 0)) {
         results.push({
           id: assetId,
           name: getAssetDisplayName(assetId),
@@ -391,10 +388,15 @@ export function runCompleteSimulation(input: SimulationInput): CalculationResult
           components: data.components || {},
           conversions: data.conversions || {}
         });
-      }
     });
 
-    return results.sort((a, b) => Math.abs(b.newValue - b.currentValue) - Math.abs(a.newValue - a.currentValue));
+    // Filtra apenas os que realmente mudaram para ordenar
+    const changedResults = results.filter(r => {
+        const percentageChange = r.currentValue > 0 ? Math.abs((r.newValue - r.currentValue) / r.currentValue) : (r.newValue > 0 ? 1 : 0);
+        return percentageChange > 0.0001 || (r.currentValue === 0 && r.newValue !== 0);
+    });
+
+    return changedResults.sort((a, b) => Math.abs(b.newValue - b.currentValue) - Math.abs(a.newValue - a.currentValue));
 
   } catch (error) {
     console.error('Erro na simulação completa:', error);
