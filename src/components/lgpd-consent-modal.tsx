@@ -30,7 +30,7 @@ export function LgpdConsentModal({ isOpen, onAccept, onReject }: LgpdConsentModa
 
   return (
     <Dialog open={isOpen}>
-      <DialogContent className="max-w-md" onInteractOutside={(e) => e.preventDefault()} hideCloseButton>
+      <DialogContent className="max-w-lg" onInteractOutside={(e) => e.preventDefault()} hideCloseButton>
         <DialogHeader className="items-center text-center">
           <div className="p-3 bg-primary/10 rounded-full mb-4">
             <Shield className="h-8 w-8 text-primary" />
