@@ -202,7 +202,7 @@ export function AssetEditModal({ isOpen, onOpenChange, onSave, asset, allAssets 
                           <FormControl>
                             <Input 
                                 placeholder="Insira o novo valor (ex: 22,33)" 
-                                value={typeof field.value === 'number' ? field.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 4 }) : (field.value || '')}
+                                value={typeof field.value === 'number' ? field.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 4 }) : String(field.value || '')}
                                 onChange={(e) => field.onChange(e.target.value)}
                                 className="text-lg h-12 font-mono"
                             />
@@ -454,5 +454,3 @@ export function AssetEditModal({ isOpen, onOpenChange, onSave, asset, allAssets 
     </>
   );
 }
-
-    
