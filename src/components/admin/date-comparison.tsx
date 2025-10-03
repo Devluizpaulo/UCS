@@ -18,7 +18,7 @@ import { getCommodityPricesByDate } from '@/lib/data-service';
 import type { CommodityPriceData } from '@/lib/types';
 import ExcelJS from 'exceljs';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import 'jspdf-autotable';
 
 interface ComparisonData {
   assetId: string;
@@ -57,6 +57,11 @@ function getTrendBadge(percentageChange: number) {
   } else {
     return <Badge variant="secondary">Sem Alteração</Badge>;
   }
+}
+
+// Estende a interface do jsPDF para incluir o autoTable
+interface jsPDFWithAutoTable extends jsPDF {
+  autoTable: (options: any) => jsPDFWithAutoTable;
 }
 
 export function DateComparison({ currentDate, currentData }: DateComparisonProps) {
@@ -228,53 +233,98 @@ export function DateComparison({ currentDate, currentData }: DateComparisonProps
   };
 
   const handleExportPdf = async () => {
-    if (!comparisonContentRef.current || !compareDate) return;
-
+    if (comparisonResults.length === 0 || !compareDate) return;
     setIsExporting(true);
+
     try {
-      const canvas = await html2canvas(comparisonContentRef.current, {
-        scale: 2,
-        useCORS: true
+      const doc = new jsPDF() as jsPDFWithAutoTable;
+      const currentDateFormatted = format(currentDate, 'dd/MM/yyyy');
+      const compareDateFormatted = format(compareDate, 'dd/MM/yyyy');
+
+      // Cabeçalho do Documento
+      doc.setFontSize(18);
+      doc.text('Relatório Comparativo de Ativos', doc.internal.pageSize.getWidth() / 2, 22, { align: 'center' });
+      doc.setFontSize(11);
+      doc.setTextColor(100);
+      doc.text(`Período: ${compareDateFormatted} vs ${currentDateFormatted}`, doc.internal.pageSize.getWidth() / 2, 29, { align: 'center' });
+
+      // Resumo de KPIs
+      const summary = {
+          up: comparisonResults.filter(r => r.percentageChange > 0).length,
+          down: comparisonResults.filter(r => r.percentageChange < 0).length,
+          maxChange: Math.max(...comparisonResults.map(r => Math.abs(r.percentageChange))),
+          avgChange: comparisonResults.reduce((sum, r) => sum + r.percentageChange, 0) / comparisonResults.length,
+      };
+      
+      const startY = 40;
+      doc.setFontSize(10);
+      doc.setFillColor(240, 240, 240); // Fundo cinza claro
+      doc.rect(14, startY, doc.internal.pageSize.getWidth() - 28, 20, 'F');
+      
+      const kpiX = 25;
+      const kpiY = startY + 8;
+      doc.setTextColor(30, 144, 255); // Azul
+      doc.text('Ativos em Alta:', kpiX, kpiY);
+      doc.setTextColor(0, 0, 0);
+      doc.text(`${summary.up}`, kpiX + 30, kpiY);
+      
+      doc.setTextColor(220, 20, 60); // Vermelho
+      doc.text('Ativos em Queda:', kpiX, kpiY + 7);
+      doc.setTextColor(0, 0, 0);
+      doc.text(`${summary.down}`, kpiX + 30, kpiY + 7);
+      
+      const kpiX2 = doc.internal.pageSize.getWidth() / 2 + 10;
+      doc.setTextColor(0, 0, 0);
+      doc.text('Maior Variação (%):', kpiX2, kpiY);
+      doc.text(`${summary.maxChange.toFixed(2)}%`, kpiX2 + 35, kpiY);
+      doc.text('Variação Média (%):', kpiX2, kpiY + 7);
+      doc.text(`${summary.avgChange.toFixed(2)}%`, kpiX2 + 35, kpiY + 7);
+
+      // Tabela de Dados
+      const tableColumn = ["Ativo", `Valor (${compareDateFormatted})`, `Valor (${currentDateFormatted})`, "Variação Absoluta", "Variação (%)"];
+      const tableRows = comparisonResults.map(item => [
+          item.assetName,
+          formatCurrency(item.compareValue, item.currency, item.assetId),
+          formatCurrency(item.currentValue, item.currency, item.assetId),
+          `${item.absoluteChange >= 0 ? '+' : ''}${formatCurrency(item.absoluteChange, item.currency, item.assetId)}`,
+          `${item.percentageChange >= 0 ? '+' : ''}${item.percentageChange.toFixed(2)}%`
+      ]);
+
+      doc.autoTable({
+          startY: startY + 25,
+          head: [tableColumn],
+          body: tableRows,
+          theme: 'striped',
+          headStyles: { fillColor: [22, 160, 133] }, // Verde-azulado para cabeçalho
+          didDrawCell: (data) => {
+              if (data.section === 'body' && data.column.index === 4) {
+                  const text = data.cell.text[0];
+                  if (text.includes('+')) {
+                      doc.setTextColor(76, 175, 80); // Verde
+                  } else if (text.includes('-')) {
+                      doc.setTextColor(244, 67, 54); // Vermelho
+                  }
+              }
+          },
       });
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      const margin = 15;
-      
-      const imgProps = pdf.getImageProperties(imgData);
-      const imgWidth = pdfWidth - (margin * 2);
-      const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
-      
-      // Adicionar cabeçalho
-      pdf.setFontSize(18);
-      pdf.text('Relatório Comparativo de Ativos', pdfWidth / 2, margin, { align: 'center' });
-      pdf.setFontSize(12);
-      pdf.setTextColor(100);
-      pdf.text(
-        `Período: ${format(compareDate, 'dd/MM/yyyy')} vs ${format(currentDate, 'dd/MM/yyyy')}`,
-        pdfWidth / 2,
-        margin + 8,
-        { align: 'center' }
-      );
 
-      let heightLeft = imgHeight;
-      let position = margin + 20;
-
-      pdf.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight);
-      heightLeft -= (pdfHeight - position - margin);
-
-      while (heightLeft > 0) {
-        position = -imgHeight + heightLeft;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight);
-        heightLeft -= pdfHeight;
+      // Rodapé
+      const pageCount = doc.internal.pages.length;
+      doc.setFontSize(10);
+      doc.setTextColor(150);
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.text(
+          `Página ${i} de ${pageCount}`,
+          doc.internal.pageSize.getWidth() / 2,
+          doc.internal.pageSize.getHeight() - 10,
+          { align: 'center' }
+        );
       }
-      
-      pdf.save(`comparativo_${format(currentDate, 'yyyy-MM-dd')}.pdf`);
+
+      doc.save(`comparativo_detalhado_${format(currentDate, 'yyyy-MM-dd')}.pdf`);
     } catch (error) {
-      console.error("PDF export error:", error);
+      console.error("PDF generation error:", error);
     } finally {
       setIsExporting(false);
     }
@@ -469,5 +519,4 @@ export function DateComparison({ currentDate, currentData }: DateComparisonProps
     </Card>
   );
 }
-
     
