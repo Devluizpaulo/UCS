@@ -5,6 +5,7 @@ import { getFirebaseAdmin } from '@/lib/firebase-admin-config';
 import type { UserRecord } from 'firebase-admin/auth';
 import type { AppUserRecord } from '@/lib/types';
 import { revalidatePath } from 'next/cache';
+import { Timestamp } from 'firebase-admin/firestore';
 
 // --- AÇÕES DE USUÁRIO ---
 
@@ -182,5 +183,24 @@ export async function removeAdminRole(uid: string): Promise<void> {
   } catch (error) {
     console.error(`Error removing admin role for user ${uid}:`, error);
     throw new Error('Falha ao remover permissões de administrador.');
+  }
+}
+
+/**
+ * Salva o consentimento LGPD para um usuário.
+ * @param uid - O UID do usuário.
+ */
+export async function acceptLgpd(uid: string): Promise<void> {
+  const { db } = await getFirebaseAdmin();
+  try {
+    const userRef = db.collection('users').doc(uid);
+    await userRef.set({
+        lgpdAccepted: true,
+        lgpdAcceptedAt: Timestamp.now(),
+    }, { merge: true });
+    revalidatePath('/dashboard'); // Revalida o caminho para garantir que a UI reflita a mudança
+  } catch (error: any) {
+    console.error(`Error accepting LGPD for user ${uid}:`, error);
+    throw new Error('Falha ao salvar o consentimento LGPD.');
   }
 }

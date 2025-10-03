@@ -31,7 +31,7 @@ import React, { useState, useEffect } from 'react';
 import type { UserRecord } from 'firebase-admin/auth';
 import { UserFormModal, type UserFormValues } from '@/components/admin/user-form-modal';
 import { useToast } from '@/hooks/use-toast';
-import { updateUser } from '@/lib/admin-actions';
+import { updateUser, acceptLgpd } from '@/lib/admin-actions';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import { LgpdConsentModal } from '@/components/lgpd-consent-modal';
@@ -168,12 +168,8 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
   
   const handleLgpdAccept = async () => {
     if (!user) return;
-    const userDocRef = doc(firestore, 'users', user.uid);
     try {
-        await setDoc(userDocRef, {
-            lgpdAccepted: true,
-            lgpdAcceptedAt: serverTimestamp(),
-        }, { merge: true });
+        await acceptLgpd(user.uid);
         setLgpdConsent({ checked: true, required: false });
         toast({ title: 'Obrigado!', description: 'Consentimento aceito. Bem-vindo à plataforma!' });
     } catch (error: any) {
