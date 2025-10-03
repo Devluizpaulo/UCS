@@ -206,119 +206,123 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
         onAccept={handleLgpdAccept}
         onReject={handleSignOut}
       />
-      <div className={lgpdConsent.required && !lgpdConsent.checked ? 'blur-sm pointer-events-none' : ''}>
-        <Sidebar variant="inset">
-          <SidebarHeader>
-            <div className="flex h-10 items-center justify-center p-2 group-data-[collapsible=icon]:hidden">
-              <LogoUCS className="h-8 w-auto" />
-            </div>
-            <div className="hidden h-10 items-center justify-center p-2 group-data-[collapsible=icon]:flex">
-              <LogoUCS className="h-8 w-auto" isIcon />
-            </div>
-          </SidebarHeader>
-          <SidebarContent className="flex-grow">
-            <SidebarMenu>
-              <SidebarMenuItem onClick={handleMenuItemClick}>
-                <SidebarMenuButton
-                  asChild
-                  isActive={pathname === '/dashboard'}
-                  tooltip={{ children: 'Dashboard' }}
-                >
-                  <Link href="/dashboard">
-                    <LayoutDashboard />
-                    <span>Dashboard</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem onClick={handleMenuItemClick}>
-                <SidebarMenuButton
-                  asChild
-                  isActive={pathname.startsWith('/reports')}
-                  tooltip={{ children: 'Relatórios com IA' }}
-                >
-                  <Link href="/reports">
-                    <Sparkles />
-                    <span>Relatórios IA</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-            <SidebarMenu>
-              <p className="px-4 py-2 text-xs font-semibold text-muted-foreground/50 tracking-wider group-data-[collapsible=icon]:text-center">
-                Análise
-              </p>
-               <SidebarMenuItem onClick={handleMenuItemClick}>
-                <SidebarMenuButton
-                  asChild
-                  isActive={pathname.startsWith('/analysis/trends')}
-                  tooltip={{ children: 'Análise Histórica' }}
-                >
-                  <Link href="/analysis/trends">
-                    <TrendingUp />
-                    <span>Análise Histórica</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-               <SidebarMenuItem onClick={handleMenuItemClick}>
-                <SidebarMenuButton
-                  asChild
-                  isActive={pathname.startsWith('/analysis/composition')}
-                  tooltip={{ children: 'Análise de Composição' }}
-                >
-                  <Link href="/analysis/composition">
-                    <PieChart />
-                    <span>Composição</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-            {isAdmin && (
+      <div className={`flex h-screen w-full bg-background ${lgpdConsent.required && !lgpdConsent.checked ? 'blur-sm pointer-events-none' : ''}`}>
+        <Sidebar>
+          <div className="flex flex-col h-full">
+            <SidebarHeader>
+              <div className="flex h-10 items-center justify-center p-2 group-data-[collapsible=icon]:hidden">
+                <LogoUCS className="h-8 w-auto" />
+              </div>
+              <div className="hidden h-10 items-center justify-center p-2 group-data-[collapsible=icon]:flex">
+                <LogoUCS className="h-8 w-auto" isIcon />
+              </div>
+            </SidebarHeader>
+            <SidebarContent className="flex-grow">
+              <SidebarMenu>
+                <SidebarMenuItem onClick={handleMenuItemClick}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname === '/dashboard'}
+                    tooltip={{ children: 'Dashboard' }}
+                  >
+                    <Link href="/dashboard">
+                      <LayoutDashboard />
+                      <span>Dashboard</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem onClick={handleMenuItemClick}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith('/reports')}
+                    tooltip={{ children: 'Relatórios com IA' }}
+                  >
+                    <Link href="/reports">
+                      <Sparkles />
+                      <span>Relatórios IA</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
               <SidebarMenu>
                 <p className="px-4 py-2 text-xs font-semibold text-muted-foreground/50 tracking-wider group-data-[collapsible=icon]:text-center">
-                  Admin
+                  Análise
                 </p>
                 <SidebarMenuItem onClick={handleMenuItemClick}>
                   <SidebarMenuButton
                     asChild
-                    isActive={pathname.startsWith('/admin/users')}
-                    tooltip={{ children: 'Gerenciar Usuários' }}
+                    isActive={pathname.startsWith('/analysis/trends')}
+                    tooltip={{ children: 'Análise Histórica' }}
                   >
-                    <Link href="/admin/users">
-                      <Users />
-                      <span>Usuários</span>
+                    <Link href="/analysis/trends">
+                      <TrendingUp />
+                      <span>Análise Histórica</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-                 <SidebarMenuItem onClick={handleMenuItemClick}>
+                <SidebarMenuItem onClick={handleMenuItemClick}>
                   <SidebarMenuButton
                     asChild
-                    isActive={pathname.startsWith('/admin/audit')}
-                    tooltip={{ children: 'Auditoria de Dados' }}
+                    isActive={pathname.startsWith('/analysis/composition')}
+                    tooltip={{ children: 'Análise de Composição' }}
                   >
-                    <Link href="/admin/audit">
-                      <History />
-                      <span>Auditoria</span>
+                    <Link href="/analysis/composition">
+                      <PieChart />
+                      <span>Composição</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               </SidebarMenu>
-            )}
-          </SidebarContent>
-          <div className="mt-auto">
-            <SidebarContent className="!flex-grow-0 border-t">
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton onClick={handleSignOut} tooltip={{ children: 'Sair' }}>
-                    <LogOut />
-                    <span>Sair</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-              <UserProfile />
+              {isAdmin && (
+                <SidebarMenu>
+                  <p className="px-4 py-2 text-xs font-semibold text-muted-foreground/50 tracking-wider group-data-[collapsible=icon]:text-center">
+                    Admin
+                  </p>
+                  <SidebarMenuItem onClick={handleMenuItemClick}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={pathname.startsWith('/admin/users')}
+                      tooltip={{ children: 'Gerenciar Usuários' }}
+                    >
+                      <Link href="/admin/users">
+                        <Users />
+                        <span>Usuários</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem onClick={handleMenuItemClick}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={pathname.startsWith('/admin/audit')}
+                      tooltip={{ children: 'Auditoria de Dados' }}
+                    >
+                      <Link href="/admin/audit">
+                        <History />
+                        <span>Auditoria</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              )}
             </SidebarContent>
+            <div className="mt-auto">
+              <SidebarContent className="!flex-grow-0 border-t">
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton onClick={handleSignOut} tooltip={{ children: 'Sair' }}>
+                      <LogOut />
+                      <span>Sair</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+                <UserProfile />
+              </SidebarContent>
+            </div>
           </div>
         </Sidebar>
-        <SidebarInset>{children}</SidebarInset>
+        <div className="flex-1 flex flex-col h-screen">
+          {children}
+        </div>
       </div>
     </>
   );

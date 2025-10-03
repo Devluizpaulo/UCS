@@ -140,7 +140,7 @@ const SidebarProvider = React.forwardRef<
               } as React.CSSProperties
             }
             className={cn(
-              "group/sidebar-wrapper flex h-screen min-h-screen w-full has-[[data-variant=inset]]:bg-sidebar",
+              "group/sidebar-wrapper",
               className
             )}
             ref={ref}
@@ -178,7 +178,7 @@ const Sidebar = React.forwardRef<
 
     if (collapsible === "none") {
       return (
-        <div
+        <aside
           className={cn(
             "flex h-full w-[--sidebar-width] flex-col bg-sidebar text-sidebar-foreground",
             className
@@ -187,7 +187,7 @@ const Sidebar = React.forwardRef<
           {...props}
         >
           {children}
-        </div>
+        </aside>
       )
     }
 
@@ -215,9 +215,9 @@ const Sidebar = React.forwardRef<
     }
 
     return (
-      <div
+      <aside
         ref={ref}
-        className={cn("peer hidden h-full md:flex", className)}
+        className={cn("hidden md:flex h-full flex-col", className)}
         data-state={state}
         data-collapsible={state === "collapsed" ? collapsible : ""}
         data-variant={variant}
@@ -245,7 +245,7 @@ const Sidebar = React.forwardRef<
             {children}
           </div>
         </div>
-      </div>
+      </aside>
     )
   }
 )
@@ -285,13 +285,7 @@ const SidebarInset = React.forwardRef<
     <main
       ref={ref}
       className={cn(
-        "relative flex min-h-0 flex-1 flex-col bg-background",
-        "md:peer-data-[state=expanded]:pl-[var(--sidebar-width)]",
-        "md:peer-data-[collapsible=icon]:peer-data-[variant=sidebar]:pl-[var(--sidebar-width-icon)]",
-        "md:peer-data-[collapsible=icon]:peer-data-[variant=floating]:pl-[calc(var(--sidebar-width-icon)_+_theme(spacing.4))]",
-        "md:peer-data-[collapsible=icon]:peer-data-[variant=inset]:pl-[calc(var(--sidebar-width-icon)_+_theme(spacing.4))]",
-        "md:peer-data-[variant=inset]:m-2 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow",
-        "transition-[padding-left] ease-linear duration-200",
+        "relative flex min-h-0 flex-1 flex-col",
         className
       )}
       {...props}

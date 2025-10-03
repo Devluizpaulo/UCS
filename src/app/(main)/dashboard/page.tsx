@@ -304,91 +304,91 @@ export default function DashboardPage() {
   
   return (
     <>
-      <PageHeader 
-        title="Painel de Cotações"
-        description={isCurrentDateOrFuture 
-            ? "Cotações em tempo real dos principais ativos." 
-            : `Exibindo cotações para: ${formattedDate}`
-        }
-      >
-        <div className="flex items-center gap-2 flex-wrap">
-            <Button variant="outline" size="sm" onClick={handleExportPdf} disabled={isExporting}>
-                {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileDown className="mr-2 h-4 w-4" />}
-                PDF
-            </Button>
-             <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={isExporting}>
-                {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileDown className="mr-2 h-4 w-4" />}
-                Excel
-            </Button>
-            <div className="w-px h-8 bg-border mx-2 hidden sm:block" />
-            {isCurrentDateOrFuture ? (
-                <Button variant="outline" size="icon" onClick={handleRefresh} disabled={isPending} title="Atualizar Cotações">
-                    <RefreshCw className={cn("h-4 w-4", isPending && "animate-spin")} />
+        <PageHeader
+            title="Painel de Cotações"
+            description={isCurrentDateOrFuture
+                ? "Cotações em tempo real dos principais ativos."
+                : `Exibindo cotações para: ${formattedDate}`
+            }
+        >
+            <div className="flex items-center gap-2 flex-wrap">
+                <Button variant="outline" size="sm" onClick={handleExportPdf} disabled={isExporting}>
+                    {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileDown className="mr-2 h-4 w-4" />}
+                    PDF
                 </Button>
+                <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={isExporting}>
+                    {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileDown className="mr-2 h-4 w-4" />}
+                    Excel
+                </Button>
+                <div className="w-px h-8 bg-border mx-2 hidden sm:block" />
+                {isCurrentDateOrFuture ? (
+                    <Button variant="outline" size="icon" onClick={handleRefresh} disabled={isPending} title="Atualizar Cotações">
+                        <RefreshCw className={cn("h-4 w-4", isPending && "animate-spin")} />
+                    </Button>
+                ) : (
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="outline" size="icon" disabled={isPending} title="Reprocessar dia">
+                                <History className={cn("h-4 w-4", isPending && "animate-spin")} />
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Reprocessar Cálculos do Dia?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Esta ação acionará o n8n para buscar e recalcular todos os dados para o dia <span className="font-bold">{formattedDate}</span>. Isso pode sobrescrever dados existentes. Use caso suspeite de um erro no processamento original.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleReprocess} disabled={isPending}>
+                                    Sim, Reprocessar
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                )}
+                <DateNavigator
+                    targetDate={targetDate}
+                />
+            </div>
+        </PageHeader>
+        <main ref={dashboardRef} className="flex-1 overflow-y-auto p-4 md:p-6 bg-gradient-to-br from-background to-muted/30">
+            {isLoading && data.length === 0 ? (
+                <div className="space-y-4 md:space-y-8">
+                    <Skeleton className="h-[180px] w-full" />
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
+                        <Skeleton className="h-32 w-full" />
+                        <Skeleton className="h-32 w-full" />
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
+                        <Skeleton className="h-32 w-full" />
+                        <Skeleton className="h-32 w-full" />
+                    </div>
+                </div>
             ) : (
-                <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                         <Button variant="outline" size="icon" disabled={isPending} title="Reprocessar dia">
-                            <History className={cn("h-4 w-4", isPending && "animate-spin")} />
-                        </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>Reprocessar Cálculos do Dia?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                Esta ação acionará o n8n para buscar e recalcular todos os dados para o dia <span className="font-bold">{formattedDate}</span>. Isso pode sobrescrever dados existentes. Use caso suspeite de um erro no processamento original.
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleReprocess} disabled={isPending}>
-                                Sim, Reprocessar
-                            </AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
-            )}
-            <DateNavigator
-              targetDate={targetDate}
-            />
-        </div>
-      </PageHeader>
-      <main ref={dashboardRef} className="flex-1 overflow-y-auto p-4 md:p-6 bg-gradient-to-br from-background to-muted/30">
-        {isLoading && data.length === 0 ? (
-          <div className="space-y-4 md:space-y-8">
-            <Skeleton className="h-[180px] w-full" />
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
-              <Skeleton className="h-32 w-full" />
-              <Skeleton className="h-32 w-full" />
-            </div>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
-              <Skeleton className="h-32 w-full" />
-              <Skeleton className="h-32 w-full" />
-            </div>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-4 md:gap-8">
-            {mainIndex && <MainIndexCard asset={mainIndex} isMain={true} />}
-            
-            {secondaryIndices.length > 0 && (
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
-                    {secondaryIndices.map(asset => <MainIndexCard key={asset.id} asset={asset} />)}
+                <div className="flex flex-col gap-4 md:gap-8">
+                    {mainIndex && <MainIndexCard asset={mainIndex} isMain={true} />}
+
+                    {secondaryIndices.length > 0 && (
+                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
+                            {secondaryIndices.map(asset => <MainIndexCard key={asset.id} asset={asset} />)}
+                        </div>
+                    )}
+
+                    {currencies.length > 0 && (
+                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
+                            {currencies.map(asset => <MainIndexCard key={asset.id} asset={asset} />)}
+                        </div>
+                    )}
+                    <CommodityPrices
+                        data={otherAssets}
+                        displayDate={isCurrentDateOrFuture ? 'Tempo Real' : formattedDate}
+                        loading={isLoading && otherAssets.length === 0}
+                    />
                 </div>
             )}
-            
-            {currencies.length > 0 && (
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
-                    {currencies.map(asset => <MainIndexCard key={asset.id} asset={asset} />)}
-                </div>
-            )}
-            <CommodityPrices 
-              data={otherAssets} 
-              displayDate={isCurrentDateOrFuture ? 'Tempo Real' : formattedDate} 
-              loading={isLoading && otherAssets.length === 0}
-            />
-          </div>
-        )}
-      </main>
+        </main>
     </>
   );
 }
