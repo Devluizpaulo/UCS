@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogBody,
   DialogFooter,
 } from '@/components/ui/dialog';
 import {
@@ -33,7 +34,6 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Loader2, AlertTriangle, Save, TrendingUp, User, Calendar } from 'lucide-react';
@@ -137,8 +137,8 @@ export function AssetEditModal({ isOpen, onOpenChange, onSave, asset, allAssets 
   return (
     <>
       <Dialog open={isOpen && !showConfirmation} onOpenChange={onOpenChange}>
-        <DialogContent className="w-[95vw] max-w-4xl h-[95vh] max-h-[900px] flex flex-col">
-          <DialogHeader className="flex-shrink-0">
+        <DialogContent className="w-[95vw] max-w-4xl">
+          <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
               <TrendingUp className="h-5 w-5 text-blue-500" />
               Editar Valor do Ativo
@@ -149,8 +149,7 @@ export function AssetEditModal({ isOpen, onOpenChange, onSave, asset, allAssets 
           </DialogDescription>
         </DialogHeader>
           
-          <div className="flex-1 overflow-hidden">
-            <ScrollArea className="h-full pr-4">
+          <DialogBody>
               <div className="space-y-6">
                 <div className="flex flex-col sm:flex-row gap-4 p-4 bg-muted/50 rounded-lg">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -302,10 +301,9 @@ export function AssetEditModal({ isOpen, onOpenChange, onSave, asset, allAssets 
                   </div>
                 )}
               </div>
-            </ScrollArea>
-          </div>
+          </DialogBody>
           
-          <DialogFooter className="flex-shrink-0 gap-2 sm:gap-0">
+          <DialogFooter className="gap-2 sm:gap-0">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="flex-1 sm:flex-none">
             Cancelar
           </Button>

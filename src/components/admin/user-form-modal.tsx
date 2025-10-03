@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogBody,
   DialogFooter,
 } from '@/components/ui/dialog';
 import {
@@ -27,7 +28,6 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { User } from 'firebase/auth';
 
 const e164Regex = /^\+[1-9]\d{1,14}$/;
@@ -124,14 +124,14 @@ export function UserFormModal({ isOpen, onOpenChange, onSubmit, user, isSelfEdit
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="grid max-h-[90vh] grid-rows-[auto_minmax(0,1fr)_auto] p-0 sm:max-w-lg">
-        <DialogHeader className="p-6 pb-4">
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
             {description}
           </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="px-6">
+        <DialogBody>
             <Form {...form}>
             <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4" id="user-form">
                 <FormField
@@ -227,8 +227,8 @@ export function UserFormModal({ isOpen, onOpenChange, onSubmit, user, isSelfEdit
                 )}
             </form>
             </Form>
-        </ScrollArea>
-        <DialogFooter className="border-t p-6 pt-4">
+        </DialogBody>
+        <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             Cancelar
             </Button>

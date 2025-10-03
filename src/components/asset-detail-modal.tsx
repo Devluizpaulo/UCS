@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, memo } from 'react';
@@ -7,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogBody,
 } from '@/components/ui/dialog';
 import {
   LineChart,
@@ -31,7 +33,6 @@ import { formatCurrency } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
 import { HistoricalPriceTable } from './historical-price-table';
 import { CalculatedAssetDetails } from './calculated-asset-details';
-import { ScrollArea } from './ui/scroll-area';
 import { UcsAseDetails } from './ucs-ase-details';
 import { Button } from './ui/button';
 import { Alert, AlertDescription } from './ui/alert';
@@ -417,10 +418,10 @@ export const AssetDetailModal = memo<AssetDetailModalProps>(({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent 
-        className="max-w-5xl w-full p-0 grid grid-rows-[auto_minmax(0,1fr)] max-h-[95vh]"
+        className="max-w-5xl w-full"
         aria-describedby="asset-description"
       >
-        <DialogHeader className="p-6 pb-0">
+        <DialogHeader>
           <div className="flex items-center gap-3 mb-1">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-muted border">
               <AssetIcon asset={asset} className="h-6 w-6 text-muted-foreground" />
@@ -434,8 +435,8 @@ export const AssetDetailModal = memo<AssetDetailModalProps>(({
           </div>
         </DialogHeader>
 
-        <ScrollArea className="w-full">
-          <div className="grid lg:grid-cols-[320px_1fr] h-full p-6 pt-2">
+        <DialogBody>
+          <div className="grid lg:grid-cols-[320px_1fr] h-full">
             {/* SIDEBAR DE INFORMAÇÕES */}
             <AssetInfo asset={asset} isLoading={loadingState.isLoading} />
 
@@ -473,7 +474,7 @@ export const AssetDetailModal = memo<AssetDetailModalProps>(({
               )}
             </div>
           </div>
-        </ScrollArea>
+        </DialogBody>
       </DialogContent>
     </Dialog>
   );
