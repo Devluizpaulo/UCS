@@ -23,7 +23,7 @@ import {
 } from 'recharts';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
-import { ArrowDown, ArrowUp, Loader2, AlertCircle, RefreshCw, TrendingUp, TrendingDown, Info } from 'lucide-react';
+import { ArrowDown, ArrowUp, Loader2, AlertCircle, RefreshCw, TrendingUp, TrendingDown } from 'lucide-react';
 import { format, parseISO, subDays, isAfter, isValid } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -199,7 +199,7 @@ ErrorState.displayName = 'ErrorState';
 /**
  * Componente de informações do ativo
  */
-const AssetInfo = memo<{
+export const AssetInfo = memo<{
   asset: CommodityPriceData;
 }>(({ asset }) => {
   const changeColor = asset.change >= 0 ? 'text-emerald-600' : 'text-red-600';

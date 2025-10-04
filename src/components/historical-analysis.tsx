@@ -40,7 +40,7 @@ import {
 import { Button } from './ui/button';
 import { Info, FileDown, Loader2 } from 'lucide-react';
 import { HistoricalPriceTable } from './historical-price-table';
-import { AssetDetailModal } from './asset-detail-modal';
+import { AssetDetailModal, AssetInfo } from './asset-detail-modal';
 import { cn } from '@/lib/utils';
 
 const ChartSkeleton = () => (
@@ -152,10 +152,14 @@ export function HistoricalAnalysis() {
   }, [assets, selectedAssetId]);
 
   const { chartData, latestQuote, mainAssetData } = useMemo(() => {
+    if (data.length === 0 || !selectedAssetConfig) {
+        return { chartData: [], latestQuote: null, mainAssetData: null };
+    }
+
     const sortedData = [...data].sort((a, b) => {
         const dateA = typeof a.timestamp === 'number' ? a.timestamp : parseISO(a.timestamp as any).getTime();
         const dateB = typeof b.timestamp === 'number' ? b.timestamp : parseISO(b.timestamp as any).getTime();
-        return dateA - dateB;
+        return dateB - dateA; // Mais recente primeiro
     });
 
     const chartPoints = sortedData
@@ -166,17 +170,17 @@ export function HistoricalAnalysis() {
            date: format(dateObject, dateFormat, { locale: ptBR }),
            value: quote.valor ?? quote.ultimo,
         }
-      });
+      }).reverse(); // Reverte para ordem cronológica no gráfico
       
-    const latest = data.length > 0 ? data[0] : null;
+    const latest = sortedData[0];
 
-    const mainAsset = selectedAssetConfig && latest ? {
+    const mainAsset = {
         ...selectedAssetConfig,
         price: latest.valor ?? latest.ultimo,
         change: latest.variacao_pct ?? 0,
         absoluteChange: (latest.valor ?? latest.ultimo) - (latest.fechamento_anterior ?? (latest.valor ?? latest.ultimo)),
         lastUpdated: latest.data,
-    } : null;
+    };
 
     return { chartData: chartPoints, latestQuote: latest, mainAssetData: mainAsset };
   }, [data, timeRange, selectedAssetConfig]);
@@ -364,6 +368,8 @@ export function HistoricalAnalysis() {
         </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-8 p-4">
+        {mainAssetData && <AssetInfo asset={mainAssetData} />}
+
         <div ref={chartRef} className="h-72 w-full bg-background pt-4 pr-4" style={{ marginLeft: '-10px' }}>
           {isLoading ? (
             <ChartSkeleton />
