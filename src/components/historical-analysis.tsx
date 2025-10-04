@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
@@ -19,7 +18,7 @@ import 'jspdf-autotable';
 import html2canvas from 'html2canvas';
 
 import type { FirestoreQuote, CommodityConfig, CommodityPriceData } from '@/lib/types';
-import { getCotacoesHistorico, getCommodityConfigs } from '@/lib/data-service';
+import { getCotacoesHistorico, getCommodityConfigs, getQuoteByDate } from '@/lib/data-service';
 import { formatCurrency } from '@/lib/formatters';
 import { Card, CardContent, CardHeader } from './ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -118,13 +117,12 @@ function DailyDetailsTable({ quote, asset }: { quote: FirestoreQuote | null, ass
     );
 }
 
-export function HistoricalAnalysis() {
+export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
   const [data, setData] = useState<FirestoreQuote[]>([]);
   const [assets, setAssets] = useState<CommodityConfig[]>([]);
   const [selectedAssetId, setSelectedAssetId] = useState<string>('ucs_ase');
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
-  const [timeRange, setTimeRange] = useState<TimeRange>('90d');
   const [selectedAssetForModal, setSelectedAssetForModal] = useState<CommodityConfig | null>(null);
   const chartRef = useRef<HTMLDivElement>(null);
 
@@ -134,9 +132,8 @@ export function HistoricalAnalysis() {
 
   useEffect(() => {
     setIsLoading(true);
-    const days = timeRangeToDays[timeRange];
-    
-    getCotacoesHistorico(selectedAssetId, days)
+    // Always fetch 90 days for the graph context
+    getCotacoesHistorico(selectedAssetId, 90)
       .then((history) => {
         setData(history);
         setIsLoading(false);
@@ -145,7 +142,7 @@ export function HistoricalAnalysis() {
         setData([]);
         setIsLoading(false);
       });
-  }, [timeRange, selectedAssetId]);
+  }, [selectedAssetId, targetDate]);
 
   const selectedAssetConfig = useMemo(() => {
     return assets.find(a => a.id === selectedAssetId);
@@ -162,28 +159,33 @@ export function HistoricalAnalysis() {
         return dateB - dateA; // Mais recente primeiro
     });
 
+    // Find the quote for the specific targetDate
+    const quoteForDate = sortedData.find(q => format(parseISO(q.timestamp as string), 'yyyy-MM-dd') === format(targetDate, 'yyyy-MM-dd')) || sortedData[0];
+    
+    if (!quoteForDate) {
+       return { chartData: [], latestQuote: null, mainAssetData: null };
+    }
+
     const chartPoints = sortedData
       .map((quote) => {
         const dateObject = typeof quote.timestamp === 'number' ? new Date(quote.timestamp) : parseISO(quote.timestamp as any);
-        let dateFormat = timeRange === '90d' ? 'MMM' : 'dd/MM';
+        let dateFormat = 'dd/MM';
         return {
            date: format(dateObject, dateFormat, { locale: ptBR }),
            value: quote.valor ?? quote.ultimo,
         }
       }).reverse(); // Reverte para ordem cronológica no gráfico
       
-    const latest = sortedData[0];
-
     const mainAsset = {
         ...selectedAssetConfig,
-        price: latest.valor ?? latest.ultimo,
-        change: latest.variacao_pct ?? 0,
-        absoluteChange: (latest.valor ?? latest.ultimo) - (latest.fechamento_anterior ?? (latest.valor ?? latest.ultimo)),
-        lastUpdated: latest.data,
+        price: quoteForDate.valor ?? quoteForDate.ultimo,
+        change: quoteForDate.variacao_pct ?? 0,
+        absoluteChange: (quoteForDate.valor ?? quoteForDate.ultimo) - (quoteForDate.fechamento_anterior ?? (quoteForDate.valor ?? quoteForDate.ultimo)),
+        lastUpdated: quoteForDate.data,
     };
 
-    return { chartData: chartPoints, latestQuote: latest, mainAssetData: mainAsset };
-  }, [data, timeRange, selectedAssetConfig]);
+    return { chartData: chartPoints, latestQuote: quoteForDate, mainAssetData: mainAsset };
+  }, [data, targetDate, selectedAssetConfig]);
   
   const handleExportPdf = async () => {
     if (!selectedAssetConfig || !chartRef.current || !latestQuote || !mainAssetData) return;
@@ -194,7 +196,6 @@ export function HistoricalAnalysis() {
         const imgData = canvas.toDataURL('image/png');
         
         const doc = new jsPDF() as jsPDFWithAutoTableType;
-        const timeRangeText = { '7d': 'Últimos 7 dias', '30d': 'Últimos 30 dias', '90d': 'Últimos 90 dias' }[timeRange];
         const generationDate = format(new Date(), "dd 'de' MMMM 'de' yyyy, HH:mm", { locale: ptBR });
         const changeColor = mainAssetData.change >= 0 ? [39, 174, 96] : [192, 57, 43];
 
@@ -206,7 +207,7 @@ export function HistoricalAnalysis() {
 
         doc.setFontSize(11);
         doc.setTextColor(108, 122, 137); // Cinza
-        doc.text(`Período de Análise: ${timeRangeText} | Gerado em: ${generationDate}`, doc.internal.pageSize.getWidth() / 2, 29, { align: 'center' });
+        doc.text(`Análise para ${format(targetDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })} | Gerado em: ${generationDate}`, doc.internal.pageSize.getWidth() / 2, 29, { align: 'center' });
         
         doc.setLineWidth(0.5);
         doc.line(14, 35, doc.internal.pageSize.getWidth() - 14, 35);
@@ -243,7 +244,7 @@ export function HistoricalAnalysis() {
         const detailsToExport = [
             { label: 'Fechamento Anterior', value: formatCurrency(latestQuote.fechamento_anterior, mainAssetData.currency) },
             { label: 'Abertura', value: formatCurrency(latestQuote.abertura, mainAssetData.currency) },
-            { label: 'Variação Diária', value: `${formatCurrency(latestQuote.minima, mainAssetData.currency)} - ${formatCurrency(latestQuote.maxima, mainAssetData.currency)}` },
+            { label: 'Var. Diária', value: `${formatCurrency(latestQuote.minima, mainAssetData.currency)} - ${formatCurrency(latestQuote.maxima, mainAssetData.currency)}` },
             { label: 'Volume', value: latestQuote.volume?.toLocaleString('pt-BR') || 'N/A' },
             { label: 'Rentabilidade Média', value: formatCurrency(latestQuote.rent_media, 'BRL') },
             { label: 'Valor (tonelada)', value: formatCurrency(latestQuote.ton, 'BRL') },
@@ -345,17 +346,6 @@ export function HistoricalAnalysis() {
           </Select>
         </div>
         <div className="flex items-center gap-2">
-          <Tabs 
-            defaultValue={timeRange} 
-            className="w-full sm:w-auto" 
-            onValueChange={(value) => setTimeRange(value as TimeRange)}
-          >
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="7d">7D</TabsTrigger>
-              <TabsTrigger value="30d">30D</TabsTrigger>
-              <TabsTrigger value="90d">90D</TabsTrigger>
-            </TabsList>
-          </Tabs>
           <Button
             variant="outline"
             size="icon"
@@ -368,7 +358,7 @@ export function HistoricalAnalysis() {
         </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-8 p-4">
-        {mainAssetData && <AssetInfo asset={mainAssetData} />}
+        {mainAssetData ? <AssetInfo asset={mainAssetData} /> : <Skeleton className="h-24 w-full" />}
 
         <div ref={chartRef} className="h-72 w-full bg-background pt-4 pr-4" style={{ marginLeft: '-10px' }}>
           {isLoading ? (
@@ -421,7 +411,7 @@ export function HistoricalAnalysis() {
             <TabsTrigger value="history">Dados Históricos</TabsTrigger>
           </TabsList>
           <TabsContent value="overview" className="pt-4">
-            <h3 className="text-lg font-semibold mb-2">Detalhes do Dia ({latestQuote?.data || 'N/A'})</h3>
+            <h3 className="text-lg font-semibold mb-2">Detalhes do Dia ({latestQuote?.data || format(targetDate, 'dd/MM/yyyy')})</h3>
             <div className="flex items-start gap-2 p-3 mb-4 text-sm text-blue-800 bg-blue-50 border border-blue-200 rounded-lg">
               <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
               <p>A tabela abaixo mostra os dados detalhados para o dia mais recente do período selecionado.</p>
