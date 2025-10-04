@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
@@ -114,13 +115,13 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
         let dateFormat = 'dd/MM';
         return {
            date: format(dateObject, dateFormat, { locale: ptBR }),
-           value: quote.valor ?? quote.ultimo,
+           value: quote.valor ?? quote.valor_brl ?? quote.resultado_final_brl ?? quote.ultimo,
         }
       }).reverse(); // Reverte para ordem cronológica no gráfico
       
     const mainAsset = {
         ...selectedAssetConfig,
-        price: quoteForDate.valor ?? quoteForDate.ultimo ?? 0,
+        price: quoteForDate.valor ?? quoteForDate.valor_brl ?? quoteForDate.resultado_final_brl ?? quoteForDate.ultimo ?? 0,
         change: quoteForDate.variacao_pct ?? 0,
         absoluteChange: (quoteForDate.valor ?? quoteForDate.ultimo ?? 0) - (quoteForDate.fechamento_anterior ?? (quoteForDate.valor ?? quoteForDate.ultimo ?? 0)),
         lastUpdated: quoteForDate.data || format(new Date(quoteForDate.timestamp as any), 'dd/MM/yyyy'),
@@ -406,7 +407,7 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
     </Card>
     {selectedAssetForModal && (
         <AssetDetailModal
-            asset={selectedAssetForModal}
+            asset={selectedAssetForModal as CommodityPriceData}
             isOpen={!!selectedAssetForModal}
             onOpenChange={() => setSelectedAssetForModal(null)}
         />

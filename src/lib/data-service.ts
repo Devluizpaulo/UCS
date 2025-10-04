@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { getFirebaseAdmin } from '@/lib/firebase-admin-config';
@@ -82,21 +83,22 @@ function extractPriceFromQuote(quoteData: any): PriceExtractionResult {
 
   // Ordem de prioridade para extração do preço
   const priceFields = [
-    { field: 'valor_brl', source: 'valor_brl' }, // Prioridade para UCS ASE
-    { field: 'valor', source: 'valor' },
-    { field: 'resultado_final_brl', source: 'resultado_final_brl' }, // Outro campo comum em calculados
-    { field: 'ultimo', source: 'ultimo' },
+    { field: 'valor_brl', source: 'valor_brl (ucs_ase)' },
+    { field: 'resultado_final_brl', source: 'resultado_final_brl (ucs_ase)' },
+    { field: 'valor', source: 'valor (padrão)' },
+    { field: 'ultimo', source: 'ultimo (padrão)' },
   ];
 
   for (const { field, source } of priceFields) {
-    if (typeof quoteData[field] === 'number' && !isNaN(quoteData[field])) {
-      return { price: quoteData[field], source };
+    const value = quoteData[field];
+    if (typeof value === 'number' && !isNaN(value)) {
+      return { price: value, source };
     }
   }
   
-  // Fallback para o campo `resultado_final` (sem _brl)
-   if (typeof quoteData['resultado_final'] === 'number' && !isNaN(quoteData['resultado_final'])) {
-      return { price: quoteData['resultado_final'], source: 'resultado_final_fallback' };
+  // Fallback para componentes (caso ucs_ase)
+  if (quoteData.componentes && typeof quoteData.componentes.resultado_final_brl === 'number') {
+      return { price: quoteData.componentes.resultado_final_brl, source: 'componentes.resultado_final_brl' };
   }
 
   return { price: 0, source: 'none' };
@@ -124,12 +126,17 @@ function formatTimestamp(timestamp: any): string {
             return format(dateToFormat, "HH:mm:ss");
         }
     } catch (error) {
-        console.warn('Erro ao formatar timestamp:', error, 'Valor original:', timestamp);
+        // Silently fail but log for debugging
+        // console.warn('Erro ao formatar timestamp:', error, 'Valor original:', timestamp);
     }
     
     // Fallback se a conversão falhar
     if(typeof timestamp === 'string' && isValid(new Date(timestamp))) {
-      return format(new Date(timestamp), "HH:mm:ss");
+      try {
+        return format(new Date(timestamp), "HH:mm:ss");
+      } catch (e) {
+        return 'Inválido';
+      }
     }
     
     return 'Inválido';
