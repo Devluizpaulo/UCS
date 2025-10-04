@@ -38,7 +38,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from './ui/button';
-import { Info, FileDown, Loader2, TrendingUp, TrendingDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Info, FileDown, Loader2 } from 'lucide-react';
 import { HistoricalPriceTable } from './historical-price-table';
 import { AssetDetailModal } from './asset-detail-modal';
 import { cn } from '@/lib/utils';
@@ -196,34 +196,34 @@ export function HistoricalAnalysis() {
 
         // --- CABEÇALHO DO DOCUMENTO ---
         doc.setFontSize(18);
-        doc.setTextColor(34, 47, 62);
+        doc.setTextColor(34, 47, 62); // Cor escura (quase preto)
         doc.setFont('helvetica', 'bold');
-        doc.text(`Relatório de Ativo: ${selectedAssetConfig.name}`, 14, 22);
+        doc.text(`Relatório de Ativo: ${selectedAssetConfig.name}`, doc.internal.pageSize.getWidth() / 2, 22, { align: 'center' });
 
-        doc.setFontSize(10);
-        doc.setTextColor(108, 122, 137);
-        doc.text(`Período de Análise: ${timeRangeText} | Gerado em: ${generationDate}`, 14, 28);
+        doc.setFontSize(11);
+        doc.setTextColor(108, 122, 137); // Cinza
+        doc.text(`Período de Análise: ${timeRangeText} | Gerado em: ${generationDate}`, doc.internal.pageSize.getWidth() / 2, 29, { align: 'center' });
         
         doc.setLineWidth(0.5);
-        doc.line(14, 32, doc.internal.pageSize.getWidth() - 14, 32);
+        doc.line(14, 35, doc.internal.pageSize.getWidth() - 14, 35);
 
 
         // --- RESUMO DO PREÇO ---
         doc.setFontSize(22);
         doc.setFont('helvetica', 'bold');
-        doc.text(formatCurrency(mainAssetData.price, mainAssetData.currency, mainAssetData.id), 14, 42);
+        doc.text(formatCurrency(mainAssetData.price, mainAssetData.currency, mainAssetData.id), 14, 48);
 
         doc.setFontSize(12);
         doc.setTextColor(changeColor[0], changeColor[1], changeColor[2]);
         doc.text(
             `${mainAssetData.absoluteChange >= 0 ? '▲' : '▼'} ${formatCurrency(mainAssetData.absoluteChange, mainAssetData.currency, mainAssetData.id)} (${mainAssetData.change >= 0 ? '+' : ''}${mainAssetData.change.toFixed(2)}%)`, 
             14, 
-            50
+            56
         );
 
         doc.setFontSize(9);
         doc.setTextColor(108, 122, 137);
-        doc.text(`Dados de ${latestQuote.data} | Fonte: Investing.com`, 14, 55);
+        doc.text(`Dados de ${latestQuote.data} | Fonte: Investing.com`, 14, 62);
 
 
         // --- IMAGEM DO GRÁFICO ---
@@ -231,9 +231,9 @@ export function HistoricalAnalysis() {
         const pdfWidth = doc.internal.pageSize.getWidth();
         const imgWidth = pdfWidth - 28;
         const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
-        doc.addImage(imgData, 'PNG', 14, 65, imgWidth, imgHeight);
+        doc.addImage(imgData, 'PNG', 14, 70, imgWidth, imgHeight);
 
-        let finalY = 65 + imgHeight + 10;
+        let finalY = 70 + imgHeight + 10;
         
         // --- TABELA DE DETALHES DO DIA ---
         const detailsToExport = [
@@ -269,7 +269,7 @@ export function HistoricalAnalysis() {
                 theme: 'grid',
                 headStyles: { fillColor: [34, 47, 62] },
             });
-            finalY = (doc as any).lastAutoTable.finalY;
+            finalY = (doc as any).lastAutoTable.finalY + 5;
 
             doc.autoTable({
                 startY: finalY,
@@ -277,9 +277,12 @@ export function HistoricalAnalysis() {
                 body: [
                   ['Cotação USD/BRL', formatCurrency(latestQuote.valores_originais?.cotacao_usd || 0, 'BRL', 'usd')],
                   ['Valor Final (USD)', formatCurrency(latestQuote.componentes.resultado_final_usd || 0, 'USD', 'ucs_ase')],
+                  ['Fórmula', latestQuote.conversoes?.brl_para_usd || 'N/A'],
                 ],
                 theme: 'grid',
                 headStyles: { fillColor: [39, 174, 96] }, // Verde
+                tableWidth: (pdfWidth / 2) - 20,
+                margin: { left: 14 }
             });
 
              doc.autoTable({
@@ -288,10 +291,12 @@ export function HistoricalAnalysis() {
                 body: [
                    ['Cotação EUR/BRL', formatCurrency(latestQuote.valores_originais?.cotacao_eur || 0, 'BRL', 'eur')],
                    ['Valor Final (EUR)', formatCurrency(latestQuote.componentes.resultado_final_eur || 0, 'EUR', 'ucs_ase')],
+                   ['Fórmula', latestQuote.conversoes?.brl_para_eur || 'N/A'],
                 ],
                 theme: 'grid',
                 headStyles: { fillColor: [41, 128, 185] }, // Azul
-                margin: { left: doc.internal.pageSize.getWidth() / 2 + 5 },
+                tableWidth: (pdfWidth / 2) - 20,
+                margin: { left: doc.internal.pageSize.getWidth() / 2 + 6 },
             });
             finalY = (doc as any).lastAutoTable.finalY;
         }
@@ -300,10 +305,10 @@ export function HistoricalAnalysis() {
         const pageCount = doc.internal.pages.length;
         for (let i = 1; i <= pageCount; i++) {
             doc.setPage(i);
-            doc.setFontSize(8);
+            doc.setFontSize(9);
             doc.setTextColor(150);
             doc.text(
-                `Página ${i} de ${pageCount} | Relatório gerado pela Plataforma UCS Index`,
+                `Página ${i} de ${pageCount} | Monitor do Índice UCS`,
                 doc.internal.pageSize.getWidth() / 2,
                 doc.internal.pageSize.getHeight() - 10,
                 { align: 'center' }
