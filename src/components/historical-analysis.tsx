@@ -198,23 +198,32 @@ export function HistoricalAnalysis() {
         doc.setFontSize(18);
         doc.setTextColor(34, 47, 62);
         doc.setFont('helvetica', 'bold');
-        doc.text(`${selectedAssetConfig.name} (${selectedAssetConfig.id.toUpperCase()})`, 14, 22);
+        doc.text(`Relatório de Ativo: ${selectedAssetConfig.name}`, 14, 22);
 
+        doc.setFontSize(10);
+        doc.setTextColor(108, 122, 137);
+        doc.text(`Período de Análise: ${timeRangeText} | Gerado em: ${generationDate}`, 14, 28);
+        
+        doc.setLineWidth(0.5);
+        doc.line(14, 32, doc.internal.pageSize.getWidth() - 14, 32);
+
+
+        // --- RESUMO DO PREÇO ---
         doc.setFontSize(22);
         doc.setFont('helvetica', 'bold');
-        doc.text(formatCurrency(mainAssetData.price, mainAssetData.currency, mainAssetData.id), 14, 32);
+        doc.text(formatCurrency(mainAssetData.price, mainAssetData.currency, mainAssetData.id), 14, 42);
 
         doc.setFontSize(12);
         doc.setTextColor(changeColor[0], changeColor[1], changeColor[2]);
         doc.text(
-            `${mainAssetData.absoluteChange >= 0 ? '+' : ''}${formatCurrency(mainAssetData.absoluteChange, mainAssetData.currency, mainAssetData.id)} (${mainAssetData.change >= 0 ? '+' : ''}${mainAssetData.change.toFixed(2)}%)`, 
+            `${mainAssetData.absoluteChange >= 0 ? '▲' : '▼'} ${formatCurrency(mainAssetData.absoluteChange, mainAssetData.currency, mainAssetData.id)} (${mainAssetData.change >= 0 ? '+' : ''}${mainAssetData.change.toFixed(2)}%)`, 
             14, 
-            40
+            50
         );
 
         doc.setFontSize(9);
         doc.setTextColor(108, 122, 137);
-        doc.text(`Dados de ${latestQuote.data} | Fonte: Investing.com`, 14, 45);
+        doc.text(`Dados de ${latestQuote.data} | Fonte: Investing.com`, 14, 55);
 
 
         // --- IMAGEM DO GRÁFICO ---
@@ -222,45 +231,30 @@ export function HistoricalAnalysis() {
         const pdfWidth = doc.internal.pageSize.getWidth();
         const imgWidth = pdfWidth - 28;
         const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
-        doc.addImage(imgData, 'PNG', 14, 55, imgWidth, imgHeight);
+        doc.addImage(imgData, 'PNG', 14, 65, imgWidth, imgHeight);
 
-        let finalY = 55 + imgHeight + 10;
+        let finalY = 65 + imgHeight + 10;
         
         // --- TABELA DE DETALHES DO DIA ---
         const detailsToExport = [
-            { label: 'Fechamento Anterior', value: latestQuote.fechamento_anterior },
-            { label: 'Abertura', value: latestQuote.abertura },
+            { label: 'Fechamento Anterior', value: formatCurrency(latestQuote.fechamento_anterior, mainAssetData.currency) },
+            { label: 'Abertura', value: formatCurrency(latestQuote.abertura, mainAssetData.currency) },
             { label: 'Variação Diária', value: `${formatCurrency(latestQuote.minima, mainAssetData.currency)} - ${formatCurrency(latestQuote.maxima, mainAssetData.currency)}` },
-            { label: 'Volume', value: latestQuote.volume?.toLocaleString('pt-BR') },
+            { label: 'Volume', value: latestQuote.volume?.toLocaleString('pt-BR') || 'N/A' },
             { label: 'Rentabilidade Média', value: formatCurrency(latestQuote.rent_media, 'BRL') },
             { label: 'Valor (tonelada)', value: formatCurrency(latestQuote.ton, 'BRL') },
-        ].filter(item => item.value !== null && item.value !== undefined && item.value !== 'N/A');
+        ].filter(item => item.value !== null && item.value !== undefined && !item.value.includes('NaN'));
 
         if (detailsToExport.length > 0) {
-            const tableBody = detailsToExport.map(item => [item.label, item.value]);
-            const half = Math.ceil(tableBody.length / 2);
-            const firstHalf = tableBody.slice(0, half);
-            const secondHalf = tableBody.slice(half);
-
             doc.autoTable({
                 startY: finalY,
-                body: firstHalf,
-                theme: 'plain',
-                styles: { fontSize: 10, cellPadding: 2 },
-                columnStyles: { 0: { fontStyle: 'bold' }, 1: { halign: 'right' } }
-            });
-
-             doc.autoTable({
-                startY: finalY,
-                body: secondHalf,
-                theme: 'plain',
-                styles: { fontSize: 10, cellPadding: 2 },
-                columnStyles: { 0: { fontStyle: 'bold' }, 1: { halign: 'right' } },
-                margin: { left: doc.internal.pageSize.getWidth() / 2 + 5 },
+                head: [['Resumo do Dia', 'Valor']],
+                body: detailsToExport.map(item => [item.label, item.value]),
+                theme: 'grid',
+                headStyles: { fillColor: [44, 62, 80] },
             });
             finalY = (doc as any).lastAutoTable.finalY + 10;
         }
-
 
         // Seção Específica para UCS ASE
         if (selectedAssetConfig.id === 'ucs_ase' && latestQuote.componentes) {
@@ -299,6 +293,21 @@ export function HistoricalAnalysis() {
                 headStyles: { fillColor: [41, 128, 185] }, // Azul
                 margin: { left: doc.internal.pageSize.getWidth() / 2 + 5 },
             });
+            finalY = (doc as any).lastAutoTable.finalY;
+        }
+
+        // --- Rodapé ---
+        const pageCount = doc.internal.pages.length;
+        for (let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
+            doc.setFontSize(8);
+            doc.setTextColor(150);
+            doc.text(
+                `Página ${i} de ${pageCount} | Relatório gerado pela Plataforma UCS Index`,
+                doc.internal.pageSize.getWidth() / 2,
+                doc.internal.pageSize.getHeight() - 10,
+                { align: 'center' }
+            );
         }
         
         doc.save(`relatorio_${selectedAssetConfig.id}_${format(new Date(), 'yyyyMMdd')}.pdf`);
