@@ -6,7 +6,7 @@ import { getFirebaseAdmin } from '@/lib/firebase-admin-config';
 import type { CommodityConfig, CommodityPriceData, FirestoreQuote } from '@/lib/types';
 import { getCache, setCache, clearCache as clearMemoryCache } from '@/lib/cache-service';
 import { Timestamp } from 'firebase-admin/firestore';
-import { subDays, format, startOfDay, endOfDay, isValid } from 'date-fns';
+import { subDays, format, startOfDay, endOfDay, isValid, parseISO } from 'date-fns';
 import { revalidatePath } from 'next/cache';
 
 // --- CONSTANTS ---

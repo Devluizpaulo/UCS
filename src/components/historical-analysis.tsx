@@ -16,9 +16,7 @@ import {
 import { format, parseISO, isAfter, isValid } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import jsPDF from 'jspdf';
-import type { jsPDF as jsPDFWithAutoTableType } from 'jspdf-autotable';
 import 'jspdf-autotable';
-import html2canvas from 'html2canvas';
 
 import type { FirestoreQuote, CommodityConfig, CommodityPriceData } from '@/lib/types';
 import { getCotacoesHistorico, getCommodityConfigs, getQuoteByDate } from '@/lib/data-service';
@@ -45,6 +43,11 @@ import { HistoricalPriceTable } from './historical-price-table';
 import { AssetDetailModal, AssetInfo, AssetSpecificDetails, GenericAssetDetails } from './asset-detail-modal';
 import { UcsAseDetails } from './ucs-ase-details';
 import { cn } from '@/lib/utils';
+
+// Extende a interface do jsPDF para incluir o autoTable
+interface jsPDFWithAutoTableType extends jsPDF {
+  autoTable: (options: any) => jsPDFWithAutoTableType;
+}
 
 const ChartSkeleton = () => (
   <div className="h-72 w-full">

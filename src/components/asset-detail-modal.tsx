@@ -565,7 +565,8 @@ export const AssetDetailModal = memo<AssetDetailModalProps>(({
             <HistoricalPriceTable 
               asset={asset}
               historicalData={historicalData} 
-              isLoading={loadingState.isLoading} 
+              isLoading={loadingState.isLoading}
+              onRowClick={() => {}}
             />
         )}
       </div>
