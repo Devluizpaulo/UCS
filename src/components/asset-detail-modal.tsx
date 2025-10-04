@@ -12,6 +12,15 @@ import {
   CartesianGrid,
   ReferenceLine,
 } from 'recharts';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogBody,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { ArrowDown, ArrowUp, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
@@ -116,12 +125,12 @@ const MilhoDetails = ({ quote }: { quote: FirestoreQuote }) => (
     <CardContent>
       <Table>
         <TableBody>
-          <DetailRow label="Preço (Último)" value={formatCurrency(quote.ultimo, 'BRL')} unit="BRL/saca" />
-          <DetailRow label="Abertura" value={formatCurrency(quote.abertura, 'BRL')} />
-          <DetailRow label="Máxima do Dia" value={formatCurrency(quote.maxima, 'BRL')} />
-          <DetailRow label="Mínima do Dia" value={formatCurrency(quote.minima, 'BRL')} />
-          <DetailRow label="Valor em Toneladas" value={formatCurrency(quote.ton, 'BRL')} unit="/ton" />
-          <DetailRow label="Rentabilidade Média" value={formatCurrency(quote.rent_media, 'BRL')} unit="/ha" isHighlighted />
+          {quote.ultimo && <DetailRow label="Preço (Último)" value={formatCurrency(quote.ultimo, 'BRL')} unit="BRL/saca" />}
+          {quote.abertura && <DetailRow label="Abertura" value={formatCurrency(quote.abertura, 'BRL')} />}
+          {quote.maxima && <DetailRow label="Máxima do Dia" value={formatCurrency(quote.maxima, 'BRL')} />}
+          {quote.minima && <DetailRow label="Mínima do Dia" value={formatCurrency(quote.minima, 'BRL')} />}
+          {quote.ton && <DetailRow label="Valor em Toneladas" value={formatCurrency(quote.ton, 'BRL')} unit="/ton" />}
+          {quote.rent_media && <DetailRow label="Rentabilidade Média" value={formatCurrency(quote.rent_media, 'BRL')} unit="/ha" isHighlighted />}
         </TableBody>
       </Table>
     </CardContent>
@@ -137,11 +146,11 @@ const SojaDetails = ({ quote }: { quote: FirestoreQuote }) => (
         <CardContent>
             <Table>
                 <TableBody>
-                    <DetailRow label="Preço (Último)" value={formatCurrency(quote.ultimo, 'USD')} unit="USD/saca" />
-                    <DetailRow label="Preço Convertido" value={formatCurrency(quote.ultimo_brl, 'BRL')} unit="BRL/saca" />
-                    <DetailRow label="Cotação Dólar Usada" value={formatCurrency(quote.cotacao_dolar, 'BRL')} />
-                    <DetailRow label="Valor em Toneladas" value={formatCurrency(quote.ton, 'BRL')} unit="/ton" />
-                    <DetailRow label="Rentabilidade Média" value={formatCurrency(quote.rent_media, 'BRL')} unit="/ha" isHighlighted />
+                    {quote.ultimo && <DetailRow label="Preço (Último)" value={formatCurrency(quote.ultimo, 'USD')} unit="USD/saca" />}
+                    {quote.ultimo_brl && <DetailRow label="Preço Convertido" value={formatCurrency(quote.ultimo_brl, 'BRL')} unit="BRL/saca" />}
+                    {quote.cotacao_dolar && <DetailRow label="Cotação Dólar Usada" value={formatCurrency(quote.cotacao_dolar, 'BRL', 'usd')} />}
+                    {quote.ton && <DetailRow label="Valor em Toneladas" value={formatCurrency(quote.ton, 'BRL')} unit="/ton" />}
+                    {quote.rent_media && <DetailRow label="Rentabilidade Média" value={formatCurrency(quote.rent_media, 'BRL')} unit="/ha" isHighlighted />}
                 </TableBody>
             </Table>
         </CardContent>
@@ -532,5 +541,3 @@ export const AssetDetailModal = memo<AssetDetailModalProps>(({
 });
 
 AssetDetailModal.displayName = 'AssetDetailModal';
-
-    
