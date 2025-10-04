@@ -119,15 +119,13 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
         }
       }).reverse(); // Reverte para ordem cronológica no gráfico
       
-    // Lógica corrigida para selecionar o preço e moeda corretos
     let priceForAssetInfo = quoteForDate.valor_brl ?? quoteForDate.resultado_final_brl ?? quoteForDate.valor ?? quoteForDate.ultimo ?? 0;
     let currencyForAssetInfo = selectedAssetConfig.currency;
 
-    if (selectedAssetConfig.id === 'soja') {
-        priceForAssetInfo = quoteForDate.ultimo ?? 0; // Preço original em USD
-        currencyForAssetInfo = 'USD';
-    } else if (selectedAssetConfig.currency === 'BRL') {
-        priceForAssetInfo = quoteForDate.ultimo_brl ?? priceForAssetInfo;
+    // Para ativos cotados em moeda estrangeira, exibe o valor original, não o convertido
+    if (['soja', 'carbono'].includes(selectedAssetConfig.id)) {
+        priceForAssetInfo = quoteForDate.ultimo ?? 0;
+        currencyForAssetInfo = selectedAssetConfig.currency;
     }
 
     const mainAsset: CommodityPriceData = {
