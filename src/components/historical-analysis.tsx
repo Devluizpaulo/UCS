@@ -40,7 +40,8 @@ import {
 import { Button } from './ui/button';
 import { Info, FileDown, Loader2 } from 'lucide-react';
 import { HistoricalPriceTable } from './historical-price-table';
-import { AssetDetailModal, AssetInfo, AssetSpecificDetails, UcsAseDetails } from './asset-detail-modal';
+import { AssetDetailModal, AssetInfo, AssetSpecificDetails } from './asset-detail-modal';
+import { UcsAseDetails } from './ucs-ase-details';
 import { cn } from '@/lib/utils';
 
 const ChartSkeleton = () => (
@@ -184,9 +185,16 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
             { label: 'Abertura', value: formatCurrency(latestQuote.abertura, mainAssetData.currency) },
             { label: 'Var. Diária', value: `${formatCurrency(latestQuote.minima, mainAssetData.currency)} - ${formatCurrency(latestQuote.maxima, mainAssetData.currency)}` },
             { label: 'Volume', value: latestQuote.volume?.toLocaleString('pt-BR') || 'N/A' },
-            { label: 'Rentabilidade Média', value: formatCurrency(latestQuote.rent_media, 'BRL') },
-            { label: 'Valor (tonelada)', value: formatCurrency(latestQuote.ton, 'BRL') },
         ].filter(item => item.value !== null && item.value !== undefined && !item.value.includes('NaN'));
+
+        // Adiciona campos específicos do ativo (ex: rent_media)
+        if (latestQuote.rent_media) {
+          detailsToExport.push({ label: 'Rentabilidade Média', value: formatCurrency(latestQuote.rent_media, 'BRL') });
+        }
+        if (latestQuote.ton) {
+          detailsToExport.push({ label: 'Valor (tonelada)', value: formatCurrency(latestQuote.ton, 'BRL') });
+        }
+
 
         if (detailsToExport.length > 0) {
             doc.autoTable({
