@@ -100,7 +100,6 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
         return dateB - dateA; // Mais recente primeiro
     });
 
-    // Find the quote for the specific targetDate, or fallback to the most recent one
     const quoteForDate = sortedData.find(q => {
         const quoteDate = new Date(q.timestamp as any);
         return format(quoteDate, 'yyyy-MM-dd') === format(targetDate, 'yyyy-MM-dd');
@@ -116,13 +115,25 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
         let dateFormat = 'dd/MM';
         return {
            date: format(dateObject, dateFormat, { locale: ptBR }),
-           value: quote.valor_brl ?? quote.resultado_final_brl ?? quote.valor ?? quote.ultimo,
+           value: quote.valor_brl ?? quote.resultado_final_brl ?? quote.ultimo ?? quote.valor,
         }
       }).reverse(); // Reverte para ordem cronológica no gráfico
       
-    const mainAsset = {
+    // Lógica corrigida para selecionar o preço e moeda corretos
+    let priceForAssetInfo = quoteForDate.valor_brl ?? quoteForDate.resultado_final_brl ?? quoteForDate.valor ?? quoteForDate.ultimo ?? 0;
+    let currencyForAssetInfo = selectedAssetConfig.currency;
+
+    if (selectedAssetConfig.id === 'soja') {
+        priceForAssetInfo = quoteForDate.ultimo ?? 0; // Preço original em USD
+        currencyForAssetInfo = 'USD';
+    } else if (selectedAssetConfig.currency === 'BRL') {
+        priceForAssetInfo = quoteForDate.ultimo_brl ?? priceForAssetInfo;
+    }
+
+    const mainAsset: CommodityPriceData = {
         ...selectedAssetConfig,
-        price: quoteForDate.valor_brl ?? quoteForDate.resultado_final_brl ?? quoteForDate.valor ?? quoteForDate.ultimo ?? 0,
+        price: priceForAssetInfo,
+        currency: currencyForAssetInfo,
         change: quoteForDate.variacao_pct ?? 0,
         absoluteChange: (quoteForDate.valor ?? quoteForDate.ultimo ?? 0) - (quoteForDate.fechamento_anterior ?? (quoteForDate.valor ?? quoteForDate.ultimo ?? 0)),
         lastUpdated: quoteForDate.data || format(new Date(quoteForDate.timestamp as any), 'dd/MM/yyyy'),
@@ -391,7 +402,7 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
           </TabsContent>
           <TabsContent value="history" className="pt-4">
              <HistoricalPriceTable 
-                asset={selectedAssetConfig!}
+                asset={mainAssetData!}
                 historicalData={data} 
                 isLoading={isLoading} 
                 onRowClick={(assetId) => {
