@@ -93,13 +93,16 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
     }
 
     const sortedData = [...data].sort((a, b) => {
-        const dateA = new Date(a.timestamp).getTime();
-        const dateB = new Date(b.timestamp).getTime();
+        const dateA = new Date(a.timestamp as any).getTime();
+        const dateB = new Date(b.timestamp as any).getTime();
         return dateB - dateA; // Mais recente primeiro
     });
 
-    // Find the quote for the specific targetDate
-    const quoteForDate = sortedData.find(q => format(new Date(q.timestamp), 'yyyy-MM-dd') === format(targetDate, 'yyyy-MM-dd')) || sortedData[0];
+    // Find the quote for the specific targetDate, or fallback to the most recent one
+    const quoteForDate = sortedData.find(q => {
+        const quoteDate = new Date(q.timestamp as any);
+        return format(quoteDate, 'yyyy-MM-dd') === format(targetDate, 'yyyy-MM-dd');
+    }) || sortedData[0];
     
     if (!quoteForDate) {
        return { chartData: [], latestQuote: null, mainAssetData: null };
@@ -107,7 +110,7 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
 
     const chartPoints = sortedData
       .map((quote) => {
-        const dateObject = new Date(quote.timestamp);
+        const dateObject = new Date(quote.timestamp as any);
         let dateFormat = 'dd/MM';
         return {
            date: format(dateObject, dateFormat, { locale: ptBR }),
@@ -117,10 +120,10 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
       
     const mainAsset = {
         ...selectedAssetConfig,
-        price: quoteForDate.valor ?? quoteForDate.ultimo,
+        price: quoteForDate.valor ?? quoteForDate.ultimo ?? 0,
         change: quoteForDate.variacao_pct ?? 0,
-        absoluteChange: (quoteForDate.valor ?? quoteForDate.ultimo) - (quoteForDate.fechamento_anterior ?? (quoteForDate.valor ?? quoteForDate.ultimo)),
-        lastUpdated: quoteForDate.data,
+        absoluteChange: (quoteForDate.valor ?? quoteForDate.ultimo ?? 0) - (quoteForDate.fechamento_anterior ?? (quoteForDate.valor ?? quoteForDate.ultimo ?? 0)),
+        lastUpdated: quoteForDate.data || format(new Date(quoteForDate.timestamp as any), 'dd/MM/yyyy'),
     };
 
     return { chartData: chartPoints, latestQuote: quoteForDate, mainAssetData: mainAsset };
@@ -196,7 +199,7 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
         }
 
 
-        if (detailsToExport.length > 0) {
+        if (detailsToExport.length > 0 && selectedAssetConfig.id !== 'ucs_ase') {
             doc.autoTable({
                 startY: finalY,
                 head: [['Resumo do Dia', 'Valor']],
@@ -253,7 +256,7 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
         }
 
         // --- Rodapé ---
-        const pageCount = doc.internal.pages.length;
+        const pageCount = (doc.internal as any).getNumberOfPages();
         for (let i = 1; i <= pageCount; i++) {
             doc.setPage(i);
             doc.setFontSize(9);
@@ -309,7 +312,7 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
         <div ref={chartRef} className="h-72 w-full bg-background pt-4 pr-4" style={{ marginLeft: '-10px' }}>
           {isLoading ? (
             <ChartSkeleton />
-          ) : (
+          ) : chartData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: -10 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -348,6 +351,10 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
                 />
               </LineChart>
             </ResponsiveContainer>
+          ) : (
+             <div className="h-full flex items-center justify-center text-muted-foreground">
+                <p>Sem dados históricos para exibir o gráfico.</p>
+            </div>
           )}
         </div>
         
@@ -382,7 +389,7 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
                 onRowClick={(assetId) => {
                     const asset = assets.find(a => a.id === assetId);
                     if (asset && mainAssetData) {
-                        const fullAssetData = {
+                        const fullAssetData: CommodityPriceData = {
                             ...asset,
                             price: mainAssetData.price,
                             change: mainAssetData.change,
@@ -399,7 +406,7 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
     </Card>
     {selectedAssetForModal && (
         <AssetDetailModal
-            asset={selectedAssetForModal as any}
+            asset={selectedAssetForModal}
             isOpen={!!selectedAssetForModal}
             onOpenChange={() => setSelectedAssetForModal(null)}
         />

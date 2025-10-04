@@ -5,7 +5,7 @@ import { getFirebaseAdmin } from '@/lib/firebase-admin-config';
 import type { CommodityConfig, CommodityPriceData, FirestoreQuote } from '@/lib/types';
 import { getCache, setCache, clearCache as clearMemoryCache } from '@/lib/cache-service';
 import { Timestamp } from 'firebase-admin/firestore';
-import { subDays, format, startOfDay, endOfDay } from 'date-fns';
+import { subDays, format, startOfDay, endOfDay, isValid } from 'date-fns';
 import { revalidatePath } from 'next/cache';
 
 // --- CONSTANTS ---
@@ -114,20 +114,20 @@ function generateDateCacheKey(baseKey: string, date: Date): string {
  * Formata timestamp para exibição
  */
 function formatTimestamp(timestamp: any): string {
-  if (!timestamp) return 'N/A';
-  
-  try {
-    const tsAsMillis = serializeFirestoreTimestamp(timestamp);
-    const dateToFormat = new Date(tsAsMillis);
+    if (!timestamp) return 'N/A';
     
-    if (!isNaN(dateToFormat.getTime())) {
-      return format(dateToFormat, "HH:mm:ss");
+    try {
+        const tsAsMillis = serializeFirestoreTimestamp(timestamp);
+        const dateToFormat = new Date(tsAsMillis);
+        
+        if (isValid(dateToFormat)) {
+            return format(dateToFormat, "HH:mm:ss");
+        }
+    } catch (error) {
+        console.warn('Erro ao formatar timestamp:', error, 'Valor original:', timestamp);
     }
-  } catch (error) {
-    console.warn('Erro ao formatar timestamp:', error);
-  }
-  
-  return 'N/A';
+    
+    return 'Inválido';
 }
 
 // --- CONFIGURATION MANAGEMENT ---
