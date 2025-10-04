@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
@@ -53,13 +54,6 @@ const TableSkeleton = () => (
         {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
     </div>
 );
-
-type TimeRange = '7d' | '30d' | '90d';
-const timeRangeToDays: Record<TimeRange, number> = {
-  '7d': 7,
-  '30d': 30,
-  '90d': 90,
-};
 
 function DailyDetailsTable({ quote, asset }: { quote: FirestoreQuote | null, asset?: CommodityPriceData }) {
     if (!quote) return null;
@@ -154,13 +148,13 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
     }
 
     const sortedData = [...data].sort((a, b) => {
-        const dateA = typeof a.timestamp === 'number' ? a.timestamp : parseISO(a.timestamp as any).getTime();
-        const dateB = typeof b.timestamp === 'number' ? b.timestamp : parseISO(b.timestamp as any).getTime();
+        const dateA = new Date(a.timestamp).getTime();
+        const dateB = new Date(b.timestamp).getTime();
         return dateB - dateA; // Mais recente primeiro
     });
 
     // Find the quote for the specific targetDate
-    const quoteForDate = sortedData.find(q => format(parseISO(q.timestamp as string), 'yyyy-MM-dd') === format(targetDate, 'yyyy-MM-dd')) || sortedData[0];
+    const quoteForDate = sortedData.find(q => format(new Date(q.timestamp), 'yyyy-MM-dd') === format(targetDate, 'yyyy-MM-dd')) || sortedData[0];
     
     if (!quoteForDate) {
        return { chartData: [], latestQuote: null, mainAssetData: null };
@@ -168,7 +162,7 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
 
     const chartPoints = sortedData
       .map((quote) => {
-        const dateObject = typeof quote.timestamp === 'number' ? new Date(quote.timestamp) : parseISO(quote.timestamp as any);
+        const dateObject = new Date(quote.timestamp);
         let dateFormat = 'dd/MM';
         return {
            date: format(dateObject, dateFormat, { locale: ptBR }),
