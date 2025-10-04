@@ -84,19 +84,19 @@ function extractPriceFromQuote(quoteData: any): PriceExtractionResult {
   const priceFields = [
     { field: 'valor_brl', source: 'valor_brl' }, // Prioridade para UCS ASE
     { field: 'valor', source: 'valor' },
-    { field: 'resultado_final', source: 'resultado_final' },
+    { field: 'resultado_final_brl', source: 'resultado_final_brl' }, // Outro campo comum em calculados
     { field: 'ultimo', source: 'ultimo' },
   ];
 
   for (const { field, source } of priceFields) {
-    if (typeof quoteData[field] === 'number' && quoteData[field] !== 0) {
+    if (typeof quoteData[field] === 'number' && !isNaN(quoteData[field])) {
       return { price: quoteData[field], source };
     }
   }
-
-  // Fallback para o campo `valor_brl` mesmo que seja 0, se ele existir
-  if (typeof quoteData['valor_brl'] === 'number') {
-      return { price: quoteData['valor_brl'], source: 'valor_brl_fallback' };
+  
+  // Fallback para o campo `resultado_final` (sem _brl)
+   if (typeof quoteData['resultado_final'] === 'number' && !isNaN(quoteData['resultado_final'])) {
+      return { price: quoteData['resultado_final'], source: 'resultado_final_fallback' };
   }
 
   return { price: 0, source: 'none' };
@@ -125,6 +125,11 @@ function formatTimestamp(timestamp: any): string {
         }
     } catch (error) {
         console.warn('Erro ao formatar timestamp:', error, 'Valor original:', timestamp);
+    }
+    
+    // Fallback se a conversão falhar
+    if(typeof timestamp === 'string' && isValid(new Date(timestamp))) {
+      return format(new Date(timestamp), "HH:mm:ss");
     }
     
     return 'Inválido';
