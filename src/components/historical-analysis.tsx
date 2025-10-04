@@ -40,7 +40,7 @@ import {
 import { Button } from './ui/button';
 import { Info, FileDown, Loader2 } from 'lucide-react';
 import { HistoricalPriceTable } from './historical-price-table';
-import { AssetDetailModal, AssetInfo } from './asset-detail-modal';
+import { AssetDetailModal, AssetInfo, AssetSpecificDetails, UcsAseDetails } from './asset-detail-modal';
 import { cn } from '@/lib/utils';
 
 const ChartSkeleton = () => (
@@ -352,10 +352,18 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
             <h3 className="text-lg font-semibold mb-2">Detalhes do Dia ({latestQuote?.data || format(targetDate, 'dd/MM/yyyy')})</h3>
             <div className="flex items-start gap-2 p-3 mb-4 text-sm text-blue-800 bg-blue-50 border border-blue-200 rounded-lg">
               <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
-              <p>A tabela abaixo mostra os dados detalhados para o dia mais recente do período selecionado.</p>
+              <p>A seção abaixo mostra os dados detalhados para o dia mais recente do período selecionado, específicos para o ativo analisado.</p>
             </div>
-            {isLoading ? <TableSkeleton /> : (
-                <p className="text-sm text-muted-foreground text-center p-4">Nenhum detalhe adicional disponível para este dia.</p>
+            {isLoading ? (
+              <TableSkeleton />
+            ) : mainAssetData && latestQuote ? (
+              mainAssetData.id === 'ucs_ase' ? (
+                <UcsAseDetails asset={mainAssetData} />
+              ) : (
+                <AssetSpecificDetails asset={mainAssetData} quote={latestQuote} />
+              )
+            ) : (
+              <p className="text-sm text-muted-foreground text-center p-4">Nenhum detalhe adicional disponível para este dia.</p>
             )}
           </TabsContent>
           <TabsContent value="history" className="pt-4">
