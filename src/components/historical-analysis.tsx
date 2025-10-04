@@ -119,19 +119,22 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
         }
       }).reverse(); // Reverte para ordem cronológica no gráfico
       
-    let priceForAssetInfo = quoteForDate.valor_brl ?? quoteForDate.resultado_final_brl ?? quoteForDate.valor ?? quoteForDate.ultimo ?? 0;
-    let currencyForAssetInfo = selectedAssetConfig.currency;
+    let priceForAssetInfo: number;
+    let currencyForAssetInfo: string;
 
-    // Para ativos cotados em moeda estrangeira, exibe o valor original, não o convertido
     if (['soja', 'carbono'].includes(selectedAssetConfig.id)) {
         priceForAssetInfo = quoteForDate.ultimo ?? 0;
         currencyForAssetInfo = selectedAssetConfig.currency;
+    } else {
+        priceForAssetInfo = quoteForDate.valor_brl ?? quoteForDate.resultado_final_brl ?? quoteForDate.valor ?? quoteForDate.ultimo ?? 0;
+        currencyForAssetInfo = 'BRL';
     }
+
 
     const mainAsset: CommodityPriceData = {
         ...selectedAssetConfig,
         price: priceForAssetInfo,
-        currency: currencyForAssetInfo,
+        currency: currencyForAssetInfo as 'USD' | 'BRL' | 'EUR',
         change: quoteForDate.variacao_pct ?? 0,
         absoluteChange: (quoteForDate.valor ?? quoteForDate.ultimo ?? 0) - (quoteForDate.fechamento_anterior ?? (quoteForDate.valor ?? quoteForDate.ultimo ?? 0)),
         lastUpdated: quoteForDate.data || format(new Date(quoteForDate.timestamp as any), 'dd/MM/yyyy'),
