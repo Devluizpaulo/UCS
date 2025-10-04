@@ -23,7 +23,7 @@ import {
 } from 'recharts';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
-import { ArrowDown, ArrowUp, Loader2, AlertCircle, RefreshCw, TrendingUp, TrendingDown } from 'lucide-react';
+import { ArrowDown, ArrowUp, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 import { format, parseISO, subDays, isAfter, isValid } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 

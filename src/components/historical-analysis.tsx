@@ -11,7 +11,7 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from 'recharts';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, isAfter, isValid } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import jsPDF from 'jspdf';
 import type { jsPDF as jsPDFWithAutoTableType } from 'jspdf-autotable';
@@ -54,62 +54,6 @@ const TableSkeleton = () => (
         {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
     </div>
 );
-
-function DailyDetailsTable({ quote, asset }: { quote: FirestoreQuote | null, asset?: CommodityPriceData }) {
-    if (!quote) return null;
-
-    const details = [
-        { label: 'Fechamento Anterior', value: quote.fechamento_anterior, type: 'currency' },
-        { label: 'Abertura', value: quote.abertura, type: 'currency' },
-        { label: 'Máxima do Dia', value: quote.maxima, type: 'currency' },
-        { label: 'Mínima do Dia', value: quote.minima, type: 'currency' },
-        { label: 'Volume', value: quote.volume, type: 'number' },
-        { label: 'Variação (%)', value: quote.variacao_pct, type: 'percentage' },
-        { label: 'Rentabilidade Média', value: quote.rent_media, type: 'currency' },
-        { label: 'Valor em Toneladas', value: quote.ton, type: 'currency' },
-    ].filter(item => item.value !== null && item.value !== undefined);
-
-    const formatValue = (value: any, type: string) => {
-        if (value === null || value === undefined) return 'N/A';
-        if (type === 'currency') return formatCurrency(value, asset?.currency || 'BRL');
-        if (type === 'percentage') return `${Number(value).toFixed(2)}%`;
-        if (type === 'number') return Number(value).toLocaleString('pt-BR');
-        return String(value);
-    };
-
-    if (details.length === 0) {
-        return <p className="text-sm text-muted-foreground text-center p-4">Nenhum detalhe adicional disponível para este dia.</p>;
-    }
-
-    const midPoint = Math.ceil(details.length / 2);
-    const firstHalf = details.slice(0, midPoint);
-    const secondHalf = details.slice(midPoint);
-
-    return (
-        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
-            <Table>
-                <TableBody>
-                    {firstHalf.map(item => (
-                        <TableRow key={item.label}>
-                            <TableCell className="font-medium text-muted-foreground">{item.label}</TableCell>
-                            <TableCell className="text-right font-mono">{formatValue(item.value, item.type)}</TableCell>
-                        </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
-             <Table>
-                <TableBody>
-                    {secondHalf.map(item => (
-                        <TableRow key={item.label}>
-                            <TableCell className="font-medium text-muted-foreground">{item.label}</TableCell>
-                            <TableCell className="text-right font-mono">{formatValue(item.value, item.type)}</TableCell>
-                        </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
-        </div>
-    );
-}
 
 export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
   const [data, setData] = useState<FirestoreQuote[]>([]);
@@ -410,7 +354,9 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
               <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
               <p>A tabela abaixo mostra os dados detalhados para o dia mais recente do período selecionado.</p>
             </div>
-            {isLoading ? <TableSkeleton /> : <DailyDetailsTable quote={latestQuote} asset={mainAssetData!} />}
+            {isLoading ? <TableSkeleton /> : (
+                <p className="text-sm text-muted-foreground text-center p-4">Nenhum detalhe adicional disponível para este dia.</p>
+            )}
           </TabsContent>
           <TabsContent value="history" className="pt-4">
              <HistoricalPriceTable 
