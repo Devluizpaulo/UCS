@@ -204,19 +204,17 @@ export const AssetInfo = memo<{
 }>(({ asset }) => {
   const changeColor = asset.change >= 0 ? 'text-emerald-600' : 'text-red-600';
   const ChangeIcon = asset.change >= 0 ? ArrowUp : ArrowDown;
-  const TrendIcon = asset.change >= 0 ? TrendingUp : TrendingDown;
 
   return (
     <div className="space-y-6">
       {/* Bloco de Preço Principal */}
-      <div className="flex flex-col gap-2">
+      <div className="space-y-2">
+        <p className="text-sm text-muted-foreground">{asset.unit || 'Pontos'}</p>
         <div className="flex items-baseline gap-2">
           <span className="text-4xl font-bold font-mono">
             {formatCurrency(asset.price, asset.currency, asset.id)}
           </span>
-          <span className="text-sm text-muted-foreground">{asset.unit}</span>
         </div>
-
         <div className="flex items-center gap-4">
           <div className={cn('flex items-center text-sm font-semibold', changeColor)}>
             <ChangeIcon className="h-4 w-4 mr-1" />
@@ -225,35 +223,36 @@ export const AssetInfo = memo<{
             <span>{formatCurrency(asset.absoluteChange, asset.currency, asset.id)}</span>
             <span className="text-xs text-muted-foreground ml-1">(24h)</span>
           </div>
-          <TrendIcon className={cn("h-5 w-5", changeColor)} />
         </div>
       </div>
-
-      {/* Bloco de Informações Adicionais */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm text-muted-foreground border-t pt-4">
-        <div className="space-y-1">
-          <p className="font-semibold text-foreground">Categoria</p>
-          <Badge variant="secondary" className="capitalize">{asset.category}</Badge>
-        </div>
-        
-        {isCalculatedAsset(asset) && (
+      
+      {/* Separador e Bloco de Informações Adicionais */}
+      <div className="border-t pt-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
           <div className="space-y-1">
-            <p className="font-semibold text-foreground">Tipo</p>
-            <Badge variant="outline">Índice Calculado</Badge>
+            <p className="font-semibold text-foreground">Categoria</p>
+            <Badge variant="secondary" className="capitalize">{asset.category}</Badge>
           </div>
-        )}
-        
-        <div className="space-y-1">
-          <p className="font-semibold text-foreground">Moeda</p>
-          <p className="font-mono">{asset.currency}</p>
-        </div>
-
-        {asset.lastUpdated && asset.lastUpdated !== 'N/A' && (
+          
+          {isCalculatedAsset(asset) && (
+            <div className="space-y-1">
+              <p className="font-semibold text-foreground">Tipo</p>
+              <Badge variant="outline">Índice Calculado</Badge>
+            </div>
+          )}
+          
           <div className="space-y-1">
-            <p className="font-semibold text-foreground">Atualização</p>
-            <p className="font-mono text-xs">{asset.lastUpdated}</p>
+            <p className="font-semibold text-foreground">Moeda</p>
+            <p className="font-mono">{asset.currency}</p>
           </div>
-        )}
+
+          {asset.lastUpdated && asset.lastUpdated !== 'N/A' && (
+            <div className="space-y-1">
+              <p className="font-semibold text-foreground">Atualização</p>
+              <p className="font-mono text-xs">{asset.lastUpdated}</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
