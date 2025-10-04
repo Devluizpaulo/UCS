@@ -137,7 +137,7 @@ const MilhoDetails = ({ quote }: { quote: FirestoreQuote }) => (
   </Card>
 );
 
-const AssetSpecificDetails = ({ asset, quote }: { asset: CommodityPriceData; quote: FirestoreQuote | null }) => {
+export const AssetSpecificDetails = ({ asset, quote }: { asset: CommodityPriceData; quote: FirestoreQuote | null }) => {
   if (!quote) return null;
 
   switch (asset.id) {
@@ -522,3 +522,5 @@ export const AssetDetailModal = memo<AssetDetailModalProps>(({
 });
 
 AssetDetailModal.displayName = 'AssetDetailModal';
+
+    
