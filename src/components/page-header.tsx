@@ -16,7 +16,7 @@ export function PageHeader({ title, description, icon: Icon, children }: PageHea
         "sticky top-0 z-30"
       )}>
       <div className="flex flex-1 items-center gap-3 min-w-0">
-        <SidebarTrigger className="md:hidden" />
+        <SidebarTrigger className="lg:hidden" />
         {Icon && <Icon className="h-6 w-6 text-muted-foreground hidden sm:block" />}
         <div className="flex-1 min-w-0">
           <h1 className="font-semibold text-lg md:text-2xl truncate">{title}</h1>
