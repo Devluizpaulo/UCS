@@ -3,15 +3,6 @@
 
 import { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogBody,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import {
   LineChart,
   Line,
   XAxis,
@@ -137,15 +128,34 @@ const MilhoDetails = ({ quote }: { quote: FirestoreQuote }) => (
   </Card>
 );
 
+const SojaDetails = ({ quote }: { quote: FirestoreQuote }) => (
+    <Card>
+        <CardHeader>
+            <CardTitle>Detalhes do Ativo: Soja</CardTitle>
+            <CardDescription>Informações detalhadas da cotação para a data selecionada.</CardDescription>
+        </CardHeader>
+        <CardContent>
+            <Table>
+                <TableBody>
+                    <DetailRow label="Preço (Último)" value={formatCurrency(quote.ultimo, 'USD')} unit="USD/saca" />
+                    <DetailRow label="Preço Convertido" value={formatCurrency(quote.ultimo_brl, 'BRL')} unit="BRL/saca" />
+                    <DetailRow label="Cotação Dólar Usada" value={formatCurrency(quote.cotacao_dolar, 'BRL')} />
+                    <DetailRow label="Valor em Toneladas" value={formatCurrency(quote.ton, 'BRL')} unit="/ton" />
+                    <DetailRow label="Rentabilidade Média" value={formatCurrency(quote.rent_media, 'BRL')} unit="/ha" isHighlighted />
+                </TableBody>
+            </Table>
+        </CardContent>
+    </Card>
+);
+
 export const AssetSpecificDetails = ({ asset, quote }: { asset: CommodityPriceData; quote: FirestoreQuote | null }) => {
   if (!quote) return null;
 
   switch (asset.id) {
     case 'milho':
       return <MilhoDetails quote={quote} />;
-    // Adicionar outros casos aqui no futuro
-    // case 'soja':
-    //   return <SojaDetails quote={quote} />;
+    case 'soja':
+      return <SojaDetails quote={quote} />;
     default:
       return null;
   }

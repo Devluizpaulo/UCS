@@ -11,6 +11,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   CartesianGrid,
+  ReferenceLine,
 } from 'recharts';
 import { format, parseISO, isAfter, isValid } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -115,13 +116,13 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
         let dateFormat = 'dd/MM';
         return {
            date: format(dateObject, dateFormat, { locale: ptBR }),
-           value: quote.valor ?? quote.valor_brl ?? quote.resultado_final_brl ?? quote.ultimo,
+           value: quote.valor_brl ?? quote.resultado_final_brl ?? quote.valor ?? quote.ultimo,
         }
       }).reverse(); // Reverte para ordem cronológica no gráfico
       
     const mainAsset = {
         ...selectedAssetConfig,
-        price: quoteForDate.valor ?? quoteForDate.valor_brl ?? quoteForDate.resultado_final_brl ?? quoteForDate.ultimo ?? 0,
+        price: quoteForDate.valor_brl ?? quoteForDate.resultado_final_brl ?? quoteForDate.valor ?? quoteForDate.ultimo ?? 0,
         change: quoteForDate.variacao_pct ?? 0,
         absoluteChange: (quoteForDate.valor ?? quoteForDate.ultimo ?? 0) - (quoteForDate.fechamento_anterior ?? (quoteForDate.valor ?? quoteForDate.ultimo ?? 0)),
         lastUpdated: quoteForDate.data || format(new Date(quoteForDate.timestamp as any), 'dd/MM/yyyy'),
@@ -341,6 +342,12 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
                   }}
                   formatter={(value: any) => [formatCurrency(Number(value), selectedAssetConfig?.currency || 'BRL', selectedAssetConfig?.id), ' ']}
                   labelFormatter={(label) => `Data: ${label}`}
+                />
+                <ReferenceLine 
+                    y={mainAssetData?.price} 
+                    stroke="hsl(var(--primary))" 
+                    strokeDasharray="2 2"
+                    opacity={0.5}
                 />
                 <Line
                   type="monotone"
