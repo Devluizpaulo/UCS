@@ -157,6 +157,28 @@ const SojaDetails = ({ quote }: { quote: FirestoreQuote }) => (
     </Card>
 );
 
+const CarbonoDetails = ({ quote }: { quote: FirestoreQuote }) => (
+  <Card>
+    <CardHeader>
+      <CardTitle>Detalhes do Ativo: Carbono</CardTitle>
+      <CardDescription>Informações detalhadas da cotação para a data selecionada.</CardDescription>
+    </CardHeader>
+    <CardContent>
+      <Table>
+        <TableBody>
+          {quote.ultimo && <DetailRow label="Preço (Último)" value={formatCurrency(quote.ultimo, 'EUR')} unit="EUR/ton" />}
+          {quote.ultimo_brl && <DetailRow label="Preço Convertido" value={formatCurrency(quote.ultimo_brl, 'BRL')} unit="BRL/ton" />}
+          {quote.cotacao_euro && <DetailRow label="Cotação Euro Usada" value={formatCurrency(quote.cotacao_euro, 'BRL', 'eur')} />}
+          {quote.abertura && <DetailRow label="Abertura" value={formatCurrency(quote.abertura, 'EUR')} />}
+          {quote.maxima && <DetailRow label="Máxima do Dia" value={formatCurrency(quote.maxima, 'EUR')} />}
+          {quote.minima && <DetailRow label="Mínima do Dia" value={formatCurrency(quote.minima, 'EUR')} />}
+          {quote.rent_media && <DetailRow label="Rentabilidade Média" value={formatCurrency(quote.rent_media, 'BRL')} unit="/ha" isHighlighted />}
+        </TableBody>
+      </Table>
+    </CardContent>
+  </Card>
+);
+
 export const AssetSpecificDetails = ({ asset, quote }: { asset: CommodityPriceData; quote: FirestoreQuote | null }) => {
   if (!quote) return null;
 
@@ -165,6 +187,8 @@ export const AssetSpecificDetails = ({ asset, quote }: { asset: CommodityPriceDa
       return <MilhoDetails quote={quote} />;
     case 'soja':
       return <SojaDetails quote={quote} />;
+    case 'carbono':
+      return <CarbonoDetails quote={quote} />;
     default:
       return null;
   }
@@ -541,3 +565,5 @@ export const AssetDetailModal = memo<AssetDetailModalProps>(({
 });
 
 AssetDetailModal.displayName = 'AssetDetailModal';
+
+    
