@@ -42,7 +42,7 @@ import {
 import { Button } from './ui/button';
 import { Info, FileDown, Loader2 } from 'lucide-react';
 import { HistoricalPriceTable } from './historical-price-table';
-import { AssetDetailModal, AssetInfo, AssetSpecificDetails } from './asset-detail-modal';
+import { AssetDetailModal, AssetInfo, AssetSpecificDetails, GenericAssetDetails } from './asset-detail-modal';
 import { UcsAseDetails } from './ucs-ase-details';
 import { cn } from '@/lib/utils';
 
@@ -115,7 +115,7 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
         let dateFormat = 'dd/MM';
         return {
            date: format(dateObject, dateFormat, { locale: ptBR }),
-           value: quote.valor_brl ?? quote.resultado_final_brl ?? quote.ultimo ?? quote.valor,
+           value: quote.valor_brl ?? quote.resultado_final_brl ?? quote.valor ?? quote.ultimo,
         }
       }).reverse(); // Reverte para ordem cronológica no gráfico
       
@@ -395,7 +395,7 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
               mainAssetData.id === 'ucs_ase' ? (
                 <UcsAseDetails asset={mainAssetData} />
               ) : (
-                <AssetSpecificDetails asset={mainAssetData} quote={latestQuote} />
+                AssetSpecificDetails({ asset: mainAssetData, quote: latestQuote }) || <GenericAssetDetails asset={mainAssetData} quote={latestQuote} />
               )
             ) : (
               <p className="text-sm text-muted-foreground text-center p-4">Nenhum detalhe adicional disponível para este dia.</p>

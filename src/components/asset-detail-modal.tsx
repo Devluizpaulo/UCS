@@ -146,11 +146,11 @@ const SojaDetails = ({ quote }: { quote: FirestoreQuote }) => (
         <CardContent>
             <Table>
                 <TableBody>
-                    {quote.ultimo && <DetailRow label="Preço (Último)" value={formatCurrency(quote.ultimo, 'USD')} unit="USD/saca" />}
-                    {quote.ultimo_brl && <DetailRow label="Preço Convertido" value={formatCurrency(quote.ultimo_brl, 'BRL')} unit="BRL/saca" />}
-                    {quote.cotacao_dolar && <DetailRow label="Cotação Dólar Usada" value={formatCurrency(quote.cotacao_dolar, 'BRL', 'usd')} />}
-                    {quote.ton && <DetailRow label="Valor em Toneladas" value={formatCurrency(quote.ton, 'BRL')} unit="/ton" />}
-                    {quote.rent_media && <DetailRow label="Rentabilidade Média" value={formatCurrency(quote.rent_media, 'BRL')} unit="/ha" isHighlighted />}
+                    {quote.ultimo != null && <DetailRow label="Preço (Último)" value={formatCurrency(quote.ultimo, 'USD')} unit="USD/saca" />}
+                    {quote.ultimo_brl != null && <DetailRow label="Preço Convertido" value={formatCurrency(quote.ultimo_brl, 'BRL')} unit="BRL/saca" />}
+                    {quote.cotacao_dolar != null && <DetailRow label="Cotação Dólar Usada" value={formatCurrency(quote.cotacao_dolar, 'BRL', 'usd')} />}
+                    {quote.ton != null && <DetailRow label="Valor em Toneladas" value={formatCurrency(quote.ton, 'BRL')} unit="/ton" />}
+                    {quote.rent_media != null && <DetailRow label="Rentabilidade Média" value={formatCurrency(quote.rent_media, 'BRL')} unit="/ha" isHighlighted />}
                 </TableBody>
             </Table>
         </CardContent>
@@ -166,18 +166,53 @@ const CarbonoDetails = ({ quote }: { quote: FirestoreQuote }) => (
     <CardContent>
       <Table>
         <TableBody>
-          {quote.ultimo && <DetailRow label="Preço (Último)" value={formatCurrency(quote.ultimo, 'EUR')} unit="EUR/ton" />}
-          {quote.ultimo_brl && <DetailRow label="Preço Convertido" value={formatCurrency(quote.ultimo_brl, 'BRL')} unit="BRL/ton" />}
-          {quote.cotacao_euro && <DetailRow label="Cotação Euro Usada" value={formatCurrency(quote.cotacao_euro, 'BRL', 'eur')} />}
-          {quote.abertura && <DetailRow label="Abertura" value={formatCurrency(quote.abertura, 'EUR')} />}
-          {quote.maxima && <DetailRow label="Máxima do Dia" value={formatCurrency(quote.maxima, 'EUR')} />}
-          {quote.minima && <DetailRow label="Mínima do Dia" value={formatCurrency(quote.minima, 'EUR')} />}
-          {quote.rent_media && <DetailRow label="Rentabilidade Média" value={formatCurrency(quote.rent_media, 'BRL')} unit="/ha" isHighlighted />}
+          {quote.ultimo != null && <DetailRow label="Preço (Último)" value={formatCurrency(quote.ultimo, 'EUR')} unit="EUR/ton" />}
+          {quote.ultimo_brl != null && <DetailRow label="Preço Convertido" value={formatCurrency(quote.ultimo_brl, 'BRL')} unit="BRL/ton" />}
+          {quote.cotacao_euro != null && <DetailRow label="Cotação Euro Usada" value={formatCurrency(quote.cotacao_euro, 'BRL', 'eur')} />}
+          {quote.abertura != null && <DetailRow label="Abertura" value={formatCurrency(quote.abertura, 'EUR')} />}
+          {quote.maxima != null && <DetailRow label="Máxima do Dia" value={formatCurrency(quote.maxima, 'EUR')} />}
+          {quote.minima != null && <DetailRow label="Mínima do Dia" value={formatCurrency(quote.minima, 'EUR')} />}
+          {quote.rent_media != null && <DetailRow label="Rentabilidade Média" value={formatCurrency(quote.rent_media, 'BRL')} unit="/ha" isHighlighted />}
         </TableBody>
       </Table>
     </CardContent>
   </Card>
 );
+
+export const GenericAssetDetails = ({ quote, asset }: { quote: FirestoreQuote; asset: CommodityPriceData }) => {
+    const details = [
+        { label: 'Fechamento Anterior', value: quote.fechamento_anterior },
+        { label: 'Abertura', value: quote.abertura },
+        { label: 'Variação Diária', value: (quote.minima && quote.maxima) ? `${formatCurrency(quote.minima, asset.currency)} - ${formatCurrency(quote.maxima, asset.currency)}` : null },
+        { label: 'Volume', value: quote.volume ? Number(quote.volume).toLocaleString('pt-BR') : null },
+    ].filter(item => item.value != null);
+
+    if (details.length === 0) {
+        return (
+            <div className="text-center text-sm text-muted-foreground p-8 border rounded-lg bg-muted/50">
+                Não há dados de mercado detalhados para este ativo.
+            </div>
+        );
+    }
+    
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Resumo do Dia</CardTitle>
+                <CardDescription>Dados de mercado para a data selecionada.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Table>
+                    <TableBody>
+                        {details.map(item => (
+                            <DetailRow key={item.label} label={item.label} value={item.value} />
+                        ))}
+                    </TableBody>
+                </Table>
+            </CardContent>
+        </Card>
+    );
+};
 
 export const AssetSpecificDetails = ({ asset, quote }: { asset: CommodityPriceData; quote: FirestoreQuote | null }) => {
   if (!quote) return null;
@@ -514,14 +549,19 @@ export const AssetDetailModal = memo<AssetDetailModalProps>(({
       return <UcsAseDetails asset={asset} />;
     }
 
+    const specificDetails = AssetSpecificDetails({ asset, quote: latestQuote });
+
     return (
       <div className="grid gap-6">
         <PriceChart data={chartData} asset={asset} isLoading={loadingState.isLoading} />
-        <AssetSpecificDetails asset={asset} quote={latestQuote} />
-        {isCalculated && !isUcsAse ? (
+        
+        {specificDetails ? specificDetails : (latestQuote && <GenericAssetDetails quote={latestQuote} asset={asset} />) }
+
+        {isCalculated && !isUcsAse && !specificDetails && (
             <CalculatedAssetDetails asset={asset} />
-        ) : (
-            !AssetSpecificDetails({ asset, quote: latestQuote }) &&
+        )}
+
+        {!isCalculated && !specificDetails && (
             <HistoricalPriceTable 
               asset={asset}
               historicalData={historicalData} 
@@ -565,5 +605,3 @@ export const AssetDetailModal = memo<AssetDetailModalProps>(({
 });
 
 AssetDetailModal.displayName = 'AssetDetailModal';
-
-    

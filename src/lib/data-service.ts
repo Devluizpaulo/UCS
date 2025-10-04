@@ -119,8 +119,18 @@ function formatTimestamp(timestamp: any): string {
     if (!timestamp) return 'N/A';
     
     try {
-        const tsAsMillis = serializeFirestoreTimestamp(timestamp);
-        const dateToFormat = new Date(tsAsMillis);
+        let dateToFormat: Date;
+        if (timestamp instanceof Timestamp) {
+            dateToFormat = timestamp.toDate();
+        } else if (typeof timestamp === 'number') {
+            dateToFormat = new Date(timestamp);
+        } else if (typeof timestamp === 'string') {
+            dateToFormat = parseISO(timestamp);
+        } else if (timestamp && typeof timestamp.toDate === 'function') {
+            dateToFormat = timestamp.toDate();
+        } else {
+            throw new Error('Invalid timestamp format');
+        }
         
         if (isValid(dateToFormat)) {
             return format(dateToFormat, "HH:mm:ss");
@@ -128,15 +138,6 @@ function formatTimestamp(timestamp: any): string {
     } catch (error) {
         // Silently fail but log for debugging
         // console.warn('Erro ao formatar timestamp:', error, 'Valor original:', timestamp);
-    }
-    
-    // Fallback se a conversão falhar
-    if(typeof timestamp === 'string' && isValid(new Date(timestamp))) {
-      try {
-        return format(new Date(timestamp), "HH:mm:ss");
-      } catch (e) {
-        return 'Inválido';
-      }
     }
     
     return 'Inválido';
