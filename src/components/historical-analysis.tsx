@@ -41,7 +41,7 @@ import {
 import { Button } from './ui/button';
 import { Info, FileDown, Loader2 } from 'lucide-react';
 import { HistoricalPriceTable } from './historical-price-table';
-import { AssetDetailModal, AssetInfo, AssetSpecificDetails, GenericAssetDetails } from './asset-detail-modal';
+import { AssetDetailModal, AssetInfo, AssetSpecificDetails, GenericAssetDetails, SojaDetails, CarbonoDetails } from './asset-detail-modal';
 import { UcsAseDetails } from './ucs-ase-details';
 import { cn } from '@/lib/utils';
 
@@ -147,7 +147,7 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
     return { chartData: chartPoints, latestQuote: quoteForDate, mainAssetData: mainAsset };
   }, [data, targetDate, selectedAssetConfig]);
   
-  const handleExportPdf = async () => {
+ const handleExportPdf = async () => {
     if (!selectedAssetConfig || !chartRef.current || !latestQuote || !mainAssetData) return;
     setIsExporting(true);
 
@@ -212,23 +212,39 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
         finalY += imgHeight + 10;
 
         // --- TABELA DE DETALHES DO DIA ---
-        const detailsToExport = [
-            { label: 'Fechamento Anterior', value: formatCurrency(latestQuote.fechamento_anterior, mainAssetData.currency) },
-            { label: 'Abertura', value: formatCurrency(latestQuote.abertura, mainAssetData.currency) },
-            { label: 'Var. Diária', value: `${formatCurrency(latestQuote.minima, mainAssetData.currency)} - ${formatCurrency(latestQuote.maxima, mainAssetData.currency)}` },
-            { label: 'Volume', value: latestQuote.volume?.toLocaleString('pt-BR') || 'N/A' },
-        ].filter(item => item.value !== null && item.value !== undefined && !item.value.includes('NaN'));
+        let detailsToExport: { label: string, value: string | null }[] = [];
+        
+        if (selectedAssetConfig.id === 'soja') {
+            detailsToExport = [
+                { label: 'Preço (Último)', value: formatCurrency(latestQuote.ultimo, 'USD') },
+                { label: 'Preço Convertido', value: formatCurrency(latestQuote.ultimo_brl, 'BRL') },
+                { label: 'Cotação Dólar Usada', value: formatCurrency(latestQuote.cotacao_dolar, 'BRL', 'usd') },
+                { label: 'Valor em Toneladas', value: formatCurrency(latestQuote.ton, 'BRL') },
+                { label: 'Rentabilidade Média', value: formatCurrency(latestQuote.rent_media, 'BRL') },
+            ];
+        } else if (selectedAssetConfig.id === 'carbono') {
+             detailsToExport = [
+                { label: 'Preço (Último)', value: formatCurrency(latestQuote.ultimo, 'EUR') },
+                { label: 'Preço Convertido', value: formatCurrency(latestQuote.ultimo_brl, 'BRL') },
+                { label: 'Cotação Euro Usada', value: formatCurrency(latestQuote.cotacao_euro, 'BRL', 'eur') },
+                { label: 'Rentabilidade Média', value: formatCurrency(latestQuote.rent_media, 'BRL') },
+            ];
+        } else if (selectedAssetConfig.id !== 'ucs_ase') {
+             detailsToExport = [
+                { label: 'Fechamento Anterior', value: formatCurrency(latestQuote.fechamento_anterior, mainAssetData.currency) },
+                { label: 'Abertura', value: formatCurrency(latestQuote.abertura, mainAssetData.currency) },
+                { label: 'Var. Diária', value: `${formatCurrency(latestQuote.minima, mainAssetData.currency)} - ${formatCurrency(latestQuote.maxima, mainAssetData.currency)}` },
+                { label: 'Volume', value: latestQuote.volume?.toLocaleString('pt-BR') || 'N/A' },
+            ].filter(item => item.value !== null && item.value !== undefined && !item.value.includes('NaN'));
+        }
 
-        if (latestQuote.rent_media) detailsToExport.push({ label: 'Rentabilidade Média', value: formatCurrency(latestQuote.rent_media, 'BRL') });
-        if (latestQuote.ton) detailsToExport.push({ label: 'Valor (tonelada)', value: formatCurrency(latestQuote.ton, 'BRL') });
-
-        if (detailsToExport.length > 0 && selectedAssetConfig.id !== 'ucs_ase') {
+        if (detailsToExport.length > 0) {
             doc.autoTable({
                 startY: finalY,
                 head: [['Resumo do Dia', 'Valor']],
                 body: detailsToExport.map(item => [item.label, item.value]),
                 theme: 'grid',
-                headStyles: { fillColor: [44, 62, 80] },
+                headStyles: { fillColor: [44, 62, 80] }, // Azul escuro
                 didDrawPage: (data) => { finalY = data.cursor?.y || finalY; }
             });
             finalY = (doc as any).lastAutoTable.finalY + 10;
@@ -241,25 +257,27 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
                 head: [['Composição do Valor Final (BRL)', '']],
                 body: [['UCS Original', formatCurrency(latestQuote.valores_originais?.ucs || 0, 'BRL', 'ucs')], ['Fórmula Aplicada', latestQuote.formula || 'UCS × 2'], ['Resultado Final', formatCurrency(latestQuote.componentes.resultado_final_brl || 0, 'BRL', 'ucs_ase')]],
                 theme: 'grid',
-                headStyles: { fillColor: [34, 47, 62] },
+                headStyles: { fillColor: [22, 160, 133] }, // Verde
+                footStyles: { fillColor: [22, 160, 133], textColor: 255, fontStyle: 'bold' },
+                foot: [['Valor Final (BRL)', formatCurrency(latestQuote.componentes.resultado_final_brl || 0, 'BRL', 'ucs_ase')]],
                 didDrawPage: (data) => { finalY = data.cursor?.y || finalY; }
             });
-            finalY = (doc as any).lastAutoTable.finalY + 5;
+            finalY = (doc as any).lastAutoTable.finalY + 15;
 
             const halfWidth = (pdfWidth - (margin * 2) - 5) / 2;
             doc.autoTable({
                 startY: finalY, head: [['Conversão para USD', '']], body: [['Cotação USD/BRL', formatCurrency(latestQuote.valores_originais?.cotacao_usd || 0, 'BRL', 'usd')], ['Valor Final (USD)', formatCurrency(latestQuote.componentes.resultado_final_usd || 0, 'USD', 'ucs_ase')], ['Fórmula', latestQuote.conversoes?.brl_para_usd || 'N/A']],
-                theme: 'grid', headStyles: { fillColor: [39, 174, 96] }, tableWidth: halfWidth, margin: { left: margin },
+                theme: 'grid', headStyles: { fillColor: [39, 174, 96] }, tableWidth: halfWidth, margin: { left: margin }, // Verde Dólar
                 didDrawPage: (data) => { finalY = data.cursor?.y || finalY; }
             });
              doc.autoTable({
                 startY: (doc as any).lastAutoTable.startY, head: [['Conversão para EUR', '']], body: [['Cotação EUR/BRL', formatCurrency(latestQuote.valores_originais?.cotacao_eur || 0, 'BRL', 'eur')], ['Valor Final (EUR)', formatCurrency(latestQuote.componentes.resultado_final_eur || 0, 'EUR', 'ucs_ase')], ['Fórmula', latestQuote.conversoes?.brl_para_eur || 'N/A']],
-                theme: 'grid', headStyles: { fillColor: [41, 128, 185] }, tableWidth: halfWidth, margin: { left: pdfWidth - margin - halfWidth },
+                theme: 'grid', headStyles: { fillColor: [41, 128, 185] }, tableWidth: halfWidth, margin: { left: pdfWidth - margin - halfWidth }, // Azul Euro
                 didDrawPage: (data) => { finalY = data.cursor?.y || finalY; }
             });
         }
 
-        // --- Rodapé ---
+        // --- RODAPÉ ---
         const pageCount = (doc.internal as any).getNumberOfPages();
         for (let i = 1; i <= pageCount; i++) {
             doc.setPage(i);

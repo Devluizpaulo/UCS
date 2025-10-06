@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, memo } from 'react';
@@ -137,7 +138,7 @@ const MilhoDetails = ({ quote }: { quote: FirestoreQuote }) => (
   </Card>
 );
 
-const SojaDetails = ({ quote }: { quote: FirestoreQuote }) => (
+export const SojaDetails = ({ quote }: { quote: FirestoreQuote }) => (
     <Card>
         <CardHeader>
             <CardTitle>Detalhes do Ativo: Soja</CardTitle>
@@ -157,7 +158,7 @@ const SojaDetails = ({ quote }: { quote: FirestoreQuote }) => (
     </Card>
 );
 
-const CarbonoDetails = ({ quote }: { quote: FirestoreQuote }) => (
+export const CarbonoDetails = ({ quote }: { quote: FirestoreQuote }) => (
   <Card>
     <CardHeader>
       <CardTitle>Detalhes do Ativo: Carbono</CardTitle>
