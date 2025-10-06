@@ -41,7 +41,6 @@ const componentNames: Record<string, string> = {
   vmad: 'VMAD (Valor da Madeira)',
   carbono_crs: 'Carbono CRS',
   Agua_CRS: 'Água CRS',
-  crs_total: 'CRS (Custo de Resp. Socioambiental)'
 };
 
 export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
@@ -75,24 +74,16 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
     const vmadValue = (componentes.vmad || 0) as number;
     const carbonoCrsValue = (componentes.carbono_crs || 0) as number;
     const aguaCrsValue = (componentes.Agua_CRS || 0) as number;
-    const crsTotalValue = carbonoCrsValue + aguaCrsValue;
 
-    // Data for the Pie Chart (main components)
-    const chartItems = [
-        { id: 'vus', name: componentNames.vus, value: vusValue },
-        { id: 'vmad', name: componentNames.vmad, value: vmadValue },
-        { id: 'crs_total', name: componentNames.crs_total, value: crsTotalValue },
+    const allComponents = [
+      { id: 'vus', name: componentNames.vus, value: vusValue },
+      { id: 'vmad', name: componentNames.vmad, value: vmadValue },
+      { id: 'carbono_crs', name: componentNames.carbono_crs, value: carbonoCrsValue },
+      { id: 'Agua_CRS', name: componentNames.Agua_CRS, value: aguaCrsValue },
     ].filter(item => item.value > 0);
 
 
-    // Data for the hierarchical table
-    const tableItems = [
-      { id: 'vus', name: componentNames.vus, value: vusValue, isSub: false },
-      { id: 'vmad', name: componentNames.vmad, value: vmadValue, isSub: false },
-      { id: 'crs_total', name: componentNames.crs_total, value: crsTotalValue, isSub: false },
-      { id: 'carbono_crs', name: componentNames.carbono_crs, value: carbonoCrsValue, isSub: true },
-      { id: 'Agua_CRS', name: componentNames.Agua_CRS, value: aguaCrsValue, isSub: true },
-    ].map(item => ({
+    const tableItems = allComponents.map(item => ({
         ...item,
         percentage: valorTotal > 0 ? (item.value / valorTotal) * 100 : 0,
     }));
@@ -110,7 +101,7 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
         lastUpdated: data.data,
     };
 
-    return { chartData: chartItems, tableData: tableItems, mainAssetData: mainAsset };
+    return { chartData: allComponents, tableData: tableItems, mainAssetData: mainAsset };
   }, [data]);
   
   const handleExportExcel = async () => {
@@ -133,14 +124,11 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
 
     tableData.forEach((item, index) => {
         const row = worksheet.getRow(5 + index);
-        row.getCell(1).value = item.isSub ? `  ${item.name}` : item.name;
+        row.getCell(1).value = item.name;
         row.getCell(2).value = item.value;
         row.getCell(2).numFmt = '"R$"#,##0.00';
         row.getCell(3).value = item.percentage / 100;
         row.getCell(3).numFmt = '0.00%';
-        if (item.id === 'crs_total') {
-            row.font = { bold: true };
-        }
     });
     
     const totalRow = worksheet.getRow(5 + tableData.length);
@@ -191,6 +179,7 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
             <Skeleton className="h-4 w-3/4" />
           </CardHeader>
           <CardContent className="space-y-4">
+            <Skeleton className="h-10 w-full" />
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-10 w-full" />
@@ -290,26 +279,15 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {tableData.filter(item => !item.isSub).map((item) => (
-                  <React.Fragment key={item.id}>
-                    <TableRow className={item.id === 'crs_total' ? 'font-bold bg-muted/30' : ''}>
+                {tableData.map((item, index) => (
+                  <TableRow key={item.id}>
                       <TableCell className="flex items-center gap-2">
-                        {item.id !== 'crs_total' && <div className="h-3 w-3 rounded-full" style={{ backgroundColor: COLORS[chartData.findIndex(c => c.id === item.id) % COLORS.length] }} />}
+                        <div className="h-3 w-3 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
                         <span className="font-medium">{item.name}</span>
                       </TableCell>
                       <TableCell className="text-right font-mono">{formatCurrency(item.value, 'BRL')}</TableCell>
                       <TableCell className="text-right font-mono">{item.percentage.toFixed(2)}%</TableCell>
-                    </TableRow>
-                    {item.id === 'crs_total' && tableData.filter(sub => sub.isSub).map(subItem => (
-                      <TableRow key={subItem.id} className="hover:bg-muted/20">
-                        <TableCell className="pl-8 text-sm text-muted-foreground">
-                          <span className="mr-2">└─</span>{subItem.name}
-                        </TableCell>
-                        <TableCell className="text-right font-mono text-sm text-muted-foreground">{formatCurrency(subItem.value, 'BRL')}</TableCell>
-                        <TableCell className="text-right font-mono text-sm text-muted-foreground">{subItem.percentage.toFixed(2)}%</TableCell>
-                      </TableRow>
-                    ))}
-                  </React.Fragment>
+                  </TableRow>
                 ))}
                 <TableRow className="font-bold bg-muted/50 border-t-2">
                    <TableCell>Total</TableCell>
@@ -324,5 +302,3 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
     </div>
   );
 }
-
-    
