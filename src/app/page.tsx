@@ -151,7 +151,7 @@ export default function LandingPage() {
         {/* HERO SECTION */}
         <section className="relative flex h-[80vh] min-h-[500px] flex-col items-center justify-center p-4 text-center">
           <Image
-            src="https://picsum.photos/seed/hills-landscape/1920/1080"
+            src="/image/hero.jpeg"
             alt="Vastas colinas verdes sob um céu ensolarado"
             fill
             className="object-cover"
