@@ -19,7 +19,8 @@ import 'jspdf-autotable';
 import html2canvas from 'html2canvas';
 
 import type { FirestoreQuote, CommodityConfig, CommodityPriceData } from '@/lib/types';
-import { getCotacoesHistorico, getCommodityConfigs, getQuoteByDate } from '@/lib/data-service';
+import { getCotacoesHistorico } from '@/lib/data-service';
+import { getCommodityConfigs } from '@/lib/data-service';
 import { formatCurrency } from '@/lib/formatters';
 import { Card, CardContent, CardHeader } from './ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -135,13 +136,12 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
     setIsExporting(true);
     const chartElement = chartRef.current;
   
-    // Forçar fundo branco para captura do gráfico
     const originalBg = chartElement.style.backgroundColor;
     chartElement.style.backgroundColor = 'white';
 
     try {
         const canvas = await html2canvas(chartElement, { scale: 3, useCORS: true });
-        chartElement.style.backgroundColor = originalBg; // Restaurar fundo
+        chartElement.style.backgroundColor = originalBg; 
         
         const imgData = canvas.toDataURL('image/png');
         
@@ -436,3 +436,5 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
     </>
   );
 }
+
+    

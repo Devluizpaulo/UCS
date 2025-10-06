@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
@@ -131,41 +130,48 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
     if (!data || chartData.length === 0 || !chartRef.current) return;
     setIsExporting(true);
   
+    const chartElement = chartRef.current;
+    const originalBg = chartElement.style.backgroundColor;
+    chartElement.style.backgroundColor = 'white';
+
     try {
-      const canvas = await html2canvas(chartRef.current, { 
-        scale: 2, 
-        backgroundColor: null 
+      const canvas = await html2canvas(chartElement, { 
+        scale: 2,
+        useCORS: true,
       });
+      chartElement.style.backgroundColor = originalBg;
+
       const imgData = canvas.toDataURL('image/png');
   
       const doc = new jsPDF() as jsPDFWithAutoTable;
       const generationDate = format(new Date(), "dd 'de' MMMM 'de' yyyy, HH:mm", { locale: ptBR });
       const pdfWidth = doc.internal.pageSize.getWidth();
       const margin = 15;
+      let finalY = 0;
       
       // --- CABEÇALHO ---
-      doc.setFillColor(248, 249, 250);
-      doc.rect(0, 0, pdfWidth, 45, 'F');
       doc.setFontSize(10);
       doc.setTextColor(108, 117, 125);
       doc.text("COMPOSITION REPORT", margin, 20);
+
       doc.setFontSize(22);
       doc.setTextColor(33, 37, 41);
       doc.setFont('helvetica', 'bold');
       doc.text('Composição do "Valor de Uso do Solo"', margin, 32);
 
-      // --- DATA BOX ---
       doc.setFillColor(40, 167, 69);
       const dateBoxWidth = 70;
       doc.rect(pdfWidth - dateBoxWidth - margin, 15, dateBoxWidth, 20, 'F');
+      
       doc.setFontSize(10);
       doc.setTextColor(255, 255, 255);
       doc.setFont('helvetica', 'bold');
       doc.text("Data da Análise", pdfWidth - dateBoxWidth - margin + 5, 22);
+      
       doc.setFontSize(12);
       doc.text(data.data, pdfWidth - dateBoxWidth - margin + 5, 30);
 
-      let finalY = 55;
+      finalY = 55;
   
       // --- GRÁFICO ---
       const imgProps = doc.getImageProperties(imgData);
@@ -199,8 +205,7 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
             fontStyle: 'bold' 
           },
           didDrawPage: (data) => {
-            // --- RODAPÉ ---
-            const pageCount = doc.internal.pages.length;
+            const pageCount = (doc.internal as any).getNumberOfPages();
             doc.setFontSize(9);
             doc.setTextColor(150);
             doc.text(
@@ -404,3 +409,5 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
     </div>
   );
 }
+
+    
