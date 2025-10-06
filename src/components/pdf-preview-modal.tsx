@@ -23,8 +23,9 @@ import {
 } from '@/components/ui/select';
 import { Label } from './ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { format } from 'date-fns';
 
-type PdfTemplate = 'simple' | 'complete' | 'executive';
+type PdfTemplate = 'simple' | 'commercial' | 'executive';
 
 interface PdfPreviewModalProps {
   isOpen: boolean;
@@ -163,9 +164,9 @@ export function PdfPreviewModal({ isOpen, onOpenChange, reportType, data }: PdfP
                   <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="executive">Executivo</SelectItem>
-                  <SelectItem value="complete">Completo</SelectItem>
-                  <SelectItem value="simple">Simples</SelectItem>
+                  <SelectItem value="simple">📊 Simples</SelectItem>
+                  <SelectItem value="commercial">💼 Comercial</SelectItem>
+                  <SelectItem value="executive">👔 Executivo</SelectItem>
                 </SelectContent>
               </Select>
             </div>
