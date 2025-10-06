@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState, useEffect, useMemo, Fragment } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getQuoteByDate } from '@/lib/data-service';
 import { formatCurrency } from '@/lib/formatters';
@@ -80,7 +81,21 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
     
     const chartItems = [vus, vmad, crsTotal].filter(item => item.value > 0);
 
-    const tableItems = [
+    const tableItems: ({
+        percentage: number;
+        isSub: boolean;
+        id: string;
+        name: string;
+        value: number;
+        parent?: undefined;
+    } | {
+        percentage: number;
+        isSub: boolean;
+        parent: string;
+        id: string;
+        name: string;
+        value: number;
+    })[] = [
       { ...vus, percentage: valorTotal > 0 ? (vus.value / valorTotal) * 100 : 0, isSub: false },
       { ...vmad, percentage: valorTotal > 0 ? (vmad.value / valorTotal) * 100 : 0, isSub: false },
       { ...crsTotal, percentage: valorTotal > 0 ? (crsTotal.value / valorTotal) * 100 : 0, isSub: false },
@@ -160,8 +175,17 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
     setIsExporting(false);
   };
 
-  const pdfComponentData = tableData.map(item => ({
-      id: item.id, name: item.name, price: item.value, change: item.percentage, absoluteChange: 0, currency: 'BRL', category: 'component', description: '', unit: 'R$', lastUpdated: data.data,
+  const pdfComponentData = tableData.map((item): CommodityPriceData => ({
+      id: item.id, 
+      name: item.name, 
+      price: item.value, 
+      change: item.percentage, 
+      absoluteChange: 0, 
+      currency: 'BRL', 
+      category: 'sub-index', 
+      description: '', 
+      unit: 'R$', 
+      lastUpdated: data.data,
   }));
 
   if (isLoading) {
@@ -226,7 +250,7 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
                  <div className="flex items-center gap-2 flex-shrink-0">
                     <PdfExportButton
                         data={{
-                            mainIndex: mainAssetData,
+                            mainIndex: mainAssetData || undefined,
                             secondaryIndices: [],
                             currencies: [],
                             otherAssets: pdfComponentData,
@@ -292,7 +316,7 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
                       <TableCell className="text-right font-mono">{formatCurrency(item.value, 'BRL')}</TableCell>
                       <TableCell className="text-right font-mono">{item.percentage.toFixed(2)}%</TableCell>
                     </TableRow>
-                    {item.id === 'crs_total' && tableData.filter(sub => sub.parent === 'crs_total').map(subItem => (
+                    {item.id === 'crs_total' && tableData.filter(sub => 'parent' in sub && sub.parent === 'crs_total').map(subItem => (
                       <TableRow key={subItem.id}>
                         <TableCell className="pl-8 flex items-center gap-2">
                           <span className="text-muted-foreground">└─</span>
