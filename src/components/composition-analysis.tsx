@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
@@ -13,7 +14,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { getQuoteByDate } from '@/lib/data-service';
 import { formatCurrency } from '@/lib/formatters';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2, AlertCircle, Download, FileText } from 'lucide-react';
+import { Loader2, AlertCircle, Download } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -265,9 +266,7 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
                             }}
                             reportType="composition"
                             disabled={isExporting}
-                        >
-                          Exportar (PDF)
-                        </PdfExportButton>
+                        />
                         <Button onClick={handleExportExcel} disabled={isExporting} variant="outline" size="sm">
                             {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
                             Exportar (XLSX)

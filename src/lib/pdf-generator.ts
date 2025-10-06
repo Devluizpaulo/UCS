@@ -14,7 +14,7 @@ interface jsPDFWithAutoTable extends jsPDF {
 }
 
 // ===================================================================================
-// === TEMPLATE EXECUTIVO (ÚNICO MODELO) =============================================
+// === TEMPLATE EXECUTIVO (MODELO PADRÃO) ============================================
 // ===================================================================================
 const generateExecutiveDashboardPdf = (data: DashboardPdfData): jsPDF => {
     const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' }) as jsPDFWithAutoTable;
@@ -173,6 +173,106 @@ const generateExecutiveDashboardPdf = (data: DashboardPdfData): jsPDF => {
 
 
 // ===================================================================================
+// === TEMPLATE DE COMPOSIÇÃO ========================================================
+// ===================================================================================
+const generateCompositionPdf = (data: DashboardPdfData): jsPDF => {
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' }) as jsPDFWithAutoTable;
+    const { mainIndex, otherAssets: components, targetDate } = data;
+    
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const margin = 40;
+    let y = 50;
+
+    // --- CABEÇALHO ---
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(34, 197, 94);
+    doc.text('ANÁLISE DE COMPOSIÇÃO', margin, y);
+    y += 40;
+
+    doc.setFontSize(24);
+    doc.setTextColor(17, 24, 39);
+    doc.text(mainIndex?.name || 'Índice de Composição', margin, y);
+    y += 24;
+    doc.setFontSize(16);
+    doc.setTextColor(55, 65, 81);
+    doc.text(`Dados de ${format(targetDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}`, margin, y);
+    y += 50;
+
+    // --- BLOCOS DE KPI DE COMPONENTES ---
+    if (components && components.length > 0) {
+        const kpiCardWidth = (pageW - (margin * 2) - ((components.length - 1) * 20)) / components.length;
+        components.forEach((component, index) => {
+            const isPositive = component.change >= 0;
+            const icon = isPositive ? '📈' : '📉';
+            const color = isPositive ? [34, 197, 94] : [239, 68, 68];
+            const x = margin + (kpiCardWidth + 20) * index;
+
+            doc.setDrawColor(229, 231, 235);
+            doc.roundedRect(x, y, kpiCardWidth, 80, 8, 8, 'S');
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(11);
+            doc.setTextColor(107, 114, 128);
+            doc.text(component.name, x + 15, y + 20);
+            doc.setFontSize(20);
+            doc.setTextColor(17, 24, 39);
+            doc.text(formatCurrency(component.price, component.currency, component.id), x + 15, y + 45);
+            doc.setFontSize(14);
+            doc.setTextColor(color[0], color[1], color[2]);
+            doc.text(`${icon} ${component.change.toFixed(2)}%`, x + 15, y + 65);
+        });
+        y += 100;
+    }
+
+    // --- VALOR TOTAL ---
+    if(mainIndex) {
+        doc.setFillColor(243, 244, 246); // gray-100
+        doc.roundedRect(margin, y, pageW - margin * 2, 50, 8, 8, 'F');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(14);
+        doc.setTextColor(55, 65, 81);
+        doc.text('Valor Total do Índice', margin + 20, y + 30);
+        doc.setFontSize(22);
+        doc.setTextColor(17, 24, 39);
+        doc.text(formatCurrency(mainIndex.price, mainIndex.currency, mainIndex.id), pageW - margin - 20, y + 30, { align: 'right' });
+        y += 70;
+    }
+
+    // --- TABELA RESUMO ---
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.setTextColor(17, 24, 39);
+    doc.text('Resumo da Composição', margin, y);
+    y += 20;
+
+    doc.autoTable({
+        startY: y,
+        head: [['Componente', 'Valor', 'Participação (%)']],
+        body: components.map(c => [c.name, formatCurrency(c.price, c.currency, c.id), `${c.change.toFixed(2)}%`]),
+        theme: 'grid',
+        headStyles: { fillColor: [55, 65, 81], textColor: 255 },
+        styles: { cellPadding: 6, fontSize: 10 },
+    });
+    y = (doc as any).lastAutoTable.finalY;
+
+    // --- RODAPÉ ---
+    for (let i = 1; i <= doc.internal.pages.length; i++) {
+        doc.setPage(i);
+        doc.setDrawColor(229, 231, 235);
+        doc.setLineWidth(0.5);
+        doc.line(margin, pageH - 40, pageW - margin, pageH - 40);
+        doc.setFontSize(9);
+        doc.setTextColor(107, 114, 128);
+        doc.text(`Confidencial | UCS Index`, margin, pageH - 25);
+        doc.text(`Página ${i}`, pageW - margin, pageH - 25, { align: 'right' });
+    }
+    
+    return doc;
+};
+
+
+// ===================================================================================
 // === FUNÇÃO PRINCIPAL DE GERAÇÃO =================================================
 // ===================================================================================
 export const generatePdf = (
@@ -183,8 +283,20 @@ export const generatePdf = (
         if (!data || !data.targetDate || isNaN(data.targetDate.getTime())) {
             throw new Error('Dados inválidos ou data de destino ausente para a geração do PDF.');
         }
-
-        const doc: jsPDF = generateExecutiveDashboardPdf(data);
+        
+        let doc: jsPDF;
+        switch (reportType) {
+            case 'composition':
+                doc = generateCompositionPdf(data);
+                break;
+            case 'executive':
+            case 'asset-detail':
+            case 'dashboard':
+            case 'audit':
+            default:
+                doc = generateExecutiveDashboardPdf(data);
+                break;
+        }
     
         return doc.output('datauristring');
 
