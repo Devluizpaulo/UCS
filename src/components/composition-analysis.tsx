@@ -79,13 +79,6 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
     const crsTotal = { id: 'crs_total', name: componentNames.crs_total, value: crsTotalValue };
     
     const chartItems = [vus, vmad, crsTotal].filter(item => item.value > 0);
-    
-    const allTableItems = [
-      vus,
-      vmad,
-      carbono_crs,
-      agua_crs,
-    ];
 
     const tableItems = [
       { ...vus, percentage: valorTotal > 0 ? (vus.value / valorTotal) * 100 : 0, isSub: false },
@@ -131,11 +124,14 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
 
     tableData.forEach((item, index) => {
         const row = worksheet.getRow(5 + index);
-        row.getCell(1).value = item.name;
+        row.getCell(1).value = item.isSub ? `  ${item.name}` : item.name;
         row.getCell(2).value = item.value;
         row.getCell(2).numFmt = '"R$"#,##0.00';
         row.getCell(3).value = item.percentage / 100;
         row.getCell(3).numFmt = '0.00%';
+        if (item.id === 'crs_total') {
+            row.font = { bold: true };
+        }
     });
     
     const totalRow = worksheet.getRow(5 + tableData.length);
@@ -177,7 +173,7 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
             <Skeleton className="h-4 w-1/2" />
           </CardHeader>
           <CardContent>
-            <Skeleton className="h-64 w-full rounded-full" />
+            <Skeleton className="h-64 w-full" />
           </CardContent>
         </Card>
         <Card>
