@@ -16,11 +16,11 @@ import type { CommodityPriceData } from '@/lib/types';
 import type { AuditLogEntry } from './audit-history';
 import { getCommodityPricesByDate } from '@/lib/data-service';
 import { getAuditLogsForPeriod } from '@/lib/audit-log-service';
-import { PdfPreviewModal } from '@/components/pdf-preview-modal';
-import { generatePdf, type DashboardPdfData } from '@/lib/pdf-generator';
+import { PdfExportButton } from '@/components/pdf-export-button';
+import type { DashboardPdfData } from '@/lib/types';
 
 interface ExportOptions {
-  format: 'csv' | 'json' | 'pdf';
+  format: 'csv' | 'json';
   includeAssetData: boolean;
   includeAuditLogs: boolean;
   includeCalculations: boolean;
@@ -45,9 +45,7 @@ export function AuditExport({ currentDate }: AuditExportProps) {
   const [isExporting, setIsExporting] = useState(false);
   const [isStartCalendarOpen, setIsStartCalendarOpen] = useState(false);
   const [isEndCalendarOpen, setIsEndCalendarOpen] = useState(false);
-  const [isPdfPreviewOpen, setIsPdfPreviewOpen] = useState(false);
-  const [pdfData, setPdfData] = useState<DashboardPdfData | null>(null);
-
+  
   const handleExport = async () => {
     setIsExporting(true);
     
@@ -60,9 +58,6 @@ export function AuditExport({ currentDate }: AuditExportProps) {
           break;
         case 'json':
           downloadJSON(exportData);
-          break;
-        case 'pdf':
-          await handlePdfExport(exportData);
           break;
       }
     } catch (error) {
@@ -157,25 +152,6 @@ export function AuditExport({ currentDate }: AuditExportProps) {
     link.remove();
   };
 
-  const handlePdfExport = async (exportData: any) => {
-    try {
-      // Preparar dados para o PDF generator
-      const pdfData: DashboardPdfData = {
-        mainIndex: exportData.asset_data?.find((asset: CommodityPriceData) => asset.id === 'ucs_ase'),
-        secondaryIndices: exportData.asset_data?.filter((asset: CommodityPriceData) => ['pdm', 'ucs'].includes(asset.id)) || [],
-        currencies: exportData.asset_data?.filter((asset: CommodityPriceData) => ['usd', 'eur'].includes(asset.id)) || [],
-        otherAssets: exportData.asset_data?.filter((asset: CommodityPriceData) => !['ucs_ase', 'pdm', 'ucs', 'usd', 'eur'].includes(asset.id)) || [],
-        targetDate: exportOptions.startDate || currentDate
-      };
-
-      setPdfData(pdfData);
-      setIsPdfPreviewOpen(true);
-    } catch (error) {
-      console.error('Erro ao preparar dados para PDF:', error);
-      alert('Erro ao preparar dados para exportação em PDF.');
-    }
-  };
-
   const setDateRangePreset = (range: 'today' | 'week' | 'month') => {
     const today = new Date();
     let start = today;
@@ -213,7 +189,7 @@ export function AuditExport({ currentDate }: AuditExportProps) {
             <label className="text-sm font-medium">Formato de Exportação</label>
             <Select
               value={exportOptions.format}
-              onValueChange={(value: 'csv' | 'json' | 'pdf') =>
+              onValueChange={(value: 'csv' | 'json') =>
                 setExportOptions(prev => ({ ...prev, format: value }))
               }
             >
@@ -231,12 +207,6 @@ export function AuditExport({ currentDate }: AuditExportProps) {
                   <div className="flex items-center gap-2">
                     <FileText className="h-4 w-4" />
                     JSON (Dados Estruturados)
-                  </div>
-                </SelectItem>
-                <SelectItem value="pdf" disabled>
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    PDF (Em Breve)
                   </div>
                 </SelectItem>
               </SelectContent>
@@ -391,11 +361,11 @@ export function AuditExport({ currentDate }: AuditExportProps) {
             </div>
           </div>
 
-          <div className="pt-4 border-t">
+          <div className="pt-4 border-t flex flex-col sm:flex-row gap-2">
             <Button
               onClick={handleExport}
               disabled={isExporting || (!exportOptions.includeAssetData && !exportOptions.includeAuditLogs && !exportOptions.includeCalculations)}
-              className="w-full"
+              className="w-full sm:w-auto"
             >
               {isExporting ? (
                 <>
@@ -409,6 +379,19 @@ export function AuditExport({ currentDate }: AuditExportProps) {
                 </>
               )}
             </Button>
+            <PdfExportButton
+              data={{
+                  targetDate: currentDate,
+                  mainIndex: undefined,
+                  secondaryIndices: [],
+                  currencies: [],
+                  otherAssets: [],
+              }}
+              reportType="audit"
+              disabled={isExporting}
+            >
+              Exportar Resumo (PDF)
+            </PdfExportButton>
             
             {!exportOptions.includeAssetData && !exportOptions.includeAuditLogs && !exportOptions.includeCalculations && (
               <p className="text-xs text-muted-foreground text-center mt-2">
@@ -418,18 +401,6 @@ export function AuditExport({ currentDate }: AuditExportProps) {
           </div>
         </CardContent>
       </Card>
-      
-      {/* Modal de Preview do PDF */}
-      {pdfData && (
-        <PdfPreviewModal
-          isOpen={isPdfPreviewOpen}
-          onOpenChange={setIsPdfPreviewOpen}
-          reportType="audit"
-          data={pdfData}
-        />
-      )}
     </>
   );
 }
-
-    

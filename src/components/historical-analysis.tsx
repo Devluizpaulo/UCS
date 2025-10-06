@@ -14,9 +14,6 @@ import {
 } from 'recharts';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
-import html2canvas from 'html2canvas';
 
 import type { FirestoreQuote, CommodityConfig, CommodityPriceData } from '@/lib/types';
 import { getCotacoesHistorico } from '@/lib/data-service';
@@ -32,18 +29,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Button } from './ui/button';
-import { Info, FileDown, Loader2 } from 'lucide-react';
+import { Info, Loader2 } from 'lucide-react';
 import { HistoricalPriceTable } from './historical-price-table';
 import { AssetInfo, AssetSpecificDetails, GenericAssetDetails } from './asset-detail-modal';
 import { UcsAseDetails } from './ucs-ase-details';
-import { cn } from '@/lib/utils';
-import { LogoUCS } from './logo-bvm';
-
-// Extende a interface do jsPDF para incluir o autoTable
-interface jsPDFWithAutoTableType extends jsPDF {
-  autoTable: (options: any) => jsPDFWithAutoTableType;
-}
+import { PdfExportButton } from './pdf-export-button';
 
 const ChartSkeleton = () => (
   <div className="h-72 w-full">
@@ -62,7 +52,6 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
   const [assets, setAssets] = useState<CommodityConfig[]>([]);
   const [selectedAssetId, setSelectedAssetId] = useState<string>('ucs_ase');
   const [isLoading, setIsLoading] = useState(true);
-  const [isExporting, setIsExporting] = useState(false);
   const chartRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -131,187 +120,6 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
     return { chartData: chartPoints, latestQuote: quoteForDate, mainAssetData: mainAsset };
   }, [data, targetDate, selectedAssetConfig]);
   
-  const handleExportPdf = async () => {
-    if (!selectedAssetConfig || !chartRef.current || !latestQuote || !mainAssetData) return;
-    setIsExporting(true);
-    const chartElement = chartRef.current;
-  
-    const originalBg = chartElement.style.backgroundColor;
-    chartElement.style.backgroundColor = 'white';
-
-    try {
-        const canvas = await html2canvas(chartElement, { scale: 3, useCORS: true });
-        chartElement.style.backgroundColor = originalBg; 
-        
-        const imgData = canvas.toDataURL('image/png');
-        
-        const doc = new jsPDF() as jsPDFWithAutoTableType;
-        const generationDate = format(new Date(), "dd 'de' MMMM 'de' yyyy, HH:mm", { locale: ptBR });
-        const pdfWidth = doc.internal.pageSize.getWidth();
-        const margin = 15;
-        let finalY = 0;
-
-        // ===================================
-        // CABEÇALHO
-        // ===================================
-        doc.setFontSize(10);
-        doc.setTextColor(108, 117, 125);
-        doc.text("UCS INDEX REPORT", margin, 20);
-
-        doc.setFontSize(22);
-        doc.setTextColor(33, 37, 41);
-        doc.setFont('helvetica', 'bold');
-        doc.text(`Análise de Ativo: ${selectedAssetConfig.name}`, margin, 32);
-        
-        doc.setFillColor(40, 167, 69);
-        const dateBoxWidth = 70;
-        doc.rect(pdfWidth - dateBoxWidth - margin, 15, dateBoxWidth, 20, 'F');
-        
-        doc.setFontSize(10);
-        doc.setTextColor(255, 255, 255);
-        doc.setFont('helvetica', 'bold');
-        doc.text("Data da Análise", pdfWidth - margin - dateBoxWidth + 5, 22);
-        
-        doc.setFontSize(12);
-        doc.text(format(targetDate, "dd 'de' MMMM, yyyy", { locale: ptBR }), pdfWidth - margin - dateBoxWidth + 5, 30);
-        
-        finalY = 55;
-
-        // ===================================
-        // CARDS DE RESUMO (KPIs)
-        // ===================================
-        const cardWidth = (pdfWidth - (margin * 2) - 10) / 2;
-        
-        doc.setFillColor(248, 249, 250);
-        doc.setDrawColor(222, 226, 230);
-        doc.roundedRect(margin, finalY, cardWidth, 30, 3, 3, 'FD');
-        doc.setFillColor(0, 123, 255);
-        doc.rect(margin, finalY, 5, 30, 'F');
-
-        doc.setFillColor(248, 249, 250);
-        doc.roundedRect(margin + cardWidth + 10, finalY, cardWidth, 30, 3, 3, 'FD');
-        const changeColor = mainAssetData.change >= 0 ? [40, 167, 69] : [220, 53, 69];
-        doc.setFillColor(changeColor[0], changeColor[1], changeColor[2]);
-        doc.rect(margin + cardWidth + 10, finalY, 5, 30, 'F');
-
-        doc.setFontSize(10);
-        doc.setTextColor(108, 117, 125);
-        doc.text("Preço de Fechamento", margin + 12, finalY + 9);
-        doc.text("Variação (24h)", margin + cardWidth + 22, finalY + 9);
-        
-        doc.setFontSize(18);
-        doc.setTextColor(33, 37, 41);
-        doc.setFont('helvetica', 'bold');
-        doc.text(formatCurrency(mainAssetData.price, mainAssetData.currency, mainAssetData.id), margin + 12, finalY + 20);
-        
-        const changeText = `${mainAssetData.change >= 0 ? '+' : ''}${mainAssetData.change.toFixed(2)}%`;
-        doc.text(changeText, margin + cardWidth + 22, finalY + 20);
-
-        doc.setFontSize(9);
-        doc.setTextColor(108, 117, 125);
-        doc.text(`Absoluto: ${formatCurrency(mainAssetData.absoluteChange, mainAssetData.currency, mainAssetData.id)}`, margin + cardWidth + 22, finalY + 26);
-        
-        finalY += 30 + 15;
-        
-        // ===================================
-        // GRÁFICO
-        // ===================================
-        doc.setFontSize(14);
-        doc.setTextColor(33, 37, 41);
-        doc.setFont('helvetica', 'bold');
-        doc.text("Histórico de Preços (Últimos 90 dias)", margin, finalY);
-        finalY += 7;
-
-        const imgProps = doc.getImageProperties(imgData);
-        const imgWidth = pdfWidth - (margin * 2);
-        const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
-        doc.addImage(imgData, 'PNG', margin, finalY, imgWidth, imgHeight);
-
-        finalY += imgHeight + 10;
-        
-        // ===================================
-        // TABELAS DE DETALHES
-        // ===================================
-        let detailsToExport: { label: string, value: string | null }[] = [];
-        let tableTitle = "Resumo do Dia";
-        let tableColor: [number, number, number] = [52, 58, 64];
-
-        if (selectedAssetConfig.id === 'soja') {
-            detailsToExport = [
-                { label: 'Preço (Último)', value: formatCurrency(latestQuote.ultimo, 'USD') + ' / saca' },
-                { label: 'Cotação Dólar Usada', value: formatCurrency(latestQuote.cotacao_dolar, 'BRL', 'usd') },
-                { label: 'Preço Convertido', value: formatCurrency(latestQuote.ultimo_brl, 'BRL') + ' / saca' },
-                { label: 'Valor em Toneladas', value: formatCurrency(latestQuote.ton, 'BRL') + ' / ton' },
-                { label: 'Rentabilidade Média', value: formatCurrency(latestQuote.rent_media, 'BRL') + ' / ha' },
-            ];
-            tableTitle = "Detalhes da Cotação: Soja";
-            tableColor = [40, 167, 69];
-        } else if (selectedAssetConfig.id === 'carbono') {
-             detailsToExport = [
-                { label: 'Preço (Último)', value: formatCurrency(latestQuote.ultimo, 'EUR') + ' / ton' },
-                { label: 'Cotação Euro Usada', value: formatCurrency(latestQuote.cotacao_euro, 'BRL', 'eur') },
-                { label: 'Preço Convertido', value: formatCurrency(latestQuote.ultimo_brl, 'BRL') + ' / ton' },
-                { label: 'Rentabilidade Média', value: formatCurrency(latestQuote.rent_media, 'BRL') + ' / ha' },
-            ];
-            tableTitle = "Detalhes da Cotação: Carbono";
-            tableColor = [23, 162, 184];
-        } else if (selectedAssetConfig.id !== 'ucs_ase') {
-             detailsToExport = [
-                { label: 'Fechamento Anterior', value: formatCurrency(latestQuote.fechamento_anterior, mainAssetData.currency) },
-                { label: 'Abertura', value: formatCurrency(latestQuote.abertura, mainAssetData.currency) },
-                { label: 'Variação Diária (Min-Max)', value: `${formatCurrency(latestQuote.minima, mainAssetData.currency)} - ${formatCurrency(latestQuote.maxima, mainAssetData.currency)}` },
-                { label: 'Volume', value: latestQuote.volume?.toLocaleString('pt-BR') || 'N/A' },
-            ].filter(item => item.value !== null && item.value !== undefined && !item.value.includes('NaN'));
-        }
-
-        if (detailsToExport.length > 0) {
-            doc.autoTable({
-                startY: finalY,
-                head: [[{ content: tableTitle, styles: { halign: 'left', fillColor: tableColor, textColor: 255, fontStyle: 'bold' } }]],
-                body: detailsToExport.map(item => [item.label, item.value]),
-                theme: 'grid',
-                didDrawPage: (data: any) => { finalY = data.cursor?.y || finalY; }
-            });
-            finalY = (doc as any).lastAutoTable.finalY + 10;
-        }
-
-        if (selectedAssetConfig.id === 'ucs_ase' && latestQuote.componentes) {
-            doc.autoTable({
-                startY: finalY,
-                head: [[{ content: "Composição e Conversão do Índice UCS ASE", colSpan: 2, styles: { halign: 'center', fillColor: [40, 167, 69], textColor: 255, fontStyle: 'bold' } }]],
-                body: [
-                    ['UCS Original (BRL)', formatCurrency(latestQuote.valores_originais?.ucs || 0, 'BRL', 'ucs')],
-                    ['Fórmula', latestQuote.formula || 'UCS × 2'],
-                    [{ content: 'Resultado Final (BRL)', styles: { fontStyle: 'bold' } }, { content: formatCurrency(latestQuote.componentes.resultado_final_brl || 0, 'BRL', 'ucs_ase'), styles: { fontStyle: 'bold' } }],
-                    [{ content: '--- Conversões ---', colSpan: 2, styles: { fillColor: [248, 249, 250], textColor: 80, halign: 'center' } }],
-                    ['Cotação USD/BRL', formatCurrency(latestQuote.valores_originais?.cotacao_usd || 0, 'BRL', 'usd')],
-                    [{ content: 'Valor Final (USD)', styles: { fontStyle: 'bold' } }, { content: formatCurrency(latestQuote.componentes.resultado_final_usd || 0, 'USD', 'ucs_ase'), styles: { fontStyle: 'bold' } }],
-                    ['Cotação EUR/BRL', formatCurrency(latestQuote.valores_originais?.cotacao_eur || 0, 'BRL', 'eur')],
-                    [{ content: 'Valor Final (EUR)', styles: { fontStyle: 'bold' } }, { content: formatCurrency(latestQuote.componentes.resultado_final_eur || 0, 'EUR', 'ucs_ase'), styles: { fontStyle: 'bold' } }],
-                ],
-                theme: 'grid',
-            });
-        }
-
-        // ===================================
-        // RODAPÉ
-        // ===================================
-        const pageCount = (doc.internal as any).getNumberOfPages();
-        for (let i = 1; i <= pageCount; i++) {
-            doc.setPage(i);
-            doc.setFontSize(9);
-            doc.setTextColor(150);
-            doc.text(`Página ${i} de ${pageCount} | Relatório gerado em ${generationDate}`, pdfWidth / 2, doc.internal.pageSize.getHeight() - 10, { align: 'center' });
-        }
-        
-        doc.save(`relatorio_ativo_${selectedAssetConfig.id}_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
-    } catch (error) {
-        console.error("PDF generation error:", error);
-    } finally {
-        setIsExporting(false);
-    }
-  };
-
   return (
     <>
     <Card>
@@ -329,16 +137,19 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
           </Select>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExportPdf}
-            disabled={isLoading || isExporting || data.length === 0}
-            title="Exportar para PDF"
-          >
-            {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
-            <span className="ml-2">Exportar PDF</span>
-          </Button>
+            <PdfExportButton
+                data={{ 
+                    mainIndex: mainAssetData || undefined,
+                    secondaryIndices: [], // Populate as needed
+                    currencies: [], // Populate as needed
+                    otherAssets: [], // Populate as needed
+                    targetDate,
+                }}
+                reportType="asset-detail"
+                disabled={isLoading || data.length === 0}
+            >
+                Exportar PDF
+            </PdfExportButton>
         </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-8 p-4">

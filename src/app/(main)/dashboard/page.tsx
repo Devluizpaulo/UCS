@@ -30,7 +30,7 @@ import {
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import { formatCurrency } from '@/lib/formatters';
-import { PdfPreviewModal } from '@/components/pdf-preview-modal';
+import { PdfExportButton } from '@/components/pdf-export-button';
 
 
 function getValidatedDate(dateString?: string | null): Date | null {
@@ -95,7 +95,6 @@ export default function DashboardPage() {
   const [isPending, startTransition] = useTransition();
   const [isExporting, setIsExporting] = useState(false);
   const [targetDate, setTargetDate] = useState<Date>(new Date());
-  const [isPdfPreviewOpen, setIsPdfPreviewOpen] = useState(false);
   
   useEffect(() => {
     const initialDate = getValidatedDate(dateParam) || new Date();
@@ -271,10 +270,19 @@ export default function DashboardPage() {
             }
         >
             <div className="flex items-center gap-2 flex-wrap">
-                <Button variant="outline" size="sm" onClick={() => setIsPdfPreviewOpen(true)} disabled={isExporting || isLoading || data.length === 0}>
-                    {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileDown className="mr-2 h-4 w-4" />}
+                <PdfExportButton
+                    data={{
+                        mainIndex,
+                        secondaryIndices,
+                        currencies,
+                        otherAssets,
+                        targetDate
+                    }}
+                    reportType="dashboard"
+                    disabled={isExporting || isLoading || data.length === 0}
+                >
                     PDF
-                </Button>
+                </PdfExportButton>
                 <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={isExporting || isLoading || data.length === 0}>
                     {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileDown className="mr-2 h-4 w-4" />}
                     Excel
@@ -348,21 +356,6 @@ export default function DashboardPage() {
                 </div>
             )}
         </main>
-        
-        {isPdfPreviewOpen && (
-            <PdfPreviewModal
-                isOpen={isPdfPreviewOpen}
-                onOpenChange={setIsPdfPreviewOpen}
-                reportType="dashboard"
-                data={{
-                    mainIndex,
-                    secondaryIndices,
-                    currencies,
-                    otherAssets,
-                    targetDate
-                }}
-            />
-        )}
     </>
   );
 }
