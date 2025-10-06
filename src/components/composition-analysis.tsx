@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
@@ -26,17 +25,11 @@ import {
 import { Button } from './ui/button';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
-import html2canvas from 'html2canvas';
 import * as ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
+import { PdfExportButton } from './pdf-export-button';
+import type { CommodityPriceData } from '@/lib/types';
 
-
-// Extende a interface do jsPDF para incluir o autoTable
-interface jsPDFWithAutoTable extends jsPDF {
-  autoTable: (options: any) => jsPDFWithAutoTable;
-}
 
 interface CompositionAnalysisProps {
   targetDate: Date;
@@ -93,8 +86,8 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
     fetchData();
   }, [targetDate]);
 
-  const chartData = useMemo(() => {
-    if (!data?.componentes) return [];
+  const { chartData, mainAssetData } = useMemo(() => {
+    if (!data?.componentes) return { chartData: [], mainAssetData: null };
 
     const componentes = data.componentes;
     const valorTotal = data.valor || 1;
@@ -124,107 +117,21 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
       }
     ];
 
-    return groupedData.filter(item => item.value > 0);
+    const mainAsset: CommodityPriceData = {
+        id: 'valor_uso_solo',
+        name: 'Valor de Uso do Solo',
+        price: data.valor,
+        change: data.variacao_pct,
+        absoluteChange: data.variacao_abs,
+        currency: 'BRL',
+        category: 'index',
+        description: 'Índice de composição do uso do solo.',
+        unit: 'Pontos',
+        lastUpdated: data.data,
+    };
+
+    return { chartData: groupedData.filter(item => item.value > 0), mainAssetData: mainAsset };
   }, [data]);
-
-  const handleExportPdf = async () => {
-    if (!data || chartData.length === 0 || !chartRef.current) return;
-    setIsExporting(true);
-  
-    const chartElement = chartRef.current;
-    const originalBg = chartElement.style.backgroundColor;
-    chartElement.style.backgroundColor = 'white';
-
-    try {
-      const canvas = await html2canvas(chartElement, { 
-        scale: 2,
-        useCORS: true,
-      });
-      chartElement.style.backgroundColor = originalBg;
-
-      const imgData = canvas.toDataURL('image/png');
-  
-      const doc = new jsPDF() as jsPDFWithAutoTable;
-      const generationDate = format(new Date(), "dd 'de' MMMM 'de' yyyy, HH:mm", { locale: ptBR });
-      const pdfWidth = doc.internal.pageSize.getWidth();
-      const margin = 15;
-      let finalY = 0;
-      
-      // --- CABEÇALHO ---
-      doc.setFontSize(10);
-      doc.setTextColor(108, 117, 125);
-      doc.text("COMPOSITION REPORT", margin, 20);
-
-      doc.setFontSize(22);
-      doc.setTextColor(33, 37, 41);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Composição do "Valor de Uso do Solo"', margin, 32);
-
-      doc.setFillColor(40, 167, 69);
-      const dateBoxWidth = 70;
-      doc.rect(pdfWidth - dateBoxWidth - margin, 15, dateBoxWidth, 20, 'F');
-      
-      doc.setFontSize(10);
-      doc.setTextColor(255, 255, 255);
-      doc.setFont('helvetica', 'bold');
-      doc.text("Data da Análise", pdfWidth - dateBoxWidth - margin + 5, 22);
-      
-      doc.setFontSize(12);
-      doc.text(data.data, pdfWidth - dateBoxWidth - margin + 5, 30);
-
-      finalY = 55;
-  
-      // --- GRÁFICO ---
-      const imgProps = doc.getImageProperties(imgData);
-      const imgWidth = pdfWidth * 0.6;
-      const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
-      const xPos = (pdfWidth / 2) - (imgWidth / 2);
-      doc.addImage(imgData, 'PNG', xPos, finalY, imgWidth, imgHeight);
-      finalY += imgHeight + 10;
-  
-      // --- TABELA DE DADOS ---
-      const tableData = chartData.map(item => [
-          item.name,
-          formatCurrency(item.value, 'BRL'),
-          `${item.percentage.toFixed(2)}%`
-      ]);
-  
-      doc.autoTable({
-          startY: finalY,
-          head: [['Componente', 'Valor (R$)', 'Participação (%)']],
-          body: tableData,
-          foot: [['Total', formatCurrency(data.valor, 'BRL', 'valor_uso_solo'), '100.00%']],
-          theme: 'grid',
-          headStyles: { 
-            fillColor: [40, 167, 69], 
-            textColor: 255, 
-            fontStyle: 'bold' 
-          },
-          footStyles: { 
-            fillColor: [33, 37, 41],
-            textColor: 255, 
-            fontStyle: 'bold' 
-          },
-          didDrawPage: (data: any) => {
-            const pageCount = (doc.internal as any).getNumberOfPages();
-            doc.setFontSize(9);
-            doc.setTextColor(150);
-            doc.text(
-              `Página ${data.pageNumber} de ${pageCount} | Relatório gerado em ${generationDate}`,
-              pdfWidth / 2,
-              doc.internal.pageSize.getHeight() - 10,
-              { align: 'center' }
-            );
-          }
-      });
-  
-      doc.save(`composicao_valor_uso_solo_${format(targetDate, 'yyyy-MM-dd')}.pdf`);
-    } catch (error) {
-      console.error("PDF generation error:", error);
-    } finally {
-      setIsExporting(false);
-    }
-  };
   
   const handleExportExcel = async () => {
     if (!data || chartData.length === 0) return;
@@ -263,12 +170,14 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
 
     worksheet.columns.forEach((column: Partial<ExcelJS.Column>) => {
         let max_width = 0;
-        column.eachCell!({ includeEmpty: true }, (cell: ExcelJS.Cell) => {
-            const columnWidth = cell.value ? cell.value.toString().length : 10;
-            if (columnWidth > max_width) {
-                max_width = columnWidth;
-            }
-        });
+        if (column.eachCell) {
+          column.eachCell({ includeEmpty: true }, (cell: ExcelJS.Cell) => {
+              const columnWidth = cell.value ? cell.value.toString().length : 10;
+              if (columnWidth > max_width) {
+                  max_width = columnWidth;
+              }
+          });
+        }
         column.width = max_width < 12 ? 12 : max_width + 4;
     });
 
@@ -335,10 +244,30 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
                         </CardDescription>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
-                        <Button onClick={handleExportPdf} disabled={isExporting} variant="outline" size="sm">
-                            {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileText className="mr-2 h-4 w-4" />}
-                            Exportar (PDF)
-                        </Button>
+                        <PdfExportButton
+                            data={{
+                                mainIndex: mainAssetData,
+                                secondaryIndices: [], // Dados de composição são específicos
+                                currencies: [],
+                                otherAssets: chartData.map(item => ({
+                                  id: item.name,
+                                  name: item.name,
+                                  price: item.value,
+                                  change: item.percentage,
+                                  absoluteChange: 0, // Não aplicável aqui
+                                  currency: 'BRL',
+                                  category: 'component',
+                                  description: '',
+                                  unit: 'R$',
+                                  lastUpdated: data.data,
+                                })),
+                                targetDate: targetDate,
+                            }}
+                            reportType="composition"
+                            disabled={isExporting}
+                        >
+                          Exportar (PDF)
+                        </PdfExportButton>
                         <Button onClick={handleExportExcel} disabled={isExporting} variant="outline" size="sm">
                             {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
                             Exportar (XLSX)
