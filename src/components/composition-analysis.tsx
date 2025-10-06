@@ -300,7 +300,7 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {tableData.filter(item => !item.isSub).map((item, index) => {
+                {tableData.filter(item => !item.isSub && item.id !== 'crs_total').map((item, index) => {
                   const hasSubComponents = item.id === 'crs_total' && tableData.filter(sub => 'parent' in sub && sub.parent === 'crs_total').length > 0;
                   const isExpanded = expandedComponents[item.id];
                   
@@ -335,7 +335,7 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
                         <TableRow key={subItem.id} className="bg-muted/10 border-l-2 border-l-muted">
                           <TableCell className="pl-12 flex items-center gap-2">
                             <div className="flex items-center gap-1">
-                              <span className="text-muted-foreground text-sm">├─</span>
+                              <span className="text-muted-foreground text-sm">└─</span>
                               <div className="h-2 w-2 rounded-full bg-muted-foreground/60" />
                             </div>
                             <span className="text-sm text-muted-foreground font-medium">{subItem.name}</span>
@@ -348,6 +348,60 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
                     </Fragment>
                   );
                 })}
+                
+                {/* Componente CRS com subcomponentes */}
+                {(() => {
+                  const crsComponent = tableData.find(item => item.id === 'crs_total');
+                  if (!crsComponent) return null;
+                  
+                  const hasSubComponents = tableData.filter(sub => 'parent' in sub && sub.parent === 'crs_total').length > 0;
+                  const isExpanded = expandedComponents['crs_total'];
+                  
+                  return (
+                    <Fragment>
+                      <TableRow className="font-bold bg-muted/30">
+                        <TableCell className="flex items-center gap-2">
+                          <div className="h-3 w-3 rounded-full" style={{ backgroundColor: COLORS[2] }} />
+                          {hasSubComponents && (
+                            <button
+                              onClick={() => toggleComponentExpansion('crs_total')}
+                              className="flex items-center justify-center w-4 h-4 hover:bg-muted rounded-sm transition-colors"
+                            >
+                              {isExpanded ? (
+                                <ChevronDown className="w-3 h-3" />
+                              ) : (
+                                <ChevronRight className="w-3 h-3" />
+                              )}
+                            </button>
+                          )}
+                          <span className="font-medium">{crsComponent.name}</span>
+                          {hasSubComponents && (
+                            <span className="text-xs text-muted-foreground bg-primary/10 text-primary px-2 py-1 rounded-full ml-2">
+                              {isExpanded ? 'expandido' : 'contém subcomponentes'}
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right font-mono">{formatCurrency(crsComponent.value, 'BRL')}</TableCell>
+                        <TableCell className="text-right font-mono">{crsComponent.percentage.toFixed(2)}%</TableCell>
+                      </TableRow>
+                      {isExpanded && tableData.filter(sub => 'parent' in sub && sub.parent === 'crs_total').map(subItem => (
+                        <TableRow key={subItem.id} className="bg-muted/10 border-l-2 border-l-muted">
+                          <TableCell className="pl-12 flex items-center gap-2">
+                            <div className="flex items-center gap-1">
+                              <span className="text-muted-foreground text-sm">└─</span>
+                              <div className="h-2 w-2 rounded-full bg-muted-foreground/60" />
+                            </div>
+                            <span className="text-sm text-muted-foreground font-medium">{subItem.name}</span>
+                            <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">subcomponente</span>
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-sm">{formatCurrency(subItem.value, 'BRL')}</TableCell>
+                          <TableCell className="text-right font-mono text-sm">{subItem.percentage.toFixed(2)}%</TableCell>
+                        </TableRow>
+                      ))}
+                    </Fragment>
+                  );
+                })()}
+                
                 <TableRow className="font-bold bg-muted/50 border-t-2">
                    <TableCell>Total</TableCell>
                    <TableCell className="text-right font-mono">{formatCurrency(data.valor, 'BRL', 'valor_uso_solo')}</TableCell>

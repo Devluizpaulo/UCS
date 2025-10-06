@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Loader2, Download, RefreshCw, ZoomIn, ZoomOut, AlertCircle, RotateCcw } from 'lucide-react';
+import { Loader2, Download, RefreshCw, ZoomIn, ZoomOut, AlertCircle, RotateCcw, ExternalLink, Eye } from 'lucide-react';
 import { generatePdf, type DashboardPdfData } from '@/lib/pdf-generator';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -49,6 +49,7 @@ export function PdfPreviewModal({ isOpen, onOpenChange, reportType, data }: PdfP
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [zoom, setZoom] = useState(1);
   const [selectedTemplate, setSelectedTemplate] = useState(reportType);
+  const [iframeLoaded, setIframeLoaded] = useState(false);
 
   const [generationState, setGenerationState] = useState<GenerationState>({
     isLoading: false,
@@ -70,27 +71,41 @@ export function PdfPreviewModal({ isOpen, onOpenChange, reportType, data }: PdfP
 
     setGenerationState({ isLoading: true, error: null, retryCount: generationState.retryCount });
     
-    // Usar requestAnimationFrame para melhor performance
-    requestAnimationFrame(() => {
+    // Usar setTimeout para garantir que a UI seja atualizada
+    setTimeout(() => {
         try {
             console.log('Gerando PDF para template:', selectedTemplate);
+            console.log('Dados para PDF:', data);
+            
             const url = generatePdf(selectedTemplate, data);
             
             if (!url) {
-                throw new Error('Falha ao gerar documento PDF');
+                throw new Error('Falha ao gerar documento PDF - URL vazia');
             }
             
-            if (pdfUrl) URL.revokeObjectURL(pdfUrl);
+            // Limpar URL anterior (apenas blob URLs precisam ser revogadas)
+            if (pdfUrl && pdfUrl.startsWith('blob:')) {
+                URL.revokeObjectURL(pdfUrl);
+            }
+
+            // Validar se a URL é válida (aceita blob: ou data: URIs)
+            if (typeof url !== 'string' || (!url.startsWith('blob:') && !url.startsWith('data:application/pdf'))) {
+                console.error('URL inválida recebida:', url);
+                throw new Error('URL do PDF inválida - formato não suportado');
+            }
 
             pdfCacheRef.current.set(cacheKey, url);
             setPdfUrl(url);
+            setIframeLoaded(false); // Reset iframe loading state
             setGenerationState({ isLoading: false, error: null, retryCount: 0 });
             
             console.log('PDF gerado com sucesso:', url);
+            console.log('Tamanho da URL:', url.length);
 
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido na geração do PDF';
             console.error("Falha ao gerar PDF:", error);
+            console.error("Stack trace:", error instanceof Error ? error.stack : 'N/A');
             
             setGenerationState(prev => ({
                 isLoading: false,
@@ -104,7 +119,7 @@ export function PdfPreviewModal({ isOpen, onOpenChange, reportType, data }: PdfP
                 description: errorMessage,
             });
         }
-    });
+    }, 100);
 
   }, [selectedTemplate, data, pdfUrl, toast, generationState.retryCount]);
 
@@ -112,20 +127,35 @@ export function PdfPreviewModal({ isOpen, onOpenChange, reportType, data }: PdfP
     if (isOpen) {
       generateAndSetPdf();
     } else {
-      // Limpa todas as URLs em cache ao fechar
+      // Limpa todas as URLs em cache ao fechar (apenas blob URLs)
       pdfCacheRef.current.forEach(url => {
         try {
-          URL.revokeObjectURL(url);
+          if (url && url.startsWith('blob:')) {
+            URL.revokeObjectURL(url);
+          }
         } catch(e) {
           // Silencia erros
         }
       });
       pdfCacheRef.current.clear();
       setPdfUrl(null);
+      setIframeLoaded(false);
       setGenerationState({ isLoading: false, error: null, retryCount: 0 });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, selectedTemplate]);
+
+  // Timeout para detectar se o iframe não carregou
+  useEffect(() => {
+    if (pdfUrl && !iframeLoaded) {
+      const timeout = setTimeout(() => {
+        console.warn('PDF iframe não carregou em tempo hábil');
+        // Não definir erro automaticamente, apenas log
+      }, 10000); // 10 segundos
+
+      return () => clearTimeout(timeout);
+    }
+  }, [pdfUrl, iframeLoaded]);
 
 
   const handleRetry = () => {
@@ -187,6 +217,20 @@ export function PdfPreviewModal({ isOpen, onOpenChange, reportType, data }: PdfP
               <Button variant="outline" size="icon" onClick={() => setZoom(z => Math.max(0.5, z - 0.1))}><ZoomOut className="h-4 w-4" /></Button>
               <Button variant="ghost" size="icon" onClick={() => setZoom(1)} className="text-muted-foreground w-12">{Math.round(zoom * 100)}%</Button>
               <Button variant="outline" size="icon" onClick={() => setZoom(z => Math.min(2.5, z + 0.1))}><ZoomIn className="h-4 w-4" /></Button>
+              
+              {pdfUrl && (
+                <div className="ml-2 pl-2 border-l border-border">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => window.open(pdfUrl, '_blank')}
+                    className="text-xs"
+                  >
+                    <ExternalLink className="h-3 w-3 mr-1" />
+                    Abrir em Nova Aba
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -209,17 +253,32 @@ export function PdfPreviewModal({ isOpen, onOpenChange, reportType, data }: PdfP
                 )}
               </div>
             ) : pdfUrl ? (
-              <div className="w-full h-full flex items-center justify-center">
+              <div className="w-full h-full flex items-center justify-center relative">
+                {/* Indicador de carregamento do iframe */}
+                <div className="absolute inset-0 flex items-center justify-center bg-secondary rounded-md z-10" id="iframe-loading">
+                  <div className="flex flex-col items-center gap-3 text-muted-foreground">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                    <p className="text-sm">Carregando PDF...</p>
+                  </div>
+                </div>
+                
                 <iframe
-                  src={pdfUrl}
-                  className="w-full h-full border-0 rounded-md shadow-lg"
+                  src={`${pdfUrl}#toolbar=1&navpanes=1&scrollbar=1&zoom=${Math.round(zoom * 100)}`}
+                  className="w-full h-full border-0 rounded-md shadow-lg relative z-20"
                   title={`Pré-visualização do PDF - ${TEMPLATE_OPTIONS[selectedTemplate as keyof typeof TEMPLATE_OPTIONS]}`}
                   style={{ 
-                    transform: `scale(${zoom})`, 
-                    transformOrigin: 'center',
-                    minHeight: '600px'
+                    minHeight: '600px',
+                    backgroundColor: 'white'
                   }}
-                  onLoad={() => console.log('PDF carregado com sucesso')}
+                  onLoad={(e) => {
+                    console.log('PDF carregado com sucesso');
+                    setIframeLoaded(true);
+                    // Remover indicador de carregamento
+                    const loadingElement = document.getElementById('iframe-loading');
+                    if (loadingElement) {
+                      loadingElement.style.display = 'none';
+                    }
+                  }}
                   onError={(e) => {
                     console.error('Erro ao carregar PDF:', e);
                     setGenerationState(prev => ({
@@ -230,12 +289,24 @@ export function PdfPreviewModal({ isOpen, onOpenChange, reportType, data }: PdfP
                 />
               </div>
             ) : (
-              <div className="flex flex-col items-center gap-4 text-muted-foreground">
-                <p>Nenhuma pré-visualização disponível.</p>
-                <Button variant="outline" onClick={generateAndSetPdf}>
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  Tentar Novamente
-                </Button>
+              <div className="flex flex-col items-center gap-4 text-muted-foreground p-8">
+                <Eye className="h-12 w-12 text-muted-foreground/50" />
+                <div className="text-center">
+                  <p className="font-medium mb-2">Nenhuma pré-visualização disponível</p>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Clique em "Baixar PDF" para visualizar o relatório ou tente gerar novamente.
+                  </p>
+                  <div className="flex gap-2">
+                    <Button variant="outline" onClick={generateAndSetPdf}>
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                      Tentar Novamente
+                    </Button>
+                    <Button variant="outline" onClick={handleDownload}>
+                      <Download className="mr-2 h-4 w-4" />
+                      Baixar PDF
+                    </Button>
+                  </div>
+                </div>
               </div>
             )}
           </div>

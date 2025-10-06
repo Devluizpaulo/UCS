@@ -13,7 +13,7 @@ import type { ReportOutput } from '@/ai/flows/report-flow';
 
 // Extende a interface do jsPDF para incluir o autoTable
 interface jsPDFWithAutoTable extends jsPDF {
-    autoTable: (options: any) => jsPDFWithAutoTable;
+  autoTable: (options: any) => jsPDFWithAutoTable;
 }
 
 export interface DashboardPdfData {
@@ -175,7 +175,7 @@ const COLORS = {
     backgroundTertiary: '#f3f4f6', // gray-100
     surface: '#ffffff',
     surfaceElevated: '#fafafa',
-    white: '#ffffff',
+  white: '#ffffff',
 
     // Bordas e divisores
     border: '#e5e7eb', // gray-200
@@ -203,7 +203,7 @@ const COLORS = {
     },
 
     // Cores específicas para KPIs
-    kpi: {
+  kpi: {
         positive: '#10b981', // emerald-500
         negative: '#ef4444', // red-500
         neutral: '#6b7280', // gray-500
@@ -219,7 +219,7 @@ const COLORS = {
     },
 
     // Cores para gráficos
-    chart: {
+  chart: {
         c1: '#1e40af', // blue-800
         c2: '#059669', // emerald-600
         c3: '#f59e0b', // amber-500
@@ -606,7 +606,7 @@ const generateAiAnalysisPdf = (data: DashboardPdfData): jsPDF => {
 const generateExecutiveDashboardPdf = (data: DashboardPdfData): jsPDF => {
     const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' }) as jsPDFWithAutoTable;
     const { mainIndex, secondaryIndices, currencies, otherAssets, targetDate, marketSummary, volatilityMetrics, auditTrail, calculationDetails } = data;
-
+    
     const pageW = doc.internal.pageSize.getWidth();
     const pageH = doc.internal.pageSize.getHeight();
     const margin = 40;
@@ -651,7 +651,7 @@ const generateExecutiveDashboardPdf = (data: DashboardPdfData): jsPDF => {
             doc.setFillColor(255, 255, 255);
             doc.roundedRect(logoX, logoY, logoWidth, logoHeight, 8, 8, 'F');
             doc.setTextColor(COLORS.primary);
-            doc.setFont('helvetica', 'bold');
+    doc.setFont('helvetica', 'bold');
             doc.setFontSize(12);
             doc.text('BMV', logoX + logoWidth/2, logoY + logoHeight/2 + 2, { align: 'center' });
             doc.setTextColor(COLORS.textPrimary);
@@ -756,7 +756,7 @@ const generateExecutiveDashboardPdf = (data: DashboardPdfData): jsPDF => {
         // Título
         doc.setTextColor(COLORS.background);
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(14);
+    doc.setFontSize(14);
         doc.text('■ Resumo Geral do Mercado', margin + 15, y + 20);
 
         // Conteúdo do resumo
@@ -895,17 +895,17 @@ const generateExecutiveDashboardPdf = (data: DashboardPdfData): jsPDF => {
             margin, y, kpiCardWidth
         );
 
-        if (kpiAssets.length > 1) {
-            const asset2 = kpiAssets[1];
-            const change2 = typeof asset2.change === 'number' ? asset2.change : 0;
+    if (kpiAssets.length > 1) {
+        const asset2 = kpiAssets[1];
+        const change2 = typeof asset2.change === 'number' ? asset2.change : 0;
             drawModernKpiBlock(
-                asset2.name,
-                formatCurrency(asset2.price, asset2.currency, asset2.id),
+            asset2.name,
+            formatCurrency(asset2.price, asset2.currency, asset2.id),
                 `${change2 >= 0 ? '+' : ''}${change2.toFixed(2)}%`,
-                change2 >= 0,
+            change2 >= 0,
                 margin + kpiCardWidth + 15, y, kpiCardWidth
-            );
-        }
+        );
+    }
         y += 140; // Espaçamento aumentado
     }
 
@@ -1694,7 +1694,7 @@ const drawCustomKpiBlock = (kpi: any, x: number, y: number, width: number, doc: 
 const generateCompositionPdf = (data: DashboardPdfData): jsPDF => {
     const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' }) as jsPDFWithAutoTable;
     const { mainIndex, otherAssets: components, targetDate } = data;
-
+    
     const pageW = doc.internal.pageSize.getWidth();
     const pageH = doc.internal.pageSize.getHeight();
     const margin = 40;
@@ -1732,7 +1732,7 @@ const generateCompositionPdf = (data: DashboardPdfData): jsPDF => {
             doc.setFillColor(COLORS.primary);
             doc.roundedRect(logoX, logoY, logoWidth, logoHeight, 8, 8, 'F');
             doc.setTextColor(255, 255, 255);
-            doc.setFont('helvetica', 'bold');
+    doc.setFont('helvetica', 'bold');
             doc.setFontSize(14);
             doc.text('BMV', logoX + logoWidth/2, logoY + logoHeight/2 + 2, { align: 'center' });
             doc.setTextColor(COLORS.textPrimary);
@@ -1742,19 +1742,19 @@ const generateCompositionPdf = (data: DashboardPdfData): jsPDF => {
     }
 
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
+    doc.setFontSize(12);
     doc.setTextColor(COLORS.primary);
     doc.text('ANÁLISE DE COMPOSIÇÃO', margin, y);
-    y += 50; // Espaçamento aumentado
+    y += 60; // Espaçamento aumentado
 
-    doc.setFontSize(28); // Título maior
+    doc.setFontSize(32); // Título maior
     doc.setTextColor(COLORS.textPrimary);
     doc.text(mainIndex?.name || 'Índice de Composição', margin, y);
-    y += 35; // Espaçamento aumentado
-    doc.setFontSize(16);
+    y += 45; // Espaçamento aumentado
+    doc.setFontSize(18);
     doc.setTextColor(COLORS.textSecondary);
     doc.text(`Dados de ${format(targetDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}`, margin, y);
-    y += 80; // Espaçamento aumentado para separar melhor do conteúdo
+    y += 100; // Espaçamento aumentado para separar melhor do conteúdo
 
     // --- BLOCOS DE KPI DE COMPONENTES CIRCULARES ---
     const drawCompositionKpiBlock = (title: string, value: string, percentage: string, x: number, yPos: number, width: number, cardIndex: number) => {
@@ -1773,13 +1773,22 @@ const generateCompositionPdf = (data: DashboardPdfData): jsPDF => {
         const centerX = x + width / 2;
         const centerY = yPos + radius + 30; // Mais espaço para o título
 
-        // Sombra do círculo (mais pronunciada)
-        doc.setFillColor(0, 0, 0, 0.15);
+        // Sombra mais proeminente em múltiplas camadas
+        doc.setFillColor(0, 0, 0, 0.18);
         doc.circle(centerX + 4, centerY + 4, radius, 'F');
+        doc.setFillColor(0, 0, 0, 0.12);
+        doc.circle(centerX + 2, centerY + 2, radius, 'F');
+        doc.setFillColor(0, 0, 0, 0.06);
+        doc.circle(centerX + 1, centerY + 1, radius, 'F');
 
-        // Círculo principal colorido (sem fundo retangular)
+        // Círculo principal colorido
         doc.setFillColor(cardColor[0]);
         doc.circle(centerX, centerY, radius, 'F');
+        
+        // Borda branca para destaque
+        doc.setDrawColor(255, 255, 255);
+        doc.setLineWidth(2);
+        doc.circle(centerX, centerY, radius, 'S');
 
         // Porcentagem no centro do círculo (branca)
         doc.setFont('helvetica', 'bold');
@@ -1787,12 +1796,20 @@ const generateCompositionPdf = (data: DashboardPdfData): jsPDF => {
         doc.setTextColor(COLORS.background);
         doc.text(percentage, centerX, centerY + 8, { align: 'center' });
 
-        // Título abaixo do círculo
+        // Título abaixo do círculo com melhor espaçamento
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(11);
+        doc.setFontSize(12);
         doc.setTextColor(COLORS.textPrimary);
-        const titleLines = doc.splitTextToSize(title, width - 10);
-        doc.text(titleLines.slice(0, 2), centerX, centerY + radius + 30, { align: 'center' });
+        const titleLines = doc.splitTextToSize(title, width - 15);
+        const titleY = centerY + radius + 45; // Mais espaço entre círculo e texto
+        
+        // Adicionar sombra sutil ao texto
+        doc.setTextColor(0, 0, 0, 0.3);
+        doc.text(titleLines.slice(0, 2), centerX + 1, titleY + 1, { align: 'center' });
+        
+        // Texto principal
+        doc.setTextColor(COLORS.textPrimary);
+        doc.text(titleLines.slice(0, 2), centerX, titleY, { align: 'center' });
     };
 
     const allComponents = components || [];
@@ -1823,30 +1840,42 @@ const generateCompositionPdf = (data: DashboardPdfData): jsPDF => {
 
             row.forEach((component, cardIndex) => {
                 const xPosition = margin + (kpiCardWidth + cardSpacing) * cardIndex;
-                drawCompositionKpiBlock(
-                    component.name,
-                    formatCurrency(component.price, component.currency, component.id),
+            drawCompositionKpiBlock(
+                component.name,
+                formatCurrency(component.price, component.currency, component.id),
                     `${(component.change || 0).toFixed(2)}%`,
                     xPosition,
-                    y,
-                    kpiCardWidth,
+                y,
+                kpiCardWidth,
                     globalCardIndex
                 );
                 globalCardIndex++;
             });
 
-            y += 200; // Espaçamento aumentado entre linhas (círculos + título + espaço extra)
+                y += 220; // Espaçamento aumentado entre linhas (círculos + título + espaço extra)
         });
     }
 
 
 
     // --- TABELA RESUMO COM HIERARQUIA ---
+    y += 20; // Espaçamento extra antes da tabela
+    
+    // Fundo sutil para o título da tabela
+    doc.setFillColor(COLORS.backgroundSecondary);
+    doc.roundedRect(margin - 10, y - 5, pageW - margin * 2 + 20, 35, 8, 8, 'F');
+    
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(16); // Título da tabela maior
+    doc.setFontSize(18); // Título da tabela maior
     doc.setTextColor(COLORS.textPrimary);
-    doc.text('Resumo da Composição', margin, y);
-    y += 40; // Espaçamento aumentado antes da tabela
+    doc.text('Resumo da Composição', margin, y + 10);
+    
+    // Linha decorativa abaixo do título
+    doc.setDrawColor(COLORS.primary);
+    doc.setLineWidth(2);
+    doc.line(margin, y + 20, margin + 200, y + 20);
+    
+    y += 50; // Espaçamento aumentado antes da tabela
 
     if (allComponents.length > 0) {
         // Separar componentes principais dos subcomponentes
@@ -1877,7 +1906,7 @@ const generateCompositionPdf = (data: DashboardPdfData): jsPDF => {
             // Adicionar subcomponentes do CRS
             subComponents.forEach(c => {
                 tableData.push([
-                    `    └─ ${c.name}`,
+                    `    - ${c.name}`,
                     formatCurrency(c.price, c.currency, c.id),
                     `${(c.change || 0).toFixed(2)}%`
                 ]);
@@ -1893,7 +1922,7 @@ const generateCompositionPdf = (data: DashboardPdfData): jsPDF => {
             styles: { cellPadding: 6, fontSize: 10 },
             didParseCell: (data: any) => {
                 // Estilizar subcomponentes
-                if (data.cell.raw && typeof data.cell.raw === 'string' && data.cell.raw.includes('└─')) {
+                if (data.cell.raw && typeof data.cell.raw === 'string' && data.cell.raw.includes(' - ')) {
                     data.cell.styles.fontStyle = 'normal';
                     data.cell.styles.fontSize = 9;
                     data.cell.styles.textColor = [107, 114, 128]; // gray-500
@@ -1909,33 +1938,55 @@ const generateCompositionPdf = (data: DashboardPdfData): jsPDF => {
 
     // --- VALOR TOTAL MELHORADO ---
     if (mainIndex) {
-        y += 30; // Espaçamento extra antes da seção
+        y += 40; // Espaçamento extra antes da seção
         
-        // Sombra sutil
+        // Sombra mais pronunciada em múltiplas camadas
+        doc.setFillColor(0, 0, 0, 0.08);
+        doc.roundedRect(margin + 3, y + 3, pageW - margin * 2, 70, 10, 10, 'F');
         doc.setFillColor(0, 0, 0, 0.05);
-        doc.roundedRect(margin + 2, y + 2, pageW - margin * 2, 60, 8, 8, 'F');
+        doc.roundedRect(margin + 2, y + 2, pageW - margin * 2, 70, 10, 10, 'F');
         
-        // Card principal
-        doc.setFillColor(249, 250, 251); // gray-50
-        doc.setDrawColor(COLORS.border);
-        doc.setLineWidth(1);
-        doc.roundedRect(margin, y, pageW - margin * 2, 60, 8, 8, 'FD');
+        // Card principal com gradiente sutil
+        doc.setFillColor(248, 250, 252); // gray-50 mais claro
+        doc.setDrawColor(COLORS.primary);
+        doc.setLineWidth(2);
+        doc.roundedRect(margin, y, pageW - margin * 2, 70, 10, 10, 'FD');
+        
+        // Ícone decorativo
+        doc.setFillColor(COLORS.primary);
+        doc.circle(margin + 35, y + 35, 8, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(12);
+        doc.text('$', margin + 35, y + 39, { align: 'center' });
         
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(15); // Fonte maior
+        doc.setFontSize(16); // Fonte maior
         doc.setTextColor(COLORS.textSecondary);
-        doc.text('Valor Total do Índice', margin + 25, y + 35);
-        doc.setFontSize(26); // Valor maior
+        doc.text('Valor Total do Índice', margin + 60, y + 35);
+        
+        doc.setFontSize(28); // Valor maior
         doc.setTextColor(COLORS.textPrimary);
-        doc.text(formatCurrency(mainIndex.price, mainIndex.currency, mainIndex.id), pageW - margin - 25, y + 35, { align: 'right' });
-        y += 90; // Espaçamento aumentado
+        doc.text(formatCurrency(mainIndex.price, mainIndex.currency, mainIndex.id), pageW - margin - 30, y + 35, { align: 'right' });
+        
+        // Linha decorativa no final
+        doc.setDrawColor(COLORS.primary);
+        doc.setLineWidth(1);
+        doc.line(margin + 60, y + 50, pageW - margin - 30, y + 50);
+        
+        y += 100; // Espaçamento aumentado
     }
 
     // --- RODAPÉ COM LOGO BMV ---
     for (let i = 1; i <= doc.internal.pages.length; i++) {
         doc.setPage(i);
         
-        // Linha separadora
+        // Linha separadora com gradiente
+        doc.setDrawColor(COLORS.primary);
+        doc.setLineWidth(1);
+        doc.line(margin, pageH - 45, pageW - margin, pageH - 45);
+        
+        // Linha sutil adicional
         doc.setDrawColor(COLORS.border);
         doc.setLineWidth(0.5);
         doc.line(margin, pageH - 40, pageW - margin, pageH - 40);
@@ -1986,7 +2037,7 @@ const generateCompositionPdf = (data: DashboardPdfData): jsPDF => {
         doc.text(`Confidencial | UCS Index`, margin, pageH - 25);
         doc.text(`Página ${i}`, pageW - margin - 30, pageH - 25, { align: 'right' }); // Ajustado para não sobrepor o logo
     }
-
+    
     return doc;
 };
 
@@ -1995,8 +2046,8 @@ const generateCompositionPdf = (data: DashboardPdfData): jsPDF => {
 // === FUNÇÃO PRINCIPAL DE GERAÇÃO =================================================
 // ===================================================================================
 export const generatePdf = (
-    reportType: string,
-    data: DashboardPdfData,
+    reportType: string, 
+    data: DashboardPdfData, 
 ): string => {
     try {
         if (!data || !data.targetDate || isNaN(data.targetDate.getTime())) {
@@ -2010,7 +2061,7 @@ export const generatePdf = (
                 data.mainIndex.change = 0;
             }
         }
-
+        
         let doc: jsPDF;
 
         switch (reportType.toLowerCase()) {
@@ -2041,7 +2092,7 @@ export const generatePdf = (
                 doc = generateExecutiveDashboardPdf(data);
                 break;
         }
-
+    
         return doc.output('datauristring');
 
     } catch (error) {
