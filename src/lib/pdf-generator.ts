@@ -93,6 +93,27 @@ const COLORS = {
   }
 };
 
+// Função para adicionar o logo BMV nos PDFs
+const addBMVLogo = (doc: jsPDF, x: number, y: number, width: number = 40, height: number = 20) => {
+  try {
+    // Criar o logo BMV como um retângulo preto com texto branco
+    // Background preto
+    doc.setFillColor(0, 0, 0); // Preto
+    doc.roundedRect(x, y, width, height, 4, 4, 'F');
+    
+    // Texto "bmv" em branco
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.setTextColor(255, 255, 255); // Branco
+    doc.text('bmv', x + width/2, y + height/2 + 4, { align: 'center' });
+    
+    return true;
+  } catch (error) {
+    console.error('Erro ao adicionar logo BMV:', error);
+    return false;
+  }
+};
+
 // ===================================================================================
 // === TEMPLATE DE ANÁLISE GERADA PELA IA ============================================
 // ===================================================================================
@@ -196,6 +217,9 @@ const generateExecutiveDashboardPdf = (data: DashboardPdfData): jsPDF => {
     doc.setFontSize(10);
     doc.setTextColor(COLORS.primary);
     doc.text('UCS INDEX', margin, y);
+
+    // Logo BMV no lado direito
+    addBMVLogo(doc, pageW - margin - 50, y - 10, 50, 25);
 
     doc.setDrawColor(229, 231, 235); // gray-200
     doc.setLineWidth(1);
@@ -711,6 +735,9 @@ const generateCustomPdf = (data: DashboardPdfData): jsPDF => {
     doc.setFontSize(10);
     doc.text(`Gerado em ${format(targetDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}`, margin, 70);
     
+    // Logo BMV no lado direito substituindo "UCS Index"
+    addBMVLogo(doc, pageW - margin - 50, 25, 50, 25);
+    
     y = 110;
 
     // --- SEÇÕES PERSONALIZADAS ---
@@ -869,10 +896,9 @@ const generateCompositionPdf = (data: DashboardPdfData): jsPDF => {
   doc.setTextColor(COLORS.kpi.blue);
   doc.text('ANÁLISE DE COMPOSIÇÃO', margin, y);
 
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10);
-  doc.setTextColor(COLORS.textPrimary);
-  doc.text('UCS Index', pageW - margin, y, { align: 'right' });
+  // Logo BMV no lado direito substituindo "UCS Index"
+  addBMVLogo(doc, pageW - margin - 50, y - 10, 50, 25);
+  
   y += 40;
 
   doc.setFontSize(28);
@@ -886,7 +912,97 @@ const generateCompositionPdf = (data: DashboardPdfData): jsPDF => {
 
   // --- KPIS CIRCULARES ---
   const allComponents = components || [];
-  const crsTotalItem = allComponents.find(c => c.id === 'crs_total');
+  
+  // Criar componentes baseados nos dados da coleção valor_uso_solo
+  // Se mainIndex contém dados de componentes, usar esses dados
+  let carbonoCrs: CommodityPriceData | undefined;
+  let aguaCrs: CommodityPriceData | undefined;
+  let crsTotalItem: CommodityPriceData | undefined;
+  
+  // Verificar se mainIndex tem dados de componentes (estrutura da coleção valor_uso_solo)
+  if (mainIndex && (mainIndex as any).componentes) {
+    const componentes = (mainIndex as any).componentes;
+    const porcentagens = (mainIndex as any).porcentagens;
+    
+    
+    // Criar componente Carbono CRS
+    if (componentes.carbono_crs !== undefined) {
+      carbonoCrs = {
+        id: 'carbono_crs',
+        name: 'Carbono CRS',
+        price: componentes.carbono_crs,
+        currency: 'BRL',
+        change: porcentagens?.carbono_crs || 0,
+        absoluteChange: 0,
+        category: 'sub-index',
+        description: 'Custo de Responsabilidade Socioambiental - Carbono',
+        unit: 'BRL',
+        lastUpdated: targetDate.toISOString()
+      };
+    }
+    
+    // Criar componente Agua CRS - usar o campo correto do Firebase: agua_crs (minúsculo)
+    const aguaCrsValue = componentes.agua_crs; // Campo correto do Firebase
+    const aguaCrsPercent = mainIndex?.price ? (aguaCrsValue / mainIndex.price) * 100 : 0; // Calcular porcentagem como no composition-analysis
+    
+    if (aguaCrsValue !== undefined) {
+      aguaCrs = {
+        id: 'Agua_CRS',
+        name: 'Água CRS',
+        price: aguaCrsValue,
+        currency: 'BRL',
+        change: aguaCrsPercent || 0,
+        absoluteChange: 0,
+        category: 'sub-index',
+        description: 'Custo de Responsabilidade Socioambiental - Água',
+        unit: 'BRL',
+        lastUpdated: targetDate.toISOString()
+      };
+    }
+    
+    // Criar componente CRS Total - usar a mesma lógica do composition-analysis.tsx
+    if (carbonoCrs || aguaCrs) {
+      const crsTotalPrice = (carbonoCrs?.price || 0) + (aguaCrs?.price || 0);
+      const crsTotalChange = mainIndex?.price ? (crsTotalPrice / mainIndex.price) * 100 : 0; // Calcular porcentagem como no composition-analysis
+      
+      crsTotalItem = {
+        id: 'crs_total',
+        name: 'CRS (Custo de Resp. Socioambiental)',
+        price: crsTotalPrice,
+        currency: 'BRL',
+        change: crsTotalChange,
+        absoluteChange: 0,
+        category: 'sub-index',
+        description: 'Custo de Responsabilidade Socioambiental Total',
+        unit: 'BRL',
+        lastUpdated: targetDate.toISOString()
+      };
+    }
+  } else {
+    // Fallback para a lógica anterior se não houver dados de componentes
+    carbonoCrs = allComponents.find(c => c.id === 'carbono_crs');
+    aguaCrs = allComponents.find(c => c.id === 'Agua_CRS');
+    
+    crsTotalItem = allComponents.find(c => c.id === 'crs_total');
+    if (!crsTotalItem && (carbonoCrs || aguaCrs)) {
+      const crsTotalPrice = (carbonoCrs?.price || 0) + (aguaCrs?.price || 0);
+      const crsTotalChange = mainIndex ? (crsTotalPrice / mainIndex.price) * 100 : 0;
+      
+      crsTotalItem = {
+        id: 'crs_total',
+        name: 'CRS (Custo de Resp. Socioambiental)',
+        price: crsTotalPrice,
+        currency: 'BRL',
+        change: crsTotalChange,
+        absoluteChange: 0,
+        category: 'sub-index',
+        description: 'Custo de Responsabilidade Socioambiental Total',
+        unit: 'BRL',
+        lastUpdated: targetDate.toISOString()
+      };
+    }
+  }
+  
   const mainItems = [
     allComponents.find(c => c.id === 'vus'),
     allComponents.find(c => c.id === 'vmad'),
@@ -937,18 +1053,60 @@ const generateCompositionPdf = (data: DashboardPdfData): jsPDF => {
   y += 25;
 
   const tableBody = [];
-  const vus = allComponents.find(c => c.id === 'vus');
-  const vmad = allComponents.find(c => c.id === 'vmad');
+  
+  // Usar os componentes criados dinamicamente ou buscar nos dados existentes
+  let vus = allComponents.find(c => c.id === 'vus');
+  let vmad = allComponents.find(c => c.id === 'vmad');
+  
+  // Se mainIndex tem dados de componentes, criar VUS e VMAD também
+  if (mainIndex && (mainIndex as any).componentes) {
+    const componentes = (mainIndex as any).componentes;
+    const porcentagens = (mainIndex as any).porcentagens;
+    
+    if (componentes.vus !== undefined) {
+      vus = {
+        id: 'vus',
+        name: 'VUS (Valor de Uso do Solo)',
+        price: componentes.vus,
+        currency: 'BRL',
+        change: porcentagens?.vus || 0,
+        absoluteChange: 0,
+        category: 'sub-index',
+        description: 'Valor de Uso do Solo',
+        unit: 'BRL',
+        lastUpdated: targetDate.toISOString()
+      };
+    }
+    
+    if (componentes.vmad !== undefined) {
+      vmad = {
+        id: 'vmad',
+        name: 'VMAD (Valor da Madeira)',
+        price: componentes.vmad,
+        currency: 'BRL',
+        change: porcentagens?.vmad || 0,
+        absoluteChange: 0,
+        category: 'sub-index',
+        description: 'Valor da Madeira',
+        unit: 'BRL',
+        lastUpdated: targetDate.toISOString()
+      };
+    }
+  }
   
   if (vus) tableBody.push([vus.name, formatCurrency(vus.price, 'BRL'), `${(vus.change || 0).toFixed(2)}%`]);
   if (vmad) tableBody.push([vmad.name, formatCurrency(vmad.price, 'BRL'), `${(vmad.change || 0).toFixed(2)}%`]);
 
   if (crsTotalItem) {
     tableBody.push([crsTotalItem.name, formatCurrency(crsTotalItem.price, 'BRL'), `${(crsTotalItem.change || 0).toFixed(2)}%`]);
-    const carbono = allComponents.find(c => c.id === 'carbono_crs');
-    const agua = allComponents.find(c => c.id === 'Agua_CRS');
-    if (carbono) tableBody.push([`  - ${carbono.name}`, formatCurrency(carbono.price, 'BRL'), `${(carbono.change || 0).toFixed(2)}%`]);
-    if (agua) tableBody.push([`  - ${agua.name}`, formatCurrency(agua.price, 'BRL'), `${(agua.change || 0).toFixed(2)}%`]);
+    
+    // Usar os componentes criados dinamicamente
+    if (carbonoCrs) {
+      tableBody.push([`  - ${carbonoCrs.name}`, formatCurrency(carbonoCrs.price, 'BRL'), `${(carbonoCrs.change || 0).toFixed(2)}%`]);
+    }
+    if (aguaCrs) {
+      tableBody.push([`  - ${aguaCrs.name}`, formatCurrency(aguaCrs.price, 'BRL'), `${(aguaCrs.change || 0).toFixed(2)}%`]);
+    }
   }
   
   doc.autoTable({

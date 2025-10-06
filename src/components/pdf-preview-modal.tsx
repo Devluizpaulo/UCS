@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Loader2, Download, RefreshCw, ZoomIn, ZoomOut, AlertCircle, RotateCcw, ExternalLink, Eye } from 'lucide-react';
+import { Loader2, Download, RefreshCw, ZoomIn, ZoomOut, AlertCircle, RotateCcw, ExternalLink, Eye, Maximize2, Minimize2, RotateCw, FileText, Settings } from 'lucide-react';
 import { generatePdf, type DashboardPdfData } from '@/lib/pdf-generator';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -50,6 +50,8 @@ export function PdfPreviewModal({ isOpen, onOpenChange, reportType, data }: PdfP
   const [zoom, setZoom] = useState(1);
   const [selectedTemplate, setSelectedTemplate] = useState(reportType);
   const [iframeLoaded, setIframeLoaded] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [rotation, setRotation] = useState(0);
 
   const [generationState, setGenerationState] = useState<GenerationState>({
     isLoading: false,
@@ -187,140 +189,276 @@ export function PdfPreviewModal({ isOpen, onOpenChange, reportType, data }: PdfP
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      
       toast({ title: 'Download Iniciado', description: 'Seu relatório está sendo baixado.' });
+      
+      // Fechar o modal após um pequeno delay para garantir que o download foi iniciado
+      setTimeout(() => {
+        onOpenChange(false);
+      }, 500);
     } catch (error) {
       toast({ variant: 'destructive', title: 'Erro no Download', description: 'Não foi possível baixar o arquivo.' });
     }
   };
 
+  const handleFullscreen = () => {
+    setIsFullscreen(!isFullscreen);
+  };
+
+  const handleRotate = () => {
+    setRotation(prev => (prev + 90) % 360);
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle>Pré-visualização do Relatório</DialogTitle>
-          <DialogDescription>
-            Selecione um modelo, visualize e baixe o seu relatório em formato PDF.
-          </DialogDescription>
-        </DialogHeader>
-        <DialogBody className="flex-grow flex flex-col gap-4">
-          <div className="flex flex-wrap items-center justify-between gap-4 p-4 border rounded-lg bg-muted/50">
-            <div className="flex items-center gap-2">
-              <label htmlFor="template-select" className="text-sm font-medium">Modelo:</label>
-              <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
-                <SelectTrigger id="template-select" className="w-[220px]">
-                  <SelectValue placeholder="Selecione um modelo" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(TEMPLATE_OPTIONS).map(([key, value]) => (
-                    <SelectItem key={key} value={key}>{value}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+      <DialogContent className={`${isFullscreen ? 'max-w-[98vw] max-h-[98vh]' : 'max-w-[95vw] max-h-[95vh]'} w-full h-full flex flex-col`}>
+        <DialogHeader className="flex-shrink-0 pb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <FileText className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <DialogTitle className="text-xl font-semibold">Pré-visualização do Relatório</DialogTitle>
+                <DialogDescription className="text-sm text-muted-foreground mt-1">
+                  Visualize, configure e baixe seu relatório em formato PDF
+                </DialogDescription>
+              </div>
             </div>
-            <div className="flex items-center gap-1">
-              <Button variant="outline" size="icon" onClick={() => setZoom(z => Math.max(0.5, z - 0.1))}><ZoomOut className="h-4 w-4" /></Button>
-              <Button variant="ghost" size="icon" onClick={() => setZoom(1)} className="text-muted-foreground w-12">{Math.round(zoom * 100)}%</Button>
-              <Button variant="outline" size="icon" onClick={() => setZoom(z => Math.min(2.5, z + 0.1))}><ZoomIn className="h-4 w-4" /></Button>
-              
-              {pdfUrl && (
-                <div className="ml-2 pl-2 border-l border-border">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleFullscreen}
+              className="shrink-0"
+            >
+              {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+            </Button>
+          </div>
+        </DialogHeader>
+        
+        <DialogBody className="flex-grow flex flex-col gap-6 min-h-0">
+          {/* Barra de Ferramentas Superior */}
+          <div className="flex-shrink-0 bg-card border rounded-xl p-4 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              {/* Seleção de Template */}
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <Settings className="h-4 w-4 text-muted-foreground" />
+                  <label htmlFor="template-select" className="text-sm font-medium text-foreground">
+                    Modelo de Relatório:
+                  </label>
+                </div>
+                <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
+                  <SelectTrigger id="template-select" className="w-[280px] h-9">
+                    <SelectValue placeholder="Selecione um modelo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(TEMPLATE_OPTIONS).map(([key, value]) => (
+                      <SelectItem key={key} value={key}>{value}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Controles de Visualização */}
+              <div className="flex items-center gap-2">
+                {/* Controles de Zoom */}
+                <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
                   <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => window.open(pdfUrl, '_blank')}
-                    className="text-xs"
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => setZoom(z => Math.max(0.5, z - 0.25))}
+                    className="h-8 w-8"
+                    title="Diminuir zoom"
                   >
-                    <ExternalLink className="h-3 w-3 mr-1" />
-                    Abrir em Nova Aba
+                    <ZoomOut className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    onClick={() => setZoom(1)} 
+                    className="h-8 px-3 text-sm font-medium min-w-[60px]"
+                    title="Zoom padrão"
+                  >
+                    {Math.round(zoom * 100)}%
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => setZoom(z => Math.min(2, z + 0.25))}
+                    className="h-8 w-8"
+                    title="Aumentar zoom"
+                  >
+                    <ZoomIn className="h-4 w-4" />
                   </Button>
                 </div>
-              )}
+
+                {/* Controles de Rotação */}
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  onClick={handleRotate}
+                  className="h-9 w-9"
+                  title="Rotacionar documento"
+                >
+                  <RotateCw className="h-4 w-4" />
+                </Button>
+
+                {/* Ações do PDF */}
+                {pdfUrl && (
+                  <div className="flex items-center gap-2 pl-2 border-l border-border">
+                    <Button 
+                      variant="default" 
+                      size="sm" 
+                      onClick={handleDownload}
+                      className="h-9 text-sm"
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Baixar PDF
+                    </Button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
-          <div className="flex-grow bg-secondary rounded-md flex items-center justify-center relative overflow-auto">
+          {/* Área de Visualização do PDF */}
+          <div className="flex-grow bg-white dark:bg-gray-900 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 overflow-hidden relative">
             {generationState.isLoading ? (
-              <div className="flex flex-col items-center gap-3 text-muted-foreground">
-                <Loader2 className="h-8 w-8 animate-spin" />
-                <p>Gerando {TEMPLATE_OPTIONS[selectedTemplate as keyof typeof TEMPLATE_OPTIONS]}...</p>
+              <div className="absolute inset-0 flex items-center justify-center bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm">
+                <div className="flex flex-col items-center gap-4 text-center">
+                  <div className="relative">
+                    <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                    <div className="absolute inset-0 h-12 w-12 rounded-full border-2 border-primary/20"></div>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-lg text-foreground">Gerando Relatório</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {TEMPLATE_OPTIONS[selectedTemplate as keyof typeof TEMPLATE_OPTIONS]}
+                    </p>
+                  </div>
+                </div>
               </div>
             ) : generationState.error ? (
-              <div className="flex flex-col items-center gap-4 text-center p-6">
-                <AlertCircle className="h-12 w-12 text-destructive" />
-                <p className="text-destructive font-medium">Erro na Geração do PDF</p>
-                <p className="text-sm text-muted-foreground">{generationState.error}</p>
-                {generationState.retryCount < maxRetries && (
-                  <Button variant="outline" onClick={handleRetry} className="mt-2">
-                    <RotateCcw className="mr-2 h-4 w-4" />
-                    Tentar Novamente ({generationState.retryCount}/{maxRetries})
-                  </Button>
-                )}
+              <div className="absolute inset-0 flex items-center justify-center p-8 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm">
+                <div className="flex flex-col items-center gap-6 text-center max-w-md">
+                  <div className="p-4 bg-destructive/10 rounded-full">
+                    <AlertCircle className="h-10 w-10 text-destructive" />
+                  </div>
+                  <div>
+                    <p className="text-destructive font-semibold text-xl mb-2">Erro na Geração</p>
+                    <p className="text-sm text-muted-foreground mb-6">{generationState.error}</p>
+                    {generationState.retryCount < maxRetries && (
+                      <Button variant="outline" onClick={handleRetry} className="mt-2">
+                        <RotateCcw className="mr-2 h-4 w-4" />
+                        Tentar Novamente ({generationState.retryCount}/{maxRetries})
+                      </Button>
+                    )}
+                  </div>
+                </div>
               </div>
             ) : pdfUrl ? (
               <div className="w-full h-full flex items-center justify-center relative">
                 {/* Indicador de carregamento do iframe */}
-                <div className="absolute inset-0 flex items-center justify-center bg-secondary rounded-md z-10" id="iframe-loading">
+                <div className="absolute inset-0 flex items-center justify-center bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm z-10" id="iframe-loading">
                   <div className="flex flex-col items-center gap-3 text-muted-foreground">
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                    <p className="text-sm">Carregando PDF...</p>
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <p className="text-sm font-medium">Carregando PDF...</p>
                   </div>
                 </div>
                 
-                <iframe
-                  src={`${pdfUrl}#toolbar=1&navpanes=1&scrollbar=1&zoom=${Math.round(zoom * 100)}`}
-                  className="w-full h-full border-0 rounded-md shadow-lg relative z-20"
-                  title={`Pré-visualização do PDF - ${TEMPLATE_OPTIONS[selectedTemplate as keyof typeof TEMPLATE_OPTIONS]}`}
+                <div 
+                  className="w-full h-full bg-white dark:bg-gray-900 overflow-hidden relative z-20"
                   style={{ 
-                    minHeight: '600px',
-                    backgroundColor: 'white'
+                    transform: `rotate(${rotation}deg)`,
+                    transition: 'transform 0.3s ease-in-out'
                   }}
-                  onLoad={(e) => {
-                    console.log('PDF carregado com sucesso');
-                    setIframeLoaded(true);
-                    // Remover indicador de carregamento
-                    const loadingElement = document.getElementById('iframe-loading');
-                    if (loadingElement) {
-                      loadingElement.style.display = 'none';
-                    }
-                  }}
-                  onError={(e) => {
-                    console.error('Erro ao carregar PDF:', e);
-                    setGenerationState(prev => ({
-                      ...prev,
-                      error: 'Erro ao carregar a pré-visualização do PDF'
-                    }));
-                  }}
-                />
+                >
+                  <iframe
+                    src={`${pdfUrl}#toolbar=0&navpanes=0&scrollbar=1&zoom=${Math.round(zoom * 100)}&view=FitH`}
+                    className="w-full h-full border-0"
+                    title={`Pré-visualização do PDF - ${TEMPLATE_OPTIONS[selectedTemplate as keyof typeof TEMPLATE_OPTIONS]}`}
+                    style={{ 
+                      minHeight: '100%',
+                      backgroundColor: 'white'
+                    }}
+                    onLoad={(e) => {
+                      console.log('PDF carregado com sucesso');
+                      setIframeLoaded(true);
+                      // Remover indicador de carregamento
+                      const loadingElement = document.getElementById('iframe-loading');
+                      if (loadingElement) {
+                        loadingElement.style.display = 'none';
+                      }
+                    }}
+                    onError={(e) => {
+                      console.error('Erro ao carregar PDF:', e);
+                      setGenerationState(prev => ({
+                        ...prev,
+                        error: 'Erro ao carregar a pré-visualização do PDF'
+                      }));
+                    }}
+                  />
+                </div>
               </div>
             ) : (
-              <div className="flex flex-col items-center gap-4 text-muted-foreground p-8">
-                <Eye className="h-12 w-12 text-muted-foreground/50" />
-                <div className="text-center">
-                  <p className="font-medium mb-2">Nenhuma pré-visualização disponível</p>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Clique em "Baixar PDF" para visualizar o relatório ou tente gerar novamente.
-                  </p>
-                  <div className="flex gap-2">
-                    <Button variant="outline" onClick={generateAndSetPdf}>
-                      <RefreshCw className="mr-2 h-4 w-4" />
-                      Tentar Novamente
-                    </Button>
-                    <Button variant="outline" onClick={handleDownload}>
-                      <Download className="mr-2 h-4 w-4" />
-                      Baixar PDF
-                    </Button>
+              <div className="absolute inset-0 flex items-center justify-center p-8 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm">
+                <div className="flex flex-col items-center gap-6 text-center max-w-lg">
+                  <div className="p-4 bg-primary/10 rounded-full">
+                    <Eye className="h-12 w-12 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-xl mb-2 text-foreground">Nenhuma Pré-visualização</p>
+                    <p className="text-sm text-muted-foreground mb-6">
+                      Gere um relatório para visualizar o PDF ou baixe diretamente o arquivo.
+                    </p>
+                    <div className="flex gap-3 justify-center">
+                      <Button variant="outline" onClick={generateAndSetPdf}>
+                        <RefreshCw className="mr-2 h-4 w-4" />
+                        Gerar PDF
+                      </Button>
+                      <Button variant="default" onClick={handleDownload}>
+                        <Download className="mr-2 h-4 w-4" />
+                        Baixar PDF
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
             )}
           </div>
         </DialogBody>
-        <DialogFooter>
-            <Button variant="outline" onClick={() => onOpenChange(false)}>Fechar</Button>
-            <Button onClick={handleDownload} disabled={!pdfUrl || generationState.isLoading}>
-              <Download className="mr-2 h-4 w-4" />
-              Baixar PDF
-            </Button>
+        
+        {/* Rodapé Simplificado */}
+        <DialogFooter className="flex-shrink-0 pt-4 border-t bg-muted/20">
+          <div className="flex items-center justify-between w-full">
+            <div className="text-sm text-muted-foreground">
+              {pdfUrl ? (
+                <span className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  PDF pronto para visualização
+                </span>
+              ) : (
+                <span>Pré-visualização não disponível</span>
+              )}
+            </div>
+
+            <div className="flex items-center gap-3">
+              <Button 
+                variant="outline" 
+                onClick={() => onOpenChange(false)}
+              >
+                Fechar
+              </Button>
+              <Button 
+                onClick={handleDownload} 
+                disabled={!pdfUrl || generationState.isLoading}
+                className="min-w-[120px]"
+              >
+                <Download className="mr-2 h-4 w-4" />
+                {generationState.isLoading ? 'Gerando...' : 'Baixar'}
+              </Button>
+            </div>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

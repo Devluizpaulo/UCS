@@ -71,10 +71,12 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
     const componentes = data.componentes;
     const valorTotal = data.valor;
 
+
     const vus = { id: 'vus', name: componentNames.vus, value: (componentes.vus || 0) as number };
     const vmad = { id: 'vmad', name: componentNames.vmad, value: (componentes.vmad || 0) as number };
     const carbono_crs = { id: 'carbono_crs', name: componentNames.carbono_crs, value: (componentes.carbono_crs || 0) as number };
-    const agua_crs = { id: 'Agua_CRS', name: componentNames.Agua_CRS, value: (componentes.Agua_CRS || 0) as number };
+    // Usar o campo correto do Firebase: agua_crs (minúsculo)
+    const agua_crs = { id: 'Agua_CRS', name: componentNames.Agua_CRS, value: (componentes.agua_crs || 0) as number };
     
     const crsTotalValue = carbono_crs.value + agua_crs.value;
     const crsTotal = { id: 'crs_total', name: componentNames.crs_total, value: crsTotalValue };
