@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -38,7 +38,7 @@ export function PdfPreviewModal({ isOpen, onOpenChange, reportType, data }: PdfP
   const [template, setTemplate] = useState<PdfTemplate>('complete');
   const [zoom, setZoom] = useState(1);
 
-  const generateAndSetPdf = async (currentTemplate: PdfTemplate) => {
+  const generateAndSetPdf = useCallback(async (currentTemplate: PdfTemplate) => {
     setIsLoading(true);
     // Revoke previous URL to free memory
     if (pdfUrl) {
@@ -53,7 +53,8 @@ export function PdfPreviewModal({ isOpen, onOpenChange, reportType, data }: PdfP
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [pdfUrl, reportType, data]);
+
 
   useEffect(() => {
     if (isOpen) {
@@ -64,12 +65,16 @@ export function PdfPreviewModal({ isOpen, onOpenChange, reportType, data }: PdfP
             setPdfUrl(null);
         }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen]);
+  // The linter wants generateAndSetPdf and template in the dependency array.
+  // Adding them would cause an infinite loop because generateAndSetPdf creates a new object URL,
+  // which changes pdfUrl, which is a dependency of generateAndSetPdf.
+  // We explicitly want this to run only when `isOpen` changes.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, template]);
 
   const handleTemplateChange = (newTemplate: PdfTemplate) => {
     setTemplate(newTemplate);
-    generateAndSetPdf(newTemplate);
+    // The useEffect will catch this change and regenerate the PDF.
   }
 
   const handleDownload = () => {
