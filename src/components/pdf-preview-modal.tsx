@@ -38,36 +38,43 @@ export function PdfPreviewModal({ isOpen, onOpenChange, reportType, data }: PdfP
   const [template, setTemplate] = useState<PdfTemplate>('complete');
   const [zoom, setZoom] = useState(1);
 
-  const generateAndSetPdf = useCallback(async (currentTemplate: PdfTemplate) => {
+  const generateAndSetPdf = useCallback((currentTemplate: PdfTemplate) => {
     setIsLoading(true);
-    // Revoke previous URL to free memory, if it exists
-    if (pdfUrl) {
-      URL.revokeObjectURL(pdfUrl);
-    }
-    try {
-      const url = await generatePdf(reportType, data, currentTemplate);
-      setPdfUrl(url);
-    } catch (error) {
-      console.error("Failed to generate PDF:", error);
-      setPdfUrl(null);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [reportType, data, pdfUrl]); // Add all dependencies
+
+    // Use setTimeout to push the heavy PDF generation task to a new event loop cycle.
+    // This allows the UI to update with the loading state immediately without freezing.
+    setTimeout(() => {
+      try {
+        const url = generatePdf(reportType, data, currentTemplate);
+        
+        // Revoke the old object URL if it exists, to prevent memory leaks
+        if (pdfUrl) {
+          URL.revokeObjectURL(pdfUrl);
+        }
+
+        setPdfUrl(url);
+      } catch (error) {
+        console.error("Failed to generate PDF:", error);
+        setPdfUrl(null);
+      } finally {
+        setIsLoading(false);
+      }
+    }, 50); // A small delay is enough to unblock the main thread
+
+  }, [reportType, data, pdfUrl]);
 
   useEffect(() => {
     if (isOpen) {
       generateAndSetPdf(template);
     } else {
-        // Cleanup when modal closes
-        if (pdfUrl) {
-            URL.revokeObjectURL(pdfUrl);
-            setPdfUrl(null);
-        }
+      // Cleanup when modal closes
+      if (pdfUrl) {
+        URL.revokeObjectURL(pdfUrl);
+        setPdfUrl(null);
+      }
     }
-    // This effect should run when isOpen or the template changes.
-    // The linter might complain about generateAndSetPdf, but it's wrapped in useCallback.
-  }, [isOpen, template, generateAndSetPdf, pdfUrl]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, template]);
 
   const handleTemplateChange = (newTemplate: PdfTemplate) => {
     setTemplate(newTemplate);
