@@ -42,6 +42,7 @@ const componentNames: Record<string, string> = {
   vmad: 'VMAD (Valor da Madeira)',
   carbono_crs: 'Carbono CRS',
   Agua_CRS: 'Água CRS',
+  crs_total: 'CRS (Custo de Resp. Socioambiental)'
 };
 
 export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
@@ -65,20 +66,30 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
     fetchData();
   }, [targetDate]);
 
-  const { chartData, mainAssetData } = useMemo(() => {
-    if (!data?.componentes) return { chartData: [], mainAssetData: null };
+  const { chartData, tableData, mainAssetData } = useMemo(() => {
+    if (!data?.componentes) return { chartData: [], tableData: [], mainAssetData: null };
 
     const componentes = data.componentes;
     const valorTotal = data.valor || 1;
 
-    const chartItems = [
-      { id: 'vus', name: componentNames.vus, value: (componentes.vus || 0) as number },
-      { id: 'vmad', name: componentNames.vmad, value: (componentes.vmad || 0) as number },
-      { id: 'carbono_crs', name: componentNames.carbono_crs, value: (componentes.carbono_crs || 0) as number },
-      { id: 'Agua_CRS', name: componentNames.Agua_CRS, value: (componentes.Agua_CRS || 0) as number },
-    ];
+    const vus = { id: 'vus', name: componentNames.vus, value: (componentes.vus || 0) as number };
+    const vmad = { id: 'vmad', name: componentNames.vmad, value: (componentes.vmad || 0) as number };
+    const carbono_crs = { id: 'carbono_crs', name: componentNames.carbono_crs, value: (componentes.carbono_crs || 0) as number, isSub: true };
+    const Agua_CRS = { id: 'Agua_CRS', name: componentNames.Agua_CRS, value: (componentes.Agua_CRS || 0) as number, isSub: true };
+    const crs_total = { id: 'crs_total', name: componentNames.crs_total, value: carbono_crs.value + Agua_CRS.value };
     
-    const groupedData = chartItems.map(item => ({
+    const chartItems = [vus, vmad, crs_total].map(item => ({
+        ...item,
+        percentage: valorTotal > 0 ? (item.value / valorTotal) * 100 : 0,
+    }));
+
+    const tableItems = [
+        vus,
+        vmad,
+        crs_total,
+        carbono_crs,
+        Agua_CRS,
+    ].map(item => ({
         ...item,
         percentage: valorTotal > 0 ? (item.value / valorTotal) * 100 : 0,
     }));
@@ -96,11 +107,11 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
         lastUpdated: data.data,
     };
 
-    return { chartData: groupedData.filter(item => item.value > 0), mainAssetData: mainAsset };
+    return { chartData: chartItems.filter(item => item.value > 0), tableData: tableItems, mainAssetData: mainAsset };
   }, [data]);
   
   const handleExportExcel = async () => {
-    if (!data || chartData.length === 0) return;
+    if (!data || tableData.length === 0) return;
     setIsExporting(true);
 
     const workbook = new ExcelJS.Workbook();
@@ -117,16 +128,19 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
     worksheet.getRow(4).values = ['Componente', 'Valor (R$)', 'Participação (%)'];
     worksheet.getRow(4).font = { bold: true };
 
-    chartData.forEach((item, index) => {
+    tableData.forEach((item, index) => {
         const row = worksheet.getRow(5 + index);
-        row.getCell(1).value = item.name;
+        row.getCell(1).value = item.isSub ? `  ${item.name}` : item.name;
         row.getCell(2).value = item.value;
         row.getCell(2).numFmt = '"R$"#,##0.00';
         row.getCell(3).value = item.percentage / 100;
         row.getCell(3).numFmt = '0.00%';
+        if (item.id === 'crs_total') {
+            row.font = { bold: true };
+        }
     });
     
-    const totalRow = worksheet.getRow(5 + chartData.length);
+    const totalRow = worksheet.getRow(5 + tableData.length);
     totalRow.getCell(1).value = 'Total';
     totalRow.getCell(2).value = data.valor;
     totalRow.getCell(3).value = 1;
@@ -196,6 +210,21 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
       </Card>
     );
   }
+  
+  const pdfComponentData = chartData.flatMap(item => {
+      if (item.id === 'crs_total') {
+          const carbono = tableData.find(t => t.id === 'carbono_crs');
+          const agua = tableData.find(t => t.id === 'Agua_CRS');
+          return [
+              carbono ? { id: carbono.id, name: carbono.name, price: carbono.value, change: carbono.percentage, absoluteChange: 0, currency: 'BRL', category: 'component', description: '', unit: 'R$', lastUpdated: data.data } : null,
+              agua ? { id: agua.id, name: agua.name, price: agua.value, change: agua.percentage, absoluteChange: 0, currency: 'BRL', category: 'component', description: '', unit: 'R$', lastUpdated: data.data } : null
+          ].filter(Boolean) as CommodityPriceData[];
+      }
+      return {
+          id: item.name, name: item.name, price: item.value, change: item.percentage, absoluteChange: 0, currency: 'BRL', category: 'component', description: '', unit: 'R$', lastUpdated: data.data,
+      };
+  });
+
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
@@ -218,18 +247,7 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
                             mainIndex: mainAssetData,
                             secondaryIndices: [], // Dados de composição são específicos
                             currencies: [],
-                            otherAssets: chartData.map(item => ({
-                              id: item.name,
-                              name: item.name,
-                              price: item.value,
-                              change: item.percentage,
-                              absoluteChange: 0, // Não aplicável aqui
-                              currency: 'BRL',
-                              category: 'component',
-                              description: '',
-                              unit: 'R$',
-                              lastUpdated: data.data,
-                            })),
+                            otherAssets: pdfComponentData,
                             targetDate: targetDate,
                         }}
                         reportType="composition"
@@ -297,17 +315,28 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {chartData.map((item, index) => (
-                  <TableRow key={item.name}>
-                    <TableCell className="flex items-center gap-2">
-                      <div className="h-3 w-3 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
-                      <span className="font-medium">{item.name}</span>
-                    </TableCell>
-                    <TableCell className="text-right font-mono">{formatCurrency(item.value, 'BRL')}</TableCell>
-                    <TableCell className="text-right font-mono">{item.percentage.toFixed(2)}%</TableCell>
-                  </TableRow>
+                {tableData.filter(item => !item.isSub).map((item, index) => (
+                  <>
+                    <TableRow key={item.id} className={item.id === 'crs_total' ? 'font-bold bg-muted/30' : ''}>
+                      <TableCell className="flex items-center gap-2">
+                        {item.id !== 'crs_total' && <div className="h-3 w-3 rounded-full" style={{ backgroundColor: COLORS[chartData.findIndex(c => c.id === item.id) % COLORS.length] }} />}
+                        <span className="font-medium">{item.name}</span>
+                      </TableCell>
+                      <TableCell className="text-right font-mono">{formatCurrency(item.value, 'BRL')}</TableCell>
+                      <TableCell className="text-right font-mono">{item.percentage.toFixed(2)}%</TableCell>
+                    </TableRow>
+                    {item.id === 'crs_total' && tableData.filter(sub => sub.isSub).map(subItem => (
+                      <TableRow key={subItem.id} className="hover:bg-muted/20">
+                        <TableCell className="pl-8 text-sm text-muted-foreground">
+                          <span className="mr-2">└─</span>{subItem.name}
+                        </TableCell>
+                        <TableCell className="text-right font-mono text-sm text-muted-foreground">{formatCurrency(subItem.value, 'BRL')}</TableCell>
+                        <TableCell className="text-right font-mono text-sm text-muted-foreground">{subItem.percentage.toFixed(2)}%</TableCell>
+                      </TableRow>
+                    ))}
+                  </>
                 ))}
-                <TableRow className="font-bold bg-muted/50">
+                <TableRow className="font-bold bg-muted/50 border-t-2">
                    <TableCell>Total</TableCell>
                    <TableCell className="text-right font-mono">{formatCurrency(data.valor, 'BRL', 'valor_uso_solo')}</TableCell>
                    <TableCell className="text-right font-mono">100.00%</TableCell>
