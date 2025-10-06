@@ -23,7 +23,40 @@ export interface DashboardPdfData {
     targetDate: Date;
 }
 
-const generateDashboardPdf = (data: DashboardPdfData): jsPDF => {
+const generateSimpleDashboardPdf = (data: DashboardPdfData): jsPDF => {
+    const doc = new jsPDF() as jsPDFWithAutoTable;
+    const { mainIndex, otherAssets, targetDate } = data;
+    const formattedDate = format(targetDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
+    
+    doc.setFontSize(18);
+    doc.text('Relatório de Cotações Simplificado', 15, 22);
+    doc.setFontSize(11);
+    doc.text(`Data: ${formattedDate}`, 15, 30);
+
+    if (mainIndex) {
+        doc.autoTable({
+            startY: 40,
+            head: [['Índice Principal', 'Valor']],
+            body: [[mainIndex.name, formatCurrency(mainIndex.price, mainIndex.currency, mainIndex.id)]],
+            theme: 'striped',
+        });
+    }
+
+    doc.autoTable({
+        startY: (doc as any).lastAutoTable.finalY + 10,
+        head: [['Ativo', 'Preço', 'Variação']],
+        body: otherAssets.map(asset => [
+            asset.name,
+            formatCurrency(asset.price, asset.currency, asset.id),
+            `${asset.change.toFixed(2)}%`
+        ]),
+        theme: 'grid',
+    });
+
+    return doc;
+};
+
+const generateCompleteDashboardPdf = (data: DashboardPdfData): jsPDF => {
     const doc = new jsPDF() as jsPDFWithAutoTable;
     const { mainIndex, secondaryIndices, currencies, otherAssets, targetDate } = data;
     const formattedDate = format(targetDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
@@ -99,17 +132,129 @@ const generateDashboardPdf = (data: DashboardPdfData): jsPDF => {
 };
 
 
-export const generatePdf = (reportType: string, data: any, template: PdfTemplate = 'complete'): string => {
-    let doc;
-    switch (reportType) {
-        case 'dashboard':
-            doc = generateDashboardPdf(data as DashboardPdfData);
-            break;
-        // Adicionar outros tipos de relatório aqui
-        default:
-            doc = new jsPDF();
-            doc.text("Tipo de relatório não suportado.", 10, 10);
+const generateExecutiveDashboardPdf = (data: DashboardPdfData): jsPDF => {
+    const doc = new jsPDF('p', 'pt') as jsPDFWithAutoTable;
+    const { mainIndex, secondaryIndices, currencies, otherAssets, targetDate } = data;
+    const formattedDate = format(targetDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
+    const shortDate = format(targetDate, "MMMM dd, yyyy", { locale: ptBR });
+
+    const primaryColor = '#16a34a'; // green-600
+    const secondaryColor = '#0f172a'; // slate-900
+    const mutedColor = '#64748b'; // slate-500
+    const pageW = doc.internal.pageSize.getWidth();
+    const margin = 40;
+    let y = 60;
+
+    // --- CABEÇALHO ---
+    doc.setTextColor(secondaryColor);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text('UCS INDEX', margin, y);
+    doc.setDrawColor(226, 232, 240); // slate-200
+    doc.line(margin + 60, y - 4, pageW - margin, y - 4);
+    y += 25;
+
+    doc.setFontSize(28);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Relatório Executivo de Ativos', margin, y);
+    
+    // Bloco verde de destaque
+    const boxWidth = 180;
+    const boxHeight = 40;
+    const boxX = pageW - margin - boxWidth;
+    const foldSize = 10;
+
+    doc.setFillColor(primaryColor);
+    doc.triangle(boxX, y, boxX + foldSize, y - foldSize, boxX, y - foldSize, 'F');
+    doc.rect(boxX, y - boxHeight, boxWidth, boxHeight, 'F');
+
+    doc.setTextColor('#FFFFFF');
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Destaques do Painel', boxX + 10, y - 25);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.text(shortDate, boxX + 10, y - 13);
+
+    y += 40;
+
+    // --- BLOCO DE KPIs ---
+    if (mainIndex) {
+        doc.setFillColor(secondaryColor);
+        doc.roundedRect(margin, y, pageW - (margin * 2), 25, 5, 5, 'F');
+        doc.setTextColor('#FFFFFF');
+        doc.setFontSize(12);
+        doc.text('Indicador Principal de Performance', margin + 15, y + 16);
+        y += 25;
+
+        doc.setDrawColor(226, 232, 240);
+        doc.roundedRect(margin, y, pageW - (margin * 2), 80, 5, 5, 'S');
+        
+        const kpiY = y + 45;
+        doc.setFontSize(28);
+        doc.setTextColor(secondaryColor);
+        doc.setFont('helvetica', 'bold');
+        doc.text(formatCurrency(mainIndex.price, mainIndex.currency, mainIndex.id), margin + 20, kpiY);
+        
+        doc.setFontSize(10);
+        doc.setTextColor(mutedColor);
+        doc.text(`Variação (24h): ${mainIndex.change.toFixed(2)}%`, margin + 20, kpiY + 15);
     }
     
+    y += 100;
+
+    // --- TABELAS ---
+    const generateTable = (title: string, assets: CommodityPriceData[]) => {
+      if (!assets || assets.length === 0) return;
+      
+      doc.setFillColor(primaryColor);
+      doc.roundedRect(margin, y, pageW - (margin * 2), 22, 5, 5, 'F');
+      doc.setTextColor('#FFFFFF');
+      doc.setFontSize(11);
+      doc.text(title, margin + 10, y + 15);
+      y += 22;
+
+      doc.autoTable({
+        startY: y,
+        head: [['Ativo', 'Último Preço', 'Variação (24h)']],
+        body: assets.map(asset => [
+            asset.name,
+            formatCurrency(asset.price, asset.currency, asset.id),
+            `${asset.change.toFixed(2)}%`
+        ]),
+        theme: 'striped',
+        margin: { left: margin, right: margin },
+        headStyles: { fillColor: secondaryColor },
+        styles: { cellPadding: 8, fontSize: 9 },
+      });
+      y = (doc as any).lastAutoTable.finalY + 20;
+    };
+
+    generateTable('Índices Secundários', secondaryIndices);
+    generateTable('Moedas', currencies);
+    generateTable('Outros Ativos e Commodities', otherAssets);
+
+    return doc;
+};
+
+
+export const generatePdf = (reportType: string, data: any, template: PdfTemplate = 'complete'): string => {
+    let doc;
+    
+    // Roteia para o gerador de PDF correto baseado no template
+    switch (template) {
+        case 'simple':
+            doc = generateSimpleDashboardPdf(data as DashboardPdfData);
+            break;
+        case 'executive':
+            doc = generateExecutiveDashboardPdf(data as DashboardPdfData);
+            break;
+        case 'complete':
+        default:
+            doc = generateCompleteDashboardPdf(data as DashboardPdfData);
+            break;
+    }
+    
+    // Sempre retorna a string de dados, que é compatível com o iframe
     return doc.output('datauristring');
 };
