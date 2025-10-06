@@ -880,49 +880,41 @@ const generateCompositionPdf = (data: DashboardPdfData): jsPDF => {
     y += 50;
 
     // --- BLOCOS DE KPI DE COMPONENTES ---
-    const drawCompositionKpiBlock = (title: string, value: string, percentage: string, x: number, yPos: number, width: number, color: string) => {
-        const circleRadius = 30;
+    const drawCompositionKpiBlock = (title: string, value: string, percentage: string, x: number, yPos: number, width: number) => {
         doc.setDrawColor(COLORS.border);
-        doc.roundedRect(x, yPos, width, 80, 8, 8, 'S');
+        doc.roundedRect(x, yPos, width, 70, 8, 8, 'S');
     
-        // Alinhamento do texto à esquerda
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(10);
         doc.setTextColor(COLORS.textSecondary);
-        doc.text(title, x + 15, yPos + 30);
+        doc.text(title, x + 15, yPos + 20);
     
         doc.setFontSize(20);
         doc.setTextColor(COLORS.textPrimary);
-        doc.text(value, x + 15, yPos + 55);
-    
-        // Círculo com porcentagem alinhado à direita
-        const circleX = x + width - 15 - circleRadius;
-        const circleY = yPos + 40;
-        doc.setFillColor(color);
-        doc.circle(circleX, circleY, circleRadius, 'F');
+        doc.text(value, x + 15, yPos + 45);
     
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(14);
-        doc.setTextColor(COLORS.white);
-        doc.text(percentage, circleX, circleY, { align: 'center', baseline: 'middle' });
+        doc.setTextColor(COLORS.primary);
+        doc.text(percentage, x + width - 15, yPos + 45, { align: 'right' });
     };
+    
+    const allComponents = components || [];
+    const kpiCount = allComponents.length;
+    const kpiCardWidth = (pageW - (margin * 2) - ((kpiCount - 1) * 15)) / kpiCount;
 
-    if (components && components.length > 0) {
-        const kpiCardWidth = (pageW - (margin * 2) - ((components.length - 1) * 20)) / components.length;
-        const chartColors = [COLORS.chart.c1, COLORS.chart.c2, COLORS.chart.c3, COLORS.chart.c4];
-
-        components.forEach((component, index) => {
+    if (allComponents.length > 0) {
+        allComponents.forEach((component, index) => {
             drawCompositionKpiBlock(
                 component.name,
                 formatCurrency(component.price, component.currency, component.id),
-                `${(component.change || 0).toFixed(0)}%`,
-                margin + (kpiCardWidth + 20) * index,
+                `${(component.change || 0).toFixed(2)}%`,
+                margin + (kpiCardWidth + 15) * index,
                 y,
-                kpiCardWidth,
-                chartColors[index % chartColors.length]
+                kpiCardWidth
             );
         });
-        y += 100;
+        y += 90;
     }
 
     // --- VALOR TOTAL ---
@@ -947,11 +939,11 @@ const generateCompositionPdf = (data: DashboardPdfData): jsPDF => {
     doc.text('Resumo da Composição', margin, y);
     y += 20;
 
-    if (components && components.length > 0) {
+    if (allComponents.length > 0) {
         doc.autoTable({
             startY: y,
             head: [['Componente', 'Valor', 'Participação (%)']],
-            body: components.map(c => [c.name, formatCurrency(c.price, c.currency, c.id), `${(c.change || 0).toFixed(2)}%`]),
+            body: allComponents.map(c => [c.name, formatCurrency(c.price, c.currency, c.id), `${(c.change || 0).toFixed(2)}%`]),
             theme: 'grid',
             headStyles: { fillColor: COLORS.textPrimary, textColor: 255 },
             styles: { cellPadding: 6, fontSize: 10 },
@@ -985,6 +977,14 @@ export const generatePdf = (
     try {
         if (!data || !data.targetDate || isNaN(data.targetDate.getTime())) {
             throw new Error('Dados inválidos ou data de destino ausente para a geração do PDF.');
+        }
+        
+        const changeValue = data.mainIndex?.change;
+
+        if (changeValue === undefined || changeValue === null || typeof changeValue !== 'number') {
+            if(data.mainIndex) {
+               data.mainIndex.change = 0;
+            }
         }
         
         let doc: jsPDF;
