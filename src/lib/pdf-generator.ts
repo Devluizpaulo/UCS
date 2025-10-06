@@ -42,7 +42,7 @@ const generateDashboardPdf = (data: DashboardPdfData): jsPDF => {
 
     // --- Função para gerar seção ---
     const generateSection = (title: string, assets: CommodityPriceData[]) => {
-      if (assets.length === 0) return;
+      if (!assets || assets.length === 0) return;
 
       const head = [['Ativo', 'Último Preço', 'Variação (24h)']];
       const body = assets.map(asset => {

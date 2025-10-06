@@ -27,16 +27,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import { formatCurrency } from '@/lib/formatters';
+import { PdfPreviewModal } from '@/components/pdf-preview-modal';
 
-// Extende a interface do jsPDF para incluir o autoTable
-interface jsPDFWithAutoTable extends jsPDF {
-  autoTable: (options: any) => jsPDFWithAutoTable;
-}
 
 function getValidatedDate(dateString?: string | null): Date | null {
   if (dateString) {
@@ -100,6 +95,7 @@ export default function DashboardPage() {
   const [isPending, startTransition] = useTransition();
   const [isExporting, setIsExporting] = useState(false);
   const [targetDate, setTargetDate] = useState<Date>(new Date());
+  const [isPdfPreviewOpen, setIsPdfPreviewOpen] = useState(false);
   
   useEffect(() => {
     const initialDate = getValidatedDate(dateParam) || new Date();
@@ -150,84 +146,6 @@ export default function DashboardPage() {
           }
       });
   }
-
-  const handleExportPdf = async () => {
-    if (!targetDate || data.length === 0) return;
-    setIsExporting(true);
-
-    try {
-      const doc = new jsPDF() as jsPDFWithAutoTable;
-      const formattedDate = format(targetDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
-      const generationDate = format(new Date(), "dd/MM/yyyy HH:mm");
-      let finalY = 20;
-
-      // --- Cabeçalho ---
-      doc.setFontSize(18);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Painel de Cotações', 15, finalY);
-      finalY += 8;
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`Dados para: ${formattedDate}`, 15, finalY);
-      finalY += 15;
-
-      const generateSection = (title: string, assets: CommodityPriceData[]) => {
-        if (assets.length === 0) return;
-
-        const head = [['Ativo', 'Último Preço', 'Variação (24h)']];
-        const body = assets.map(asset => {
-          const changeText = `${asset.change >= 0 ? '+' : ''}${asset.change.toFixed(2)}%`;
-          return [asset.name, formatCurrency(asset.price, asset.currency, asset.id), changeText];
-        });
-
-        doc.autoTable({
-          startY: finalY,
-          head: head,
-          body: body,
-          theme: 'grid',
-          headStyles: { fillColor: [44, 62, 80], fontStyle: 'bold' },
-          didParseCell: (data) => {
-             if (data.column.index === 2 && data.section === 'body') {
-                const cellValue = data.cell.raw as string;
-                if(cellValue.startsWith('+')) {
-                    data.cell.styles.textColor = [39, 174, 96]; // Verde
-                } else if (cellValue.startsWith('-')) {
-                    data.cell.styles.textColor = [192, 57, 43]; // Vermelho
-                }
-             }
-          }
-        });
-        finalY = (doc as any).lastAutoTable.finalY + 10;
-      };
-      
-      // Gera seções
-      if(mainIndex) generateSection('Índice Principal', [mainIndex]);
-      generateSection('Índices Secundários', secondaryIndices);
-      generateSection('Moedas', currencies);
-      generateSection('Commodities e Outros Ativos', otherAssets);
-      
-      // --- Rodapé ---
-      const pageCount = (doc.internal as any).getNumberOfPages();
-      for (let i = 1; i <= pageCount; i++) {
-        doc.setPage(i);
-        doc.setFontSize(9);
-        doc.setTextColor(150);
-        doc.text(
-          `Página ${i} de ${pageCount} | Relatório gerado em ${generationDate} | UCS Index`,
-          doc.internal.pageSize.getWidth() / 2,
-          doc.internal.pageSize.getHeight() - 10,
-          { align: 'center' }
-        );
-      }
-
-      doc.save(`painel_cotacoes_${format(targetDate, 'yyyy-MM-dd')}.pdf`);
-    } catch (error) {
-      console.error('PDF Export Error:', error);
-      toast({ variant: 'destructive', title: 'Erro ao gerar PDF', description: 'Ocorreu uma falha ao criar o arquivo.' });
-    } finally {
-      setIsExporting(false);
-    }
-  };
 
   const handleExportExcel = async () => {
     if (!targetDate || data.length === 0) return;
@@ -353,7 +271,7 @@ export default function DashboardPage() {
             }
         >
             <div className="flex items-center gap-2 flex-wrap">
-                <Button variant="outline" size="sm" onClick={handleExportPdf} disabled={isExporting || isLoading || data.length === 0}>
+                <Button variant="outline" size="sm" onClick={() => setIsPdfPreviewOpen(true)} disabled={isExporting || isLoading || data.length === 0}>
                     {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileDown className="mr-2 h-4 w-4" />}
                     PDF
                 </Button>
@@ -430,6 +348,21 @@ export default function DashboardPage() {
                 </div>
             )}
         </main>
+        
+        {isPdfPreviewOpen && (
+            <PdfPreviewModal
+                isOpen={isPdfPreviewOpen}
+                onOpenChange={setIsPdfPreviewOpen}
+                reportType="dashboard"
+                data={{
+                    mainIndex,
+                    secondaryIndices,
+                    currencies,
+                    otherAssets,
+                    targetDate
+                }}
+            />
+        )}
     </>
   );
 }
