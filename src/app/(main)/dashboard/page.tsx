@@ -28,10 +28,15 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import 'jspdf-autotable';
 import ExcelJS from 'exceljs';
-import { formatCurrency } from '@/lib/formatters';
+import { saveAs } from 'file-saver';
+import { AssetIcon } from '@/lib/icons';
 
+// Extende a interface do jsPDF para incluir o autoTable
+interface jsPDFWithAutoTable extends jsPDF {
+  autoTable: (options: any) => jsPDFWithAutoTable;
+}
 
 function getValidatedDate(dateString?: string | null): Date | null {
   if (dateString) {
@@ -94,7 +99,6 @@ export default function DashboardPage() {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [isExporting, setIsExporting] = useState(false);
-  const dashboardRef = useRef<HTMLDivElement>(null);
 
   const [targetDate, setTargetDate] = useState<Date | null>(null);
   
@@ -149,125 +153,164 @@ export default function DashboardPage() {
   }
 
   const handleExportPdf = async () => {
-    if (!dashboardRef.current) return;
+    if (!targetDate || data.length === 0) return;
     setIsExporting(true);
+
     try {
-        const canvas = await html2canvas(dashboardRef.current, { scale: 2, useCORS: true });
-        const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const imgProps = pdf.getImageProperties(imgData);
-        const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
-        
-        let heightLeft = imgHeight;
-        let position = 15;
+      const doc = new jsPDF() as jsPDFWithAutoTable;
+      const formattedDate = format(targetDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
+      const generationDate = format(new Date(), "dd/MM/yyyy HH:mm");
+      let finalY = 20;
 
-        pdf.setFontSize(16);
-        pdf.text(`Painel de Cotações - ${format(targetDate!, 'dd/MM/yyyy')}`, pdfWidth / 2, 10, { align: 'center' });
+      // --- Cabeçalho ---
+      doc.setFontSize(18);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Painel de Cotações', 15, finalY);
+      finalY += 8;
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Dados para: ${formattedDate}`, 15, finalY);
+      finalY += 15;
 
-        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
-        heightLeft -= pdf.internal.pageSize.getHeight();
+      const generateSection = (title: string, assets: CommodityPriceData[]) => {
+        if (assets.length === 0) return;
 
-        while (heightLeft >= 0) {
-            position = heightLeft - imgHeight;
-            pdf.addPage();
-            pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
-            heightLeft -= pdf.internal.pageSize.getHeight();
-        }
-        
-        pdf.save(`painel_cotacoes_${format(targetDate!, 'yyyy-MM-dd')}.pdf`);
+        const head = [['Ativo', 'Último Preço', 'Variação (24h)']];
+        const body = assets.map(asset => {
+          const changeText = `${asset.change >= 0 ? '+' : ''}${asset.change.toFixed(2)}%`;
+          return [asset.name, formatCurrency(asset.price, asset.currency, asset.id), changeText];
+        });
+
+        doc.autoTable({
+          startY: finalY,
+          head: head,
+          body: body,
+          theme: 'grid',
+          headStyles: { fillColor: [44, 62, 80], fontStyle: 'bold' },
+          didParseCell: (data) => {
+             if (data.column.index === 2 && data.section === 'body') {
+                const cellValue = data.cell.raw as string;
+                if(cellValue.startsWith('+')) {
+                    data.cell.styles.textColor = [39, 174, 96]; // Verde
+                } else if (cellValue.startsWith('-')) {
+                    data.cell.styles.textColor = [192, 57, 43]; // Vermelho
+                }
+             }
+          }
+        });
+        finalY = (doc as any).lastAutoTable.finalY + 10;
+      };
+      
+      // Gera seções
+      if(mainIndex) generateSection('Índice Principal', [mainIndex]);
+      generateSection('Índices Secundários', secondaryIndices);
+      generateSection('Moedas', currencies);
+      generateSection('Commodities e Outros Ativos', otherAssets);
+      
+      // --- Rodapé ---
+      const pageCount = (doc.internal as any).getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(9);
+        doc.setTextColor(150);
+        doc.text(
+          `Página ${i} de ${pageCount} | Relatório gerado em ${generationDate} | UCS Index`,
+          doc.internal.pageSize.getWidth() / 2,
+          doc.internal.pageSize.getHeight() - 10,
+          { align: 'center' }
+        );
+      }
+
+      doc.save(`painel_cotacoes_${format(targetDate, 'yyyy-MM-dd')}.pdf`);
     } catch (error) {
-        toast({ variant: 'destructive', title: 'Erro ao gerar PDF', description: 'Ocorreu uma falha ao exportar o painel.' });
+      console.error('PDF Export Error:', error);
+      toast({ variant: 'destructive', title: 'Erro ao gerar PDF', description: 'Ocorreu uma falha ao criar o arquivo.' });
     } finally {
-        setIsExporting(false);
+      setIsExporting(false);
     }
   };
 
   const handleExportExcel = async () => {
+    if (!targetDate || data.length === 0) return;
     setIsExporting(true);
+    
     try {
         const workbook = new ExcelJS.Workbook();
-        const worksheet = workbook.addWorksheet('Cotações do Dia');
+        workbook.creator = 'UCS Index Platform';
+        workbook.created = new Date();
+        
+        const worksheet = workbook.addWorksheet('Painel de Cotações');
 
+        // --- Título ---
         worksheet.mergeCells('A1:E1');
         const titleCell = worksheet.getCell('A1');
-        titleCell.value = `Painel de Cotações - ${format(targetDate!, 'dd/MM/yyyy')}`;
+        titleCell.value = 'Painel de Cotações';
         titleCell.font = { name: 'Calibri', size: 16, bold: true };
         titleCell.alignment = { horizontal: 'center' };
-        worksheet.getRow(1).height = 30;
 
-        worksheet.getRow(3).values = ['Ativo', 'Último Preço', 'Variação (24h)', 'Variação Absoluta', 'Última Atualização'];
-        const headerRow = worksheet.getRow(3);
-        headerRow.font = { bold: true };
+        worksheet.mergeCells('A2:E2');
+        const subtitleCell = worksheet.getCell('A2');
+        subtitleCell.value = `Dados para ${format(targetDate, 'dd/MM/yyyy', { locale: ptBR })}`;
+        subtitleCell.font = { name: 'Calibri', size: 12, color: { argb: 'FF808080' } };
+        subtitleCell.alignment = { horizontal: 'center' };
+
+        worksheet.addRow([]); // Linha em branco
+
+        // --- Cabeçalho da Tabela ---
+        const headerRow = worksheet.addRow(['Categoria', 'Ativo', 'Último Preço', 'Variação (%)', 'Variação Absoluta', 'Unidade']);
+        headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
         headerRow.eachCell(cell => {
             cell.fill = {
                 type: 'pattern',
                 pattern: 'solid',
-                fgColor: { argb: 'FFE0E0E0' }
+                fgColor: { argb: 'FF0070F3' }
             };
-            cell.border = { bottom: { style: 'thin' } };
+            cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
         });
 
+        // --- Dados ---
         const allData = [mainIndex, ...secondaryIndices, ...currencies, ...otherAssets].filter(Boolean) as CommodityPriceData[];
 
         allData.forEach((asset) => {
             const row = worksheet.addRow([
+                asset.category,
                 asset.name,
                 asset.price,
                 asset.change / 100,
                 asset.absoluteChange,
-                asset.lastUpdated
+                asset.unit
             ]);
 
-            const priceCell = row.getCell(2);
-            priceCell.numFmt = `"${asset.currency}" #,##0.00`;
-            if (['usd', 'eur'].includes(asset.id)) {
-                priceCell.numFmt = `"${asset.currency}" #,##0.0000`;
-            }
-
-            const changeCell = row.getCell(3);
-            changeCell.numFmt = '0.00%';
+            const priceCell = row.getCell(3);
+            priceCell.numFmt = `"${asset.currency}" #,##0.00${['usd', 'eur'].includes(asset.id) ? '00' : ''}`;
             
-            const absChangeCell = row.getCell(4);
-            absChangeCell.numFmt = `"${asset.currency}" #,##0.00`;
-
+            const changeCell = row.getCell(4);
+            changeCell.numFmt = '0.00%';
+            if(asset.change > 0) changeCell.font = { color: { argb: 'FF008000' } };
+            if(asset.change < 0) changeCell.font = { color: { argb: 'FFFF0000' } };
+            
+            const absChangeCell = row.getCell(5);
+            absChangeCell.numFmt = `#,##0.00${['usd', 'eur'].includes(asset.id) ? '00' : ''}`;
         });
         
+        // --- Auto-ajuste de colunas ---
         worksheet.columns.forEach(column => {
-            if (column) {
-                let maxLength = 0;
-                column.eachCell({ includeEmpty: true }, (cell, rowNumber) => {
-                    // Apenas considera as linhas com conteúdo para o cálculo da largura
-                    if (rowNumber > 2) {
-                        let columnLength = cell.value ? cell.value.toString().length : 10;
-                        if (cell.numFmt && typeof cell.value === 'number') {
-                           // Estima o tamanho formatado
-                           const numStr = cell.value.toFixed(cell.numFmt.includes('0.0000') ? 4 : 2);
-                           const currencyPrefix = cell.numFmt.startsWith('"') ? cell.numFmt.substring(1, cell.numFmt.indexOf('"', 1)) + ' ' : '';
-                           columnLength = (currencyPrefix + numStr).length;
-                        }
-                        if (columnLength > maxLength) {
-                            maxLength = columnLength;
-                        }
-                    }
-                });
-                column.width = maxLength < 12 ? 12 : maxLength + 4;
-            }
+            let maxLength = 0;
+            column.eachCell!({ includeEmpty: true }, (cell) => {
+                const length = cell.value ? cell.value.toString().length : 10;
+                if (length > maxLength) {
+                    maxLength = length;
+                }
+            });
+            column.width = maxLength < 12 ? 12 : maxLength + 2;
         });
 
-
         const buffer = await workbook.xlsx.writeBuffer();
-        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `cotacoes_${format(targetDate!, 'yyyy-MM-dd')}.xlsx`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        saveAs(new Blob([buffer]), `painel_cotacoes_${format(targetDate, 'yyyy-MM-dd')}.xlsx`);
 
     } catch (error) {
-        console.error(error);
-        toast({ variant: 'destructive', title: 'Erro ao gerar Excel', description: 'Ocorreu uma falha ao exportar a planilha.' });
+        console.error('Excel Export Error:', error);
+        toast({ variant: 'destructive', title: 'Erro ao gerar Excel', description: 'Ocorreu uma falha ao criar a planilha.' });
     } finally {
         setIsExporting(false);
     }
@@ -311,11 +354,11 @@ export default function DashboardPage() {
             }
         >
             <div className="flex items-center gap-2 flex-wrap">
-                <Button variant="outline" size="sm" onClick={handleExportPdf} disabled={isExporting}>
+                <Button variant="outline" size="sm" onClick={handleExportPdf} disabled={isExporting || isLoading || data.length === 0}>
                     {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileDown className="mr-2 h-4 w-4" />}
                     PDF
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={isExporting}>
+                <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={isExporting || isLoading || data.length === 0}>
                     {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileDown className="mr-2 h-4 w-4" />}
                     Excel
                 </Button>
@@ -352,7 +395,7 @@ export default function DashboardPage() {
                 />
             </div>
         </PageHeader>
-        <main ref={dashboardRef} className="flex-1 overflow-y-auto p-4 md:p-6 bg-gradient-to-br from-background to-muted/30">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gradient-to-br from-background to-muted/30">
             {isLoading && data.length === 0 ? (
                 <div className="space-y-4 md:space-y-8">
                     <Skeleton className="h-[180px] w-full" />
