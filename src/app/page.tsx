@@ -151,11 +151,11 @@ export default function LandingPage() {
         {/* HERO SECTION */}
         <section className="relative flex h-[80vh] min-h-[500px] flex-col items-center justify-center p-4 text-center">
           <Image
-            src="https://picsum.photos/seed/forest-sun/1920/1080"
-            alt="Floresta exuberante com um caminho de luz"
+            src="https://picsum.photos/seed/hills-landscape/1920/1080"
+            alt="Vastas colinas verdes sob um céu ensolarado"
             fill
             className="object-cover"
-            data-ai-hint="lush forest sunbeam"
+            data-ai-hint="green hills"
             priority
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent" />
@@ -360,5 +360,7 @@ export default function LandingPage() {
     </div>
   );
 }
+
+    
 
     
