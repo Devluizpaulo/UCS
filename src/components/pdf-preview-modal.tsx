@@ -54,8 +54,8 @@ export function PdfPreviewModal({ isOpen, onOpenChange, reportType, data }: PdfP
   const pdfCacheRef = useRef<Map<string, string>>(new Map());
   const maxRetries = 2;
 
-  const generateAndSetPdf = useCallback(async (currentTemplate: PdfTemplate) => {
-    const cacheKey = `${reportType}_${currentTemplate}_${data.targetDate.toISOString()}`;
+  const generateAndSetPdf = useCallback(() => {
+    const cacheKey = `${reportType}_${template}_${data.targetDate.toISOString()}`;
     
     if (pdfCacheRef.current.has(cacheKey)) {
       setPdfUrl(pdfCacheRef.current.get(cacheKey)!);
@@ -68,7 +68,7 @@ export function PdfPreviewModal({ isOpen, onOpenChange, reportType, data }: PdfP
     // Libera a UI para renderizar o loader antes de iniciar a tarefa pesada
     setTimeout(() => {
         try {
-            const url = generatePdf(reportType, data, currentTemplate);
+            const url = generatePdf(reportType, data, template);
             
             if (pdfUrl) URL.revokeObjectURL(pdfUrl);
 
@@ -94,30 +94,30 @@ export function PdfPreviewModal({ isOpen, onOpenChange, reportType, data }: PdfP
         }
     }, 50); // Pequeno delay para garantir que o estado de loading seja renderizado
 
-  }, [reportType, data, pdfUrl, toast]);
+  }, [reportType, data, template, pdfUrl, toast]);
 
   useEffect(() => {
     if (isOpen) {
-      generateAndSetPdf(template);
+      generateAndSetPdf();
     } else {
+      // Limpa a URL e o cache quando o modal é fechado para economizar memória
       if (pdfUrl) URL.revokeObjectURL(pdfUrl);
       setPdfUrl(null);
+      pdfCacheRef.current.clear();
       setGenerationState({ isLoading: false, error: null, retryCount: 0 });
     }
-  // A dependência `generateAndSetPdf` garante que o efeito seja re-executado se a função mudar
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, template]);
 
 
   const handleTemplateChange = (newTemplate: PdfTemplate) => {
     setTemplate(newTemplate);
-    // Dispara a regeneração via useEffect
-    generateAndSetPdf(newTemplate);
+    // A regeneração será acionada pelo useEffect
   };
 
   const handleRetry = () => {
     if (generationState.retryCount < maxRetries) {
-      generateAndSetPdf(template);
+      generateAndSetPdf();
     } else {
         toast({
             variant: 'destructive',
@@ -177,7 +177,7 @@ export function PdfPreviewModal({ isOpen, onOpenChange, reportType, data }: PdfP
                 <Button variant="ghost" size="icon" onClick={() => setZoom(1)} className="text-muted-foreground w-12">{Math.round(zoom * 100)}%</Button>
                 <Button variant="outline" size="icon" onClick={() => setZoom(z => Math.min(2.5, z + 0.1))}><ZoomIn className="h-4 w-4" /></Button>
               </div>
-              <Button variant="outline" onClick={() => generateAndSetPdf(template)} disabled={generationState.isLoading}>
+              <Button variant="outline" onClick={generateAndSetPdf} disabled={generationState.isLoading}>
                 <RefreshCw className={`mr-2 h-4 w-4 ${generationState.isLoading ? 'animate-spin' : ''}`} />
                 Atualizar
               </Button>
@@ -225,4 +225,3 @@ export function PdfPreviewModal({ isOpen, onOpenChange, reportType, data }: PdfP
     </Dialog>
   );
 }
-
