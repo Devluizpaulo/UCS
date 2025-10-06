@@ -1,3 +1,6 @@
+
+'use server';
+
 import type { DashboardPdfData, CommodityPriceData } from './types';
 
 // ===================================================================================
@@ -6,11 +9,11 @@ import type { DashboardPdfData, CommodityPriceData } from './types';
 
 // Função para calcular métricas de sustentabilidade reais
 export function calculateSustainabilityMetrics(data: DashboardPdfData) {
-    const sustainabilityAssets = data.otherAssets.filter(asset => 
+    const sustainabilityAssets = data.otherAssets.filter((asset: CommodityPriceData) => 
         ['carbono', 'madeira', 'ch2o_agua', 'Agua_CRS'].includes(asset.id)
     );
     
-    const agriculturalAssets = data.otherAssets.filter(asset => 
+    const agriculturalAssets = data.otherAssets.filter((asset: CommodityPriceData) => 
         ['soja', 'milho', 'boi_gordo'].includes(asset.id)
     );
 
@@ -19,9 +22,9 @@ export function calculateSustainabilityMetrics(data: DashboardPdfData) {
     const sustainabilityScore = totalSustainableAssets > 0 ? (positiveImpactAssets / totalSustainableAssets) * 100 : 0;
     
     // Cálculo de impacto ambiental baseado em valores reais
-    const carbonImpact = sustainabilityAssets.find(asset => asset.id === 'carbono')?.price || 0;
-    const waterImpact = sustainabilityAssets.find(asset => asset.id === 'ch2o_agua')?.price || 0;
-    const forestImpact = sustainabilityAssets.find(asset => asset.id === 'madeira')?.price || 0;
+    const carbonImpact = sustainabilityAssets.find((asset: CommodityPriceData) => asset.id === 'carbono')?.price || 0;
+    const waterImpact = sustainabilityAssets.find((asset: CommodityPriceData) => asset.id === 'ch2o_agua')?.price || 0;
+    const forestImpact = sustainabilityAssets.find((asset: CommodityPriceData) => asset.id === 'madeira')?.price || 0;
     
     const environmentalScore = Math.min(100, ((carbonImpact + waterImpact + forestImpact) / 1000) * 10);
     
@@ -34,7 +37,7 @@ export function calculateSustainabilityMetrics(data: DashboardPdfData) {
         waterImpact,
         forestImpact,
         agriculturalPerformance: agriculturalAssets.length > 0 ? 
-            agriculturalAssets.reduce((sum, asset) => sum + asset.change, 0) / agriculturalAssets.length : 0
+            agriculturalAssets.reduce((sum: number, asset: CommodityPriceData) => sum + asset.change, 0) / agriculturalAssets.length : 0
     };
 }
 
@@ -62,15 +65,15 @@ export function calculatePortfolioMetrics(data: DashboardPdfData) {
     const categories = {
         'Índices': [data.mainIndex, ...data.secondaryIndices].filter(Boolean),
         'Moedas': data.currencies,
-        'Agrícolas': data.otherAssets.filter(asset => ['soja', 'milho', 'boi_gordo'].includes(asset.id)),
-        'Materiais': data.otherAssets.filter(asset => ['madeira'].includes(asset.id)),
-        'Sustentáveis': data.otherAssets.filter(asset => ['carbono', 'ch2o_agua', 'Agua_CRS'].includes(asset.id))
+        'Agrícolas': data.otherAssets.filter((asset: CommodityPriceData) => ['soja', 'milho', 'boi_gordo'].includes(asset.id)),
+        'Materiais': data.otherAssets.filter((asset: CommodityPriceData) => ['madeira'].includes(asset.id)),
+        'Sustentáveis': data.otherAssets.filter((asset: CommodityPriceData) => ['carbono', 'ch2o_agua', 'Agua_CRS'].includes(asset.id))
     };
     
     const categoryWeights = Object.entries(categories).map(([name, assets]) => ({
         name,
-        weight: assets.length > 0 ? (assets.reduce((sum, asset) => sum + asset.price, 0) / totalValue) * 100 : 0,
-        performance: assets.length > 0 ? assets.reduce((sum, asset) => sum + asset.change, 0) / assets.length : 0
+        weight: assets.length > 0 ? (assets.reduce((sum: number, asset: CommodityPriceData) => sum + asset.price, 0) / totalValue) * 100 : 0,
+        performance: assets.length > 0 ? assets.reduce((sum: number, asset: CommodityPriceData) => sum + asset.change, 0) / assets.length : 0
     }));
     
     return {
@@ -138,7 +141,7 @@ function calculatePearsonCorrelation(change1: number, change2: number, asset1: C
     // Baseado no tipo de ativo, aplicar correlações mais realistas
     
     // Correlações baseadas em categorias
-    const categoryCorrelations = {
+    const categoryCorrelations: Record<string, Record<string, Record<string, number>>> = {
         // Moedas tendem a se correlacionar
         'exchange': {
             'usd': { 'eur': 0.6, 'default': 0.3 },
@@ -232,9 +235,9 @@ export function generateMarketInsights(data: DashboardPdfData) {
     }
     
     // Análise por setores
-    const agriculturalAssets = data.otherAssets.filter(asset => ['soja', 'milho', 'boi_gordo'].includes(asset.id));
+    const agriculturalAssets = data.otherAssets.filter((asset: CommodityPriceData) => ['soja', 'milho', 'boi_gordo'].includes(asset.id));
     if (agriculturalAssets.length > 0) {
-        const avgAgriculturalChange = agriculturalAssets.reduce((sum, asset) => sum + asset.change, 0) / agriculturalAssets.length;
+        const avgAgriculturalChange = agriculturalAssets.reduce((sum: number, asset: CommodityPriceData) => sum + asset.change, 0) / agriculturalAssets.length;
         if (avgAgriculturalChange > 1) {
             insights.push({
                 type: 'positive',
@@ -254,7 +257,7 @@ export function generateMarketInsights(data: DashboardPdfData) {
     
     // Análise de moedas
     if (data.currencies.length > 0) {
-        const avgCurrencyChange = data.currencies.reduce((sum, asset) => sum + asset.change, 0) / data.currencies.length;
+        const avgCurrencyChange = data.currencies.reduce((sum: number, asset: CommodityPriceData) => sum + asset.change, 0) / data.currencies.length;
         if (avgCurrencyChange > 0.5) {
             insights.push({
                 type: 'positive',
@@ -273,9 +276,9 @@ export function generateMarketInsights(data: DashboardPdfData) {
     }
     
     // Análise de sustentabilidade
-    const sustainabilityAssets = data.otherAssets.filter(asset => ['carbono', 'ch2o_agua', 'Agua_CRS'].includes(asset.id));
+    const sustainabilityAssets = data.otherAssets.filter((asset: CommodityPriceData) => ['carbono', 'ch2o_agua', 'Agua_CRS'].includes(asset.id));
     if (sustainabilityAssets.length > 0) {
-        const avgSustainabilityChange = sustainabilityAssets.reduce((sum, asset) => sum + asset.change, 0) / sustainabilityAssets.length;
+        const avgSustainabilityChange = sustainabilityAssets.reduce((sum: number, asset: CommodityPriceData) => sum + asset.change, 0) / sustainabilityAssets.length;
         if (avgSustainabilityChange > 0) {
             insights.push({
                 type: 'positive',

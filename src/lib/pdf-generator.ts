@@ -5,7 +5,7 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import type { CommodityPriceData } from './types';
+import type { CommodityPriceData, DashboardPdfData } from './types';
 import { formatCurrency } from './formatters';
 
 // Extende a interface do jsPDF para incluir o autoTable
@@ -18,14 +18,6 @@ interface jsPDFWithAutoTable extends jsPDF {
 // ===================================================================================
 
 type PdfTemplate = 'simple' | 'commercial' | 'executive';
-
-export interface DashboardPdfData {
-    mainIndex?: CommodityPriceData;
-    secondaryIndices: CommodityPriceData[];
-    currencies: CommodityPriceData[];
-    otherAssets: CommodityPriceData[];
-    targetDate: Date;
-}
 
 // ===================================================================================
 // === TEMPLATE SIMPLES ============================================================

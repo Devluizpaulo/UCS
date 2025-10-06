@@ -1,4 +1,6 @@
 
+'use server';
+
 import type { User as FirebaseUser } from 'firebase/auth';
 import type { UserRecord } from 'firebase-admin/auth';
 
@@ -46,4 +48,13 @@ export interface AppUser extends FirebaseUser {
 // Extends the server-side UserRecord to include our custom isAdmin flag
 export interface AppUserRecord extends UserRecord {
     isAdmin: boolean;
+}
+
+// Defines the data structure needed for generating PDF reports
+export interface DashboardPdfData {
+    mainIndex?: CommodityPriceData;
+    secondaryIndices: CommodityPriceData[];
+    currencies: CommodityPriceData[];
+    otherAssets: CommodityPriceData[];
+    targetDate: Date;
 }
