@@ -40,7 +40,7 @@ export function PdfPreviewModal({ isOpen, onOpenChange, reportType, data }: PdfP
 
   const generateAndSetPdf = useCallback(async (currentTemplate: PdfTemplate) => {
     setIsLoading(true);
-    // Revoke previous URL to free memory
+    // Revoke previous URL to free memory, if it exists
     if (pdfUrl) {
       URL.revokeObjectURL(pdfUrl);
     }
@@ -53,24 +53,21 @@ export function PdfPreviewModal({ isOpen, onOpenChange, reportType, data }: PdfP
     } finally {
       setIsLoading(false);
     }
-  }, [pdfUrl, reportType, data]);
-
+  }, [reportType, data, pdfUrl]); // Add all dependencies
 
   useEffect(() => {
     if (isOpen) {
       generateAndSetPdf(template);
     } else {
+        // Cleanup when modal closes
         if (pdfUrl) {
             URL.revokeObjectURL(pdfUrl);
             setPdfUrl(null);
         }
     }
-  // The linter wants generateAndSetPdf and template in the dependency array.
-  // Adding them would cause an infinite loop because generateAndSetPdf creates a new object URL,
-  // which changes pdfUrl, which is a dependency of generateAndSetPdf.
-  // We explicitly want this to run only when `isOpen` changes.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, template]);
+    // This effect should run when isOpen or the template changes.
+    // The linter might complain about generateAndSetPdf, but it's wrapped in useCallback.
+  }, [isOpen, template, generateAndSetPdf, pdfUrl]);
 
   const handleTemplateChange = (newTemplate: PdfTemplate) => {
     setTemplate(newTemplate);
