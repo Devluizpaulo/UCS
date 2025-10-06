@@ -2,19 +2,11 @@
 'use client';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
-import {
-  PieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
-  Legend,
-  Tooltip,
-} from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getQuoteByDate } from '@/lib/data-service';
 import { formatCurrency } from '@/lib/formatters';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2, AlertCircle, Download } from 'lucide-react';
+import { Loader2, AlertCircle, Download, PieChart as PieChartIcon } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -50,26 +42,33 @@ const componentNames: Record<string, string> = {
   crs: 'CRS (Custo de Resp. Socioambiental)',
 };
 
-const RADIAN = Math.PI / 180;
-const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
-  if (percent === 0) return null;
-  const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
-  const x = cx + radius * Math.cos(-midAngle * RADIAN);
-  const y = cy + radius * Math.sin(-midAngle * RADIAN);
-
-  return (
-    <text x={x} y={y} fill="white" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" className="text-xs font-bold">
-      {`${(percent * 100).toFixed(0)}%`}
-    </text>
-  );
-};
-
+const KpiCard = ({ title, value, percentage, color }: { title: string; value: number; percentage: number; color: string }) => (
+    <Card className="flex-1 min-w-[200px] hover:shadow-lg transition-shadow">
+        <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
+        </CardHeader>
+        <CardContent className="flex items-center justify-between">
+            <div className="text-3xl font-bold font-mono">
+                {formatCurrency(value, 'BRL')}
+            </div>
+            <div 
+                className="relative flex items-center justify-center w-20 h-20 rounded-full"
+                style={{
+                    background: `conic-gradient(${color} ${percentage}%, hsl(var(--muted)) ${percentage}%)`
+                }}
+            >
+                <div className="absolute flex items-center justify-center w-[calc(100%-12px)] h-[calc(100%-12px)] bg-card rounded-full">
+                    <span className="text-xl font-bold" style={{ color }}>{percentage.toFixed(0)}%</span>
+                </div>
+            </div>
+        </CardContent>
+    </Card>
+);
 
 export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
   const [data, setData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
-  const chartRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -190,14 +189,16 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <Card className="lg:col-span-2">
+      <div className="space-y-8">
+        <Card>
             <CardHeader>
                 <Skeleton className="h-8 w-3/4" />
                 <Skeleton className="h-4 w-1/2" />
             </CardHeader>
-            <CardContent>
-                <Skeleton className="h-72 w-full" />
+            <CardContent className="flex flex-wrap gap-4">
+                <Skeleton className="h-32 flex-1 min-w-[200px]" />
+                <Skeleton className="h-32 flex-1 min-w-[200px]" />
+                <Skeleton className="h-32 flex-1 min-w-[200px]" />
             </CardContent>
         </Card>
         <Card>
@@ -206,7 +207,6 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
                 <Skeleton className="h-4 w-3/4" />
             </CardHeader>
             <CardContent className="space-y-4">
-                <Skeleton className="h-10 w-full" />
                 <Skeleton className="h-10 w-full" />
                 <Skeleton className="h-10 w-full" />
                 <Skeleton className="h-10 w-full" />
@@ -234,14 +234,17 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <Card className="lg:col-span-2">
+    <div className="space-y-8">
+        <Card>
             <CardHeader>
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                     <div>
-                        <CardTitle>Composição do Índice "Valor de Uso do Solo"</CardTitle>
+                        <CardTitle className="flex items-center gap-2">
+                           <PieChartIcon className="h-5 w-5 text-primary"/>
+                           Composição do Índice "Valor de Uso do Solo"
+                        </CardTitle>
                         <CardDescription>
-                            Distribuição percentual dos componentes que formam o valor total de {formatCurrency(data.valor, 'BRL', 'valor_uso_solo')} em {data.data}.
+                            Distribuição dos componentes que formam o valor total de {formatCurrency(data.valor, 'BRL', 'valor_uso_solo')} em {data.data}.
                         </CardDescription>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
@@ -274,37 +277,22 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
                     </div>
                 </div>
             </CardHeader>
-            <CardContent className="h-96">
-                <div ref={chartRef} className="w-full h-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                      <Pie
-                          data={chartData}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          label={renderCustomizedLabel}
-                          outerRadius={150}
-                          fill="#8884d8"
-                          dataKey="value"
-                      >
-                      {chartData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                      </Pie>
-                      <Tooltip
-                          formatter={(value: number, name: string) => [formatCurrency(value, 'BRL'), name]}
-                      />
-                      <Legend />
-                  </PieChart>
-                  </ResponsiveContainer>
-                </div>
+            <CardContent className="flex flex-col sm:flex-row flex-wrap gap-4">
+               {chartData.map((item, index) => (
+                    <KpiCard 
+                        key={item.name}
+                        title={item.name}
+                        value={item.value}
+                        percentage={item.percentage}
+                        color={COLORS[index % COLORS.length]}
+                    />
+                ))}
             </CardContent>
         </Card>
         <Card>
             <CardHeader>
-                <CardTitle>Valores dos Componentes</CardTitle>
-                <CardDescription>Detalhes de cada componente do índice.</CardDescription>
+                <CardTitle>Valores Detalhados dos Componentes</CardTitle>
+                <CardDescription>Análise tabular de cada componente do índice.</CardDescription>
             </CardHeader>
             <CardContent>
                 <Table>
@@ -312,7 +300,7 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
                         <TableRow>
                             <TableHead>Componente</TableHead>
                             <TableHead className="text-right">Valor</TableHead>
-                            <TableHead className="text-right">(%)</TableHead>
+                            <TableHead className="text-right">Participação (%)</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
