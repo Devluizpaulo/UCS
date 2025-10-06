@@ -17,13 +17,12 @@ import {
 } from '@/components/ui/table';
 import { Button } from './ui/button';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import * as ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import { PdfExportButton } from './pdf-export-button';
 import type { CommodityPriceData } from '@/lib/types';
 import * as React from 'react';
-
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 
 interface CompositionAnalysisProps {
   targetDate: Date;
@@ -67,39 +66,43 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
   }, [targetDate]);
 
   const { chartData, tableData, mainAssetData } = useMemo(() => {
-    if (!data?.componentes) return { chartData: [], tableData: [], mainAssetData: null };
+    if (!data?.componentes || !data.valor) return { chartData: [], tableData: [], mainAssetData: null };
 
     const componentes = data.componentes;
-    const valorTotal = data.valor || 1;
+    const valorTotal = data.valor;
 
-    const vus = { id: 'vus', name: componentNames.vus, value: (componentes.vus || 0) as number };
-    const vmad = { id: 'vmad', name: componentNames.vmad, value: (componentes.vmad || 0) as number };
-    const carbono_crs = { id: 'carbono_crs', name: componentNames.carbono_crs, value: (componentes.carbono_crs || 0) as number, isSub: true };
-    const Agua_CRS = { id: 'Agua_CRS', name: componentNames.Agua_CRS, value: (componentes.Agua_CRS || 0) as number, isSub: true };
-    const crs_total = { id: 'crs_total', name: componentNames.crs_total, value: carbono_crs.value + Agua_CRS.value };
-    
-    const chartItems = [vus, vmad, crs_total].map(item => ({
-        ...item,
-        percentage: valorTotal > 0 ? (item.value / valorTotal) * 100 : 0,
-    }));
+    const vusValue = (componentes.vus || 0) as number;
+    const vmadValue = (componentes.vmad || 0) as number;
+    const carbonoCrsValue = (componentes.carbono_crs || 0) as number;
+    const aguaCrsValue = (componentes.Agua_CRS || 0) as number;
+    const crsTotalValue = carbonoCrsValue + aguaCrsValue;
 
+    // Data for the Pie Chart (main components)
+    const chartItems = [
+        { id: 'vus', name: componentNames.vus, value: vusValue },
+        { id: 'vmad', name: componentNames.vmad, value: vmadValue },
+        { id: 'crs_total', name: componentNames.crs_total, value: crsTotalValue },
+    ].filter(item => item.value > 0);
+
+
+    // Data for the hierarchical table
     const tableItems = [
-        vus,
-        vmad,
-        crs_total,
-        carbono_crs,
-        Agua_CRS,
+      { id: 'vus', name: componentNames.vus, value: vusValue, isSub: false },
+      { id: 'vmad', name: componentNames.vmad, value: vmadValue, isSub: false },
+      { id: 'crs_total', name: componentNames.crs_total, value: crsTotalValue, isSub: false },
+      { id: 'carbono_crs', name: componentNames.carbono_crs, value: carbonoCrsValue, isSub: true },
+      { id: 'Agua_CRS', name: componentNames.Agua_CRS, value: aguaCrsValue, isSub: true },
     ].map(item => ({
         ...item,
         percentage: valorTotal > 0 ? (item.value / valorTotal) * 100 : 0,
     }));
-
+    
     const mainAsset: CommodityPriceData = {
         id: 'valor_uso_solo',
         name: 'Valor de Uso do Solo',
-        price: data.valor,
-        change: data.variacao_pct,
-        absoluteChange: data.variacao_abs,
+        price: valorTotal,
+        change: data.variacao_pct || 0,
+        absoluteChange: data.variacao_abs || 0,
         currency: 'BRL',
         category: 'index',
         description: 'Índice de composição do uso do solo.',
@@ -107,7 +110,7 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
         lastUpdated: data.data,
     };
 
-    return { chartData: chartItems.filter(item => item.value > 0), tableData: tableItems, mainAssetData: mainAsset };
+    return { chartData: chartItems, tableData: tableItems, mainAssetData: mainAsset };
   }, [data]);
   
   const handleExportExcel = async () => {
@@ -166,20 +169,23 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
     setIsExporting(false);
   };
 
+  const pdfComponentData = tableData.map(item => ({
+      id: item.id, name: item.name, price: item.value, change: item.percentage, absoluteChange: 0, currency: 'BRL', category: 'component', description: '', unit: 'R$', lastUpdated: data.data,
+  }));
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <Card className="lg:col-span-1">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+        <Card className="lg:col-span-3">
           <CardHeader>
             <Skeleton className="h-8 w-3/4" />
             <Skeleton className="h-4 w-1/2" />
           </CardHeader>
           <CardContent>
-            <Skeleton className="h-64 w-full rounded-lg" />
+            <Skeleton className="h-64 w-full rounded-full" />
           </CardContent>
         </Card>
-        <Card className="lg:col-span-1">
+        <Card className="lg:col-span-2">
           <CardHeader>
             <Skeleton className="h-8 w-full" />
             <Skeleton className="h-4 w-3/4" />
@@ -210,21 +216,6 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
       </Card>
     );
   }
-  
-  const pdfComponentData = chartData.flatMap(item => {
-      if (item.id === 'crs_total') {
-          const carbono = tableData.find(t => t.id === 'carbono_crs');
-          const agua = tableData.find(t => t.id === 'Agua_CRS');
-          return [
-              carbono ? { id: carbono.id, name: carbono.name, price: carbono.value, change: carbono.percentage, absoluteChange: 0, currency: 'BRL', category: 'component', description: '', unit: 'R$', lastUpdated: data.data } : null,
-              agua ? { id: agua.id, name: agua.name, price: agua.value, change: agua.percentage, absoluteChange: 0, currency: 'BRL', category: 'component', description: '', unit: 'R$', lastUpdated: data.data } : null
-          ].filter(Boolean) as CommodityPriceData[];
-      }
-      return {
-          id: item.name, name: item.name, price: item.value, change: item.percentage, absoluteChange: 0, currency: 'BRL', category: 'component', description: '', unit: 'R$', lastUpdated: data.data,
-      };
-  });
-
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
@@ -244,7 +235,7 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
                     <PdfExportButton
                         data={{
                             mainIndex: mainAssetData,
-                            secondaryIndices: [], // Dados de composição são específicos
+                            secondaryIndices: [],
                             currencies: [],
                             otherAssets: pdfComponentData,
                             targetDate: targetDate,
@@ -260,38 +251,26 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
             </div>
           </CardHeader>
           <CardContent className="h-96">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {chartData.map((item, index) => (
-                <Card key={item.id} className="flex flex-col items-center justify-center p-4 text-center">
-                  <div className="relative h-24 w-24">
-                    <svg className="h-full w-full" viewBox="0 0 36 36">
-                      <path
-                        className="text-muted/30"
-                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      />
-                      <path
-                        style={{ stroke: COLORS[index % COLORS.length] }}
-                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeDasharray={`${item.percentage}, 100`}
-                      />
-                    </svg>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-xl font-bold" style={{ color: COLORS[index % COLORS.length] }}>
-                        {item.percentage.toFixed(0)}%
-                      </span>
-                    </div>
-                  </div>
-                  <p className="mt-2 text-sm font-semibold">{item.name}</p>
-                  <p className="text-lg font-mono font-bold">{formatCurrency(item.value, 'BRL')}</p>
-                </Card>
-              ))}
-            </div>
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={chartData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  outerRadius={120}
+                  fill="#8884d8"
+                  dataKey="value"
+                  label={({ name, percent }) => `${name.split(' ')[0]}: ${(percent * 100).toFixed(0)}%`}
+                >
+                  {chartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(value: number) => [formatCurrency(value, 'BRL'), 'Valor']} />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
           </CardContent>
         </Card>
 
@@ -307,11 +286,11 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
                 <TableRow>
                   <TableHead>Componente</TableHead>
                   <TableHead className="text-right">Valor</TableHead>
-                  <TableHead className="text-right">Participação (%)</TableHead>
+                  <TableHead className="text-right">Participação</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {tableData.filter(item => !item.isSub).map((item, index) => (
+                {tableData.filter(item => !item.isSub).map((item) => (
                   <React.Fragment key={item.id}>
                     <TableRow className={item.id === 'crs_total' ? 'font-bold bg-muted/30' : ''}>
                       <TableCell className="flex items-center gap-2">
@@ -345,3 +324,5 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
     </div>
   );
 }
+
+    
