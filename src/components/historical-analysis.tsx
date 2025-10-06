@@ -17,6 +17,7 @@ import { format, parseISO, isAfter, isValid } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import html2canvas from 'html2canvas';
 
 import type { FirestoreQuote, CommodityConfig, CommodityPriceData } from '@/lib/types';
 import { getCotacoesHistorico, getCommodityConfigs, getQuoteByDate } from '@/lib/data-service';
@@ -118,7 +119,7 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
         let dateFormat = 'dd/MM';
         return {
            date: format(dateObject, dateFormat, { locale: ptBR }),
-           value: quote.valor_brl ?? quote.resultado_final_brl ?? quote.valor ?? quote.ultimo,
+           value: quote.ultimo,
         }
       }).reverse(); // Reverte para ordem cronológica no gráfico
       
@@ -151,54 +152,65 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
     setIsExporting(true);
 
     try {
-        const canvas = await html2canvas(chartRef.current, { scale: 2, useCORS: true });
+        const canvas = await html2canvas(chartRef.current, { scale: 2, useCORS: true, backgroundColor: null });
         const imgData = canvas.toDataURL('image/png');
         
         const doc = new jsPDF() as jsPDFWithAutoTableType;
         const generationDate = format(new Date(), "dd 'de' MMMM 'de' yyyy, HH:mm", { locale: ptBR });
         const changeColor = mainAssetData.change >= 0 ? [39, 174, 96] : [192, 57, 43];
+        const pdfWidth = doc.internal.pageSize.getWidth();
+        const margin = 15;
+        let finalY = 0;
 
         // --- CABEÇALHO DO DOCUMENTO ---
         doc.setFontSize(18);
-        doc.setTextColor(34, 47, 62); // Cor escura (quase preto)
+        doc.setTextColor(34, 47, 62);
         doc.setFont('helvetica', 'bold');
-        doc.text(`Relatório de Ativo: ${selectedAssetConfig.name}`, doc.internal.pageSize.getWidth() / 2, 22, { align: 'center' });
+        doc.text(`Relatório de Ativo: ${selectedAssetConfig.name}`, pdfWidth / 2, 22, { align: 'center' });
 
         doc.setFontSize(11);
-        doc.setTextColor(108, 122, 137); // Cinza
-        doc.text(`Análise para ${format(targetDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })} | Gerado em: ${generationDate}`, doc.internal.pageSize.getWidth() / 2, 29, { align: 'center' });
+        doc.setTextColor(108, 122, 137);
+        doc.text(`Análise para ${format(targetDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}`, pdfWidth / 2, 29, { align: 'center' });
+        doc.text(`Gerado em: ${generationDate}`, pdfWidth / 2, 35, { align: 'center' });
         
-        doc.setLineWidth(0.5);
-        doc.line(14, 35, doc.internal.pageSize.getWidth() - 14, 35);
+        finalY = 45;
 
+        // --- RESUMO DO PREÇO EM CARDS ---
+        doc.setDrawColor(226, 232, 240); // Borda
+        doc.setFillColor(248, 250, 252); // Fundo
+        doc.roundedRect(margin, finalY, pdfWidth - (margin * 2), 25, 3, 3, 'FD');
+        
+        doc.setFontSize(10);
+        doc.setTextColor(100, 116, 139);
+        doc.text("Preço Atual", margin + 5, finalY + 7);
 
-        // --- RESUMO DO PREÇO ---
         doc.setFontSize(22);
         doc.setFont('helvetica', 'bold');
-        doc.text(formatCurrency(mainAssetData.price, mainAssetData.currency, mainAssetData.id), 14, 48);
+        doc.setTextColor(34, 47, 62);
+        doc.text(formatCurrency(mainAssetData.price, mainAssetData.currency, mainAssetData.id), margin + 5, finalY + 18);
 
-        doc.setFontSize(12);
+        const changeText = `${mainAssetData.absoluteChange >= 0 ? '▲' : '▼'} ${formatCurrency(mainAssetData.absoluteChange, mainAssetData.currency, mainAssetData.id)} (${mainAssetData.change >= 0 ? '+' : ''}${mainAssetData.change.toFixed(2)}%) (24h)`;
+        doc.setFontSize(11);
         doc.setTextColor(changeColor[0], changeColor[1], changeColor[2]);
-        doc.text(
-            `${mainAssetData.absoluteChange >= 0 ? '▲' : '▼'} ${formatCurrency(mainAssetData.absoluteChange, mainAssetData.currency, mainAssetData.id)} (${mainAssetData.change >= 0 ? '+' : ''}${mainAssetData.change.toFixed(2)}%)`, 
-            14, 
-            56
-        );
-
-        doc.setFontSize(9);
-        doc.setTextColor(108, 122, 137);
-        doc.text(`Dados de ${latestQuote.data} | Fonte: Investing.com`, 14, 62);
-
+        doc.setFont('helvetica', 'bold');
+        doc.text(changeText, pdfWidth - margin - 5, finalY + 18, { align: 'right' });
+        
+        finalY += 25 + 10;
 
         // --- IMAGEM DO GRÁFICO ---
-        const imgProps = doc.getImageProperties(imgData);
-        const pdfWidth = doc.internal.pageSize.getWidth();
-        const imgWidth = pdfWidth - 28;
-        const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
-        doc.addImage(imgData, 'PNG', 14, 70, imgWidth, imgHeight);
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(34, 47, 62);
+        doc.text("Histórico de Preços (Últimos 90 dias)", margin, finalY);
+        finalY += 7;
 
-        let finalY = 70 + imgHeight + 10;
-        
+        const imgProps = doc.getImageProperties(imgData);
+        const imgWidth = pdfWidth - (margin * 2);
+        const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+        doc.addImage(imgData, 'PNG', margin, finalY, imgWidth, imgHeight);
+
+        finalY += imgHeight + 10;
+
         // --- TABELA DE DETALHES DO DIA ---
         const detailsToExport = [
             { label: 'Fechamento Anterior', value: formatCurrency(latestQuote.fechamento_anterior, mainAssetData.currency) },
@@ -207,14 +219,8 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
             { label: 'Volume', value: latestQuote.volume?.toLocaleString('pt-BR') || 'N/A' },
         ].filter(item => item.value !== null && item.value !== undefined && !item.value.includes('NaN'));
 
-        // Adiciona campos específicos do ativo (ex: rent_media)
-        if (latestQuote.rent_media) {
-          detailsToExport.push({ label: 'Rentabilidade Média', value: formatCurrency(latestQuote.rent_media, 'BRL') });
-        }
-        if (latestQuote.ton) {
-          detailsToExport.push({ label: 'Valor (tonelada)', value: formatCurrency(latestQuote.ton, 'BRL') });
-        }
-
+        if (latestQuote.rent_media) detailsToExport.push({ label: 'Rentabilidade Média', value: formatCurrency(latestQuote.rent_media, 'BRL') });
+        if (latestQuote.ton) detailsToExport.push({ label: 'Valor (tonelada)', value: formatCurrency(latestQuote.ton, 'BRL') });
 
         if (detailsToExport.length > 0 && selectedAssetConfig.id !== 'ucs_ase') {
             doc.autoTable({
@@ -223,6 +229,7 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
                 body: detailsToExport.map(item => [item.label, item.value]),
                 theme: 'grid',
                 headStyles: { fillColor: [44, 62, 80] },
+                didDrawPage: (data) => { finalY = data.cursor?.y || finalY; }
             });
             finalY = (doc as any).lastAutoTable.finalY + 10;
         }
@@ -232,44 +239,24 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
             doc.autoTable({
                 startY: finalY,
                 head: [['Composição do Valor Final (BRL)', '']],
-                body: [
-                    ['UCS Original', formatCurrency(latestQuote.valores_originais?.ucs || 0, 'BRL', 'ucs')],
-                    ['Fórmula Aplicada', latestQuote.formula || 'UCS × 2'],
-                    ['Resultado Final', formatCurrency(latestQuote.componentes.resultado_final_brl || 0, 'BRL', 'ucs_ase')]
-                ],
+                body: [['UCS Original', formatCurrency(latestQuote.valores_originais?.ucs || 0, 'BRL', 'ucs')], ['Fórmula Aplicada', latestQuote.formula || 'UCS × 2'], ['Resultado Final', formatCurrency(latestQuote.componentes.resultado_final_brl || 0, 'BRL', 'ucs_ase')]],
                 theme: 'grid',
                 headStyles: { fillColor: [34, 47, 62] },
+                didDrawPage: (data) => { finalY = data.cursor?.y || finalY; }
             });
             finalY = (doc as any).lastAutoTable.finalY + 5;
 
+            const halfWidth = (pdfWidth - (margin * 2) - 5) / 2;
             doc.autoTable({
-                startY: finalY,
-                head: [['Conversão para USD', '']],
-                body: [
-                  ['Cotação USD/BRL', formatCurrency(latestQuote.valores_originais?.cotacao_usd || 0, 'BRL', 'usd')],
-                  ['Valor Final (USD)', formatCurrency(latestQuote.componentes.resultado_final_usd || 0, 'USD', 'ucs_ase')],
-                  ['Fórmula', latestQuote.conversoes?.brl_para_usd || 'N/A'],
-                ],
-                theme: 'grid',
-                headStyles: { fillColor: [39, 174, 96] }, // Verde
-                tableWidth: (pdfWidth / 2) - 20,
-                margin: { left: 14 }
+                startY: finalY, head: [['Conversão para USD', '']], body: [['Cotação USD/BRL', formatCurrency(latestQuote.valores_originais?.cotacao_usd || 0, 'BRL', 'usd')], ['Valor Final (USD)', formatCurrency(latestQuote.componentes.resultado_final_usd || 0, 'USD', 'ucs_ase')], ['Fórmula', latestQuote.conversoes?.brl_para_usd || 'N/A']],
+                theme: 'grid', headStyles: { fillColor: [39, 174, 96] }, tableWidth: halfWidth, margin: { left: margin },
+                didDrawPage: (data) => { finalY = data.cursor?.y || finalY; }
             });
-
              doc.autoTable({
-                startY: finalY,
-                head: [['Conversão para EUR', '']],
-                body: [
-                   ['Cotação EUR/BRL', formatCurrency(latestQuote.valores_originais?.cotacao_eur || 0, 'BRL', 'eur')],
-                   ['Valor Final (EUR)', formatCurrency(latestQuote.componentes.resultado_final_eur || 0, 'EUR', 'ucs_ase')],
-                   ['Fórmula', latestQuote.conversoes?.brl_para_eur || 'N/A'],
-                ],
-                theme: 'grid',
-                headStyles: { fillColor: [41, 128, 185] }, // Azul
-                tableWidth: (pdfWidth / 2) - 20,
-                margin: { left: doc.internal.pageSize.getWidth() / 2 + 6 },
+                startY: (doc as any).lastAutoTable.startY, head: [['Conversão para EUR', '']], body: [['Cotação EUR/BRL', formatCurrency(latestQuote.valores_originais?.cotacao_eur || 0, 'BRL', 'eur')], ['Valor Final (EUR)', formatCurrency(latestQuote.componentes.resultado_final_eur || 0, 'EUR', 'ucs_ase')], ['Fórmula', latestQuote.conversoes?.brl_para_eur || 'N/A']],
+                theme: 'grid', headStyles: { fillColor: [41, 128, 185] }, tableWidth: halfWidth, margin: { left: pdfWidth - margin - halfWidth },
+                didDrawPage: (data) => { finalY = data.cursor?.y || finalY; }
             });
-            finalY = (doc as any).lastAutoTable.finalY;
         }
 
         // --- Rodapé ---
@@ -278,12 +265,7 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
             doc.setPage(i);
             doc.setFontSize(9);
             doc.setTextColor(150);
-            doc.text(
-                `Página ${i} de ${pageCount} | Monitor do Índice UCS`,
-                doc.internal.pageSize.getWidth() / 2,
-                doc.internal.pageSize.getHeight() - 10,
-                { align: 'center' }
-            );
+            doc.text(`Página ${i} de ${pageCount} | Monitor do Índice UCS`, pdfWidth / 2, doc.internal.pageSize.getHeight() - 10, { align: 'center' });
         }
         
         doc.save(`relatorio_${selectedAssetConfig.id}_${format(new Date(), 'yyyyMMdd')}.pdf`);
