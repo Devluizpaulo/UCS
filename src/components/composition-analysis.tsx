@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
@@ -131,7 +132,6 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
     setIsExporting(true);
   
     try {
-      // 1. Capturar o gráfico como imagem
       const canvas = await html2canvas(chartRef.current, { 
         scale: 2, 
         backgroundColor: null 
@@ -140,31 +140,42 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
   
       const doc = new jsPDF() as jsPDFWithAutoTable;
       const generationDate = format(new Date(), "dd 'de' MMMM 'de' yyyy, HH:mm", { locale: ptBR });
-      
-      // --- CABEÇALHO DO DOCUMENTO ---
-      doc.setFontSize(18);
-      doc.setTextColor(34, 47, 62); // Cor escura
-      doc.setFont('helvetica', 'bold');
-      doc.text('Relatório de Composição do Índice', doc.internal.pageSize.getWidth() / 2, 22, { align: 'center' });
-      
-      doc.setFontSize(11);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(108, 122, 137); // Cinza
-      doc.text(`Análise para o índice "Valor de Uso do Solo" em ${data.data}`, doc.internal.pageSize.getWidth() / 2, 29, { align: 'center' });
-      doc.text(`Gerado em: ${generationDate}`, doc.internal.pageSize.getWidth() / 2, 35, { align: 'center' });
-
-
-      // 2. Adicionar a imagem do gráfico
-      const imgProps = doc.getImageProperties(imgData);
       const pdfWidth = doc.internal.pageSize.getWidth();
-      const imgWidth = pdfWidth * 0.6; // Ocupará 60% da largura
+      const margin = 15;
+      
+      // --- CABEÇALHO ---
+      doc.setFillColor(248, 249, 250);
+      doc.rect(0, 0, pdfWidth, 45, 'F');
+      doc.setFontSize(10);
+      doc.setTextColor(108, 117, 125);
+      doc.text("COMPOSITION REPORT", margin, 20);
+      doc.setFontSize(22);
+      doc.setTextColor(33, 37, 41);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Composição do "Valor de Uso do Solo"', margin, 32);
+
+      // --- DATA BOX ---
+      doc.setFillColor(40, 167, 69);
+      const dateBoxWidth = 70;
+      doc.rect(pdfWidth - dateBoxWidth - margin, 15, dateBoxWidth, 20, 'F');
+      doc.setFontSize(10);
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.text("Data da Análise", pdfWidth - dateBoxWidth - margin + 5, 22);
+      doc.setFontSize(12);
+      doc.text(data.data, pdfWidth - dateBoxWidth - margin + 5, 30);
+
+      let finalY = 55;
+  
+      // --- GRÁFICO ---
+      const imgProps = doc.getImageProperties(imgData);
+      const imgWidth = pdfWidth * 0.6;
       const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
-      const xPos = (pdfWidth / 2) - (imgWidth / 2); // Centralizar o gráfico
-      let finalY = 45;
+      const xPos = (pdfWidth / 2) - (imgWidth / 2);
       doc.addImage(imgData, 'PNG', xPos, finalY, imgWidth, imgHeight);
       finalY += imgHeight + 10;
   
-      // 3. Adicionar a Tabela de Dados
+      // --- TABELA DE DADOS ---
       const tableData = chartData.map(item => [
           item.name,
           formatCurrency(item.value, 'BRL'),
@@ -178,23 +189,23 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
           foot: [['Total', formatCurrency(data.valor, 'BRL', 'valor_uso_solo'), '100.00%']],
           theme: 'grid',
           headStyles: { 
-            fillColor: [22, 160, 133], // Verde principal da aplicação
+            fillColor: [40, 167, 69], 
             textColor: 255, 
             fontStyle: 'bold' 
           },
           footStyles: { 
-            fillColor: [44, 62, 80], // Azul escuro
+            fillColor: [33, 37, 41],
             textColor: 255, 
             fontStyle: 'bold' 
           },
           didDrawPage: (data) => {
-            // --- Rodapé ---
+            // --- RODAPÉ ---
             const pageCount = doc.internal.pages.length;
             doc.setFontSize(9);
             doc.setTextColor(150);
             doc.text(
-              `Página ${data.pageNumber} de ${pageCount}`,
-              doc.internal.pageSize.getWidth() / 2,
+              `Página ${data.pageNumber} de ${pageCount} | Relatório gerado em ${generationDate}`,
+              pdfWidth / 2,
               doc.internal.pageSize.getHeight() - 10,
               { align: 'center' }
             );
@@ -393,4 +404,3 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
     </div>
   );
 }
-
