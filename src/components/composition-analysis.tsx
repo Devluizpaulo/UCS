@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import {
   PieChart,
   Pie,
@@ -26,6 +27,7 @@ import { Button } from './ui/button';
 import { format } from 'date-fns';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import html2canvas from 'html2canvas';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 
@@ -71,6 +73,7 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
   const [data, setData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
+  const chartRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -122,41 +125,59 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
     return groupedData.filter(item => item.value > 0);
   }, [data]);
 
-  const handleExportPdf = () => {
-    if (!data || chartData.length === 0) return;
+  const handleExportPdf = async () => {
+    if (!data || chartData.length === 0 || !chartRef.current) return;
     setIsExporting(true);
-
-    const doc = new jsPDF() as jsPDFWithAutoTable;
-    
-    doc.setFontSize(18);
-    doc.text("Relatório de Composição do Índice", 14, 22);
-    doc.setFontSize(11);
-    doc.setTextColor(100);
-    doc.text(`Valor de Uso do Solo - ${data.data}`, 14, 30);
-    
-    const tableData = chartData.map(item => [
-        item.name,
-        formatCurrency(item.value, 'BRL'),
-        `${item.percentage.toFixed(2)}%`
-    ]);
-
-    tableData.push([
-        'Total',
-        formatCurrency(data.valor, 'BRL', 'valor_uso_solo'),
-        '100.00%'
-    ]);
-
-    doc.autoTable({
-        startY: 40,
-        head: [['Componente', 'Valor (R$)', 'Participação (%)']],
-        body: tableData,
-        foot: [['Total', formatCurrency(data.valor, 'BRL', 'valor_uso_solo'), '100.00%']],
-        headStyles: { fillColor: [22, 160, 133] },
-        footStyles: { fillColor: [22, 160, 133], fontStyle: 'bold' }
-    });
-
-    doc.save(`composicao_valor_uso_solo_${format(targetDate, 'yyyy-MM-dd')}.pdf`);
-    setIsExporting(false);
+  
+    try {
+      // 1. Capturar o gráfico como imagem
+      const canvas = await html2canvas(chartRef.current, { 
+        scale: 2, 
+        backgroundColor: null 
+      });
+      const imgData = canvas.toDataURL('image/png');
+  
+      const doc = new jsPDF() as jsPDFWithAutoTable;
+      
+      // 2. Adicionar Título
+      doc.setFontSize(18);
+      doc.text("Relatório de Composição do Índice", 14, 22);
+      doc.setFontSize(11);
+      doc.setTextColor(100);
+      doc.text(`Valor de Uso do Solo - ${data.data}`, 14, 30);
+  
+      // 3. Adicionar a imagem do gráfico
+      const imgProps = doc.getImageProperties(imgData);
+      const pdfWidth = doc.internal.pageSize.getWidth();
+      const imgWidth = pdfWidth * 0.5; // O gráfico ocupará metade da largura da página
+      const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+      const xPos = (pdfWidth / 2) - (imgWidth / 2); // Centralizar o gráfico
+      let finalY = 40;
+      doc.addImage(imgData, 'PNG', xPos, finalY, imgWidth, imgHeight);
+      finalY += imgHeight + 10;
+  
+      // 4. Adicionar a Tabela de Dados
+      const tableData = chartData.map(item => [
+          item.name,
+          formatCurrency(item.value, 'BRL'),
+          `${item.percentage.toFixed(2)}%`
+      ]);
+  
+      doc.autoTable({
+          startY: finalY,
+          head: [['Componente', 'Valor (R$)', 'Participação (%)']],
+          body: tableData,
+          foot: [['Total', formatCurrency(data.valor, 'BRL', 'valor_uso_solo'), '100.00%']],
+          headStyles: { fillColor: [22, 160, 133] },
+          footStyles: { fillColor: [22, 160, 133], fontStyle: 'bold' }
+      });
+  
+      doc.save(`composicao_valor_uso_solo_${format(targetDate, 'yyyy-MM-dd')}.pdf`);
+    } catch (error) {
+      console.error("PDF generation error:", error);
+    } finally {
+      setIsExporting(false);
+    }
   };
   
   const handleExportExcel = async () => {
@@ -280,28 +301,30 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
                 </div>
             </CardHeader>
             <CardContent className="h-96">
-                <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                    <Pie
-                        data={chartData}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={renderCustomizedLabel}
-                        outerRadius={150}
-                        fill="#8884d8"
-                        dataKey="value"
-                    >
-                    {chartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                    </Pie>
-                    <Tooltip
-                        formatter={(value: number, name: string) => [formatCurrency(value, 'BRL'), name]}
-                    />
-                    <Legend />
-                </PieChart>
-                </ResponsiveContainer>
+                <div ref={chartRef} className="w-full h-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                      <Pie
+                          data={chartData}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={renderCustomizedLabel}
+                          outerRadius={150}
+                          fill="#8884d8"
+                          dataKey="value"
+                      >
+                      {chartData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                      </Pie>
+                      <Tooltip
+                          formatter={(value: number, name: string) => [formatCurrency(value, 'BRL'), name]}
+                      />
+                      <Legend />
+                  </PieChart>
+                  </ResponsiveContainer>
+                </div>
             </CardContent>
         </Card>
         <Card>
@@ -341,3 +364,4 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
     </div>
   );
 }
+
