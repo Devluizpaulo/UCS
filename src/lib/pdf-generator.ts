@@ -64,7 +64,7 @@ export interface CustomSection {
 
 const COLORS = {
   primary: '#16a34a', // green-600
-  textPrimary: '#111827', // gray-900
+  textPrimary: '#1f2937', // gray-800
   textSecondary: '#4b5563', // gray-600
   border: '#e5e7eb', // gray-200
   white: '#ffffff',
@@ -75,10 +75,10 @@ const COLORS = {
     yellow: '#f59e0b', // amber-500
   },
   chart: {
-    c1: '#3b82f6', // blue-500
-    c2: '#f97316', // orange-500
-    c3: '#8b5cf6', // violet-500
-    c4: '#10b981', // emerald-500
+    c1: '#2563eb', // blue-600
+    c2: '#16a34a', // green-600
+    c3: '#f97316', // orange-500
+    c4: '#8b5cf6', // violet-500
     c5: '#ef4444', // red-500
   },
   risk: {
@@ -855,115 +855,152 @@ const drawCustomKpiBlock = (kpi: any, x: number, y: number, width: number, doc: 
 // === TEMPLATE DE COMPOSIÇÃO ========================================================
 // ===================================================================================
 const generateCompositionPdf = (data: DashboardPdfData): jsPDF => {
-    const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' }) as jsPDFWithAutoTable;
-    const { mainIndex, otherAssets: components, targetDate } = data;
-    
-    const pageW = doc.internal.pageSize.getWidth();
-    const pageH = doc.internal.pageSize.getHeight();
-    const margin = 40;
-    let y = 50;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' }) as jsPDFWithAutoTable;
+  const { mainIndex, otherAssets: components, targetDate } = data;
+  
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const margin = 50;
+  let y = 60;
 
-    // --- CABEÇALHO ---
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
-    doc.setTextColor(COLORS.primary);
-    doc.text('ANÁLISE DE COMPOSIÇÃO', margin, y);
-    y += 40;
+  // --- CABEÇALHO ---
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.setTextColor(COLORS.kpi.blue);
+  doc.text('ANÁLISE DE COMPOSIÇÃO', margin, y);
 
-    doc.setFontSize(24);
-    doc.setTextColor(COLORS.textPrimary);
-    doc.text(mainIndex?.name || 'Índice de Composição', margin, y);
-    y += 24;
-    doc.setFontSize(16);
-    doc.setTextColor(COLORS.textSecondary);
-    doc.text(`Dados de ${format(targetDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}`, margin, y);
-    y += 50;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.setTextColor(COLORS.textPrimary);
+  doc.text('UCS Index', pageW - margin, y, { align: 'right' });
+  y += 40;
 
-    // --- BLOCOS DE KPI DE COMPONENTES ---
-    const drawCompositionKpiBlock = (title: string, value: string, percentage: string, x: number, yPos: number, width: number) => {
-        doc.setDrawColor(COLORS.border);
-        doc.roundedRect(x, yPos, width, 70, 8, 8, 'S');
-    
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(10);
-        doc.setTextColor(COLORS.textSecondary);
-        doc.text(title, x + 15, yPos + 20);
-    
-        doc.setFontSize(20);
-        doc.setTextColor(COLORS.textPrimary);
-        doc.text(value, x + 15, yPos + 45);
-    
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(14);
-        doc.setTextColor(COLORS.primary);
-        doc.text(percentage, x + width - 15, yPos + 45, { align: 'right' });
-    };
-    
-    const allComponents = components || [];
-    const kpiCount = allComponents.length;
-    const kpiCardWidth = (pageW - (margin * 2) - ((kpiCount - 1) * 15)) / kpiCount;
+  doc.setFontSize(28);
+  doc.setTextColor(COLORS.textPrimary);
+  doc.text(mainIndex?.name || 'Índice de Composição', margin, y);
+  y += 28;
+  doc.setFontSize(14);
+  doc.setTextColor(COLORS.textSecondary);
+  doc.text(`Dados de ${format(targetDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}`, margin, y);
+  y += 60;
 
-    if (allComponents.length > 0) {
-        allComponents.forEach((component, index) => {
-            drawCompositionKpiBlock(
-                component.name,
-                formatCurrency(component.price, component.currency, component.id),
-                `${(component.change || 0).toFixed(2)}%`,
-                margin + (kpiCardWidth + 15) * index,
-                y,
-                kpiCardWidth
-            );
-        });
-        y += 90;
-    }
+  // --- KPIS CIRCULARES ---
+  const allComponents = components || [];
+  const crsTotalItem = allComponents.find(c => c.id === 'crs_total');
+  const mainItems = [
+    allComponents.find(c => c.id === 'vus'),
+    allComponents.find(c => c.id === 'vmad'),
+    crsTotalItem,
+  ].filter(Boolean) as CommodityPriceData[];
 
-    // --- VALOR TOTAL ---
-    if(mainIndex) {
-        doc.setFillColor(249, 250, 251); // gray-50
-        doc.setDrawColor(COLORS.border);
-        doc.roundedRect(margin, y, pageW - margin * 2, 50, 8, 8, 'FD');
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(14);
-        doc.setTextColor(COLORS.textSecondary);
-        doc.text('Valor Total do Índice', margin + 20, y + 30);
-        doc.setFontSize(22);
-        doc.setTextColor(COLORS.textPrimary);
-        doc.text(formatCurrency(mainIndex.price, mainIndex.currency, mainIndex.id), pageW - margin - 20, y + 30, { align: 'right' });
-        y += 70;
-    }
+  const kpiCount = mainItems.length;
+  if (kpiCount > 0) {
+      const cardWidth = (pageW - margin * 2) / kpiCount;
+      const circleRadius = 50;
+      
+      mainItems.forEach((item, index) => {
+          const x = margin + (cardWidth * index) + (cardWidth / 2);
+          const itemColor = COLORS.chart[`c${index + 1}` as keyof typeof COLORS.chart] || COLORS.chart.c1;
+          const percentage = item.change || 0;
 
-    // --- TABELA RESUMO ---
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(14);
-    doc.setTextColor(COLORS.textPrimary);
-    doc.text('Resumo da Composição', margin, y);
-    y += 20;
+          // Círculo
+          doc.setLineWidth(8);
+          doc.setDrawColor(itemColor);
+          doc.circle(x, y + circleRadius, circleRadius, 'S');
+          
+          // Texto da Porcentagem
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(22);
+          doc.setTextColor(itemColor);
+          doc.text(`${percentage.toFixed(2)}%`, x, y + circleRadius + 8, { align: 'center' });
+      });
 
-    if (allComponents.length > 0) {
-        doc.autoTable({
-            startY: y,
-            head: [['Componente', 'Valor', 'Participação (%)']],
-            body: allComponents.map(c => [c.name, formatCurrency(c.price, c.currency, c.id), `${(c.change || 0).toFixed(2)}%`]),
-            theme: 'grid',
-            headStyles: { fillColor: COLORS.textPrimary, textColor: 255 },
-            styles: { cellPadding: 6, fontSize: 10 },
-        });
-        y = (doc as any).lastAutoTable.finalY;
-    }
+      y += (circleRadius * 2) + 20;
 
-    // --- RODAPÉ ---
-    for (let i = 1; i <= doc.internal.pages.length; i++) {
-        doc.setPage(i);
-        doc.setDrawColor(COLORS.border);
-        doc.setLineWidth(0.5);
-        doc.line(margin, pageH - 40, pageW - margin, pageH - 40);
-        doc.setFontSize(9);
-        doc.setTextColor(107, 114, 128);
-        doc.text(`Confidencial | UCS Index`, margin, pageH - 25);
-        doc.text(`Página ${i}`, pageW - margin, pageH - 25, { align: 'right' });
-    }
-    
-    return doc;
+      // Legendas dos Círculos
+      mainItems.forEach((item, index) => {
+          const x = margin + (cardWidth * index) + (cardWidth / 2);
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(10);
+          doc.setTextColor(COLORS.textPrimary);
+          doc.text(item.name, x, y, { align: 'center' });
+      });
+
+      y += 40;
+  }
+  
+  // --- TABELA RESUMO ---
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(14);
+  doc.setTextColor(COLORS.textPrimary);
+  doc.text('Resumo da Composição', margin, y);
+  y += 25;
+
+  const tableBody = [];
+  const vus = allComponents.find(c => c.id === 'vus');
+  const vmad = allComponents.find(c => c.id === 'vmad');
+  
+  if (vus) tableBody.push([vus.name, formatCurrency(vus.price, 'BRL'), `${(vus.change || 0).toFixed(2)}%`]);
+  if (vmad) tableBody.push([vmad.name, formatCurrency(vmad.price, 'BRL'), `${(vmad.change || 0).toFixed(2)}%`]);
+
+  if (crsTotalItem) {
+    tableBody.push([crsTotalItem.name, formatCurrency(crsTotalItem.price, 'BRL'), `${(crsTotalItem.change || 0).toFixed(2)}%`]);
+    const carbono = allComponents.find(c => c.id === 'carbono_crs');
+    const agua = allComponents.find(c => c.id === 'Agua_CRS');
+    if (carbono) tableBody.push([`  - ${carbono.name}`, formatCurrency(carbono.price, 'BRL'), `${(carbono.change || 0).toFixed(2)}%`]);
+    if (agua) tableBody.push([`  - ${agua.name}`, formatCurrency(agua.price, 'BRL'), `${(agua.change || 0).toFixed(2)}%`]);
+  }
+  
+  doc.autoTable({
+      startY: y,
+      head: [['Componente', 'Valor', 'Participação (%)']],
+      body: tableBody,
+      theme: 'striped',
+      headStyles: { fillColor: COLORS.textPrimary, textColor: 255 },
+      styles: { cellPadding: 8, fontSize: 10, halign: 'left' },
+      columnStyles: {
+          1: { halign: 'right' },
+          2: { halign: 'right' }
+      },
+      didParseCell: (data: any) => {
+          if (data.row.raw[0].toString().includes('- ')) {
+              data.cell.styles.fontStyle = 'italic';
+              data.cell.styles.textColor = COLORS.textSecondary;
+          }
+           if (data.row.raw[0].toString().includes('CRS (Custo')) {
+              data.cell.styles.fontStyle = 'bold';
+          }
+      },
+  });
+  y = (doc as any).lastAutoTable.finalY + 40;
+
+  // --- VALOR TOTAL ---
+  if(mainIndex) {
+      doc.setFillColor(COLORS.kpi.blue);
+      doc.roundedRect(margin, y, pageW - margin * 2, 50, 8, 8, 'F');
+      
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14);
+      doc.setTextColor(255, 255, 255);
+      doc.text('Valor Total do Índice', margin + 20, y + 30);
+      
+      doc.setFontSize(22);
+      doc.text(formatCurrency(mainIndex.price, mainIndex.currency, mainIndex.id), pageW - margin - 20, y + 30, { align: 'right' });
+  }
+
+  // --- RODAPÉ ---
+  for (let i = 1; i <= doc.internal.pages.length; i++) {
+      doc.setPage(i);
+      doc.setDrawColor(COLORS.border);
+      doc.setLineWidth(0.5);
+      doc.line(margin, pageH - 40, pageW - margin, pageH - 40);
+      doc.setFontSize(9);
+      doc.setTextColor(COLORS.textSecondary);
+      doc.text(`Confidencial | UCS Index`, margin, pageH - 25);
+      doc.text(`Página ${i}`, pageW - margin, pageH - 25, { align: 'right' });
+  }
+  
+  return doc;
 };
 
 
@@ -1025,3 +1062,4 @@ export const generatePdf = (
         throw new Error(`Falha na geração do PDF: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
     }
 };
+
