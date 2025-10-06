@@ -152,11 +152,8 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
         let finalY = 0;
 
         // ===================================
-        // CABEÇALHO
+        // CABEÇALHO (NOVO DESIGN)
         // ===================================
-        doc.setFillColor(248, 249, 250); // Fundo cinza claro
-        doc.rect(0, 0, pdfWidth, 45, 'F');
-        
         doc.setFontSize(10);
         doc.setTextColor(108, 117, 125); // Cinza
         doc.text("UCS INDEX REPORT", margin, 20);
@@ -166,6 +163,7 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
         doc.setFont('helvetica', 'bold');
         doc.text(`Análise de Ativo: ${selectedAssetConfig.name}`, margin, 32);
 
+        // --- DATA BOX ---
         doc.setFillColor(40, 167, 69); // Verde
         const dateBoxWidth = 70;
         doc.rect(pdfWidth - dateBoxWidth - margin, 15, dateBoxWidth, 20, 'F');
@@ -173,11 +171,13 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
         doc.setFontSize(10);
         doc.setTextColor(255, 255, 255);
         doc.setFont('helvetica', 'bold');
-        doc.text("Data da Análise", pdfWidth - dateBoxWidth - margin + 5, 22);
+        doc.text("Data da Análise", pdfWidth - margin - dateBoxWidth + 5, 22);
+        
         doc.setFontSize(12);
-        doc.text(format(targetDate, "dd 'de' MMMM, yyyy", { locale: ptBR }), pdfWidth - dateBoxWidth - margin + 5, 30);
+        doc.text(format(targetDate, "dd 'de' MMMM, yyyy", { locale: ptBR }), pdfWidth - margin - dateBoxWidth + 5, 30);
         
         finalY = 55;
+
 
         // ===================================
         // CARDS DE RESUMO (KPIs)
@@ -270,10 +270,10 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
         if (detailsToExport.length > 0) {
             doc.autoTable({
                 startY: finalY,
-                head: [[{ content: tableTitle, styles: { halign: 'left' } }]],
+                head: [[{ content: tableTitle, styles: { halign: 'left', fillColor: tableColor } }]],
                 body: detailsToExport.map(item => [item.label, item.value]),
                 theme: 'grid',
-                headStyles: { fillColor: tableColor, textColor: 255, fontStyle: 'bold' },
+                headStyles: { textColor: 255, fontStyle: 'bold' },
                 didDrawPage: (data) => { finalY = data.cursor?.y || finalY; }
             });
             finalY = (doc as any).lastAutoTable.finalY + 10;
