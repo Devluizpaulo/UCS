@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useMemo, useTransition, useRef } from 'react';
+import { useState, useEffect, useMemo, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CommodityPrices } from '@/components/commodity-prices';
 import { getCommodityPricesByDate, getCommodityPrices, clearCacheAndRefresh, reprocessDate } from '@/lib/data-service';
@@ -31,7 +31,6 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
-import { AssetIcon } from '@/lib/icons';
 import { formatCurrency } from '@/lib/formatters';
 
 // Extende a interface do jsPDF para incluir o autoTable
@@ -100,7 +99,7 @@ export default function DashboardPage() {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [isExporting, setIsExporting] = useState(false);
-  const [targetDate, setTargetDate] = useState<Date | null>(null);
+  const [targetDate, setTargetDate] = useState<Date>(new Date());
   
   useEffect(() => {
     const initialDate = getValidatedDate(dateParam) || new Date();
