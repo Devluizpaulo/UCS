@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from './ui/button';
 import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import html2canvas from 'html2canvas';
@@ -138,25 +139,32 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
       const imgData = canvas.toDataURL('image/png');
   
       const doc = new jsPDF() as jsPDFWithAutoTable;
+      const generationDate = format(new Date(), "dd 'de' MMMM 'de' yyyy, HH:mm", { locale: ptBR });
       
-      // 2. Adicionar Título
+      // --- CABEÇALHO DO DOCUMENTO ---
       doc.setFontSize(18);
-      doc.text("Relatório de Composição do Índice", 14, 22);
+      doc.setTextColor(34, 47, 62); // Cor escura
+      doc.setFont('helvetica', 'bold');
+      doc.text('Relatório de Composição do Índice', doc.internal.pageSize.getWidth() / 2, 22, { align: 'center' });
+      
       doc.setFontSize(11);
-      doc.setTextColor(100);
-      doc.text(`Valor de Uso do Solo - ${data.data}`, 14, 30);
-  
-      // 3. Adicionar a imagem do gráfico
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(108, 122, 137); // Cinza
+      doc.text(`Análise para o índice "Valor de Uso do Solo" em ${data.data}`, doc.internal.pageSize.getWidth() / 2, 29, { align: 'center' });
+      doc.text(`Gerado em: ${generationDate}`, doc.internal.pageSize.getWidth() / 2, 35, { align: 'center' });
+
+
+      // 2. Adicionar a imagem do gráfico
       const imgProps = doc.getImageProperties(imgData);
       const pdfWidth = doc.internal.pageSize.getWidth();
-      const imgWidth = pdfWidth * 0.5; // O gráfico ocupará metade da largura da página
+      const imgWidth = pdfWidth * 0.6; // Ocupará 60% da largura
       const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
       const xPos = (pdfWidth / 2) - (imgWidth / 2); // Centralizar o gráfico
-      let finalY = 40;
+      let finalY = 45;
       doc.addImage(imgData, 'PNG', xPos, finalY, imgWidth, imgHeight);
       finalY += imgHeight + 10;
   
-      // 4. Adicionar a Tabela de Dados
+      // 3. Adicionar a Tabela de Dados
       const tableData = chartData.map(item => [
           item.name,
           formatCurrency(item.value, 'BRL'),
@@ -168,8 +176,29 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
           head: [['Componente', 'Valor (R$)', 'Participação (%)']],
           body: tableData,
           foot: [['Total', formatCurrency(data.valor, 'BRL', 'valor_uso_solo'), '100.00%']],
-          headStyles: { fillColor: [22, 160, 133] },
-          footStyles: { fillColor: [22, 160, 133], fontStyle: 'bold' }
+          theme: 'grid',
+          headStyles: { 
+            fillColor: [22, 160, 133], // Verde principal da aplicação
+            textColor: 255, 
+            fontStyle: 'bold' 
+          },
+          footStyles: { 
+            fillColor: [44, 62, 80], // Azul escuro
+            textColor: 255, 
+            fontStyle: 'bold' 
+          },
+          didDrawPage: (data) => {
+            // --- Rodapé ---
+            const pageCount = doc.internal.pages.length;
+            doc.setFontSize(9);
+            doc.setTextColor(150);
+            doc.text(
+              `Página ${data.pageNumber} de ${pageCount}`,
+              doc.internal.pageSize.getWidth() / 2,
+              doc.internal.pageSize.getHeight() - 10,
+              { align: 'center' }
+            );
+          }
       });
   
       doc.save(`composicao_valor_uso_solo_${format(targetDate, 'yyyy-MM-dd')}.pdf`);
