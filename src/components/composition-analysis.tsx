@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -37,10 +36,9 @@ const COLORS = [
 ];
 
 const componentNames: Record<string, string> = {
-  vus: 'VUS (Uso do Solo)',
-  vmad: 'VMAD (Madeira)',
-  carbono_crs: 'Carbono CRS',
-  Agua_CRS: 'Água CRS',
+  vus: 'VUS (Valor de Uso do Solo)',
+  vmad: 'VMAD (Valor da Madeira)',
+  crs: 'CRS (Custo de Resp. Socioambiental)',
 };
 
 const RADIAN = Math.PI / 180;
@@ -81,14 +79,37 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
   const chartData = useMemo(() => {
     if (!data?.componentes) return [];
 
-    return Object.entries(data.componentes)
-      .map(([key, value]) => ({
-        name: componentNames[key] || key,
-        value: value as number,
-        percentage: data.porcentagens?.[key] || (((value as number) / data.valor) * 100),
-      }))
-      .filter(item => item.value > 0); // Não mostra componentes com valor zero no gráfico
+    const componentes = data.componentes;
+    const valorTotal = data.valor || 1;
+
+    const vusValue = (componentes.vus || 0) as number;
+    const vmadValue = (componentes.vmad || 0) as number;
+    const carbonoCRSValue = (componentes.carbono_crs || 0) as number;
+    const aguaCRSValue = (componentes.Agua_CRS || 0) as number;
+    
+    const crsTotalValue = carbonoCRSValue + aguaCRSValue;
+
+    const groupedData = [
+      {
+        name: componentNames.vus,
+        value: vusValue,
+        percentage: (vusValue / valorTotal) * 100,
+      },
+      {
+        name: componentNames.vmad,
+        value: vmadValue,
+        percentage: (vmadValue / valorTotal) * 100,
+      },
+      {
+        name: componentNames.crs,
+        value: crsTotalValue,
+        percentage: (crsTotalValue / valorTotal) * 100,
+      }
+    ];
+
+    return groupedData.filter(item => item.value > 0);
   }, [data]);
+
 
   if (isLoading) {
     return (
