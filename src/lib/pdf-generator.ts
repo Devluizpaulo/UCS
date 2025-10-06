@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import jsPDF from 'jspdf';
@@ -46,7 +47,7 @@ const generateExecutiveDashboardPdf = (data: DashboardPdfData): jsPDF => {
     const { mainIndex, secondaryIndices, currencies, otherAssets, targetDate } = data;
     
     const pageW = doc.internal.pageSize.getWidth();
-    const pageH = doc.internal.pageSize.getHeight();
+    const pageH = doc.internal-pageSize.getHeight();
     const margin = 40;
     let y = 50;
 
@@ -228,26 +229,28 @@ const generateCompositionPdf = (data: DashboardPdfData): jsPDF => {
 
     // --- BLOCOS DE KPI DE COMPONENTES ---
     const drawCompositionKpiBlock = (title: string, value: string, percentage: string, x: number, yPos: number, width: number, color: string) => {
-        const circleRadius = 25;
+        const circleRadius = 30; // Aumentado
         doc.setDrawColor(COLORS.border);
         doc.roundedRect(x, yPos, width, 80, 8, 8, 'S');
-
-        // Título e Valor
+    
+        // Alinhamento do texto à esquerda
+        const textBlockWidth = width - circleRadius * 2 - 30; // Espaço para o círculo e padding
+        
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(11);
+        doc.setFontSize(10);
         doc.setTextColor(COLORS.textSecondary);
         doc.text(title, x + 15, yPos + 30);
-
+    
         doc.setFontSize(20);
         doc.setTextColor(COLORS.textPrimary);
         doc.text(value, x + 15, yPos + 55);
-
-        // Círculo com porcentagem
+    
+        // Círculo com porcentagem alinhado à direita
         const circleX = x + width - 15 - circleRadius;
-        const circleY = yPos + 40;
+        const circleY = yPos + 40; // Centralizado verticalmente
         doc.setFillColor(color);
         doc.circle(circleX, circleY, circleRadius, 'F');
-
+    
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(14);
         doc.setTextColor(COLORS.white);
@@ -335,6 +338,8 @@ export const generatePdf = (
         }
         
         let doc: jsPDF;
+        const pageW = new jsPDF().internal.pageSize.getWidth();
+        const pageH = new jsPDF().internal.pageSize.getHeight();
         switch (reportType) {
             case 'composition':
                 doc = generateCompositionPdf(data);
@@ -356,3 +361,4 @@ export const generatePdf = (
         throw new Error(`Falha na geração do PDF: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
     }
 };
+
