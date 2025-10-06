@@ -320,9 +320,7 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
             </div>
           </div>
         </Sidebar>
-        <div className="flex-1 flex flex-col h-screen">
-          {children}
-        </div>
+        <SidebarInset>{children}</SidebarInset>
       </div>
     </>
   );

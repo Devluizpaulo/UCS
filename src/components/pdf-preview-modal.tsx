@@ -14,18 +14,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Loader2, Download, RefreshCw, ZoomIn, ZoomOut, AlertCircle, RotateCcw } from 'lucide-react';
 import { generatePdf, type DashboardPdfData } from '@/lib/pdf-generator';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Label } from './ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
-
-type PdfTemplate = 'simple' | 'commercial' | 'executive';
 
 interface PdfPreviewModalProps {
   isOpen: boolean;
@@ -42,7 +32,6 @@ interface GenerationState {
 
 export function PdfPreviewModal({ isOpen, onOpenChange, reportType, data }: PdfPreviewModalProps) {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
-  const [template, setTemplate] = useState<PdfTemplate>('executive');
   const [zoom, setZoom] = useState(1);
   const [generationState, setGenerationState] = useState<GenerationState>({
     isLoading: false,
@@ -51,14 +40,12 @@ export function PdfPreviewModal({ isOpen, onOpenChange, reportType, data }: PdfP
   });
   
   const { toast } = useToast();
-  const pdfCacheRef = useRef<Map<string, string>>(new Map());
+  const pdfCacheRef = useRef<string | null>(null);
   const maxRetries = 2;
 
   const generateAndSetPdf = useCallback(() => {
-    const cacheKey = `${reportType}_${template}_${data.targetDate.toISOString()}`;
-    
-    if (pdfCacheRef.current.has(cacheKey)) {
-      setPdfUrl(pdfCacheRef.current.get(cacheKey)!);
+    if (pdfCacheRef.current) {
+      setPdfUrl(pdfCacheRef.current);
       setGenerationState({ isLoading: false, error: null, retryCount: 0 });
       return;
     }
@@ -68,11 +55,11 @@ export function PdfPreviewModal({ isOpen, onOpenChange, reportType, data }: PdfP
     // Libera a UI para renderizar o loader antes de iniciar a tarefa pesada
     setTimeout(() => {
         try {
-            const url = generatePdf(reportType, data, template);
+            const url = generatePdf(reportType, data);
             
             if (pdfUrl) URL.revokeObjectURL(pdfUrl);
 
-            pdfCacheRef.current.set(cacheKey, url);
+            pdfCacheRef.current = url;
             setPdfUrl(url);
             setGenerationState({ isLoading: false, error: null, retryCount: 0 });
 
@@ -94,26 +81,27 @@ export function PdfPreviewModal({ isOpen, onOpenChange, reportType, data }: PdfP
         }
     }, 50); // Pequeno delay para garantir que o estado de loading seja renderizado
 
-  }, [reportType, data, template, pdfUrl, toast]);
+  }, [reportType, data, pdfUrl, toast]);
 
   useEffect(() => {
     if (isOpen) {
       generateAndSetPdf();
     } else {
       // Limpa a URL e o cache quando o modal é fechado para economizar memória
-      if (pdfUrl) URL.revokeObjectURL(pdfUrl);
+      if (pdfUrl) {
+          try {
+            URL.revokeObjectURL(pdfUrl);
+          } catch(e) {
+            // Ignora erros de revogação de data-uri
+          }
+      }
       setPdfUrl(null);
-      pdfCacheRef.current.clear();
+      pdfCacheRef.current = null;
       setGenerationState({ isLoading: false, error: null, retryCount: 0 });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, template]);
+  }, [isOpen]);
 
-
-  const handleTemplateChange = (newTemplate: PdfTemplate) => {
-    setTemplate(newTemplate);
-    // A regeneração será acionada pelo useEffect
-  };
 
   const handleRetry = () => {
     if (generationState.retryCount < maxRetries) {
@@ -136,7 +124,7 @@ export function PdfPreviewModal({ isOpen, onOpenChange, reportType, data }: PdfP
     try {
       const link = document.createElement('a');
       link.href = pdfUrl;
-      link.download = `${reportType}_${template}_${format(data.targetDate, 'yyyy-MM-dd')}.pdf`;
+      link.download = `${reportType}_executivo_${format(data.targetDate, 'yyyy-MM-dd')}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -150,38 +138,22 @@ export function PdfPreviewModal({ isOpen, onOpenChange, reportType, data }: PdfP
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Pré-visualização do Relatório</DialogTitle>
+          <DialogTitle>Pré-visualização do Relatório Executivo</DialogTitle>
           <DialogDescription>
-            Escolha um modelo, visualize e baixe o seu relatório.
+            Visualize e baixe o seu relatório em formato PDF.
           </DialogDescription>
         </DialogHeader>
         <DialogBody className="flex-grow flex flex-col gap-4">
-          <div className="flex items-center justify-between gap-4 p-4 border rounded-lg bg-muted/50">
-            <div className="grid gap-1.5">
-              <Label htmlFor="template">Modelo do Relatório</Label>
-              <Select value={template} onValueChange={(value: PdfTemplate) => handleTemplateChange(value)}>
-                <SelectTrigger id="template" className="w-[180px]">
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="simple">📊 Simples</SelectItem>
-                  <SelectItem value="commercial">💼 Comercial</SelectItem>
-                  <SelectItem value="executive">👔 Executivo</SelectItem>
-                </SelectContent>
-              </Select>
+          <div className="flex items-center justify-end gap-4 p-4 border rounded-lg bg-muted/50">
+            <div className="flex items-center gap-1">
+              <Button variant="outline" size="icon" onClick={() => setZoom(z => Math.max(0.5, z - 0.1))}><ZoomOut className="h-4 w-4" /></Button>
+              <Button variant="ghost" size="icon" onClick={() => setZoom(1)} className="text-muted-foreground w-12">{Math.round(zoom * 100)}%</Button>
+              <Button variant="outline" size="icon" onClick={() => setZoom(z => Math.min(2.5, z + 0.1))}><ZoomIn className="h-4 w-4" /></Button>
             </div>
-            
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1">
-                <Button variant="outline" size="icon" onClick={() => setZoom(z => Math.max(0.5, z - 0.1))}><ZoomOut className="h-4 w-4" /></Button>
-                <Button variant="ghost" size="icon" onClick={() => setZoom(1)} className="text-muted-foreground w-12">{Math.round(zoom * 100)}%</Button>
-                <Button variant="outline" size="icon" onClick={() => setZoom(z => Math.min(2.5, z + 0.1))}><ZoomIn className="h-4 w-4" /></Button>
-              </div>
-              <Button variant="outline" onClick={generateAndSetPdf} disabled={generationState.isLoading}>
-                <RefreshCw className={`mr-2 h-4 w-4 ${generationState.isLoading ? 'animate-spin' : ''}`} />
-                Atualizar
-              </Button>
-            </div>
+            <Button variant="outline" onClick={generateAndSetPdf} disabled={generationState.isLoading}>
+              <RefreshCw className={`mr-2 h-4 w-4 ${generationState.isLoading ? 'animate-spin' : ''}`} />
+              Atualizar Pré-visualização
+            </Button>
           </div>
 
           <div className="flex-grow bg-secondary rounded-md flex items-center justify-center relative overflow-auto">
