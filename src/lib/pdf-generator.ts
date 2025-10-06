@@ -126,6 +126,7 @@ const generateExecutiveDashboardPdf = (data: DashboardPdfData): jsPDF => {
     const { mainIndex, secondaryIndices, currencies, otherAssets, targetDate } = data;
     const formattedDate = format(targetDate, "dd 'de' MMMM, yyyy", { locale: ptBR });
     const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
     const margin = 40;
     let y = 60;
 
@@ -270,4 +271,3 @@ export const generatePdf = (
         throw new Error(`Falha na geração do PDF: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
     }
 };
-
