@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
@@ -13,7 +12,7 @@ import {
   CartesianGrid,
   ReferenceLine,
 } from 'recharts';
-import { format, parseISO, isAfter, isValid } from 'date-fns';
+import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -32,16 +31,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableRow,
-} from '@/components/ui/table';
 import { Button } from './ui/button';
 import { Info, FileDown, Loader2 } from 'lucide-react';
 import { HistoricalPriceTable } from './historical-price-table';
-import { AssetInfo, AssetSpecificDetails, GenericAssetDetails, SojaDetails, CarbonoDetails } from './asset-detail-modal';
+import { AssetInfo, AssetSpecificDetails, GenericAssetDetails } from './asset-detail-modal';
 import { UcsAseDetails } from './ucs-ase-details';
 import { cn } from '@/lib/utils';
 import { LogoUCS } from './logo-bvm';
@@ -87,7 +80,7 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
         setData([]);
         setIsLoading(false);
       });
-  }, [selectedAssetId, targetDate]);
+  }, [selectedAssetId]);
 
   const selectedAssetConfig = useMemo(() => {
     return assets.find(a => a.id === selectedAssetId);
@@ -123,7 +116,7 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
         }
       }).reverse(); // Reverte para ordem cronológica no gráfico
       
-    const isForexAsset = ['soja', 'carbono'].includes(selectedAssetConfig.id);
+    const isForexAsset = ['soja', 'carbono', 'madeira'].includes(selectedAssetConfig.id);
 
     const mainAsset: CommodityPriceData = {
         ...selectedAssetConfig,
@@ -142,7 +135,7 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
     setIsExporting(true);
 
     try {
-        const canvas = await html2canvas(chartRef.current, { scale: 2, useCORS: true, backgroundColor: null });
+        const canvas = await html2canvas(chartRef.current, { scale: 3, useCORS: true, backgroundColor: null });
         const imgData = canvas.toDataURL('image/png');
         
         const doc = new jsPDF() as jsPDFWithAutoTableType;
@@ -162,7 +155,7 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
         doc.setTextColor(33, 37, 41); // Preto
         doc.setFont('helvetica', 'bold');
         doc.text(`Análise de Ativo: ${selectedAssetConfig.name}`, margin, 32);
-
+        
         // --- DATA BOX ---
         doc.setFillColor(40, 167, 69); // Verde
         const dateBoxWidth = 70;
@@ -177,7 +170,6 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
         doc.text(format(targetDate, "dd 'de' MMMM, yyyy", { locale: ptBR }), pdfWidth - margin - dateBoxWidth + 5, 30);
         
         finalY = 55;
-
 
         // ===================================
         // CARDS DE RESUMO (KPIs)
@@ -194,7 +186,8 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
         // Card Variação
         doc.setFillColor(248, 249, 250);
         doc.roundedRect(margin + cardWidth + 10, finalY, cardWidth, 30, 3, 3, 'FD');
-        doc.setFillColor(mainAssetData.change >= 0 ? 40 : 220, mainAssetData.change >= 0 ? 167 : 53, mainAssetData.change >= 0 ? 69 : 69);
+        const changeColor = mainAssetData.change >= 0 ? [40, 167, 69] : [220, 53, 69];
+        doc.setFillColor(changeColor[0], changeColor[1], changeColor[2]);
         doc.rect(margin + cardWidth + 10, finalY, 5, 30, 'F');
 
         doc.setFontSize(10);
@@ -215,7 +208,7 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
         doc.text(`Absoluto: ${formatCurrency(mainAssetData.absoluteChange, mainAssetData.currency, mainAssetData.id)}`, margin + cardWidth + 22, finalY + 26);
         
         finalY += 30 + 15;
-
+        
         // ===================================
         // GRÁFICO
         // ===================================
@@ -270,10 +263,9 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
         if (detailsToExport.length > 0) {
             doc.autoTable({
                 startY: finalY,
-                head: [[{ content: tableTitle, styles: { halign: 'left', fillColor: tableColor } }]],
+                head: [[{ content: tableTitle, styles: { halign: 'left', fillColor: tableColor, textColor: 255, fontStyle: 'bold' } }]],
                 body: detailsToExport.map(item => [item.label, item.value]),
                 theme: 'grid',
-                headStyles: { textColor: 255, fontStyle: 'bold' },
                 didDrawPage: (data) => { finalY = data.cursor?.y || finalY; }
             });
             finalY = (doc as any).lastAutoTable.finalY + 10;
@@ -282,7 +274,7 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
         if (selectedAssetConfig.id === 'ucs_ase' && latestQuote.componentes) {
             doc.autoTable({
                 startY: finalY,
-                head: [[{ content: "Composição e Conversão do Índice UCS ASE", colSpan: 2, styles: { halign: 'center', fillColor: [40, 167, 69] } }]],
+                head: [[{ content: "Composição e Conversão do Índice UCS ASE", colSpan: 2, styles: { halign: 'center', fillColor: [40, 167, 69], textColor: 255, fontStyle: 'bold' } }]],
                 body: [
                     ['UCS Original (BRL)', formatCurrency(latestQuote.valores_originais?.ucs || 0, 'BRL', 'ucs')],
                     ['Fórmula', latestQuote.formula || 'UCS × 2'],
@@ -294,7 +286,6 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
                     [{ content: 'Valor Final (EUR)', styles: { fontStyle: 'bold' } }, { content: formatCurrency(latestQuote.componentes.resultado_final_eur || 0, 'EUR', 'ucs_ase'), styles: { fontStyle: 'bold' } }],
                 ],
                 theme: 'grid',
-                headStyles: { textColor: 255, fontStyle: 'bold' },
             });
         }
 
@@ -316,7 +307,6 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
         setIsExporting(false);
     }
   };
-
 
   return (
     <>
