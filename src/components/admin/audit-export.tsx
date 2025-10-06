@@ -15,6 +15,8 @@ import type { CommodityPriceData } from '@/lib/types';
 import type { AuditLogEntry } from './audit-history';
 import { getCommodityPricesByDate } from '@/lib/data-service';
 import { getAuditLogsForPeriod } from '@/lib/audit-log-service';
+import { PdfPreviewModal } from '@/components/pdf-preview-modal';
+import { generatePdf, type DashboardPdfData } from '@/lib/pdf-generator';
 
 interface ExportOptions {
   format: 'csv' | 'json' | 'pdf';
@@ -42,6 +44,8 @@ export function AuditExport({ currentDate }: AuditExportProps) {
   const [isExporting, setIsExporting] = useState(false);
   const [isStartCalendarOpen, setIsStartCalendarOpen] = useState(false);
   const [isEndCalendarOpen, setIsEndCalendarOpen] = useState(false);
+  const [isPdfPreviewOpen, setIsPdfPreviewOpen] = useState(false);
+  const [pdfData, setPdfData] = useState<DashboardPdfData | null>(null);
 
   const handleExport = async () => {
     setIsExporting(true);
@@ -57,8 +61,7 @@ export function AuditExport({ currentDate }: AuditExportProps) {
           downloadJSON(exportData);
           break;
         case 'pdf':
-          // PDF generation can be implemented here
-          alert('Exportação em PDF será implementada em breve.');
+          await handlePdfExport(exportData);
           break;
       }
     } catch (error) {
@@ -151,6 +154,25 @@ export function AuditExport({ currentDate }: AuditExportProps) {
 
     link.click();
     link.remove();
+  };
+
+  const handlePdfExport = async (exportData: any) => {
+    try {
+      // Preparar dados para o PDF generator
+      const pdfData: DashboardPdfData = {
+        mainIndex: exportData.asset_data?.find((asset: CommodityPriceData) => asset.id === 'ucs_ase'),
+        secondaryIndices: exportData.asset_data?.filter((asset: CommodityPriceData) => ['pdm', 'ucs'].includes(asset.id)) || [],
+        currencies: exportData.asset_data?.filter((asset: CommodityPriceData) => ['usd', 'eur'].includes(asset.id)) || [],
+        otherAssets: exportData.asset_data?.filter((asset: CommodityPriceData) => !['ucs_ase', 'pdm', 'ucs', 'usd', 'eur'].includes(asset.id)) || [],
+        targetDate: exportOptions.startDate || currentDate
+      };
+
+      setPdfData(pdfData);
+      setIsPdfPreviewOpen(true);
+    } catch (error) {
+      console.error('Erro ao preparar dados para PDF:', error);
+      alert('Erro ao preparar dados para exportação em PDF.');
+    }
   };
 
   const setDateRangePreset = (range: 'today' | 'week' | 'month') => {
@@ -394,5 +416,15 @@ export function AuditExport({ currentDate }: AuditExportProps) {
         </div>
       </CardContent>
     </Card>
+    
+    {/* Modal de Preview do PDF */}
+    {pdfData && (
+      <PdfPreviewModal
+        isOpen={isPdfPreviewOpen}
+        onOpenChange={setIsPdfPreviewOpen}
+        reportType="audit"
+        data={pdfData}
+      />
+    )}
   );
 }

@@ -38,6 +38,8 @@ import { UcsAseDetails } from './ucs-ase-details';
 import { Button } from './ui/button';
 import { Alert, AlertDescription } from './ui/alert';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { PdfExportButton } from './pdf-export-button';
+import type { DashboardPdfData } from '@/lib/pdf-generator';
 
 // --- TYPES ---
 interface AssetDetailModalProps {
@@ -599,7 +601,28 @@ export const AssetDetailModal = memo<AssetDetailModalProps>(({
                 {renderContent()}
             </div>
         </DialogBody>
-        <DialogFooter />
+        <DialogFooter className="flex justify-between">
+          <div className="flex items-center gap-2">
+            <PdfExportButton
+              data={{
+                mainIndex: asset.id === 'ucs_ase' ? asset : undefined,
+                secondaryIndices: asset.id !== 'ucs_ase' ? [asset] : [],
+                currencies: [],
+                otherAssets: [],
+                targetDate: new Date()
+              }}
+              reportType="asset-detail"
+              fileName={`${asset.name}_${format(new Date(), 'yyyy-MM-dd')}`}
+              variant="outline"
+              size="sm"
+            >
+              Exportar PDF
+            </PdfExportButton>
+          </div>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Fechar
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

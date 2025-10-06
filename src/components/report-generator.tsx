@@ -28,6 +28,9 @@ import { DateRangePicker } from './date-range-picker';
 import { Separator } from './ui/separator';
 import { generateReport, type ReportInput, type ReportOutput } from '@/ai/flows/report-flow';
 import { useToast } from '@/hooks/use-toast';
+import { PdfPreviewModal } from '@/components/pdf-preview-modal';
+import { generatePdf, type DashboardPdfData } from '@/lib/pdf-generator';
+import { getCommodityPricesByDate } from '@/lib/data-service';
 
 const reportSchema = z.object({
   assetId: z.string().min(1, { message: 'Selecione um ativo.' }),
@@ -46,6 +49,8 @@ export function ReportGenerator() {
   const [reportResult, setReportResult] = useState<ReportOutput | null>(null);
   const reportContentRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const [isPdfPreviewOpen, setIsPdfPreviewOpen] = useState(false);
+  const [pdfData, setPdfData] = useState<DashboardPdfData | null>(null);
 
   const [date, setDate] = useState<DateRange | undefined>({
     from: addDays(new Date(), -30),
@@ -98,57 +103,34 @@ export function ReportGenerator() {
   };
   
   const handleDownloadPdf = async () => {
-    if (!reportContentRef.current) {
-        toast({
-            variant: 'destructive',
-            title: 'Erro de Exportação',
-            description: 'Não foi possível encontrar o conteúdo do relatório para exportar.',
-        });
-        return;
-    }
+    if (!reportResult) return;
     
     setIsDownloading(true);
-
+    
     try {
-        const canvas = await html2canvas(reportContentRef.current, {
-            scale: 2, // Aumenta a resolução da captura
-            useCORS: true,
-            backgroundColor: null,
-        });
-        
-        const imgData = canvas.toDataURL('image/png');
-        
-        const pdf = new jsPDF({
-            orientation: 'p',
-            unit: 'mm',
-            format: 'a4',
-        });
-        
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
-        const canvasWidth = canvas.width;
-        const canvasHeight = canvas.height;
-        const ratio = canvasWidth / canvasHeight;
-        
-        // Define margens
-        const margin = 15;
-        const contentWidth = pdfWidth - (margin * 2);
-        const contentHeight = contentWidth / ratio;
+      // Buscar dados dos ativos para o período do relatório
+      const assetData = await getCommodityPricesByDate(date?.to || new Date());
+      
+      // Preparar dados para o PDF generator
+      const pdfData: DashboardPdfData = {
+        mainIndex: assetData.find(asset => asset.id === 'ucs_ase'),
+        secondaryIndices: assetData.filter(asset => ['pdm', 'ucs'].includes(asset.id)),
+        currencies: assetData.filter(asset => ['usd', 'eur'].includes(asset.id)),
+        otherAssets: assetData.filter(asset => !['ucs_ase', 'pdm', 'ucs', 'usd', 'eur'].includes(asset.id)),
+        targetDate: date?.to || new Date()
+      };
 
-        pdf.addImage(imgData, 'PNG', margin, margin, contentWidth, contentHeight);
-
-        const fileName = `relatorio_${assetId}_${format(new Date(), 'yyyy-MM-dd')}.pdf`;
-        pdf.save(fileName);
-
-    } catch(error) {
-         toast({
-            variant: 'destructive',
-            title: 'Erro ao gerar PDF',
-            description: 'Ocorreu uma falha durante a criação do arquivo PDF.',
-        });
-        console.error('PDF Generation Error:', error);
+      setPdfData(pdfData);
+      setIsPdfPreviewOpen(true);
+    } catch (error) {
+      console.error('Erro ao preparar dados para PDF:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao Gerar PDF",
+        description: "Não foi possível preparar os dados para o PDF.",
+      });
     } finally {
-        setIsDownloading(false);
+      setIsDownloading(false);
     }
   };
 
@@ -303,6 +285,16 @@ export function ReportGenerator() {
           </CardContent>
         </Card>
       </div>
+      
+      {/* Modal de Preview do PDF */}
+      {pdfData && (
+        <PdfPreviewModal
+          isOpen={isPdfPreviewOpen}
+          onOpenChange={setIsPdfPreviewOpen}
+          reportType="report"
+          data={pdfData}
+        />
+      )}
     </div>
   );
 }
