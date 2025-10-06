@@ -70,15 +70,23 @@ export function PdfPreviewModal({ isOpen, onOpenChange, reportType, data }: PdfP
 
     setGenerationState({ isLoading: true, error: null, retryCount: generationState.retryCount });
     
-    setTimeout(() => {
+    // Usar requestAnimationFrame para melhor performance
+    requestAnimationFrame(() => {
         try {
+            console.log('Gerando PDF para template:', selectedTemplate);
             const url = generatePdf(selectedTemplate, data);
+            
+            if (!url) {
+                throw new Error('Falha ao gerar documento PDF');
+            }
             
             if (pdfUrl) URL.revokeObjectURL(pdfUrl);
 
             pdfCacheRef.current.set(cacheKey, url);
             setPdfUrl(url);
             setGenerationState({ isLoading: false, error: null, retryCount: 0 });
+            
+            console.log('PDF gerado com sucesso:', url);
 
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido na geração do PDF';
@@ -96,7 +104,7 @@ export function PdfPreviewModal({ isOpen, onOpenChange, reportType, data }: PdfP
                 description: errorMessage,
             });
         }
-    }, 50);
+    });
 
   }, [selectedTemplate, data, pdfUrl, toast, generationState.retryCount]);
 
@@ -201,14 +209,34 @@ export function PdfPreviewModal({ isOpen, onOpenChange, reportType, data }: PdfP
                 )}
               </div>
             ) : pdfUrl ? (
-              <iframe
-                src={pdfUrl}
-                className="w-full h-full border-0"
-                title={`Pré-visualização do PDF`}
-                style={{ transform: `scale(${zoom})`, transformOrigin: 'center' }}
-              />
+              <div className="w-full h-full flex items-center justify-center">
+                <iframe
+                  src={pdfUrl}
+                  className="w-full h-full border-0 rounded-md shadow-lg"
+                  title={`Pré-visualização do PDF - ${TEMPLATE_OPTIONS[selectedTemplate as keyof typeof TEMPLATE_OPTIONS]}`}
+                  style={{ 
+                    transform: `scale(${zoom})`, 
+                    transformOrigin: 'center',
+                    minHeight: '600px'
+                  }}
+                  onLoad={() => console.log('PDF carregado com sucesso')}
+                  onError={(e) => {
+                    console.error('Erro ao carregar PDF:', e);
+                    setGenerationState(prev => ({
+                      ...prev,
+                      error: 'Erro ao carregar a pré-visualização do PDF'
+                    }));
+                  }}
+                />
+              </div>
             ) : (
-              <p className="text-muted-foreground">Nenhuma pré-visualização disponível.</p>
+              <div className="flex flex-col items-center gap-4 text-muted-foreground">
+                <p>Nenhuma pré-visualização disponível.</p>
+                <Button variant="outline" onClick={generateAndSetPdf}>
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Tentar Novamente
+                </Button>
+              </div>
             )}
           </div>
         </DialogBody>

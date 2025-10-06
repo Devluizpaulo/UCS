@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { getQuoteByDate } from '@/lib/data-service';
 import { formatCurrency } from '@/lib/formatters';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2, AlertCircle, Download, PieChart as PieChartIcon } from 'lucide-react';
+import { Loader2, AlertCircle, Download, PieChart as PieChartIcon, ChevronDown, ChevronRight } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -39,7 +39,7 @@ const componentNames: Record<string, string> = {
   vus: 'VUS (Valor de Uso do Solo)',
   vmad: 'VMAD (Valor da Madeira)',
   carbono_crs: 'Carbono CRS',
-  Agua_CRS: 'Água CRS',
+  agua_crs: 'Água CRS',
   crs_total: 'CRS (Custo de Resp. Socioambiental)'
 };
 
@@ -47,6 +47,9 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
   const [data, setData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
+  const [expandedComponents, setExpandedComponents] = useState<Record<string, boolean>>({
+    crs_total: false // CRS recolhido por padrão
+  });
 
   useEffect(() => {
     async function fetchData() {
@@ -70,23 +73,34 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
     const componentes = data.componentes;
     const valorTotal = data.valor;
 
+    // Debug: Log dos valores dos componentes
+    console.log('Componentes recebidos:', componentes);
+    console.log('agua_crs value:', componentes.agua_crs);
+
     const vus = { id: 'vus', name: componentNames.vus, value: (componentes.vus || 0) as number };
     const vmad = { id: 'vmad', name: componentNames.vmad, value: (componentes.vmad || 0) as number };
     const carbono_crs = { id: 'carbono_crs', name: componentNames.carbono_crs, value: (componentes.carbono_crs || 0) as number };
-    const agua_crs = { id: 'Agua_CRS', name: componentNames.Agua_CRS, value: (componentes.Agua_CRS || 0) as number };
+    const agua_crs = { id: 'agua_crs', name: componentNames.agua_crs, value: (componentes.agua_crs || 0) as number };
 
     const crsTotalValue = carbono_crs.value + agua_crs.value;
     const crsTotal = { id: 'crs_total', name: componentNames.crs_total, value: crsTotalValue };
     
     const chartItems = [vus, vmad, crsTotal].filter(item => item.value > 0);
     
-    const tableItems = [
+    const tableItems: Array<{
+      id: string;
+      name: string;
+      value: number;
+      percentage: number;
+      isSub: boolean;
+      parent?: string;
+    }> = [
       { ...vus, percentage: valorTotal > 0 ? (vus.value / valorTotal) * 100 : 0, isSub: false },
       { ...vmad, percentage: valorTotal > 0 ? (vmad.value / valorTotal) * 100 : 0, isSub: false },
       { ...crsTotal, percentage: valorTotal > 0 ? (crsTotal.value / valorTotal) * 100 : 0, isSub: false },
       { ...carbono_crs, percentage: valorTotal > 0 ? (carbono_crs.value / valorTotal) * 100 : 0, isSub: true, parent: 'crs_total' },
       { ...agua_crs, percentage: valorTotal > 0 ? (agua_crs.value / valorTotal) * 100 : 0, isSub: true, parent: 'crs_total' },
-    ].filter(item => item.value > 0);
+    ].filter(item => item.value >= 0); // Mudança: permitir valores 0 para mostrar todos os componentes
     
     const mainAsset: CommodityPriceData = {
         id: 'valor_uso_solo',
@@ -103,6 +117,13 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
 
     return { chartData: chartItems, tableData: tableItems, mainAssetData: mainAsset };
   }, [data]);
+
+  const toggleComponentExpansion = (componentId: string) => {
+    setExpandedComponents(prev => ({
+      ...prev,
+      [componentId]: !prev[componentId]
+    }));
+  };
   
   const handleExportExcel = async () => {
     if (!data || tableData.length === 0) return;
@@ -158,7 +179,7 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
   };
 
   const pdfComponentData = tableData.map(item => ({
-      id: item.id, name: item.name, price: item.value, change: item.percentage, absoluteChange: 0, currency: 'BRL', category: 'component', description: '', unit: 'R$', lastUpdated: data.data,
+      id: item.id, name: item.name, price: item.value, change: item.percentage, absoluteChange: 0, currency: 'BRL' as const, category: 'calculated' as const, description: '', unit: 'R$', lastUpdated: data.data,
   }));
 
   if (isLoading) {
@@ -223,7 +244,7 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
                  <div className="flex items-center gap-2 flex-shrink-0">
                     <PdfExportButton
                         data={{
-                            mainIndex: mainAssetData,
+                            mainIndex: mainAssetData || undefined,
                             secondaryIndices: [],
                             currencies: [],
                             otherAssets: pdfComponentData,
@@ -279,28 +300,54 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {tableData.filter(item => !item.isSub).map((item, index) => (
-                  <Fragment key={item.id}>
-                    <TableRow className={item.id === 'crs_total' ? 'font-bold bg-muted/30' : ''}>
-                      <TableCell className="flex items-center gap-2">
-                        {item.id !== 'crs_total' && <div className="h-3 w-3 rounded-full" style={{ backgroundColor: COLORS[chartData.findIndex(c => c.id === item.id) % COLORS.length] }} />}
-                        <span className="font-medium">{item.name}</span>
-                      </TableCell>
-                      <TableCell className="text-right font-mono">{formatCurrency(item.value, 'BRL')}</TableCell>
-                      <TableCell className="text-right font-mono">{item.percentage.toFixed(2)}%</TableCell>
-                    </TableRow>
-                    {item.id === 'crs_total' && tableData.filter(sub => sub.parent === 'crs_total').map(subItem => (
-                      <TableRow key={subItem.id}>
-                        <TableCell className="pl-8 flex items-center gap-2">
-                          <span className="text-muted-foreground">└─</span>
-                          <span>{subItem.name}</span>
+                {tableData.filter(item => !item.isSub).map((item, index) => {
+                  const hasSubComponents = item.id === 'crs_total' && tableData.filter(sub => 'parent' in sub && sub.parent === 'crs_total').length > 0;
+                  const isExpanded = expandedComponents[item.id];
+                  
+                  return (
+                    <Fragment key={item.id}>
+                      <TableRow className={item.id === 'crs_total' ? 'font-bold bg-muted/30' : ''}>
+                        <TableCell className="flex items-center gap-2">
+                          <div className="h-3 w-3 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
+                          {hasSubComponents && (
+                            <button
+                              onClick={() => toggleComponentExpansion(item.id)}
+                              className="flex items-center justify-center w-4 h-4 hover:bg-muted rounded-sm transition-colors"
+                            >
+                              {isExpanded ? (
+                                <ChevronDown className="w-3 h-3" />
+                              ) : (
+                                <ChevronRight className="w-3 h-3" />
+                              )}
+                            </button>
+                          )}
+                          <span className="font-medium">{item.name}</span>
+                          {hasSubComponents && (
+                            <span className="text-xs text-muted-foreground bg-primary/10 text-primary px-2 py-1 rounded-full ml-2">
+                              {isExpanded ? 'expandido' : 'contém subcomponentes'}
+                            </span>
+                          )}
                         </TableCell>
-                        <TableCell className="text-right font-mono">{formatCurrency(subItem.value, 'BRL')}</TableCell>
-                        <TableCell className="text-right font-mono">{subItem.percentage.toFixed(2)}%</TableCell>
+                        <TableCell className="text-right font-mono">{formatCurrency(item.value, 'BRL')}</TableCell>
+                        <TableCell className="text-right font-mono">{item.percentage.toFixed(2)}%</TableCell>
                       </TableRow>
-                    ))}
-                  </Fragment>
-                ))}
+                      {item.id === 'crs_total' && isExpanded && tableData.filter(sub => 'parent' in sub && sub.parent === 'crs_total').map(subItem => (
+                        <TableRow key={subItem.id} className="bg-muted/10 border-l-2 border-l-muted">
+                          <TableCell className="pl-12 flex items-center gap-2">
+                            <div className="flex items-center gap-1">
+                              <span className="text-muted-foreground text-sm">├─</span>
+                              <div className="h-2 w-2 rounded-full bg-muted-foreground/60" />
+                            </div>
+                            <span className="text-sm text-muted-foreground font-medium">{subItem.name}</span>
+                            <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">subcomponente</span>
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-sm">{formatCurrency(subItem.value, 'BRL')}</TableCell>
+                          <TableCell className="text-right font-mono text-sm">{subItem.percentage.toFixed(2)}%</TableCell>
+                        </TableRow>
+                      ))}
+                    </Fragment>
+                  );
+                })}
                 <TableRow className="font-bold bg-muted/50 border-t-2">
                    <TableCell>Total</TableCell>
                    <TableCell className="text-right font-mono">{formatCurrency(data.valor, 'BRL', 'valor_uso_solo')}</TableCell>
