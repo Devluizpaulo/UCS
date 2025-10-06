@@ -133,9 +133,16 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
   const handleExportPdf = async () => {
     if (!selectedAssetConfig || !chartRef.current || !latestQuote || !mainAssetData) return;
     setIsExporting(true);
+    const chartElement = chartRef.current;
+  
+    // Forçar fundo branco para captura do gráfico
+    const originalBg = chartElement.style.backgroundColor;
+    chartElement.style.backgroundColor = 'white';
 
     try {
-        const canvas = await html2canvas(chartRef.current, { scale: 3, useCORS: true, backgroundColor: null });
+        const canvas = await html2canvas(chartElement, { scale: 3, useCORS: true });
+        chartElement.style.backgroundColor = originalBg; // Restaurar fundo
+        
         const imgData = canvas.toDataURL('image/png');
         
         const doc = new jsPDF() as jsPDFWithAutoTableType;
@@ -145,19 +152,18 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
         let finalY = 0;
 
         // ===================================
-        // CABEÇALHO (NOVO DESIGN)
+        // CABEÇALHO
         // ===================================
         doc.setFontSize(10);
-        doc.setTextColor(108, 117, 125); // Cinza
+        doc.setTextColor(108, 117, 125);
         doc.text("UCS INDEX REPORT", margin, 20);
 
         doc.setFontSize(22);
-        doc.setTextColor(33, 37, 41); // Preto
+        doc.setTextColor(33, 37, 41);
         doc.setFont('helvetica', 'bold');
         doc.text(`Análise de Ativo: ${selectedAssetConfig.name}`, margin, 32);
         
-        // --- DATA BOX ---
-        doc.setFillColor(40, 167, 69); // Verde
+        doc.setFillColor(40, 167, 69);
         const dateBoxWidth = 70;
         doc.rect(pdfWidth - dateBoxWidth - margin, 15, dateBoxWidth, 20, 'F');
         
@@ -176,14 +182,12 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
         // ===================================
         const cardWidth = (pdfWidth - (margin * 2) - 10) / 2;
         
-        // Card Preço de Fechamento
         doc.setFillColor(248, 249, 250);
         doc.setDrawColor(222, 226, 230);
         doc.roundedRect(margin, finalY, cardWidth, 30, 3, 3, 'FD');
-        doc.setFillColor(0, 123, 255); // Azul
+        doc.setFillColor(0, 123, 255);
         doc.rect(margin, finalY, 5, 30, 'F');
 
-        // Card Variação
         doc.setFillColor(248, 249, 250);
         doc.roundedRect(margin + cardWidth + 10, finalY, cardWidth, 30, 3, 3, 'FD');
         const changeColor = mainAssetData.change >= 0 ? [40, 167, 69] : [220, 53, 69];
