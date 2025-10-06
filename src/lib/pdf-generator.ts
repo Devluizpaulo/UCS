@@ -20,6 +20,42 @@ export interface DashboardPdfData {
     currencies: CommodityPriceData[];
     otherAssets: CommodityPriceData[];
     targetDate: Date;
+    // Dados adicionais para relatórios comerciais
+    marketInsights?: MarketInsight[];
+    performanceMetrics?: PerformanceMetric[];
+    riskAnalysis?: RiskAnalysis;
+    customSections?: CustomSection[];
+}
+
+export interface MarketInsight {
+    title: string;
+    description: string;
+    impact: 'positive' | 'negative' | 'neutral';
+    confidence: number; // 0-100
+}
+
+export interface PerformanceMetric {
+    name: string;
+    value: number;
+    unit: string;
+    trend: 'up' | 'down' | 'stable';
+    period: string;
+}
+
+export interface RiskAnalysis {
+    overallRisk: 'low' | 'medium' | 'high';
+    factors: {
+        name: string;
+        level: 'low' | 'medium' | 'high';
+        description: string;
+    }[];
+}
+
+export interface CustomSection {
+    title: string;
+    content: string;
+    type: 'text' | 'table' | 'chart' | 'kpi';
+    data?: any[];
 }
 
 const COLORS = {
@@ -31,11 +67,25 @@ const COLORS = {
   kpi: {
     green: '#10b981', // emerald-500
     red: '#ef4444', // red-500
+    blue: '#3b82f6', // blue-500
+    yellow: '#f59e0b', // amber-500
   },
   chart: {
     c1: '#3b82f6', // blue-500
     c2: '#f97316', // orange-500
     c3: '#8b5cf6', // violet-500
+    c4: '#10b981', // emerald-500
+    c5: '#ef4444', // red-500
+  },
+  risk: {
+    low: '#10b981', // emerald-500
+    medium: '#f59e0b', // amber-500
+    high: '#ef4444', // red-500
+  },
+  insight: {
+    positive: '#10b981', // emerald-500
+    negative: '#ef4444', // red-500
+    neutral: '#6b7280', // gray-500
   }
 };
 
@@ -47,7 +97,7 @@ const generateExecutiveDashboardPdf = (data: DashboardPdfData): jsPDF => {
     const { mainIndex, secondaryIndices, currencies, otherAssets, targetDate } = data;
     
     const pageW = doc.internal.pageSize.getWidth();
-    const pageH = doc.internal-pageSize.getHeight();
+    const pageH = doc.internal.pageSize.getHeight();
     const margin = 40;
     let y = 50;
 
@@ -200,6 +250,518 @@ const generateExecutiveDashboardPdf = (data: DashboardPdfData): jsPDF => {
 
 
 // ===================================================================================
+// === TEMPLATE COMERCIAL EXECUTIVO ==================================================
+// ===================================================================================
+const generateCommercialExecutivePdf = (data: DashboardPdfData): jsPDF => {
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' }) as jsPDFWithAutoTable;
+    const { mainIndex, secondaryIndices, currencies, otherAssets, targetDate, marketInsights, performanceMetrics, riskAnalysis } = data;
+    
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const margin = 50;
+    const sectionSpacing = 30;
+    const elementSpacing = 20;
+    let y = 60;
+
+    // --- CABEÇALHO COMERCIAL ---
+    doc.setFillColor(22, 101, 52); // green-800
+    doc.roundedRect(0, 0, pageW, 100, 0, 0, 'F');
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.text('UCS INDEX', margin, 30);
+    doc.setFontSize(20);
+    doc.text('Relatório Comercial Executivo', margin, 55);
+    doc.setFontSize(12);
+    doc.text('Análise Estratégica de Mercado', margin, 75);
+    
+    // Data no canto superior direito
+    doc.setFontSize(10);
+    doc.text('Data da Análise:', pageW - margin - 120, 30);
+    doc.setFontSize(12);
+    doc.text(format(targetDate, "dd/MM/yyyy"), pageW - margin - 120, 50);
+    doc.setFontSize(10);
+    doc.text(format(targetDate, "HH:mm"), pageW - margin - 120, 65);
+    
+    y = 120;
+
+    // --- RESUMO EXECUTIVO ---
+    doc.setFillColor(249, 250, 251); // gray-50
+    doc.roundedRect(margin, y, pageW - margin * 2, 90, 8, 8, 'F');
+    
+    doc.setTextColor(COLORS.textPrimary);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.text('📊 Resumo Executivo', margin + 20, y + 25);
+    
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(COLORS.textSecondary);
+    const summaryText = mainIndex 
+        ? `O índice principal ${mainIndex.name} apresentou performance ${mainIndex.change && mainIndex.change > 0 ? 'positiva' : 'negativa'} de ${mainIndex.change?.toFixed(2) || '0.00'}% no período analisado. O mercado demonstra ${riskAnalysis?.overallRisk === 'low' ? 'baixo risco' : riskAnalysis?.overallRisk === 'medium' ? 'risco moderado' : 'alto risco'} com tendências ${marketInsights && marketInsights.length > 0 ? 'diversas' : 'estáveis'}.`
+        : 'Análise completa do mercado com foco em commodities e ativos correlacionados.';
+    
+    const splitText = doc.splitTextToSize(summaryText, pageW - margin * 2 - 40);
+    doc.text(splitText, margin + 20, y + 45);
+    y += 110;
+
+    // --- KPIs PRINCIPAIS ---
+    if (performanceMetrics && performanceMetrics.length > 0) {
+        // Verificar se há espaço suficiente para a seção
+        if (y > pageH - 200) {
+            doc.addPage();
+            y = 50;
+        }
+        
+        doc.setTextColor(COLORS.textPrimary);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(14);
+        doc.text('📈 Métricas de Performance', margin, y);
+        y += elementSpacing + 5;
+
+        const kpiWidth = (pageW - margin * 2 - 40) / 3;
+        const kpiHeight = 70;
+        const kpiRows = Math.ceil(performanceMetrics.slice(0, 6).length / 3);
+        
+        performanceMetrics.slice(0, 6).forEach((metric, index) => {
+            const col = index % 3;
+            const row = Math.floor(index / 3);
+            const x = margin + (kpiWidth + 20) * col;
+            const yPos = y + (kpiHeight + 15) * row;
+            
+            // Verificar se precisa de nova página
+            if (yPos + kpiHeight > pageH - 100) {
+                doc.addPage();
+                y = 50;
+                const newYPos = y + (kpiHeight + 15) * row;
+                drawCommercialKpiBlock(metric, x, newYPos, kpiWidth, doc);
+            } else {
+                drawCommercialKpiBlock(metric, x, yPos, kpiWidth, doc);
+            }
+        });
+        
+        y += kpiRows * (kpiHeight + 15) + sectionSpacing;
+    }
+
+    // --- ANÁLISE DE RISCOS ---
+    if (riskAnalysis) {
+        if (y > pageH - 250) {
+            doc.addPage();
+            y = 50;
+        }
+        
+        doc.setTextColor(COLORS.textPrimary);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(14);
+        doc.text('⚠️ Análise de Riscos', margin, y);
+        y += elementSpacing + 5;
+
+        // Indicador de risco geral
+        const riskColor = COLORS.risk[riskAnalysis.overallRisk];
+        doc.setFillColor(riskColor);
+        doc.circle(margin + 15, y + 12, 10, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'bold');
+        doc.text(riskAnalysis.overallRisk.toUpperCase().substring(0, 3), margin + 15, y + 12, { align: 'center', baseline: 'middle' });
+        
+        doc.setTextColor(COLORS.textPrimary);
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`Risco Geral: ${riskAnalysis.overallRisk.toUpperCase()}`, margin + 40, y + 18);
+        y += 35;
+
+        // Fatores de risco
+        riskAnalysis.factors.forEach((factor, index) => {
+            if (y > pageH - 120) {
+                doc.addPage();
+                y = 50;
+            }
+            
+            const factorColor = COLORS.risk[factor.level];
+            doc.setFillColor(factorColor);
+            doc.roundedRect(margin, y, pageW - margin * 2, 35, 4, 4, 'F');
+            
+            doc.setTextColor(255, 255, 255);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(9);
+            doc.text(factor.name, margin + 10, y + 15);
+            
+            doc.setTextColor(255, 255, 255);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8);
+            const descText = doc.splitTextToSize(factor.description, pageW - margin * 2 - 20);
+            doc.text(descText, margin + 10, y + 25);
+            
+            y += 45;
+        });
+        y += sectionSpacing;
+    }
+
+    // --- INSIGHTS DE MERCADO ---
+    if (marketInsights && marketInsights.length > 0) {
+        if (y > pageH - 200) {
+            doc.addPage();
+            y = 50;
+        }
+        
+        doc.setTextColor(COLORS.textPrimary);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(14);
+        doc.text('💡 Insights de Mercado', margin, y);
+        y += elementSpacing + 5;
+
+        marketInsights.forEach((insight, index) => {
+            if (y > pageH - 100) {
+                doc.addPage();
+                y = 50;
+            }
+            
+            drawMarketInsightBlock(insight, margin, y, pageW - margin * 2, doc);
+            y += 85;
+        });
+        y += sectionSpacing;
+    }
+
+    // --- PERFORMANCE DE ATIVOS ---
+    if (y > pageH - 150) {
+        doc.addPage();
+        y = 50;
+    }
+    
+    doc.setTextColor(COLORS.textPrimary);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.text('📊 Performance Detalhada dos Ativos', margin, y);
+    y += elementSpacing + 5;
+
+    const allAssets = [...(mainIndex ? [mainIndex] : []), ...secondaryIndices, ...currencies, ...otherAssets];
+    if (allAssets.length > 0) {
+        doc.autoTable({
+            startY: y,
+            head: [['Ativo', 'Categoria', 'Valor', 'Variação', 'Status']],
+            body: allAssets.map(asset => {
+                const changeValue = typeof asset.change === 'number' ? asset.change : 0;
+                const status = changeValue > 0 ? '📈 Alta' : changeValue < 0 ? '📉 Baixa' : '➡️ Estável';
+                return [
+                    asset.name,
+                    asset.category,
+                    formatCurrency(asset.price, asset.currency, asset.id),
+                    `${changeValue >= 0 ? '+' : ''}${changeValue.toFixed(2)}%`,
+                    status
+                ];
+            }),
+            theme: 'striped',
+            headStyles: { fillColor: COLORS.primary, textColor: 255 },
+            styles: { cellPadding: 5, fontSize: 8 },
+            margin: { left: margin, right: margin },
+            didParseCell: (data: any) => {
+                if (data.column.index === 3 && data.section === 'body') {
+                    const rawValue = data.cell.raw as string;
+                    data.cell.styles.textColor = rawValue.startsWith('+') ? COLORS.kpi.green : COLORS.kpi.red;
+                }
+            }
+        });
+        y = (doc as any).lastAutoTable.finalY + sectionSpacing;
+    }
+
+    // --- RECOMENDAÇÕES ESTRATÉGICAS ---
+    if (y > pageH - 150) {
+        doc.addPage();
+        y = 50;
+    }
+    
+    doc.setTextColor(COLORS.textPrimary);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.text('🎯 Recomendações Estratégicas', margin, y);
+    y += elementSpacing + 5;
+
+    const recommendations = generateRecommendations(data);
+    recommendations.forEach((rec, index) => {
+        if (y > pageH - 120) {
+            doc.addPage();
+            y = 50;
+        }
+        
+        doc.setFillColor(rec.color);
+        doc.roundedRect(margin, y, pageW - margin * 2, 50, 6, 6, 'F');
+        
+        doc.setTextColor(255, 255, 255);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.text(rec.title, margin + 15, y + 18);
+        
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        const recText = doc.splitTextToSize(rec.description, pageW - margin * 2 - 30);
+        doc.text(recText, margin + 15, y + 32);
+        
+        y += 60;
+    });
+
+    // --- RODAPÉ COMERCIAL ---
+    for (let i = 1; i <= doc.internal.pages.length; i++) {
+        doc.setPage(i);
+        doc.setFillColor(22, 101, 52); // green-800
+        doc.roundedRect(0, pageH - 60, pageW, 60, 0, 0, 'F');
+        
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(9);
+        doc.text('Confidencial - UCS Index | Relatório Comercial Executivo', margin, pageH - 35);
+        doc.text(`Página ${i} de ${doc.internal.pages.length}`, pageW - margin, pageH - 35, { align: 'right' });
+    }
+
+    return doc;
+};
+
+// Funções auxiliares para o relatório comercial
+const drawCommercialKpiBlock = (metric: PerformanceMetric, x: number, y: number, width: number, doc: jsPDF) => {
+    const trendIcon = metric.trend === 'up' ? '📈' : metric.trend === 'down' ? '📉' : '➡️';
+    const trendColor = metric.trend === 'up' ? COLORS.kpi.green : metric.trend === 'down' ? COLORS.kpi.red : COLORS.textSecondary;
+    
+    doc.setDrawColor(COLORS.border);
+    doc.setLineWidth(1);
+    doc.roundedRect(x, y, width, 70, 6, 6, 'S');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(COLORS.textSecondary);
+    const nameLines = doc.splitTextToSize(metric.name, width - 20);
+    doc.text(nameLines, x + 10, y + 12);
+
+    doc.setFontSize(16);
+    doc.setTextColor(COLORS.textPrimary);
+    const valueText = `${metric.value.toFixed(2)} ${metric.unit}`;
+    doc.text(valueText, x + 10, y + 30);
+
+    doc.setFontSize(10);
+    doc.setTextColor(trendColor);
+    doc.text(`${trendIcon} ${metric.period}`, x + 10, y + 50);
+};
+
+const drawMarketInsightBlock = (insight: MarketInsight, x: number, y: number, width: number, doc: jsPDF) => {
+    const impactColor = COLORS.insight[insight.impact];
+    const impactIcon = insight.impact === 'positive' ? '✅' : insight.impact === 'negative' ? '⚠️' : 'ℹ️';
+    
+    doc.setFillColor(impactColor);
+    doc.roundedRect(x, y, width, 75, 6, 6, 'F');
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    const titleLines = doc.splitTextToSize(`${impactIcon} ${insight.title}`, width - 30);
+    doc.text(titleLines, x + 15, y + 15);
+    
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    const descText = doc.splitTextToSize(insight.description, width - 30);
+    doc.text(descText, x + 15, y + 35);
+    
+    // Indicador de confiança
+    doc.setFontSize(8);
+    doc.text(`Confiança: ${insight.confidence}%`, x + width - 80, y + 65);
+};
+
+const generateRecommendations = (data: DashboardPdfData) => {
+    const recommendations = [];
+    
+    if (data.mainIndex && data.mainIndex.change && data.mainIndex.change > 0) {
+        recommendations.push({
+            title: 'Oportunidade de Investimento',
+            description: 'O índice principal apresenta tendência positiva, sugerindo oportunidades de alocação de capital.',
+            color: COLORS.kpi.green
+        });
+    }
+    
+    if (data.riskAnalysis && data.riskAnalysis.overallRisk === 'high') {
+        recommendations.push({
+            title: 'Gestão de Risco',
+            description: 'Alto nível de risco detectado. Recomenda-se diversificação de portfólio e monitoramento contínuo.',
+            color: COLORS.kpi.red
+        });
+    }
+    
+    if (data.marketInsights && data.marketInsights.length > 0) {
+        recommendations.push({
+            title: 'Análise de Mercado',
+            description: 'Insights específicos do mercado identificados. Considere ajustes estratégicos baseados nas tendências.',
+            color: COLORS.kpi.blue
+        });
+    }
+    
+    return recommendations;
+};
+
+// ===================================================================================
+// === TEMPLATE PERSONALIZADO =======================================================
+// ===================================================================================
+const generateCustomPdf = (data: DashboardPdfData): jsPDF => {
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' }) as jsPDFWithAutoTable;
+    const { targetDate, customSections } = data;
+    
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const margin = 50;
+    const sectionSpacing = 25;
+    const elementSpacing = 15;
+    let y = 60;
+
+    // --- CABEÇALHO PERSONALIZADO ---
+    doc.setFillColor(COLORS.primary);
+    doc.roundedRect(0, 0, pageW, 90, 0, 0, 'F');
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(18);
+    doc.text('UCS INDEX', margin, 30);
+    doc.setFontSize(14);
+    doc.text('Relatório Personalizado', margin, 50);
+    doc.setFontSize(10);
+    doc.text(`Gerado em ${format(targetDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}`, margin, 70);
+    
+    y = 110;
+
+    // --- SEÇÕES PERSONALIZADAS ---
+    if (customSections && customSections.length > 0) {
+        customSections.forEach((section, index) => {
+            if (y > pageH - 150) {
+                doc.addPage();
+                y = 50;
+            }
+            
+            // Título da seção
+            doc.setTextColor(COLORS.textPrimary);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(14);
+            doc.text(section.title, margin, y);
+            y += elementSpacing + 5;
+            
+            // Conteúdo da seção baseado no tipo
+            switch (section.type) {
+                case 'text':
+                    doc.setTextColor(COLORS.textSecondary);
+                    doc.setFont('helvetica', 'normal');
+                    doc.setFontSize(10);
+                    const textLines = doc.splitTextToSize(section.content, pageW - margin * 2);
+                    doc.text(textLines, margin, y);
+                    y += textLines.length * 12 + sectionSpacing;
+                    break;
+                    
+                case 'kpi':
+                    if (section.data && section.data.length > 0) {
+                        const kpiWidth = (pageW - margin * 2 - 40) / Math.min(section.data.length, 3);
+                        const kpiHeight = 60;
+                        const kpiRows = Math.ceil(section.data.length / 3);
+                        
+                        section.data.forEach((kpi: any, kpiIndex: number) => {
+                            const col = kpiIndex % 3;
+                            const row = Math.floor(kpiIndex / 3);
+                            const x = margin + (kpiWidth + 20) * col;
+                            const yPos = y + (kpiHeight + 15) * row;
+                            
+                            if (yPos + kpiHeight > pageH - 100) {
+                                doc.addPage();
+                                y = 50;
+                                const newYPos = y + (kpiHeight + 15) * row;
+                                drawCustomKpiBlock(kpi, x, newYPos, kpiWidth, doc);
+                            } else {
+                                drawCustomKpiBlock(kpi, x, yPos, kpiWidth, doc);
+                            }
+                        });
+                        y += kpiRows * (kpiHeight + 15) + sectionSpacing;
+                    }
+                    break;
+                    
+                case 'table':
+                    if (section.data && section.data.length > 0) {
+                        doc.autoTable({
+                            startY: y,
+                            head: section.data[0] ? Object.keys(section.data[0]).map(key => key.toUpperCase()) : [],
+                            body: section.data.map((row: any) => Object.values(row)),
+                            theme: 'striped',
+                            headStyles: { fillColor: COLORS.primary, textColor: 255 },
+                            styles: { cellPadding: 5, fontSize: 8 },
+                            margin: { left: margin, right: margin },
+                        });
+                        y = (doc as any).lastAutoTable.finalY + sectionSpacing;
+                    }
+                    break;
+                    
+                case 'chart':
+                    // Para gráficos, vamos criar uma representação textual
+                    doc.setFillColor(249, 250, 251);
+                    doc.roundedRect(margin, y, pageW - margin * 2, 80, 8, 8, 'F');
+                    doc.setTextColor(COLORS.textSecondary);
+                    doc.setFontSize(9);
+                    doc.text('📊 Gráfico: ' + section.content, margin + 20, y + 40);
+                    y += 100;
+                    break;
+            }
+            
+            // Separador entre seções
+            if (index < customSections.length - 1) {
+                doc.setDrawColor(COLORS.border);
+                doc.setLineWidth(0.5);
+                doc.line(margin, y - 10, pageW - margin, y - 10);
+                y += sectionSpacing;
+            }
+        });
+    } else {
+        // Seção padrão quando não há seções personalizadas
+        doc.setTextColor(COLORS.textPrimary);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(14);
+        doc.text('Relatório Personalizado', margin, y);
+        y += elementSpacing + 5;
+        
+        doc.setTextColor(COLORS.textSecondary);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
+        doc.text('Este é um relatório personalizado gerado pelo UCS Index. Use as configurações de personalização para adicionar seções específicas.', margin, y);
+    }
+
+    // --- RODAPÉ PERSONALIZADO ---
+    for (let i = 1; i <= doc.internal.pages.length; i++) {
+        doc.setPage(i);
+        doc.setFillColor(COLORS.primary);
+        doc.roundedRect(0, pageH - 40, pageW, 40, 0, 0, 'F');
+        
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(9);
+        doc.text('UCS Index - Relatório Personalizado', margin, pageH - 20);
+        doc.text(`Página ${i}`, pageW - margin, pageH - 20, { align: 'right' });
+    }
+
+    return doc;
+};
+
+const drawCustomKpiBlock = (kpi: any, x: number, y: number, width: number, doc: jsPDF) => {
+    doc.setDrawColor(COLORS.border);
+    doc.setLineWidth(1);
+    doc.roundedRect(x, y, width, 60, 6, 6, 'S');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(COLORS.textSecondary);
+    const titleLines = doc.splitTextToSize(kpi.title || 'KPI', width - 20);
+    doc.text(titleLines, x + 10, y + 12);
+
+    doc.setFontSize(14);
+    doc.setTextColor(COLORS.textPrimary);
+    const valueText = `${kpi.value || '0'} ${kpi.unit || ''}`;
+    doc.text(valueText, x + 10, y + 30);
+
+    doc.setFontSize(8);
+    doc.setTextColor(COLORS.textSecondary);
+    if (kpi.trend) {
+        const trendIcon = kpi.trend === 'up' ? '📈' : kpi.trend === 'down' ? '📉' : '➡️';
+        doc.text(trendIcon, x + 10, y + 45);
+    }
+};
+
+// ===================================================================================
 // === TEMPLATE DE COMPOSIÇÃO ========================================================
 // ===================================================================================
 const generateCompositionPdf = (data: DashboardPdfData): jsPDF => {
@@ -338,13 +900,24 @@ export const generatePdf = (
         }
         
         let doc: jsPDF;
-        const pageW = new jsPDF().internal.pageSize.getWidth();
-        const pageH = new jsPDF().internal.pageSize.getHeight();
-        switch (reportType) {
+        
+        switch (reportType.toLowerCase()) {
             case 'composition':
+            case 'análise de composição':
                 doc = generateCompositionPdf(data);
                 break;
+            case 'commercial':
+            case 'comercial executivo':
+            case 'commercial-executive':
+                doc = generateCommercialExecutivePdf(data);
+                break;
+            case 'custom':
+            case 'personalizado':
+            case 'personalized':
+                doc = generateCustomPdf(data);
+                break;
             case 'executive':
+            case 'executivo':
             case 'asset-detail':
             case 'dashboard':
             case 'audit':
