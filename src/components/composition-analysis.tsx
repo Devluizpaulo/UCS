@@ -2,7 +2,6 @@
 'use client';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getQuoteByDate } from '@/lib/data-service';
 import { formatCurrency } from '@/lib/formatters';
@@ -23,6 +22,7 @@ import * as ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import { PdfExportButton } from './pdf-export-button';
 import type { CommodityPriceData } from '@/lib/types';
+import * as React from 'react';
 
 
 interface CompositionAnalysisProps {
@@ -228,8 +228,7 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-      <div className="lg:col-span-3">
-        <Card>
+       <Card className="lg:col-span-3">
           <CardHeader>
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 <div>
@@ -261,43 +260,40 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
             </div>
           </CardHeader>
           <CardContent className="h-96">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={chartData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  outerRadius="80%"
-                  fill="#8884d8"
-                  dataKey="value"
-                  label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
-                    const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
-                    const x = cx + radius * Math.cos(-midAngle * (Math.PI / 180));
-                    const y = cy + radius * Math.sin(-midAngle * (Math.PI / 180));
-                    return (
-                      <text x={x} y={y} fill="white" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central">
-                        {`${(percent * 100).toFixed(0)}%`}
-                      </text>
-                    );
-                  }}
-                >
-                  {chartData.map((_, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  formatter={(value, name, props) => [
-                    `${formatCurrency(value as number, 'BRL')} (${props.payload.percentage.toFixed(2)}%)`,
-                    props.payload.name
-                  ]}
-                />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {chartData.map((item, index) => (
+                <Card key={item.id} className="flex flex-col items-center justify-center p-4 text-center">
+                  <div className="relative h-24 w-24">
+                    <svg className="h-full w-full" viewBox="0 0 36 36">
+                      <path
+                        className="text-muted/30"
+                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      />
+                      <path
+                        style={{ stroke: COLORS[index % COLORS.length] }}
+                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeDasharray={`${item.percentage}, 100`}
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-xl font-bold" style={{ color: COLORS[index % COLORS.length] }}>
+                        {item.percentage.toFixed(0)}%
+                      </span>
+                    </div>
+                  </div>
+                  <p className="mt-2 text-sm font-semibold">{item.name}</p>
+                  <p className="text-lg font-mono font-bold">{formatCurrency(item.value, 'BRL')}</p>
+                </Card>
+              ))}
+            </div>
           </CardContent>
         </Card>
-      </div>
 
       <div className="lg:col-span-2">
         <Card>
@@ -316,8 +312,8 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
               </TableHeader>
               <TableBody>
                 {tableData.filter(item => !item.isSub).map((item, index) => (
-                  <>
-                    <TableRow key={item.id} className={item.id === 'crs_total' ? 'font-bold bg-muted/30' : ''}>
+                  <React.Fragment key={item.id}>
+                    <TableRow className={item.id === 'crs_total' ? 'font-bold bg-muted/30' : ''}>
                       <TableCell className="flex items-center gap-2">
                         {item.id !== 'crs_total' && <div className="h-3 w-3 rounded-full" style={{ backgroundColor: COLORS[chartData.findIndex(c => c.id === item.id) % COLORS.length] }} />}
                         <span className="font-medium">{item.name}</span>
@@ -334,7 +330,7 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
                         <TableCell className="text-right font-mono text-sm text-muted-foreground">{subItem.percentage.toFixed(2)}%</TableCell>
                       </TableRow>
                     ))}
-                  </>
+                  </React.Fragment>
                 ))}
                 <TableRow className="font-bold bg-muted/50 border-t-2">
                    <TableCell>Total</TableCell>
