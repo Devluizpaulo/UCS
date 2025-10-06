@@ -73,7 +73,7 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
     const vusValue = (componentes.vus || 0) as number;
     const vmadValue = (componentes.vmad || 0) as number;
     const carbonoCrsValue = (componentes.carbono_crs || 0) as number;
-    const aguaCrsValue = (componentes.Agua_CRS || 0) as number;
+    const aguaCrsValue = (componentes.agua_crs || 0) as number; // Corrected from Agua_CRS to agua_crs
 
     const allComponents = [
       { id: 'vus', name: componentNames.vus, value: vusValue },
