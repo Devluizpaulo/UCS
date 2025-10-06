@@ -5,7 +5,7 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import type { CommodityPriceData, DashboardPdfData } from './types';
+import type { CommodityPriceData } from './types';
 import { formatCurrency } from './formatters';
 
 // Extende a interface do jsPDF para incluir o autoTable
@@ -13,8 +13,33 @@ interface jsPDFWithAutoTable extends jsPDF {
   autoTable: (options: any) => jsPDFWithAutoTable;
 }
 
+export interface DashboardPdfData {
+    mainIndex?: CommodityPriceData;
+    secondaryIndices: CommodityPriceData[];
+    currencies: CommodityPriceData[];
+    otherAssets: CommodityPriceData[];
+    targetDate: Date;
+}
+
+const COLORS = {
+  primary: '#16a34a', // green-600
+  textPrimary: '#111827', // gray-900
+  textSecondary: '#4b5563', // gray-600
+  border: '#e5e7eb', // gray-200
+  white: '#ffffff',
+  kpi: {
+    green: '#10b981', // emerald-500
+    red: '#ef4444', // red-500
+  },
+  chart: {
+    c1: '#3b82f6', // blue-500
+    c2: '#f97316', // orange-500
+    c3: '#8b5cf6', // violet-500
+  }
+};
+
 // ===================================================================================
-// === TEMPLATE EXECUTIVO (MODELO PADRÃO) ============================================
+// === TEMPLATE EXECUTIVO ============================================================
 // ===================================================================================
 const generateExecutiveDashboardPdf = (data: DashboardPdfData): jsPDF => {
     const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' }) as jsPDFWithAutoTable;
@@ -28,7 +53,7 @@ const generateExecutiveDashboardPdf = (data: DashboardPdfData): jsPDF => {
     // --- CABEÇALHO ---
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
-    doc.setTextColor(34, 197, 94); // green-500
+    doc.setTextColor(COLORS.primary);
     doc.text('UCS INDEX', margin, y);
 
     doc.setDrawColor(229, 231, 235); // gray-200
@@ -38,11 +63,11 @@ const generateExecutiveDashboardPdf = (data: DashboardPdfData): jsPDF => {
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(28);
-    doc.setTextColor(17, 24, 39); // gray-900
+    doc.setTextColor(COLORS.textPrimary);
     doc.text('Relatório Executivo', margin, y);
     y+= 28;
     doc.setFontSize(22);
-    doc.setTextColor(55, 65, 81); // gray-600
+    doc.setTextColor(COLORS.textSecondary);
     doc.text('Análise de Mercado e Performance', margin, y);
     
     // Bloco de data verde
@@ -65,7 +90,7 @@ const generateExecutiveDashboardPdf = (data: DashboardPdfData): jsPDF => {
     // --- BLOCOS DE KPI ---
     const drawKpiBlock = (title: string, value: string, change: string, isPositive: boolean, x: number, yPos: number, width: number) => {
         const icon = isPositive ? '📈' : '📉';
-        const color = isPositive ? [34, 197, 94] : [239, 68, 68];
+        const color = isPositive ? COLORS.kpi.green : COLORS.kpi.red;
         
         doc.setDrawColor(229, 231, 235);
         doc.roundedRect(x, yPos, width, 80, 8, 8, 'S');
@@ -80,7 +105,7 @@ const generateExecutiveDashboardPdf = (data: DashboardPdfData): jsPDF => {
         doc.text(value, x + 15, yPos + 45);
 
         doc.setFontSize(14);
-        doc.setTextColor(color[0], color[1], color[2]);
+        doc.setTextColor(color);
         doc.text(`${icon} ${change}`, x + 15, yPos + 65);
     };
 
@@ -145,11 +170,12 @@ const generateExecutiveDashboardPdf = (data: DashboardPdfData): jsPDF => {
                 ]
             }),
             theme: 'striped',
-            headStyles: { fillColor: [34, 197, 94], textColor: 255 },
+            headStyles: { fillColor: COLORS.primary, textColor: 255 },
             styles: { cellPadding: 6, fontSize: 10 },
             didParseCell: (data: any) => {
                 if (data.column.index === 3 && data.section === 'body') {
-                    data.cell.styles.textColor = data.cell.raw.startsWith('+') ? [22, 163, 74] : [220, 38, 38];
+                    const rawValue = data.cell.raw as string;
+                    data.cell.styles.textColor = rawValue.startsWith('+') ? COLORS.kpi.green : COLORS.kpi.red;
                 }
             }
         });
@@ -187,54 +213,76 @@ const generateCompositionPdf = (data: DashboardPdfData): jsPDF => {
     // --- CABEÇALHO ---
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
-    doc.setTextColor(34, 197, 94);
+    doc.setTextColor(COLORS.primary);
     doc.text('ANÁLISE DE COMPOSIÇÃO', margin, y);
     y += 40;
 
     doc.setFontSize(24);
-    doc.setTextColor(17, 24, 39);
+    doc.setTextColor(COLORS.textPrimary);
     doc.text(mainIndex?.name || 'Índice de Composição', margin, y);
     y += 24;
     doc.setFontSize(16);
-    doc.setTextColor(55, 65, 81);
+    doc.setTextColor(COLORS.textSecondary);
     doc.text(`Dados de ${format(targetDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}`, margin, y);
     y += 50;
 
     // --- BLOCOS DE KPI DE COMPONENTES ---
+    const drawCompositionKpiBlock = (title: string, value: string, percentage: string, x: number, yPos: number, width: number, color: string) => {
+        const circleRadius = 25;
+        doc.setDrawColor(COLORS.border);
+        doc.roundedRect(x, yPos, width, 80, 8, 8, 'S');
+
+        // Título e Valor
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.setTextColor(COLORS.textSecondary);
+        doc.text(title, x + 15, yPos + 30);
+
+        doc.setFontSize(20);
+        doc.setTextColor(COLORS.textPrimary);
+        doc.text(value, x + 15, yPos + 55);
+
+        // Círculo com porcentagem
+        const circleX = x + width - 15 - circleRadius;
+        const circleY = yPos + 40;
+        doc.setFillColor(color);
+        doc.circle(circleX, circleY, circleRadius, 'F');
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(14);
+        doc.setTextColor(COLORS.white);
+        doc.text(percentage, circleX, circleY, { align: 'center', baseline: 'middle' });
+    };
+
     if (components && components.length > 0) {
         const kpiCardWidth = (pageW - (margin * 2) - ((components.length - 1) * 20)) / components.length;
-        components.forEach((component, index) => {
-            const isPositive = component.change >= 0;
-            const icon = isPositive ? '📈' : '📉';
-            const color = isPositive ? [34, 197, 94] : [239, 68, 68];
-            const x = margin + (kpiCardWidth + 20) * index;
+        const chartColors = [COLORS.chart.c1, COLORS.chart.c2, COLORS.chart.c3];
 
-            doc.setDrawColor(229, 231, 235);
-            doc.roundedRect(x, y, kpiCardWidth, 80, 8, 8, 'S');
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(11);
-            doc.setTextColor(107, 114, 128);
-            doc.text(component.name, x + 15, y + 20);
-            doc.setFontSize(20);
-            doc.setTextColor(17, 24, 39);
-            doc.text(formatCurrency(component.price, component.currency, component.id), x + 15, y + 45);
-            doc.setFontSize(14);
-            doc.setTextColor(color[0], color[1], color[2]);
-            doc.text(`${icon} ${component.change.toFixed(2)}%`, x + 15, y + 65);
+        components.forEach((component, index) => {
+            drawCompositionKpiBlock(
+                component.name,
+                formatCurrency(component.price, component.currency, component.id),
+                `${component.change.toFixed(0)}%`,
+                margin + (kpiCardWidth + 20) * index,
+                y,
+                kpiCardWidth,
+                chartColors[index % chartColors.length]
+            );
         });
         y += 100;
     }
 
     // --- VALOR TOTAL ---
     if(mainIndex) {
-        doc.setFillColor(243, 244, 246); // gray-100
-        doc.roundedRect(margin, y, pageW - margin * 2, 50, 8, 8, 'F');
+        doc.setFillColor(249, 250, 251); // gray-50
+        doc.setDrawColor(COLORS.border);
+        doc.roundedRect(margin, y, pageW - margin * 2, 50, 8, 8, 'FD');
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(14);
-        doc.setTextColor(55, 65, 81);
+        doc.setTextColor(COLORS.textSecondary);
         doc.text('Valor Total do Índice', margin + 20, y + 30);
         doc.setFontSize(22);
-        doc.setTextColor(17, 24, 39);
+        doc.setTextColor(COLORS.textPrimary);
         doc.text(formatCurrency(mainIndex.price, mainIndex.currency, mainIndex.id), pageW - margin - 20, y + 30, { align: 'right' });
         y += 70;
     }
@@ -242,24 +290,26 @@ const generateCompositionPdf = (data: DashboardPdfData): jsPDF => {
     // --- TABELA RESUMO ---
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(14);
-    doc.setTextColor(17, 24, 39);
+    doc.setTextColor(COLORS.textPrimary);
     doc.text('Resumo da Composição', margin, y);
     y += 20;
 
-    doc.autoTable({
-        startY: y,
-        head: [['Componente', 'Valor', 'Participação (%)']],
-        body: components.map(c => [c.name, formatCurrency(c.price, c.currency, c.id), `${c.change.toFixed(2)}%`]),
-        theme: 'grid',
-        headStyles: { fillColor: [55, 65, 81], textColor: 255 },
-        styles: { cellPadding: 6, fontSize: 10 },
-    });
-    y = (doc as any).lastAutoTable.finalY;
+    if (components && components.length > 0) {
+        doc.autoTable({
+            startY: y,
+            head: [['Componente', 'Valor', 'Participação (%)']],
+            body: components.map(c => [c.name, formatCurrency(c.price, c.currency, c.id), `${c.change.toFixed(2)}%`]),
+            theme: 'grid',
+            headStyles: { fillColor: COLORS.textPrimary, textColor: 255 },
+            styles: { cellPadding: 6, fontSize: 10 },
+        });
+        y = (doc as any).lastAutoTable.finalY;
+    }
 
     // --- RODAPÉ ---
     for (let i = 1; i <= doc.internal.pages.length; i++) {
         doc.setPage(i);
-        doc.setDrawColor(229, 231, 235);
+        doc.setDrawColor(COLORS.border);
         doc.setLineWidth(0.5);
         doc.line(margin, pageH - 40, pageW - margin, pageH - 40);
         doc.setFontSize(9);
@@ -293,6 +343,7 @@ export const generatePdf = (
             case 'asset-detail':
             case 'dashboard':
             case 'audit':
+            case 'report':
             default:
                 doc = generateExecutiveDashboardPdf(data);
                 break;

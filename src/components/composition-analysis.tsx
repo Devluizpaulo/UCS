@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getQuoteByDate } from '@/lib/data-service';
 import { formatCurrency } from '@/lib/formatters';
@@ -41,29 +42,6 @@ const componentNames: Record<string, string> = {
   vmad: 'VMAD (Valor da Madeira)',
   crs: 'CRS (Custo de Resp. Socioambiental)',
 };
-
-const KpiCard = ({ title, value, percentage, color }: { title: string; value: number; percentage: number; color: string }) => (
-    <Card className="flex-1 min-w-[200px] hover:shadow-lg transition-shadow">
-        <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-        </CardHeader>
-        <CardContent className="flex items-center justify-between">
-            <div className="text-3xl font-bold font-mono">
-                {formatCurrency(value, 'BRL')}
-            </div>
-            <div 
-                className="relative flex items-center justify-center w-20 h-20 rounded-full"
-                style={{
-                    background: `conic-gradient(${color} ${percentage}%, hsl(var(--muted)) ${percentage}%)`
-                }}
-            >
-                <div className="absolute flex items-center justify-center w-[calc(100%-12px)] h-[calc(100%-12px)] bg-card rounded-full">
-                    <span className="text-xl font-bold" style={{ color }}>{percentage.toFixed(0)}%</span>
-                </div>
-            </div>
-        </CardContent>
-    </Card>
-);
 
 export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
   const [data, setData] = useState<any>(null);
@@ -189,28 +167,26 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
 
   if (isLoading) {
     return (
-      <div className="space-y-8">
-        <Card>
-            <CardHeader>
-                <Skeleton className="h-8 w-3/4" />
-                <Skeleton className="h-4 w-1/2" />
-            </CardHeader>
-            <CardContent className="flex flex-wrap gap-4">
-                <Skeleton className="h-32 flex-1 min-w-[200px]" />
-                <Skeleton className="h-32 flex-1 min-w-[200px]" />
-                <Skeleton className="h-32 flex-1 min-w-[200px]" />
-            </CardContent>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <Card className="lg:col-span-1">
+          <CardHeader>
+            <Skeleton className="h-8 w-3/4" />
+            <Skeleton className="h-4 w-1/2" />
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-64 w-full rounded-lg" />
+          </CardContent>
         </Card>
-        <Card>
-            <CardHeader>
-                <Skeleton className="h-8 w-full" />
-                <Skeleton className="h-4 w-3/4" />
-            </CardHeader>
-            <CardContent className="space-y-4">
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-full" />
-            </CardContent>
+        <Card className="lg:col-span-1">
+          <CardHeader>
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-4 w-3/4" />
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </CardContent>
         </Card>
       </div>
     );
@@ -234,95 +210,125 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+      <div className="lg:col-span-3">
         <Card>
-            <CardHeader>
-                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                    <div>
-                        <CardTitle className="flex items-center gap-2">
-                           <PieChartIcon className="h-5 w-5 text-primary"/>
-                           Composição do Índice "Valor de Uso do Solo"
-                        </CardTitle>
-                        <CardDescription>
-                            Distribuição dos componentes que formam o valor total de {formatCurrency(data.valor, 'BRL', 'valor_uso_solo')} em {data.data}.
-                        </CardDescription>
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                        <PdfExportButton
-                            data={{
-                                mainIndex: mainAssetData,
-                                secondaryIndices: [], // Dados de composição são específicos
-                                currencies: [],
-                                otherAssets: chartData.map(item => ({
-                                  id: item.name,
-                                  name: item.name,
-                                  price: item.value,
-                                  change: item.percentage,
-                                  absoluteChange: 0, // Não aplicável aqui
-                                  currency: 'BRL',
-                                  category: 'component',
-                                  description: '',
-                                  unit: 'R$',
-                                  lastUpdated: data.data,
-                                })),
-                                targetDate: targetDate,
-                            }}
-                            reportType="composition"
-                            disabled={isExporting}
-                        />
-                        <Button onClick={handleExportExcel} disabled={isExporting} variant="outline" size="sm">
-                            {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-                            Exportar (XLSX)
-                        </Button>
-                    </div>
+          <CardHeader>
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                <div>
+                    <CardTitle className="flex items-center gap-2">
+                       <PieChartIcon className="h-5 w-5 text-primary"/>
+                       Composição do Índice "Valor de Uso do Solo"
+                    </CardTitle>
+                    <CardDescription>
+                        Distribuição dos componentes que formam o valor total de {formatCurrency(data.valor, 'BRL', 'valor_uso_solo')} em {data.data}.
+                    </CardDescription>
                 </div>
-            </CardHeader>
-            <CardContent className="flex flex-col sm:flex-row flex-wrap gap-4">
-               {chartData.map((item, index) => (
-                    <KpiCard 
-                        key={item.name}
-                        title={item.name}
-                        value={item.value}
-                        percentage={item.percentage}
-                        color={COLORS[index % COLORS.length]}
+                 <div className="flex items-center gap-2 flex-shrink-0">
+                    <PdfExportButton
+                        data={{
+                            mainIndex: mainAssetData,
+                            secondaryIndices: [], // Dados de composição são específicos
+                            currencies: [],
+                            otherAssets: chartData.map(item => ({
+                              id: item.name,
+                              name: item.name,
+                              price: item.value,
+                              change: item.percentage,
+                              absoluteChange: 0, // Não aplicável aqui
+                              currency: 'BRL',
+                              category: 'component',
+                              description: '',
+                              unit: 'R$',
+                              lastUpdated: data.data,
+                            })),
+                            targetDate: targetDate,
+                        }}
+                        reportType="composition"
+                        disabled={isExporting}
                     />
-                ))}
-            </CardContent>
+                    <Button onClick={handleExportExcel} disabled={isExporting} variant="outline" size="sm">
+                        {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                        Exportar (XLSX)
+                    </Button>
+                </div>
+            </div>
+          </CardHeader>
+          <CardContent className="h-96">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={chartData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  outerRadius="80%"
+                  fill="#8884d8"
+                  dataKey="value"
+                  label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
+                    const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+                    const x = cx + radius * Math.cos(-midAngle * (Math.PI / 180));
+                    const y = cy + radius * Math.sin(-midAngle * (Math.PI / 180));
+                    return (
+                      <text x={x} y={y} fill="white" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central">
+                        {`${(percent * 100).toFixed(0)}%`}
+                      </text>
+                    );
+                  }}
+                >
+                  {chartData.map((_, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  formatter={(value, name, props) => [
+                    `${formatCurrency(value as number, 'BRL')} (${props.payload.percentage.toFixed(2)}%)`,
+                    props.payload.name
+                  ]}
+                />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
         </Card>
+      </div>
+
+      <div className="lg:col-span-2">
         <Card>
-            <CardHeader>
-                <CardTitle>Valores Detalhados dos Componentes</CardTitle>
-                <CardDescription>Análise tabular de cada componente do índice.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Componente</TableHead>
-                            <TableHead className="text-right">Valor</TableHead>
-                            <TableHead className="text-right">Participação (%)</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {chartData.map((item, index) => (
-                            <TableRow key={item.name}>
-                                <TableCell className="flex items-center gap-2">
-                                    <div className="h-3 w-3 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
-                                    <span className="font-medium">{item.name}</span>
-                                </TableCell>
-                                <TableCell className="text-right font-mono">{formatCurrency(item.value, 'BRL')}</TableCell>
-                                <TableCell className="text-right font-mono">{item.percentage.toFixed(2)}%</TableCell>
-                            </TableRow>
-                        ))}
-                         <TableRow className="font-bold bg-muted/50">
-                            <TableCell>Total</TableCell>
-                            <TableCell className="text-right font-mono">{formatCurrency(data.valor, 'BRL', 'valor_uso_solo')}</TableCell>
-                            <TableCell className="text-right font-mono">100.00%</TableCell>
-                        </TableRow>
-                    </TableBody>
-                </Table>
-            </CardContent>
+          <CardHeader>
+            <CardTitle>Valores Detalhados dos Componentes</CardTitle>
+            <CardDescription>Análise tabular de cada componente do índice.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Componente</TableHead>
+                  <TableHead className="text-right">Valor</TableHead>
+                  <TableHead className="text-right">Participação (%)</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {chartData.map((item, index) => (
+                  <TableRow key={item.name}>
+                    <TableCell className="flex items-center gap-2">
+                      <div className="h-3 w-3 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
+                      <span className="font-medium">{item.name}</span>
+                    </TableCell>
+                    <TableCell className="text-right font-mono">{formatCurrency(item.value, 'BRL')}</TableCell>
+                    <TableCell className="text-right font-mono">{item.percentage.toFixed(2)}%</TableCell>
+                  </TableRow>
+                ))}
+                <TableRow className="font-bold bg-muted/50">
+                   <TableCell>Total</TableCell>
+                   <TableCell className="text-right font-mono">{formatCurrency(data.valor, 'BRL', 'valor_uso_solo')}</TableCell>
+                   <TableCell className="text-right font-mono">100.00%</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </CardContent>
         </Card>
+      </div>
     </div>
   );
 }
