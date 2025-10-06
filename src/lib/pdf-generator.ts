@@ -30,6 +30,7 @@ const generateSimpleDashboardPdf = (data: DashboardPdfData): jsPDF => {
     const doc = new jsPDF() as jsPDFWithAutoTable;
     const { mainIndex, otherAssets, targetDate } = data;
     const formattedDate = format(targetDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
+    const pageH = doc.internal.pageSize.getHeight(); // Corrigido: Definido pageH
     
     doc.setFontSize(18);
     doc.text('Relatório de Cotações Simplificado', 14, 22);
@@ -72,6 +73,7 @@ const generateCompleteDashboardPdf = (data: DashboardPdfData): jsPDF => {
     const { mainIndex, secondaryIndices, currencies, otherAssets, targetDate } = data;
     const formattedDate = format(targetDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
     const generationDate = format(new Date(), "dd/MM/yyyy HH:mm");
+    const pageH = doc.internal.pageSize.getHeight(); // Corrigido: Definido pageH
     let finalY = 20;
 
     doc.setFontSize(20);
