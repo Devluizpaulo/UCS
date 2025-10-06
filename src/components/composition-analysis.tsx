@@ -40,7 +40,8 @@ const COLORS = [
 const componentNames: Record<string, string> = {
   vus: 'VUS (Valor de Uso do Solo)',
   vmad: 'VMAD (Valor da Madeira)',
-  crs: 'CRS (Custo de Resp. Socioambiental)',
+  carbono_crs: 'Carbono CRS',
+  Agua_CRS: 'Água CRS',
 };
 
 export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
@@ -70,30 +71,17 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
     const componentes = data.componentes;
     const valorTotal = data.valor || 1;
 
-    const vusValue = (componentes.vus || 0) as number;
-    const vmadValue = (componentes.vmad || 0) as number;
-    const carbonoCRSValue = (componentes.carbono_crs || 0) as number;
-    const aguaCRSValue = (componentes.Agua_CRS || 0) as number;
-    
-    const crsTotalValue = carbonoCRSValue + aguaCRSValue;
-
-    const groupedData = [
-      {
-        name: componentNames.vus,
-        value: vusValue,
-        percentage: valorTotal > 0 ? (vusValue / valorTotal) * 100 : 0,
-      },
-      {
-        name: componentNames.vmad,
-        value: vmadValue,
-        percentage: valorTotal > 0 ? (vmadValue / valorTotal) * 100 : 0,
-      },
-      {
-        name: componentNames.crs,
-        value: crsTotalValue,
-        percentage: valorTotal > 0 ? (crsTotalValue / valorTotal) * 100 : 0,
-      }
+    const chartItems = [
+      { id: 'vus', name: componentNames.vus, value: (componentes.vus || 0) as number },
+      { id: 'vmad', name: componentNames.vmad, value: (componentes.vmad || 0) as number },
+      { id: 'carbono_crs', name: componentNames.carbono_crs, value: (componentes.carbono_crs || 0) as number },
+      { id: 'Agua_CRS', name: componentNames.Agua_CRS, value: (componentes.Agua_CRS || 0) as number },
     ];
+    
+    const groupedData = chartItems.map(item => ({
+        ...item,
+        percentage: valorTotal > 0 ? (item.value / valorTotal) * 100 : 0,
+    }));
 
     const mainAsset: CommodityPriceData = {
         id: 'valor_uso_solo',
