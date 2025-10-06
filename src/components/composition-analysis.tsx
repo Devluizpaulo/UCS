@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { getQuoteByDate } from '@/lib/data-service';
 import { formatCurrency } from '@/lib/formatters';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { Loader2, AlertCircle, Download, FileText } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -22,6 +22,17 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Button } from './ui/button';
+import { format } from 'date-fns';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
+
+// Extende a interface do jsPDF para incluir o autoTable
+interface jsPDFWithAutoTable extends jsPDF {
+  autoTable: (options: any) => jsPDFWithAutoTable;
+}
 
 interface CompositionAnalysisProps {
   targetDate: Date;
@@ -59,6 +70,7 @@ const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, per
 export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
   const [data, setData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -93,22 +105,110 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
       {
         name: componentNames.vus,
         value: vusValue,
-        percentage: (vusValue / valorTotal) * 100,
+        percentage: valorTotal > 0 ? (vusValue / valorTotal) * 100 : 0,
       },
       {
         name: componentNames.vmad,
         value: vmadValue,
-        percentage: (vmadValue / valorTotal) * 100,
+        percentage: valorTotal > 0 ? (vmadValue / valorTotal) * 100 : 0,
       },
       {
         name: componentNames.crs,
         value: crsTotalValue,
-        percentage: (crsTotalValue / valorTotal) * 100,
+        percentage: valorTotal > 0 ? (crsTotalValue / valorTotal) * 100 : 0,
       }
     ];
 
     return groupedData.filter(item => item.value > 0);
   }, [data]);
+
+  const handleExportPdf = () => {
+    if (!data || chartData.length === 0) return;
+    setIsExporting(true);
+
+    const doc = new jsPDF() as jsPDFWithAutoTable;
+    
+    doc.setFontSize(18);
+    doc.text("Relatório de Composição do Índice", 14, 22);
+    doc.setFontSize(11);
+    doc.setTextColor(100);
+    doc.text(`Valor de Uso do Solo - ${data.data}`, 14, 30);
+    
+    const tableData = chartData.map(item => [
+        item.name,
+        formatCurrency(item.value, 'BRL'),
+        `${item.percentage.toFixed(2)}%`
+    ]);
+
+    tableData.push([
+        'Total',
+        formatCurrency(data.valor, 'BRL', 'valor_uso_solo'),
+        '100.00%'
+    ]);
+
+    doc.autoTable({
+        startY: 40,
+        head: [['Componente', 'Valor (R$)', 'Participação (%)']],
+        body: tableData,
+        foot: [['Total', formatCurrency(data.valor, 'BRL', 'valor_uso_solo'), '100.00%']],
+        headStyles: { fillColor: [22, 160, 133] },
+        footStyles: { fillColor: [22, 160, 133], fontStyle: 'bold' }
+    });
+
+    doc.save(`composicao_valor_uso_solo_${format(targetDate, 'yyyy-MM-dd')}.pdf`);
+    setIsExporting(false);
+  };
+  
+  const handleExportExcel = async () => {
+    if (!data || chartData.length === 0) return;
+    setIsExporting(true);
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Composição');
+
+    worksheet.mergeCells('A1:C1');
+    worksheet.getCell('A1').value = 'Relatório de Composição - Valor de Uso do Solo';
+    worksheet.getCell('A1').font = { size: 16, bold: true };
+
+    worksheet.mergeCells('A2:C2');
+    worksheet.getCell('A2').value = `Data: ${data.data}`;
+    worksheet.getCell('A2').font = { size: 12 };
+    
+    worksheet.getRow(4).values = ['Componente', 'Valor (R$)', 'Participação (%)'];
+    worksheet.getRow(4).font = { bold: true };
+
+    chartData.forEach((item, index) => {
+        const row = worksheet.getRow(5 + index);
+        row.getCell(1).value = item.name;
+        row.getCell(2).value = item.value;
+        row.getCell(2).numFmt = '"R$"#,##0.00';
+        row.getCell(3).value = item.percentage / 100;
+        row.getCell(3).numFmt = '0.00%';
+    });
+    
+    const totalRow = worksheet.getRow(5 + chartData.length);
+    totalRow.getCell(1).value = 'Total';
+    totalRow.getCell(2).value = data.valor;
+    totalRow.getCell(3).value = 1;
+    totalRow.font = { bold: true };
+    totalRow.getCell(2).numFmt = '"R$"#,##0.00';
+    totalRow.getCell(3).numFmt = '0.00%';
+
+    worksheet.columns.forEach(column => {
+        let max_width = 0;
+        column.eachCell!({ includeEmpty: true }, (cell) => {
+            const columnWidth = cell.value ? cell.value.toString().length : 10;
+            if (columnWidth > max_width) {
+                max_width = columnWidth;
+            }
+        });
+        column.width = max_width < 12 ? 12 : max_width + 4;
+    });
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    saveAs(new Blob([buffer]), `composicao_valor_uso_solo_${format(targetDate, 'yyyy-MM-dd')}.xlsx`);
+    setIsExporting(false);
+  };
 
 
   if (isLoading) {
@@ -160,10 +260,24 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <Card className="lg:col-span-2">
             <CardHeader>
-                <CardTitle>Composição do Índice "Valor de Uso do Solo"</CardTitle>
-                <CardDescription>
-                    Distribuição percentual dos componentes que formam o valor total de {formatCurrency(data.valor, 'BRL', 'valor_uso_solo')} em {data.data}.
-                </CardDescription>
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                    <div>
+                        <CardTitle>Composição do Índice "Valor de Uso do Solo"</CardTitle>
+                        <CardDescription>
+                            Distribuição percentual dos componentes que formam o valor total de {formatCurrency(data.valor, 'BRL', 'valor_uso_solo')} em {data.data}.
+                        </CardDescription>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                        <Button onClick={handleExportPdf} disabled={isExporting} variant="outline" size="sm">
+                            {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileText className="mr-2 h-4 w-4" />}
+                            Exportar (PDF)
+                        </Button>
+                        <Button onClick={handleExportExcel} disabled={isExporting} variant="outline" size="sm">
+                            {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                            Exportar (XLSX)
+                        </Button>
+                    </div>
+                </div>
             </CardHeader>
             <CardContent className="h-96">
                 <ResponsiveContainer width="100%" height="100%">
