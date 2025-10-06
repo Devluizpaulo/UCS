@@ -61,7 +61,7 @@ const generateDashboardPdf = (data: DashboardPdfData): jsPDF => {
         body: body,
         theme: 'grid',
         headStyles: { fillColor: [44, 62, 80], fontStyle: 'bold' },
-        didParseCell: (data) => {
+        didParseCell: (data: any) => {
            if (data.column.index === 2 && data.section === 'body') {
               const cellValue = data.cell.raw as string;
               if(cellValue.startsWith('+')) {

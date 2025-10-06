@@ -270,7 +270,7 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
                 head: [[{ content: tableTitle, styles: { halign: 'left', fillColor: tableColor, textColor: 255, fontStyle: 'bold' } }]],
                 body: detailsToExport.map(item => [item.label, item.value]),
                 theme: 'grid',
-                didDrawPage: (data) => { finalY = data.cursor?.y || finalY; }
+                didDrawPage: (data: any) => { finalY = data.cursor?.y || finalY; }
             });
             finalY = (doc as any).lastAutoTable.finalY + 10;
         }
@@ -436,5 +436,3 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
     </>
   );
 }
-
-    

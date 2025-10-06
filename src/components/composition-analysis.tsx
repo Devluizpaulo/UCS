@@ -29,8 +29,6 @@ import { ptBR } from 'date-fns/locale';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import html2canvas from 'html2canvas';
-import ExcelJS from 'exceljs';
-import { saveAs } from 'file-saver';
 
 // Extende a interface do jsPDF para incluir o autoTable
 interface jsPDFWithAutoTable extends jsPDF {
@@ -204,7 +202,7 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
             textColor: 255, 
             fontStyle: 'bold' 
           },
-          didDrawPage: (data) => {
+          didDrawPage: (data: any) => {
             const pageCount = (doc.internal as any).getNumberOfPages();
             doc.setFontSize(9);
             doc.setTextColor(150);
@@ -409,5 +407,3 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
     </div>
   );
 }
-
-    
