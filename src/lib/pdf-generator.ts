@@ -8,6 +8,8 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import type { CommodityPriceData } from './types';
 import { formatCurrency } from './formatters';
+import type { ReportOutput } from '@/ai/flows/report-flow';
+
 
 // Extende a interface do jsPDF para incluir o autoTable
 interface jsPDFWithAutoTable extends jsPDF {
@@ -20,6 +22,8 @@ export interface DashboardPdfData {
     currencies: CommodityPriceData[];
     otherAssets: CommodityPriceData[];
     targetDate: Date;
+    // Dados para o relatório de IA
+    aiReportData?: ReportOutput;
     // Dados adicionais para relatórios comerciais
     marketInsights?: MarketInsight[];
     performanceMetrics?: PerformanceMetric[];
@@ -88,6 +92,92 @@ const COLORS = {
     neutral: '#6b7280', // gray-500
   }
 };
+
+// ===================================================================================
+// === TEMPLATE DE ANÁLISE GERADA PELA IA ============================================
+// ===================================================================================
+const generateAiAnalysisPdf = (data: DashboardPdfData): jsPDF => {
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' }) as jsPDFWithAutoTable;
+    const { mainIndex, targetDate, aiReportData } = data;
+    
+    const pageW = doc.internal.pageSize.getWidth();
+    const margin = 50;
+    let y = 60;
+
+    // --- CABEÇALHO ---
+    doc.setFillColor(34, 197, 94); // green-500
+    doc.roundedRect(0, 0, pageW, 100, 0, 0, 'F');
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.text('UCS INDEX', margin, 35);
+    doc.setFontSize(22);
+    doc.text('Relatório de Análise com IA', margin, 65);
+
+    // Data no canto superior direito
+    doc.setFontSize(10);
+    doc.text(`Ativo Analisado: ${mainIndex?.name || 'N/A'}`, pageW - margin - 200, 35);
+    doc.text(`Período: ${format(targetDate, "dd/MM/yyyy")}`, pageW - margin - 200, 50);
+    doc.text(`Gerado em: ${format(new Date(), "dd/MM/yyyy HH:mm")}`, pageW - margin - 200, 65);
+    
+    y = 130;
+
+    if (!aiReportData) {
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(12);
+        doc.setTextColor(COLORS.textSecondary);
+        doc.text('Dados da análise de IA não encontrados.', margin, y);
+        return doc;
+    }
+
+    // --- FUNÇÃO PARA DESENHAR SEÇÃO ---
+    const drawSection = (title: string, content: string) => {
+        if (y > doc.internal.pageSize.getHeight() - 150) {
+            doc.addPage();
+            y = 60;
+        }
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(14);
+        doc.setTextColor(COLORS.textPrimary);
+        doc.text(title, margin, y);
+        y += 20;
+
+        doc.setFillColor(249, 250, 251); // gray-50
+        doc.setDrawColor(COLORS.border);
+        const textLines = doc.splitTextToSize(content, pageW - margin * 2 - 40);
+        const rectHeight = textLines.length * 12 + 40;
+        doc.roundedRect(margin, y, pageW - margin * 2, rectHeight, 8, 8, 'FD');
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
+        doc.setTextColor(COLORS.textSecondary);
+        doc.text(textLines, margin + 20, y + 25);
+        y += rectHeight + 25;
+    };
+    
+    // --- RENDERIZA AS SEÇÕES DO RELATÓRIO ---
+    drawSection('Resumo Executivo', aiReportData.executiveSummary);
+    drawSection('Análise de Tendência', aiReportData.trendAnalysis);
+    drawSection('Análise de Volatilidade', aiReportData.volatilityAnalysis);
+    drawSection('Conclusão', aiReportData.conclusion);
+    
+    // --- RODAPÉ ---
+    for (let i = 1; i <= doc.internal.pages.length; i++) {
+        doc.setPage(i);
+        doc.setDrawColor(COLORS.border);
+        doc.setLineWidth(0.5);
+        doc.line(margin, doc.internal.pageSize.getHeight() - 40, pageW - margin, doc.internal.pageSize.getHeight() - 40);
+        doc.setFontSize(9);
+        doc.setTextColor(107, 114, 128);
+        doc.text(`Confidencial | UCS Index - Relatório de IA`, margin, doc.internal.pageSize.getHeight() - 25);
+        doc.text(`Página ${i}`, pageW - margin, doc.internal.pageSize.getHeight() - 25, { align: 'right' });
+    }
+
+    return doc;
+};
+
 
 // ===================================================================================
 // === TEMPLATE EXECUTIVO ============================================================
@@ -791,13 +881,11 @@ const generateCompositionPdf = (data: DashboardPdfData): jsPDF => {
 
     // --- BLOCOS DE KPI DE COMPONENTES ---
     const drawCompositionKpiBlock = (title: string, value: string, percentage: string, x: number, yPos: number, width: number, color: string) => {
-        const circleRadius = 30; // Aumentado
+        const circleRadius = 30;
         doc.setDrawColor(COLORS.border);
         doc.roundedRect(x, yPos, width, 80, 8, 8, 'S');
     
         // Alinhamento do texto à esquerda
-        const textBlockWidth = width - circleRadius * 2 - 30; // Espaço para o círculo e padding
-        
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(10);
         doc.setTextColor(COLORS.textSecondary);
@@ -809,7 +897,7 @@ const generateCompositionPdf = (data: DashboardPdfData): jsPDF => {
     
         // Círculo com porcentagem alinhado à direita
         const circleX = x + width - 15 - circleRadius;
-        const circleY = yPos + 40; // Centralizado verticalmente
+        const circleY = yPos + 40;
         doc.setFillColor(color);
         doc.circle(circleX, circleY, circleRadius, 'F');
     
@@ -821,13 +909,13 @@ const generateCompositionPdf = (data: DashboardPdfData): jsPDF => {
 
     if (components && components.length > 0) {
         const kpiCardWidth = (pageW - (margin * 2) - ((components.length - 1) * 20)) / components.length;
-        const chartColors = [COLORS.chart.c1, COLORS.chart.c2, COLORS.chart.c3];
+        const chartColors = [COLORS.chart.c1, COLORS.chart.c2, COLORS.chart.c3, COLORS.chart.c4];
 
         components.forEach((component, index) => {
             drawCompositionKpiBlock(
                 component.name,
                 formatCurrency(component.price, component.currency, component.id),
-                `${component.change.toFixed(0)}%`,
+                `${(component.change || 0).toFixed(0)}%`,
                 margin + (kpiCardWidth + 20) * index,
                 y,
                 kpiCardWidth,
@@ -863,7 +951,7 @@ const generateCompositionPdf = (data: DashboardPdfData): jsPDF => {
         doc.autoTable({
             startY: y,
             head: [['Componente', 'Valor', 'Participação (%)']],
-            body: components.map(c => [c.name, formatCurrency(c.price, c.currency, c.id), `${c.change.toFixed(2)}%`]),
+            body: components.map(c => [c.name, formatCurrency(c.price, c.currency, c.id), `${(c.change || 0).toFixed(2)}%`]),
             theme: 'grid',
             headStyles: { fillColor: COLORS.textPrimary, textColor: 255 },
             styles: { cellPadding: 6, fontSize: 10 },
@@ -902,6 +990,10 @@ export const generatePdf = (
         let doc: jsPDF;
         
         switch (reportType.toLowerCase()) {
+            case 'report':
+            case 'ia_analysis':
+                doc = generateAiAnalysisPdf(data);
+                break;
             case 'composition':
             case 'análise de composição':
                 doc = generateCompositionPdf(data);
@@ -921,7 +1013,6 @@ export const generatePdf = (
             case 'asset-detail':
             case 'dashboard':
             case 'audit':
-            case 'report':
             default:
                 doc = generateExecutiveDashboardPdf(data);
                 break;
@@ -934,4 +1025,3 @@ export const generatePdf = (
         throw new Error(`Falha na geração do PDF: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
     }
 };
-

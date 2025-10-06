@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useRef } from 'react';
@@ -8,8 +9,6 @@ import * as z from 'zod';
 import { addDays, format } from "date-fns"
 import type { DateRange } from "react-day-picker"
 import * as React from 'react';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,8 +28,8 @@ import { Separator } from './ui/separator';
 import { generateReport, type ReportInput, type ReportOutput } from '@/ai/flows/report-flow';
 import { useToast } from '@/hooks/use-toast';
 import { PdfPreviewModal } from '@/components/pdf-preview-modal';
-import { generatePdf, type DashboardPdfData } from '@/lib/pdf-generator';
-import { getCommodityPricesByDate } from '@/lib/data-service';
+import type { DashboardPdfData } from '@/lib/pdf-generator';
+import { getCommodityPricesByDate, getCommodityConfigs } from '@/lib/data-service';
 
 const reportSchema = z.object({
   assetId: z.string().min(1, { message: 'Selecione um ativo.' }),
@@ -47,7 +46,7 @@ export function ReportGenerator() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [reportResult, setReportResult] = useState<ReportOutput | null>(null);
-  const reportContentRef = useRef<HTMLDivElement>(null);
+  const [availableAssets, setAvailableAssets] = useState<{ id: string, name: string }[]>([]);
   const { toast } = useToast();
   const [isPdfPreviewOpen, setIsPdfPreviewOpen] = useState(false);
   const [pdfData, setPdfData] = useState<DashboardPdfData | null>(null);
@@ -78,6 +77,15 @@ export function ReportGenerator() {
   const assetId = watch('assetId');
 
   React.useEffect(() => {
+    async function fetchAssets() {
+        const configs = await getCommodityConfigs();
+        const selectableAssets = configs.filter(c => ['ucs_ase', 'soja', 'milho', 'boi_gordo', 'carbono'].includes(c.id));
+        setAvailableAssets(selectableAssets.map(c => ({ id: c.id, name: c.name })));
+    }
+    fetchAssets();
+  }, []);
+
+  React.useEffect(() => {
     if (date) {
         setValue('dateRange', date as { from: Date; to: Date; });
     }
@@ -103,24 +111,26 @@ export function ReportGenerator() {
   };
   
   const handleDownloadPdf = async () => {
-    if (!reportResult) return;
+    if (!reportResult || !date?.to) return;
     
     setIsDownloading(true);
     
     try {
       // Buscar dados dos ativos para o período do relatório
-      const assetData = await getCommodityPricesByDate(date?.to || new Date());
+      const assetData = await getCommodityPricesByDate(date.to);
+      const assetConfig = availableAssets.find(a => a.id === assetId);
       
       // Preparar dados para o PDF generator
-      const pdfData: DashboardPdfData = {
-        mainIndex: assetData.find(asset => asset.id === 'ucs_ase'),
-        secondaryIndices: assetData.filter(asset => ['pdm', 'ucs'].includes(asset.id)),
-        currencies: assetData.filter(asset => ['usd', 'eur'].includes(asset.id)),
-        otherAssets: assetData.filter(asset => !['ucs_ase', 'pdm', 'ucs', 'usd', 'eur'].includes(asset.id)),
-        targetDate: date?.to || new Date()
+      const pdfDataPayload: DashboardPdfData = {
+        mainIndex: assetData.find(asset => asset.id === assetId),
+        secondaryIndices: [],
+        currencies: [],
+        otherAssets: [],
+        targetDate: date.to,
+        aiReportData: reportResult,
       };
 
-      setPdfData(pdfData);
+      setPdfData(pdfDataPayload);
       setIsPdfPreviewOpen(true);
     } catch (error) {
       console.error('Erro ao preparar dados para PDF:', error);
@@ -165,11 +175,9 @@ export function ReportGenerator() {
                         <SelectValue placeholder="Selecione o ativo" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="ucs_ase">Índice UCS ASE</SelectItem>
-                        <SelectItem value="soja">Soja</SelectItem>
-                        <SelectItem value="milho">Milho</SelectItem>
-                        <SelectItem value="boi_gordo">Boi Gordo</SelectItem>
-                        <SelectItem value="carbono">Crédito de Carbono</SelectItem>
+                         {availableAssets.map(asset => (
+                           <SelectItem key={asset.id} value={asset.id}>{asset.name}</SelectItem>
+                         ))}
                       </SelectContent>
                     </Select>
                   )}
@@ -221,7 +229,7 @@ export function ReportGenerator() {
                 {isDownloading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Baixando...
+                      Preparando...
                     </>
                   ) : (
                     <>
@@ -239,7 +247,7 @@ export function ReportGenerator() {
                     <p className="text-sm text-muted-foreground max-w-sm">Isso pode levar alguns instantes. Estamos compilando o histórico de preços, calculando métricas e gerando a análise textual.</p>
                 </div>
             ) : reportResult ? (
-                <div ref={reportContentRef} className="space-y-6 bg-background p-4 sm:p-6 rounded-lg">
+                <div className="space-y-6 bg-background p-4 sm:p-6 rounded-lg">
                     <div>
                         <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
                             <Sparkles className="h-5 w-5 text-primary" />

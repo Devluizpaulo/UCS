@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -37,9 +38,10 @@ interface GenerationState {
   retryCount: number;
 }
 
-const TEMPLATE_OPTIONS = {
+const TEMPLATE_OPTIONS: Record<string, string> = {
   executive: 'Relatório Executivo',
   composition: 'Relatório de Composição',
+  report: 'Relatório de Análise IA',
 };
 
 

@@ -1,8 +1,10 @@
 
+
 'use server';
 
 import type { User as FirebaseUser } from 'firebase/auth';
 import type { UserRecord } from 'firebase-admin/auth';
+import type { ReportOutput } from '@/ai/flows/report-flow';
 
 // Defines the structure for a single commodity configuration
 export interface CommodityConfig {
@@ -57,4 +59,5 @@ export interface DashboardPdfData {
     currencies: CommodityPriceData[];
     otherAssets: CommodityPriceData[];
     targetDate: Date;
+    aiReportData?: ReportOutput;
 }
