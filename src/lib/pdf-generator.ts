@@ -44,6 +44,11 @@ const generateDashboardPdf = (data: DashboardPdfData): jsPDF => {
     const generateSection = (title: string, assets: CommodityPriceData[]) => {
       if (!assets || assets.length === 0) return;
 
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text(title, 15, finalY);
+      finalY += 8;
+
       const head = [['Ativo', 'Último Preço', 'Variação (24h)']];
       const body = assets.map(asset => {
         const changeText = `${asset.change >= 0 ? '+' : ''}${asset.change.toFixed(2)}%`;
@@ -106,5 +111,5 @@ export const generatePdf = (reportType: string, data: any, template: PdfTemplate
             doc.text("Tipo de relatório não suportado.", 10, 10);
     }
     
-    return doc.output('bloburl');
+    return doc.output('datauristring');
 };
