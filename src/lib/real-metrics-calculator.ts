@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import type { DashboardPdfData, CommodityPriceData } from './types';
@@ -63,7 +64,7 @@ export function calculatePortfolioMetrics(data: DashboardPdfData) {
     
     // Cálculo de diversificação por categoria
     const categories = {
-        'Índices': [data.mainIndex, ...data.secondaryIndices].filter(Boolean),
+        'Índices': [data.mainIndex, ...data.secondaryIndices].filter((asset): asset is CommodityPriceData => !!asset),
         'Moedas': data.currencies,
         'Agrícolas': data.otherAssets.filter((asset: CommodityPriceData) => ['soja', 'milho', 'boi_gordo'].includes(asset.id)),
         'Materiais': data.otherAssets.filter((asset: CommodityPriceData) => ['madeira'].includes(asset.id)),

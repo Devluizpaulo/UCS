@@ -142,6 +142,10 @@ export function PdfPreviewModal({ isOpen, onOpenChange, reportType, data }: PdfP
       setIframeLoaded(false);
       setGenerationState({ isLoading: false, error: null, retryCount: 0 });
     }
+  // AVISO: A remoção de generateAndSetPdf da lista de dependências é intencional
+  // para quebrar um loop de renderização infinito causado pela sua recriação
+  // a cada mudança de estado (pdfUrl). O comportamento desejado é que a função
+  // seja chamada apenas quando o modal abre ou o template muda.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, selectedTemplate]);
 
