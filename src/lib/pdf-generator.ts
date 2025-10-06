@@ -205,10 +205,10 @@ const generateExecutiveDashboardPdf = (data: DashboardPdfData): jsPDF => {
             theme: 'striped',
             headStyles: { fillColor: [31, 41, 55], textColor: 255 },
             styles: { cellPadding: 6 },
-            didParseCell: (hookData: any) => {
-                if (hookData.column.index === 2 && hookData.section === 'body') {
-                    const value = hookData.cell.raw as string;
-                    hookData.cell.styles.textColor = value.startsWith('+') ? [5, 150, 105] : [199, 24, 24];
+            didParseCell: (data: any) => {
+                if (data.column.index === 2 && data.section === 'body') {
+                    const value = data.cell.raw as string;
+                    data.cell.styles.textColor = value.startsWith('+') ? [5, 150, 105] : [199, 24, 24];
                 }
             }
         });
