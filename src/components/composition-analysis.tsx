@@ -29,6 +29,9 @@ import { ptBR } from 'date-fns/locale';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import html2canvas from 'html2canvas';
+import * as ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
+
 
 // Extende a interface do jsPDF para incluir o autoTable
 interface jsPDFWithAutoTable extends jsPDF {
@@ -258,9 +261,9 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
     totalRow.getCell(2).numFmt = '"R$"#,##0.00';
     totalRow.getCell(3).numFmt = '0.00%';
 
-    worksheet.columns.forEach(column => {
+    worksheet.columns.forEach((column: Partial<ExcelJS.Column>) => {
         let max_width = 0;
-        column.eachCell!({ includeEmpty: true }, (cell) => {
+        column.eachCell!({ includeEmpty: true }, (cell: ExcelJS.Cell) => {
             const columnWidth = cell.value ? cell.value.toString().length : 10;
             if (columnWidth > max_width) {
                 max_width = columnWidth;
