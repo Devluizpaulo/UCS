@@ -1,7 +1,6 @@
-
 'use client';
 
-import { useState, useEffect, useMemo, useRef, Fragment } from 'react';
+import { useState, useEffect, useMemo, Fragment } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getQuoteByDate } from '@/lib/data-service';
 import { formatCurrency } from '@/lib/formatters';
@@ -79,10 +78,8 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
     const crsTotalValue = carbono_crs.value + agua_crs.value;
     const crsTotal = { id: 'crs_total', name: componentNames.crs_total, value: crsTotalValue };
     
-    // Data for the Pie Chart (top-level components)
     const chartItems = [vus, vmad, crsTotal].filter(item => item.value > 0);
     
-    // Data for the Table (hierarchical)
     const tableItems = [
       { ...vus, percentage: valorTotal > 0 ? (vus.value / valorTotal) * 100 : 0, isSub: false },
       { ...vmad, percentage: valorTotal > 0 ? (vmad.value / valorTotal) * 100 : 0, isSub: false },
