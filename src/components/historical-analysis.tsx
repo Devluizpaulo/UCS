@@ -41,7 +41,7 @@ import {
 import { Button } from './ui/button';
 import { Info, FileDown, Loader2 } from 'lucide-react';
 import { HistoricalPriceTable } from './historical-price-table';
-import { AssetDetailModal, AssetInfo, AssetSpecificDetails, GenericAssetDetails, SojaDetails, CarbonoDetails } from './asset-detail-modal';
+import { AssetInfo, AssetSpecificDetails, GenericAssetDetails, SojaDetails, CarbonoDetails } from './asset-detail-modal';
 import { UcsAseDetails } from './ucs-ase-details';
 import { cn } from '@/lib/utils';
 import { LogoUCS } from './logo-bvm';
@@ -69,7 +69,6 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
   const [selectedAssetId, setSelectedAssetId] = useState<string>('ucs_ase');
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
-  const [selectedAssetForModal, setSelectedAssetForModal] = useState<CommodityConfig | null>(null);
   const chartRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -124,10 +123,12 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
         }
       }).reverse(); // Reverte para ordem cronológica no gráfico
       
+    const isForexAsset = ['soja', 'carbono'].includes(selectedAssetConfig.id);
+
     const mainAsset: CommodityPriceData = {
         ...selectedAssetConfig,
-        price: quoteForDate.ultimo ?? 0,
-        currency: selectedAssetConfig.currency as 'USD' | 'BRL' | 'EUR',
+        price: isForexAsset ? (quoteForDate.ultimo ?? 0) : (quoteForDate.valor_brl ?? quoteForDate.valor ?? quoteForDate.ultimo ?? 0),
+        currency: selectedAssetConfig.currency,
         change: quoteForDate.variacao_pct ?? 0,
         absoluteChange: (quoteForDate.ultimo ?? 0) - (quoteForDate.fechamento_anterior ?? (quoteForDate.ultimo ?? 0)),
         lastUpdated: quoteForDate.data || format(new Date(quoteForDate.timestamp as any), 'dd/MM/yyyy'),
@@ -146,7 +147,6 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
         
         const doc = new jsPDF() as jsPDFWithAutoTableType;
         const generationDate = format(new Date(), "dd 'de' MMMM 'de' yyyy, HH:mm", { locale: ptBR });
-        const changeColor = mainAssetData.change >= 0 ? [39, 174, 96] : [192, 57, 43];
         const pdfWidth = doc.internal.pageSize.getWidth();
         const margin = 15;
         let finalY = 0;
@@ -157,7 +157,6 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
         doc.setFillColor(248, 250, 252); // Cinza claro
         doc.rect(0, 0, pdfWidth, 45, 'F');
         
-        // "Logo" improvisado
         doc.setFontSize(10);
         doc.setTextColor(100, 116, 139);
         doc.text("UCS INDEX REPORT", margin, 20);
@@ -179,7 +178,7 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
         doc.setFontSize(12);
         doc.text(format(targetDate, "dd 'de' MMMM, yyyy", { locale: ptBR }), pdfWidth - dateBoxWidth - margin + 5, 30);
         
-        finalY = 55; // Posição Y após o cabeçalho
+        finalY = 55;
 
         // ===================================
         // CARDS DE RESUMO (KPIs)
@@ -187,26 +186,26 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
         const cardWidth = (pdfWidth - (margin * 2) - 10) / 2;
         doc.setFillColor(41, 128, 185); // Azul
         doc.roundedRect(margin, finalY, cardWidth, 30, 3, 3, 'F');
+        doc.setFillColor(mainAssetData.change >= 0 ? 39 : 192, mainAssetData.change >= 0 ? 174 : 57, mainAssetData.change >= 0 ? 96 : 43); // Verde ou Vermelho
         doc.roundedRect(margin + cardWidth + 10, finalY, cardWidth, 30, 3, 3, 'F');
 
         doc.setFontSize(10);
         doc.setTextColor(255, 255, 255);
         doc.setFont('helvetica', 'bold');
-        doc.text("Preço de Fechamento", margin + 5, finalY + 7);
-        doc.text("Variação (24h)", margin + cardWidth + 15, finalY + 7);
+        doc.text("Preço de Fechamento", margin + 7, finalY + 9);
+        doc.text("Variação (24h)", margin + cardWidth + 17, finalY + 9);
         
         doc.setFontSize(18);
-        doc.setTextColor(255, 255, 255);
         doc.setFont('helvetica', 'bold');
-        doc.text(formatCurrency(mainAssetData.price, mainAssetData.currency, mainAssetData.id), margin + 5, finalY + 18);
+        doc.text(formatCurrency(mainAssetData.price, mainAssetData.currency, mainAssetData.id), margin + 7, finalY + 20);
         
         const changeText = `${mainAssetData.change >= 0 ? '+' : ''}${mainAssetData.change.toFixed(2)}%`;
-        doc.text(changeText, margin + cardWidth + 15, finalY + 18);
+        doc.text(changeText, margin + cardWidth + 17, finalY + 20);
 
         doc.setFontSize(9);
         doc.setTextColor(200, 220, 255);
         doc.setFont('helvetica', 'normal');
-        doc.text(`Absoluto: ${formatCurrency(mainAssetData.absoluteChange, mainAssetData.currency, mainAssetData.id)}`, margin + cardWidth + 15, finalY + 24);
+        doc.text(`Absoluto: ${formatCurrency(mainAssetData.absoluteChange, mainAssetData.currency, mainAssetData.id)}`, margin + cardWidth + 17, finalY + 26);
         
         finalY += 30 + 15;
 
@@ -264,7 +263,7 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
         if (detailsToExport.length > 0) {
             doc.autoTable({
                 startY: finalY,
-                head: [[{ content: tableTitle, colSpan: 2, styles: { halign: 'left' } }]],
+                head: [[{ content: tableTitle, styles: { halign: 'left' } }]],
                 body: detailsToExport.map(item => [item.label, item.value]),
                 theme: 'striped',
                 headStyles: { fillColor: tableColor, textColor: 255, fontStyle: 'bold' },
@@ -277,7 +276,7 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
         if (selectedAssetConfig.id === 'ucs_ase' && latestQuote.componentes) {
             doc.autoTable({
                 startY: finalY,
-                head: [[{ content: "Composição e Conversão do Índice UCS ASE", colSpan: 2 }]],
+                head: [[{ content: "Composição e Conversão do Índice UCS ASE", colSpan: 2, styles: { halign: 'center' } }]],
                 body: [
                     ['UCS Original (BRL)', formatCurrency(latestQuote.valores_originais?.ucs || 0, 'BRL', 'ucs')],
                     ['Fórmula', latestQuote.formula || 'UCS × 2'],
@@ -427,31 +426,12 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
                 asset={mainAssetData!}
                 historicalData={data} 
                 isLoading={isLoading} 
-                onRowClick={(assetId) => {
-                    const asset = assets.find(a => a.id === assetId);
-                    if (asset && mainAssetData) {
-                        const fullAssetData: CommodityPriceData = {
-                            ...asset,
-                            price: mainAssetData.price,
-                            change: mainAssetData.change,
-                            absoluteChange: mainAssetData.absoluteChange,
-                            lastUpdated: mainAssetData.lastUpdated,
-                        };
-                        setSelectedAssetForModal(fullAssetData);
-                    }
-                }}
+                onRowClick={() => {}}
               />
           </TabsContent>
         </Tabs>
       </CardContent>
     </Card>
-    {selectedAssetForModal && (
-        <AssetDetailModal
-            asset={selectedAssetForModal as CommodityPriceData}
-            isOpen={!!selectedAssetForModal}
-            onOpenChange={() => setSelectedAssetForModal(null)}
-        />
-    )}
     </>
   );
 }
