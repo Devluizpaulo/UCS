@@ -74,12 +74,19 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
     const vmad = { id: 'vmad', name: componentNames.vmad, value: (componentes.vmad || 0) as number };
     const carbono_crs = { id: 'carbono_crs', name: componentNames.carbono_crs, value: (componentes.carbono_crs || 0) as number };
     const agua_crs = { id: 'Agua_CRS', name: componentNames.Agua_CRS, value: (componentes.Agua_CRS || 0) as number };
-
+    
     const crsTotalValue = carbono_crs.value + agua_crs.value;
     const crsTotal = { id: 'crs_total', name: componentNames.crs_total, value: crsTotalValue };
     
     const chartItems = [vus, vmad, crsTotal].filter(item => item.value > 0);
     
+    const allTableItems = [
+      vus,
+      vmad,
+      carbono_crs,
+      agua_crs,
+    ];
+
     const tableItems = [
       { ...vus, percentage: valorTotal > 0 ? (vus.value / valorTotal) * 100 : 0, isSub: false },
       { ...vmad, percentage: valorTotal > 0 ? (vmad.value / valorTotal) * 100 : 0, isSub: false },
@@ -163,8 +170,8 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-        <Card className="lg:col-span-3">
+      <div className="grid grid-cols-1 gap-8">
+        <Card>
           <CardHeader>
             <Skeleton className="h-8 w-3/4" />
             <Skeleton className="h-4 w-1/2" />
@@ -173,7 +180,7 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
             <Skeleton className="h-64 w-full rounded-full" />
           </CardContent>
         </Card>
-        <Card className="lg:col-span-2">
+        <Card>
           <CardHeader>
             <Skeleton className="h-8 w-full" />
             <Skeleton className="h-4 w-3/4" />
@@ -207,8 +214,8 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-       <Card className="lg:col-span-3">
+    <div className="grid grid-cols-1 gap-8">
+       <Card>
           <CardHeader>
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 <div>
@@ -263,7 +270,7 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
           </CardContent>
         </Card>
 
-      <div className="lg:col-span-2">
+      <div>
         <Card>
           <CardHeader>
             <CardTitle>Valores Detalhados dos Componentes</CardTitle>
@@ -279,8 +286,8 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {tableData.filter(item => !item.isSub).map((item, index) => (
-                  <Fragment key={item.id}>
+                {tableData.filter(item => !item.isSub).map((item) => (
+                  <React.Fragment key={item.id}>
                     <TableRow className={item.id === 'crs_total' ? 'font-bold bg-muted/30' : ''}>
                       <TableCell className="flex items-center gap-2">
                         {item.id !== 'crs_total' && <div className="h-3 w-3 rounded-full" style={{ backgroundColor: COLORS[chartData.findIndex(c => c.id === item.id) % COLORS.length] }} />}
@@ -299,7 +306,7 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
                         <TableCell className="text-right font-mono">{subItem.percentage.toFixed(2)}%</TableCell>
                       </TableRow>
                     ))}
-                  </Fragment>
+                  </React.Fragment>
                 ))}
                 <TableRow className="font-bold bg-muted/50 border-t-2">
                    <TableCell>Total</TableCell>
