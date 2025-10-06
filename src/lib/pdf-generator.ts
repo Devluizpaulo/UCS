@@ -85,11 +85,12 @@ const generateExecutiveDashboardPdf = (data: DashboardPdfData): jsPDF => {
     };
 
     if (mainIndex) {
+        const changeValue = typeof mainIndex.change === 'number' ? mainIndex.change : 0;
         drawKpiBlock(
             `Índice Principal: ${mainIndex.name}`,
             formatCurrency(mainIndex.price, mainIndex.currency, mainIndex.id),
-            `${mainIndex.change.toFixed(2)}%`,
-            mainIndex.change >= 0,
+            `${changeValue.toFixed(2)}%`,
+            changeValue >= 0,
             margin, y, pageW - margin * 2
         );
         y += 100;
@@ -98,20 +99,24 @@ const generateExecutiveDashboardPdf = (data: DashboardPdfData): jsPDF => {
     const kpiAssets = [...secondaryIndices, ...currencies];
     const kpiCardWidth = (pageW - (margin * 2) - 20) / 2;
     if (kpiAssets.length > 0) {
+        const asset1 = kpiAssets[0];
+        const change1 = typeof asset1.change === 'number' ? asset1.change : 0;
         drawKpiBlock(
-            kpiAssets[0].name,
-            formatCurrency(kpiAssets[0].price, kpiAssets[0].currency, kpiAssets[0].id),
-            `${kpiAssets[0].change.toFixed(2)}%`,
-            kpiAssets[0].change >= 0,
+            asset1.name,
+            formatCurrency(asset1.price, asset1.currency, asset1.id),
+            `${change1.toFixed(2)}%`,
+            change1 >= 0,
             margin, y, kpiCardWidth
         );
     }
     if (kpiAssets.length > 1) {
+        const asset2 = kpiAssets[1];
+        const change2 = typeof asset2.change === 'number' ? asset2.change : 0;
         drawKpiBlock(
-            kpiAssets[1].name,
-            formatCurrency(kpiAssets[1].price, kpiAssets[1].currency, kpiAssets[1].id),
-            `${kpiAssets[1].change.toFixed(2)}%`,
-            kpiAssets[1].change >= 0,
+            asset2.name,
+            formatCurrency(asset2.price, asset2.currency, asset2.id),
+            `${change2.toFixed(2)}%`,
+            change2 >= 0,
             margin + kpiCardWidth + 20, y, kpiCardWidth
         );
     }
@@ -130,12 +135,15 @@ const generateExecutiveDashboardPdf = (data: DashboardPdfData): jsPDF => {
         doc.autoTable({
             startY: y,
             head: [['Ativo', 'Categoria', 'Valor Atual', 'Variação (24h)']],
-            body: otherAssets.map(asset => [
-                asset.name,
-                asset.category,
-                formatCurrency(asset.price, asset.currency, asset.id),
-                `${asset.change >= 0 ? '+' : ''}${asset.change.toFixed(2)}%`
-            ]),
+            body: otherAssets.map(asset => {
+                const changeValue = typeof asset.change === 'number' ? asset.change : 0;
+                return [
+                    asset.name,
+                    asset.category,
+                    formatCurrency(asset.price, asset.currency, asset.id),
+                    `${changeValue >= 0 ? '+' : ''}${changeValue.toFixed(2)}%`
+                ]
+            }),
             theme: 'striped',
             headStyles: { fillColor: [34, 197, 94], textColor: 255 },
             styles: { cellPadding: 6, fontSize: 10 },
@@ -156,7 +164,7 @@ const generateExecutiveDashboardPdf = (data: DashboardPdfData): jsPDF => {
         doc.line(margin, pageH - 40, pageW - margin, pageH - 40);
         doc.setFontSize(9);
         doc.setTextColor(107, 114, 128);
-        doc.text('Confidencial | UCS Index', margin, pageH - 25);
+        doc.text(`Confidencial | UCS Index`, margin, pageH - 25);
         doc.text(`Página ${i}`, pageW - margin, pageH - 25, { align: 'right' });
     }
 
