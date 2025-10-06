@@ -119,7 +119,7 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
         let dateFormat = 'dd/MM';
         return {
            date: format(dateObject, dateFormat, { locale: ptBR }),
-           value: quote.ultimo,
+           value: quote.ultimo ?? quote.valor,
         }
       }).reverse(); // Reverte para ordem cronológica no gráfico
       
@@ -128,7 +128,7 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
     const mainAsset: CommodityPriceData = {
         ...selectedAssetConfig,
         price: isForexAsset ? (quoteForDate.ultimo ?? 0) : (quoteForDate.valor_brl ?? quoteForDate.valor ?? quoteForDate.ultimo ?? 0),
-        currency: selectedAssetConfig.currency,
+        currency: isForexAsset ? selectedAssetConfig.currency : 'BRL',
         change: quoteForDate.variacao_pct ?? 0,
         absoluteChange: (quoteForDate.ultimo ?? 0) - (quoteForDate.fechamento_anterior ?? (quoteForDate.ultimo ?? 0)),
         lastUpdated: quoteForDate.data || format(new Date(quoteForDate.timestamp as any), 'dd/MM/yyyy'),
@@ -154,27 +154,28 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
         // ===================================
         // CABEÇALHO (ESTILO "Board of Directors")
         // ===================================
-        doc.setFillColor(248, 250, 252); // Cinza claro
+        // Fundo cinza claro sutil para o cabeçalho inteiro
+        doc.setFillColor(248, 249, 250); // #f8f9fa
         doc.rect(0, 0, pdfWidth, 45, 'F');
         
         doc.setFontSize(10);
-        doc.setTextColor(100, 116, 139);
+        doc.setTextColor(108, 117, 125); // #6c757d - Cinza para o subtítulo
         doc.text("UCS INDEX REPORT", margin, 20);
 
         doc.setFontSize(22);
-        doc.setTextColor(34, 47, 62);
+        doc.setTextColor(33, 37, 41); // #212529 - Cor de texto principal
         doc.setFont('helvetica', 'bold');
         doc.text(`Análise de Ativo: ${selectedAssetConfig.name}`, margin, 32);
 
-        // Box de data verde
-        doc.setFillColor(34, 197, 94); // Verde
+        // Bloco de data verde
+        doc.setFillColor(40, 167, 69); // #28a745 - Verde mais corporativo
         const dateBoxWidth = 70;
         doc.rect(pdfWidth - dateBoxWidth - margin, 15, dateBoxWidth, 20, 'F');
         
         doc.setFontSize(10);
         doc.setTextColor(255, 255, 255);
         doc.setFont('helvetica', 'bold');
-        doc.text("Data da Análise", pdfWidth - dateBoxWidth - margin + 5, 23);
+        doc.text("Data da Análise", pdfWidth - dateBoxWidth - margin + 5, 22);
         doc.setFontSize(12);
         doc.text(format(targetDate, "dd 'de' MMMM, yyyy", { locale: ptBR }), pdfWidth - dateBoxWidth - margin + 5, 30);
         
@@ -184,18 +185,22 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
         // CARDS DE RESUMO (KPIs)
         // ===================================
         const cardWidth = (pdfWidth - (margin * 2) - 10) / 2;
-        doc.setFillColor(41, 128, 185); // Azul
+        
+        // Card Preço de Fechamento (Azul)
+        doc.setFillColor(0, 123, 255); // #007bff - Azul primário
         doc.roundedRect(margin, finalY, cardWidth, 30, 3, 3, 'F');
-        doc.setFillColor(mainAssetData.change >= 0 ? 39 : 192, mainAssetData.change >= 0 ? 174 : 57, mainAssetData.change >= 0 ? 96 : 43); // Verde ou Vermelho
+        // Card Variação (Verde/Vermelho)
+        doc.setFillColor(mainAssetData.change >= 0 ? 40 : 220, mainAssetData.change >= 0 ? 167 : 53, mainAssetData.change >= 0 ? 69 : 69); // #28a745 (Verde) ou #dc3545 (Vermelho)
         doc.roundedRect(margin + cardWidth + 10, finalY, cardWidth, 30, 3, 3, 'F');
 
         doc.setFontSize(10);
-        doc.setTextColor(255, 255, 255);
-        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(230, 240, 255);
+        doc.setFont('helvetica', 'normal');
         doc.text("Preço de Fechamento", margin + 7, finalY + 9);
         doc.text("Variação (24h)", margin + cardWidth + 17, finalY + 9);
         
         doc.setFontSize(18);
+        doc.setTextColor(255, 255, 255);
         doc.setFont('helvetica', 'bold');
         doc.text(formatCurrency(mainAssetData.price, mainAssetData.currency, mainAssetData.id), margin + 7, finalY + 20);
         
@@ -203,7 +208,7 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
         doc.text(changeText, margin + cardWidth + 17, finalY + 20);
 
         doc.setFontSize(9);
-        doc.setTextColor(200, 220, 255);
+        doc.setTextColor(220, 230, 255);
         doc.setFont('helvetica', 'normal');
         doc.text(`Absoluto: ${formatCurrency(mainAssetData.absoluteChange, mainAssetData.currency, mainAssetData.id)}`, margin + cardWidth + 17, finalY + 26);
         
@@ -213,7 +218,7 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
         // GRÁFICO
         // ===================================
         doc.setFontSize(14);
-        doc.setTextColor(34, 47, 62);
+        doc.setTextColor(33, 37, 41);
         doc.setFont('helvetica', 'bold');
         doc.text("Histórico de Preços (Últimos 90 dias)", margin, finalY);
         finalY += 7;
@@ -230,7 +235,7 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
         // ===================================
         let detailsToExport: { label: string, value: string | null }[] = [];
         let tableTitle = "Resumo do Dia";
-        let tableColor: [number, number, number] = [44, 62, 80]; // Azul Escuro
+        let tableColor: [number, number, number] = [52, 58, 64]; // #343a40
 
         if (selectedAssetConfig.id === 'soja') {
             detailsToExport = [
@@ -241,7 +246,7 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
                 { label: 'Rentabilidade Média', value: formatCurrency(latestQuote.rent_media, 'BRL') + ' / ha' },
             ];
             tableTitle = "Detalhes da Cotação: Soja";
-            tableColor = [34, 197, 94]; // Verde
+            tableColor = [40, 167, 69]; // Verde
         } else if (selectedAssetConfig.id === 'carbono') {
              detailsToExport = [
                 { label: 'Preço (Último)', value: formatCurrency(latestQuote.ultimo, 'EUR') + ' / ton' },
@@ -250,7 +255,7 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
                 { label: 'Rentabilidade Média', value: formatCurrency(latestQuote.rent_media, 'BRL') + ' / ha' },
             ];
             tableTitle = "Detalhes da Cotação: Carbono";
-            tableColor = [52, 152, 219]; // Azul claro
+            tableColor = [23, 162, 184]; // #17a2b8 - Azul ciano
         } else if (selectedAssetConfig.id !== 'ucs_ase') {
              detailsToExport = [
                 { label: 'Fechamento Anterior', value: formatCurrency(latestQuote.fechamento_anterior, mainAssetData.currency) },
@@ -265,7 +270,7 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
                 startY: finalY,
                 head: [[{ content: tableTitle, styles: { halign: 'left' } }]],
                 body: detailsToExport.map(item => [item.label, item.value]),
-                theme: 'striped',
+                theme: 'grid',
                 headStyles: { fillColor: tableColor, textColor: 255, fontStyle: 'bold' },
                 didDrawPage: (data) => { finalY = data.cursor?.y || finalY; }
             });
@@ -276,19 +281,19 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
         if (selectedAssetConfig.id === 'ucs_ase' && latestQuote.componentes) {
             doc.autoTable({
                 startY: finalY,
-                head: [[{ content: "Composição e Conversão do Índice UCS ASE", colSpan: 2, styles: { halign: 'center' } }]],
+                head: [[{ content: "Composição e Conversão do Índice UCS ASE", colSpan: 2, styles: { halign: 'center', fillColor: [40, 167, 69] } }]],
                 body: [
                     ['UCS Original (BRL)', formatCurrency(latestQuote.valores_originais?.ucs || 0, 'BRL', 'ucs')],
                     ['Fórmula', latestQuote.formula || 'UCS × 2'],
                     [{ content: 'Resultado Final (BRL)', styles: { fontStyle: 'bold' } }, { content: formatCurrency(latestQuote.componentes.resultado_final_brl || 0, 'BRL', 'ucs_ase'), styles: { fontStyle: 'bold' } }],
-                    [{ content: '--- Conversões ---', colSpan: 2, styles: { fillColor: [240, 240, 240], textColor: 80, halign: 'center' } }],
+                    [{ content: '--- Conversões ---', colSpan: 2, styles: { fillColor: [248, 249, 250], textColor: 80, halign: 'center' } }],
                     ['Cotação USD/BRL', formatCurrency(latestQuote.valores_originais?.cotacao_usd || 0, 'BRL', 'usd')],
                     [{ content: 'Valor Final (USD)', styles: { fontStyle: 'bold' } }, { content: formatCurrency(latestQuote.componentes.resultado_final_usd || 0, 'USD', 'ucs_ase'), styles: { fontStyle: 'bold' } }],
                     ['Cotação EUR/BRL', formatCurrency(latestQuote.valores_originais?.cotacao_eur || 0, 'BRL', 'eur')],
                     [{ content: 'Valor Final (EUR)', styles: { fontStyle: 'bold' } }, { content: formatCurrency(latestQuote.componentes.resultado_final_eur || 0, 'EUR', 'ucs_ase'), styles: { fontStyle: 'bold' } }],
                 ],
                 theme: 'grid',
-                headStyles: { fillColor: [22, 160, 133] },
+                headStyles: { textColor: 255, fontStyle: 'bold' },
             });
         }
 
