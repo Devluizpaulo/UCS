@@ -319,7 +319,7 @@ export default function DashboardPage() {
         });
 
         // === ABA DE ANÁLISES ===
-        const analysisWorksheet = workbook.addWorksheet('📈 Análises e Gráficos');
+        const analysisWorksheet = workbook.addWorksheet('📈 Análises');
 
         // Gráfico de Pizza para Categorias
         const categoryData = allData.reduce((acc, asset) => {
@@ -327,7 +327,6 @@ export default function DashboardPage() {
             return acc;
         }, {} as Record<string, number>);
 
-        const chartStartRow = 5;
         analysisWorksheet.addRow([]);
         analysisWorksheet.addRow([]);
         const chartTitleRow = analysisWorksheet.addRow(['🍕 DISTRIBUIÇÃO POR CATEGORIA']);
@@ -351,23 +350,6 @@ export default function DashboardPage() {
             });
         });
 
-        // Criar gráfico de pizza melhorado
-        const pieChart = analysisWorksheet.addChart({
-            type: 'pie',
-            name: 'Distribuição por Categoria',
-            title: {
-                name: '📊 Distribuição dos Ativos por Categoria'
-            }
-        });
-
-        const chartDataEndRow = chartStartRow + Object.keys(categoryData).length + 1;
-        pieChart.addSeries({
-            categories: [`A${chartStartRow + 2}:A${chartDataEndRow}`],
-            values: [`B${chartStartRow + 2}:B${chartDataEndRow}`],
-            name: 'Categorias'
-        });
-
-        pieChart.setPosition(`D${chartStartRow}`, `H${chartStartRow + 15}`);
         
         // Gráfico de Barras para Variações
         const variationsData = allData
@@ -376,7 +358,6 @@ export default function DashboardPage() {
             .slice(0, 15); // Top 15 maiores variações
 
         if (variationsData.length > 0) {
-            const barChartStartRow = chartDataEndRow + 5;
             analysisWorksheet.addRow([]);
             analysisWorksheet.addRow([]);
             const barChartTitleRow = analysisWorksheet.addRow(['📊 TOP 15 MAIORES VARIAÇÕES']);
@@ -415,24 +396,6 @@ export default function DashboardPage() {
                     if (colNumber !== 3) cell.alignment = { horizontal: 'center' };
                 });
             });
-
-            // Criar gráfico de barras melhorado
-            const barChart = analysisWorksheet.addChart({
-                type: 'column',
-                name: 'Top Variações',
-                title: {
-                    name: '📈 Top 15 Maiores Variações Percentuais'
-                }
-            });
-
-            const barChartDataEndRow = barChartStartRow + variationsData.length + 1;
-            barChart.addSeries({
-                categories: [`B${barChartStartRow + 2}:B${barChartDataEndRow}`],
-                values: [`C${barChartStartRow + 2}:C${barChartDataEndRow}`],
-                name: 'Variação %'
-            });
-
-            barChart.setPosition(`D${barChartStartRow}`, `H${barChartStartRow + 15}`);
         }
 
         // === ABA DE RESUMO EXECUTIVO ===
@@ -502,7 +465,7 @@ export default function DashboardPage() {
 
         toast({
             title: '✅ Excel Exportado com Sucesso!',
-            description: `Relatório completo gerado com ${totalAssets} ativos, gráficos e análises.`,
+            description: `Relatório completo gerado com ${totalAssets} ativos, análises e resumo.`,
         });
 
     } catch (error) {
@@ -652,3 +615,5 @@ export default function DashboardPage() {
     </>
   );
 }
+
+    
