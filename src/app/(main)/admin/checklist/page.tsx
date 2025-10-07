@@ -394,7 +394,7 @@ export default function AdminChecklistPage() {
             <div style={{ marginTop: '24px', padding: '0 8px' }}>
               <h3 className="text-sm font-semibold text-blue-600" style={{ marginBottom: '20px' }}>Arquitetura Técnica</h3>
               <div className="diagram" role="img" aria-label="Diagrama de arquitetura técnica">
-                <svg viewBox="0 0 600 220" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+                <svg viewBox="0 0 600 220" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" style={{maxWidth: '600px'}}>
                   <defs>
                     <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
                       <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="#000" floodOpacity="0.1"/>
@@ -443,7 +443,7 @@ export default function AdminChecklistPage() {
             <div style={{ marginTop: '32px', padding: '0 8px' }}>
               <h3 className="text-sm font-semibold text-blue-600" style={{ marginBottom: '20px' }}>Fluxo de Dados</h3>
               <div className="diagram" role="img" aria-label="Fluxo de dados">
-                <svg viewBox="0 0 600 100" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+                <svg viewBox="0 0 600 100" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" style={{maxWidth: '550px'}}>
                   <rect x="20" y="20" rx="8" ry="8" width="100" height="35" fill="#ffffff" stroke="#dfe8f6"/>
                   <text x="70" y="42" fontSize="8" textAnchor="middle" fill="#0f172a" fontWeight="700">Usuário</text>
                   <rect x="140" y="18" rx="8" ry="8" width="130" height="40" fill="#ffffff" stroke="#dfe8f6"/>
@@ -473,7 +473,7 @@ export default function AdminChecklistPage() {
             <div style={{ marginTop: '32px', padding: '0 8px' }}>
               <h3 className="text-sm font-semibold text-blue-600" style={{ marginBottom: '20px' }}>Infraestrutura de Deploy</h3>
               <div className="diagram" role="img" aria-label="Infraestrutura de deploy">
-                 <svg viewBox="0 0 600 120" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+                 <svg viewBox="0 0 600 120" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" style={{maxWidth: '600px'}}>
                   <rect x="25" y="20" rx="8" ry="8" width="120" height="40" fill="#fff" stroke="#dfe8f6"/>
                   <text x="85" y="42" fontSize="9" textAnchor="middle" fill="#0f172a" fontWeight="700">GitHub Repo</text>
                   <rect x="170" y="20" rx="8" ry="8" width="140" height="40" fill="#fff" stroke="#dfe8f6"/>
@@ -526,7 +526,7 @@ export default function AdminChecklistPage() {
 
             <h3 className="text-sm font-semibold text-blue-600" style={{ marginBottom: '20px' }}>Arquitetura do Fluxo</h3>
               <div className="diagram" role="img" aria-label="Arquitetura do fluxo N8N">
-                <svg viewBox="0 0 620 250" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+                <svg viewBox="0 0 620 250" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" style={{maxWidth: '620px'}}>
                   <defs>
                     <filter id="shadow-n8n" x="-50%" y="-50%" width="200%" height="200%">
                       <feDropShadow dx="1" dy="2" stdDeviation="4" floodColor="#000" floodOpacity="0.08"/>
@@ -829,14 +829,6 @@ export default function AdminChecklistPage() {
                 <div className="chev">▸</div>
               </div>
               <div id="monitoramento" className="coll-content">
-                <h3>📈 Métricas de Performance</h3>
-                <ul className="checklist-list">
-                  <li className="check-item"><label><input type="checkbox" data-key="mon_perf_uptime" /><span className="txt">Monitoramento de uptime configurado</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="mon_perf_response" /><span className="txt">Tempo de resposta monitorado</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="mon_perf_errors" /><span className="txt">Taxa de erro monitorada</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="mon_perf_throughput" /><span className="txt">Throughput monitorado</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="mon_perf_resources" /><span className="txt">Uso de recursos monitorado</span></label></li>
-                </ul>
                 <h3>🔍 Logs e Rastreamento</h3>
                 <ul className="checklist-list">
                   <li className="check-item"><label><input type="checkbox" data-key="mon_logs_centralized" /><span className="txt">Logs centralizados configurados</span></label></li>
@@ -902,6 +894,28 @@ export default function AdminChecklistPage() {
                 </ul>
               </div>
 
+              <div className="collapsible" data-target="treinamento">
+                <div className="title"><strong>🎓 Treinamento</strong></div>
+                <div className="chev">▸</div>
+              </div>
+              <div id="treinamento" className="coll-content">
+                <h3>👥 Usuários Finais</h3>
+                <ul className="checklist-list">
+                    <li className="check-item"><label><input type="checkbox" data-key="train_user_manual" /><span className="txt">Manual do usuário criado</span></label></li>
+                    <li className="check-item"><label><input type="checkbox" data-key="train_user_training" /><span className="txt">Treinamento básico realizado</span></label></li>
+                    <li className="check-item"><label><input type="checkbox" data-key="train_user_faq" /><span className="txt">FAQ criado</span></label></li>
+                    <li className="check-item"><label><input type="checkbox" data-key="train_user_support" /><span className="txt">Suporte configurado</span></label></li>
+                </ul>
+
+                <h3>🔧 Administradores</h3>
+                <ul className="checklist-list">
+                    <li className="check-item"><label><input type="checkbox" data-key="train_admin_manual" /><span className="txt">Manual administrativo criado</span></label></li>
+                    <li className="check-item"><label><input type="checkbox" data-key="train_admin_training" /><span className="txt">Treinamento técnico realizado</span></label></li>
+                    <li className="check-item"><label><input type="checkbox" data-key="train_admin_procedures" /><span className="txt">Procedimentos de manutenção documentados</span></label></li>
+                    <li className="check-item"><label><input type="checkbox" data-key="train_admin_contacts" /><span className="txt">Contatos de suporte definidos</span></label></li>
+                </ul>
+              </div>
+              
               <div className="collapsible" data-target="hospedagem">
                 <div className="title"><strong>🏢 Seção de Hospedagem</strong></div>
                 <div className="chev">▸</div>
@@ -1021,3 +1035,5 @@ export default function AdminChecklistPage() {
     </div>
   );
 }
+
+    
