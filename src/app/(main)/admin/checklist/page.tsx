@@ -276,8 +276,10 @@ export default function AdminChecklistPage() {
             width: 100% !important;
           }
           .diagram svg {
-            max-width: 100%;
+            width: 80% !important;
             height: auto;
+            margin: 0 auto;
+            display: block;
           }
         `}</style>
       </Head>
@@ -523,7 +525,7 @@ export default function AdminChecklistPage() {
 
             <h3 className="text-sm font-semibold text-blue-600" style={{ marginBottom: '20px' }}>Arquitetura do Fluxo</h3>
               <div className="diagram" role="img" aria-label="Arquitetura do fluxo N8N">
-                <svg viewBox="0 0 600 250" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+                <svg viewBox="0 0 620 250" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
                   <defs>
                     <filter id="shadow-n8n" x="-50%" y="-50%" width="200%" height="200%">
                       <feDropShadow dx="1" dy="2" stdDeviation="4" floodColor="#000" floodOpacity="0.08"/>
@@ -534,42 +536,56 @@ export default function AdminChecklistPage() {
                   </defs>
                   
                   {/* Nodes */}
-                  <rect x="25" y="25" rx="10" ry="10" width="130" height="45" fill="#fff" stroke="#e2e8f0" filter="url(#shadow-n8n)"/>
-                  <text x="90" y="48" fontSize="10" textAnchor="middle" fill="#2d3748" fontWeight="600">⏰ Cron Trigger</text>
-                  <text x="90" y="62" fontSize="8" textAnchor="middle" fill="#718096">Execução programada</text>
+                  <g>
+                    <rect x="25" y="25" rx="10" ry="10" width="130" height="45" fill="#fff" stroke="#e2e8f0" filter="url(#shadow-n8n)"/>
+                    <text x="90" y="48" fontSize="10" textAnchor="middle" fill="#2d3748" fontWeight="600">⏰ Cron Trigger</text>
+                    <text x="90" y="62" fontSize="8" textAnchor="middle" fill="#718096">Execução programada</text>
+                  </g>
 
-                  <rect x="180" y="25" rx="10" ry="10" width="130" height="45" fill="#fff" stroke="#e2e8f0" filter="url(#shadow-n8n)"/>
-                  <text x="245" y="48" fontSize="10" textAnchor="middle" fill="#2d3748" fontWeight="600">🌐 HTTP Request</text>
-                  <text x="245" y="62" fontSize="8" textAnchor="middle" fill="#718096">Investing.com</text>
+                  <g>
+                    <rect x="180" y="25" rx="10" ry="10" width="130" height="45" fill="#fff" stroke="#e2e8f0" filter="url(#shadow-n8n)"/>
+                    <text x="245" y="48" fontSize="10" textAnchor="middle" fill="#2d3748" fontWeight="600">🌐 HTTP Request</text>
+                    <text x="245" y="62" fontSize="8" textAnchor="middle" fill="#718096">Investing.com</text>
+                  </g>
 
-                  <rect x="335" y="25" rx="10" ry="10" width="130" height="45" fill="#fff" stroke="#e2e8f0" filter="url(#shadow-n8n)"/>
-                  <text x="400" y="48" fontSize="10" textAnchor="middle" fill="#2d3748" fontWeight="600">🔍 HTML Extract</text>
-                  <text x="400" y="62" fontSize="8" textAnchor="middle" fill="#718096">CSS Selectors</text>
-
-                  <rect x="490" y="25" rx="10" ry="10" width="130" height="45" fill="#fff" stroke="#e2e8f0" filter="url(#shadow-n8n)"/>
-                  <text x="555" y="48" fontSize="10" textAnchor="middle" fill="#2d3748" fontWeight="600">⚙️ Code</text>
-                  <text x="555" y="62" fontSize="8" textAnchor="middle" fill="#718096">Processar Dados</text>
-
-                  <rect x="180" y="115" rx="10" ry="10" width="130" height="45" fill="#fff" stroke="#e2e8f0" filter="url(#shadow-n8n)"/>
-                  <text x="245" y="138" fontSize="10" textAnchor="middle" fill="#2d3748" fontWeight="600">🔥 Firebase</text>
-                  <text x="245" y="152" fontSize="8" textAnchor="middle" fill="#718096">Write Document</text>
+                  <g>
+                    <rect x="335" y="25" rx="10" ry="10" width="130" height="45" fill="#fff" stroke="#e2e8f0" filter="url(#shadow-n8n)"/>
+                    <text x="400" y="48" fontSize="10" textAnchor="middle" fill="#2d3748" fontWeight="600">🔍 HTML Extract</text>
+                    <text x="400" y="62" fontSize="8" textAnchor="middle" fill="#718096">CSS Selectors</text>
+                  </g>
                   
-                  <rect x="335" y="115" rx="10" ry="10" width="130" height="45" fill="#fff" stroke="#e2e8f0" filter="url(#shadow-n8n)"/>
-                  <text x="400" y="138" fontSize="10" textAnchor="middle" fill="#2d3748" fontWeight="600">⚠️ Error</text>
-                  <text x="400" y="152" fontSize="8" textAnchor="middle" fill="#718096">Handle Errors</text>
+                  <g>
+                    <rect x="490" y="25" rx="10" ry="10" width="130" height="45" fill="#fff" stroke="#e2e8f0" filter="url(#shadow-n8n)"/>
+                    <text x="555" y="48" fontSize="10" textAnchor="middle" fill="#2d3748" fontWeight="600">⚙️ Code</text>
+                    <text x="555" y="62" fontSize="8" textAnchor="middle" fill="#718096">Processar Dados</text>
+                  </g>
+                  
+                  <g>
+                    <rect x="260" y="115" rx="10" ry="10" width="130" height="45" fill="#fff" stroke="#e2e8f0" filter="url(#shadow-n8n)"/>
+                    <text x="325" y="138" fontSize="10" textAnchor="middle" fill="#2d3748" fontWeight="600">🔥 Firebase</text>
+                    <text x="325" y="152" fontSize="8" textAnchor="middle" fill="#718096">Write Document</text>
+                  </g>
+                  
+                  <g>
+                    <rect x="420" y="115" rx="10" ry="10" width="130" height="45" fill="#fff" stroke="#e2e8f0" filter="url(#shadow-n8n)"/>
+                    <text x="485" y="138" fontSize="10" textAnchor="middle" fill="#2d3748" fontWeight="600">⚠️ Error</text>
+                    <text x="485" y="152" fontSize="8" textAnchor="middle" fill="#718096">Handle Errors</text>
+                  </g>
 
-                  <rect x="490" y="115" rx="10" ry="10" width="130" height="45" fill="#fff" stroke="#e2e8f0" filter="url(#shadow-n8n)"/>
-                  <text x="555" y="138" fontSize="10" textAnchor="middle" fill="#2d3748" fontWeight="600">📝 Log</text>
-                  <text x="555" y="152" fontSize="8" textAnchor="middle" fill="#718096">Audit Trail</text>
+                  <g>
+                    <rect x="95" y="115" rx="10" ry="10" width="130" height="45" fill="#fff" stroke="#e2e8f0" filter="url(#shadow-n8n)"/>
+                    <text x="160" y="138" fontSize="10" textAnchor="middle" fill="#2d3748" fontWeight="600">📝 Log</text>
+                    <text x="160" y="152" fontSize="8" textAnchor="middle" fill="#718096">Audit Trail</text>
+                  </g>
                   
                   {/* Arrows */}
                   <line x1="155" y1="47.5" x2="180" y2="47.5" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrow-n8n)"/>
                   <line x1="310" y1="47.5" x2="335" y2="47.5" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrow-n8n)"/>
                   <line x1="465" y1="47.5" x2="490" y2="47.5" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrow-n8n)"/>
 
-                  <path d="M 555 70 Q 555 90 245 115" stroke="#a0aec0" strokeWidth="1.5" fill="none" markerEnd="url(#arrow-n8n)"/>
-                  <path d="M 555 70 Q 555 90 400 115" stroke="#a0aec0" strokeWidth="1.5" fill="none" markerEnd="url(#arrow-n8n)"/>
-                  <line x1="555" y1="70" x2="555" y2="115" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrow-n8n)"/>
+                  <path d="M 555 70 Q 555 90 325 115" stroke="#a0aec0" strokeWidth="1.5" fill="none" markerEnd="url(#arrow-n8n)"/>
+                  <path d="M 325 70 Q 325 90 160 115" stroke="#a0aec0" strokeDasharray="4 2" strokeWidth="1.5" fill="none" markerEnd="url(#arrow-n8n)"/>
+                  <path d="M 325 70 Q 325 90 485 115" stroke="#a0aec0" strokeDasharray="4 2" strokeWidth="1.5" fill="none" markerEnd="url(#arrow-n8n)"/>
                   
                   {/* Info boxes */}
                   <rect x="25" y="190" rx="8" ry="8" width="130" height="50" fill="#f7fafc" stroke="#e2e8f0" />
@@ -683,7 +699,6 @@ export default function AdminChecklistPage() {
                 <h3>🔧 Configuração de Ambiente</h3>
                 <ul className="checklist-list">
                   <li className="check-item"><label><input type="checkbox" data-key="pre_env_node" defaultChecked/><span className="txt">Node.js versão compatível especificada</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="pre_env_pnpm" /><span className="txt">pnpm configurado como gerenciador de pacotes</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="pre_env_deps" defaultChecked/><span className="txt">Dependências atualizadas e sem vulnerabilidades</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="pre_env_scripts" defaultChecked/><span className="txt">Scripts de desenvolvimento e produção configurados</span></label></li>
                 </ul>
