@@ -501,7 +501,7 @@ export default function AdminChecklistPage() {
                   </div>
                   <div style={{ minWidth: '200px' }}>
                     <div style={{ fontSize: '13px', color: 'hsl(var(--muted-foreground))' }}>Data</div>
-                    <input id="sigDevDate" type="date" className="sig-input" />
+                    <input id="sigDevDate" className="sig-input" placeholder="DD/MM/AAAA" />
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '12px', marginTop: '12px', flexWrap: 'wrap' }}>
@@ -511,21 +511,21 @@ export default function AdminChecklistPage() {
                   </div>
                   <div style={{ minWidth: '200px' }}>
                     <div style={{ fontSize: '13px', color: 'hsl(var(--muted-foreground))' }}>Data</div>
-                    <input id="sigClientDate" type="date" className="sig-input" />
+                    <input id="sigClientDate" className="sig-input" placeholder="DD/MM/AAAA" />
                   </div>
                 </div>
               </div>
             </div>
           </section>
-
         </div>
       </main>
+
       <aside>
         <div className="sticky">
           <div className="card">
             <div className="panel-title">📊 Progresso</div>
             <div style={{ textAlign: 'center', margin: '16px 0' }}>
-              <div style="font-size: 48px; font-weight: 800" id="progressBig">0%</div>
+              <div id="progressBig">0%</div>
               <div style={{ fontSize: '14px', color: 'hsl(var(--muted-foreground))', marginTop: '8px' }}>
                 <span id="completedItems">0</span> de <span id="totalItems">0</span> itens concluídos
               </div>
@@ -545,6 +545,7 @@ export default function AdminChecklistPage() {
         </div>
       </aside>
     </div>
-  
-  </body>
-</html>
+  );
+}
+
+    
