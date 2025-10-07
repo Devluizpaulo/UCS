@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useMemo, useTransition } from 'react';
@@ -270,7 +271,7 @@ export default function DashboardPage() {
                 asset.unit,
                 asset.currency,
                 status,
-                asset.lastUpdated ? format(new Date(asset.lastUpdated), 'dd/MM HH:mm') : 'N/A',
+                asset.lastUpdated,
                 observation
             ]);
 
