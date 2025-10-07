@@ -78,42 +78,127 @@
     --sidebar-ring: 222.2 47.4% 11.2%;
   }
 
-  .checklist-container{
-      max-width: var(--maxWidth);
-      margin: auto;
-      display: grid;
-      grid-template-columns: 1fr 340px;
-      gap: 1.5rem;
-      align-items: flex-start;
-      padding: 1.5rem;
+  .checklist-container {
+    max-width: 1200px;
+    margin: auto;
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 1.5rem;
+    align-items: flex-start;
+    padding: 1.5rem;
   }
-  
-  .card:has(.diagram) {
-      page-break-inside: avoid;
+  main {
+    grid-column: 1 / 2;
+  }
+  aside {
+    grid-column: 2 / 3;
+    position: sticky;
+    top: 1.5rem;
+  }
+  .card {
+    background: hsl(var(--card));
+    color: hsl(var(--foreground));
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  }
+  .section-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid hsl(var(--border));
+  }
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .section-title .icon {
+    font-size: 1.5rem;
+  }
+  .muted-note {
+    font-size: 0.875rem;
+    color: hsl(var(--muted-foreground));
+    padding: 0 1.5rem 1rem;
+  }
+  .collapsible {
+    padding: 1rem 1.5rem;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background-color 0.2s;
+    border-bottom: 1px solid hsl(var(--border));
+  }
+  .collapsible:hover {
+    background: hsl(var(--accent));
+  }
+  .collapsible .chev {
+    transition: transform 0.2s;
+  }
+  .coll-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out, padding 0.3s ease-out;
+    padding: 0 1.5rem;
+  }
+  .checklist-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .check-item {
+    padding: 0.5rem 0;
+    display: flex;
+    align-items: center;
+  }
+  .check-item label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    gap: 0.5rem;
+  }
+  .check-item input[type="checkbox"] {
+    width: 1rem;
+    height: 1rem;
+  }
+  .panel-title {
+    font-size: 1rem;
+    font-weight: 600;
+    padding: 1rem;
+    border-bottom: 1px solid hsl(var(--border));
+  }
+  #progressBig {
+    font-size: 3rem;
+    font-weight: 700;
+    color: hsl(var(--primary));
+  }
+  .progress-bar-container {
+    background: hsl(var(--muted));
+    border-radius: 999px;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: hsl(var(--primary));
+    border-radius: 999px;
+    transition: width 0.3s;
+  }
+  .sig-input {
+    width: 100%;
+    padding: 0.5rem;
+    border-radius: var(--radius);
+    border: 1px solid hsl(var(--border));
+    background: hsl(var(--background));
   }
 
-  .diagram {
-      max-width: 100%;
-      overflow: auto; /* Permite rolagem se o diagrama for muito grande */
-  }
-
-  .diagram svg {
-      min-width: 600px; /* Garante que o diagrama tenha um tamanho mínimo */
-  }
-
-  @media print {
-      body { background: white !important; padding: 0 !important; }
-      .checklist-container { display: block !important; }
-      main, aside { grid-column: auto !important; width: 100% !important; }
-      aside, header, .toolbar, .sticky { display: none !important; }
-      .card { box-shadow: none !important; border: 1px solid #eee !important; backdrop-filter: none !important; page-break-inside: avoid; }
-      .diagram { border: 1px solid #eee !important; width: 100% !important; max-width: 100% !important; overflow: hidden !important;}
-      .diagram svg { width: 100% !important; height: auto !important; }
-      .coll-content { max-height: none !important; padding-top: 12px !important; }
-      .collapsible .chev { display: none !important; }
-      @page {
-          size: A4;
-          margin: 15mm;
-      }
+  @media (max-width: 1024px) {
+    .checklist-container {
+      grid-template-columns: 1fr;
+    }
+    aside {
+      position: static;
+    }
   }
 }
