@@ -1,11 +1,12 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { getQuoteByDate } from '@/lib/data-service';
+import { getQuoteByDate, getCommodityPricesByDate } from '@/lib/data-service';
 import { formatCurrency } from '@/lib/formatters';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2, AlertCircle, Download, PieChart as PieChartIcon } from 'lucide-react';
+import { Loader2, AlertCircle, PieChart as PieChartIcon } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -14,13 +15,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Button } from './ui/button';
 import { format } from 'date-fns';
 import * as ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import { PdfExportButton } from './pdf-export-button';
 import { ExcelExportButton } from './excel-export-button';
-import type { CommodityPriceData } from '@/lib/types';
+import type { CommodityPriceData, FirestoreQuote } from '@/lib/types';
 import * as React from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 
@@ -109,66 +109,116 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
     if (!data || tableData.length === 0) return;
     setIsExporting(true);
 
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Composição');
+    try {
+        const workbook = new ExcelJS.Workbook();
+        workbook.creator = 'UCS Index Platform';
+        workbook.created = new Date();
 
-    worksheet.mergeCells('A1:C1');
-    worksheet.getCell('A1').value = 'Relatório de Composição - Valor de Uso do Solo';
-    worksheet.getCell('A1').font = { size: 16, bold: true };
+        // --- ABA 1: RESUMO DA COMPOSIÇÃO ---
+        const summarySheet = workbook.addWorksheet('Resumo da Composição');
+        
+        summarySheet.mergeCells('A1:C1');
+        summarySheet.getCell('A1').value = 'Relatório de Composição - Valor de Uso do Solo';
+        summarySheet.getCell('A1').font = { size: 16, bold: true, color: { argb: 'FF16a34a' } };
 
-    worksheet.mergeCells('A2:C2');
-    worksheet.getCell('A2').value = `Data: ${data.data}`;
-    worksheet.getCell('A2').font = { size: 12 };
-    
-    worksheet.getRow(4).values = ['Componente', 'Valor (R$)', 'Participação (%)'];
-    worksheet.getRow(4).font = { bold: true };
+        summarySheet.mergeCells('A2:C2');
+        summarySheet.getCell('A2').value = `Data: ${data.data}`;
+        summarySheet.getCell('A2').font = { size: 12, color: { argb: 'FF4b5563' } };
+        
+        summarySheet.getRow(4).values = ['Componente', 'Valor (R$)', 'Participação (%)'];
+        const headerRow = summarySheet.getRow(4);
+        headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        headerRow.eachCell(cell => {
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF16a34a' } };
+        });
 
-    tableData.forEach((item, index) => {
-        const row = worksheet.getRow(5 + index);
-        row.getCell(1).value = item.isSub ? `  ${item.name}` : item.name;
-        row.getCell(2).value = item.value;
-        row.getCell(2).numFmt = '"R$"#,##0.00';
-        row.getCell(3).value = item.percentage / 100;
-        row.getCell(3).numFmt = '0.00%';
-        if (item.id === 'crs_total') {
-            row.font = { bold: true };
-        }
-    });
-    
-    const totalRow = worksheet.getRow(5 + tableData.length);
-    totalRow.getCell(1).value = 'Total';
-    totalRow.getCell(2).value = data.valor;
-    totalRow.getCell(3).value = 1;
-    totalRow.font = { bold: true };
-    totalRow.getCell(2).numFmt = '"R$"#,##0.00';
-    totalRow.getCell(3).numFmt = '0.00%';
+        tableData.forEach((item, index) => {
+            const row = summarySheet.getRow(5 + index);
+            row.getCell(1).value = item.isSub ? `  └─ ${item.name}` : item.name;
+            row.getCell(2).value = item.value;
+            row.getCell(2).numFmt = '"R$"#,##0.00';
+            row.getCell(3).value = item.percentage / 100;
+            row.getCell(3).numFmt = '0.00%';
+            if (item.id === 'crs_total') {
+                row.font = { bold: true };
+            }
+            if (item.isSub) {
+                row.getCell(1).alignment = { indent: 1 };
+                row.font = { italic: true };
+            }
+        });
+        
+        const totalRow = summarySheet.getRow(5 + tableData.length);
+        totalRow.getCell(1).value = 'Total';
+        totalRow.getCell(2).value = data.valor;
+        totalRow.getCell(3).value = 1;
+        totalRow.font = { bold: true, size: 12 };
+        totalRow.getCell(2).numFmt = '"R$"#,##0.00';
+        totalRow.getCell(3).numFmt = '0.00%';
 
-    worksheet.columns.forEach((column: Partial<ExcelJS.Column>) => {
-        let max_width = 0;
-        if (column.eachCell) {
-          column.eachCell({ includeEmpty: true }, (cell: ExcelJS.Cell) => {
-              const columnWidth = cell.value ? cell.value.toString().length : 10;
-              if (columnWidth > max_width) {
-                  max_width = columnWidth;
-              }
-          });
-        }
-        column.width = max_width < 12 ? 12 : max_width + 4;
-    });
+        summarySheet.columns.forEach(column => {
+            let maxLength = 0;
+            column.eachCell!({ includeEmpty: true }, cell => {
+                let cellLength = cell.value ? cell.value.toString().length : 10;
+                if (cell.numFmt?.includes('%')) cellLength += 1;
+                if (maxLength < cellLength) maxLength = cellLength;
+            });
+            column.width = maxLength < 12 ? 12 : maxLength + 2;
+        });
 
-    const buffer = await workbook.xlsx.writeBuffer();
-    saveAs(new Blob([buffer]), `composicao_valor_uso_solo_${format(targetDate, 'yyyy-MM-dd')}.xlsx`);
-    setIsExporting(false);
+        // --- ABA 2: DADOS BRUTOS ---
+        const rawDataSheet = workbook.addWorksheet('Dados Brutos (Banco de Dados)');
+        
+        const rawDataHeader = ['Data', 'ID do Ativo', 'Nome', 'Valor', 'Moeda', 'Variação (%)', 'Variação Absoluta', 'Unidade', 'Categoria'];
+        rawDataSheet.getRow(1).values = rawDataHeader;
+        rawDataSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        rawDataSheet.getRow(1).eachCell(cell => {
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1f2937' } };
+        });
+        
+        const allRawData = await getCommodityPricesByDate(targetDate);
+        allRawData.forEach(asset => {
+            rawDataSheet.addRow([
+                asset.lastUpdated,
+                asset.id,
+                asset.name,
+                asset.price,
+                asset.currency,
+                asset.change,
+                asset.absoluteChange,
+                asset.unit,
+                asset.category
+            ]);
+        });
+        
+        rawDataSheet.columns.forEach(column => {
+            let maxLength = 0;
+            column.eachCell!({ includeEmpty: true }, cell => {
+                let cellLength = cell.value ? cell.value.toString().length : 10;
+                if (maxLength < cellLength) maxLength = cellLength;
+            });
+            column.width = maxLength < 15 ? 15 : maxLength + 2;
+        });
+
+
+        const buffer = await workbook.xlsx.writeBuffer();
+        saveAs(new Blob([buffer]), `composicao_valor_uso_solo_${format(targetDate, 'yyyy-MM-dd')}.xlsx`);
+        
+    } catch (error) {
+        console.error("Excel export failed:", error);
+    } finally {
+        setIsExporting(false);
+    }
   };
 
-  const pdfComponentData = tableData.map((item): CommodityPriceData => ({
+  const pdfComponentData: CommodityPriceData[] = tableData.map((item) => ({
       id: item.id, 
       name: item.name, 
       price: item.value, 
       change: item.percentage, 
       absoluteChange: 0, 
       currency: 'BRL', 
-      category: 'sub-index', 
+      category: item.isSub ? 'sub-index' : 'index', 
       description: '', 
       unit: 'R$', 
       lastUpdated: data.data,
@@ -236,7 +286,7 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
                  <div className="flex items-center gap-2 flex-shrink-0">
                     <PdfExportButton
                         data={{
-                            mainIndex: mainAssetData,
+                            mainIndex: mainAssetData ?? undefined,
                             secondaryIndices: [],
                             currencies: [],
                             otherAssets: pdfComponentData,
