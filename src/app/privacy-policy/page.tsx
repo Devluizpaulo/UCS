@@ -101,9 +101,9 @@ export default function PrivacyPolicyPage() {
                     </section>
 
                     <div className="pt-8 flex justify-center">
-                        <Button onClick={() => router.back()}>
+                        <Button onClick={() => router.push('/dashboard')}>
                             <ArrowLeft className="mr-2 h-4 w-4" />
-                            Voltar
+                            Voltar para o Dashboard
                         </Button>
                     </div>
                 </CardContent>
