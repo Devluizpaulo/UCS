@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState } from 'react';
@@ -76,6 +77,48 @@ export function ExcelPreviewModal({
   if (!data) return null;
 
   const { allData, categoryData, variationsData, targetDate, totalAssets, positiveChanges, negativeChanges, stableChanges } = data;
+  
+  const pieChartComponents = Object.entries(categoryData).reduce(
+    (acc: { components: JSX.Element[]; rotation: number }, [_, count], index) => {
+      const percentage = (count / totalAssets) * 100;
+      const rotation = acc.rotation;
+      const newRotation = rotation + percentage * 3.6;
+      const color = categoryColors[index % categoryColors.length];
+
+      const newComponents = [...acc.components];
+
+      newComponents.push(
+        <div
+          key={index}
+          className={`absolute inset-0 rounded-full ${color}`}
+          style={{
+            clipPath: `inset(0 ${percentage > 50 ? '0' : '50%'} 0 0)`,
+            transform: `rotate(${rotation}deg)`,
+          }}
+        />
+      );
+
+      if (percentage > 50) {
+        newComponents.push(
+          <div
+            key={`${index}-over50`}
+            className={`absolute inset-0 rounded-full ${color}`}
+            style={{
+              clipPath: 'inset(0 0 0 50%)',
+              transform: `rotate(${newRotation}deg)`,
+            }}
+          />
+        );
+      }
+
+      return {
+        components: newComponents,
+        rotation: newRotation,
+      };
+    },
+    { components: [], rotation: 0 }
+  ).components;
+
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -178,7 +221,7 @@ export function ExcelPreviewModal({
                           <tr key={asset.id} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
                             <td className="border p-2 font-medium">{asset.name}</td>
                             <td className="border p-2 text-right font-mono">
-                              {formatCurrency(asset.price, asset.currency)}
+                              {formatCurrency(asset.price, asset.currency, asset.id)}
                             </td>
                             <td className={`border p-2 text-right font-mono font-medium ${
                               asset.change > 0 ? 'text-green-600' : asset.change < 0 ? 'text-red-600' : 'text-gray-600'
@@ -203,34 +246,7 @@ export function ExcelPreviewModal({
                 <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
                   <div className="relative w-64 h-64 mx-auto">
                     <div className="absolute inset-0 rounded-full bg-gray-200" />
-                    {Object.entries(categoryData).reduce((acc, [_, count], index) => {
-                      const percentage = (count / totalAssets) * 100;
-                      const rotation = acc.rotation;
-                      const newRotation = rotation + percentage * 3.6;
-                      const color = categoryColors[index % categoryColors.length];
-                      return {
-                        components: [
-                          ...acc.components,
-                          <div
-                            key={index}
-                            className={`absolute inset-0 rounded-full ${color}`}
-                            style={{
-                              clipPath: `inset(0 ${percentage > 50 ? '0' : '50%'} 0 0)`,
-                              transform: `rotate(${rotation}deg)`
-                            }}
-                          />,
-                          percentage > 50 && <div
-                            key={`${index}-over50`}
-                            className={`absolute inset-0 rounded-full ${color}`}
-                            style={{
-                              clipPath: 'inset(0 0 0 50%)',
-                              transform: `rotate(${newRotation}deg)`
-                            }}
-                          />
-                        ],
-                        rotation: newRotation,
-                      };
-                    }, { components: [] as JSX.Element[], rotation: 0 }).components}
+                    {pieChartComponents}
                     <div className="absolute inset-4 rounded-full bg-background flex items-center justify-center">
                       <PieChart className="h-16 w-16 text-blue-600" />
                     </div>
