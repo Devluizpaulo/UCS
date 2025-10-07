@@ -6,7 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { getQuoteByDate, getCommodityPricesByDate } from '@/lib/data-service';
 import { formatCurrency } from '@/lib/formatters';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2, AlertCircle, PieChart as PieChartIcon } from 'lucide-react';
+import { Loader2, AlertCircle, PieChart as PieChartIcon, AlertTriangle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Table,
   TableBody,
@@ -23,6 +24,7 @@ import { ExcelExportButton } from './excel-export-button';
 import type { CommodityPriceData, FirestoreQuote } from '@/lib/types';
 import * as React from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { createPieChartImage, createBarChartImage, addImageToExcelWorksheet } from '@/lib/excel-chart-generator';
 
 interface CompositionAnalysisProps {
   targetDate: Date;
@@ -65,18 +67,48 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
     fetchData();
   }, [targetDate]);
 
-  const { chartData, tableData, mainAssetData } = useMemo(() => {
-    if (!data?.componentes || !data.valor) return { chartData: [], tableData: [], mainAssetData: null };
+  const { chartData, tableData, mainAssetData, hasDuplication } = useMemo(() => {
+    if (!data?.componentes || !data.valor) return { chartData: [], tableData: [], mainAssetData: null, hasDuplication: false };
 
     const componentes = data.componentes;
     const valorTotal = data.valor;
+
+    // Verificar duplicação de componentes
+    const componentKeys = Object.keys(componentes);
+    const uniqueKeys = new Set(componentKeys);
+    const hasDuplication = componentKeys.length !== uniqueKeys.size;
+
+    // Log de duplicação se encontrada
+    if (hasDuplication) {
+      console.warn('⚠️ Duplicação detectada nos componentes:', {
+        totalKeys: componentKeys.length,
+        uniqueKeys: uniqueKeys.size,
+        duplicatedKeys: componentKeys.filter(key => {
+          const count = componentKeys.filter(k => k === key).length;
+          return count > 1;
+        })
+      });
+    }
 
     const vus = { id: 'vus', name: componentNames.vus, value: (componentes.vus || 0) as number };
     const vmad = { id: 'vmad', name: componentNames.vmad, value: (componentes.vmad || 0) as number };
     const carbono_crs = { id: 'carbono_crs', name: componentNames.carbono_crs, value: (componentes.carbono_crs || 0) as number };
     const agua_crs = { id: 'Agua_CRS', name: componentNames.Agua_CRS, value: (componentes.agua_crs || 0) as number };
     
+    // Verificar se há valores duplicados ou inconsistentes
     const crsTotalValue = carbono_crs.value + agua_crs.value;
+    const expectedTotal = vus.value + vmad.value + crsTotalValue;
+    const totalDifference = Math.abs(valorTotal - expectedTotal);
+    
+    if (totalDifference > 0.01) { // Tolerância de 1 centavo
+      console.warn('⚠️ Inconsistência nos valores:', {
+        valorTotal,
+        expectedTotal,
+        difference: totalDifference,
+        components: { vus: vus.value, vmad: vmad.value, carbono_crs: carbono_crs.value, agua_crs: agua_crs.value }
+      });
+    }
+    
     const crsTotal = { id: 'crs_total', name: componentNames.crs_total, value: crsTotalValue };
     
     const chartItems = [vus, vmad, crsTotal].filter(item => item.value > 0);
@@ -102,7 +134,7 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
         lastUpdated: data.data,
     };
 
-    return { chartData: chartItems, tableData: tableItems, mainAssetData: mainAsset };
+    return { chartData: chartItems, tableData: tableItems, mainAssetData: mainAsset, hasDuplication };
   }, [data]);
   
   const handleExportExcel = async () => {
@@ -114,48 +146,88 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
         workbook.creator = 'UCS Index Platform';
         workbook.created = new Date();
 
-        // --- ABA 1: RESUMO DA COMPOSIÇÃO ---
-        const summarySheet = workbook.addWorksheet('Resumo da Composição');
+        // --- ABA 1: RESUMO DA COMPOSIÇÃO COM GRÁFICOS ---
+        const summarySheet = workbook.addWorksheet('Análise de Composição');
         
-        summarySheet.mergeCells('A1:C1');
-        summarySheet.getCell('A1').value = 'Relatório de Composição - Valor de Uso do Solo';
-        summarySheet.getCell('A1').font = { size: 16, bold: true, color: { argb: 'FF16a34a' } };
+        // Título principal
+        summarySheet.mergeCells('A1:F1');
+        const titleCell = summarySheet.getCell('A1');
+        titleCell.value = '🍕 Relatório de Composição - Valor de Uso do Solo';
+        titleCell.font = { size: 18, bold: true, color: { argb: 'FFFFFFFF' } };
+        titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF16a34a' } };
+        titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
 
-        summarySheet.mergeCells('A2:C2');
-        summarySheet.getCell('A2').value = `Data: ${data.data}`;
-        summarySheet.getCell('A2').font = { size: 12, color: { argb: 'FF4b5563' } };
-        
-        summarySheet.getRow(4).values = ['Componente', 'Valor (R$)', 'Participação (%)'];
+        // Data e informações
+        summarySheet.mergeCells('A2:F2');
+        const dateCell = summarySheet.getCell('A2');
+        dateCell.value = `📅 Data: ${data.data} | 💰 Valor Total: ${formatCurrency(data.valor, 'BRL')}`;
+        dateCell.font = { size: 12, color: { argb: 'FF4b5563' } };
+        dateCell.alignment = { horizontal: 'center' };
+
+        // Cabeçalhos da tabela
+        summarySheet.getRow(4).values = ['Componente', 'Valor (R$)', 'Participação (%)', 'Visualização'];
         const headerRow = summarySheet.getRow(4);
         headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
         headerRow.eachCell(cell => {
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF16a34a' } };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1f2937' } };
+            cell.alignment = { horizontal: 'center' };
         });
 
+        // Adicionar dados com formatação melhorada
         tableData.forEach((item, index) => {
             const row = summarySheet.getRow(5 + index);
+            const percentage = item.percentage;
+            const barLength = Math.round(percentage / 5); // Cada 5% = 1 caractere
+            const barVisual = '█'.repeat(barLength) + '░'.repeat(20 - barLength);
+            
             row.getCell(1).value = item.isSub ? `  └─ ${item.name}` : item.name;
             row.getCell(2).value = item.value;
             row.getCell(2).numFmt = '"R$"#,##0.00';
             row.getCell(3).value = item.percentage / 100;
             row.getCell(3).numFmt = '0.00%';
+            row.getCell(4).value = barVisual;
+            
+            // Formatação condicional
             if (item.id === 'crs_total') {
                 row.font = { bold: true };
+                row.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFe0e7ff' } };
             }
             if (item.isSub) {
                 row.getCell(1).alignment = { indent: 1 };
                 row.font = { italic: true };
             }
+            
+            // Colorir a barra visual baseada no componente
+            const colors = [
+                { argb: 'FFFF6384' }, // VUS - Vermelho
+                { argb: 'FF36A2EB' }, // VMAD - Azul  
+                { argb: 'FF4BC0C0' }, // CRS - Verde-azulado
+            ];
+            const colorIndex = chartData.findIndex(c => c.id === item.id);
+            if (colorIndex >= 0) {
+                row.getCell(4).font = { 
+                    name: 'Courier New', 
+                    size: 10, 
+                    color: colors[colorIndex % colors.length] 
+                };
+            }
         });
         
+        // Linha total
         const totalRow = summarySheet.getRow(5 + tableData.length);
-        totalRow.getCell(1).value = 'Total';
+        totalRow.getCell(1).value = 'TOTAL';
         totalRow.getCell(2).value = data.valor;
         totalRow.getCell(3).value = 1;
+        totalRow.getCell(4).value = '█'.repeat(20);
         totalRow.font = { bold: true, size: 12 };
         totalRow.getCell(2).numFmt = '"R$"#,##0.00';
         totalRow.getCell(3).numFmt = '0.00%';
+        totalRow.getCell(4).font = { name: 'Courier New', size: 10, color: { argb: 'FF16a34a' } };
+        totalRow.eachCell(cell => {
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFf0f9ff' } };
+        });
 
+        // Ajustar larguras das colunas
         summarySheet.columns.forEach(column => {
             let maxLength = 0;
             column.eachCell!({ includeEmpty: true }, cell => {
@@ -163,17 +235,141 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
                 if (cell.numFmt?.includes('%')) cellLength += 1;
                 if (maxLength < cellLength) maxLength = cellLength;
             });
-            column.width = maxLength < 12 ? 12 : maxLength + 2;
+            column.width = maxLength < 15 ? 15 : maxLength + 2;
         });
 
-        // --- ABA 2: DADOS BRUTOS ---
-        const rawDataSheet = workbook.addWorksheet('Dados Brutos (Banco de Dados)');
+        // --- ABA 2: GRÁFICOS VISUAIS ---
+        const chartsSheet = workbook.addWorksheet('Gráficos e Visualizações');
+        
+        // Título da aba de gráficos
+        chartsSheet.mergeCells('A1:F1');
+        const chartsTitleCell = chartsSheet.getCell('A1');
+        chartsTitleCell.value = '📊 Gráficos de Composição';
+        chartsTitleCell.font = { size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
+        chartsTitleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2563eb' } };
+        chartsTitleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+
+        // Criar dados para gráfico de pizza
+        const pieChartData = chartData.map((item, index) => ({
+            label: item.name.split(' ')[0], // Usar apenas a sigla
+            value: item.value,
+            color: COLORS[index % COLORS.length]
+        }));
+
+        // Tentar criar gráfico de pizza real
+        try {
+            const pieChartImage = await createPieChartImage(
+                pieChartData,
+                'Distribuição por Componente',
+                400,
+                300
+            );
+
+            if (pieChartImage) {
+                await addImageToExcelWorksheet(chartsSheet, pieChartImage, {
+                    row: 3,
+                    col: 0.5
+                }, { width: 400, height: 300 });
+            }
+        } catch (error) {
+            console.warn('Erro ao criar gráfico de pizza:', error);
+        }
+
+        // Criar gráfico de barras para comparação
+        try {
+            const barChartData = chartData.map((item, index) => ({
+                label: item.name.split(' ')[0],
+                value: item.value,
+                color: COLORS[index % COLORS.length]
+            }));
+
+            const barChartImage = await createBarChartImage(
+                barChartData,
+                'Comparação de Valores',
+                500,
+                300
+            );
+
+            if (barChartImage) {
+                await addImageToExcelWorksheet(chartsSheet, barChartImage, {
+                    row: 3,
+                    col: 8
+                }, { width: 500, height: 300 });
+            }
+        } catch (error) {
+            console.warn('Erro ao criar gráfico de barras:', error);
+        }
+
+        // Adicionar análise estatística
+        chartsSheet.addRow([]);
+        chartsSheet.addRow([]);
+        
+        const statsTitleRow = chartsSheet.addRow(['📈 Análise Estatística dos Componentes']);
+        statsTitleRow.getCell(1).font = { bold: true, size: 14, color: { argb: 'FF1f2937' } };
+        statsTitleRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFe0e7ff' } };
+
+        // Calcular estatísticas
+        const values = chartData.map(item => item.value);
+        const maxValue = Math.max(...values);
+        const minValue = Math.min(...values);
+        const avgValue = values.reduce((sum, val) => sum + val, 0) / values.length;
+        const totalValue = values.reduce((sum, val) => sum + val, 0);
+
+        const statsData = [
+            ['Métrica', 'Valor', 'Percentual'],
+            ['Maior Componente', formatCurrency(maxValue, 'BRL'), `${((maxValue / totalValue) * 100).toFixed(1)}%`],
+            ['Menor Componente', formatCurrency(minValue, 'BRL'), `${((minValue / totalValue) * 100).toFixed(1)}%`],
+            ['Valor Médio', formatCurrency(avgValue, 'BRL'), `${((avgValue / totalValue) * 100).toFixed(1)}%`],
+            ['Valor Total', formatCurrency(totalValue, 'BRL'), '100.0%']
+        ];
+
+        statsData.forEach((row, index) => {
+            const excelRow = chartsSheet.addRow(row);
+            if (index === 0) {
+                // Cabeçalho
+                excelRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+                excelRow.eachCell(cell => {
+                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1f2937' } };
+                    cell.alignment = { horizontal: 'center' };
+                });
+            } else {
+                // Dados
+                excelRow.getCell(2).numFmt = '"R$"#,##0.00';
+                excelRow.getCell(3).alignment = { horizontal: 'center' };
+            }
+        });
+
+        // Adicionar insights
+        chartsSheet.addRow([]);
+        chartsSheet.addRow([]);
+        
+        const insightsTitleRow = chartsSheet.addRow(['💡 Insights e Observações']);
+        insightsTitleRow.getCell(1).font = { bold: true, size: 14, color: { argb: 'FF1f2937' } };
+        insightsTitleRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFf0f9ff' } };
+
+        const insights = [
+            `• O componente dominante representa ${((maxValue / totalValue) * 100).toFixed(1)}% do total`,
+            `• A diferença entre maior e menor componente é de ${formatCurrency(maxValue - minValue, 'BRL')}`,
+            `• A distribuição mostra ${chartData.length} componentes principais`,
+            `• Data da análise: ${data.data}`,
+            `• Valor total analisado: ${formatCurrency(totalValue, 'BRL')}`
+        ];
+
+        insights.forEach(insight => {
+            const row = chartsSheet.addRow([insight]);
+            row.getCell(1).font = { size: 11 };
+            row.getCell(1).alignment = { wrapText: true };
+        });
+
+        // --- ABA 3: DADOS BRUTOS ---
+        const rawDataSheet = workbook.addWorksheet('Dados Brutos');
         
         const rawDataHeader = ['Data', 'ID do Ativo', 'Nome', 'Valor', 'Moeda', 'Variação (%)', 'Variação Absoluta', 'Unidade', 'Categoria'];
         rawDataSheet.getRow(1).values = rawDataHeader;
         rawDataSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
         rawDataSheet.getRow(1).eachCell(cell => {
           cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1f2937' } };
+          cell.alignment = { horizontal: 'center' };
         });
         
         const allRawData = await getCommodityPricesByDate(targetDate);
@@ -199,7 +395,6 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
             });
             column.width = maxLength < 15 ? 15 : maxLength + 2;
         });
-
 
         const buffer = await workbook.xlsx.writeBuffer();
         saveAs(new Blob([buffer]), `composicao_valor_uso_solo_${format(targetDate, 'yyyy-MM-dd')}.xlsx`);
@@ -271,6 +466,17 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
 
   return (
     <div className="grid grid-cols-1 gap-8">
+      {/* Alerta de Duplicação */}
+      {hasDuplication && (
+        <Alert className="border-orange-200 bg-orange-50">
+          <AlertTriangle className="h-4 w-4 text-orange-600" />
+          <AlertDescription className="text-orange-800">
+            <strong>⚠️ Duplicação Detectada:</strong> Foram encontrados componentes duplicados nos dados. 
+            Verifique o console para mais detalhes e considere revisar os dados de origem.
+          </AlertDescription>
+        </Alert>
+      )}
+      
        <Card>
           <CardHeader>
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">

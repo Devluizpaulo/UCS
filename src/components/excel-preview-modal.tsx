@@ -21,9 +21,10 @@ import {
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { ptBR, enUS, es } from 'date-fns/locale';
 import type { CommodityPriceData } from '@/lib/types';
 import { formatCurrency, formatPercentage } from '@/lib/formatters';
+import { useLanguage } from '@/lib/language-context';
 
 interface ExcelPreviewData {
   allData: CommodityPriceData[];
@@ -55,6 +56,14 @@ const categoryColors = [
   'bg-pink-500', 'bg-indigo-500', 'bg-teal-500', 'bg-yellow-500'
 ];
 
+const getDateLocale = (language: string) => {
+  switch (language) {
+    case 'en': return enUS;
+    case 'es': return es;
+    default: return ptBR;
+  }
+};
+
 export function ExcelPreviewModal({ 
   isOpen, 
   onClose, 
@@ -62,6 +71,7 @@ export function ExcelPreviewModal({
   data, 
   isExporting 
 }: ExcelPreviewModalProps) {
+  const { language, t } = useLanguage();
 
   if (!data) return null;
 
@@ -82,11 +92,11 @@ export function ExcelPreviewModal({
                  </div>
                </div>
                <DialogTitle className="text-xl font-bold">
-                 Preview do Relatório Excel
+                 {t.excelPreview.title}
                </DialogTitle>
              </div>
              <p className="text-sm text-gray-600">
-               Dados para {format(targetDate, 'dd/MM/yyyy', { locale: ptBR })}
+               {t.excelPreview.subtitle} {format(targetDate, 'dd/MM/yyyy', { locale: getDateLocale(language) })}
              </p>
           </div>
         </DialogHeader>
@@ -99,7 +109,7 @@ export function ExcelPreviewModal({
                   <div className="flex items-center gap-3">
                     <FileSpreadsheet className="h-6 w-6 text-blue-600" />
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">Total de Ativos</p>
+                      <p className="text-sm font-medium text-muted-foreground">{t.excelPreview.totalAssets}</p>
                       <p className="text-2xl font-bold text-blue-600">{totalAssets}</p>
                     </div>
                   </div>
@@ -110,7 +120,7 @@ export function ExcelPreviewModal({
                   <div className="flex items-center gap-3">
                     <TrendingUp className="h-6 w-6 text-green-600" />
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">Em Alta</p>
+                      <p className="text-sm font-medium text-muted-foreground">{t.excelPreview.rising}</p>
                       <p className="text-2xl font-bold text-green-600">{positiveChanges}</p>
                     </div>
                   </div>
@@ -121,7 +131,7 @@ export function ExcelPreviewModal({
                   <div className="flex items-center gap-3">
                     <TrendingDown className="h-6 w-6 text-red-600" />
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">Em Baixa</p>
+                      <p className="text-sm font-medium text-muted-foreground">{t.excelPreview.falling}</p>
                       <p className="text-2xl font-bold text-red-600">{negativeChanges}</p>
                     </div>
                   </div>
@@ -132,7 +142,7 @@ export function ExcelPreviewModal({
                   <div className="flex items-center gap-3">
                     <Minus className="h-6 w-6 text-gray-600" />
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">Estáveis</p>
+                      <p className="text-sm font-medium text-muted-foreground">{t.excelPreview.stable}</p>
                       <p className="text-2xl font-bold text-gray-600">{stableChanges}</p>
                     </div>
                   </div>
@@ -142,25 +152,25 @@ export function ExcelPreviewModal({
 
           <Tabs defaultValue="dados" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="dados">📊 Dados Principais</TabsTrigger>
-              <TabsTrigger value="distribuicao">🍕 Distribuição</TabsTrigger>
-              <TabsTrigger value="variacoes">📈 Top Variações</TabsTrigger>
+              <TabsTrigger value="dados">{t.excelPreview.tabs.mainData}</TabsTrigger>
+              <TabsTrigger value="distribuicao">{t.excelPreview.tabs.distribution}</TabsTrigger>
+              <TabsTrigger value="variacoes">{t.excelPreview.tabs.topVariations}</TabsTrigger>
             </TabsList>
 
             {/* Aba 1: Dados Principais */}
             <TabsContent value="dados" className="mt-4">
               <Card>
                 <CardHeader>
-                  <CardTitle>Tabela de Dados</CardTitle>
+                  <CardTitle>{t.excelPreview.tabs.mainData}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="overflow-x-auto max-h-96">
                     <table className="w-full border-collapse">
                       <thead>
                         <tr className="bg-blue-600 text-white sticky top-0">
-                          <th className="border p-2 text-left text-sm">Ativo</th>
-                          <th className="border p-2 text-right text-sm">Preço</th>
-                          <th className="border p-2 text-right text-sm">Variação</th>
+                          <th className="border p-2 text-left text-sm">{t.excelPreview.table.asset}</th>
+                          <th className="border p-2 text-right text-sm">{t.excelPreview.table.price}</th>
+                          <th className="border p-2 text-right text-sm">{t.excelPreview.table.variation}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -188,7 +198,7 @@ export function ExcelPreviewModal({
             <TabsContent value="distribuicao" className="mt-4">
               <Card>
                 <CardHeader>
-                  <CardTitle>Distribuição por Categoria</CardTitle>
+                  <CardTitle>{t.excelPreview.distribution.title}</CardTitle>
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
                   <div className="relative w-64 h-64 mx-auto">
@@ -232,7 +242,7 @@ export function ExcelPreviewModal({
                         <div className="flex-1">
                           <div className="flex justify-between items-center">
                             <span className="text-sm font-medium">{category}</span>
-                            <span className="text-sm text-muted-foreground">{count} ativo(s)</span>
+                            <span className="text-sm text-muted-foreground">{count} {t.excelPreview.distribution.assets}</span>
                           </div>
                           <Progress value={(count / totalAssets) * 100} className="h-2 mt-1" />
                         </div>
@@ -247,7 +257,7 @@ export function ExcelPreviewModal({
             <TabsContent value="variacoes" className="mt-4">
               <Card>
                 <CardHeader>
-                  <CardTitle>Top 10 Maiores Variações</CardTitle>
+                  <CardTitle>{t.excelPreview.topVariations.title}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
@@ -287,11 +297,11 @@ export function ExcelPreviewModal({
               <div className="flex items-start gap-3">
                 <Info className="h-5 w-5 text-blue-600 mt-0.5" />
                 <div>
-                  <h4 className="font-semibold text-blue-900 mb-2">Recursos do Excel Exportado:</h4>
+                  <h4 className="font-semibold text-blue-900 mb-2">{t.excelPreview.features.title}</h4>
                   <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
-                    <li>Três abas organizadas: Dados, Análises e Resumo.</li>
-                    <li>Formatação condicional com cores para altas e baixas.</li>
-                    <li>Gráficos de Pizza e Barras interativos.</li>
+                    {t.excelPreview.features.features.map((feature, index) => (
+                      <li key={index}>{feature}</li>
+                    ))}
                   </ul>
                 </div>
               </div>
@@ -301,18 +311,18 @@ export function ExcelPreviewModal({
 
         <DialogFooter className="p-6 pt-4 border-t flex-shrink-0">
           <Button variant="outline" onClick={onClose} disabled={isExporting}>
-            Cancelar
+            {t.excelPreview.buttons.cancel}
           </Button>
           <Button onClick={onExport} disabled={isExporting} className="min-w-[150px]">
             {isExporting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Gerando...
+                {t.excelPreview.buttons.generating}
               </>
             ) : (
               <>
                 <Download className="h-4 w-4 mr-2" />
-                Exportar para Excel
+                {t.excelPreview.buttons.exportToExcel}
               </>
             )}
           </Button>

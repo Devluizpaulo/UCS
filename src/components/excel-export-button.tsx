@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { FileSpreadsheet, Download, Eye, Loader2 } from 'lucide-react';
 import { ExcelPreviewModal } from '@/components/excel-preview-modal';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { ptBR, enUS, es } from 'date-fns/locale';
 import type { CommodityPriceData } from '@/lib/types';
+import { useLanguage } from '@/lib/language-context';
 
 interface ExcelExportButtonProps {
   data: {
@@ -29,6 +30,7 @@ export function ExcelExportButton({
   variant = 'outline',
   size = 'default'
 }: ExcelExportButtonProps) {
+  const { language, t } = useLanguage();
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
@@ -81,7 +83,7 @@ export function ExcelExportButton({
           disabled={allData.length === 0}
         >
           <Eye className="h-4 w-4 mr-2" />
-          Preview Excel
+          {t.excelExport.buttons.previewExcel}
         </Button>
         
         <Button
@@ -94,12 +96,12 @@ export function ExcelExportButton({
           {isExporting ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Exportando...
+              {t.excelExport.buttons.exporting}
             </>
           ) : (
             <>
               <Download className="h-4 w-4 mr-2" />
-              Exportar Excel
+              {t.excelExport.buttons.exportExcel}
             </>
           )}
         </Button>

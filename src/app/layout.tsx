@@ -5,6 +5,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/theme-provider';
 import { FirebaseClientProvider } from '@/firebase';
 import { CookieConsentBanner } from '@/components/cookie-consent-banner';
+import { LanguageProvider } from '@/lib/language-context';
 
 const APP_NAME = "Monitor do Índice UCS";
 const APP_DESCRIPTION = "Plataforma para monitoramento de ativos ambientais, incluindo o Índice de Unidade de Conservação Sustentável (UCS) e o Potencial Desflorestador Monetizado (PDM). Acompanhe o futuro do capital natural.";
@@ -70,16 +71,18 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <FirebaseClientProvider>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="light"
-            enableSystem
-            disableTransitionOnChange
-          >
-            {children}
-            <Toaster />
-            <CookieConsentBanner />
-          </ThemeProvider>
+          <LanguageProvider>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="light"
+              enableSystem
+              disableTransitionOnChange
+            >
+              {children}
+              <Toaster />
+              <CookieConsentBanner />
+            </ThemeProvider>
+          </LanguageProvider>
         </FirebaseClientProvider>
       </body>
     </html>

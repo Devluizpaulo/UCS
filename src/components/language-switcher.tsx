@@ -1,7 +1,6 @@
 
 'use client';
 
-import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -10,19 +9,20 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { BrazilFlag, USFlag, SpainFlag } from './flags';
+import { useLanguage } from '@/lib/language-context';
+import { SupportedLanguage } from '@/lib/i18n';
 
 const languages = [
-  { code: 'pt', label: 'Português', Flag: BrazilFlag },
-  { code: 'en', label: 'English', Flag: USFlag },
-  { code: 'es', label: 'Español', Flag: SpainFlag },
+  { code: 'pt' as SupportedLanguage, label: 'Português', Flag: BrazilFlag },
+  { code: 'en' as SupportedLanguage, label: 'English', Flag: USFlag },
+  { code: 'es' as SupportedLanguage, label: 'Español', Flag: SpainFlag },
 ];
 
 export function LanguageSwitcher() {
-  // For now, this is just a visual component.
-  // In a real i18n setup, this would come from a context or a store.
-  const [selectedLanguage, setSelectedLanguage] = useState(languages[0]);
-
-  const CurrentFlag = selectedLanguage.Flag;
+  const { language, setLanguage } = useLanguage();
+  
+  const currentLanguage = languages.find(lang => lang.code === language) || languages[0];
+  const CurrentFlag = currentLanguage.Flag;
 
   return (
     <DropdownMenu>
@@ -36,7 +36,7 @@ export function LanguageSwitcher() {
         {languages.map((lang) => (
           <DropdownMenuItem
             key={lang.code}
-            onClick={() => setSelectedLanguage(lang)}
+            onClick={() => setLanguage(lang.code)}
             className="flex items-center gap-2"
           >
             <lang.Flag />

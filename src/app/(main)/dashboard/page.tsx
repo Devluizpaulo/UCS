@@ -8,7 +8,8 @@ import { CommodityPrices } from '@/components/commodity-prices';
 import { getCommodityPricesByDate, getCommodityPrices, clearCacheAndRefresh, reprocessDate } from '@/lib/data-service';
 import { PageHeader } from '@/components/page-header';
 import { addDays, format, parseISO, isValid, isToday, isFuture } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { ptBR, enUS, es } from 'date-fns/locale';
+import { useLanguage } from '@/lib/language-context';
 import { DateNavigator } from '@/components/date-navigator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MainIndexCard } from '@/components/main-index-card';
@@ -44,6 +45,14 @@ function getValidatedDate(dateString?: string | null): Date | null {
   }
   return null;
 }
+
+const getDateLocale = (language: string) => {
+  switch (language) {
+    case 'en': return enUS;
+    case 'es': return es;
+    default: return ptBR;
+  }
+};
 
 function useRealtimeData(initialDate: Date | null) {
     const [data, setData] = useState<CommodityPriceData[]>([]);
@@ -92,6 +101,7 @@ function useRealtimeData(initialDate: Date | null) {
 export default function DashboardPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { language, t } = useLanguage();
   const dateParam = searchParams.get('date');
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
@@ -186,7 +196,7 @@ export default function DashboardPage() {
         // Subtítulo
         worksheet.mergeCells('A2:J2');
         const subtitleCell = worksheet.getCell('A2');
-        subtitleCell.value = `📅 Dados para ${format(targetDate, 'dd/MM/yyyy', { locale: ptBR })} | 🕐 Gerado em ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ptBR })}`;
+        subtitleCell.value = `📅 ${t.excelExport.executiveSummary.dataFor} ${format(targetDate, 'dd/MM/yyyy', { locale: getDateLocale(language) })} | 🕐 ${t.excelExport.executiveSummary.generatedOn} ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: getDateLocale(language) })}`;
         subtitleCell.font = { name: 'Calibri', size: 11, color: { argb: 'FF6b7280' } };
         subtitleCell.alignment = { horizontal: 'center' };
 
@@ -199,11 +209,11 @@ export default function DashboardPage() {
 
         worksheet.addRow([]);
         const statsRow = worksheet.addRow([
-            '📊 RESUMO ESTATÍSTICO',
-            `Total: ${totalAssets}`,
-            `📈 Altas: ${positiveChanges}`,
-            `📉 Baixas: ${negativeChanges}`,
-            `➡️ Estáveis: ${stableChanges}`,
+            t.excelExport.summary.title,
+            `${t.excelExport.summary.total}: ${totalAssets}`,
+            `${t.excelExport.summary.rising}: ${positiveChanges}`,
+            `${t.excelExport.summary.falling}: ${negativeChanges}`,
+            `${t.excelExport.summary.stable}: ${stableChanges}`,
             '',
             '',
             '',
@@ -226,16 +236,16 @@ export default function DashboardPage() {
 
         // --- Cabeçalho da Tabela Melhorado ---
         const headerRow = worksheet.addRow([
-            '🏷️ Categoria', 
-            '📋 Ativo', 
-            '💰 Último Preço', 
-            '📊 Variação (%)', 
-            '📈 Variação Absoluta', 
-            '📏 Unidade', 
-            '💱 Moeda', 
-            '🎯 Status',
-            '📅 Última Atualização',
-            '🔍 Observações'
+            t.excelExport.headers.category, 
+            t.excelExport.headers.asset, 
+            t.excelExport.headers.lastPrice, 
+            t.excelExport.headers.variationPercent, 
+            t.excelExport.headers.absoluteVariation, 
+            t.excelExport.headers.unit, 
+            t.excelExport.headers.currency, 
+            t.excelExport.headers.status,
+            t.excelExport.headers.lastUpdate,
+            t.excelExport.headers.notes
         ]);
         
         headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
@@ -319,53 +329,110 @@ export default function DashboardPage() {
             });
         });
 
-        // === ABA DE ANÁLISES ===
-        const analysisWorksheet = workbook.addWorksheet('📈 Análises');
+        // === ABA DE ANÁLISES COM GRÁFICOS ===
+        const analysisWorksheet = workbook.addWorksheet(t.excelExport.analysis.title);
 
-        // Gráfico de Pizza para Categorias
+        // Preparar dados para gráficos
         const categoryData = allData.reduce((acc, asset) => {
             acc[asset.category] = (acc[asset.category] || 0) + 1;
             return acc;
         }, {} as Record<string, number>);
 
-        analysisWorksheet.addRow([]);
-        analysisWorksheet.addRow([]);
-        const chartTitleRow = analysisWorksheet.addRow(['🍕 DISTRIBUIÇÃO POR CATEGORIA']);
-        chartTitleRow.getCell(1).font = { bold: true, size: 16, color: { argb: 'FF1f2937' } };
-        chartTitleRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFe0e7ff' } };
+        const variationsData = allData
+            .filter(asset => Math.abs(asset.change) > 0.01)
+            .sort((a, b) => Math.abs(b.change) - Math.abs(a.change))
+            .slice(0, 15);
 
-        const chartDataRow = analysisWorksheet.addRow(['Categoria', 'Quantidade', 'Percentual']);
-        chartDataRow.font = { bold: true };
-        chartDataRow.eachCell(cell => {
+        // === GRÁFICO DE PIZZA - DISTRIBUIÇÃO POR CATEGORIA ===
+        analysisWorksheet.addRow([]);
+        analysisWorksheet.addRow([]);
+        
+        // Título do gráfico
+        const pieChartTitleRow = analysisWorksheet.addRow([`🍕 ${t.excelExport.charts.categoryDistribution}`]);
+        pieChartTitleRow.getCell(1).font = { bold: true, size: 16, color: { argb: 'FF1f2937' } };
+        pieChartTitleRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFe0e7ff' } };
+
+        // Dados para o gráfico de pizza
+        const pieChartDataRow = analysisWorksheet.addRow([t.excelExport.charts.category, t.excelExport.charts.quantity]);
+        pieChartDataRow.font = { bold: true };
+        pieChartDataRow.eachCell(cell => {
             cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2563eb' } };
             cell.font = { color: { argb: 'FFFFFFFF' } };
             cell.alignment = { horizontal: 'center' };
         });
 
+        // Adicionar dados das categorias
         Object.entries(categoryData).forEach(([category, count]) => {
-            const percentage = (count / totalAssets) * 100;
-            const row = analysisWorksheet.addRow([category, count, percentage / 100]);
-            row.getCell(3).numFmt = '0.00%';
+            const row = analysisWorksheet.addRow([category, count]);
             row.eachCell(cell => {
                 cell.alignment = { horizontal: 'center' };
             });
         });
 
+        // === VISUALIZAÇÃO DE GRÁFICO DE PIZZA COM FORMATAÇÃO CONDICIONAL ===
+        // Criar uma representação visual usando caracteres e cores
+        analysisWorksheet.addRow([]);
+        analysisWorksheet.addRow([]);
         
-        // Gráfico de Barras para Variações
-        const variationsData = allData
-            .filter(asset => Math.abs(asset.change) > 0.01)
-            .sort((a, b) => Math.abs(b.change) - Math.abs(a.change))
-            .slice(0, 15); // Top 15 maiores variações
+        const pieVisualTitleRow = analysisWorksheet.addRow(['🍕 Visualização da Distribuição por Categoria']);
+        pieVisualTitleRow.getCell(1).font = { bold: true, size: 14, color: { argb: 'FF1f2937' } };
+        pieVisualTitleRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFe0e7ff' } };
 
+        // Adicionar dados com barras visuais para representar proporções
+        Object.entries(categoryData).forEach(([category, count], index) => {
+            const percentage = (count / totalAssets) * 100;
+            const barLength = Math.round(percentage / 5); // Cada 5% = 1 caractere
+            const barVisual = '█'.repeat(barLength) + '░'.repeat(20 - barLength);
+            
+            const row = analysisWorksheet.addRow([
+                category,
+                count,
+                `${percentage.toFixed(1)}%`,
+                barVisual
+            ]);
+            
+            // Colorir baseado no índice
+            const colors = [
+                { argb: 'FFFF6384' }, // Vermelho
+                { argb: 'FF36A2EB' }, // Azul
+                { argb: 'FFFFCE56' }, // Amarelo
+                { argb: 'FF4BC0C0' }, // Verde-azulado
+                { argb: 'FF9966FF' }  // Roxo
+            ];
+            
+            const categoryCell = row.getCell(1);
+            categoryCell.fill = { type: 'pattern', pattern: 'solid', fgColor: colors[index % colors.length] };
+            categoryCell.font = { color: { argb: 'FFFFFFFF' }, bold: true };
+            categoryCell.alignment = { horizontal: 'center' };
+            
+            const countCell = row.getCell(2);
+            countCell.alignment = { horizontal: 'center' };
+            countCell.font = { bold: true };
+            
+            const percentageCell = row.getCell(3);
+            percentageCell.alignment = { horizontal: 'center' };
+            percentageCell.font = { bold: true, color: colors[index % colors.length] };
+            
+            const barCell = row.getCell(4);
+            barCell.font = { name: 'Courier New', size: 10 };
+            barCell.alignment = { horizontal: 'left' };
+        });
+
+        // === GRÁFICO DE BARRAS - TOP VARIAÇÕES ===
         if (variationsData.length > 0) {
             analysisWorksheet.addRow([]);
             analysisWorksheet.addRow([]);
-            const barChartTitleRow = analysisWorksheet.addRow(['📊 TOP 15 MAIORES VARIAÇÕES']);
+            
+            const barChartTitleRow = analysisWorksheet.addRow([`📊 ${t.excelExport.charts.topVariations}`]);
             barChartTitleRow.getCell(1).font = { bold: true, size: 16, color: { argb: 'FF1f2937' } };
             barChartTitleRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFe0e7ff' } };
 
-            const barChartDataRow = analysisWorksheet.addRow(['Rank', 'Ativo', 'Variação (%)', 'Categoria']);
+            // Dados para o gráfico de barras
+            const barChartDataRow = analysisWorksheet.addRow([
+                t.excelExport.charts.rank, 
+                t.excelExport.charts.asset, 
+                t.excelExport.charts.variation
+            ]);
             barChartDataRow.font = { bold: true };
             barChartDataRow.eachCell(cell => {
                 cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2563eb' } };
@@ -373,18 +440,19 @@ export default function DashboardPage() {
                 cell.alignment = { horizontal: 'center' };
             });
 
+            // Adicionar dados das variações
             variationsData.forEach((asset, index) => {
                 const row = analysisWorksheet.addRow([
                     index + 1,
-                    asset.name, 
-                    asset.change / 100, 
-                    asset.category
+                    asset.name,
+                    asset.change / 100
                 ]);
                 
                 const variationCell = row.getCell(3);
                 variationCell.numFmt = '0.00%';
                 variationCell.alignment = { horizontal: 'center' };
                 
+                // Colorir baseado na variação
                 if(asset.change > 0) {
                     variationCell.font = { color: { argb: 'FF008000' }, bold: true };
                     variationCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFd1fae5' } };
@@ -397,10 +465,56 @@ export default function DashboardPage() {
                     if (colNumber !== 3) cell.alignment = { horizontal: 'center' };
                 });
             });
+
+            // === VISUALIZAÇÃO DE GRÁFICO DE BARRAS COM FORMATAÇÃO CONDICIONAL ===
+            analysisWorksheet.addRow([]);
+            analysisWorksheet.addRow([]);
+            
+            const barVisualTitleRow = analysisWorksheet.addRow(['📊 Visualização das Maiores Variações']);
+            barVisualTitleRow.getCell(1).font = { bold: true, size: 14, color: { argb: 'FF1f2937' } };
+            barVisualTitleRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFe0e7ff' } };
+
+            // Adicionar dados com barras visuais para representar variações
+            variationsData.slice(0, 10).forEach((asset, index) => {
+                const maxVariation = Math.max(...variationsData.map(v => Math.abs(v.change)));
+                const barLength = Math.round((Math.abs(asset.change) / maxVariation) * 25); // Máximo 25 caracteres
+                const barVisual = '█'.repeat(barLength) + '░'.repeat(25 - barLength);
+                
+                const row = analysisWorksheet.addRow([
+                    index + 1,
+                    asset.name,
+                    `${asset.change.toFixed(2)}%`,
+                    barVisual,
+                    asset.category
+                ]);
+                
+                // Colorir baseado na variação
+                const variationCell = row.getCell(3);
+                const barCell = row.getCell(4);
+                
+                if(asset.change > 0) {
+                    variationCell.font = { color: { argb: 'FF008000' }, bold: true };
+                    variationCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFd1fae5' } };
+                    barCell.font = { name: 'Courier New', size: 10, color: { argb: 'FF008000' } };
+                } else {
+                    variationCell.font = { color: { argb: 'FFFF0000' }, bold: true };
+                    variationCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFfee2e2' } };
+                    barCell.font = { name: 'Courier New', size: 10, color: { argb: 'FFFF0000' } };
+                }
+                
+                variationCell.alignment = { horizontal: 'center' };
+                barCell.alignment = { horizontal: 'left' };
+                
+                // Formatação das outras células
+                row.getCell(1).alignment = { horizontal: 'center' };
+                row.getCell(1).font = { bold: true };
+                row.getCell(2).alignment = { horizontal: 'left' };
+                row.getCell(5).alignment = { horizontal: 'center' };
+            });
         }
 
         // === ABA DE RESUMO EXECUTIVO ===
-        const summaryWorksheet = workbook.addWorksheet('📋 Resumo Executivo');
+        const summaryWorksheet = workbook.addWorksheet(t.excelExport.executiveSummary.title);
 
         // Cabeçalho
         summaryWorksheet.mergeCells('A1:E1');
@@ -412,7 +526,7 @@ export default function DashboardPage() {
 
         summaryWorksheet.mergeCells('A2:E2');
         const summarySubtitle = summaryWorksheet.getCell('A2');
-        summarySubtitle.value = `Data: ${format(targetDate, 'dd/MM/yyyy', { locale: ptBR })} | Gerado: ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ptBR })}`;
+        summarySubtitle.value = `${t.excelExport.executiveSummary.dataFor}: ${format(targetDate, 'dd/MM/yyyy', { locale: getDateLocale(language) })} | ${t.excelExport.executiveSummary.generatedOn}: ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: getDateLocale(language) })}`;
         summarySubtitle.font = { name: 'Calibri', size: 11, color: { argb: 'FF6b7280' } };
         summarySubtitle.alignment = { horizontal: 'center' };
 
@@ -420,11 +534,11 @@ export default function DashboardPage() {
         summaryWorksheet.addRow([]);
         summaryWorksheet.addRow([]);
         const kpisRow = summaryWorksheet.addRow([
-            '📊 MÉTRICAS PRINCIPAIS',
-            `Total de Ativos: ${totalAssets}`,
-            `Tendência de Alta: ${positiveChanges}`,
-            `Tendência de Baixa: ${negativeChanges}`,
-            `Estáveis: ${stableChanges}`
+            t.excelExport.executiveSummary.keyMetrics,
+            `${t.excelExport.summary.total}: ${totalAssets}`,
+            `${t.excelExport.summary.rising}: ${positiveChanges}`,
+            `${t.excelExport.summary.falling}: ${negativeChanges}`,
+            `${t.excelExport.summary.stable}: ${stableChanges}`
         ]);
         
         kpisRow.eachCell((cell, colNumber) => {
@@ -435,6 +549,143 @@ export default function DashboardPage() {
                 cell.font = { bold: true, size: 12 };
                 cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFe5e7eb' } };
                 cell.alignment = { horizontal: 'center' };
+            }
+        });
+
+        // === GRÁFICO DE LINHA - TENDÊNCIAS DE PREÇOS ===
+        summaryWorksheet.addRow([]);
+        summaryWorksheet.addRow([]);
+        
+        const lineChartTitleRow = summaryWorksheet.addRow([`📈 ${t.excelExport.charts.priceTrends}`]);
+        lineChartTitleRow.getCell(1).font = { bold: true, size: 16, color: { argb: 'FF1f2937' } };
+        lineChartTitleRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFe0e7ff' } };
+
+        // Preparar dados para gráfico de linha (top 5 ativos por preço)
+        const topAssetsByPrice = allData
+            .sort((a, b) => b.price - a.price)
+            .slice(0, 5);
+
+        // Dados para o gráfico de linha
+        const lineChartDataRow = summaryWorksheet.addRow([
+            t.excelExport.charts.asset,
+            t.excelExport.charts.price,
+            t.excelExport.charts.variation
+        ]);
+        lineChartDataRow.font = { bold: true };
+        lineChartDataRow.eachCell(cell => {
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2563eb' } };
+            cell.font = { color: { argb: 'FFFFFFFF' } };
+            cell.alignment = { horizontal: 'center' };
+        });
+
+        // Adicionar dados dos principais ativos
+        topAssetsByPrice.forEach((asset) => {
+            const row = summaryWorksheet.addRow([
+                asset.name,
+                asset.price,
+                asset.change / 100
+            ]);
+            
+            const priceCell = row.getCell(2);
+            priceCell.numFmt = '#,##0.00';
+            priceCell.alignment = { horizontal: 'center' };
+            
+            const variationCell = row.getCell(3);
+            variationCell.numFmt = '0.00%';
+            variationCell.alignment = { horizontal: 'center' };
+            
+            // Colorir baseado na variação
+            if(asset.change > 0) {
+                variationCell.font = { color: { argb: 'FF008000' }, bold: true };
+                variationCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFd1fae5' } };
+            } else {
+                variationCell.font = { color: { argb: 'FFFF0000' }, bold: true };
+                variationCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFfee2e2' } };
+            }
+            
+            row.eachCell((cell, colNumber) => {
+                if (colNumber !== 2 && colNumber !== 3) cell.alignment = { horizontal: 'center' };
+            });
+        });
+
+        // Criar gráfico de linha com configuração simplificada
+        try {
+            const lineChart = summaryWorksheet.addChart({
+                type: 'line',
+                name: t.excelExport.charts.priceTrends,
+                title: {
+                    name: t.excelExport.charts.priceTrends,
+                    overlay: false
+                },
+                legend: {
+                    position: 'bottom'
+                },
+                dataRange: {
+                    name: 'Preços',
+                    categories: `A${lineChartDataRow.number + 1}:A${lineChartDataRow.number + topAssetsByPrice.length}`,
+                    values: `B${lineChartDataRow.number + 1}:B${lineChartDataRow.number + topAssetsByPrice.length}`,
+                }
+            });
+
+            // Posicionar o gráfico de linha
+            lineChart.position = {
+                tl: { col: 0.5, row: lineChartTitleRow.number + 1 },
+                br: { col: 6.5, row: lineChartTitleRow.number + 12 }
+            };
+        } catch (error) {
+            console.warn('Erro ao criar gráfico de linha:', error);
+        }
+
+        // === VISUALIZAÇÃO ALTERNATIVA COM FORMATAÇÃO CONDICIONAL ===
+        // Adicionar uma seção com barras visuais usando formatação condicional
+        summaryWorksheet.addRow([]);
+        summaryWorksheet.addRow([]);
+        
+        const visualTitleRow = summaryWorksheet.addRow(['📊 Visualização de Dados com Formatação Condicional']);
+        visualTitleRow.getCell(1).font = { bold: true, size: 16, color: { argb: 'FF1f2937' } };
+        visualTitleRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFe0e7ff' } };
+
+        // Criar uma tabela com barras visuais usando caracteres
+        const visualDataRow = summaryWorksheet.addRow(['Ativo', 'Preço', 'Barra Visual', 'Variação']);
+        visualDataRow.font = { bold: true };
+        visualDataRow.eachCell(cell => {
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2563eb' } };
+            cell.font = { color: { argb: 'FFFFFFFF' } };
+            cell.alignment = { horizontal: 'center' };
+        });
+
+        // Adicionar dados com barras visuais
+        topAssetsByPrice.forEach((asset) => {
+            const maxPrice = Math.max(...topAssetsByPrice.map(a => a.price));
+            const barLength = Math.round((asset.price / maxPrice) * 20); // Máximo 20 caracteres
+            const barVisual = '█'.repeat(barLength) + '░'.repeat(20 - barLength);
+            
+            const row = summaryWorksheet.addRow([
+                asset.name,
+                asset.price,
+                barVisual,
+                asset.change / 100
+            ]);
+            
+            const priceCell = row.getCell(2);
+            priceCell.numFmt = '#,##0.00';
+            priceCell.alignment = { horizontal: 'center' };
+            
+            const barCell = row.getCell(3);
+            barCell.font = { name: 'Courier New', size: 10 };
+            barCell.alignment = { horizontal: 'left' };
+            
+            const variationCell = row.getCell(4);
+            variationCell.numFmt = '0.00%';
+            variationCell.alignment = { horizontal: 'center' };
+            
+            // Colorir baseado na variação
+            if(asset.change > 0) {
+                variationCell.font = { color: { argb: 'FF008000' }, bold: true };
+                variationCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFd1fae5' } };
+            } else {
+                variationCell.font = { color: { argb: 'FFFF0000' }, bold: true };
+                variationCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFfee2e2' } };
             }
         });
 
@@ -465,7 +716,7 @@ export default function DashboardPage() {
         saveAs(new Blob([buffer]), `🏛️_UCS_Index_Painel_Completo_${format(targetDate, 'yyyy-MM-dd')}.xlsx`);
 
         toast({
-            title: '✅ Excel Exportado com Sucesso!',
+            title: `✅ ${t.excelExport.messages.exportSuccess}`,
             description: `Relatório completo gerado com ${totalAssets} ativos, análises e resumo.`,
         });
 
@@ -473,7 +724,7 @@ export default function DashboardPage() {
         console.error('Excel Export Error:', error);
         toast({ 
             variant: 'destructive', 
-            title: '❌ Erro ao gerar Excel', 
+            title: `❌ ${t.excelExport.messages.exportError}`, 
             description: 'Ocorreu uma falha ao criar a planilha. Tente novamente.' 
         });
     } finally {
