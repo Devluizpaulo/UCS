@@ -11,9 +11,7 @@ export default function ChecklistLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <html lang="pt-BR">
-      <body>{children}</body>
-    </html>
-  );
+  // A tag <html> e <body> são gerenciadas pelo RootLayout principal.
+  // Este layout apenas aplica o CSS específico e renderiza o conteúdo.
+  return <>{children}</>;
 }

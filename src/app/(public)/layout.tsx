@@ -18,19 +18,25 @@ export default function PublicLayout({
   const { user, isUserLoading } = useUser();
   const router = useRouter();
 
+  // Este useEffect causava o redirecionamento indevido.
+  // Ele foi removido para permitir o acesso a páginas públicas (como /checklist)
+  // mesmo quando o usuário está logado.
+  /*
   useEffect(() => {
     if (!isUserLoading && user) {
       router.replace('/dashboard');
     }
   }, [isUserLoading, user, router]);
-
-  if (isUserLoading || user) {
+  */
+  
+  if (isUserLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
     );
   }
+
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-background text-foreground">
