@@ -310,18 +310,6 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                   <SidebarMenuItem onClick={handleMenuItemClick}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={pathname.startsWith('/admin/checklist')}
-                      tooltip={{ children: 'Checklist de Entrega' }}
-                    >
-                      <Link href="/admin/checklist">
-                        <CheckSquare />
-                        <span>Checklist</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
                 </SidebarMenu>
               )}
             </SidebarContent>
