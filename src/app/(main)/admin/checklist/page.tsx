@@ -188,7 +188,11 @@ export default function AdminChecklistPage() {
                 backgroundColor: '#ffffff'
             }).then(canvas => {
                 const imgData = canvas.toDataURL('image/jpeg', 0.98);
-                const pdf = new jsPDF('p', 'mm', 'a4');
+                const pdf = new jsPDF({
+                    orientation: 'portrait',
+                    unit: 'mm',
+                    format: 'a4',
+                });
                 const pdfWidth = pdf.internal.pageSize.getWidth();
                 const pdfHeight = pdf.internal.pageSize.getHeight();
                 
@@ -196,22 +200,25 @@ export default function AdminChecklistPage() {
                 const canvasHeight = canvas.height;
                 
                 // Calcula a proporção para caber na largura do PDF
-                const ratio = pdfWidth / canvasWidth;
+                const ratio = (pdfWidth - 20) / canvasWidth; // margem de 10mm de cada lado
                 const imgHeight = canvasHeight * ratio;
+                const imgWidth = canvasWidth * ratio;
                 
                 let heightLeft = imgHeight;
                 let position = 0;
+                
+                const margin = 10;
 
                 // Adiciona a primeira página
-                pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, imgHeight);
-                heightLeft -= pdfHeight;
+                pdf.addImage(imgData, 'JPEG', margin, position + margin, imgWidth, imgHeight);
+                heightLeft -= (pdfHeight - margin * 2);
 
                 // Adiciona páginas subsequentes se necessário
                 while (heightLeft > 0) {
-                    position = heightLeft - imgHeight;
+                    position -= (pdfHeight - margin * 2);
                     pdf.addPage();
-                    pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, imgHeight);
-                    heightLeft -= pdfHeight;
+                    pdf.addImage(imgData, 'JPEG', margin, position + margin, imgWidth, imgHeight);
+                    heightLeft -= (pdfHeight - margin * 2);
                 }
                 
                 const dev = ((document.getElementById('sigDevName') as HTMLInputElement)?.value || 'dev').replace(/\s+/g,'_');
@@ -332,8 +339,8 @@ export default function AdminChecklistPage() {
           }
           .diagram svg {
             max-width: 100%;
-            height: auto;
-            display: block;
+            width: 100% !important;
+            height: auto !important;
           }
           @media print {
             html, body {
@@ -603,53 +610,46 @@ export default function AdminChecklistPage() {
               <li style={{ marginBottom: '12px' }}>Execução programada (cron jobs)</li>
             </ul>
            
-            <h3 className="text-sm font-semibold text-blue-600" style={{ marginTop: '32px', marginBottom: '20px' }}>Custos de Hospedagem 24/7</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '28px', marginTop: '24px', padding: '0 8px' }}>
-                <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                  <h4 style={{ margin: '0 0 12px 0', color: '#0f172a' }}>🏢 Locaweb VPS</h4>
-                  <div style={{ fontSize: '13px', color: '#6b7280', marginBottom: '8px' }}>VPS 1 GB - Linux</div>
-                  <ul style={{ margin: '8px 0', paddingLeft: '16px', fontSize: '13px', color: '#374151' }}>
-                    <li>2 vCPUs</li>
-                    <li>1 GB RAM</li>
-                    <li>40 GB SSD</li>
-                    <li>Transferência ilimitada</li>
-                    <li>Ubuntu 20.04+</li>
-                    <li>Painel de controle</li>
-                    <li>Suporte técnico</li>
-                  </ul>
-                  <div style={{ marginTop: '12px' }}>
-                    <div style={{ fontSize: '14px', color: '#0f172a', fontWeight: 600 }}>Mensal: R$ 31,90/mês</div>
-                    <div style={{ fontSize: '13px', color: '#059669' }}>Trimestral: R$ 29,90/mês (R$ 89,70 total)</div>
-                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Semestral: R$ 27,90/mês</div>
-                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Anual: R$ 25,90/mês</div>
-                  </div>
-                </div>
-                <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                  <h4 style={{ margin: '0 0 12px 0', color: '#0f172a' }}>🌐 Hostinger VPS</h4>
-                  <div style={{ fontSize: '13px', color: '#6b7280', marginBottom: '8px' }}>KVM 2 - 12 meses</div>
-                  <ul style={{ margin: '8px 0', paddingLeft: '16px', fontSize: '13px', color: '#374151' }}>
-                    <li>2 vCPUs</li>
-                    <li>4 GB RAM</li>
-                    <li>80 GB SSD</li>
-                    <li>Transferência ilimitada</li>
-                    <li>Ubuntu 20.04+</li>
-                    <li>Painel de controle</li>
-                    <li>Suporte técnico</li>
-                  </ul>
-                  <div style={{ marginTop: '12px' }}>
-                    <div style={{ fontSize: '14px', color: '#0f172a', fontWeight: 600 }}>Anual: R$ 46,99/mês</div>
-                    <div style={{ fontSize: '13px', color: '#059669' }}>Economia anual: R$ 516,00</div>
-                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Total anual: R$ 563,88</div>
-                  </div>
-                </div>
-              </div>
-              <div style={{ background: '#fef3c7', padding: '28px', borderRadius: '10px', border: '1px solid #f59e0b', marginTop: '32px', marginLeft: '8px', marginRight: '8px' }}>
-                <h4 style={{ margin: '0 0 20px 0', color: '#92400e' }}>🏆 Melhor Opção: Hostinger KVM 2</h4>
-                <p style={{ margin: '0', fontSize: '14px', color: '#92400e', lineHeight: '1.7', paddingRight: '12px' }}>
-                  <strong>Hostinger KVM 2</strong> é a melhor opção para execução 24/7 do N8N, oferecendo mais recursos (4GB RAM vs 1GB) por um custo similar ao trimestral da Locaweb. Ideal para múltiplos fluxos e crescimento futuro.
-                </p>
-              </div>
+            <h3 className="text-sm font-semibold text-blue-600" style={{ marginBottom: '20px' }}>Arquitetura do Fluxo (SVG Detalhado)</h3>
+             <div className="diagram" role="img" aria-label="Arquitetura do fluxo N8N">
+                <svg viewBox="0 0 350 450" width="350" height="450" xmlns="http://www.w3.org/2000/svg">
+                    <g filter="url(#svg_shadow)">
+                        <rect x="50" y="25" width="250" height="50" rx="8" fill="#fff" stroke="#e2e8f0"/>
+                        <rect x="50" y="95" width="250" height="50" rx="8" fill="#fff" stroke="#e2e8f0"/>
+                        <rect x="50" y="165" width="250" height="50" rx="8" fill="#fff" stroke="#e2e8f0"/>
+                        <rect x="50" y="235" width="250" height="50" rx="8" fill="#fff" stroke="#e2e8f0"/>
+                        <rect x="50" y="305" width="250" height="50" rx="8" fill="#fff" stroke="#e2e8f0"/>
+                        <rect x="185" y="375" width="115" height="40" rx="8" fill="#fff" stroke="#e2e8f0"/>
+                        <rect x="50" y="375" width="115" height="40" rx="8" fill="#fff" stroke="#e2e8f0"/>
+                    </g>
+                    
+                    <text x="65" y="45" fontSize="10" fill="#2d3748" fontWeight="bold">⏰ Cron Trigger</text>
+                    <text x="65" y="60" fontSize="8" fill="#718096">Execução programada</text>
+
+                    <text x="65" y="115" fontSize="10" fill="#2d3748" fontWeight="bold">🌐 HTTP Request</text>
+                    <text x="65" y="130" fontSize="8" fill="#718096">Busca dados (Investing.com)</text>
+
+                    <text x="65" y="185" fontSize="10" fill="#2d3748" fontWeight="bold">🔍 HTML Extract</text>
+                    <text x="65" y="200" fontSize="8" fill="#718096">Extrai dados com CSS Selectors</text>
+
+                    <text x="65" y="255" fontSize="10" fill="#2d3748" fontWeight="bold">⚙️ Code</text>
+                    <text x="65" y="270" fontSize="8" fill="#718096">Processa e valida os dados</text>
+
+                    <text x="65" y="325" fontSize="10" fill="#2d3748" fontWeight="bold">🔥 Firebase</text>
+                    <text x="65" y="340" fontSize="8" fill="#718096">Salva documento no Firestore</text>
+                    
+                    <text x="200" y="395" fontSize="9" fill="#2d3748" fontWeight="bold">⚠️ Handle Errors</text>
+                    <text x="65" y="395" fontSize="9" fill="#2d3748" fontWeight="bold">📝 Log Audit</text>
+
+                    <path d="M 175 75 V 95" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrowhead)"/>
+                    <path d="M 175 145 V 165" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrowhead)"/>
+                    <path d="M 175 215 V 235" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrowhead)"/>
+                    <path d="M 175 285 V 305" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrowhead)"/>
+                    <path d="M 175 355 C 175 365, 115 365, 115 375" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrowhead)" fill="none"/>
+                    <path d="M 175 355 C 175 365, 235 365, 235 375" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrowhead)" fill="none"/>
+                </svg>
             </div>
+          </div>
           </section>
 
           <section className="card" style={{ marginTop: '18px' }}>
@@ -901,21 +901,18 @@ export default function AdminChecklistPage() {
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '18px', marginTop: '12px' }}>
                     <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
                       <h4 style={{ margin: '0 0 12px 0', color: '#0f172a' }}>🏢 Locaweb VPS</h4>
-                      <div style={{ fontSize: '13px', color: '#6b7280', marginBottom: '8px' }}>VPS 1 GB - Linux</div>
+                      <div style={{ fontSize: '13px', color: '#6b7280', marginBottom: '8px' }}>VPS 4 GB - Linux</div>
                       <ul style={{ margin: '8px 0', paddingLeft: '16px', fontSize: '13px', color: '#374151' }}>
                         <li>2 vCPUs</li>
-                        <li>1 GB RAM</li>
-                        <li>40 GB SSD</li>
+                        <li>4 GB RAM</li>
+                        <li>70 GB SSD</li>
                         <li>Transferência ilimitada</li>
                         <li>Ubuntu 20.04+</li>
                         <li>Painel de controle</li>
-                        <li>Suporte técnico</li>
                       </ul>
                       <div style={{ marginTop: '12px' }}>
-                        <div style={{ fontSize: '14px', color: '#0f172a', fontWeight: 600 }}>Mensal: R$ 31,90/mês</div>
-                        <div style={{ fontSize: '13px', color: '#059669' }}>Trimestral: R$ 29,90/mês (R$ 89,70 total)</div>
-                        <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Semestral: R$ 27,90/mês</div>
-                        <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Anual: R$ 25,90/mês</div>
+                        <div style={{ fontSize: '14px', color: '#0f172a', fontWeight: 600 }}>Trimestral: R$ 69,90/mês</div>
+                        <div style={{ fontSize: '13px', color: '#059669' }}>Total por trimestre: R$ 209,70</div>
                       </div>
                     </div>
                     <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
