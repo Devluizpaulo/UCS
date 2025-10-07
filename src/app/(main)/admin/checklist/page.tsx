@@ -22,8 +22,8 @@ export default function AdminChecklistPage() {
       const progressTextEl = document.getElementById('progressText');
       if (progressTextEl) progressTextEl.textContent = `${pct}%`;
       
-      const progressBarFill = document.querySelector('.progress-bar-fill') as HTMLElement | null;
-      if (progressBarFill) progressBarFill.style.width = `${pct}%`;
+      const progressFill = document.getElementById('progressFill') as HTMLElement | null;
+      if (progressFill) progressFill.style.width = `${pct}%`;
 
       const progressBigEl = document.getElementById('progressBig');
       if (progressBigEl) progressBigEl.textContent = `${pct}%`;
@@ -94,29 +94,24 @@ export default function AdminChecklistPage() {
       }
       updateProgressUI();
     }
-
-    checkboxes.forEach(cb => {
-      cb.addEventListener('change', saveStateDebounced);
+    
+     document.querySelectorAll('.collapsible').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        const target = document.getElementById(el.getAttribute('data-target') || '');
+        const chev = el.querySelector('.chev');
+        if(!target) return;
+        if(target.style.maxHeight && target.style.maxHeight !== '0px'){
+          target.style.maxHeight = '0';
+          if(target.style.paddingTop) target.style.paddingTop = '0';
+          if(chev) chev.style.transform = 'rotate(0deg)';
+        } else {
+          target.style.maxHeight = target.scrollHeight + 'px';
+          target.style.paddingTop = '12px';
+          if(chev) chev.style.transform = 'rotate(90deg)';
+        }
+      });
     });
 
-    ['sigDevName', 'sigDevDate', 'sigClientName', 'sigClientDate'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.addEventListener('input', saveStateDebounced);
-    });
-
-    document.querySelectorAll('.collapsible-trigger').forEach(trigger => {
-        trigger.addEventListener('click', () => {
-            const content = trigger.nextElementSibling as HTMLElement;
-            const chev = trigger.querySelector('.chev');
-            if (content && content.style.maxHeight && content.style.maxHeight !== '0px') {
-                content.style.maxHeight = '0px';
-                if(chev) chev.classList.remove('rotate-90');
-            } else if(content) {
-                content.style.maxHeight = content.scrollHeight + "px";
-                if(chev) chev.classList.add('rotate-90');
-            }
-        });
-    });
 
     const exportPdfButton = document.getElementById('exportPdf');
     if (exportPdfButton) {
@@ -128,11 +123,14 @@ export default function AdminChecklistPage() {
         }
 
         // Expand all sections to ensure they are rendered in the PDF
-        document.querySelectorAll('.collapsible-content').forEach(content => {
+        document.querySelectorAll('.coll-content').forEach(content => {
           const el = content as HTMLElement;
           el.style.maxHeight = el.scrollHeight + "px";
           const trigger = el.previousElementSibling;
-          if(trigger) trigger.querySelector('.chev')?.classList.add('rotate-90');
+          if(trigger) {
+            const chev = trigger.querySelector('.chev');
+            if(chev) (chev as HTMLElement).style.transform = 'rotate(90deg)';
+          }
         });
 
         const btn = exportPdfButton as HTMLButtonElement;
@@ -159,7 +157,7 @@ export default function AdminChecklistPage() {
           margin: 15,
           filename: filename,
           image: { type: 'jpeg', quality: 0.95 },
-          html2canvas: { scale: 2, useCORS: true },
+          html2canvas: { scale: 2, useCORS: true, logging: true },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
@@ -173,7 +171,6 @@ export default function AdminChecklistPage() {
         }).catch((err: any) => {
           console.error('Erro na geração do PDF:', err);
           alert('Erro ao gerar PDF: ' + (err.message || err));
-          btn.textContent = prevText;
           btn.disabled = false;
         });
       });
@@ -181,19 +178,30 @@ export default function AdminChecklistPage() {
 
     loadState();
     
-    // Auto-expand all on initial load
+     // Auto-expand all on initial load
     setTimeout(() => {
-        document.querySelectorAll('.collapsible-content').forEach(content => {
+        document.querySelectorAll('.coll-content').forEach(content => {
             const el = content as HTMLElement;
             el.style.maxHeight = el.scrollHeight + "px";
             const trigger = el.previousElementSibling;
-            if(trigger) trigger.querySelector('.chev')?.classList.add('rotate-90');
+            if(trigger) {
+                const chev = trigger.querySelector('.chev');
+                if(chev) (chev as HTMLElement).style.transform = 'rotate(90deg)';
+            }
         });
     }, 200);
 
+    checkboxes.forEach(cb => {
+      cb.addEventListener('change', saveStateDebounced);
+    });
+    
+    ['sigDevName', 'sigDevDate', 'sigClientName', 'sigClientDate'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('input', saveStateDebounced);
+    });
+
     return () => {
       checkboxes.forEach(cb => cb.removeEventListener('change', saveStateDebounced));
-      document.querySelectorAll('.collapsible-trigger').forEach(trigger => trigger.removeEventListener('click', () => {}));
     };
   }, []);
 
@@ -202,11 +210,11 @@ export default function AdminChecklistPage() {
       <Head>
         <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js" defer></script>
       </Head>
-      <style>{`
+       <style jsx global>{`
         .checklist-container { padding: 1rem; max-width: 1200px; margin: auto; display: grid; grid-template-columns: 1fr 320px; gap: 1.5rem; align-items: start; }
         main { grid-column: 1 / 2; }
         aside { grid-column: 2 / 3; position: sticky; top: 1.5rem; }
-        .checklist-card { background-color: var(--card); border-radius: 0.75rem; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); }
+        .checklist-card { background-color: var(--card); border-radius: 0.75rem; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); border: 1px solid hsl(var(--border)); }
         .checklist-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
         .checklist-title-section { display: flex; align-items: center; gap: 1rem; }
         .checklist-icon { width: 2.75rem; height: 2.75rem; border-radius: 0.5rem; background-color: hsl(var(--muted)); display: flex; align-items: center; justify-content: center; font-size: 1.25rem; }
@@ -221,144 +229,196 @@ export default function AdminChecklistPage() {
         .checklist-item .txt { font-size: 0.875rem; color: hsl(var(--foreground)); }
         h3 { font-size: 1.125rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.5rem; color: hsl(var(--primary)); }
         .sig-input { width: 100%; padding: 0.5rem; border-radius: 0.5rem; border: 1px solid hsl(var(--border)); margin-top: 0.25rem; background-color: hsl(var(--background)); }
-        .collapsible-trigger { cursor: pointer; padding: 0.75rem; border-radius: 0.5rem; border: 1px solid hsl(var(--border)); display: flex; align-items: center; justify-content: space-between; transition: background-color 0.2s; }
-        .collapsible-trigger:hover { background-color: hsl(var(--muted)/0.5); }
-        .collapsible-trigger .title { font-weight: 600; }
-        .collapsible-content { overflow: hidden; transition: max-height 0.3s ease-out, padding 0.3s ease-out; max-height: 0; }
+        .collapsible { cursor: pointer; padding: 0.75rem; border-radius: 0.5rem; border: 1px solid hsl(var(--border)); display: flex; align-items: center; justify-content: space-between; transition: background-color 0.2s; margin-top: 0.5rem; }
+        .collapsible:hover { background-color: hsl(var(--muted)/0.5); }
+        .collapsible .title { font-weight: 600; }
+        .coll-content { overflow: hidden; transition: max-height 0.3s ease-out, padding 0.3s ease-out; max-height: 0; }
         .chev { transition: transform 0.2s; }
-        .rotate-90 { transform: rotate(90deg); }
         .progress-bar-container { background-color: hsl(var(--muted)); border-radius: 9999px; overflow: hidden; height: 0.5rem; }
         .progress-bar-fill { background-color: hsl(var(--primary)); height: 100%; transition: width 0.3s; }
         .panel-title { font-weight: 600; margin-bottom: 0.75rem; }
+        .diagram{width:100%;height:auto;border-radius:10px;border:1px solid hsl(var(--border));background:linear-gradient(180deg, hsl(var(--card)), hsl(var(--muted)));padding:12px;margin-top:12px}
+        .muted-note{font-size:13px;color:var(--muted);margin-top:6px}
         @media (max-width: 980px) { .checklist-container { grid-template-columns: 1fr; } aside { position: static; } }
       `}</style>
       <div className="checklist-container">
         <main>
-            <div className="checklist-card">
-              <div className="checklist-header">
-                  <div className="checklist-title-section">
-                  <div className="checklist-icon">📋</div>
-                  <div>
-                      <h1 className="checklist-title">Checklist de Entrega - UCS Index Platform</h1>
-                      <p className="checklist-subtitle">Versão: 1.0.0 | Progresso salvo localmente no seu navegador.</p>
-                  </div>
-                  </div>
-                  <Button id="exportPdf" size="sm">Exportar PDF</Button>
-              </div>
-            </div>
-
             <div id="docArea">
               <section className="checklist-card">
-                <div className="collapsible-trigger">
-                  <div className="title">📋 Pré-Entrega</div>
-                  <div className="chev">▸</div>
-                </div>
-                <div className="collapsible-content p-4">
-                  <h3>🏗️ Desenvolvimento Concluído</h3>
-                  <ul className="checklist-list">
-                    <li className="checklist-item"><label><input type="checkbox" data-key="dev_done_features" /><span className="txt">Todas as funcionalidades implementadas conforme especificação</span></label></li>
-                    <li className="checklist-item"><label><input type="checkbox" data-key="dev_done_local_tests" /><span className="txt">Testes locais realizados com sucesso</span></label></li>
-                    <li className="checklist-item"><label><input type="checkbox" data-key="dev_done_code_review" /><span className="txt">Código revisado e documentado</span></label></li>
-                    <li className="checklist-item"><label><input type="checkbox" data-key="dev_done_performance" /><span className="txt">Performance otimizada</span></label></li>
-                    <li className="checklist-item"><label><input type="checkbox" data-key="dev_done_responsive" /><span className="txt">Responsividade testada em diferentes dispositivos</span></label></li>
-                  </ul>
-                  <h3>📚 Documentação Completa</h3>
-                  <ul className="checklist-list">
-                      <li className="checklist-item"><label><input type="checkbox" data-key="doc_readme" /><span className="txt">README.md atualizado</span></label></li>
-                      <li className="checklist-item"><label><input type="checkbox" data-key="doc_tech" /><span className="txt">Documentação técnica de entrega criada</span></label></li>
-                      <li className="checklist-item"><label><input type="checkbox" data-key="doc_env" /><span className="txt">Arquivo de exemplo de variáveis de ambiente</span></label></li>
-                      <li className="checklist-item"><label><input type="checkbox" data-key="doc_install" /><span className="txt">Instruções de instalação e deploy</span></label></li>
-                      <li className="checklist-item"><label><input type="checkbox" data-key="doc_diagrams" /><span className="txt">Diagramas de arquitetura atualizados</span></label></li>
-                  </ul>
-                  <h3>🔧 Configuração de Ambiente</h3>
-                  <ul className="checklist-list">
-                      <li className="checklist-item"><label><input type="checkbox" data-key="env_vars" /><span className="txt">Variáveis de ambiente documentadas</span></label></li>
-                      <li className="checklist-item"><label><input type="checkbox" data-key="env_firebase" /><span className="txt">Firebase configurado e testado</span></label></li>
-                      <li className="checklist-item"><label><input type="checkbox" data-key="env_google_ai" /><span className="txt">Google AI integrado e funcionando</span></label></li>
-                      <li className="checklist-item"><label><input type="checkbox" data-key="env_n8n" /><span className="txt">N8N configurado (se aplicável)</span></label></li>
-                      <li className="checklist-item"><label><input type="checkbox" data-key="env_build" /><span className="txt">Build de produção testado</span></label></li>
-                  </ul>
-                </div>
-              </section>
-
-              <section className="checklist-card">
-                <div className="collapsible-trigger">
-                  <div className="title">🚀 Entrega</div>
-                  <div className="chev">▸</div>
-                </div>
-                <div className="collapsible-content p-4">
-                  <h3>📦 Arquivos Entregues</h3>
-                  <ul className="checklist-list">
-                    <li className="checklist-item"><label><input type="checkbox" data-key="entrega_arquivos_codigo" /><span className="txt">Código-fonte completo</span></label></li>
-                    <li className="checklist-item"><label><input type="checkbox" data-key="entrega_arquivos_doc_tecnica" /><span className="txt">Documentação técnica (`DOCUMENTACAO_TECNICA_ENTREGA.md`)</span></label></li>
-                    <li className="checklist-item"><label><input type="checkbox" data-key="entrega_arquivos_readme" /><span className="txt">README atualizado</span></label></li>
-                    <li className="checklist-item"><label><input type="checkbox" data-key="entrega_arquivos_env" /><span className="txt">Arquivo de exemplo de configuração (`env.example`)</span></label></li>
-                    <li className="checklist-item"><label><input type="checkbox" data-key="entrega_arquivos_checklist" /><span className="txt">Checklist de entrega</span></label></li>
-                    <li className="checklist-item"><label><input type="checkbox" data-key="entrega_arquivos_backup" /><span className="txt">Backup do banco de dados (se solicitado)</span></label></li>
-                  </ul>
-                  <h3>🔑 Credenciais e Acessos</h3>
-                  <ul className="checklist-list">
-                    <li className="checklist-item"><label><input type="checkbox" data-key="entrega_credenciais_firebase" /><span className="txt">Firebase: Projeto criado e configurado</span></label></li>
-                    <li className="checklist-item"><label><input type="checkbox" data-key="entrega_credenciais_google_ai" /><span className="txt">Google AI: API Key configurada</span></label></li>
-                    <li className="checklist-item"><label><input type="checkbox" data-key="entrega_credenciais_n8n" /><span className="txt">N8N: Instância configurada (se aplicável)</span></label></li>
-                    <li className="checklist-item"><label><input type="checkbox" data-key="entrega_credenciais_dominio" /><span className="txt">Domínio: Configurado e apontando</span></label></li>
-                    <li className="checklist-item"><label><input type="checkbox" data-key="entrega_credenciais_ssl" /><span className="txt">SSL: Certificado configurado</span></label></li>
-                  </ul>
-                  <h3>🎯 Funcionalidades Testadas</h3>
-                  <ul className="checklist-list">
-                    <li className="checklist-item"><label><input type="checkbox" data-key="entrega_func_login" /><span className="txt">Login/logout funcionando</span></label></li>
-                    <li className="checklist-item"><label><input type="checkbox" data-key="entrega_func_dashboard" /><span className="txt">Dashboard carregando dados corretamente</span></label></li>
-                    <li className="checklist-item"><label><input type="checkbox" data-key="entrega_func_export_pdf" /><span className="txt">Exportação de PDF funcionando</span></label></li>
-                    <li className="checklist-item"><label><input type="checkbox" data-key="entrega_func_export_excel" /><span className="txt">Exportação de Excel funcionando</span></label></li>
-                    <li className="checklist-item"><label><input type="checkbox" data-key="entrega_func_preview" /><span className="txt">Preview de relatórios funcionando</span></label></li>
-                  </ul>
-                </div>
-              </section>
-
-              <section className="checklist-card">
-                  <div className="collapsible-trigger">
-                      <div className="title">✅ Assinaturas</div>
-                      <div className="chev">▸</div>
+                  <div className="section-head">
+                    <div className="section-title">
+                      <div className="icon">📋</div>
+                      <div>
+                        <h2 id="summary-title">Resumo da Entrega</h2>
+                        <div className="muted">Versão: 1.0.0 • Data: {new Date().toLocaleDateString('pt-BR')}</div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="collapsible-content p-4">
-                      <h3>Desenvolvedor</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-                          <div>
-                              <label htmlFor="sigDevName" className="text-sm font-medium">Nome:</label>
+                  <p className="muted-note">Este documento reúne a documentação técnica, checklists, diagramas e informações de deploy para a transferência completa do projeto UCS Index Platform.</p>
+              </section>
+
+              <section className="checklist-card">
+                  <div className="section-title">
+                      <div className="icon">🏛️</div>
+                      <h2>Visão Geral do Projeto</h2>
+                  </div>
+                  <p className="muted-note">UCS Index Platform é uma aplicação web para monitoramento de índices de sustentabilidade, com análises, relatórios em PDF/Excel e integração com automações (N8N) e IA (Google Genkit).</p>
+              </section>
+              
+              <section className="card">
+                <div className="section-title">
+                  <div className="icon">🗺️</div>
+                  <div>
+                    <h2>Diagramas</h2>
+                    <div className="muted">Arquitetura, Fluxo de Dados e Infraestrutura</div>
+                  </div>
+                </div>
+
+                <div style={({ marginTop: '12px' })}>
+                  <h3>Arquitetura Técnica</h3>
+                  <div className="diagram" role="img" aria-label="Diagrama de arquitetura técnica">
+                    <svg viewBox="0 0 1000 360" width="100%" height="320" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+                        <defs>
+                          <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+                            <feDropShadow dx="0" dy="6" stdDeviation="10" floodColor="#000" floodOpacity="0.12"/>
+                          </filter>
+                          <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="#9fb7e8" />
+                          </marker>
+                        </defs>
+                        <rect x="40" y="40" rx="12" ry="12" width="220" height="80" fill="#ffffff" stroke="#dfe8f6" strokeWidth="1.5" filter="url(#shadow)"/>
+                        <text x="150" y="70" fontSize="14" textAnchor="middle" fill="#0f172a" fontWeight="700">Front-end</text>
+                        <text x="150" y="92" fontSize="12" textAnchor="middle" fill="#6b7280">Next.js (React)</text>
+                        <rect x="300" y="40" rx="12" ry="12" width="220" height="80" fill="#ffffff" stroke="#dfe8f6" strokeWidth="1.5" filter="url(#shadow)"/>
+                        <text x="410" y="68" fontSize="14" textAnchor="middle" fill="#0f172a" fontWeight="700">API / Server</text>
+                        <text x="410" y="90" fontSize="12" textAnchor="middle" fill="#6b7280">Cloud Functions / Serverless</text>
+                        <rect x="560" y="40" rx="12" ry="12" width="220" height="80" fill="#ffffff" stroke="#dfe8f6" strokeWidth="1.5" filter="url(#shadow)"/>
+                        <text x="670" y="68" fontSize="14" textAnchor="middle" fill="#0f172a" fontWeight="700">Banco de Dados</text>
+                        <text x="670" y="90" fontSize="12" textAnchor="middle" fill="#6b7280">Firebase Firestore</text>
+                        <line x1="260" y1="80" x2="300" y2="80" stroke="#9fb7e8" strokeWidth="3" markerEnd="url(#arrow)"/>
+                        <line x1="520" y1="80" x2="560" y2="80" stroke="#9fb7e8" strokeWidth="3" markerEnd="url(#arrow)"/>
+                        <rect x="120" y="180" rx="10" ry="10" width="240" height="64" fill="#fff" stroke="#dfe8f6" strokeWidth="1.2" filter="url(#shadow)"/>
+                        <text x="240" y="205" fontSize="13" textAnchor="middle" fill="#0f172a" fontWeight="700">N8N (Automação)</text>
+                        <text x="240" y="223" fontSize="12" textAnchor="middle" fill="#6b7280">Coleta de dados e workflows</text>
+                        <rect x="440" y="180" rx="10" ry="10" width="240" height="64" fill="#fff" stroke="#dfe8f6" strokeWidth="1.2" filter="url(#shadow)"/>
+                        <text x="560" y="205" fontSize="13" textAnchor="middle" fill="#0f172a" fontWeight="700">Google AI (Genkit)</text>
+                        <text x="560" y="223" fontSize="12" textAnchor="middle" fill="#6b7280">Geração de relatórios / NLP</text>
+                        <line x1="240" y1="180" x2="240" y2="140" stroke="#b7d0f7" strokeWidth="2" markerEnd="url(#arrow)"/>
+                        <line x1="560" y1="180" x2="560" y2="140" stroke="#b7d0f7" strokeWidth="2" markerEnd="url(#arrow)"/>
+                    </svg>
+                  </div>
+                </div>
+              </section>
+
+              <section className="card">
+                <div className="section-title">
+                    <div className="icon">🔄</div>
+                    <h2>Fluxo N8N - Automação de Coleta</h2>
+                </div>
+                <div style={({ marginTop: '12px' })}>
+                    <h3>Arquitetura do Fluxo</h3>
+                    <div className="diagram" role="img" aria-label="Arquitetura do fluxo N8N">
+                        <svg viewBox="0 0 1000 400" width="100%" height="400" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+                           <defs>
+                              <filter id="shadow-n8n" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="6" stdDeviation="10" floodColor="#000" floodOpacity="0.12"/></filter>
+                              <marker id="arrow-n8n" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#9fb7e8" /></marker>
+                           </defs>
+                           <rect x="40" y="40" rx="12" ry="12" width="180" height="60" fill="#fff" stroke="#dfe8f6" strokeWidth="1.5" filter="url(#shadow-n8n)"/><text x="130" y="70" fontSize="13" textAnchor="middle" fill="#0f172a" fontWeight="700">⏰ Cron Trigger</text><text x="130" y="88" fontSize="11" textAnchor="middle" fill="#6b7280">Execução programada</text>
+                           <rect x="260" y="40" rx="12" ry="12" width="180" height="60" fill="#fff" stroke="#dfe8f6" strokeWidth="1.5" filter="url(#shadow-n8n)"/><text x="350" y="70" fontSize="13" textAnchor="middle" fill="#0f172a" fontWeight="700">🌐 HTTP Request</text><text x="350" y="88" fontSize="11" textAnchor="middle" fill="#6b7280">Investing.com</text>
+                           <rect x="480" y="40" rx="12" ry="12" width="180" height="60" fill="#fff" stroke="#dfe8f6" strokeWidth="1.5" filter="url(#shadow-n8n)"/><text x="570" y="70" fontSize="13" textAnchor="middle" fill="#0f172a" fontWeight="700">🔍 HTML Extract</text><text x="570" y="88" fontSize="11" textAnchor="middle" fill="#6b7280">CSS Selectors</text>
+                           <rect x="700" y="40" rx="12" ry="12" width="180" height="60" fill="#fff" stroke="#dfe8f6" strokeWidth="1.5" filter="url(#shadow-n8n)"/><text x="790" y="70" fontSize="13" textAnchor="middle" fill="#0f172a" fontWeight="700">⚙️ Code</text><text x="790" y="88" fontSize="11" textAnchor="middle" fill="#6b7280">Processar Dados</text>
+                           <rect x="260" y="160" rx="12" ry="12" width="180" height="60" fill="#fff" stroke="#dfe8f6" strokeWidth="1.5" filter="url(#shadow-n8n)"/><text x="350" y="190" fontSize="13" textAnchor="middle" fill="#0f172a" fontWeight="700">🔥 Firebase</text><text x="350" y="208" fontSize="11" textAnchor="middle" fill="#6b7280">Write Document</text>
+                           <rect x="480" y="160" rx="12" ry="12" width="180" height="60" fill="#fff" stroke="#dfe8f6" strokeWidth="1.5" filter="url(#shadow-n8n)"/><text x="570" y="190" fontSize="13" textAnchor="middle" fill="#0f172a" fontWeight="700">⚠️ Error</text><text x="570" y="208" fontSize="11" textAnchor="middle" fill="#6b7280">Handle Errors</text>
+                           <rect x="700" y="160" rx="12" ry="12" width="180" height="60" fill="#fff" stroke="#dfe8f6" strokeWidth="1.5" filter="url(#shadow-n8n)"/><text x="790" y="190" fontSize="13" textAnchor="middle" fill="#0f172a" fontWeight="700">📝 Log</text><text x="790" y="208" fontSize="11" textAnchor="middle" fill="#6b7280">Audit Trail</text>
+                           <line x1="220" y1="70" x2="260" y2="70" stroke="#9fb7e8" strokeWidth="3" markerEnd="url(#arrow-n8n)"/><line x1="440" y1="70" x2="480" y2="70" stroke="#9fb7e8" strokeWidth="3" markerEnd="url(#arrow-n8n)"/><line x1="660" y1="70" x2="700" y2="70" stroke="#9fb7e8" strokeWidth="3" markerEnd="url(#arrow-n8n)"/>
+                           <line x1="790" y1="100" x2="350" y2="160" stroke="#9fb7e8" strokeWidth="3" markerEnd="url(#arrow-n8n)"/><line x1="790" y1="100" x2="570" y2="160" stroke="#9fb7e8" strokeWidth="3" markerEnd="url(#arrow-n8n)"/><line x1="790" y1="100" x2="790" y2="160" stroke="#9fb7e8" strokeWidth="3" markerEnd="url(#arrow-n8n)"/>
+                        </svg>
+                    </div>
+                </div>
+              </section>
+
+              <section className="checklist-card" style={{marginTop: '18px'}}>
+                  <div className="section-head">
+                    <div className="section-title">
+                      <div className="icon">✅</div>
+                      <h2>Checklist de Entrega</h2>
+                    </div>
+                  </div>
+                  <div style={{marginTop: '12px'}}>
+                    <div className="collapsible" data-target="preEntrega">
+                      <div className="title"><strong>📋 Pré-Entrega</strong></div>
+                      <div className="chev">▸</div>
+                    </div>
+                    <div id="preEntrega" className="coll-content">
+                      <h3>🏗️ Desenvolvimento Concluído</h3>
+                      <ul className="checklist-list">
+                        <li className="checklist-item"><label><input type="checkbox" data-key="pre_dev_func"/><span className="txt">Todas as funcionalidades implementadas</span></label></li>
+                         <li className="checklist-item"><label><input type="checkbox" data-key="pre_dev_tests"/><span className="txt">Testes locais realizados</span></label></li>
+                      </ul>
+                    </div>
+                    
+                    <div className="collapsible" data-target="entrega">
+                      <div className="title"><strong>🚀 Entrega</strong></div>
+                      <div className="chev">▸</div>
+                    </div>
+                    <div id="entrega" className="coll-content">
+                      <h3>📦 Arquivos Entregues</h3>
+                      <ul className="checklist-list">
+                          <li className="checklist-item"><label><input type="checkbox" data-key="entrega_code"/><span className="txt">Código-fonte completo</span></label></li>
+                          <li className="checklist-item"><label><input type="checkbox" data-key="entrega_doc"/><span className="txt">Documentação técnica</span></label></li>
+                      </ul>
+                    </div>
+                     <div style={{marginTop: '14px'}}>
+                      <h3>✅ Assinaturas</h3>
+                      <div style={{display:'flex', gap:'12px', marginTop:'8px', flexWrap:'wrap'}}>
+                          <div style={{flex:'1', minWidth:'220px'}}>
+                              <div style={{fontSize:'13px', color:'var(--muted)'}}>Desenvolvedor</div>
                               <input id="sigDevName" className="sig-input" placeholder="Nome do desenvolvedor" />
                           </div>
-                          <div>
-                              <label htmlFor="sigDevDate" className="text-sm font-medium">Data:</label>
+                          <div style={{minWidth:'200px'}}>
+                              <div style={{fontSize:'13px', color:'var(--muted)'}}>Data</div>
                               <input id="sigDevDate" type="date" className="sig-input" />
                           </div>
                       </div>
-                      <h3 className="mt-6">Cliente</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-                          <div>
-                              <label htmlFor="sigClientName" className="text-sm font-medium">Nome:</label>
+                      <div style={{display:'flex', gap:'12px', marginTop:'12px', flexWrap:'wrap'}}>
+                          <div style={{flex:'1', minWidth:'220px'}}>
+                              <div style={{fontSize:'13px', color:'var(--muted)'}}>Cliente</div>
                               <input id="sigClientName" className="sig-input" placeholder="Nome do cliente" />
                           </div>
-                          <div>
-                              <label htmlFor="sigClientDate" className="text-sm font-medium">Data:</label>
+                          <div style={{minWidth:'200px'}}>
+                              <div style={{fontSize:'13px', color:'var(--muted)'}}>Data</div>
                               <input id="sigClientDate" type="date" className="sig-input" />
                           </div>
                       </div>
                   </div>
+                  </div>
               </section>
             </div>
+            <footer style={{marginTop: '18px', textAlign: 'center'}}>
+                <div className="muted">Progresso salvo no navegador. Use "Exportar PDF" para gerar o documento final.</div>
+            </footer>
         </main>
         <aside>
-          <div className="checklist-card">
-            <h3 className="panel-title">Progresso Geral</h3>
-            <div className="text-center my-4">
-              <span id="progressBig" className="text-5xl font-bold text-primary">0%</span>
+          <div className="sticky">
+            <div className="checklist-card">
+              <div className="panel-title">📊 Progresso</div>
+              <div style={{textAlign:'center', margin:'16px 0'}}>
+                <div style={{fontSize: '48px', fontWeight: 800, background: 'var(--gradient-primary)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}} id="progressBig">0%</div>
+                <div style={{fontSize: '14px', color:'var(--muted)', marginTop:'8px'}}>
+                  <span id="completedItems">0</span> de <span id="totalItems">0</span> itens concluídos
+                </div>
+                <div style={{marginTop:'12px'}}>
+                  <div className="progress-bar-container" style={{width:'100%', height:'8px'}}>
+                    <div className="progress-bar-fill" id="progressFill" style={{width:'0%'}}></div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="progress-bar-container">
-              <div id="progressBar" className="progress-bar-fill"></div>
-            </div>
-            <div className="flex justify-between text-sm text-muted-foreground mt-2">
-              <span><span id="completedItems">0</span> Concluídos</span>
-              <span><span id="totalItems">0</span> Total</span>
+            <div className="checklist-card">
+              <div className="panel-title">⚡ Ações Rápidas</div>
+              <div style={{display:'flex', flexDirection:'column', gap:'8px'}}>
+                 <Button id="exportPdf" size="sm">Exportar PDF</Button>
+              </div>
             </div>
           </div>
         </aside>
@@ -366,3 +426,5 @@ export default function AdminChecklistPage() {
     </>
   );
 }
+
+    
