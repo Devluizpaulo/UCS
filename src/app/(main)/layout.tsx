@@ -95,16 +95,22 @@ function UserProfile() {
     return (
         <>
             <div 
-                className="flex flex-col items-start gap-2 p-2 group-data-[collapsible=icon]:items-center cursor-pointer hover:bg-sidebar-accent/50 rounded-md"
+                className="flex flex-col items-start gap-2 p-3 group-data-[collapsible=icon]:items-center cursor-pointer hover:bg-sidebar-accent/50 rounded-lg transition-all duration-200 hover:shadow-sm"
                 onClick={() => setIsProfileModalOpen(true)}
             >
-                <div className="flex w-full items-center gap-2">
-                    <Avatar>
-                        <AvatarFallback>{getInitials(user.email)}</AvatarFallback>
+                <div className="flex w-full items-center gap-3">
+                    <Avatar className="h-10 w-10 ring-2 ring-sidebar-primary/20">
+                        <AvatarFallback className="bg-sidebar-primary text-sidebar-primary-foreground font-semibold">
+                            {getInitials(user.email)}
+                        </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 truncate group-data-[collapsible=icon]:hidden">
-                        <p className="font-semibold text-sm truncate">{user.displayName || user.email}</p>
-                        <p className="text-xs text-muted-foreground">{isAdmin ? 'Admin' : 'Usuário'}</p>
+                        <p className="font-semibold text-sm truncate text-sidebar-foreground">
+                            {user.displayName || user.email}
+                        </p>
+                        <p className="text-xs text-sidebar-muted-foreground">
+                            {isAdmin ? '👑 Administrador' : '👤 Usuário'}
+                        </p>
                     </div>
                 </div>
             </div>
@@ -209,13 +215,13 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
         onReject={handleSignOut}
       />
       <div className={`flex h-screen w-full bg-background ${lgpdConsent.required && !lgpdConsent.checked ? 'blur-sm pointer-events-none' : ''}`}>
-        <Sidebar>
+        <Sidebar className="sidebar-modern">
           <div className="flex flex-col h-full">
-            <SidebarHeader>
-              <div className="flex h-10 items-center justify-center p-2 group-data-[collapsible=icon]:hidden">
+            <SidebarHeader className="border-b border-sidebar-border">
+              <div className="flex h-12 items-center justify-center p-3 group-data-[collapsible=icon]:hidden">
                 <LogoUCS className="h-8 w-auto" />
               </div>
-              <div className="hidden h-10 items-center justify-center p-2 group-data-[collapsible=icon]:flex">
+              <div className="hidden h-12 items-center justify-center p-3 group-data-[collapsible=icon]:flex">
                 <LogoUCS className="h-8 w-auto" isIcon />
               </div>
             </SidebarHeader>
@@ -320,16 +326,22 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
               )}
             </SidebarContent>
             <div className="mt-auto">
-              <SidebarContent className="!flex-grow-0 border-t">
+              <SidebarContent className="!flex-grow-0 border-t border-sidebar-border">
                 <SidebarMenu>
                   <SidebarMenuItem>
-                    <SidebarMenuButton onClick={handleSignOut} tooltip={{ children: 'Sair' }}>
+                    <SidebarMenuButton 
+                      onClick={handleSignOut} 
+                      tooltip={{ children: 'Sair' }}
+                      className="hover:bg-destructive/10 hover:text-destructive"
+                    >
                       <LogOut />
                       <span>Sair</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 </SidebarMenu>
-                <UserProfile />
+                <div className="p-2">
+                  <UserProfile />
+                </div>
               </SidebarContent>
             </div>
           </div>

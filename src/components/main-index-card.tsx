@@ -25,8 +25,8 @@ export function MainIndexCard({ asset, isMain = false }: MainIndexCardProps) {
       <Card 
         onClick={() => setIsModalOpen(true)}
         className={cn(
-          "cursor-pointer transition-all hover:shadow-lg hover:-translate-y-1",
-          isMain && "bg-secondary/30 border-primary/50 shadow-primary/10"
+          "cursor-pointer hover-lift smooth-border",
+          isMain && "modern-gradient border-primary/50 shadow-primary/10"
         )}
       >
         <CardHeader className="flex flex-row items-center justify-between pb-2">
