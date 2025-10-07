@@ -171,7 +171,7 @@ export default function AdminChecklistPage() {
         }
         
         const opt = {
-          margin: 15,
+          margin: 10,
           filename: filename,
           image: { type: 'jpeg', quality: 0.95 },
           html2canvas: { scale: 2, useCORS: true, logging: true, scrollY: 0, scrollX: 0 },
@@ -277,7 +277,7 @@ export default function AdminChecklistPage() {
           }
           .diagram svg {
             width: 100% !important;
-            max-width: 600px;
+            max-width: 100%;
             height: auto;
             margin: 0 auto;
             display: block;
@@ -394,47 +394,43 @@ export default function AdminChecklistPage() {
             <div style={{ marginTop: '24px', padding: '0 8px' }}>
               <h3 className="text-sm font-semibold text-blue-600" style={{ marginBottom: '20px' }}>Arquitetura Técnica</h3>
               <div className="diagram" role="img" aria-label="Diagrama de arquitetura técnica">
-                <svg viewBox="0 0 600 220" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+                <svg viewBox="0 0 350 480" xmlns="http://www.w3.org/2000/svg">
                   <defs>
-                    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
-                      <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="#000" floodOpacity="0.1"/>
+                    <marker id="arrowhead" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                      <path d="M 0 0 L 10 5 L 0 10 z" fill="#a0aec0"/>
+                    </marker>
+                    <filter id="svg_shadow" x="-20%" y="-20%" width="140%" height="140%">
+                      <feDropShadow dx="2" dy="3" stdDeviation="3" floodColor="#000000" floodOpacity="0.1"/>
                     </filter>
                   </defs>
-                  <rect x="25" y="25" rx="10" ry="10" width="150" height="55" fill="#ffffff" stroke="#dfe8f6" strokeWidth="1.2" filter="url(#shadow)"/>
-                  <text x="100" y="48" fontSize="10" textAnchor="middle" fill="#0f172a" fontWeight="700">Front-end</text>
-                  <text x="100" y="64" fontSize="8" textAnchor="middle" fill="#6b7280">Next.js (React)</text>
+
+                  <g filter="url(#svg_shadow)">
+                    <rect x="25" y="25" width="300" height="60" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
+                    <rect x="25" y="115" width="300" height="60" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
+                    <rect x="25" y="205" width="300" height="60" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
+                    <rect x="25" y="295" width="300" height="60" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
+                    <rect x="25" y="385" width="300" height="60" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
+                  </g>
+
+                  <text x="45" y="50" fontSize="12" fill="#2d3748" fontWeight="bold">🌐 Frontend (Next.js)</text>
+                  <text x="45" y="70" fontSize="10" fill="#718096">Interface do Usuário / Vercel</text>
+
+                  <text x="45" y="140" fontSize="12" fill="#2d3748" fontWeight="bold">⚙️ API / Server (Cloud Functions)</text>
+                  <text x="45" y="160" fontSize="10" fill="#718096">Lógica de negócio e endpoints</text>
                   
-                  <rect x="225" y="25" rx="10" ry="10" width="150" height="55" fill="#ffffff" stroke="#dfe8f6" strokeWidth="1.2" filter="url(#shadow)"/>
-                  <text x="300" y="48" fontSize="10" textAnchor="middle" fill="#0f172a" fontWeight="700">API / Server</text>
-                  <text x="300" y="64" fontSize="8" textAnchor="middle" fill="#6b7280">Cloud Functions</text>
-                  
-                  <rect x="425" y="25" rx="10" ry="10" width="150" height="55" fill="#ffffff" stroke="#dfe8f6" strokeWidth="1.2" filter="url(#shadow)"/>
-                  <text x="500" y="48" fontSize="10" textAnchor="middle" fill="#0f172a" fontWeight="700">Banco de Dados</text>
-                  <text x="500" y="64" fontSize="8" textAnchor="middle" fill="#6b7280">Firebase Firestore</text>
-                  
-                  <line x1="175" y1="52.5" x2="225" y2="52.5" stroke="#9fb7e8" strokeWidth="2" markerEnd="url(#arrow)"/>
-                  <line x1="375" y1="52.5" x2="425" y2="52.5" stroke="#9fb7e8" strokeWidth="2" markerEnd="url(#arrow)"/>
-                  
-                  <rect x="80" y="125" rx="8" ry="8" width="160" height="45" fill="#fff" stroke="#dfe8f6" strokeWidth="1" filter="url(#shadow)"/>
-                  <text x="160" y="145" fontSize="9" textAnchor="middle" fill="#0f172a" fontWeight="700">N8N (Automação)</text>
-                  <text x="160" y="158" fontSize="8" textAnchor="middle" fill="#6b7280">Coleta de dados</text>
-                  
-                  <rect x="360" y="125" rx="8" ry="8" width="160" height="45" fill="#fff" stroke="#dfe8f6" strokeWidth="1" filter="url(#shadow)"/>
-                  <text x="440" y="145" fontSize="9" textAnchor="middle" fill="#0f172a" fontWeight="700">Google AI (Genkit)</text>
-                  <text x="440" y="158" fontSize="8" textAnchor="middle" fill="#6b7280">Geração de relatórios</text>
-                  
-                  <line x1="160" y1="125" x2="160" y2="80" stroke="#b7d0f7" strokeWidth="1.5" markerEnd="url(#arrow)"/>
-                  <line x1="440" y1="125" x2="440" y2="80" stroke="#b7d0f7" strokeWidth="1.5" markerEnd="url(#arrow)"/>
-                  
-                  <defs>
-                    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                      <path d="M 0 0 L 10 5 L 0 10 z" fill="#9fb7e8"/>
-                    </marker>
-                  </defs>
-                  
-                  <rect x="25" y="190" rx="6" ry="6" width="550" height="30" fill="#fbfdff" stroke="#eef4ff"/>
-                  <text x="45" y="210" fontSize="8" fill="#6b7280">Legenda:</text>
-                  <text x="90" y="210" fontSize="8" fill="#0f172a">Fluxo principal de dados e integrações de serviços.</text>
+                  <text x="45" y="230" fontSize="12" fill="#2d3748" fontWeight="bold">🔥 Banco de Dados (Firestore)</text>
+                  <text x="45" y="250" fontSize="10" fill="#718096">Armazenamento de dados NoSQL</text>
+
+                  <text x="45" y="320" fontSize="12" fill="#2d3748" fontWeight="bold">🤖 IA (Google AI / Genkit)</text>
+                  <text x="45" y="340" fontSize="10" fill="#718096">Geração de relatórios e análises</text>
+
+                  <text x="45" y="410" fontSize="12" fill="#2d3748" fontWeight="bold">🔄 Automação (N8N)</text>
+                  <text x="45" y="430" fontSize="10" fill="#718096">Coleta de dados de mercado</text>
+
+                  <path d="M 175 85 V 115" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrowhead)"/>
+                  <path d="M 175 175 V 205" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrowhead)"/>
+                  <path d="M 175 265 V 295" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrowhead)"/>
+                  <path d="M 175 355 V 385" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrowhead)"/>
                 </svg>
               </div>
             </div>
@@ -443,28 +439,29 @@ export default function AdminChecklistPage() {
             <div style={{ marginTop: '32px', padding: '0 8px' }}>
               <h3 className="text-sm font-semibold text-blue-600" style={{ marginBottom: '20px' }}>Fluxo de Dados</h3>
               <div className="diagram" role="img" aria-label="Fluxo de dados">
-                <svg viewBox="0 0 550 100" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
-                  <rect x="20" y="20" rx="8" ry="8" width="100" height="35" fill="#ffffff" stroke="#dfe8f6"/>
-                  <text x="70" y="42" fontSize="8" textAnchor="middle" fill="#0f172a" fontWeight="700">Usuário</text>
-                  <rect x="140" y="18" rx="8" ry="8" width="130" height="40" fill="#ffffff" stroke="#dfe8f6"/>
-                  <text x="205" y="38" fontSize="8" textAnchor="middle" fill="#0f172a" fontWeight="700">Front-end</text>
-                  <text x="205" y="50" fontSize="7" textAnchor="middle" fill="#6b7280">Dashboard</text>
-                  <rect x="290" y="18" rx="8" ry="8" width="110" height="40" fill="#ffffff" stroke="#dfe8f6"/>
-                  <text x="345" y="38" fontSize="8" textAnchor="middle" fill="#0f172a" fontWeight="700">API / Functions</text>
-                   <text x="345" y="50" fontSize="7" textAnchor="middle" fill="#6b7280">Processamento</text>
-                  <rect x="420" y="18" rx="8" ry="8" width="110" height="40" fill="#ffffff" stroke="#dfe8f6"/>
-                  <text x="475" y="38" fontSize="8" textAnchor="middle" fill="#0f172a" fontWeight="700">Firestore</text>
-                  <text x="475" y="50" fontSize="7" textAnchor="middle" fill="#6b7280">Armazenamento</text>
-                  <line x1="120" y1="38" x2="140" y2="38" stroke="#9fb7e8" strokeWidth="2" markerEnd="url(#arrow2)"/>
-                  <line x1="270" y1="38" x2="290" y2="38" stroke="#9fb7e8" strokeWidth="2" markerEnd="url(#arrow2)"/>
-                  <line x1="400" y1="38" x2="420" y2="38" stroke="#9fb7e8" strokeWidth="2" markerEnd="url(#arrow2)"/>
-                  <defs>
-                    <marker id="arrow2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                      <path d="M 0 0 L 10 5 L 0 10 z" fill="#9fb7e8"/>
-                    </marker>
-                  </defs>
-                  <text x="70" y="75" fontSize="7" textAnchor="middle" fill="#6b7280">Interações</text>
-                  <text x="205" y="75" fontSize="7" textAnchor="middle" fill="#6b7280">Renderização + API</text>
+                <svg viewBox="0 0 350 400" xmlns="http://www.w3.org/2000/svg">
+                    <g filter="url(#svg_shadow)">
+                        <rect x="25" y="25" width="300" height="60" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
+                        <rect x="25" y="115" width="300" height="60" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
+                        <rect x="25" y="205" width="300" height="60" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
+                        <rect x="25" y="295" width="300" height="60" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
+                    </g>
+                    
+                    <text x="45" y="50" fontSize="12" fill="#2d3748" fontWeight="bold">👤 Usuário</text>
+                    <text x="45" y="70" fontSize="10" fill="#718096">Interação com a plataforma</text>
+                    
+                    <text x="45" y="140" fontSize="12" fill="#2d3748" fontWeight="bold">🖥️ Frontend (Dashboard)</text>
+                    <text x="45" y="160" fontSize="10" fill="#718096">Renderiza dados e chama API</text>
+                    
+                    <text x="45" y="230" fontSize="12" fill="#2d3748" fontWeight="bold">⚙️ API / Functions</text>
+                    <text x="45" y="250" fontSize="10" fill="#718096">Processa requisições</text>
+                    
+                    <text x="45" y="320" fontSize="12" fill="#2d3748" fontWeight="bold">🔥 Firestore</text>
+                    <text x="45" y="340" fontSize="10" fill="#718096">Armazena e fornece dados</text>
+
+                    <path d="M 175 85 V 115" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrowhead)"/>
+                    <path d="M 175 175 V 205" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrowhead)"/>
+                    <path d="M 175 265 V 295" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrowhead)"/>
                 </svg>
               </div>
             </div>
@@ -473,27 +470,29 @@ export default function AdminChecklistPage() {
             <div style={{ marginTop: '32px', padding: '0 8px' }}>
               <h3 className="text-sm font-semibold text-blue-600" style={{ marginBottom: '20px' }}>Infraestrutura de Deploy</h3>
               <div className="diagram" role="img" aria-label="Infraestrutura de deploy">
-                 <svg viewBox="0 0 600 120" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
-                  <rect x="25" y="20" rx="8" ry="8" width="120" height="40" fill="#fff" stroke="#dfe8f6"/>
-                  <text x="85" y="42" fontSize="9" textAnchor="middle" fill="#0f172a" fontWeight="700">GitHub Repo</text>
-                  <rect x="170" y="20" rx="8" ry="8" width="140" height="40" fill="#fff" stroke="#dfe8f6"/>
-                  <text x="240" y="38" fontSize="9" textAnchor="middle" fill="#0f172a" fontWeight="700">CI/CD (Actions)</text>
-                  <text x="240" y="50" fontSize="7" textAnchor="middle" fill="#6b7280">Lint, Testes, Build</text>
-                  <rect x="335" y="8" rx="8" ry="8" width="120" height="28" fill="#fff" stroke="#dfe8f6"/>
-                  <text x="395" y="25" fontSize="8" textAnchor="middle" fill="#0f172a">Vercel (Recomendado)</text>
-                  <rect x="335" y="46" rx="8" ry="8" width="120" height="28" fill="#fff" stroke="#dfe8f6"/>
-                  <text x="395" y="63" fontSize="8" textAnchor="middle" fill="#0f172a">Hostinger / Locaweb</text>
-                  <rect x="480" y="20" rx="8" ry="8" width="100" height="40" fill="#fff" stroke="#dfe8f6"/>
-                  <text x="530" y="42" fontSize="8" textAnchor="middle" fill="#0f172a">VPS (N8N)</text>
-                  <line x1="145" y1="40" x2="170" y2="40" stroke="#9fb7e8" strokeWidth="2" markerEnd="url(#arrow3)"/>
-                  <line x1="310" y1="34" x2="335" y2="22" stroke="#9fb7e8" strokeWidth="2" markerEnd="url(#arrow3)"/>
-                  <line x1="310" y1="52" x2="335" y2="60" stroke="#9fb7e8" strokeWidth="2" markerEnd="url(#arrow3)"/>
-                  <line x1="455" y1="40" x2="480" y2="40" stroke="#9fb7e8" strokeWidth="2" markerEnd="url(#arrow3)"/>
-                  <defs>
-                    <marker id="arrow3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                      <path d="M 0 0 L 10 5 L 0 10 z" fill="#9fb7e8"/>
-                    </marker>
-                  </defs>
+                 <svg viewBox="0 0 350 400" xmlns="http://www.w3.org/2000/svg">
+                    <g filter="url(#svg_shadow)">
+                        <rect x="25" y="25" width="300" height="60" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
+                        <rect x="25" y="115" width="300" height="60" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
+                        <rect x="25" y="205" width="300" height="60" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
+                        <rect x="25" y="295" width="300" height="60" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
+                    </g>
+                    
+                    <text x="45" y="50" fontSize="12" fill="#2d3748" fontWeight="bold">📦 GitHub Repo</text>
+                    <text x="45" y="70" fontSize="10" fill="#718096">Código-fonte</text>
+                    
+                    <text x="45" y="140" fontSize="12" fill="#2d3748" fontWeight="bold">🤖 CI/CD (GitHub Actions)</text>
+                    <text x="45" y="160" fontSize="10" fill="#718096">Lint, Testes, Build</text>
+                    
+                    <text x="45" y="230" fontSize="12" fill="#2d3748" fontWeight="bold">🚀 Deploy Targets</text>
+                    <text x="45" y="250" fontSize="10" fill="#718096">Vercel (Recomendado), Hostinger/Locaweb</text>
+                    
+                    <text x="45" y="320" fontSize="12" fill="#2d3748" fontWeight="bold">🖥️ VPS (N8N)</text>
+                    <text x="45" y="340" fontSize="10" fill="#718096">Hospedagem da automação e monitoramento</text>
+                    
+                    <path d="M 175 85 V 115" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrowhead)"/>
+                    <path d="M 175 175 V 205" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrowhead)"/>
+                    <path d="M 175 265 V 295" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrowhead)"/>
                 </svg>
               </div>
             </div>
@@ -526,88 +525,34 @@ export default function AdminChecklistPage() {
 
             <h3 className="text-sm font-semibold text-blue-600" style={{ marginBottom: '20px' }}>Arquitetura do Fluxo</h3>
               <div className="diagram" role="img" aria-label="Arquitetura do fluxo N8N">
-                <svg viewBox="0 0 620 250" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
-                  <defs>
-                    <filter id="shadow-n8n" x="-50%" y="-50%" width="200%" height="200%">
-                      <feDropShadow dx="1" dy="2" stdDeviation="4" floodColor="#000" floodOpacity="0.08"/>
-                    </filter>
-                    <marker id="arrow-n8n" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                      <path d="M 0 0 L 10 5 L 0 10 z" fill="#a0aec0"/>
-                    </marker>
-                  </defs>
-                  
-                  {/* Nodes */}
-                  <g>
-                    <rect x="25" y="25" rx="10" ry="10" width="130" height="45" fill="#fff" stroke="#e2e8f0" filter="url(#shadow-n8n)"/>
-                    <text x="90" y="48" fontSize="10" textAnchor="middle" fill="#2d3748" fontWeight="600">⏰ Cron Trigger</text>
-                    <text x="90" y="62" fontSize="8" textAnchor="middle" fill="#718096">Execução programada</text>
+                <svg viewBox="0 0 350 400" xmlns="http://www.w3.org/2000/svg">
+                  <g filter="url(#svg_shadow)">
+                    <rect x="25" y="25" width="300" height="50" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
+                    <rect x="25" y="95" width="300" height="50" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
+                    <rect x="25" y="165" width="300" height="50" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
+                    <rect x="25" y="235" width="300" height="50" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
+                    <rect x="25" y="305" width="300" height="50" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
                   </g>
+                  
+                  <text x="45" y="45" fontSize="12" fill="#2d3748" fontWeight="bold">⏰ Cron Trigger</text>
+                  <text x="45" y="60" fontSize="10" fill="#718096">Execução programada</text>
 
-                  <g>
-                    <rect x="180" y="25" rx="10" ry="10" width="130" height="45" fill="#fff" stroke="#e2e8f0" filter="url(#shadow-n8n)"/>
-                    <text x="245" y="48" fontSize="10" textAnchor="middle" fill="#2d3748" fontWeight="600">🌐 HTTP Request</text>
-                    <text x="245" y="62" fontSize="8" textAnchor="middle" fill="#718096">Investing.com</text>
-                  </g>
+                  <text x="45" y="115" fontSize="12" fill="#2d3748" fontWeight="bold">🌐 HTTP Request (Investing.com)</text>
+                  <text x="45" y="130" fontSize="10" fill="#718096">Busca de dados HTML</text>
+                  
+                  <text x="45" y="185" fontSize="12" fill="#2d3748" fontWeight="bold">🔍 HTML Extract (CSS Selectors)</text>
+                  <text x="45" y="200" fontSize="10" fill="#718096">Extração de preços e valores</text>
 
-                  <g>
-                    <rect x="335" y="25" rx="10" ry="10" width="130" height="45" fill="#fff" stroke="#e2e8f0" filter="url(#shadow-n8n)"/>
-                    <text x="400" y="48" fontSize="10" textAnchor="middle" fill="#2d3748" fontWeight="600">🔍 HTML Extract</text>
-                    <text x="400" y="62" fontSize="8" textAnchor="middle" fill="#718096">CSS Selectors</text>
-                  </g>
+                  <text x="45" y="255" fontSize="12" fill="#2d3748" fontWeight="bold">⚙️ Code (Processar Dados)</text>
+                  <text x="45" y="270" fontSize="10" fill="#718096">Validação e formatação</text>
                   
-                  <g>
-                    <rect x="490" y="25" rx="10" ry="10" width="130" height="45" fill="#fff" stroke="#e2e8f0" filter="url(#shadow-n8n)"/>
-                    <text x="555" y="48" fontSize="10" textAnchor="middle" fill="#2d3748" fontWeight="600">⚙️ Code</text>
-                    <text x="555" y="62" fontSize="8" textAnchor="middle" fill="#718096">Processar Dados</text>
-                  </g>
-                  
-                  <g>
-                    <rect x="260" y="115" rx="10" ry="10" width="130" height="45" fill="#fff" stroke="#e2e8f0" filter="url(#shadow-n8n)"/>
-                    <text x="325" y="138" fontSize="10" textAnchor="middle" fill="#2d3748" fontWeight="600">🔥 Firebase</text>
-                    <text x="325" y="152" fontSize="8" textAnchor="middle" fill="#718096">Write Document</text>
-                  </g>
-                  
-                  <g>
-                    <rect x="420" y="115" rx="10" ry="10" width="130" height="45" fill="#fff" stroke="#e2e8f0" filter="url(#shadow-n8n)"/>
-                    <text x="485" y="138" fontSize="10" textAnchor="middle" fill="#2d3748" fontWeight="600">⚠️ Error</text>
-                    <text x="485" y="152" fontSize="8" textAnchor="middle" fill="#718096">Handle Errors</text>
-                  </g>
+                  <text x="45" y="325" fontSize="12" fill="#2d3748" fontWeight="bold">🔥 Firebase (Write Document)</text>
+                  <text x="45" y="340" fontSize="10" fill="#718096">Armazenamento no Firestore</text>
 
-                  <g>
-                    <rect x="95" y="115" rx="10" ry="10" width="130" height="45" fill="#fff" stroke="#e2e8f0" filter="url(#shadow-n8n)"/>
-                    <text x="160" y="138" fontSize="10" textAnchor="middle" fill="#2d3748" fontWeight="600">📝 Log</text>
-                    <text x="160" y="152" fontSize="8" textAnchor="middle" fill="#718096">Audit Trail</text>
-                  </g>
-                  
-                  {/* Arrows */}
-                  <line x1="155" y1="47.5" x2="180" y2="47.5" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrow-n8n)"/>
-                  <line x1="310" y1="47.5" x2="335" y2="47.5" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrow-n8n)"/>
-                  <line x1="465" y1="47.5" x2="490" y2="47.5" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrow-n8n)"/>
-
-                  <path d="M 555 70 Q 555 90 325 115" stroke="#a0aec0" strokeWidth="1.5" fill="none" markerEnd="url(#arrow-n8n)"/>
-                  <path d="M 325 70 Q 325 90 160 115" stroke="#a0aec0" strokeDasharray="4 2" strokeWidth="1.5" fill="none" markerEnd="url(#arrow-n8n)"/>
-                  <path d="M 325 70 Q 325 90 485 115" stroke="#a0aec0" strokeDasharray="4 2" strokeWidth="1.5" fill="none" markerEnd="url(#arrow-n8n)"/>
-                  
-                  {/* Info boxes */}
-                  <rect x="25" y="190" rx="8" ry="8" width="130" height="50" fill="#f7fafc" stroke="#e2e8f0" />
-                  <text x="90" y="208" fontSize="9" textAnchor="middle" fill="#2d3748" fontWeight="600">📊 Fontes de Dados</text>
-                  <text x="90" y="222" fontSize="7" textAnchor="middle" fill="#718096">• Milho, Soja, Ouro</text>
-                  <text x="90" y="232" fontSize="7" textAnchor="middle" fill="#718096">• Índices Sustentáveis</text>
-                  
-                  <rect x="180" y="190" rx="8" ry="8" width="130" height="50" fill="#f7fafc" stroke="#e2e8f0" />
-                  <text x="245" y="208" fontSize="9" textAnchor="middle" fill="#2d3748" fontWeight="600">💾 Saída</text>
-                  <text x="245" y="222" fontSize="7" textAnchor="middle" fill="#718096">• Firebase Firestore</text>
-                  <text x="245" y="232" fontSize="7" textAnchor="middle" fill="#718096">• Logs de Auditoria</text>
-
-                  <rect x="335" y="190" rx="8" ry="8" width="130" height="50" fill="#f7fafc" stroke="#e2e8f0" />
-                  <text x="400" y="208" fontSize="9" textAnchor="middle" fill="#2d3748" fontWeight="600">⏱️ Agendamento</text>
-                  <text x="400" y="222" fontSize="7" textAnchor="middle" fill="#718096">• Execução a cada 15 min</text>
-                  <text x="400" y="232" fontSize="7" textAnchor="middle" fill="#718096">• Retry automático</text>
-
-                  <rect x="490" y="190" rx="8" ry="8" width="130" height="50" fill="#f7fafc" stroke="#e2e8f0" />
-                  <text x="555" y="208" fontSize="9" textAnchor="middle" fill="#2d3748" fontWeight="600">⚡ Performance</text>
-                  <text x="555" y="222" fontSize="7" textAnchor="middle" fill="#718096">• Execução &lt; 30s</text>
-                  <text x="555" y="232" fontSize="7" textAnchor="middle" fill="#718096">• Monitoramento 24/7</text>
+                  <path d="M 175 75 V 95" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrowhead)"/>
+                  <path d="M 175 145 V 165" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrowhead)"/>
+                  <path d="M 175 215 V 235" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrowhead)"/>
+                  <path d="M 175 285 V 305" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrowhead)"/>
                 </svg>
               </div>
 
