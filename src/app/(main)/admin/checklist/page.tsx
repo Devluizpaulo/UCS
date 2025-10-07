@@ -699,7 +699,7 @@ export default function AdminChecklistPage() {
                   <li className="check-item"><label><input type="checkbox" data-key="entrega_code" defaultChecked/><span className="txt">Código-fonte completo</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="entrega_doc" defaultChecked/><span className="txt">Documentação técnica (`DOCUMENTACAO_TECNICA_ENTREGA.md`)</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="entrega_readme" defaultChecked/><span className="txt">README atualizado</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="entrega_env" /><span className="txt">Arquivo de exemplo (`env.example`)</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="entrega_env" defaultChecked/><span className="txt">Arquivo de exemplo (`env.example`)</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="entrega_backup" /><span className="txt">Backup do banco de dados (se solicitado)</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="entrega_package" defaultChecked/><span className="txt">package.json com scripts configurados</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="entrega_config" defaultChecked/><span className="txt">Arquivos de configuração (next.config.js, tailwind.config.js)</span></label></li>
