@@ -3,6 +3,8 @@
 import { useEffect } from 'react';
 import Head from 'next/head';
 import { Button } from '@/components/ui/button';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 export default function AdminChecklistPage() {
   useEffect(() => {
@@ -158,78 +160,84 @@ export default function AdminChecklistPage() {
 
     const exportPdfButton = document.getElementById('exportPdf');
     if (exportPdfButton) {
-      exportPdfButton.addEventListener('click', async () => {
-        // @ts-ignore
-        if (typeof html2pdf === 'undefined') {
-          alert('Biblioteca html2pdf não está carregada. Recarregue a página e tente novamente.');
-          return;
-        }
+        exportPdfButton.addEventListener('click', async () => {
+            const btn = exportPdfButton as HTMLButtonElement;
+            const prevText = btn.textContent;
+            btn.textContent = 'Gerando PDF...';
+            btn.disabled = true;
 
-        // Expand all sections to ensure they are rendered in the PDF
-        document.querySelectorAll('.coll-content').forEach(content => {
-          const el = content as HTMLElement;
-          el.style.maxHeight = el.scrollHeight + "px";
-          const trigger = el.previousElementSibling;
-          if(trigger) {
-            const chev = trigger.querySelector('.chev');
-            if(chev) (chev as HTMLElement).style.transform = 'rotate(90deg)';
-          }
+            const element = document.getElementById('docArea') as HTMLElement;
+            if (!element) {
+                alert('Erro: área de documento não encontrada.');
+                btn.disabled = false;
+                btn.textContent = prevText;
+                return;
+            }
+            
+            // Expand all sections for capture
+            document.querySelectorAll('.coll-content').forEach(content => {
+                const el = content as HTMLElement;
+                el.style.maxHeight = el.scrollHeight + "px";
+            });
+            await new Promise(r => setTimeout(r, 300)); // wait for expansion
+
+            html2canvas(element, {
+                scale: 1.5, // Aumenta a resolução da captura
+                useCORS: true,
+                logging: false,
+                backgroundColor: '#ffffff'
+            }).then(canvas => {
+                const imgData = canvas.toDataURL('image/jpeg', 0.98);
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = pdf.internal.pageSize.getHeight();
+                
+                const canvasWidth = canvas.width;
+                const canvasHeight = canvas.height;
+                
+                // Calcula a proporção para caber na largura do PDF
+                const ratio = pdfWidth / canvasWidth;
+                const imgHeight = canvasHeight * ratio;
+                
+                let heightLeft = imgHeight;
+                let position = 0;
+
+                // Adiciona a primeira página
+                pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, imgHeight);
+                heightLeft -= pdfHeight;
+
+                // Adiciona páginas subsequentes se necessário
+                while (heightLeft > 0) {
+                    position = heightLeft - imgHeight;
+                    pdf.addPage();
+                    pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, imgHeight);
+                    heightLeft -= pdfHeight;
+                }
+                
+                const dev = ((document.getElementById('sigDevName') as HTMLInputElement)?.value || 'dev').replace(/\s+/g,'_');
+                const client = ((document.getElementById('sigClientName') as HTMLInputElement)?.value || 'client').replace(/\s+/g,'_');
+                const date = new Date().toISOString().slice(0,10);
+                const filename = `UCS_Documentacao_Checklist_${dev}_${client}_${date}.pdf`;
+
+                pdf.save(filename);
+                
+                btn.textContent = '✅ PDF Gerado!';
+                setTimeout(() => {
+                    btn.textContent = prevText;
+                    btn.disabled = false;
+                }, 2000);
+            }).catch(err => {
+                console.error('Erro na geração do PDF:', err);
+                alert('Erro ao gerar PDF: ' + (err.message || err));
+                btn.disabled = false;
+                btn.textContent = prevText;
+            });
+             // Collapse sections back
+            document.querySelectorAll('.coll-content').forEach(content => {
+                const el = content as HTMLElement;
+                el.style.maxHeight = '0px';
+            });
         });
-
-        const btn = exportPdfButton as HTMLButtonElement;
-        const prevText = btn.textContent;
-        btn.textContent = 'Gerando PDF...';
-        btn.disabled = true;
-
-        await new Promise(resolve => setTimeout(resolve, 500)); // wait for animations
-
-        saveState();
-
-        const dev = ((document.getElementById('sigDevName') as HTMLInputElement)?.value || 'dev').replace(/\s+/g,'_');
-        const client = ((document.getElementById('sigClientName') as HTMLInputElement)?.value || 'client').replace(/\s+/g,'_');
-        const date = new Date().toISOString().slice(0,10);
-        const filename = `UCS_Documentacao_Checklist_${dev}_${client}_${date}.pdf`;
-
-        const element = document.getElementById('docArea');
-        if (!element) {
-          alert('Erro: área de documento não encontrada.');
-          return;
-        }
-        
-        const elementWidth = element.clientWidth || 900;
-        const elementHeight = element.scrollHeight || 3000;
-        
-        const opt = {
-          margin: [10, 10, 10, 10],
-          filename: filename,
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { 
-            scale: 1.4,
-            useCORS: true,
-            logging: false,
-            scrollY: 0,
-            scrollX: 0,
-            windowWidth: elementWidth,
-            windowHeight: elementHeight,
-            backgroundColor: '#ffffff'
-          },
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-          pagebreak: { mode: ['avoid-all', 'css'], before: '.card' }
-        };
-
-        // @ts-ignore
-        html2pdf().set(opt).from(element).save().then(() => {
-          btn.textContent = '✅ PDF Gerado!';
-          setTimeout(() => {
-            btn.textContent = prevText;
-            btn.disabled = false;
-          }, 2000);
-        }).catch((err: any) => {
-          console.error('Erro na geração do PDF:', err);
-          alert('Erro ao gerar PDF: ' + (err.message || err));
-          btn.disabled = false;
-        });
-      });
     }
 
     // Auto-expand all on initial load
@@ -320,7 +328,7 @@ export default function AdminChecklistPage() {
             justify-content: center;
             align-items: center;
             margin: 16px auto;
-            max-width: 600px;
+            max-width: 450px;
           }
           .diagram svg {
             max-width: 100%;
@@ -332,10 +340,10 @@ export default function AdminChecklistPage() {
               background: #ffffff !important;
             }
             #docArea {
-              width: 794px !important; /* ~ A4 a 96dpi */
-              max-width: 794px !important;
-              margin: 0 auto !important;
-              page-break-inside: avoid;
+              width: 100%;
+              max-width: 100%;
+              margin: 0;
+              padding: 0;
             }
             .card {
               page-break-inside: avoid;
@@ -466,7 +474,7 @@ export default function AdminChecklistPage() {
             <div style={{ marginTop: '24px', padding: '0 8px' }}>
               <h3 className="text-sm font-semibold text-blue-600" style={{ marginBottom: '20px' }}>Arquitetura Técnica</h3>
               <div className="diagram" role="img" aria-label="Diagrama de arquitetura técnica">
-                <svg viewBox="0 0 350 480" width="350" height="480" xmlns="http://www.w3.org/2000/svg">
+                <svg viewBox="0 0 300 420" width="300" height="420" xmlns="http://www.w3.org/2000/svg">
                   <defs>
                     <marker id="arrowhead" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
                       <path d="M 0 0 L 10 5 L 0 10 z" fill="#a0aec0"/>
@@ -477,32 +485,32 @@ export default function AdminChecklistPage() {
                   </defs>
 
                   <g filter="url(#svg_shadow)">
-                    <rect x="25" y="25" width="300" height="60" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
-                    <rect x="25" y="115" width="300" height="60" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
-                    <rect x="25" y="205" width="300" height="60" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
-                    <rect x="25" y="295" width="300" height="60" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
-                    <rect x="25" y="385" width="300" height="60" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
+                    <rect x="25" y="25" width="250" height="50" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
+                    <rect x="25" y="95" width="250" height="50" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
+                    <rect x="25" y="165" width="250" height="50" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
+                    <rect x="25" y="235" width="250" height="50" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
+                    <rect x="25" y="305" width="250" height="50" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
                   </g>
 
-                  <text x="45" y="50" fontSize="12" fill="#2d3748" fontWeight="bold">🌐 Frontend (Next.js)</text>
-                  <text x="45" y="70" fontSize="10" fill="#718096">Interface do Usuário / Vercel</text>
+                  <text x="40" y="45" fontSize="10" fill="#2d3748" fontWeight="bold">🌐 Frontend (Next.js)</text>
+                  <text x="40" y="60" fontSize="8" fill="#718096">Interface do Usuário / Vercel</text>
 
-                  <text x="45" y="140" fontSize="12" fill="#2d3748" fontWeight="bold">⚙️ API / Server (Cloud Functions)</text>
-                  <text x="45" y="160" fontSize="10" fill="#718096">Lógica de negócio e endpoints</text>
+                  <text x="40" y="115" fontSize="10" fill="#2d3748" fontWeight="bold">⚙️ API / Server (Cloud Functions)</text>
+                  <text x="40" y="130" fontSize="8" fill="#718096">Lógica de negócio e endpoints</text>
                   
-                  <text x="45" y="230" fontSize="12" fill="#2d3748" fontWeight="bold">🔥 Banco de Dados (Firestore)</text>
-                  <text x="45" y="250" fontSize="10" fill="#718096">Armazenamento de dados NoSQL</text>
+                  <text x="40" y="185" fontSize="10" fill="#2d3748" fontWeight="bold">🔥 Banco de Dados (Firestore)</text>
+                  <text x="40" y="200" fontSize="8" fill="#718096">Armazenamento de dados NoSQL</text>
 
-                  <text x="45" y="320" fontSize="12" fill="#2d3748" fontWeight="bold">🤖 IA (Google AI / Genkit)</text>
-                  <text x="45" y="340" fontSize="10" fill="#718096">Geração de relatórios e análises</text>
+                  <text x="40" y="255" fontSize="10" fill="#2d3748" fontWeight="bold">🤖 IA (Google AI / Genkit)</text>
+                  <text x="40" y="270" fontSize="8" fill="#718096">Geração de relatórios e análises</text>
 
-                  <text x="45" y="410" fontSize="12" fill="#2d3748" fontWeight="bold">🔄 Automação (N8N)</text>
-                  <text x="45" y="430" fontSize="10" fill="#718096">Coleta de dados de mercado</text>
+                  <text x="40" y="325" fontSize="10" fill="#2d3748" fontWeight="bold">🔄 Automação (N8N)</text>
+                  <text x="40" y="340" fontSize="8" fill="#718096">Coleta de dados de mercado</text>
 
-                  <path d="M 175 85 V 115" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrowhead)"/>
-                  <path d="M 175 175 V 205" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrowhead)"/>
-                  <path d="M 175 265 V 295" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrowhead)"/>
-                  <path d="M 175 355 V 385" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrowhead)"/>
+                  <path d="M 150 75 V 95" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrowhead)"/>
+                  <path d="M 150 145 V 165" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrowhead)"/>
+                  <path d="M 150 215 V 235" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrowhead)"/>
+                  <path d="M 150 285 V 305" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrowhead)"/>
                 </svg>
               </div>
             </div>
@@ -511,29 +519,29 @@ export default function AdminChecklistPage() {
             <div style={{ marginTop: '32px', padding: '0 8px' }}>
               <h3 className="text-sm font-semibold text-blue-600" style={{ marginBottom: '20px' }}>Fluxo de Dados</h3>
               <div className="diagram" role="img" aria-label="Fluxo de dados">
-                <svg viewBox="0 0 350 400" width="350" height="400" xmlns="http://www.w3.org/2000/svg">
+                <svg viewBox="0 0 300 350" width="300" height="350" xmlns="http://www.w3.org/2000/svg">
                     <g filter="url(#svg_shadow)">
-                        <rect x="25" y="25" width="300" height="60" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
-                        <rect x="25" y="115" width="300" height="60" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
-                        <rect x="25" y="205" width="300" height="60" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
-                        <rect x="25" y="295" width="300" height="60" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
+                        <rect x="25" y="25" width="250" height="50" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
+                        <rect x="25" y="95" width="250" height="50" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
+                        <rect x="25" y="165" width="250" height="50" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
+                        <rect x="25" y="235" width="250" height="50" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
                     </g>
                     
-                    <text x="45" y="50" fontSize="12" fill="#2d3748" fontWeight="bold">👤 Usuário</text>
-                    <text x="45" y="70" fontSize="10" fill="#718096">Interação com a plataforma</text>
+                    <text x="40" y="45" fontSize="10" fill="#2d3748" fontWeight="bold">👤 Usuário</text>
+                    <text x="40" y="60" fontSize="8" fill="#718096">Interação com a plataforma</text>
                     
-                    <text x="45" y="140" fontSize="12" fill="#2d3748" fontWeight="bold">🖥️ Frontend (Dashboard)</text>
-                    <text x="45" y="160" fontSize="10" fill="#718096">Renderiza dados e chama API</text>
+                    <text x="40" y="115" fontSize="10" fill="#2d3748" fontWeight="bold">🖥️ Frontend (Dashboard)</text>
+                    <text x="40" y="130" fontSize="8" fill="#718096">Renderiza dados e chama API</text>
                     
-                    <text x="45" y="230" fontSize="12" fill="#2d3748" fontWeight="bold">⚙️ API / Functions</text>
-                    <text x="45" y="250" fontSize="10" fill="#718096">Processa requisições</text>
+                    <text x="40" y="185" fontSize="10" fill="#2d3748" fontWeight="bold">⚙️ API / Functions</text>
+                    <text x="40" y="200" fontSize="8" fill="#718096">Processa requisições</text>
                     
-                    <text x="45" y="320" fontSize="12" fill="#2d3748" fontWeight="bold">🔥 Firestore</text>
-                    <text x="45" y="340" fontSize="10" fill="#718096">Armazena e fornece dados</text>
+                    <text x="40" y="255" fontSize="10" fill="#2d3748" fontWeight="bold">🔥 Firestore</text>
+                    <text x="40" y="270" fontSize="8" fill="#718096">Armazena e fornece dados</text>
 
-                    <path d="M 175 85 V 115" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrowhead)"/>
-                    <path d="M 175 175 V 205" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrowhead)"/>
-                    <path d="M 175 265 V 295" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrowhead)"/>
+                    <path d="M 150 75 V 95" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrowhead)"/>
+                    <path d="M 150 145 V 165" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrowhead)"/>
+                    <path d="M 150 215 V 235" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrowhead)"/>
                 </svg>
               </div>
             </div>
@@ -542,29 +550,29 @@ export default function AdminChecklistPage() {
             <div style={{ marginTop: '32px', padding: '0 8px' }}>
               <h3 className="text-sm font-semibold text-blue-600" style={{ marginBottom: '20px' }}>Infraestrutura de Deploy</h3>
               <div className="diagram" role="img" aria-label="Infraestrutura de deploy">
-                 <svg viewBox="0 0 350 400" width="350" height="400" xmlns="http://www.w3.org/2000/svg">
+                 <svg viewBox="0 0 300 350" width="300" height="350" xmlns="http://www.w3.org/2000/svg">
                     <g filter="url(#svg_shadow)">
-                        <rect x="25" y="25" width="300" height="60" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
-                        <rect x="25" y="115" width="300" height="60" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
-                        <rect x="25" y="205" width="300" height="60" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
-                        <rect x="25" y="295" width="300" height="60" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
+                        <rect x="25" y="25" width="250" height="50" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
+                        <rect x="25" y="95" width="250" height="50" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
+                        <rect x="25" y="165" width="250" height="50" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
+                        <rect x="25" y="235" width="250" height="50" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
                     </g>
                     
-                    <text x="45" y="50" fontSize="12" fill="#2d3748" fontWeight="bold">📦 GitHub Repo</text>
-                    <text x="45" y="70" fontSize="10" fill="#718096">Código-fonte</text>
+                    <text x="40" y="45" fontSize="10" fill="#2d3748" fontWeight="bold">📦 GitHub Repo</text>
+                    <text x="40" y="60" fontSize="8" fill="#718096">Código-fonte</text>
                     
-                    <text x="45" y="140" fontSize="12" fill="#2d3748" fontWeight="bold">🤖 CI/CD (GitHub Actions)</text>
-                    <text x="45" y="160" fontSize="10" fill="#718096">Lint, Testes, Build</text>
+                    <text x="40" y="115" fontSize="10" fill="#2d3748" fontWeight="bold">🤖 CI/CD (GitHub Actions)</text>
+                    <text x="40" y="130" fontSize="8" fill="#718096">Lint, Testes, Build</text>
                     
-                    <text x="45" y="230" fontSize="12" fill="#2d3748" fontWeight="bold">🚀 Deploy Targets</text>
-                    <text x="45" y="250" fontSize="10" fill="#718096">Vercel (Recomendado), Hostinger/Locaweb</text>
+                    <text x="40" y="185" fontSize="10" fill="#2d3748" fontWeight="bold">🚀 Deploy Targets</text>
+                    <text x="40" y="200" fontSize="8" fill="#718096">Vercel (Recomendado)</text>
                     
-                    <text x="45" y="320" fontSize="12" fill="#2d3748" fontWeight="bold">🖥️ VPS (N8N)</text>
-                    <text x="45" y="340" fontSize="10" fill="#718096">Hospedagem da automação e monitoramento</text>
+                    <text x="40" y="255" fontSize="10" fill="#2d3748" fontWeight="bold">🖥️ VPS (N8N)</text>
+                    <text x="40" y="270" fontSize="8" fill="#718096">Hospedagem da automação</text>
                     
-                    <path d="M 175 85 V 115" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrowhead)"/>
-                    <path d="M 175 175 V 205" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrowhead)"/>
-                    <path d="M 175 265 V 295" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrowhead)"/>
+                    <path d="M 150 75 V 95" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrowhead)"/>
+                    <path d="M 150 145 V 165" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrowhead)"/>
+                    <path d="M 150 215 V 235" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrowhead)"/>
                 </svg>
               </div>
             </div>
@@ -598,33 +606,34 @@ export default function AdminChecklistPage() {
             <h3 className="text-sm font-semibold text-blue-600" style={{ marginBottom: '20px' }}>Arquitetura do Fluxo</h3>
               <div className="diagram" role="img" aria-label="Arquitetura do fluxo N8N">
                 <svg viewBox="0 0 350 400" width="350" height="400" xmlns="http://www.w3.org/2000/svg">
-                  <g filter="url(#svg_shadow)">
-                    <rect x="25" y="25" width="300" height="50" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
-                    <rect x="25" y="95" width="300" height="50" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
-                    <rect x="25" y="165" width="300" height="50" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
-                    <rect x="25" y="235" width="300" height="50" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
-                    <rect x="25" y="305" width="300" height="50" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
-                  </g>
-                  
-                  <text x="45" y="45" fontSize="12" fill="#2d3748" fontWeight="bold">⏰ Cron Trigger</text>
-                  <text x="45" y="60" fontSize="10" fill="#718096">Execução programada</text>
+                    <defs>
+                        <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style={{stopColor: 'rgb(239, 246, 255)', stopOpacity:1}} />
+                            <stop offset="100%" style={{stopColor: 'rgb(219, 234, 254)', stopOpacity:1}} />
+                        </linearGradient>
+                    </defs>
+                    <g transform="translate(25, 0)">
+                        <path d="M 0,20 L 125,20 L 125,0 L 250,35 L 125,70 L 125,50 L 0,50 Z" fill="url(#grad1)" stroke="#dbeafe" strokeWidth="1"/>
+                        <text x="25" y="38" fontSize="10" fontWeight="bold" fill="#1e3a8a">⏰ Cron</text>
+                        
+                        <path d="M 0,90 L 125,90 L 125,70 L 250,105 L 125,140 L 125,120 L 0,120 Z" fill="url(#grad1)" stroke="#dbeafe" strokeWidth="1"/>
+                        <text x="15" y="108" fontSize="10" fontWeight="bold" fill="#1e3a8a">🌐 HTTP Req</text>
+                        
+                        <path d="M 0,160 L 125,160 L 125,140 L 250,175 L 125,210 L 125,190 L 0,190 Z" fill="url(#grad1)" stroke="#dbeafe" strokeWidth="1"/>
+                        <text x="10" y="178" fontSize="10" fontWeight="bold" fill="#1e3a8a">🔍 HTML Extract</text>
+                        
+                        <path d="M 0,230 L 125,230 L 125,210 L 250,245 L 125,280 L 125,260 L 0,260 Z" fill="url(#grad1)" stroke="#dbeafe" strokeWidth="1"/>
+                        <text x="20" y="248" fontSize="10" fontWeight="bold" fill="#1e3a8a">⚙️ Code</text>
 
-                  <text x="45" y="115" fontSize="12" fill="#2d3748" fontWeight="bold">🌐 HTTP Request (Investing.com)</text>
-                  <text x="45" y="130" fontSize="10" fill="#718096">Busca de dados HTML</text>
-                  
-                  <text x="45" y="185" fontSize="12" fill="#2d3748" fontWeight="bold">🔍 HTML Extract (CSS Selectors)</text>
-                  <text x="45" y="200" fontSize="10" fill="#718096">Extração de preços e valores</text>
+                        <path d="M 0,300 L 125,300 L 125,280 L 250,315 L 125,350 L 125,330 L 0,330 Z" fill="url(#grad1)" stroke="#dbeafe" strokeWidth="1"/>
+                        <text x="15" y="318" fontSize="10" fontWeight="bold" fill="#1e3a8a">🔥 Firebase</text>
 
-                  <text x="45" y="255" fontSize="12" fill="#2d3748" fontWeight="bold">⚙️ Code (Processar Dados)</text>
-                  <text x="45" y="270" fontSize="10" fill="#718096">Validação e formatação</text>
-                  
-                  <text x="45" y="325" fontSize="12" fill="#2d3748" fontWeight="bold">🔥 Firebase (Write Document)</text>
-                  <text x="45" y="340" fontSize="10" fill="#718096">Armazenamento no Firestore</text>
-
-                  <path d="M 175 75 V 95" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrowhead)"/>
-                  <path d="M 175 145 V 165" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrowhead)"/>
-                  <path d="M 175 215 V 235" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrowhead)"/>
-                  <path d="M 175 285 V 305" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrowhead)"/>
+                        <path d="M 260,175 L 300,175" stroke="#a0aec0" strokeWidth="1.5" />
+                        <path d="M 280,165 L 280,185" stroke="#a0aec0" strokeWidth="1.5" />
+                        <text x="260" y="155" fontSize="8" fill="#718096">Saídas</text>
+                        <text x="290" y="165" fontSize="9" fontWeight="bold" fill="#dc2626">⚠️ Erro</text>
+                        <text x="290" y="185" fontSize="9" fontWeight="bold" fill="#166534">📝 Log</text>
+                    </g>
                 </svg>
               </div>
 
@@ -729,22 +738,22 @@ export default function AdminChecklistPage() {
               <div id="entrega" className="coll-content">
                 <h3>📦 Arquivos Entregues</h3>
                 <ul className="checklist-list">
-                  <li className="check-item"><label><input type="checkbox" data-key="entrega_code" defaultChecked/><span className="txt">Código-fonte completo</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="entrega_doc" defaultChecked/><span className="txt">Documentação técnica (`DOCUMENTACAO_TECNICA_ENTREGA.md`)</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="entrega_readme" defaultChecked/><span className="txt">README atualizado</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="entrega_env" defaultChecked/><span className="txt">Arquivo de exemplo (`env.example`)</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="entrega_package" defaultChecked/><span className="txt">package.json com scripts configurados</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="entrega_config" defaultChecked/><span className="txt">Arquivos de configuração (next.config.js, tailwind.config.js)</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="entrega_assets" defaultChecked/><span className="txt">Assets estáticos (imagens, ícones, favicons)</span></label></li>
+                    <li className="check-item"><label><input type="checkbox" data-key="entrega_code" defaultChecked/><span className="txt">Código-fonte completo</span></label></li>
+                    <li className="check-item"><label><input type="checkbox" data-key="entrega_doc" defaultChecked/><span className="txt">Documentação técnica (`DOCUMENTACAO_TECNICA_ENTREGA.md`)</span></label></li>
+                    <li className="check-item"><label><input type="checkbox" data-key="entrega_readme" defaultChecked/><span className="txt">README atualizado</span></label></li>
+                    <li className="check-item"><label><input type="checkbox" data-key="entrega_env" defaultChecked/><span className="txt">Arquivo de exemplo (`env.example`)</span></label></li>
+                    <li className="check-item"><label><input type="checkbox" data-key="entrega_package" defaultChecked/><span className="txt">package.json com scripts configurados</span></label></li>
+                    <li className="check-item"><label><input type="checkbox" data-key="entrega_config" defaultChecked/><span className="txt">Arquivos de configuração (next.config.js, tailwind.config.js)</span></label></li>
+                    <li className="check-item"><label><input type="checkbox" data-key="entrega_assets" defaultChecked/><span className="txt">Assets estáticos (imagens, ícones, favicons)</span></label></li>
                 </ul>
                 <h3>🔑 Credenciais</h3>
                 <ul className="checklist-list">
-                  <li className="check-item"><label><input type="checkbox" data-key="cred_firebase" /><span className="txt">Firebase: Projeto criar e configurar novo projeto dentro do workspace da BMV</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="cred_ai" /><span className="txt">Google AI: API Key configurada na conta BMV</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="cred_n8n" /><span className="txt">N8N: Instância configurar dentro da conts BMV</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="cred_domain" /><span className="txt">Domínio: Configurar quando for adiquirido</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="cred_ssl" /><span className="txt">SSL: Configurar quando for adiquirido</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="cred_deploy" /><span className="txt">Plataforma de deploy configurada ou hspedar na localweb (ESTE SITE (Vercel/Netlify)</span></label></li>
+                    <li className="check-item"><label><input type="checkbox" data-key="cred_firebase" /><span className="txt">Firebase: Projeto criar e configurar novo projeto dentro do workspace da BMV</span></label></li>
+                    <li className="check-item"><label><input type="checkbox" data-key="cred_ai" /><span className="txt">Google AI: API Key configurada na conta BMV</span></label></li>
+                    <li className="check-item"><label><input type="checkbox" data-key="cred_n8n" /><span className="txt">N8N: Instância configurar dentro da conta BMV</span></label></li>
+                    <li className="check-item"><label><input type="checkbox" data-key="cred_domain" /><span className="txt">Domínio: Configurar quando for adquirido</span></label></li>
+                    <li className="check-item"><label><input type="checkbox" data-key="cred_ssl" /><span className="txt">SSL: Configurar quando for adquirido</span></label></li>
+                    <li className="check-item"><label><input type="checkbox" data-key="cred_deploy" /><span className="txt">Plataforma de deploy configurada ou hospedar na localweb (ESTE SITE) (Vercel/Netlify)</span></label></li>
                 </ul>
                 <h3>🌐 Deploy e Hospedagem</h3>
                 <ul className="checklist-list">
