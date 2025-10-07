@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -105,7 +104,7 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
       { ...agua_crs, percentage: valorTotal > 0 ? (agua_crs.value / valorTotal) * 100 : 0, isSub: true, parent: 'crs_total' },
     ].filter(item => item.value > 0);
     
-    const mainAsset: CommodityPriceData = {
+    const mainAsset: CommodityPriceData | null = {
         id: 'valor_uso_solo',
         name: 'Valor de Uso do Solo',
         price: valorTotal,
@@ -252,7 +251,7 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
                  <div className="flex items-center gap-2 flex-shrink-0">
                     <PdfExportButton
                         data={{
-                            mainIndex: mainAssetData || undefined,
+                            mainIndex: mainAssetData,
                             secondaryIndices: [],
                             currencies: [],
                             otherAssets: pdfComponentData,
