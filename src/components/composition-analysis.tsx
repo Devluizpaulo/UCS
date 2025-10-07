@@ -19,6 +19,7 @@ import { format } from 'date-fns';
 import * as ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import { PdfExportButton } from './pdf-export-button';
+import { ExcelExportButton } from './excel-export-button';
 import type { CommodityPriceData } from '@/lib/types';
 import * as React from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
@@ -70,11 +71,9 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
     const componentes = data.componentes;
     const valorTotal = data.valor;
 
-
     const vus = { id: 'vus', name: componentNames.vus, value: (componentes.vus || 0) as number };
     const vmad = { id: 'vmad', name: componentNames.vmad, value: (componentes.vmad || 0) as number };
     const carbono_crs = { id: 'carbono_crs', name: componentNames.carbono_crs, value: (componentes.carbono_crs || 0) as number };
-    // Usar o campo correto do Firebase: agua_crs (minúsculo)
     const agua_crs = { id: 'Agua_CRS', name: componentNames.Agua_CRS, value: (componentes.agua_crs || 0) as number };
     
     const crsTotalValue = carbono_crs.value + agua_crs.value;
@@ -82,21 +81,7 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
     
     const chartItems = [vus, vmad, crsTotal].filter(item => item.value > 0);
 
-    const tableItems: ({
-        percentage: number;
-        isSub: boolean;
-        id: string;
-        name: string;
-        value: number;
-        parent?: undefined;
-    } | {
-        percentage: number;
-        isSub: boolean;
-        parent: string;
-        id: string;
-        name: string;
-        value: number;
-    })[] = [
+    const tableItems = [
       { ...vus, percentage: valorTotal > 0 ? (vus.value / valorTotal) * 100 : 0, isSub: false },
       { ...vmad, percentage: valorTotal > 0 ? (vmad.value / valorTotal) * 100 : 0, isSub: false },
       { ...crsTotal, percentage: valorTotal > 0 ? (crsTotal.value / valorTotal) * 100 : 0, isSub: false },
@@ -260,10 +245,18 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
                         reportType="composition"
                         disabled={isExporting}
                     />
-                    <Button onClick={handleExportExcel} disabled={isExporting} variant="outline" size="sm">
-                        {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-                        Exportar (XLSX)
-                    </Button>
+                    <ExcelExportButton
+                      data={{
+                        mainIndex: mainAssetData || undefined,
+                        secondaryIndices: [],
+                        currencies: [],
+                        otherAssets: pdfComponentData,
+                        targetDate: targetDate
+                      }}
+                      onExport={handleExportExcel}
+                      variant="outline"
+                      size="sm"
+                    />
                 </div>
             </div>
           </CardHeader>
