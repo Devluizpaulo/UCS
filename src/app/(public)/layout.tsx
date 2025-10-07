@@ -60,16 +60,7 @@ export default function PublicLayout({
               </div>
           </header>
 
-          <main className="relative flex-1 flex items-center justify-center p-4">
-              <Image
-                  src="/image/login.jpg"
-                  alt="Floresta exuberante ao fundo"
-                  fill
-                  className="object-cover animate-zoom-in"
-                  data-ai-hint="lush forest"
-                  priority
-              />
-              <div className="absolute inset-0 bg-black/60" />
+          <main className="relative flex-1 flex items-center justify-center p-4 bg-muted/30">
               <div className="relative z-10 w-full max-w-sm sm:max-w-md">
                   {children}
               </div>
