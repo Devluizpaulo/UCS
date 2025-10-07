@@ -13,6 +13,7 @@ export default function AdminChecklistPage() {
     const AUTOSAVE_DEBOUNCE = 600;
 
     const checkboxes = Array.from(document.querySelectorAll('input[type="checkbox"][data-key]')) as HTMLInputElement[];
+    const allCollapsibles = document.querySelectorAll('.collapsible');
 
     function updateProgressUI() {
       const total = checkboxes.length;
@@ -33,6 +34,9 @@ export default function AdminChecklistPage() {
 
       const totalItemsEl = document.getElementById('totalItems');
       if(totalItemsEl) totalItemsEl.textContent = String(total);
+      
+      const progressPctEl = document.getElementById('progressPct');
+      if (progressPctEl) progressPctEl.textContent = `${pct}%`;
     }
 
     function debounce<T extends (...args: any[]) => void>(fn: T, delay: number) {
@@ -95,7 +99,7 @@ export default function AdminChecklistPage() {
       updateProgressUI();
     }
     
-     document.querySelectorAll('.collapsible').forEach(el=>{
+     allCollapsibles.forEach(el=>{
       el.addEventListener('click', ()=>{
         const target = document.getElementById(el.getAttribute('data-target') || '');
         const chev = el.querySelector('.chev');
@@ -157,8 +161,9 @@ export default function AdminChecklistPage() {
           margin: 15,
           filename: filename,
           image: { type: 'jpeg', quality: 0.95 },
-          html2canvas: { scale: 2, useCORS: true, logging: true },
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+          html2canvas: { scale: 2, useCORS: true, logging: true, scrollY: 0, scrollX: 0 },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+          pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
         };
 
         // @ts-ignore
@@ -176,17 +181,15 @@ export default function AdminChecklistPage() {
       });
     }
 
-    loadState();
-    
-     // Auto-expand all on initial load
+    // Auto-expand all on initial load
     setTimeout(() => {
-        document.querySelectorAll('.coll-content').forEach(content => {
-            const el = content as HTMLElement;
-            el.style.maxHeight = el.scrollHeight + "px";
-            const trigger = el.previousElementSibling;
-            if(trigger) {
-                const chev = trigger.querySelector('.chev');
-                if(chev) (chev as HTMLElement).style.transform = 'rotate(90deg)';
+        allCollapsibles.forEach(el => {
+            const target = document.getElementById(el.getAttribute('data-target') || '');
+            const chev = el.querySelector('.chev');
+            if (target && chev) {
+                target.style.maxHeight = target.scrollHeight + "px";
+                (chev as HTMLElement).style.transform = 'rotate(90deg)';
+                 target.style.paddingTop = '12px';
             }
         });
     }, 200);
@@ -199,7 +202,12 @@ export default function AdminChecklistPage() {
       const el = document.getElementById(id);
       if (el) el.addEventListener('input', saveStateDebounced);
     });
+    
+    const dateEl = document.getElementById('dateNow');
+    if (dateEl) dateEl.textContent = new Date().toLocaleDateString('pt-BR');
 
+    loadState();
+    
     return () => {
       checkboxes.forEach(cb => cb.removeEventListener('change', saveStateDebounced));
     };
@@ -208,68 +216,35 @@ export default function AdminChecklistPage() {
   return (
     <>
       <Head>
+        <title>UCS Index Platform — Checklist de Entrega</title>
         <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js" defer></script>
       </Head>
-       <style jsx global>{`
-        .checklist-container { padding: 1rem; max-width: 1200px; margin: auto; display: grid; grid-template-columns: 1fr 320px; gap: 1.5rem; align-items: start; }
-        main { grid-column: 1 / 2; }
-        aside { grid-column: 2 / 3; position: sticky; top: 1.5rem; }
-        .checklist-card { background-color: var(--card); border-radius: 0.75rem; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); border: 1px solid hsl(var(--border)); }
-        .checklist-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
-        .checklist-title-section { display: flex; align-items: center; gap: 1rem; }
-        .checklist-icon { width: 2.75rem; height: 2.75rem; border-radius: 0.5rem; background-color: hsl(var(--muted)); display: flex; align-items: center; justify-content: center; font-size: 1.25rem; }
-        .checklist-title { font-size: 1.25rem; font-weight: 600; color: hsl(var(--foreground)); }
-        .checklist-subtitle { font-size: 0.875rem; color: hsl(var(--muted-foreground)); }
-        .checklist-tag { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 9999px; background-color: hsl(var(--secondary)); color: hsl(var(--secondary-foreground)); font-weight: 600; font-size: 0.75rem; }
-        .checklist-list { margin-top: 1rem; list-style: none; padding: 0; }
-        .checklist-item { display: flex; align-items: start; gap: 0.75rem; padding: 0.75rem 0.5rem; border-radius: 0.5rem; transition: background-color 0.2s; }
-        .checklist-item:hover { background-color: hsl(var(--muted)/0.5); }
-        .checklist-item label { display: flex; align-items: start; gap: 0.75rem; cursor: pointer; flex-grow: 1; }
-        .checklist-item input[type="checkbox"] { margin-top: 3px; flex-shrink: 0; width: 1.125rem; height: 1.125rem; border-radius: 0.25rem; border: 1px solid hsl(var(--border)); accent-color: hsl(var(--primary)); }
-        .checklist-item .txt { font-size: 0.875rem; color: hsl(var(--foreground)); }
-        h3 { font-size: 1.125rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.5rem; color: hsl(var(--primary)); }
-        .sig-input { width: 100%; padding: 0.5rem; border-radius: 0.5rem; border: 1px solid hsl(var(--border)); margin-top: 0.25rem; background-color: hsl(var(--background)); }
-        .collapsible { cursor: pointer; padding: 0.75rem; border-radius: 0.5rem; border: 1px solid hsl(var(--border)); display: flex; align-items: center; justify-content: space-between; transition: background-color 0.2s; margin-top: 0.5rem; }
-        .collapsible:hover { background-color: hsl(var(--muted)/0.5); }
-        .collapsible .title { font-weight: 600; }
-        .coll-content { overflow: hidden; transition: max-height 0.3s ease-out, padding 0.3s ease-out; max-height: 0; }
-        .chev { transition: transform 0.2s; }
-        .progress-bar-container { background-color: hsl(var(--muted)); border-radius: 9999px; overflow: hidden; height: 0.5rem; }
-        .progress-bar-fill { background-color: hsl(var(--primary)); height: 100%; transition: width 0.3s; }
-        .panel-title { font-weight: 600; margin-bottom: 0.75rem; }
-        .diagram{width:100%;height:auto;border-radius:10px;border:1px solid hsl(var(--border));background:linear-gradient(180deg, hsl(var(--card)), hsl(var(--muted)));padding:12px;margin-top:12px; cursor: zoom-in; transition: transform 0.3s ease;}
-        .diagram.zoomed { transform: scale(1.5); cursor: zoom-out; z-index: 10; position: relative; }
-        .muted-note{font-size:13px;color:var(--muted);margin-top:6px}
-        @media (max-width: 980px) { .checklist-container { grid-template-columns: 1fr; } aside { position: static; } }
-      `}</style>
       <div className="checklist-container">
         <main>
             <div id="docArea">
-              {/* SUMMARY */}
-              <section className="checklist-card" aria-labelledby="summary-title">
+               <section className="card" aria-labelledby="summary-title">
                   <div className="section-head">
                     <div className="section-title">
                       <div className="icon">📋</div>
                       <div>
-                        <h2 id="summary-title">Resumo da Entrega</h2>
-                        <div className="muted">Versão: 1.0.0 • Data: {new Date().toLocaleDateString('pt-BR')}</div>
+                        <h2 id="summary-title" className="text-lg font-semibold">Resumo da Entrega</h2>
+                        <div className="muted">Versão: 1.0.0 • Data: <span id="dateNow">{new Date().toLocaleDateString('pt-BR')}</span></div>
                       </div>
                     </div>
                   </div>
                   <p className="muted-note">Este documento reúne a documentação técnica, checklists, diagramas e informações de deploy para a transferência completa do projeto UCS Index Platform.</p>
               </section>
 
-              {/* DIAGRAMS */}
                <section className="card">
                 <div className="section-title">
                     <div className="icon">🗺️</div>
                     <div>
-                        <h2>Diagramas</h2>
+                        <h2 className="text-lg font-semibold">Diagramas</h2>
                         <div className="muted">Arquitetura, Fluxo de Dados e Infraestrutura</div>
                     </div>
                 </div>
                 <div style={{ marginTop: '12px' }}>
-                    <h3>Arquitetura Técnica</h3>
+                    <h3 className="text-md font-semibold">Arquitetura Técnica</h3>
                     <p className="muted-note">Visão geral dos componentes principais: Front-end (Next.js), Camada de API (Serverless), Banco de Dados (Firestore) e integrações (N8N, Google AI).</p>
                     <div className="diagram" role="img" aria-label="Diagrama de arquitetura técnica" onClick={(e) => e.currentTarget.classList.toggle('zoomed')}>
                         <svg viewBox="0 0 1000 360" width="100%" xmlns="http://www.w3.org/2000/svg">
@@ -307,7 +282,7 @@ export default function AdminChecklistPage() {
                     </div>
                 </div>
                  <div style={{ marginTop: '18px' }}>
-                    <h3>Fluxo de Dados</h3>
+                    <h3 className="text-md font-semibold">Fluxo de Dados</h3>
                     <p className="muted-note">Ilustra como os dados fluem desde as fontes externas (N8N), são armazenados no Firestore, e consumidos pela aplicação web e pela IA.</p>
                     <div className="diagram" role="img" aria-label="Fluxo de dados" onClick={(e) => e.currentTarget.classList.toggle('zoomed')}>
                        <svg viewBox="0 0 1000 160" width="100%" xmlns="http://www.w3.org/2000/svg">
@@ -333,7 +308,7 @@ export default function AdminChecklistPage() {
                     </div>
                 </div>
                 <div style={{ marginTop: '18px' }}>
-                    <h3>Infraestrutura de Deploy</h3>
+                    <h3 className="text-md font-semibold">Infraestrutura de Deploy</h3>
                      <p className="muted-note">Mostra o pipeline de CI/CD do GitHub Actions e os alvos de deploy, incluindo Vercel, Hostinger/Locaweb, e a VPS para N8N.</p>
                     <div className="diagram" role="img" aria-label="Infraestrutura de deploy" onClick={(e) => e.currentTarget.classList.toggle('zoomed')}>
                        <svg viewBox="0 0 1000 220" width="100%" xmlns="http://www.w3.org/2000/svg">
@@ -362,50 +337,62 @@ export default function AdminChecklistPage() {
                 </div>
               </section>
 
-              {/* CHECKLIST */}
-              <section className="checklist-card" style={{marginTop: '18px'}}>
+              <section className="card" style={{marginTop: '18px'}}>
                   <div className="section-head">
                     <div className="section-title">
                       <div className="icon">✅</div>
-                      <h2>Checklist de Entrega</h2>
+                      <h2 className="text-lg font-semibold">Checklist de Entrega</h2>
                     </div>
+                     <div style={{fontSize:'13px',color:'hsl(var(--muted-foreground))'}}>Progresso: <strong id="progressPct">0%</strong></div>
                   </div>
                   <div style={{marginTop: '12px'}}>
-                    {/* PRÉ-ENTREGA */}
+                    
                     <div className="collapsible" data-target="preEntrega">
                       <div className="title"><strong>📋 Pré-Entrega</strong></div>
                       <div className="chev">▸</div>
                     </div>
                     <div id="preEntrega" className="coll-content">
-                      <h3>🏗️ Desenvolvimento Concluído</h3>
-                      <ul className="checklist-list">
-                        <li className="checklist-item"><label><input type="checkbox" data-key="pre_dev_func"/><span className="txt">Todas as funcionalidades implementadas</span></label></li>
-                        <li className="checklist-item"><label><input type="checkbox" data-key="pre_dev_tests"/><span className="txt">Testes locais realizados</span></label></li>
-                      </ul>
-                       <h3>📚 Documentação Completa</h3>
-                       <ul className="checklist-list">
-                        <li className="checklist-item"><label><input type="checkbox" data-key="pre_doc_readme"/><span className="txt">README.md atualizado</span></label></li>
-                       </ul>
+                        <h3>🏗️ Desenvolvimento Concluído</h3>
+                        <ul className="checklist-list">
+                            <li className="checklist-item"><label><input type="checkbox" data-key="pre_dev_func"/><span className="txt">Todas as funcionalidades implementadas conforme especificação</span></label></li>
+                            <li className="checklist-item"><label><input type="checkbox" data-key="pre_dev_tests"/><span className="txt">Testes locais realizados com sucesso</span></label></li>
+                            <li className="checklist-item"><label><input type="checkbox" data-key="pre_dev_review" /><span className="txt">Código revisado e documentado</span></label></li>
+                            <li className="checklist-item"><label><input type="checkbox" data-key="pre_dev_perf" /><span className="txt">Performance otimizada</span></label></li>
+                            <li className="checklist-item"><label><input type="checkbox" data-key="pre_dev_resp" /><span className="txt">Responsividade testada em diferentes dispositivos</span></label></li>
+                        </ul>
+                        <h3>📚 Documentação Completa</h3>
+                        <ul className="checklist-list">
+                            <li className="checklist-item"><label><input type="checkbox" data-key="pre_doc_readme"/><span className="txt">README.md atualizado</span></label></li>
+                            <li className="checklist-item"><label><input type="checkbox" data-key="pre_doc_tech" /><span className="txt">Documentação técnica de entrega criada</span></label></li>
+                            <li className="checklist-item"><label><input type="checkbox" data-key="pre_doc_env" /><span className="txt">Arquivo de exemplo de variáveis de ambiente</span></label></li>
+                            <li className="checklist-item"><label><input type="checkbox" data-key="pre_doc_install" /><span className="txt">Instruções de instalação e deploy</span></label></li>
+                            <li className="checklist-item"><label><input type="checkbox" data-key="pre_doc_diagrams" /><span className="txt">Diagramas de arquitetura atualizados</span></label></li>
+                        </ul>
                     </div>
                     
-                    {/* ENTREGA */}
                     <div className="collapsible" data-target="entrega">
                       <div className="title"><strong>🚀 Entrega</strong></div>
                       <div className="chev">▸</div>
                     </div>
                     <div id="entrega" className="coll-content">
-                      <h3>📦 Arquivos Entregues</h3>
-                      <ul className="checklist-list">
-                          <li className="checklist-item"><label><input type="checkbox" data-key="entrega_code"/><span className="txt">Código-fonte completo</span></label></li>
-                          <li className="checklist-item"><label><input type="checkbox" data-key="entrega_doc"/><span className="txt">Documentação técnica</span></label></li>
-                      </ul>
-                       <h3>🔑 Credenciais e Acessos</h3>
-                       <ul className="checklist-list">
-                        <li className="checklist-item"><label><input type="checkbox" data-key="cred_firebase"/><span className="txt">Firebase: Projeto criado e configurado</span></label></li>
-                       </ul>
+                        <h3>📦 Arquivos Entregues</h3>
+                        <ul className="checklist-list">
+                            <li className="checklist-item"><label><input type="checkbox" data-key="entrega_code"/><span className="txt">Código-fonte completo</span></label></li>
+                            <li className="checklist-item"><label><input type="checkbox" data-key="entrega_doc"/><span className="txt">Documentação técnica (`DOCUMENTACAO_TECNICA_ENTREGA.md`)</span></label></li>
+                            <li className="checklist-item"><label><input type="checkbox" data-key="entrega_readme" /><span className="txt">README atualizado</span></label></li>
+                            <li className="checklist-item"><label><input type="checkbox" data-key="entrega_env" /><span className="txt">Arquivo de exemplo (`env.example`)</span></label></li>
+                            <li className="checklist-item"><label><input type="checkbox" data-key="entrega_backup" /><span className="txt">Backup do banco de dados (se solicitado)</span></label></li>
+                        </ul>
+                        <h3>🔑 Credenciais</h3>
+                        <ul className="checklist-list">
+                            <li className="checklist-item"><label><input type="checkbox" data-key="cred_firebase"/><span className="txt">Firebase: Projeto criado e configurado</span></label></li>
+                            <li className="checklist-item"><label><input type="checkbox" data-key="cred_ai" /><span className="txt">Google AI: API Key configurada</span></label></li>
+                            <li className="checklist-item"><label><input type="checkbox" data-key="cred_n8n" /><span className="txt">N8N: Instância configurada (se aplicável)</span></label></li>
+                            <li className="checklist-item"><label><input type="checkbox" data-key="cred_domain" /><span className="txt">Domínio: Configurado e apontando</span></label></li>
+                            <li className="checklist-item"><label><input type="checkbox" data-key="cred_ssl" /><span className="txt">SSL: Certificado configurado</span></label></li>
+                        </ul>
                     </div>
                     
-                    {/* TESTES */}
                     <div className="collapsible" data-target="testes">
                         <div className="title"><strong>🔍 Testes de Aceite</strong></div>
                         <div className="chev">▸</div>
@@ -415,70 +402,123 @@ export default function AdminChecklistPage() {
                         <ul className="checklist-list">
                             <li className="checklist-item"><label><input type="checkbox" data-key="test_func_login" /><span className="txt">Usuário consegue fazer login</span></label></li>
                             <li className="checklist-item"><label><input type="checkbox" data-key="test_func_dashboard" /><span className="txt">Dashboard exibe dados em tempo real</span></label></li>
+                            <li className="checklist-item"><label><input type="checkbox" data-key="test_func_pdf" /><span className="txt">Exportação de PDF funcionando</span></label></li>
+                            <li className="checklist-item"><label><input type="checkbox" data-key="test_func_admin" /><span className="txt">Admin permite CRUD de usuários</span></label></li>
+                            <li className="checklist-item"><label><input type="checkbox" data-key="test_func_audit" /><span className="txt">Sistema de auditoria registra ações</span></label></li>
                         </ul>
                          <h3>✅ Testes de Performance</h3>
                         <ul className="checklist-list">
                             <li className="checklist-item"><label><input type="checkbox" data-key="test_perf_load" /><span className="txt">Carregamento inicial &lt; 3 segundos</span></label></li>
+                            <li className="checklist-item"><label><input type="checkbox" data-key="test_perf_nav" /><span className="txt">Navegação entre páginas &lt; 1 segundo</span></label></li>
+                            <li className="checklist-item"><label><input type="checkbox" data-key="test_perf_export" /><span className="txt">Exportação de PDF &lt; 10 segundos</span></label></li>
                         </ul>
                     </div>
 
-                    {/* SEGURANÇA */}
                     <div className="collapsible" data-target="seguranca">
                         <div className="title"><strong>🛡️ Segurança e LGPD</strong></div>
                         <div className="chev">▸</div>
                     </div>
                     <div id="seguranca" className="coll-content">
-                        <h3>🔐 Autenticação e Autorização</h3>
+                        <h3>🔐 Autenticação</h3>
                         <ul className="checklist-list">
                             <li className="checklist-item"><label><input type="checkbox" data-key="sec_auth_login" /><span className="txt">Login seguro implementado</span></label></li>
+                            <li className="checklist-item"><label><input type="checkbox" data-key="sec_auth_roles" /><span className="txt">Controle de acesso por roles</span></label></li>
                         </ul>
-                    </div>
-
-                    {/* DEPLOY */}
-                    <div className="collapsible" data-target="deploy">
-                        <div className="title"><strong>🚀 Deploy</strong></div>
-                        <div className="chev">▸</div>
-                    </div>
-                    <div id="deploy" className="coll-content">
-                        <h3>🌐 Produção</h3>
+                        <h3>🛡️ Proteção de Dados</h3>
                         <ul className="checklist-list">
-                            <li className="checklist-item"><label><input type="checkbox" data-key="deploy_prod_build" /><span className="txt">Build de produção gerado</span></label></li>
+                            <li className="checklist-item"><label><input type="checkbox" data-key="sec_data_crypto" /><span className="txt">Dados sensíveis criptografados</span></label></li>
+                            <li className="checklist-item"><label><input type="checkbox" data-key="sec_data_sanitize" /><span className="txt">Validação e sanitização de inputs</span></label></li>
+                        </ul>
+                         <h3>📋 Conformidade LGPD</h3>
+                        <ul className="checklist-list">
+                            <li className="checklist-item"><label><input type="checkbox" data-key="lgpd_consent" /><span className="txt">Consentimento explícito implementado</span></label></li>
+                            <li className="checklist-item"><label><input type="checkbox" data-key="lgpd_policy" /><span className="txt">Política de privacidade atualizada</span></label></li>
                         </ul>
                     </div>
 
-                    {/* Assinaturas */}
-                    <div className="collapsible" data-target="assinaturas">
-                        <div className="title"><strong>✅ Assinaturas</strong></div>
+                     <div className="collapsible" data-target="n8n">
+                      <div className="title"><strong>🔄 N8N - Automação</strong></div>
+                      <div className="chev">▸</div>
+                    </div>
+                    <div id="n8n" className="coll-content">
+                        <h3>🚀 Deploy do N8N</h3>
+                        <ul className="checklist-list">
+                            <li className="checklist-item"><label><input type="checkbox" data-key="n8n_deploy_vps"/><span className="txt">VPS contratado (Locaweb/Hostinger)</span></label></li>
+                            <li className="checklist-item"><label><input type="checkbox" data-key="n8n_deploy_docker"/><span className="txt">Docker e Docker Compose instalados</span></label></li>
+                            <li className="checklist-item"><label><input type="checkbox" data-key="n8n_deploy_run"/><span className="txt">N8N deployado e funcionando</span></label></li>
+                            <li className="checklist-item"><label><input type="checkbox" data-key="n8n_deploy_import"/><span className="txt">Fluxo "UCS - Pronto" importado</span></label></li>
+                            <li className="checklist-item"><label><input type="checkbox" data-key="n8n_deploy_creds"/><span className="txt">Credenciais Firebase configuradas</span></label></li>
+                        </ul>
+                        <h3>⚙️ Configuração</h3>
+                        <ul className="checklist-list">
+                            <li className="checklist-item"><label><input type="checkbox" data-key="n8n_config_cron"/><span className="txt">Cron jobs configurados (15 min)</span></label></li>
+                            <li className="checklist-item"><label><input type="checkbox" data-key="n8n_config_fb"/><span className="txt">Conexão Firebase testada</span></label></li>
+                            <li className="checklist-item"><label><input type="checkbox" data-key="n8n_config_wh"/><span className="txt">Webhooks configurados</span></label></li>
+                            <li className="checklist-item"><label><input type="checkbox" data-key="n8n_config_env"/><span className="txt">Variáveis de ambiente definidas</span></label></li>
+                            <li className="checklist-item"><label><input type="checkbox" data-key="n8n_config_ssl"/><span className="txt">SSL configurado (HTTPS)</span></label></li>
+                        </ul>
+                        <h3>🔍 Testes</h3>
+                         <ul className="checklist-list">
+                            <li className="checklist-item"><label><input type="checkbox" data-key="n8n_test_manual"/><span className="txt">Execução manual testada</span></label></li>
+                            <li className="checklist-item"><label><input type="checkbox" data-key="n8n_test_save"/><span className="txt">Dados sendo salvos no Firebase</span></label></li>
+                            <li className="checklist-item"><label><input type="checkbox" data-key="n8n_test_auto"/><span className="txt">Execução automática funcionando</span></label></li>
+                            <li className="checklist-item"><label><input type="checkbox" data-key="n8n_test_error"/><span className="txt">Tratamento de erros funcionando</span></label></li>
+                            <li className="checklist-item"><label><input type="checkbox" data-key="n8n_test_logs"/><span className="txt">Logs sendo gerados corretamente</span></label></li>
+                        </ul>
+                         <h3>📊 Monitoramento</h3>
+                         <ul className="checklist-list">
+                            <li className="checklist-item"><label><input type="checkbox" data-key="n8n_mon_uptime"/><span className="txt">Monitoramento de uptime configurado</span></label></li>
+                            <li className="checklist-item"><label><input type="checkbox" data-key="n8n_mon_alerts"/><span className="txt">Alertas por email configurados</span></label></li>
+                            <li className="checklist-item"><label><input type="checkbox" data-key="n8n_mon_logs"/><span className="txt">Sistema de logs funcionando</span></label></li>
+                            <li className="checklist-item"><label><input type="checkbox" data-key="n8n_mon_backup"/><span className="txt">Backup automático configurado</span></label></li>
+                            <li className="checklist-item"><label><input type="checkbox" data-key="n8n_mon_restart"/><span className="txt">Restart automático em caso de crash</span></label></li>
+                        </ul>
+                    </div>
+
+                    <div className="collapsible" data-target="suporte">
+                        <div className="title"><strong>📞 Suporte Pós-Entrega</strong></div>
                         <div className="chev">▸</div>
                     </div>
-                    <div id="assinaturas" className="coll-content">
-                        <div style={{display:'flex', gap:'12px', marginTop:'8px', flexWrap:'wrap'}}>
-                            <div style={{flex:'1', minWidth:'220px'}}>
-                                <div style={{fontSize:'13px', color:'var(--muted)'}}>Desenvolvedor</div>
-                                <input id="sigDevName" className="sig-input" placeholder="Nome do desenvolvedor" />
-                            </div>
-                            <div style={{minWidth:'200px'}}>
-                                <div style={{fontSize:'13px', color:'var(--muted)'}}>Data</div>
-                                <input id="sigDevDate" type="date" className="sig-input" />
-                            </div>
-                        </div>
-                        <div style={{display:'flex', gap:'12px', marginTop:'12px', flexWrap:'wrap'}}>
-                            <div style={{flex:'1', minWidth:'220px'}}>
-                                <div style={{fontSize:'13px', color:'var(--muted)'}}>Cliente</div>
-                                <input id="sigClientName" className="sig-input" placeholder="Nome do cliente" />
-                            </div>
-                            <div style={{minWidth:'200px'}}>
-                                <div style={{fontSize:'13px', color:'var(--muted)'}}>Data</div>
-                                <input id="sigClientDate" type="date" className="sig-input" />
-                            </div>
-                        </div>
+                    <div id="suporte" className="coll-content">
+                        <h3>🆘 Suporte Imediato</h3>
+                        <ul className="checklist-list">
+                            <li className="checklist-item"><label><input type="checkbox" data-key="sup_imm_email"/><span className="txt">Suporte via email configurado</span></label></li>
+                            <li className="checklist-item"><label><input type="checkbox" data-key="sup_imm_sla"/><span className="txt">SLA de resposta definido (24h)</span></label></li>
+                        </ul>
+                        <h3>📈 Suporte Contínuo</h3>
+                        <ul className="checklist-list">
+                            <li className="checklist-item"><label><input type="checkbox" data-key="sup_cont_contract"/><span className="txt">Contrato de suporte definido</span></label></li>
+                            <li className="checklist-item"><label><input type="checkbox" data-key="sup_cont_backup"/><span className="txt">Backup de rotina configurado</span></label></li>
+                        </ul>
+                    </div>
+
+                    <div style={{marginTop: '14px'}}>
+                      <h3>✅ Assinaturas</h3>
+                      <p className="muted-note">Preencha os campos abaixo antes de exportar o PDF.</p>
+                      <div style={{display:'flex',gap:'12px',marginTop:'8px',flexWrap:'wrap'}}>
+                          <div style={{flex:'1', minWidth:'220px'}}>
+                              <div style={{fontSize:'13px',color:'hsl(var(--muted-foreground))'}}>Desenvolvedor</div>
+                              <input id="sigDevName" className="sig-input" placeholder="Nome do desenvolvedor" />
+                          </div>
+                          <div style={{minWidth:'200px'}}>
+                              <div style={{fontSize:'13px',color:'hsl(var(--muted-foreground))'}}>Data</div>
+                              <input id="sigDevDate" type="date" className="sig-input" />
+                          </div>
+                      </div>
+                      <div style={{display:'flex',gap:'12px',marginTop:'12px',flexWrap:'wrap'}}>
+                          <div style={{flex:'1', minWidth:'220px'}}>
+                              <div style={{fontSize:'13px',color:'hsl(var(--muted-foreground))'}}>Cliente</div>
+                              <input id="sigClientName" className="sig-input" placeholder="Nome do cliente" />
+                          </div>
+                          <div style={{minWidth:'200px'}}>
+                              <div style={{fontSize:'13px',color:'hsl(var(--muted-foreground))'}}>Data</div>
+                              <input id="sigClientDate" type="date" className="sig-input" />
+                          </div>
+                      </div>
                     </div>
                   </div>
               </section>
             </div>
-            <footer style={{marginTop: '18px', textAlign: 'center'}}>
-                <div className="muted">Progresso salvo no navegador. Use "Exportar PDF" para gerar o documento final.</div>
-            </footer>
         </main>
         <aside>
           <div className="sticky">
@@ -486,7 +526,7 @@ export default function AdminChecklistPage() {
               <div className="panel-title">📊 Progresso</div>
               <div style={{textAlign:'center', margin:'16px 0'}}>
                 <div style={{fontSize: '48px', fontWeight: 800}} id="progressBig">0%</div>
-                <div style={{fontSize: '14px', color:'var(--muted)', marginTop:'8px'}}>
+                <div style={{fontSize: '14px', color:'hsl(var(--muted-foreground))', marginTop:'8px'}}>
                   <span id="completedItems">0</span> de <span id="totalItems">0</span> itens concluídos
                 </div>
                 <div style={{marginTop:'12px'}}>
@@ -508,7 +548,3 @@ export default function AdminChecklistPage() {
     </>
   );
 }
-    
-
-    
-
