@@ -130,6 +130,33 @@ export default function AdminChecklistPage() {
     });
 
 
+    const resetButton = document.getElementById('resetChecklist');
+    if (resetButton) {
+      resetButton.addEventListener('click', () => {
+        if (confirm('Tem certeza que deseja resetar o checklist? Todos os dados marcados serão perdidos.')) {
+          // Limpar todos os checkboxes
+          checkboxes.forEach(cb => {
+            cb.checked = false;
+          });
+          
+          // Limpar campos de assinatura
+          (document.getElementById('sigDevName') as HTMLInputElement).value = '';
+          (document.getElementById('sigDevDate') as HTMLInputElement).value = '';
+          (document.getElementById('sigClientName') as HTMLInputElement).value = '';
+          (document.getElementById('sigClientDate') as HTMLInputElement).value = '';
+          
+          // Limpar localStorage
+          localStorage.removeItem(STORAGE_KEY);
+          localStorage.removeItem(SIG_KEY);
+          
+          // Atualizar UI
+          updateProgressUI();
+          
+          alert('✅ Checklist resetado com sucesso!');
+        }
+      });
+    }
+
     const exportPdfButton = document.getElementById('exportPdf');
     if (exportPdfButton) {
       exportPdfButton.addEventListener('click', async () => {
@@ -171,12 +198,20 @@ export default function AdminChecklistPage() {
         }
         
         const opt = {
-          margin: 10,
+          margin: [10, 10, 10, 10],
           filename: filename,
-          image: { type: 'jpeg', quality: 0.95 },
-          html2canvas: { scale: 2, useCORS: true, logging: true, scrollY: 0, scrollX: 0 },
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { 
+            scale: 1.5, 
+            useCORS: true, 
+            logging: false, 
+            scrollY: 0, 
+            scrollX: 0,
+            windowWidth: 1200,
+            windowHeight: document.getElementById('docArea')?.scrollHeight || 3000
+          },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-          pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+          pagebreak: { mode: ['avoid-all', 'css', 'legacy'], before: '.card' }
         };
 
         // @ts-ignore
@@ -275,12 +310,35 @@ export default function AdminChecklistPage() {
             max-width: none !important;
             width: 100% !important;
           }
+          .diagram {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 16px auto;
+            max-width: 600px;
+          }
           .diagram svg {
-            width: 100% !important;
             max-width: 100%;
             height: auto;
-            margin: 0 auto;
             display: block;
+          }
+          @media print {
+            .card {
+              page-break-inside: avoid;
+            }
+            .diagram {
+              max-width: 450px;
+              page-break-inside: avoid;
+              margin: 12px auto;
+            }
+            .diagram svg {
+              max-width: 100%;
+              width: 100% !important;
+              height: auto !important;
+            }
+            h3 {
+              page-break-after: avoid;
+            }
           }
         `}</style>
       </Head>
@@ -394,7 +452,7 @@ export default function AdminChecklistPage() {
             <div style={{ marginTop: '24px', padding: '0 8px' }}>
               <h3 className="text-sm font-semibold text-blue-600" style={{ marginBottom: '20px' }}>Arquitetura Técnica</h3>
               <div className="diagram" role="img" aria-label="Diagrama de arquitetura técnica">
-                <svg viewBox="0 0 350 480" xmlns="http://www.w3.org/2000/svg">
+                <svg viewBox="0 0 350 480" width="350" height="480" xmlns="http://www.w3.org/2000/svg">
                   <defs>
                     <marker id="arrowhead" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
                       <path d="M 0 0 L 10 5 L 0 10 z" fill="#a0aec0"/>
@@ -439,7 +497,7 @@ export default function AdminChecklistPage() {
             <div style={{ marginTop: '32px', padding: '0 8px' }}>
               <h3 className="text-sm font-semibold text-blue-600" style={{ marginBottom: '20px' }}>Fluxo de Dados</h3>
               <div className="diagram" role="img" aria-label="Fluxo de dados">
-                <svg viewBox="0 0 350 400" xmlns="http://www.w3.org/2000/svg">
+                <svg viewBox="0 0 350 400" width="350" height="400" xmlns="http://www.w3.org/2000/svg">
                     <g filter="url(#svg_shadow)">
                         <rect x="25" y="25" width="300" height="60" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
                         <rect x="25" y="115" width="300" height="60" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
@@ -470,7 +528,7 @@ export default function AdminChecklistPage() {
             <div style={{ marginTop: '32px', padding: '0 8px' }}>
               <h3 className="text-sm font-semibold text-blue-600" style={{ marginBottom: '20px' }}>Infraestrutura de Deploy</h3>
               <div className="diagram" role="img" aria-label="Infraestrutura de deploy">
-                 <svg viewBox="0 0 350 400" xmlns="http://www.w3.org/2000/svg">
+                 <svg viewBox="0 0 350 400" width="350" height="400" xmlns="http://www.w3.org/2000/svg">
                     <g filter="url(#svg_shadow)">
                         <rect x="25" y="25" width="300" height="60" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
                         <rect x="25" y="115" width="300" height="60" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
@@ -525,7 +583,7 @@ export default function AdminChecklistPage() {
 
             <h3 className="text-sm font-semibold text-blue-600" style={{ marginBottom: '20px' }}>Arquitetura do Fluxo</h3>
               <div className="diagram" role="img" aria-label="Arquitetura do fluxo N8N">
-                <svg viewBox="0 0 350 400" xmlns="http://www.w3.org/2000/svg">
+                <svg viewBox="0 0 350 400" width="350" height="400" xmlns="http://www.w3.org/2000/svg">
                   <g filter="url(#svg_shadow)">
                     <rect x="25" y="25" width="300" height="50" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
                     <rect x="25" y="95" width="300" height="50" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"/>
@@ -956,7 +1014,8 @@ export default function AdminChecklistPage() {
           <div className="card">
             <div className="panel-title">⚡ Ações Rápidas</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <Button id="exportPdf" size="sm">Exportar PDF</Button>
+              <Button id="exportPdf" size="sm">📄 Exportar PDF</Button>
+              <Button id="resetChecklist" size="sm" variant="outline">🔄 Resetar Checklist</Button>
             </div>
           </div>
         </div>
