@@ -602,41 +602,7 @@ export default function AdminChecklistPage() {
               <li style={{ marginBottom: '12px' }}>Tratamento de erros e logs de auditoria</li>
               <li style={{ marginBottom: '12px' }}>Execução programada (cron jobs)</li>
             </ul>
-
-            <h3 className="text-sm font-semibold text-blue-600" style={{ marginBottom: '20px' }}>Arquitetura do Fluxo</h3>
-              <div className="diagram" role="img" aria-label="Arquitetura do fluxo N8N">
-                <svg viewBox="0 0 350 400" width="350" height="400" xmlns="http://www.w3.org/2000/svg">
-                    <defs>
-                        <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" style={{stopColor: 'rgb(239, 246, 255)', stopOpacity:1}} />
-                            <stop offset="100%" style={{stopColor: 'rgb(219, 234, 254)', stopOpacity:1}} />
-                        </linearGradient>
-                    </defs>
-                    <g transform="translate(25, 0)">
-                        <path d="M 0,20 L 125,20 L 125,0 L 250,35 L 125,70 L 125,50 L 0,50 Z" fill="url(#grad1)" stroke="#dbeafe" strokeWidth="1"/>
-                        <text x="25" y="38" fontSize="10" fontWeight="bold" fill="#1e3a8a">⏰ Cron</text>
-                        
-                        <path d="M 0,90 L 125,90 L 125,70 L 250,105 L 125,140 L 125,120 L 0,120 Z" fill="url(#grad1)" stroke="#dbeafe" strokeWidth="1"/>
-                        <text x="15" y="108" fontSize="10" fontWeight="bold" fill="#1e3a8a">🌐 HTTP Req</text>
-                        
-                        <path d="M 0,160 L 125,160 L 125,140 L 250,175 L 125,210 L 125,190 L 0,190 Z" fill="url(#grad1)" stroke="#dbeafe" strokeWidth="1"/>
-                        <text x="10" y="178" fontSize="10" fontWeight="bold" fill="#1e3a8a">🔍 HTML Extract</text>
-                        
-                        <path d="M 0,230 L 125,230 L 125,210 L 250,245 L 125,280 L 125,260 L 0,260 Z" fill="url(#grad1)" stroke="#dbeafe" strokeWidth="1"/>
-                        <text x="20" y="248" fontSize="10" fontWeight="bold" fill="#1e3a8a">⚙️ Code</text>
-
-                        <path d="M 0,300 L 125,300 L 125,280 L 250,315 L 125,350 L 125,330 L 0,330 Z" fill="url(#grad1)" stroke="#dbeafe" strokeWidth="1"/>
-                        <text x="15" y="318" fontSize="10" fontWeight="bold" fill="#1e3a8a">🔥 Firebase</text>
-
-                        <path d="M 260,175 L 300,175" stroke="#a0aec0" strokeWidth="1.5" />
-                        <path d="M 280,165 L 280,185" stroke="#a0aec0" strokeWidth="1.5" />
-                        <text x="260" y="155" fontSize="8" fill="#718096">Saídas</text>
-                        <text x="290" y="165" fontSize="9" fontWeight="bold" fill="#dc2626">⚠️ Erro</text>
-                        <text x="290" y="185" fontSize="9" fontWeight="bold" fill="#166534">📝 Log</text>
-                    </g>
-                </svg>
-              </div>
-
+           
             <h3 className="text-sm font-semibold text-blue-600" style={{ marginTop: '32px', marginBottom: '20px' }}>Custos de Hospedagem 24/7</h3>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '28px', marginTop: '24px', padding: '0 8px' }}>
                 <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
