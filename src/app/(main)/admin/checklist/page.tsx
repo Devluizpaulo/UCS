@@ -275,6 +275,10 @@ export default function AdminChecklistPage() {
             max-width: none !important;
             width: 100% !important;
           }
+          .diagram svg {
+            max-width: 100%;
+            height: auto;
+          }
         `}</style>
       </Head>
       <main>
