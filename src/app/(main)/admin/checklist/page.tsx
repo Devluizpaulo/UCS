@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect } from 'react';
@@ -197,21 +196,25 @@ export default function AdminChecklistPage() {
           return;
         }
         
+        const elementWidth = element.clientWidth || 900;
+        const elementHeight = element.scrollHeight || 3000;
+        
         const opt = {
           margin: [10, 10, 10, 10],
           filename: filename,
           image: { type: 'jpeg', quality: 0.98 },
           html2canvas: { 
-            scale: 1.5, 
-            useCORS: true, 
-            logging: false, 
-            scrollY: 0, 
+            scale: 1.4,
+            useCORS: true,
+            logging: false,
+            scrollY: 0,
             scrollX: 0,
-            windowWidth: 1200,
-            windowHeight: document.getElementById('docArea')?.scrollHeight || 3000
+            windowWidth: elementWidth,
+            windowHeight: elementHeight,
+            backgroundColor: '#ffffff'
           },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-          pagebreak: { mode: ['avoid-all', 'css', 'legacy'], before: '.card' }
+          pagebreak: { mode: ['avoid-all', 'css'], before: '.card' }
         };
 
         // @ts-ignore
@@ -307,8 +310,10 @@ export default function AdminChecklistPage() {
             width: 100% !important;
           }
           #docArea {
-            max-width: none !important;
+            max-width: 900px !important; /* largura ideal para PDF sem corte */
             width: 100% !important;
+            margin: 0 auto;
+            background: #ffffff;
           }
           .diagram {
             display: flex;
@@ -323,6 +328,15 @@ export default function AdminChecklistPage() {
             display: block;
           }
           @media print {
+            html, body {
+              background: #ffffff !important;
+            }
+            #docArea {
+              width: 794px !important; /* ~ A4 a 96dpi */
+              max-width: 794px !important;
+              margin: 0 auto !important;
+              page-break-inside: avoid;
+            }
             .card {
               page-break-inside: avoid;
             }
