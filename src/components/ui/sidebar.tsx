@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -9,7 +8,6 @@ import { PanelLeft } from "lucide-react"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import {
   Tooltip,
@@ -38,7 +36,7 @@ type SidebarContext = {
 
 const SidebarContext = React.createContext<SidebarContext | null>(null)
 
-function useSidebar() {
+export function useSidebar() {
   const context = React.useContext(SidebarContext)
   if (!context) {
     throw new Error("useSidebar must be used within a SidebarProvider.")
@@ -71,8 +69,6 @@ const SidebarProvider = React.forwardRef<
     const isTablet = useMediaQuery("(min-width: 768px) and (max-width: 1023px)")
     const [openMobile, setOpenMobile] = React.useState(false)
 
-    // This is the internal state of the sidebar.
-    // We use openProp and setOpenProp for control from outside the component.
     const [_open, _setOpen] = React.useState(defaultOpen)
     const open = openProp ?? _open
     const setOpen = React.useCallback(
@@ -83,14 +79,11 @@ const SidebarProvider = React.forwardRef<
         } else {
           _setOpen(openState)
         }
-
-        // This sets the cookie to keep the sidebar state.
         document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
       },
       [setOpenProp, open]
     )
 
-    // Helper to toggle the sidebar.
     const toggleSidebar = React.useCallback(() => {
       if (isMobile || isTablet) {
         return setOpenMobile((open) => !open);
@@ -98,7 +91,6 @@ const SidebarProvider = React.forwardRef<
       return setOpen((open) => !open)
     }, [isMobile, isTablet, setOpen, setOpenMobile])
 
-    // Adds a keyboard shortcut to toggle the sidebar.
     React.useEffect(() => {
       const handleKeyDown = (event: KeyboardEvent) => {
         if (
@@ -114,8 +106,6 @@ const SidebarProvider = React.forwardRef<
       return () => window.removeEventListener("keydown", handleKeyDown)
     }, [toggleSidebar])
 
-    // We add a state so that we can do data-state="expanded" or "collapsed".
-    // This makes it easier to style the sidebar with Tailwind classes.
     const state = open && !isTablet ? "expanded" : "collapsed"
 
     const contextValue = React.useMemo<SidebarContext>(
@@ -235,7 +225,6 @@ const Sidebar = React.forwardRef<
             "w-[--sidebar-width]",
             "group-data-[collapsible=offcanvas]:w-0",
             "group-data-[side=right]:rotate-180",
-            // Adjust the padding for floating and inset variants.
             variant === "floating" || variant === "inset"
               ? "m-2 rounded-lg border border-sidebar-border shadow group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4))]"
               : "group-data-[collapsible=icon]:w-[--sidebar-width-icon] group-data-[side=left]:border-r group-data-[side=right]:border-l",
@@ -449,5 +438,4 @@ export {
   SidebarProvider,
   SidebarTrigger,
   SidebarInset,
-  useSidebar,
 }

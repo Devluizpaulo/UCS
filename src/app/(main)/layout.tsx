@@ -10,6 +10,7 @@ import {
   SidebarMenuButton,
   SidebarProvider,
   SidebarInset,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import {
   LayoutDashboard,
@@ -23,7 +24,7 @@ import {
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LogoUCS } from '@/components/logo-bvm';
-import { useAuth, useUser, useSidebar } from '@/firebase';
+import { useAuth, useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -184,7 +185,7 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
   }, [isUserLoading, user, router]);
 
   const handleMenuItemClick = () => {
-    if (isMobile && setOpenMobile) {
+    if (isMobile) {
       setOpenMobile(false);
     }
   };
