@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 export default function LoginPage() {
     return (
-        <Card className="bg-card text-card-foreground shadow-lg">
+        <Card className="bg-card text-card-foreground shadow-lg border">
             <CardHeader className="text-center">
                  <div className="flex justify-center mb-4">
                     <LogoUCS />

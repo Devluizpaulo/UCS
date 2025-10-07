@@ -7,7 +7,7 @@ import { ChevronLeft } from "lucide-react";
 
 export default function ForgotPasswordPage() {
     return (
-        <Card className="bg-card/90 backdrop-blur-sm border-white/20 text-card-foreground">
+        <Card className="bg-card text-card-foreground shadow-lg border">
             <CardHeader className="text-center">
                  <div className="flex justify-center mb-4">
                     <LogoUCS />

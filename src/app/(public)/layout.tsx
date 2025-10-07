@@ -4,7 +4,6 @@
 import { useUser } from '@/firebase';
 import { useRouter, usePathname } from 'next/navigation';
 import React, { useEffect } from 'react';
-import Image from 'next/image';
 import { LogoUCS } from '@/components/logo-bvm';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { Button } from '@/components/ui/button';
@@ -44,8 +43,8 @@ export default function PublicLayout({
   // Se o usuário não estiver logado, mostre o conteúdo (páginas de login, etc.).
   if ((user && pathname === '/checklist') || !user) {
     return (
-      <div className="flex min-h-screen w-full flex-col bg-background text-foreground">
-          <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-sm">
+      <div className="flex min-h-screen w-full flex-col bg-muted/20 text-foreground">
+          <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur-sm">
               <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
               <LogoUCS />
               <div className="flex items-center gap-2">
@@ -60,7 +59,7 @@ export default function PublicLayout({
               </div>
           </header>
 
-          <main className="relative flex-1 flex items-center justify-center p-4 bg-muted/30">
+          <main className="relative flex-1 flex items-center justify-center p-4">
               <div className="relative z-10 w-full max-w-sm sm:max-w-md">
                   {children}
               </div>
