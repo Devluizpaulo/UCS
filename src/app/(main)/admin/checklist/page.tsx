@@ -283,6 +283,7 @@ export default function AdminChecklistPage() {
             display: block;
           }
         `}</style>
+        <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js" defer></script>
       </Head>
       <main>
         <div id="docArea">
@@ -829,22 +830,6 @@ export default function AdminChecklistPage() {
                 <div className="chev">▸</div>
               </div>
               <div id="monitoramento" className="coll-content">
-                <h3>🔍 Logs e Rastreamento</h3>
-                <ul className="checklist-list">
-                  <li className="check-item"><label><input type="checkbox" data-key="mon_logs_centralized" /><span className="txt">Logs centralizados configurados</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="mon_logs_structured" /><span className="txt">Logs estruturados implementados</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="mon_logs_retention" /><span className="txt">Política de retenção de logs definida</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="mon_logs_search" /><span className="txt">Sistema de busca de logs configurado</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="mon_logs_alerts" /><span className="txt">Alertas baseados em logs configurados</span></label></li>
-                </ul>
-                <h3>🚨 Alertas e Notificações</h3>
-                <ul className="checklist-list">
-                  <li className="check-item"><label><input type="checkbox" data-key="mon_alerts_email" /><span className="txt">Alertas por email configurados</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="mon_alerts_slack" /><span className="txt">Alertas no Slack configurados (se aplicável)</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="mon_alerts_thresholds" /><span className="txt">Thresholds de alerta definidos</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="mon_alerts_escalation" /><span className="txt">Política de escalação definida</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="mon_alerts_test" /><span className="txt">Alertas testados e funcionando</span></label></li>
-                </ul>
                 <h3>📊 Dashboards e Relatórios</h3>
                 <ul className="checklist-list">
                   <li className="check-item"><label><input type="checkbox" data-key="mon_dash_main" /><span className="txt">Dashboard principal configurado</span></label></li>
@@ -1035,5 +1020,3 @@ export default function AdminChecklistPage() {
     </div>
   );
 }
-
-    
