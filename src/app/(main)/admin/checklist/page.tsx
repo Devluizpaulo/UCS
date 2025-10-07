@@ -103,11 +103,11 @@ export default function AdminChecklistPage() {
         if(target.style.maxHeight && target.style.maxHeight !== '0px'){
           target.style.maxHeight = '0';
           if(target.style.paddingTop) target.style.paddingTop = '0';
-          if(chev) chev.style.transform = 'rotate(0deg)';
+          if(chev) (chev as HTMLElement).style.transform = 'rotate(0deg)';
         } else {
           target.style.maxHeight = target.scrollHeight + 'px';
           target.style.paddingTop = '12px';
-          if(chev) chev.style.transform = 'rotate(90deg)';
+          if(chev) (chev as HTMLElement).style.transform = 'rotate(90deg)';
         }
       });
     });
@@ -381,30 +381,33 @@ export default function AdminChecklistPage() {
                         </ul>
                     </div>
 
-                     {/* Assinaturas */}
-                     <div style={{marginTop: '14px'}}>
-                      <h3>✅ Assinaturas</h3>
-                      <div style={{display:'flex', gap:'12px', marginTop:'8px', flexWrap:'wrap'}}>
-                          <div style={{flex:'1', minWidth:'220px'}}>
-                              <div style={{fontSize:'13px', color:'var(--muted)'}}>Desenvolvedor</div>
-                              <input id="sigDevName" className="sig-input" placeholder="Nome do desenvolvedor" />
-                          </div>
-                          <div style={{minWidth:'200px'}}>
-                              <div style={{fontSize:'13px', color:'var(--muted)'}}>Data</div>
-                              <input id="sigDevDate" type="date" className="sig-input" />
-                          </div>
-                      </div>
-                      <div style={{display:'flex', gap:'12px', marginTop:'12px', flexWrap:'wrap'}}>
-                          <div style={{flex:'1', minWidth:'220px'}}>
-                              <div style={{fontSize:'13px', color:'var(--muted)'}}>Cliente</div>
-                              <input id="sigClientName" className="sig-input" placeholder="Nome do cliente" />
-                          </div>
-                          <div style={{minWidth:'200px'}}>
-                              <div style={{fontSize:'13px', color:'var(--muted)'}}>Data</div>
-                              <input id="sigClientDate" type="date" className="sig-input" />
-                          </div>
-                      </div>
-                  </div>
+                    {/* Assinaturas */}
+                    <div className="collapsible" data-target="assinaturas">
+                        <div className="title"><strong>✅ Assinaturas</strong></div>
+                        <div className="chev">▸</div>
+                    </div>
+                    <div id="assinaturas" className="coll-content">
+                        <div style={{display:'flex', gap:'12px', marginTop:'8px', flexWrap:'wrap'}}>
+                            <div style={{flex:'1', minWidth:'220px'}}>
+                                <div style={{fontSize:'13px', color:'var(--muted)'}}>Desenvolvedor</div>
+                                <input id="sigDevName" className="sig-input" placeholder="Nome do desenvolvedor" />
+                            </div>
+                            <div style={{minWidth:'200px'}}>
+                                <div style={{fontSize:'13px', color:'var(--muted)'}}>Data</div>
+                                <input id="sigDevDate" type="date" className="sig-input" />
+                            </div>
+                        </div>
+                        <div style={{display:'flex', gap:'12px', marginTop:'12px', flexWrap:'wrap'}}>
+                            <div style={{flex:'1', minWidth:'220px'}}>
+                                <div style={{fontSize:'13px', color:'var(--muted)'}}>Cliente</div>
+                                <input id="sigClientName" className="sig-input" placeholder="Nome do cliente" />
+                            </div>
+                            <div style={{minWidth:'200px'}}>
+                                <div style={{fontSize:'13px', color:'var(--muted)'}}>Data</div>
+                                <input id="sigClientDate" type="date" className="sig-input" />
+                            </div>
+                        </div>
+                    </div>
                   </div>
               </section>
             </div>
