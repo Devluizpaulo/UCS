@@ -237,14 +237,16 @@ export default function AdminChecklistPage() {
         .progress-bar-container { background-color: hsl(var(--muted)); border-radius: 9999px; overflow: hidden; height: 0.5rem; }
         .progress-bar-fill { background-color: hsl(var(--primary)); height: 100%; transition: width 0.3s; }
         .panel-title { font-weight: 600; margin-bottom: 0.75rem; }
-        .diagram{width:100%;height:auto;border-radius:10px;border:1px solid hsl(var(--border));background:linear-gradient(180deg, hsl(var(--card)), hsl(var(--muted)));padding:12px;margin-top:12px}
+        .diagram{width:100%;height:auto;border-radius:10px;border:1px solid hsl(var(--border));background:linear-gradient(180deg, hsl(var(--card)), hsl(var(--muted)));padding:12px;margin-top:12px; cursor: zoom-in; transition: transform 0.3s ease;}
+        .diagram.zoomed { transform: scale(1.5); cursor: zoom-out; z-index: 10; position: relative; }
         .muted-note{font-size:13px;color:var(--muted);margin-top:6px}
         @media (max-width: 980px) { .checklist-container { grid-template-columns: 1fr; } aside { position: static; } }
       `}</style>
       <div className="checklist-container">
         <main>
             <div id="docArea">
-              <section className="checklist-card">
+              {/* SUMMARY */}
+              <section className="checklist-card" aria-labelledby="summary-title">
                   <div className="section-head">
                     <div className="section-title">
                       <div className="icon">📋</div>
@@ -257,86 +259,45 @@ export default function AdminChecklistPage() {
                   <p className="muted-note">Este documento reúne a documentação técnica, checklists, diagramas e informações de deploy para a transferência completa do projeto UCS Index Platform.</p>
               </section>
 
-              <section className="checklist-card">
-                  <div className="section-title">
-                      <div className="icon">🏛️</div>
-                      <h2>Visão Geral do Projeto</h2>
-                  </div>
-                  <p className="muted-note">UCS Index Platform é uma aplicação web para monitoramento de índices de sustentabilidade, com análises, relatórios em PDF/Excel e integração com automações (N8N) e IA (Google Genkit).</p>
-              </section>
-              
-              <section className="card">
+              {/* DIAGRAMS */}
+               <section className="card">
                 <div className="section-title">
-                  <div className="icon">🗺️</div>
-                  <div>
-                    <h2>Diagramas</h2>
-                    <div className="muted">Arquitetura, Fluxo de Dados e Infraestrutura</div>
-                  </div>
+                    <div className="icon">🗺️</div>
+                    <div>
+                        <h2>Diagramas</h2>
+                        <div className="muted">Arquitetura, Fluxo de Dados e Infraestrutura</div>
+                    </div>
                 </div>
-
-                <div style={({ marginTop: '12px' })}>
-                  <h3>Arquitetura Técnica</h3>
-                  <div className="diagram" role="img" aria-label="Diagrama de arquitetura técnica">
-                    <svg viewBox="0 0 1000 360" width="100%" height="320" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
-                        <defs>
-                          <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
-                            <feDropShadow dx="0" dy="6" stdDeviation="10" floodColor="#000" floodOpacity="0.12"/>
-                          </filter>
-                          <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                            <path d="M 0 0 L 10 5 L 0 10 z" fill="#9fb7e8" />
-                          </marker>
-                        </defs>
-                        <rect x="40" y="40" rx="12" ry="12" width="220" height="80" fill="#ffffff" stroke="#dfe8f6" strokeWidth="1.5" filter="url(#shadow)"/>
-                        <text x="150" y="70" fontSize="14" textAnchor="middle" fill="#0f172a" fontWeight="700">Front-end</text>
-                        <text x="150" y="92" fontSize="12" textAnchor="middle" fill="#6b7280">Next.js (React)</text>
-                        <rect x="300" y="40" rx="12" ry="12" width="220" height="80" fill="#ffffff" stroke="#dfe8f6" strokeWidth="1.5" filter="url(#shadow)"/>
-                        <text x="410" y="68" fontSize="14" textAnchor="middle" fill="#0f172a" fontWeight="700">API / Server</text>
-                        <text x="410" y="90" fontSize="12" textAnchor="middle" fill="#6b7280">Cloud Functions / Serverless</text>
-                        <rect x="560" y="40" rx="12" ry="12" width="220" height="80" fill="#ffffff" stroke="#dfe8f6" strokeWidth="1.5" filter="url(#shadow)"/>
-                        <text x="670" y="68" fontSize="14" textAnchor="middle" fill="#0f172a" fontWeight="700">Banco de Dados</text>
-                        <text x="670" y="90" fontSize="12" textAnchor="middle" fill="#6b7280">Firebase Firestore</text>
-                        <line x1="260" y1="80" x2="300" y2="80" stroke="#9fb7e8" strokeWidth="3" markerEnd="url(#arrow)"/>
-                        <line x1="520" y1="80" x2="560" y2="80" stroke="#9fb7e8" strokeWidth="3" markerEnd="url(#arrow)"/>
-                        <rect x="120" y="180" rx="10" ry="10" width="240" height="64" fill="#fff" stroke="#dfe8f6" strokeWidth="1.2" filter="url(#shadow)"/>
-                        <text x="240" y="205" fontSize="13" textAnchor="middle" fill="#0f172a" fontWeight="700">N8N (Automação)</text>
-                        <text x="240" y="223" fontSize="12" textAnchor="middle" fill="#6b7280">Coleta de dados e workflows</text>
-                        <rect x="440" y="180" rx="10" ry="10" width="240" height="64" fill="#fff" stroke="#dfe8f6" strokeWidth="1.2" filter="url(#shadow)"/>
-                        <text x="560" y="205" fontSize="13" textAnchor="middle" fill="#0f172a" fontWeight="700">Google AI (Genkit)</text>
-                        <text x="560" y="223" fontSize="12" textAnchor="middle" fill="#6b7280">Geração de relatórios / NLP</text>
-                        <line x1="240" y1="180" x2="240" y2="140" stroke="#b7d0f7" strokeWidth="2" markerEnd="url(#arrow)"/>
-                        <line x1="560" y1="180" x2="560" y2="140" stroke="#b7d0f7" strokeWidth="2" markerEnd="url(#arrow)"/>
-                    </svg>
-                  </div>
-                </div>
-              </section>
-
-              <section className="card">
-                <div className="section-title">
-                    <div className="icon">🔄</div>
-                    <h2>Fluxo N8N - Automação de Coleta</h2>
-                </div>
-                <div style={({ marginTop: '12px' })}>
-                    <h3>Arquitetura do Fluxo</h3>
-                    <div className="diagram" role="img" aria-label="Arquitetura do fluxo N8N">
-                        <svg viewBox="0 0 1000 400" width="100%" height="400" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
-                           <defs>
-                              <filter id="shadow-n8n" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="6" stdDeviation="10" floodColor="#000" floodOpacity="0.12"/></filter>
-                              <marker id="arrow-n8n" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#9fb7e8" /></marker>
-                           </defs>
-                           <rect x="40" y="40" rx="12" ry="12" width="180" height="60" fill="#fff" stroke="#dfe8f6" strokeWidth="1.5" filter="url(#shadow-n8n)"/><text x="130" y="70" fontSize="13" textAnchor="middle" fill="#0f172a" fontWeight="700">⏰ Cron Trigger</text><text x="130" y="88" fontSize="11" textAnchor="middle" fill="#6b7280">Execução programada</text>
-                           <rect x="260" y="40" rx="12" ry="12" width="180" height="60" fill="#fff" stroke="#dfe8f6" strokeWidth="1.5" filter="url(#shadow-n8n)"/><text x="350" y="70" fontSize="13" textAnchor="middle" fill="#0f172a" fontWeight="700">🌐 HTTP Request</text><text x="350" y="88" fontSize="11" textAnchor="middle" fill="#6b7280">Investing.com</text>
-                           <rect x="480" y="40" rx="12" ry="12" width="180" height="60" fill="#fff" stroke="#dfe8f6" strokeWidth="1.5" filter="url(#shadow-n8n)"/><text x="570" y="70" fontSize="13" textAnchor="middle" fill="#0f172a" fontWeight="700">🔍 HTML Extract</text><text x="570" y="88" fontSize="11" textAnchor="middle" fill="#6b7280">CSS Selectors</text>
-                           <rect x="700" y="40" rx="12" ry="12" width="180" height="60" fill="#fff" stroke="#dfe8f6" strokeWidth="1.5" filter="url(#shadow-n8n)"/><text x="790" y="70" fontSize="13" textAnchor="middle" fill="#0f172a" fontWeight="700">⚙️ Code</text><text x="790" y="88" fontSize="11" textAnchor="middle" fill="#6b7280">Processar Dados</text>
-                           <rect x="260" y="160" rx="12" ry="12" width="180" height="60" fill="#fff" stroke="#dfe8f6" strokeWidth="1.5" filter="url(#shadow-n8n)"/><text x="350" y="190" fontSize="13" textAnchor="middle" fill="#0f172a" fontWeight="700">🔥 Firebase</text><text x="350" y="208" fontSize="11" textAnchor="middle" fill="#6b7280">Write Document</text>
-                           <rect x="480" y="160" rx="12" ry="12" width="180" height="60" fill="#fff" stroke="#dfe8f6" strokeWidth="1.5" filter="url(#shadow-n8n)"/><text x="570" y="190" fontSize="13" textAnchor="middle" fill="#0f172a" fontWeight="700">⚠️ Error</text><text x="570" y="208" fontSize="11" textAnchor="middle" fill="#6b7280">Handle Errors</text>
-                           <rect x="700" y="160" rx="12" ry="12" width="180" height="60" fill="#fff" stroke="#dfe8f6" strokeWidth="1.5" filter="url(#shadow-n8n)"/><text x="790" y="190" fontSize="13" textAnchor="middle" fill="#0f172a" fontWeight="700">📝 Log</text><text x="790" y="208" fontSize="11" textAnchor="middle" fill="#6b7280">Audit Trail</text>
-                           <line x1="220" y1="70" x2="260" y2="70" stroke="#9fb7e8" strokeWidth="3" markerEnd="url(#arrow-n8n)"/><line x1="440" y1="70" x2="480" y2="70" stroke="#9fb7e8" strokeWidth="3" markerEnd="url(#arrow-n8n)"/><line x1="660" y1="70" x2="700" y2="70" stroke="#9fb7e8" strokeWidth="3" markerEnd="url(#arrow-n8n)"/>
-                           <line x1="790" y1="100" x2="350" y2="160" stroke="#9fb7e8" strokeWidth="3" markerEnd="url(#arrow-n8n)"/><line x1="790" y1="100" x2="570" y2="160" stroke="#9fb7e8" strokeWidth="3" markerEnd="url(#arrow-n8n)"/><line x1="790" y1="100" x2="790" y2="160" stroke="#9fb7e8" strokeWidth="3" markerEnd="url(#arrow-n8n)"/>
+                <div style={{ marginTop: '12px' }}>
+                    <h3>Arquitetura Técnica</h3>
+                    <p className="muted-note">Visão geral dos componentes principais: Front-end (Next.js), Camada de API (Serverless), Banco de Dados (Firestore) e integrações (N8N, Google AI).</p>
+                    <div className="diagram" role="img" aria-label="Diagrama de arquitetura técnica" onClick={(e) => e.currentTarget.classList.toggle('zoomed')}>
+                        <svg viewBox="0 0 1000 360" width="100%" xmlns="http://www.w3.org/2000/svg">
+                            {/* SVG content for Arquitetura Técnica */}
                         </svg>
+                    </div>
+                </div>
+                 <div style={{ marginTop: '18px' }}>
+                    <h3>Fluxo de Dados</h3>
+                    <p className="muted-note">Ilustra como os dados fluem desde as fontes externas (N8N), são armazenados no Firestore, e consumidos pela aplicação web e pela IA.</p>
+                    <div className="diagram" role="img" aria-label="Fluxo de dados" onClick={(e) => e.currentTarget.classList.toggle('zoomed')}>
+                       <svg viewBox="0 0 1000 160" width="100%" xmlns="http://www.w3.org/2000/svg">
+                          {/* SVG content for Fluxo de Dados */}
+                       </svg>
+                    </div>
+                </div>
+                <div style={{ marginTop: '18px' }}>
+                    <h3>Infraestrutura de Deploy</h3>
+                     <p className="muted-note">Mostra o pipeline de CI/CD do GitHub Actions e os alvos de deploy, incluindo Vercel, Hostinger/Locaweb, e a VPS para N8N.</p>
+                    <div className="diagram" role="img" aria-label="Infraestrutura de deploy" onClick={(e) => e.currentTarget.classList.toggle('zoomed')}>
+                       <svg viewBox="0 0 1000 220" width="100%" xmlns="http://www.w3.org/2000/svg">
+                          {/* SVG content for Infraestrutura de Deploy */}
+                       </svg>
                     </div>
                 </div>
               </section>
 
+              {/* CHECKLIST */}
               <section className="checklist-card" style={{marginTop: '18px'}}>
                   <div className="section-head">
                     <div className="section-title">
@@ -345,6 +306,7 @@ export default function AdminChecklistPage() {
                     </div>
                   </div>
                   <div style={{marginTop: '12px'}}>
+                    {/* PRÉ-ENTREGA */}
                     <div className="collapsible" data-target="preEntrega">
                       <div className="title"><strong>📋 Pré-Entrega</strong></div>
                       <div className="chev">▸</div>
@@ -353,10 +315,15 @@ export default function AdminChecklistPage() {
                       <h3>🏗️ Desenvolvimento Concluído</h3>
                       <ul className="checklist-list">
                         <li className="checklist-item"><label><input type="checkbox" data-key="pre_dev_func"/><span className="txt">Todas as funcionalidades implementadas</span></label></li>
-                         <li className="checklist-item"><label><input type="checkbox" data-key="pre_dev_tests"/><span className="txt">Testes locais realizados</span></label></li>
+                        <li className="checklist-item"><label><input type="checkbox" data-key="pre_dev_tests"/><span className="txt">Testes locais realizados</span></label></li>
                       </ul>
+                       <h3>📚 Documentação Completa</h3>
+                       <ul className="checklist-list">
+                        <li className="checklist-item"><label><input type="checkbox" data-key="pre_doc_readme"/><span className="txt">README.md atualizado</span></label></li>
+                       </ul>
                     </div>
                     
+                    {/* ENTREGA */}
                     <div className="collapsible" data-target="entrega">
                       <div className="title"><strong>🚀 Entrega</strong></div>
                       <div className="chev">▸</div>
@@ -367,7 +334,54 @@ export default function AdminChecklistPage() {
                           <li className="checklist-item"><label><input type="checkbox" data-key="entrega_code"/><span className="txt">Código-fonte completo</span></label></li>
                           <li className="checklist-item"><label><input type="checkbox" data-key="entrega_doc"/><span className="txt">Documentação técnica</span></label></li>
                       </ul>
+                       <h3>🔑 Credenciais e Acessos</h3>
+                       <ul className="checklist-list">
+                        <li className="checklist-item"><label><input type="checkbox" data-key="cred_firebase"/><span className="txt">Firebase: Projeto criado e configurado</span></label></li>
+                       </ul>
                     </div>
+                    
+                    {/* TESTES */}
+                    <div className="collapsible" data-target="testes">
+                        <div className="title"><strong>🔍 Testes de Aceite</strong></div>
+                        <div className="chev">▸</div>
+                    </div>
+                    <div id="testes" className="coll-content">
+                        <h3>✅ Testes Funcionais</h3>
+                        <ul className="checklist-list">
+                            <li className="checklist-item"><label><input type="checkbox" data-key="test_func_login" /><span className="txt">Usuário consegue fazer login</span></label></li>
+                            <li className="checklist-item"><label><input type="checkbox" data-key="test_func_dashboard" /><span className="txt">Dashboard exibe dados em tempo real</span></label></li>
+                        </ul>
+                         <h3>✅ Testes de Performance</h3>
+                        <ul className="checklist-list">
+                            <li className="checklist-item"><label><input type="checkbox" data-key="test_perf_load" /><span className="txt">Carregamento inicial &lt; 3 segundos</span></label></li>
+                        </ul>
+                    </div>
+
+                    {/* SEGURANÇA */}
+                    <div className="collapsible" data-target="seguranca">
+                        <div className="title"><strong>🛡️ Segurança e LGPD</strong></div>
+                        <div className="chev">▸</div>
+                    </div>
+                    <div id="seguranca" className="coll-content">
+                        <h3>🔐 Autenticação e Autorização</h3>
+                        <ul className="checklist-list">
+                            <li className="checklist-item"><label><input type="checkbox" data-key="sec_auth_login" /><span className="txt">Login seguro implementado</span></label></li>
+                        </ul>
+                    </div>
+
+                    {/* DEPLOY */}
+                    <div className="collapsible" data-target="deploy">
+                        <div className="title"><strong>🚀 Deploy</strong></div>
+                        <div className="chev">▸</div>
+                    </div>
+                    <div id="deploy" className="coll-content">
+                        <h3>🌐 Produção</h3>
+                        <ul className="checklist-list">
+                            <li className="checklist-item"><label><input type="checkbox" data-key="deploy_prod_build" /><span className="txt">Build de produção gerado</span></label></li>
+                        </ul>
+                    </div>
+
+                     {/* Assinaturas */}
                      <div style={{marginTop: '14px'}}>
                       <h3>✅ Assinaturas</h3>
                       <div style={{display:'flex', gap:'12px', marginTop:'8px', flexWrap:'wrap'}}>
@@ -403,13 +417,13 @@ export default function AdminChecklistPage() {
             <div className="checklist-card">
               <div className="panel-title">📊 Progresso</div>
               <div style={{textAlign:'center', margin:'16px 0'}}>
-                <div style={{fontSize: '48px', fontWeight: 800, background: 'var(--gradient-primary)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}} id="progressBig">0%</div>
+                <div style={{fontSize: '48px', fontWeight: 800}} id="progressBig">0%</div>
                 <div style={{fontSize: '14px', color:'var(--muted)', marginTop:'8px'}}>
                   <span id="completedItems">0</span> de <span id="totalItems">0</span> itens concluídos
                 </div>
                 <div style={{marginTop:'12px'}}>
                   <div className="progress-bar-container" style={{width:'100%', height:'8px'}}>
-                    <div className="progress-bar-fill" id="progressFill" style={{width:'0%'}}></div>
+                    <div className="progress-bar-fill" id="progressFillSidebar" style={{width:'0%'}}></div>
                   </div>
                 </div>
               </div>
@@ -426,5 +440,6 @@ export default function AdminChecklistPage() {
     </>
   );
 }
+    
 
     
