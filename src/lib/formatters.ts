@@ -1,5 +1,4 @@
 
-
 /**
  * Formata um valor monetário ou numérico de acordo com a moeda e o tipo de ativo.
  * Esta é uma função utilitária síncrona segura para ser usada no cliente.
@@ -21,7 +20,7 @@ export function formatCurrency(value: number, currency: string, assetId?: string
     return new Intl.NumberFormat('pt-BR', options).format(value);
 
   } catch (e) {
-    console.error("Error formatting currency:", e);
+    // console.error("Error formatting currency:", e);
     
     // Fallback em caso de erro na API de internacionalização
     const fallbackOptions = { 
@@ -32,4 +31,18 @@ export function formatCurrency(value: number, currency: string, assetId?: string
 
     return `${currency} ${fallbackFormatter.format(value)}`;
   }
+}
+
+
+/**
+ * Formata um número como uma porcentagem.
+ */
+export function formatPercentage(value: number): string {
+  if (typeof value !== 'number' || isNaN(value)) return '0,00%';
+  
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'percent',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value / 100);
 }
