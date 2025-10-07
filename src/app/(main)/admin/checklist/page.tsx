@@ -391,7 +391,7 @@ export default function AdminChecklistPage() {
             <div style={{ marginTop: '24px', padding: '0 8px' }}>
               <h3 className="text-sm font-semibold text-blue-600" style={{ marginBottom: '20px' }}>Arquitetura Técnica</h3>
               <div className="diagram" role="img" aria-label="Diagrama de arquitetura técnica">
-                <svg viewBox="0 0 800 288" width="100%" height="auto" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+                <svg viewBox="0 0 700 250" width="100%" height="auto" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
                   <defs>
                     <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
                       <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="#000" floodOpacity="0.1"/>
@@ -432,7 +432,7 @@ export default function AdminChecklistPage() {
             <div style={{ marginTop: '32px', padding: '0 8px' }}>
               <h3 className="text-sm font-semibold text-blue-600" style={{ marginBottom: '20px' }}>Fluxo de Dados</h3>
               <div className="diagram" role="img" aria-label="Fluxo de dados">
-                <svg viewBox="0 0 800 128" width="100%" height="auto" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+                <svg viewBox="0 0 700 120" width="100%" height="auto" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
                   <rect x="24" y="24" rx="8" ry="8" width="120" height="40" fill="#ffffff" stroke="#dfe8f6"/>
                   <text x="84" y="48" fontSize="9.6" textAnchor="middle" fill="#0f172a" fontWeight="700">Usuário</text>
                   <rect x="168" y="20" rx="8" ry="8" width="160" height="48" fill="#ffffff" stroke="#dfe8f6"/>
@@ -459,7 +459,7 @@ export default function AdminChecklistPage() {
             <div style={{ marginTop: '32px', padding: '0 8px' }}>
               <h3 className="text-sm font-semibold text-blue-600" style={{ marginBottom: '20px' }}>Infraestrutura de Deploy</h3>
               <div className="diagram" role="img" aria-label="Infraestrutura de deploy">
-                 <svg viewBox="0 0 800 176" width="100%" height="auto" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+                 <svg viewBox="0 0 700 150" width="100%" height="auto" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
                   <rect x="32" y="24" rx="8" ry="8" width="144" height="48" fill="#fff" stroke="#dfe8f6"/>
                   <text x="104" y="48" fontSize="10.4" textAnchor="middle" fill="#0f172a" fontWeight="700">GitHub Repo</text>
                   <rect x="208" y="24" rx="8" ry="8" width="176" height="48" fill="#fff" stroke="#dfe8f6"/>
@@ -512,7 +512,7 @@ export default function AdminChecklistPage() {
 
             <h3 className="text-sm font-semibold text-blue-600" style={{ marginBottom: '20px' }}>Arquitetura do Fluxo</h3>
               <div className="diagram" role="img" aria-label="Arquitetura do fluxo N8N">
-                <svg viewBox="0 0 800 320" width="100%" height="auto" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+                <svg viewBox="0 0 700 280" width="100%" height="auto" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
                   <defs>
                     <filter id="shadow-n8n" x="-50%" y="-50%" width="200%" height="200%">
                       <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="#000" floodOpacity="0.1"/>
@@ -743,8 +743,8 @@ export default function AdminChecklistPage() {
                   <li className="check-item"><label><input type="checkbox" data-key="test_sec_auth" defaultChecked/><span className="txt">Autenticação segura funcionando</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="test_sec_roles" defaultChecked/><span className="txt">Controle de acesso por roles</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="test_sec_input" defaultChecked/><span className="txt">Validação de inputs</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="test_sec_xss" /><span className="txt">Proteção contra XSS</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="test_sec_csrf" /><span className="txt">Proteção contra CSRF</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="test_sec_xss" defaultChecked/><span className="txt">Proteção contra XSS</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="test_sec_csrf" defaultChecked/><span className="txt">Proteção contra CSRF</span></label></li>
                 </ul>
               </div>
 
