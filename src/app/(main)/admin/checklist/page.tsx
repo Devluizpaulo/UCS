@@ -277,13 +277,12 @@ export default function AdminChecklistPage() {
           }
           .diagram svg {
             width: 100% !important;
-            max-width: 800px;
+            max-width: 600px;
             height: auto;
             margin: 0 auto;
             display: block;
           }
         `}</style>
-        <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js" defer></script>
       </Head>
       <main>
         <div id="docArea">
@@ -395,7 +394,7 @@ export default function AdminChecklistPage() {
             <div style={{ marginTop: '24px', padding: '0 8px' }}>
               <h3 className="text-sm font-semibold text-blue-600" style={{ marginBottom: '20px' }}>Arquitetura Técnica</h3>
               <div className="diagram" role="img" aria-label="Diagrama de arquitetura técnica">
-                <svg viewBox="0 0 600 220" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" style={{maxWidth: '600px'}}>
+                <svg viewBox="0 0 600 220" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
                   <defs>
                     <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
                       <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="#000" floodOpacity="0.1"/>
@@ -444,7 +443,7 @@ export default function AdminChecklistPage() {
             <div style={{ marginTop: '32px', padding: '0 8px' }}>
               <h3 className="text-sm font-semibold text-blue-600" style={{ marginBottom: '20px' }}>Fluxo de Dados</h3>
               <div className="diagram" role="img" aria-label="Fluxo de dados">
-                <svg viewBox="0 0 600 100" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" style={{maxWidth: '550px'}}>
+                <svg viewBox="0 0 550 100" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
                   <rect x="20" y="20" rx="8" ry="8" width="100" height="35" fill="#ffffff" stroke="#dfe8f6"/>
                   <text x="70" y="42" fontSize="8" textAnchor="middle" fill="#0f172a" fontWeight="700">Usuário</text>
                   <rect x="140" y="18" rx="8" ry="8" width="130" height="40" fill="#ffffff" stroke="#dfe8f6"/>
@@ -474,7 +473,7 @@ export default function AdminChecklistPage() {
             <div style={{ marginTop: '32px', padding: '0 8px' }}>
               <h3 className="text-sm font-semibold text-blue-600" style={{ marginBottom: '20px' }}>Infraestrutura de Deploy</h3>
               <div className="diagram" role="img" aria-label="Infraestrutura de deploy">
-                 <svg viewBox="0 0 600 120" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" style={{maxWidth: '600px'}}>
+                 <svg viewBox="0 0 600 120" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
                   <rect x="25" y="20" rx="8" ry="8" width="120" height="40" fill="#fff" stroke="#dfe8f6"/>
                   <text x="85" y="42" fontSize="9" textAnchor="middle" fill="#0f172a" fontWeight="700">GitHub Repo</text>
                   <rect x="170" y="20" rx="8" ry="8" width="140" height="40" fill="#fff" stroke="#dfe8f6"/>
@@ -527,7 +526,7 @@ export default function AdminChecklistPage() {
 
             <h3 className="text-sm font-semibold text-blue-600" style={{ marginBottom: '20px' }}>Arquitetura do Fluxo</h3>
               <div className="diagram" role="img" aria-label="Arquitetura do fluxo N8N">
-                <svg viewBox="0 0 620 250" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" style={{maxWidth: '620px'}}>
+                <svg viewBox="0 0 620 250" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
                   <defs>
                     <filter id="shadow-n8n" x="-50%" y="-50%" width="200%" height="200%">
                       <feDropShadow dx="1" dy="2" stdDeviation="4" floodColor="#000" floodOpacity="0.08"/>
