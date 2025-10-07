@@ -78,42 +78,42 @@
     --sidebar-ring: 222.2 47.4% 11.2%;
   }
 
-    .checklist-container{
-        max-width: var(--maxWidth);
-        margin: auto;
-        display: grid;
-        grid-template-columns: 1fr 340px;
-        gap: 1.5rem;
-        align-items: flex-start;
-        padding: 1.5rem;
-    }
-    
-    .card:has(.diagram) {
-        page-break-inside: avoid;
-    }
+  .checklist-container{
+      max-width: var(--maxWidth);
+      margin: auto;
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 1.5rem;
+      align-items: flex-start;
+      padding: 1.5rem;
+  }
+  
+  .card:has(.diagram) {
+      page-break-inside: avoid;
+  }
 
-    .diagram {
-        max-width: 100%;
-        overflow: auto; /* Permite rolagem se o diagrama for muito grande */
-    }
+  .diagram {
+      max-width: 100%;
+      overflow: auto; /* Permite rolagem se o diagrama for muito grande */
+  }
 
-    .diagram svg {
-        min-width: 600px; /* Garante que o diagrama tenha um tamanho mínimo */
-    }
+  .diagram svg {
+      min-width: 600px; /* Garante que o diagrama tenha um tamanho mínimo */
+  }
 
-    @media print {
-        body { background: white !important; padding: 0 !important; }
-        .checklist-container { display: block !important; }
-        main, aside { grid-column: auto !important; width: 100% !important; }
-        aside, header, .toolbar, .sticky { display: none !important; }
-        .card { box-shadow: none !important; border: 1px solid #eee !important; backdrop-filter: none !important; page-break-inside: avoid; }
-        .diagram { border: 1px solid #eee !important; width: 100% !important; max-width: 100% !important; overflow: hidden !important;}
-        .diagram svg { width: 100% !important; height: auto !important; }
-        .coll-content { max-height: none !important; padding-top: 12px !important; }
-        .collapsible .chev { display: none !important; }
-        @page {
-            size: A4;
-            margin: 15mm;
-        }
-    }
+  @media print {
+      body { background: white !important; padding: 0 !important; }
+      .checklist-container { display: block !important; }
+      main, aside { grid-column: auto !important; width: 100% !important; }
+      aside, header, .toolbar, .sticky { display: none !important; }
+      .card { box-shadow: none !important; border: 1px solid #eee !important; backdrop-filter: none !important; page-break-inside: avoid; }
+      .diagram { border: 1px solid #eee !important; width: 100% !important; max-width: 100% !important; overflow: hidden !important;}
+      .diagram svg { width: 100% !important; height: auto !important; }
+      .coll-content { max-height: none !important; padding-top: 12px !important; }
+      .collapsible .chev { display: none !important; }
+      @page {
+          size: A4;
+          margin: 15mm;
+      }
+  }
 }
