@@ -230,7 +230,6 @@ export default function AdminChecklistPage() {
     <div className="checklist-container">
       <Head>
         <title>UCS Index Platform — Checklist de Entrega</title>
-        <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js" defer></script>
         <style jsx>{`
           .collapsible {
             cursor: pointer;
