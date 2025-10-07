@@ -391,7 +391,7 @@ export default function AdminChecklistPage() {
             <div style={{ marginTop: '24px', padding: '0 8px' }}>
               <h3 className="text-sm font-semibold text-blue-600" style={{ marginBottom: '20px' }}>Arquitetura Técnica</h3>
               <div className="diagram" role="img" aria-label="Diagrama de arquitetura técnica">
-                <svg viewBox="0 0 800 288" width="100%" height="288" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+                <svg viewBox="0 0 800 288" width="100%" height="auto" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
                   <defs>
                     <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
                       <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="#000" floodOpacity="0.1"/>
@@ -432,7 +432,7 @@ export default function AdminChecklistPage() {
             <div style={{ marginTop: '32px', padding: '0 8px' }}>
               <h3 className="text-sm font-semibold text-blue-600" style={{ marginBottom: '20px' }}>Fluxo de Dados</h3>
               <div className="diagram" role="img" aria-label="Fluxo de dados">
-                <svg viewBox="0 0 800 128" width="100%" height="128" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+                <svg viewBox="0 0 800 128" width="100%" height="auto" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
                   <rect x="24" y="24" rx="8" ry="8" width="120" height="40" fill="#ffffff" stroke="#dfe8f6"/>
                   <text x="84" y="48" fontSize="9.6" textAnchor="middle" fill="#0f172a" fontWeight="700">Usuário</text>
                   <rect x="168" y="20" rx="8" ry="8" width="160" height="48" fill="#ffffff" stroke="#dfe8f6"/>
@@ -459,7 +459,7 @@ export default function AdminChecklistPage() {
             <div style={{ marginTop: '32px', padding: '0 8px' }}>
               <h3 className="text-sm font-semibold text-blue-600" style={{ marginBottom: '20px' }}>Infraestrutura de Deploy</h3>
               <div className="diagram" role="img" aria-label="Infraestrutura de deploy">
-                 <svg viewBox="0 0 800 176" width="100%" height="176" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+                 <svg viewBox="0 0 800 176" width="100%" height="auto" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
                   <rect x="32" y="24" rx="8" ry="8" width="144" height="48" fill="#fff" stroke="#dfe8f6"/>
                   <text x="104" y="48" fontSize="10.4" textAnchor="middle" fill="#0f172a" fontWeight="700">GitHub Repo</text>
                   <rect x="208" y="24" rx="8" ry="8" width="176" height="48" fill="#fff" stroke="#dfe8f6"/>
@@ -512,7 +512,7 @@ export default function AdminChecklistPage() {
 
             <h3 className="text-sm font-semibold text-blue-600" style={{ marginBottom: '20px' }}>Arquitetura do Fluxo</h3>
               <div className="diagram" role="img" aria-label="Arquitetura do fluxo N8N">
-                <svg viewBox="0 0 800 320" width="100%" height="320" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+                <svg viewBox="0 0 800 320" width="100%" height="auto" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
                   <defs>
                     <filter id="shadow-n8n" x="-50%" y="-50%" width="200%" height="200%">
                       <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="#000" floodOpacity="0.1"/>
@@ -637,32 +637,32 @@ export default function AdminChecklistPage() {
               <div id="preEntrega" className="coll-content">
                 <h3>🏗️ Desenvolvimento Concluído</h3>
                 <ul className="checklist-list">
-                  <li className="check-item"><label><input type="checkbox" data-key="pre_dev_func" checked/><span className="txt">Todas as funcionalidades implementadas conforme especificação</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="pre_dev_func" defaultChecked/><span className="txt">Todas as funcionalidades implementadas conforme especificação</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="pre_dev_tests" /><span className="txt">Testes locais realizados com sucesso</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="pre_dev_review" checked/><span className="txt">Código revisado e documentado</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="pre_dev_review" defaultChecked/><span className="txt">Código revisado e documentado</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="pre_dev_perf" /><span className="txt">Performance otimizada</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="pre_dev_resp" checked/><span className="txt">Responsividade testada em diferentes dispositivos</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="pre_dev_lint" checked/><span className="txt">Linting e formatação de código aplicados</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="pre_dev_types" checked/><span className="txt">TypeScript configurado e sem erros</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="pre_dev_build" checked/><span className="txt">Build de produção funcionando</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="pre_dev_resp" defaultChecked/><span className="txt">Responsividade testada em diferentes dispositivos</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="pre_dev_lint" defaultChecked/><span className="txt">Linting e formatação de código aplicados</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="pre_dev_types" defaultChecked/><span className="txt">TypeScript configurado e sem erros</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="pre_dev_build" defaultChecked/><span className="txt">Build de produção funcionando</span></label></li>
                 </ul>
                 <h3>📚 Documentação Completa</h3>
                 <ul className="checklist-list">
-                  <li className="check-item"><label><input type="checkbox" data-key="pre_doc_readme" checked/><span className="txt">README.md atualizado</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="pre_doc_tech" checked/><span className="txt">Documentação técnica de entrega criada</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="pre_doc_env" checked/><span className="txt">Arquivo de exemplo de variáveis de ambiente</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="pre_doc_install" checked/><span className="txt">Instruções de instalação e deploy</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="pre_doc_diagrams" checked/><span className="txt">Diagramas de arquitetura atualizados</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="pre_doc_readme" defaultChecked/><span className="txt">README.md atualizado</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="pre_doc_tech" defaultChecked/><span className="txt">Documentação técnica de entrega criada</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="pre_doc_env" defaultChecked/><span className="txt">Arquivo de exemplo de variáveis de ambiente</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="pre_doc_install" defaultChecked/><span className="txt">Instruções de instalação e deploy</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="pre_doc_diagrams" defaultChecked/><span className="txt">Diagramas de arquitetura atualizados</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="pre_doc_api" /><span className="txt">Documentação da API (se aplicável)</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="pre_doc_changelog" /><span className="txt">CHANGELOG.md atualizado</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="pre_doc_license" /><span className="txt">LICENSE.md definido</span></label></li>
                 </ul>
                 <h3>🔧 Configuração de Ambiente</h3>
                 <ul className="checklist-list">
-                  <li className="check-item"><label><input type="checkbox" data-key="pre_env_node" checked/><span className="txt">Node.js versão compatível especificada</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="pre_env_node" defaultChecked/><span className="txt">Node.js versão compatível especificada</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="pre_env_pnpm" /><span className="txt">pnpm configurado como gerenciador de pacotes</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="pre_env_deps" checked/><span className="txt">Dependências atualizadas e sem vulnerabilidades</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="pre_env_scripts" checked/><span className="txt">Scripts de desenvolvimento e produção configurados</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="pre_env_deps" defaultChecked/><span className="txt">Dependências atualizadas e sem vulnerabilidades</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="pre_env_scripts" defaultChecked/><span className="txt">Scripts de desenvolvimento e produção configurados</span></label></li>
                 </ul>
               </div>
 
@@ -673,14 +673,14 @@ export default function AdminChecklistPage() {
               <div id="entrega" className="coll-content">
                 <h3>📦 Arquivos Entregues</h3>
                 <ul className="checklist-list">
-                  <li className="check-item"><label><input type="checkbox" data-key="entrega_code" checked/><span className="txt">Código-fonte completo</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="entrega_doc" checked/><span className="txt">Documentação técnica (`DOCUMENTACAO_TECNICA_ENTREGA.md`)</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="entrega_readme" checked/><span className="txt">README atualizado</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="entrega_code" defaultChecked/><span className="txt">Código-fonte completo</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="entrega_doc" defaultChecked/><span className="txt">Documentação técnica (`DOCUMENTACAO_TECNICA_ENTREGA.md`)</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="entrega_readme" defaultChecked/><span className="txt">README atualizado</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="entrega_env" /><span className="txt">Arquivo de exemplo (`env.example`)</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="entrega_backup" /><span className="txt">Backup do banco de dados (se solicitado)</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="entrega_package" checked/><span className="txt">package.json com scripts configurados</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="entrega_config" checked/><span className="txt">Arquivos de configuração (next.config.js, tailwind.config.js)</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="entrega_assets" checked/><span className="txt">Assets estáticos (imagens, ícones, favicons)</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="entrega_package" defaultChecked/><span className="txt">package.json com scripts configurados</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="entrega_config" defaultChecked/><span className="txt">Arquivos de configuração (next.config.js, tailwind.config.js)</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="entrega_assets" defaultChecked/><span className="txt">Assets estáticos (imagens, ícones, favicons)</span></label></li>
                 </ul>
                 <h3>🔑 Credenciais</h3>
                 <ul className="checklist-list">
@@ -710,16 +710,16 @@ export default function AdminChecklistPage() {
               <div id="testes" className="coll-content">
                 <h3>✅ Testes Funcionais</h3>
                 <ul className="checklist-list">
-                  <li className="check-item"><label><input type="checkbox" data-key="test_func_login" checked/><span className="txt">Usuário consegue fazer login</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="test_func_dashboard" checked/><span className="txt">Dashboard exibe dados em tempo real</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="test_func_pdf" checked/><span className="txt">Exportação de PDF funcionando</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="test_func_admin" checked/><span className="txt">Admin permite CRUD de usuários</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="test_func_audit" checked/><span className="txt">Sistema de auditoria registra ações</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="test_func_excel" checked/><span className="txt">Exportação de Excel funcionando</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="test_func_charts" checked/><span className="txt">Gráficos sendo exibidos corretamente</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="test_func_responsive" checked/><span className="txt">Interface responsiva em todos os dispositivos</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="test_func_i18n" checked/><span className="txt">Sistema de internacionalização funcionando</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="test_func_theme" checked/><span className="txt">Sistema de temas funcionando</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="test_func_login" defaultChecked/><span className="txt">Usuário consegue fazer login</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="test_func_dashboard" defaultChecked/><span className="txt">Dashboard exibe dados em tempo real</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="test_func_pdf" defaultChecked/><span className="txt">Exportação de PDF funcionando</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="test_func_admin" defaultChecked/><span className="txt">Admin permite CRUD de usuários</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="test_func_audit" defaultChecked/><span className="txt">Sistema de auditoria registra ações</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="test_func_excel" defaultChecked/><span className="txt">Exportação de Excel funcionando</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="test_func_charts" defaultChecked/><span className="txt">Gráficos sendo exibidos corretamente</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="test_func_responsive" defaultChecked/><span className="txt">Interface responsiva em todos os dispositivos</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="test_func_i18n" defaultChecked/><span className="txt">Sistema de internacionalização funcionando</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="test_func_theme" defaultChecked/><span className="txt">Sistema de temas funcionando</span></label></li>
                 </ul>
                 <h3>✅ Testes de Performance</h3>
                 <ul className="checklist-list">
@@ -732,17 +732,17 @@ export default function AdminChecklistPage() {
                 </ul>
                 <h3>✅ Testes de Compatibilidade</h3>
                 <ul className="checklist-list">
-                  <li className="check-item"><label><input type="checkbox" data-key="test_comp_chrome" checked/><span className="txt">Chrome (últimas 2 versões)</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="test_comp_chrome" defaultChecked/><span className="txt">Chrome (últimas 2 versões)</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="test_comp_firefox" /><span className="txt">Firefox (últimas 2 versões)</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="test_comp_safari" /><span className="txt">Safari (últimas 2 versões)</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="test_comp_edge" /><span className="txt">Edge (últimas 2 versões)</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="test_comp_mobile" checked/><span className="txt">Dispositivos móveis (iOS/Android)</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="test_comp_mobile" defaultChecked/><span className="txt">Dispositivos móveis (iOS/Android)</span></label></li>
                 </ul>
                 <h3>✅ Testes de Segurança</h3>
                 <ul className="checklist-list">
-                  <li className="check-item"><label><input type="checkbox" data-key="test_sec_auth" checked/><span className="txt">Autenticação segura funcionando</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="test_sec_roles" checked/><span className="txt">Controle de acesso por roles</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="test_sec_input" checked/><span className="txt">Validação de inputs</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="test_sec_auth" defaultChecked/><span className="txt">Autenticação segura funcionando</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="test_sec_roles" defaultChecked/><span className="txt">Controle de acesso por roles</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="test_sec_input" defaultChecked/><span className="txt">Validação de inputs</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="test_sec_xss" /><span className="txt">Proteção contra XSS</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="test_sec_csrf" /><span className="txt">Proteção contra CSRF</span></label></li>
                 </ul>
@@ -755,18 +755,18 @@ export default function AdminChecklistPage() {
               <div id="seguranca" className="coll-content">
                 <h3>🔐 Autenticação e Autorização</h3>
                 <ul className="checklist-list">
-                  <li className="check-item"><label><input type="checkbox" data-key="sec_auth_login" checked/><span className="txt">Login seguro implementado</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="sec_auth_roles" checked/><span className="txt">Controle de acesso por roles</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="sec_auth_session" checked/><span className="txt">Gerenciamento de sessão seguro</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="sec_auth_logout" checked/><span className="txt">Logout seguro implementado</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="sec_auth_login" defaultChecked/><span className="txt">Login seguro implementado</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="sec_auth_roles" defaultChecked/><span className="txt">Controle de acesso por roles</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="sec_auth_session" defaultChecked/><span className="txt">Gerenciamento de sessão seguro</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="sec_auth_logout" defaultChecked/><span className="txt">Logout seguro implementado</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="sec_auth_2fa" /><span className="txt">2FA implementado (se aplicável)</span></label></li>
                 </ul>
                 <h3>🛡️ Proteção de Dados</h3>
                 <ul className="checklist-list">
                   <li className="check-item"><label><input type="checkbox" data-key="sec_data_crypto" /><span className="txt">Dados sensíveis criptografados</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="sec_data_sanitize" /><span className="txt">Validação e sanitização de inputs</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="sec_data_transport" checked/><span className="txt">Dados transmitidos via HTTPS</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="sec_data_storage" checked/><span className="txt">Armazenamento seguro configurado</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="sec_data_transport" defaultChecked/><span className="txt">Dados transmitidos via HTTPS</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="sec_data_storage" defaultChecked/><span className="txt">Armazenamento seguro configurado</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="sec_data_backup" /><span className="txt">Backup seguro dos dados</span></label></li>
                 </ul>
                 <h3>🔒 Segurança da Aplicação</h3>
@@ -774,16 +774,16 @@ export default function AdminChecklistPage() {
                   <li className="check-item"><label><input type="checkbox" data-key="sec_app_headers" /><span className="txt">Headers de segurança configurados</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="sec_app_cors" /><span className="txt">CORS configurado corretamente</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="sec_app_rate" /><span className="txt">Rate limiting implementado</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="sec_app_env" checked/><span className="txt">Variáveis de ambiente protegidas</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="sec_app_env" defaultChecked/><span className="txt">Variáveis de ambiente protegidas</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="sec_app_logs" /><span className="txt">Logs de segurança configurados</span></label></li>
                 </ul>
                 <h3>📋 Conformidade LGPD</h3>
                 <ul className="checklist-list">
-                  <li className="check-item"><label><input type="checkbox" data-key="lgpd_consent" checked/><span className="txt">Consentimento explícito implementado</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="lgpd_policy" checked/><span className="txt">Política de privacidade atualizada</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="lgpd_cookies" checked/><span className="txt">Banner de cookies implementado</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="lgpd_consent" defaultChecked/><span className="txt">Consentimento explícito implementado</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="lgpd_policy" defaultChecked/><span className="txt">Política de privacidade atualizada</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="lgpd_cookies" defaultChecked/><span className="txt">Banner de cookies implementado</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="lgpd_data" /><span className="txt">Direitos do titular implementados</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="lgpd_audit" checked/><span className="txt">Auditoria de dados implementada</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="lgpd_audit" defaultChecked/><span className="txt">Auditoria de dados implementada</span></label></li>
                 </ul>
               </div>
 
