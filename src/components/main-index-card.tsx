@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -20,11 +21,14 @@ export function MainIndexCard({ asset, isMain = false }: MainIndexCardProps) {
   const changeColor = asset.change >= 0 ? 'text-primary' : 'text-destructive';
   const ChangeIcon = asset.change >= 0 ? ArrowUp : ArrowDown;
   
-  const mainCardClasses = isMain ? 'bg-primary text-primary-foreground shadow-lg' : 'bg-card';
-  const mainCardTitleClasses = isMain ? 'text-primary-foreground/90' : '';
-  const mainCardDescriptionClasses = isMain ? 'text-primary-foreground/70' : 'text-muted-foreground';
-  const mainCardPriceClasses = isMain ? 'text-primary-foreground' : 'text-foreground';
-  const mainCardChangeClasses = isMain ? 'text-primary-foreground/80 bg-white/20' : changeColor;
+  // Condicionais para o estilo do card principal
+  const mainCardClasses = isMain 
+    ? 'bg-card border-primary/50 hover:border-primary shadow-lg' 
+    : 'bg-card';
+  const mainCardTitleClasses = isMain ? 'text-primary' : '';
+  const mainCardDescriptionClasses = 'text-muted-foreground';
+  const mainCardPriceClasses = 'text-foreground';
+  const mainCardChangeClasses = changeColor;
 
   return (
     <>
@@ -39,9 +43,9 @@ export function MainIndexCard({ asset, isMain = false }: MainIndexCardProps) {
             <div className="flex items-center gap-3">
                 <div className={cn(
                     "flex h-10 w-10 items-center justify-center rounded-lg",
-                    isMain ? "bg-white/20" : "bg-muted"
+                    isMain ? "bg-primary/10" : "bg-muted"
                 )}>
-                    <AssetIcon asset={asset} className={cn("h-5 w-5", isMain ? "text-primary-foreground" : "text-muted-foreground")} />
+                    <AssetIcon asset={asset} className={cn("h-5 w-5", isMain ? "text-primary" : "text-muted-foreground")} />
                 </div>
                 <CardTitle className={cn("text-lg", mainCardTitleClasses, isMain && "text-xl")}>{asset.name}</CardTitle>
             </div>
@@ -54,7 +58,11 @@ export function MainIndexCard({ asset, isMain = false }: MainIndexCardProps) {
             </span>
           </div>
           <div className="flex items-center gap-4 text-sm mt-1">
-            <div className={cn('inline-flex items-center rounded-full border border-transparent px-2 py-0.5 text-xs font-semibold', mainCardChangeClasses)}>
+            <div className={cn(
+                'inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold', 
+                changeColor,
+                asset.change >= 0 ? 'bg-primary/10' : 'bg-destructive/10'
+            )}>
               <ChangeIcon className="h-3 w-3 mr-1" />
               <span>{asset.change.toFixed(2)}%</span>
             </div>
