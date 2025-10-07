@@ -276,7 +276,8 @@ export default function AdminChecklistPage() {
             width: 100% !important;
           }
           .diagram svg {
-            width: 80% !important;
+            width: 100% !important;
+            max-width: 800px;
             height: auto;
             margin: 0 auto;
             display: block;
@@ -715,20 +716,18 @@ export default function AdminChecklistPage() {
                   <li className="check-item"><label><input type="checkbox" data-key="entrega_doc" defaultChecked/><span className="txt">Documentação técnica (`DOCUMENTACAO_TECNICA_ENTREGA.md`)</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="entrega_readme" defaultChecked/><span className="txt">README atualizado</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="entrega_env" defaultChecked/><span className="txt">Arquivo de exemplo (`env.example`)</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="entrega_backup" /><span className="txt">Backup do banco de dados (se solicitado)</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="entrega_package" defaultChecked/><span className="txt">package.json com scripts configurados</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="entrega_config" defaultChecked/><span className="txt">Arquivos de configuração (next.config.js, tailwind.config.js)</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="entrega_assets" defaultChecked/><span className="txt">Assets estáticos (imagens, ícones, favicons)</span></label></li>
                 </ul>
                 <h3>🔑 Credenciais</h3>
                 <ul className="checklist-list">
-                  <li className="check-item"><label><input type="checkbox" data-key="cred_firebase" /><span className="txt">Firebase: Projeto criado e configurado</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="cred_ai" /><span className="txt">Google AI: API Key configurada</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="cred_n8n" /><span className="txt">N8N: Instância configurada (se aplicável)</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="cred_domain" /><span className="txt">Domínio: Configurado e apontando</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="cred_ssl" /><span className="txt">SSL: Certificado configurado</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="cred_deploy" /><span className="txt">Plataforma de deploy configurada (Vercel/Netlify)</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="cred_monitoring" /><span className="txt">Ferramentas de monitoramento configuradas</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="cred_firebase" /><span className="txt">Firebase: Projeto criar e configurar novo projeto dentro do workspace da BMV</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="cred_ai" /><span className="txt">Google AI: API Key configurada na conta BMV</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="cred_n8n" /><span className="txt">N8N: Instância configurar dentro da conts BMV</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="cred_domain" /><span className="txt">Domínio: Configurar quando for adiquirido</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="cred_ssl" /><span className="txt">SSL: Configurar quando for adiquirido</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="cred_deploy" /><span className="txt">Plataforma de deploy configurada ou hspedar na localweb (ESTE SITE (Vercel/Netlify)</span></label></li>
                 </ul>
                 <h3>🌐 Deploy e Hospedagem</h3>
                 <ul className="checklist-list">
