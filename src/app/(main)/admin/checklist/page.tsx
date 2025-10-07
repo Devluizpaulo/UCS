@@ -280,7 +280,6 @@ export default function AdminChecklistPage() {
             height: auto;
           }
         `}</style>
-        <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js" defer></script>
       </Head>
       <main>
         <div id="docArea">
@@ -392,39 +391,47 @@ export default function AdminChecklistPage() {
             <div style={{ marginTop: '24px', padding: '0 8px' }}>
               <h3 className="text-sm font-semibold text-blue-600" style={{ marginBottom: '20px' }}>Arquitetura Técnica</h3>
               <div className="diagram" role="img" aria-label="Diagrama de arquitetura técnica">
-                <svg viewBox="0 0 700 250" width="600" height="214" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+                <svg viewBox="0 0 600 220" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
                   <defs>
                     <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
                       <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="#000" floodOpacity="0.1"/>
                     </filter>
                   </defs>
-                  <rect x="32" y="32" rx="10" ry="10" width="176" height="64" fill="#ffffff" stroke="#dfe8f6" strokeWidth="1.2" filter="url(#shadow)"/>
-                  <text x="120" y="56" fontSize="11.2" textAnchor="middle" fill="#0f172a" fontWeight="700">Front-end</text>
-                  <text x="120" y="73.6" fontSize="9.6" textAnchor="middle" fill="#6b7280">Next.js (React)</text>
-                  <rect x="240" y="32" rx="10" ry="10" width="176" height="64" fill="#ffffff" stroke="#dfe8f6" strokeWidth="1.2" filter="url(#shadow)"/>
-                  <text x="328" y="54.4" fontSize="11.2" textAnchor="middle" fill="#0f172a" fontWeight="700">API / Server</text>
-                  <text x="328" y="72" fontSize="9.6" textAnchor="middle" fill="#6b7280">Cloud Functions / Serverless</text>
-                  <rect x="448" y="32" rx="10" ry="10" width="176" height="64" fill="#ffffff" stroke="#dfe8f6" strokeWidth="1.2" filter="url(#shadow)"/>
-                  <text x="536" y="54.4" fontSize="11.2" textAnchor="middle" fill="#0f172a" fontWeight="700">Banco de Dados</text>
-                  <text x="536" y="72" fontSize="9.6" textAnchor="middle" fill="#6b7280">Firebase Firestore</text>
-                  <line x1="208" y1="64" x2="240" y2="64" stroke="#9fb7e8" strokeWidth="2.4" markerEnd="url(#arrow)"/>
-                  <line x1="416" y1="64" x2="448" y2="64" stroke="#9fb7e8" strokeWidth="2.4" markerEnd="url(#arrow)"/>
-                  <rect x="96" y="144" rx="8" ry="8" width="192" height="51.2" fill="#fff" stroke="#dfe8f6" strokeWidth="0.96" filter="url(#shadow)"/>
-                  <text x="192" y="164" fontSize="10.4" textAnchor="middle" fill="#0f172a" fontWeight="700">N8N (Automação)</text>
-                  <text x="192" y="178.4" fontSize="9.6" textAnchor="middle" fill="#6b7280">Coleta de dados e workflows</text>
-                  <rect x="352" y="144" rx="8" ry="8" width="192" height="51.2" fill="#fff" stroke="#dfe8f6" strokeWidth="0.96" filter="url(#shadow)"/>
-                  <text x="448" y="164" fontSize="10.4" textAnchor="middle" fill="#0f172a" fontWeight="700">Google AI (Genkit)</text>
-                  <text x="448" y="178.4" fontSize="9.6" textAnchor="middle" fill="#6b7280">Geração de relatórios / NLP</text>
-                  <line x1="192" y1="144" x2="192" y2="112" stroke="#b7d0f7" strokeWidth="1.6" markerEnd="url(#arrow)"/>
-                  <line x1="448" y1="144" x2="448" y2="112" stroke="#b7d0f7" strokeWidth="1.6" markerEnd="url(#arrow)"/>
+                  <rect x="25" y="25" rx="10" ry="10" width="150" height="55" fill="#ffffff" stroke="#dfe8f6" strokeWidth="1.2" filter="url(#shadow)"/>
+                  <text x="100" y="48" fontSize="10" textAnchor="middle" fill="#0f172a" fontWeight="700">Front-end</text>
+                  <text x="100" y="64" fontSize="8" textAnchor="middle" fill="#6b7280">Next.js (React)</text>
+                  
+                  <rect x="225" y="25" rx="10" ry="10" width="150" height="55" fill="#ffffff" stroke="#dfe8f6" strokeWidth="1.2" filter="url(#shadow)"/>
+                  <text x="300" y="48" fontSize="10" textAnchor="middle" fill="#0f172a" fontWeight="700">API / Server</text>
+                  <text x="300" y="64" fontSize="8" textAnchor="middle" fill="#6b7280">Cloud Functions</text>
+                  
+                  <rect x="425" y="25" rx="10" ry="10" width="150" height="55" fill="#ffffff" stroke="#dfe8f6" strokeWidth="1.2" filter="url(#shadow)"/>
+                  <text x="500" y="48" fontSize="10" textAnchor="middle" fill="#0f172a" fontWeight="700">Banco de Dados</text>
+                  <text x="500" y="64" fontSize="8" textAnchor="middle" fill="#6b7280">Firebase Firestore</text>
+                  
+                  <line x1="175" y1="52.5" x2="225" y2="52.5" stroke="#9fb7e8" strokeWidth="2" markerEnd="url(#arrow)"/>
+                  <line x1="375" y1="52.5" x2="425" y2="52.5" stroke="#9fb7e8" strokeWidth="2" markerEnd="url(#arrow)"/>
+                  
+                  <rect x="80" y="125" rx="8" ry="8" width="160" height="45" fill="#fff" stroke="#dfe8f6" strokeWidth="1" filter="url(#shadow)"/>
+                  <text x="160" y="145" fontSize="9" textAnchor="middle" fill="#0f172a" fontWeight="700">N8N (Automação)</text>
+                  <text x="160" y="158" fontSize="8" textAnchor="middle" fill="#6b7280">Coleta de dados</text>
+                  
+                  <rect x="360" y="125" rx="8" ry="8" width="160" height="45" fill="#fff" stroke="#dfe8f6" strokeWidth="1" filter="url(#shadow)"/>
+                  <text x="440" y="145" fontSize="9" textAnchor="middle" fill="#0f172a" fontWeight="700">Google AI (Genkit)</text>
+                  <text x="440" y="158" fontSize="8" textAnchor="middle" fill="#6b7280">Geração de relatórios</text>
+                  
+                  <line x1="160" y1="125" x2="160" y2="80" stroke="#b7d0f7" strokeWidth="1.5" markerEnd="url(#arrow)"/>
+                  <line x1="440" y1="125" x2="440" y2="80" stroke="#b7d0f7" strokeWidth="1.5" markerEnd="url(#arrow)"/>
+                  
                   <defs>
                     <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
                       <path d="M 0 0 L 10 5 L 0 10 z" fill="#9fb7e8"/>
                     </marker>
                   </defs>
-                  <rect x="32" y="216" rx="6.4" ry="6.4" width="624" height="51.2" fill="#fbfdff" stroke="#eef4ff"/>
-                  <text x="56" y="236" fontSize="9.6" fill="#6b7280">Legenda:</text>
-                  <text x="112" y="236" fontSize="9.6" fill="#0f172a">Frontend → Server → Firestore; N8N e Google AI integram-se via API / Webhooks</text>
+                  
+                  <rect x="25" y="190" rx="6" ry="6" width="550" height="30" fill="#fbfdff" stroke="#eef4ff"/>
+                  <text x="45" y="210" fontSize="8" fill="#6b7280">Legenda:</text>
+                  <text x="90" y="210" fontSize="8" fill="#0f172a">Fluxo principal de dados e integrações de serviços.</text>
                 </svg>
               </div>
             </div>
@@ -433,25 +440,28 @@ export default function AdminChecklistPage() {
             <div style={{ marginTop: '32px', padding: '0 8px' }}>
               <h3 className="text-sm font-semibold text-blue-600" style={{ marginBottom: '20px' }}>Fluxo de Dados</h3>
               <div className="diagram" role="img" aria-label="Fluxo de dados">
-                <svg viewBox="0 0 700 120" width="600" height="103" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
-                  <rect x="24" y="24" rx="8" ry="8" width="120" height="40" fill="#ffffff" stroke="#dfe8f6"/>
-                  <text x="84" y="48" fontSize="9.6" textAnchor="middle" fill="#0f172a" fontWeight="700">Usuário</text>
-                  <rect x="168" y="20" rx="8" ry="8" width="160" height="48" fill="#ffffff" stroke="#dfe8f6"/>
-                  <text x="248" y="41.6" fontSize="9.6" textAnchor="middle" fill="#0f172a" fontWeight="700">Front-end / Dashboard</text>
-                  <rect x="352" y="20" rx="8" ry="8" width="128" height="48" fill="#ffffff" stroke="#dfe8f6"/>
-                  <text x="416" y="41.6" fontSize="9.6" textAnchor="middle" fill="#0f172a" fontWeight="700">API / Functions</text>
-                  <rect x="512" y="20" rx="8" ry="8" width="136" height="48" fill="#ffffff" stroke="#dfe8f6"/>
-                  <text x="580" y="41.6" fontSize="9.6" textAnchor="middle" fill="#0f172a" fontWeight="700">Firestore</text>
-                  <line x1="144" y1="44" x2="168" y2="44" stroke="#9fb7e8" strokeWidth="2.4" markerEnd="url(#arrow2)"/>
-                  <line x1="328" y1="44" x2="352" y2="44" stroke="#9fb7e8" strokeWidth="2.4" markerEnd="url(#arrow2)"/>
-                  <line x1="480" y1="44" x2="512" y2="44" stroke="#9fb7e8" strokeWidth="2.4" markerEnd="url(#arrow2)"/>
+                <svg viewBox="0 0 600 100" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+                  <rect x="20" y="20" rx="8" ry="8" width="100" height="35" fill="#ffffff" stroke="#dfe8f6"/>
+                  <text x="70" y="42" fontSize="8" textAnchor="middle" fill="#0f172a" fontWeight="700">Usuário</text>
+                  <rect x="140" y="18" rx="8" ry="8" width="130" height="40" fill="#ffffff" stroke="#dfe8f6"/>
+                  <text x="205" y="38" fontSize="8" textAnchor="middle" fill="#0f172a" fontWeight="700">Front-end</text>
+                  <text x="205" y="50" fontSize="7" textAnchor="middle" fill="#6b7280">Dashboard</text>
+                  <rect x="290" y="18" rx="8" ry="8" width="110" height="40" fill="#ffffff" stroke="#dfe8f6"/>
+                  <text x="345" y="38" fontSize="8" textAnchor="middle" fill="#0f172a" fontWeight="700">API / Functions</text>
+                   <text x="345" y="50" fontSize="7" textAnchor="middle" fill="#6b7280">Processamento</text>
+                  <rect x="420" y="18" rx="8" ry="8" width="110" height="40" fill="#ffffff" stroke="#dfe8f6"/>
+                  <text x="475" y="38" fontSize="8" textAnchor="middle" fill="#0f172a" fontWeight="700">Firestore</text>
+                  <text x="475" y="50" fontSize="7" textAnchor="middle" fill="#6b7280">Armazenamento</text>
+                  <line x1="120" y1="38" x2="140" y2="38" stroke="#9fb7e8" strokeWidth="2" markerEnd="url(#arrow2)"/>
+                  <line x1="270" y1="38" x2="290" y2="38" stroke="#9fb7e8" strokeWidth="2" markerEnd="url(#arrow2)"/>
+                  <line x1="400" y1="38" x2="420" y2="38" stroke="#9fb7e8" strokeWidth="2" markerEnd="url(#arrow2)"/>
                   <defs>
                     <marker id="arrow2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
                       <path d="M 0 0 L 10 5 L 0 10 z" fill="#9fb7e8"/>
                     </marker>
                   </defs>
-                  <text x="84" y="80" fontSize="8.8" textAnchor="middle" fill="#6b7280">Interações do usuário</text>
-                  <text x="248" y="80" fontSize="8.8" textAnchor="middle" fill="#6b7280">Renderização + chamadas API</text>
+                  <text x="70" y="75" fontSize="7" textAnchor="middle" fill="#6b7280">Interações</text>
+                  <text x="205" y="75" fontSize="7" textAnchor="middle" fill="#6b7280">Renderização + API</text>
                 </svg>
               </div>
             </div>
@@ -460,22 +470,22 @@ export default function AdminChecklistPage() {
             <div style={{ marginTop: '32px', padding: '0 8px' }}>
               <h3 className="text-sm font-semibold text-blue-600" style={{ marginBottom: '20px' }}>Infraestrutura de Deploy</h3>
               <div className="diagram" role="img" aria-label="Infraestrutura de deploy">
-                 <svg viewBox="0 0 700 150" width="600" height="128" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
-                  <rect x="32" y="24" rx="8" ry="8" width="144" height="48" fill="#fff" stroke="#dfe8f6"/>
-                  <text x="104" y="48" fontSize="10.4" textAnchor="middle" fill="#0f172a" fontWeight="700">GitHub Repo</text>
-                  <rect x="208" y="24" rx="8" ry="8" width="176" height="48" fill="#fff" stroke="#dfe8f6"/>
-                  <text x="296" y="40" fontSize="10.4" textAnchor="middle" fill="#0f172a" fontWeight="700">CI/CD (GitHub Actions)</text>
-                  <text x="296" y="54.4" fontSize="8.8" textAnchor="middle" fill="#6b7280">Lint, Testes, Build</text>
-                  <rect x="416" y="8" rx="8" ry="8" width="160" height="32" fill="#fff" stroke="#dfe8f6"/>
-                  <text x="496" y="28" fontSize="9.6" textAnchor="middle" fill="#0f172a">Vercel (Recomendado)</text>
-                  <rect x="416" y="56" rx="8" ry="8" width="160" height="32" fill="#fff" stroke="#dfe8f6"/>
-                  <text x="496" y="76" fontSize="9.6" textAnchor="middle" fill="#0f172a">Hostinger / Locaweb</text>
-                  <rect x="608" y="32" rx="8" ry="8" width="144" height="48" fill="#fff" stroke="#dfe8f6"/>
-                  <text x="680" y="52" fontSize="9.6" textAnchor="middle" fill="#0f172a">VPS (N8N / Monitoramento)</text>
-                  <line x1="176" y1="48" x2="208" y2="48" stroke="#9fb7e8" strokeWidth="2.4" markerEnd="url(#arrow3)"/>
-                  <line x1="384" y1="40" x2="416" y2="24" stroke="#9fb7e8" strokeWidth="2.4" markerEnd="url(#arrow3)"/>
-                  <line x1="384" y1="64" x2="416" y2="72" stroke="#9fb7e8" strokeWidth="2.4" markerEnd="url(#arrow3)"/>
-                  <line x1="576" y1="56" x2="608" y2="56" stroke="#9fb7e8" strokeWidth="2.4" markerEnd="url(#arrow3)"/>
+                 <svg viewBox="0 0 600 120" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+                  <rect x="25" y="20" rx="8" ry="8" width="120" height="40" fill="#fff" stroke="#dfe8f6"/>
+                  <text x="85" y="42" fontSize="9" textAnchor="middle" fill="#0f172a" fontWeight="700">GitHub Repo</text>
+                  <rect x="170" y="20" rx="8" ry="8" width="140" height="40" fill="#fff" stroke="#dfe8f6"/>
+                  <text x="240" y="38" fontSize="9" textAnchor="middle" fill="#0f172a" fontWeight="700">CI/CD (Actions)</text>
+                  <text x="240" y="50" fontSize="7" textAnchor="middle" fill="#6b7280">Lint, Testes, Build</text>
+                  <rect x="335" y="8" rx="8" ry="8" width="120" height="28" fill="#fff" stroke="#dfe8f6"/>
+                  <text x="395" y="25" fontSize="8" textAnchor="middle" fill="#0f172a">Vercel (Recomendado)</text>
+                  <rect x="335" y="46" rx="8" ry="8" width="120" height="28" fill="#fff" stroke="#dfe8f6"/>
+                  <text x="395" y="63" fontSize="8" textAnchor="middle" fill="#0f172a">Hostinger / Locaweb</text>
+                  <rect x="480" y="20" rx="8" ry="8" width="100" height="40" fill="#fff" stroke="#dfe8f6"/>
+                  <text x="530" y="42" fontSize="8" textAnchor="middle" fill="#0f172a">VPS (N8N)</text>
+                  <line x1="145" y1="40" x2="170" y2="40" stroke="#9fb7e8" strokeWidth="2" markerEnd="url(#arrow3)"/>
+                  <line x1="310" y1="34" x2="335" y2="22" stroke="#9fb7e8" strokeWidth="2" markerEnd="url(#arrow3)"/>
+                  <line x1="310" y1="52" x2="335" y2="60" stroke="#9fb7e8" strokeWidth="2" markerEnd="url(#arrow3)"/>
+                  <line x1="455" y1="40" x2="480" y2="40" stroke="#9fb7e8" strokeWidth="2" markerEnd="url(#arrow3)"/>
                   <defs>
                     <marker id="arrow3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
                       <path d="M 0 0 L 10 5 L 0 10 z" fill="#9fb7e8"/>
@@ -513,62 +523,74 @@ export default function AdminChecklistPage() {
 
             <h3 className="text-sm font-semibold text-blue-600" style={{ marginBottom: '20px' }}>Arquitetura do Fluxo</h3>
               <div className="diagram" role="img" aria-label="Arquitetura do fluxo N8N">
-                <svg viewBox="0 0 700 280" width="600" height="240" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+                <svg viewBox="0 0 600 250" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
                   <defs>
                     <filter id="shadow-n8n" x="-50%" y="-50%" width="200%" height="200%">
-                      <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="#000" floodOpacity="0.1"/>
+                      <feDropShadow dx="1" dy="2" stdDeviation="4" floodColor="#000" floodOpacity="0.08"/>
                     </filter>
                     <marker id="arrow-n8n" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                      <path d="M 0 0 L 10 5 L 0 10 z" fill="#9fb7e8"/>
+                      <path d="M 0 0 L 10 5 L 0 10 z" fill="#a0aec0"/>
                     </marker>
                   </defs>
-                  <rect x="32" y="32" rx="10" ry="10" width="144" height="48" fill="#fff" stroke="#dfe8f6" strokeWidth="1.2" filter="url(#shadow-n8n)"/>
-                  <text x="104" y="56" fontSize="10.4" textAnchor="middle" fill="#0f172a" fontWeight="700">⏰ Cron Trigger</text>
-                  <text x="104" y="70.4" fontSize="8.8" textAnchor="middle" fill="#6b7280">Execução programada</text>
-                  <rect x="208" y="32" rx="10" ry="10" width="144" height="48" fill="#fff" stroke="#dfe8f6" strokeWidth="1.2" filter="url(#shadow-n8n)"/>
-                  <text x="280" y="56" fontSize="10.4" textAnchor="middle" fill="#0f172a" fontWeight="700">🌐 HTTP Request</text>
-                  <text x="280" y="70.4" fontSize="8.8" textAnchor="middle" fill="#6b7280">Investing.com</text>
-                  <rect x="384" y="32" rx="10" ry="10" width="144" height="48" fill="#fff" stroke="#dfe8f6" strokeWidth="1.2" filter="url(#shadow-n8n)"/>
-                  <text x="456" y="56" fontSize="10.4" textAnchor="middle" fill="#0f172a" fontWeight="700">🔍 HTML Extract</text>
-                  <text x="456" y="70.4" fontSize="8.8" textAnchor="middle" fill="#6b7280">CSS Selectors</text>
-                  <rect x="560" y="32" rx="10" ry="10" width="144" height="48" fill="#fff" stroke="#dfe8f6" strokeWidth="1.2" filter="url(#shadow-n8n)"/>
-                  <text x="632" y="56" fontSize="10.4" textAnchor="middle" fill="#0f172a" fontWeight="700">⚙️ Code</text>
-                  <text x="632" y="70.4" fontSize="8.8" textAnchor="middle" fill="#6b7280">Processar Dados</text>
-                  <rect x="208" y="128" rx="10" ry="10" width="144" height="48" fill="#fff" stroke="#dfe8f6" strokeWidth="1.2" filter="url(#shadow-n8n)"/>
-                  <text x="280" y="152" fontSize="10.4" textAnchor="middle" fill="#0f172a" fontWeight="700">🔥 Firebase</text>
-                  <text x="280" y="166.4" fontSize="8.8" textAnchor="middle" fill="#6b7280">Write Document</text>
-                  <rect x="384" y="128" rx="10" ry="10" width="144" height="48" fill="#fff" stroke="#dfe8f6" strokeWidth="1.2" filter="url(#shadow-n8n)"/>
-                  <text x="456" y="152" fontSize="10.4" textAnchor="middle" fill="#0f172a" fontWeight="700">⚠️ Error</text>
-                  <text x="456" y="166.4" fontSize="8.8" textAnchor="middle" fill="#6b7280">Handle Errors</text>
-                  <rect x="560" y="128" rx="10" ry="10" width="144" height="48" fill="#fff" stroke="#dfe8f6" strokeWidth="1.2" filter="url(#shadow-n8n)"/>
-                  <text x="632" y="152" fontSize="10.4" textAnchor="middle" fill="#0f172a" fontWeight="700">📝 Log</text>
-                  <text x="632" y="166.4" fontSize="8.8" textAnchor="middle" fill="#6b7280">Audit Trail</text>
-                  <line x1="176" y1="56" x2="208" y2="56" stroke="#9fb7e8" strokeWidth="2.4" markerEnd="url(#arrow-n8n)"/>
-                  <line x1="352" y1="56" x2="384" y2="56" stroke="#9fb7e8" strokeWidth="2.4" markerEnd="url(#arrow-n8n)"/>
-                  <line x1="528" y1="56" x2="560" y2="56" stroke="#9fb7e8" strokeWidth="2.4" markerEnd="url(#arrow-n8n)"/>
-                  <line x1="632" y1="80" x2="280" y2="128" stroke="#9fb7e8" strokeWidth="2.4" markerEnd="url(#arrow-n8n)"/>
-                  <line x1="632" y1="80" x2="456" y2="128" stroke="#9fb7e8" strokeWidth="2.4" markerEnd="url(#arrow-n8n)"/>
-                  <line x1="632" y1="80" x2="632" y2="128" stroke="#9fb7e8" strokeWidth="2.4" markerEnd="url(#arrow-n8n)"/>
-                  <rect x="32" y="224" rx="8" ry="8" width="160" height="64" fill="#f8fafc" stroke="#e2e8f0" strokeWidth="0.8"/>
-                  <text x="112" y="244" fontSize="9.6" textAnchor="middle" fill="#0f172a" fontWeight="700">📊 Fontes de Dados</text>
-                  <text x="112" y="260" fontSize="8.8" textAnchor="middle" fill="#6b7280">• Milho (Investing.com)</text>
-                  <text x="112" y="272" fontSize="8.8" textAnchor="middle" fill="#6b7280">• Soja, Petróleo, Ouro</text>
-                  <text x="112" y="284" fontSize="8.8" textAnchor="middle" fill="#6b7280">• Índices de Sustentabilidade</text>
-                  <rect x="224" y="224" rx="8" ry="8" width="160" height="64" fill="#f8fafc" stroke="#e2e8f0" strokeWidth="0.8"/>
-                  <text x="304" y="244" fontSize="9.6" textAnchor="middle" fill="#0f172a" fontWeight="700">💾 Saída</text>
-                  <text x="304" y="260" fontSize="8.8" textAnchor="middle" fill="#6b7280">• Firebase Firestore</text>
-                  <text x="304" y="272" fontSize="8.8" textAnchor="middle" fill="#6b7280">• Logs de Auditoria</text>
-                  <text x="304" y="284" fontSize="8.8" textAnchor="middle" fill="#6b7280">• Tratamento de Erros</text>
-                  <rect x="416" y="224" rx="8" ry="8" width="160" height="64" fill="#f8fafc" stroke="#e2e8f0" strokeWidth="0.8"/>
-                  <text x="496" y="244" fontSize="9.6" textAnchor="middle" fill="#0f172a" fontWeight="700">⏱️ Agendamento</text>
-                  <text x="496" y="260" fontSize="8.8" textAnchor="middle" fill="#6b7280">• Execução a cada 15 min</text>
-                  <text x="496" y="272" fontSize="8.8" textAnchor="middle" fill="#6b7280">• Horário comercial</text>
-                  <text x="496" y="284" fontSize="8.8" textAnchor="middle" fill="#6b7280">• Retry automático</text>
-                  <rect x="608" y="224" rx="8" ry="8" width="160" height="64" fill="#f8fafc" stroke="#e2e8f0" strokeWidth="0.8"/>
-                  <text x="688" y="244" fontSize="9.6" textAnchor="middle" fill="#0f172a" fontWeight="700">⚡ Performance</text>
-                  <text x="688" y="260" fontSize="8.8" textAnchor="middle" fill="#6b7280">• Execução &lt; 30 segundos</text>
-                  <text x="688" y="272" fontSize="8.8" textAnchor="middle" fill="#6b7280">• Uptime 99.9%</text>
-                  <text x="688" y="284" fontSize="8.8" textAnchor="middle" fill="#6b7280">• Monitoramento 24/7</text>
+                  
+                  {/* Nodes */}
+                  <rect x="25" y="25" rx="10" ry="10" width="130" height="45" fill="#fff" stroke="#e2e8f0" filter="url(#shadow-n8n)"/>
+                  <text x="90" y="48" fontSize="10" textAnchor="middle" fill="#2d3748" fontWeight="600">⏰ Cron Trigger</text>
+                  <text x="90" y="62" fontSize="8" textAnchor="middle" fill="#718096">Execução programada</text>
+
+                  <rect x="180" y="25" rx="10" ry="10" width="130" height="45" fill="#fff" stroke="#e2e8f0" filter="url(#shadow-n8n)"/>
+                  <text x="245" y="48" fontSize="10" textAnchor="middle" fill="#2d3748" fontWeight="600">🌐 HTTP Request</text>
+                  <text x="245" y="62" fontSize="8" textAnchor="middle" fill="#718096">Investing.com</text>
+
+                  <rect x="335" y="25" rx="10" ry="10" width="130" height="45" fill="#fff" stroke="#e2e8f0" filter="url(#shadow-n8n)"/>
+                  <text x="400" y="48" fontSize="10" textAnchor="middle" fill="#2d3748" fontWeight="600">🔍 HTML Extract</text>
+                  <text x="400" y="62" fontSize="8" textAnchor="middle" fill="#718096">CSS Selectors</text>
+
+                  <rect x="490" y="25" rx="10" ry="10" width="130" height="45" fill="#fff" stroke="#e2e8f0" filter="url(#shadow-n8n)"/>
+                  <text x="555" y="48" fontSize="10" textAnchor="middle" fill="#2d3748" fontWeight="600">⚙️ Code</text>
+                  <text x="555" y="62" fontSize="8" textAnchor="middle" fill="#718096">Processar Dados</text>
+
+                  <rect x="180" y="115" rx="10" ry="10" width="130" height="45" fill="#fff" stroke="#e2e8f0" filter="url(#shadow-n8n)"/>
+                  <text x="245" y="138" fontSize="10" textAnchor="middle" fill="#2d3748" fontWeight="600">🔥 Firebase</text>
+                  <text x="245" y="152" fontSize="8" textAnchor="middle" fill="#718096">Write Document</text>
+                  
+                  <rect x="335" y="115" rx="10" ry="10" width="130" height="45" fill="#fff" stroke="#e2e8f0" filter="url(#shadow-n8n)"/>
+                  <text x="400" y="138" fontSize="10" textAnchor="middle" fill="#2d3748" fontWeight="600">⚠️ Error</text>
+                  <text x="400" y="152" fontSize="8" textAnchor="middle" fill="#718096">Handle Errors</text>
+
+                  <rect x="490" y="115" rx="10" ry="10" width="130" height="45" fill="#fff" stroke="#e2e8f0" filter="url(#shadow-n8n)"/>
+                  <text x="555" y="138" fontSize="10" textAnchor="middle" fill="#2d3748" fontWeight="600">📝 Log</text>
+                  <text x="555" y="152" fontSize="8" textAnchor="middle" fill="#718096">Audit Trail</text>
+                  
+                  {/* Arrows */}
+                  <line x1="155" y1="47.5" x2="180" y2="47.5" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrow-n8n)"/>
+                  <line x1="310" y1="47.5" x2="335" y2="47.5" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrow-n8n)"/>
+                  <line x1="465" y1="47.5" x2="490" y2="47.5" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrow-n8n)"/>
+
+                  <path d="M 555 70 Q 555 90 245 115" stroke="#a0aec0" strokeWidth="1.5" fill="none" markerEnd="url(#arrow-n8n)"/>
+                  <path d="M 555 70 Q 555 90 400 115" stroke="#a0aec0" strokeWidth="1.5" fill="none" markerEnd="url(#arrow-n8n)"/>
+                  <line x1="555" y1="70" x2="555" y2="115" stroke="#a0aec0" strokeWidth="1.5" markerEnd="url(#arrow-n8n)"/>
+                  
+                  {/* Info boxes */}
+                  <rect x="25" y="190" rx="8" ry="8" width="130" height="50" fill="#f7fafc" stroke="#e2e8f0" />
+                  <text x="90" y="208" fontSize="9" textAnchor="middle" fill="#2d3748" fontWeight="600">📊 Fontes de Dados</text>
+                  <text x="90" y="222" fontSize="7" textAnchor="middle" fill="#718096">• Milho, Soja, Ouro</text>
+                  <text x="90" y="232" fontSize="7" textAnchor="middle" fill="#718096">• Índices Sustentáveis</text>
+                  
+                  <rect x="180" y="190" rx="8" ry="8" width="130" height="50" fill="#f7fafc" stroke="#e2e8f0" />
+                  <text x="245" y="208" fontSize="9" textAnchor="middle" fill="#2d3748" fontWeight="600">💾 Saída</text>
+                  <text x="245" y="222" fontSize="7" textAnchor="middle" fill="#718096">• Firebase Firestore</text>
+                  <text x="245" y="232" fontSize="7" textAnchor="middle" fill="#718096">• Logs de Auditoria</text>
+
+                  <rect x="335" y="190" rx="8" ry="8" width="130" height="50" fill="#f7fafc" stroke="#e2e8f0" />
+                  <text x="400" y="208" fontSize="9" textAnchor="middle" fill="#2d3748" fontWeight="600">⏱️ Agendamento</text>
+                  <text x="400" y="222" fontSize="7" textAnchor="middle" fill="#718096">• Execução a cada 15 min</text>
+                  <text x="400" y="232" fontSize="7" textAnchor="middle" fill="#718096">• Retry automático</text>
+
+                  <rect x="490" y="190" rx="8" ry="8" width="130" height="50" fill="#f7fafc" stroke="#e2e8f0" />
+                  <text x="555" y="208" fontSize="9" textAnchor="middle" fill="#2d3748" fontWeight="600">⚡ Performance</text>
+                  <text x="555" y="222" fontSize="7" textAnchor="middle" fill="#718096">• Execução &lt; 30s</text>
+                  <text x="555" y="232" fontSize="7" textAnchor="middle" fill="#718096">• Monitoramento 24/7</text>
                 </svg>
               </div>
 
