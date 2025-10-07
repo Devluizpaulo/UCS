@@ -280,6 +280,7 @@ export default function AdminChecklistPage() {
             height: auto;
           }
         `}</style>
+        <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js" defer></script>
       </Head>
       <main>
         <div id="docArea">
@@ -391,7 +392,7 @@ export default function AdminChecklistPage() {
             <div style={{ marginTop: '24px', padding: '0 8px' }}>
               <h3 className="text-sm font-semibold text-blue-600" style={{ marginBottom: '20px' }}>Arquitetura Técnica</h3>
               <div className="diagram" role="img" aria-label="Diagrama de arquitetura técnica">
-                <svg viewBox="0 0 700 250" width="100%" height="auto" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+                <svg viewBox="0 0 700 250" width="600" height="214" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
                   <defs>
                     <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
                       <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="#000" floodOpacity="0.1"/>
@@ -432,7 +433,7 @@ export default function AdminChecklistPage() {
             <div style={{ marginTop: '32px', padding: '0 8px' }}>
               <h3 className="text-sm font-semibold text-blue-600" style={{ marginBottom: '20px' }}>Fluxo de Dados</h3>
               <div className="diagram" role="img" aria-label="Fluxo de dados">
-                <svg viewBox="0 0 700 120" width="100%" height="auto" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+                <svg viewBox="0 0 700 120" width="600" height="103" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
                   <rect x="24" y="24" rx="8" ry="8" width="120" height="40" fill="#ffffff" stroke="#dfe8f6"/>
                   <text x="84" y="48" fontSize="9.6" textAnchor="middle" fill="#0f172a" fontWeight="700">Usuário</text>
                   <rect x="168" y="20" rx="8" ry="8" width="160" height="48" fill="#ffffff" stroke="#dfe8f6"/>
@@ -459,7 +460,7 @@ export default function AdminChecklistPage() {
             <div style={{ marginTop: '32px', padding: '0 8px' }}>
               <h3 className="text-sm font-semibold text-blue-600" style={{ marginBottom: '20px' }}>Infraestrutura de Deploy</h3>
               <div className="diagram" role="img" aria-label="Infraestrutura de deploy">
-                 <svg viewBox="0 0 700 150" width="100%" height="auto" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+                 <svg viewBox="0 0 700 150" width="600" height="128" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
                   <rect x="32" y="24" rx="8" ry="8" width="144" height="48" fill="#fff" stroke="#dfe8f6"/>
                   <text x="104" y="48" fontSize="10.4" textAnchor="middle" fill="#0f172a" fontWeight="700">GitHub Repo</text>
                   <rect x="208" y="24" rx="8" ry="8" width="176" height="48" fill="#fff" stroke="#dfe8f6"/>
@@ -512,7 +513,7 @@ export default function AdminChecklistPage() {
 
             <h3 className="text-sm font-semibold text-blue-600" style={{ marginBottom: '20px' }}>Arquitetura do Fluxo</h3>
               <div className="diagram" role="img" aria-label="Arquitetura do fluxo N8N">
-                <svg viewBox="0 0 700 280" width="100%" height="auto" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+                <svg viewBox="0 0 700 280" width="600" height="240" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
                   <defs>
                     <filter id="shadow-n8n" x="-50%" y="-50%" width="200%" height="200%">
                       <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="#000" floodOpacity="0.1"/>
@@ -865,23 +866,6 @@ export default function AdminChecklistPage() {
                 </ul>
               </div>
 
-              <div className="collapsible" data-target="suporte">
-                <div className="title"><strong>📞 Suporte Pós-Entrega</strong></div>
-                <div className="chev">▸</div>
-              </div>
-              <div id="suporte" className="coll-content">
-                <h3>🆘 Suporte Imediato</h3>
-                <ul className="checklist-list">
-                  <li className="check-item"><label><input type="checkbox" data-key="sup_imm_email" /><span className="txt">Suporte via email configurado</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="sup_imm_sla" /><span className="txt">SLA de resposta definido (24h)</span></label></li>
-                </ul>
-                <h3>📈 Suporte Contínuo</h3>
-                <ul className="checklist-list">
-                  <li className="check-item"><label><input type="checkbox" data-key="sup_cont_contract" /><span className="txt">Contrato de suporte definido</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="sup_cont_backup" /><span className="txt">Backup de rotina configurado</span></label></li>
-                </ul>
-              </div>
-              
               <div className="collapsible" data-target="hospedagem">
                 <div className="title"><strong>🏢 Seção de Hospedagem</strong></div>
                 <div className="chev">▸</div>
