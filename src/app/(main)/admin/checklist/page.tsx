@@ -75,8 +75,8 @@ export default function AdminChecklistPage() {
         try {
           const state = JSON.parse(rawState);
           checkboxes.forEach(cb => {
-            if (cb.dataset.key && state[cb.dataset.key]) {
-              cb.checked = true;
+            if (cb.dataset.key && state[cb.dataset.key] !== undefined) {
+               cb.checked = Boolean(state[cb.dataset.key]);
             }
           });
         } catch (e) {
@@ -391,56 +391,39 @@ export default function AdminChecklistPage() {
             <div style={{ marginTop: '24px', padding: '0 8px' }}>
               <h3 className="text-sm font-semibold text-blue-600" style={{ marginBottom: '20px' }}>Arquitetura Técnica</h3>
               <div className="diagram" role="img" aria-label="Diagrama de arquitetura técnica">
-                <svg viewBox="0 0 1000 360" width="100%" height="320" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+                <svg viewBox="0 0 800 288" width="100%" height="288" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
                   <defs>
                     <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
-                      <feDropShadow dx="0" dy="6" stdDeviation="10" floodColor="#000" floodOpacity="0.12"/>
+                      <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="#000" floodOpacity="0.1"/>
                     </filter>
                   </defs>
-
-                  {/* Frontend */}
-                  <rect x="40" y="40" rx="12" ry="12" width="220" height="80" fill="#ffffff" stroke="#dfe8f6" strokeWidth="1.5" filter="url(#shadow)"/>
-                  <text x="150" y="70" fontSize="14" textAnchor="middle" fill="#0f172a" fontWeight="700">Front-end</text>
-                  <text x="150" y="92" fontSize="12" textAnchor="middle" fill="#6b7280">Next.js (React)</text>
-
-                  {/* API Layer / Functions */}
-                  <rect x="300" y="40" rx="12" ry="12" width="220" height="80" fill="#ffffff" stroke="#dfe8f6" strokeWidth="1.5" filter="url(#shadow)"/>
-                  <text x="410" y="68" fontSize="14" textAnchor="middle" fill="#0f172a" fontWeight="700">API / Server</text>
-                  <text x="410" y="90" fontSize="12" textAnchor="middle" fill="#6b7280">Cloud Functions / Serverless</text>
-
-                  {/* Firestore */}
-                  <rect x="560" y="40" rx="12" ry="12" width="220" height="80" fill="#ffffff" stroke="#dfe8f6" strokeWidth="1.5" filter="url(#shadow)"/>
-                  <text x="670" y="68" fontSize="14" textAnchor="middle" fill="#0f172a" fontWeight="700">Banco de Dados</text>
-                  <text x="670" y="90" fontSize="12" textAnchor="middle" fill="#6b7280">Firebase Firestore</text>
-
-                  {/* arrows */}
-                  <line x1="260" y1="80" x2="300" y2="80" stroke="#9fb7e8" strokeWidth="3" markerEnd="url(#arrow)"/>
-                  <line x1="520" y1="80" x2="560" y2="80" stroke="#9fb7e8" strokeWidth="3" markerEnd="url(#arrow)"/>
-
-                  {/* Integrations: N8N and Google AI */}
-                  <rect x="120" y="180" rx="10" ry="10" width="240" height="64" fill="#fff" stroke="#dfe8f6" strokeWidth="1.2" filter="url(#shadow)"/>
-                  <text x="240" y="205" fontSize="13" textAnchor="middle" fill="#0f172a" fontWeight="700">N8N (Automação)</text>
-                  <text x="240" y="223" fontSize="12" textAnchor="middle" fill="#6b7280">Coleta de dados e workflows</text>
-
-                  <rect x="440" y="180" rx="10" ry="10" width="240" height="64" fill="#fff" stroke="#dfe8f6" strokeWidth="1.2" filter="url(#shadow)"/>
-                  <text x="560" y="205" fontSize="13" textAnchor="middle" fill="#0f172a" fontWeight="700">Google AI (Genkit)</text>
-                  <text x="560" y="223" fontSize="12" textAnchor="middle" fill="#6b7280">Geração de relatórios / NLP</text>
-
-                  {/* arrows to DB */}
-                  <line x1="240" y1="180" x2="240" y2="140" stroke="#b7d0f7" strokeWidth="2" markerEnd="url(#arrow)"/>
-                  <line x1="560" y1="180" x2="560" y2="140" stroke="#b7d0f7" strokeWidth="2" markerEnd="url(#arrow)"/>
-
-                  {/* definitions for arrow */}
+                  <rect x="32" y="32" rx="10" ry="10" width="176" height="64" fill="#ffffff" stroke="#dfe8f6" strokeWidth="1.2" filter="url(#shadow)"/>
+                  <text x="120" y="56" fontSize="11.2" textAnchor="middle" fill="#0f172a" fontWeight="700">Front-end</text>
+                  <text x="120" y="73.6" fontSize="9.6" textAnchor="middle" fill="#6b7280">Next.js (React)</text>
+                  <rect x="240" y="32" rx="10" ry="10" width="176" height="64" fill="#ffffff" stroke="#dfe8f6" strokeWidth="1.2" filter="url(#shadow)"/>
+                  <text x="328" y="54.4" fontSize="11.2" textAnchor="middle" fill="#0f172a" fontWeight="700">API / Server</text>
+                  <text x="328" y="72" fontSize="9.6" textAnchor="middle" fill="#6b7280">Cloud Functions / Serverless</text>
+                  <rect x="448" y="32" rx="10" ry="10" width="176" height="64" fill="#ffffff" stroke="#dfe8f6" strokeWidth="1.2" filter="url(#shadow)"/>
+                  <text x="536" y="54.4" fontSize="11.2" textAnchor="middle" fill="#0f172a" fontWeight="700">Banco de Dados</text>
+                  <text x="536" y="72" fontSize="9.6" textAnchor="middle" fill="#6b7280">Firebase Firestore</text>
+                  <line x1="208" y1="64" x2="240" y2="64" stroke="#9fb7e8" strokeWidth="2.4" markerEnd="url(#arrow)"/>
+                  <line x1="416" y1="64" x2="448" y2="64" stroke="#9fb7e8" strokeWidth="2.4" markerEnd="url(#arrow)"/>
+                  <rect x="96" y="144" rx="8" ry="8" width="192" height="51.2" fill="#fff" stroke="#dfe8f6" strokeWidth="0.96" filter="url(#shadow)"/>
+                  <text x="192" y="164" fontSize="10.4" textAnchor="middle" fill="#0f172a" fontWeight="700">N8N (Automação)</text>
+                  <text x="192" y="178.4" fontSize="9.6" textAnchor="middle" fill="#6b7280">Coleta de dados e workflows</text>
+                  <rect x="352" y="144" rx="8" ry="8" width="192" height="51.2" fill="#fff" stroke="#dfe8f6" strokeWidth="0.96" filter="url(#shadow)"/>
+                  <text x="448" y="164" fontSize="10.4" textAnchor="middle" fill="#0f172a" fontWeight="700">Google AI (Genkit)</text>
+                  <text x="448" y="178.4" fontSize="9.6" textAnchor="middle" fill="#6b7280">Geração de relatórios / NLP</text>
+                  <line x1="192" y1="144" x2="192" y2="112" stroke="#b7d0f7" strokeWidth="1.6" markerEnd="url(#arrow)"/>
+                  <line x1="448" y1="144" x2="448" y2="112" stroke="#b7d0f7" strokeWidth="1.6" markerEnd="url(#arrow)"/>
                   <defs>
                     <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                      <path d="M 0 0 L 10 5 L 0 10 z" fill="#9fb7e8" />
+                      <path d="M 0 0 L 10 5 L 0 10 z" fill="#9fb7e8"/>
                     </marker>
                   </defs>
-
-                  {/* Legend */}
-                  <rect x="40" y="270" rx="8" ry="8" width="780" height="64" fill="#fbfdff" stroke="#eef4ff" />
-                  <text x="70" y="295" fontSize="12" fill="#6b7280">Legenda:</text>
-                  <text x="140" y="295" fontSize="12" fill="#0f172a">Frontend → Server → Firestore; N8N e Google AI integram-se via API / Webhooks</text>
+                  <rect x="32" y="216" rx="6.4" ry="6.4" width="624" height="51.2" fill="#fbfdff" stroke="#eef4ff"/>
+                  <text x="56" y="236" fontSize="9.6" fill="#6b7280">Legenda:</text>
+                  <text x="112" y="236" fontSize="9.6" fill="#0f172a">Frontend → Server → Firestore; N8N e Google AI integram-se via API / Webhooks</text>
                 </svg>
               </div>
             </div>
@@ -449,34 +432,25 @@ export default function AdminChecklistPage() {
             <div style={{ marginTop: '32px', padding: '0 8px' }}>
               <h3 className="text-sm font-semibold text-blue-600" style={{ marginBottom: '20px' }}>Fluxo de Dados</h3>
               <div className="diagram" role="img" aria-label="Fluxo de dados">
-                <svg viewBox="0 0 1000 160" width="100%" height="160" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
-                  {/* boxes */}
-                  <rect x="30" y="30" rx="10" ry="10" width="150" height="50" fill="#ffffff" stroke="#dfe8f6"/>
-                  <text x="105" y="60" fontSize="12" textAnchor="middle" fill="#0f172a" fontWeight="700">Usuário</text>
-
-                  <rect x="210" y="25" rx="10" ry="10" width="200" height="60" fill="#ffffff" stroke="#dfe8f6"/>
-                  <text x="310" y="52" fontSize="12" textAnchor="middle" fill="#0f172a" fontWeight="700">Front-end / Dashboard</text>
-
-                  <rect x="440" y="25" rx="10" ry="10" width="160" height="60" fill="#ffffff" stroke="#dfe8f6"/>
-                  <text x="520" y="52" fontSize="12" textAnchor="middle" fill="#0f172a" fontWeight="700">API / Functions</text>
-
-                  <rect x="640" y="25" rx="10" ry="10" width="170" height="60" fill="#ffffff" stroke="#dfe8f6"/>
-                  <text x="725" y="52" fontSize="12" textAnchor="middle" fill="#0f172a" fontWeight="700">Firestore</text>
-
-                  {/* arrows */}
-                  <line x1="180" y1="55" x2="210" y2="55" stroke="#9fb7e8" strokeWidth="3" markerEnd="url(#arrow2)"/>
-                  <line x1="410" y1="55" x2="440" y2="55" stroke="#9fb7e8" strokeWidth="3" markerEnd="url(#arrow2)"/>
-                  <line x1="600" y1="55" x2="640" y2="55" stroke="#9fb7e8" strokeWidth="3" markerEnd="url(#arrow2)"/>
-
+                <svg viewBox="0 0 800 128" width="100%" height="128" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+                  <rect x="24" y="24" rx="8" ry="8" width="120" height="40" fill="#ffffff" stroke="#dfe8f6"/>
+                  <text x="84" y="48" fontSize="9.6" textAnchor="middle" fill="#0f172a" fontWeight="700">Usuário</text>
+                  <rect x="168" y="20" rx="8" ry="8" width="160" height="48" fill="#ffffff" stroke="#dfe8f6"/>
+                  <text x="248" y="41.6" fontSize="9.6" textAnchor="middle" fill="#0f172a" fontWeight="700">Front-end / Dashboard</text>
+                  <rect x="352" y="20" rx="8" ry="8" width="128" height="48" fill="#ffffff" stroke="#dfe8f6"/>
+                  <text x="416" y="41.6" fontSize="9.6" textAnchor="middle" fill="#0f172a" fontWeight="700">API / Functions</text>
+                  <rect x="512" y="20" rx="8" ry="8" width="136" height="48" fill="#ffffff" stroke="#dfe8f6"/>
+                  <text x="580" y="41.6" fontSize="9.6" textAnchor="middle" fill="#0f172a" fontWeight="700">Firestore</text>
+                  <line x1="144" y1="44" x2="168" y2="44" stroke="#9fb7e8" strokeWidth="2.4" markerEnd="url(#arrow2)"/>
+                  <line x1="328" y1="44" x2="352" y2="44" stroke="#9fb7e8" strokeWidth="2.4" markerEnd="url(#arrow2)"/>
+                  <line x1="480" y1="44" x2="512" y2="44" stroke="#9fb7e8" strokeWidth="2.4" markerEnd="url(#arrow2)"/>
                   <defs>
                     <marker id="arrow2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                      <path d="M 0 0 L 10 5 L 0 10 z" fill="#9fb7e8" />
+                      <path d="M 0 0 L 10 5 L 0 10 z" fill="#9fb7e8"/>
                     </marker>
                   </defs>
-
-                  {/* notes */}
-                  <text x="105" y="100" fontSize="11" textAnchor="middle" fill="#6b7280">Interações do usuário</text>
-                  <text x="310" y="100" fontSize="11" textAnchor="middle" fill="#6b7280">Renderização + chamadas API</text>
+                  <text x="84" y="80" fontSize="8.8" textAnchor="middle" fill="#6b7280">Interações do usuário</text>
+                  <text x="248" y="80" fontSize="8.8" textAnchor="middle" fill="#6b7280">Renderização + chamadas API</text>
                 </svg>
               </div>
             </div>
@@ -485,35 +459,25 @@ export default function AdminChecklistPage() {
             <div style={{ marginTop: '32px', padding: '0 8px' }}>
               <h3 className="text-sm font-semibold text-blue-600" style={{ marginBottom: '20px' }}>Infraestrutura de Deploy</h3>
               <div className="diagram" role="img" aria-label="Infraestrutura de deploy">
-                <svg viewBox="0 0 1000 220" width="100%" height="220" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
-                  {/* GitHub */}
-                  <rect x="40" y="30" rx="10" ry="10" width="180" height="60" fill="#fff" stroke="#dfe8f6"/>
-                  <text x="130" y="60" fontSize="13" textAnchor="middle" fill="#0f172a" fontWeight="700">GitHub Repo</text>
-
-                  {/* CI/CD */}
-                  <rect x="260" y="30" rx="10" ry="10" width="220" height="60" fill="#fff" stroke="#dfe8f6"/>
-                  <text x="370" y="50" fontSize="13" textAnchor="middle" fill="#0f172a" fontWeight="700">CI/CD (GitHub Actions)</text>
-                  <text x="370" y="68" fontSize="11" textAnchor="middle" fill="#6b7280">Lint, Testes, Build</text>
-
-                  {/* Deploy targets */}
-                  <rect x="520" y="10" rx="10" ry="10" width="200" height="40" fill="#fff" stroke="#dfe8f6"/>
-                  <text x="620" y="35" fontSize="12" textAnchor="middle" fill="#0f172a">Vercel (Recomendado)</text>
-
-                  <rect x="520" y="70" rx="10" ry="10" width="200" height="40" fill="#fff" stroke="#dfe8f6"/>
-                  <text x="620" y="95" fontSize="12" textAnchor="middle" fill="#0f172a">Hostinger / Locaweb</text>
-
-                  <rect x="760" y="40" rx="10" ry="10" width="180" height="60" fill="#fff" stroke="#dfe8f6"/>
-                  <text x="850" y="65" fontSize="12" textAnchor="middle" fill="#0f172a">VPS (N8N / Monitoramento)</text>
-
-                  {/* arrows */}
-                  <line x1="220" y1="60" x2="260" y2="60" stroke="#9fb7e8" strokeWidth="3" markerEnd="url(#arrow3)"/>
-                  <line x1="480" y1="50" x2="520" y2="30" stroke="#9fb7e8" strokeWidth="3" markerEnd="url(#arrow3)"/>
-                  <line x1="480" y1="80" x2="520" y2="90" stroke="#9fb7e8" strokeWidth="3" markerEnd="url(#arrow3)"/>
-                  <line x1="720" y1="70" x2="760" y2="70" stroke="#9fb7e8" strokeWidth="3" markerEnd="url(#arrow3)"/>
-
+                 <svg viewBox="0 0 800 176" width="100%" height="176" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+                  <rect x="32" y="24" rx="8" ry="8" width="144" height="48" fill="#fff" stroke="#dfe8f6"/>
+                  <text x="104" y="48" fontSize="10.4" textAnchor="middle" fill="#0f172a" fontWeight="700">GitHub Repo</text>
+                  <rect x="208" y="24" rx="8" ry="8" width="176" height="48" fill="#fff" stroke="#dfe8f6"/>
+                  <text x="296" y="40" fontSize="10.4" textAnchor="middle" fill="#0f172a" fontWeight="700">CI/CD (GitHub Actions)</text>
+                  <text x="296" y="54.4" fontSize="8.8" textAnchor="middle" fill="#6b7280">Lint, Testes, Build</text>
+                  <rect x="416" y="8" rx="8" ry="8" width="160" height="32" fill="#fff" stroke="#dfe8f6"/>
+                  <text x="496" y="28" fontSize="9.6" textAnchor="middle" fill="#0f172a">Vercel (Recomendado)</text>
+                  <rect x="416" y="56" rx="8" ry="8" width="160" height="32" fill="#fff" stroke="#dfe8f6"/>
+                  <text x="496" y="76" fontSize="9.6" textAnchor="middle" fill="#0f172a">Hostinger / Locaweb</text>
+                  <rect x="608" y="32" rx="8" ry="8" width="144" height="48" fill="#fff" stroke="#dfe8f6"/>
+                  <text x="680" y="52" fontSize="9.6" textAnchor="middle" fill="#0f172a">VPS (N8N / Monitoramento)</text>
+                  <line x1="176" y1="48" x2="208" y2="48" stroke="#9fb7e8" strokeWidth="2.4" markerEnd="url(#arrow3)"/>
+                  <line x1="384" y1="40" x2="416" y2="24" stroke="#9fb7e8" strokeWidth="2.4" markerEnd="url(#arrow3)"/>
+                  <line x1="384" y1="64" x2="416" y2="72" stroke="#9fb7e8" strokeWidth="2.4" markerEnd="url(#arrow3)"/>
+                  <line x1="576" y1="56" x2="608" y2="56" stroke="#9fb7e8" strokeWidth="2.4" markerEnd="url(#arrow3)"/>
                   <defs>
                     <marker id="arrow3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                      <path d="M 0 0 L 10 5 L 0 10 z" fill="#9fb7e8" />
+                      <path d="M 0 0 L 10 5 L 0 10 z" fill="#9fb7e8"/>
                     </marker>
                   </defs>
                 </svg>
@@ -548,88 +512,62 @@ export default function AdminChecklistPage() {
 
             <h3 className="text-sm font-semibold text-blue-600" style={{ marginBottom: '20px' }}>Arquitetura do Fluxo</h3>
               <div className="diagram" role="img" aria-label="Arquitetura do fluxo N8N">
-                <svg viewBox="0 0 1000 400" width="100%" height="400" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+                <svg viewBox="0 0 800 320" width="100%" height="320" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
                   <defs>
                     <filter id="shadow-n8n" x="-50%" y="-50%" width="200%" height="200%">
-                      <feDropShadow dx="0" dy="6" stdDeviation="10" floodColor="#000" floodOpacity="0.12"/>
+                      <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="#000" floodOpacity="0.1"/>
                     </filter>
                     <marker id="arrow-n8n" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                      <path d="M 0 0 L 10 5 L 0 10 z" fill="#9fb7e8" />
+                      <path d="M 0 0 L 10 5 L 0 10 z" fill="#9fb7e8"/>
                     </marker>
                   </defs>
-
-                  {/* Cron Trigger */}
-                  <rect x="40" y="40" rx="12" ry="12" width="180" height="60" fill="#fff" stroke="#dfe8f6" strokeWidth="1.5" filter="url(#shadow-n8n)"/>
-                  <text x="130" y="70" fontSize="13" textAnchor="middle" fill="#0f172a" fontWeight="700">⏰ Cron Trigger</text>
-                  <text x="130" y="88" fontSize="11" textAnchor="middle" fill="#6b7280">Execução programada</text>
-
-                  {/* HTTP Request */}
-                  <rect x="260" y="40" rx="12" ry="12" width="180" height="60" fill="#fff" stroke="#dfe8f6" strokeWidth="1.5" filter="url(#shadow-n8n)"/>
-                  <text x="350" y="70" fontSize="13" textAnchor="middle" fill="#0f172a" fontWeight="700">🌐 HTTP Request</text>
-                  <text x="350" y="88" fontSize="11" textAnchor="middle" fill="#6b7280">Investing.com</text>
-
-                  {/* HTML Extract */}
-                  <rect x="480" y="40" rx="12" ry="12" width="180" height="60" fill="#fff" stroke="#dfe8f6" strokeWidth="1.5" filter="url(#shadow-n8n)"/>
-                  <text x="570" y="70" fontSize="13" textAnchor="middle" fill="#0f172a" fontWeight="700">🔍 HTML Extract</text>
-                  <text x="570" y="88" fontSize="11" textAnchor="middle" fill="#6b7280">CSS Selectors</text>
-
-                  {/* Code Processing */}
-                  <rect x="700" y="40" rx="12" ry="12" width="180" height="60" fill="#fff" stroke="#dfe8f6" strokeWidth="1.5" filter="url(#shadow-n8n)"/>
-                  <text x="790" y="70" fontSize="13" textAnchor="middle" fill="#0f172a" fontWeight="700">⚙️ Code</text>
-                  <text x="790" y="88" fontSize="11" textAnchor="middle" fill="#6b7280">Processar Dados</text>
-
-                  {/* Firebase Write */}
-                  <rect x="260" y="160" rx="12" ry="12" width="180" height="60" fill="#fff" stroke="#dfe8f6" strokeWidth="1.5" filter="url(#shadow-n8n)"/>
-                  <text x="350" y="190" fontSize="13" textAnchor="middle" fill="#0f172a" fontWeight="700">🔥 Firebase</text>
-                  <text x="350" y="208" fontSize="11" textAnchor="middle" fill="#6b7280">Write Document</text>
-
-                  {/* Error Handling */}
-                  <rect x="480" y="160" rx="12" ry="12" width="180" height="60" fill="#fff" stroke="#dfe8f6" strokeWidth="1.5" filter="url(#shadow-n8n)"/>
-                  <text x="570" y="190" fontSize="13" textAnchor="middle" fill="#0f172a" fontWeight="700">⚠️ Error</text>
-                  <text x="570" y="208" fontSize="11" textAnchor="middle" fill="#6b7280">Handle Errors</text>
-
-                  {/* Logging */}
-                  <rect x="700" y="160" rx="12" ry="12" width="180" height="60" fill="#fff" stroke="#dfe8f6" strokeWidth="1.5" filter="url(#shadow-n8n)"/>
-                  <text x="790" y="190" fontSize="13" textAnchor="middle" fill="#0f172a" fontWeight="700">📝 Log</text>
-                  <text x="790" y="208" fontSize="11" textAnchor="middle" fill="#6b7280">Audit Trail</text>
-
-                  {/* Arrows */}
-                  <line x1="220" y1="70" x2="260" y2="70" stroke="#9fb7e8" strokeWidth="3" markerEnd="url(#arrow-n8n)"/>
-                  <line x1="440" y1="70" x2="480" y2="70" stroke="#9fb7e8" strokeWidth="3" markerEnd="url(#arrow-n8n)"/>
-                  <line x1="660" y1="70" x2="700" y2="70" stroke="#9fb7e8" strokeWidth="3" markerEnd="url(#arrow-n8n)"/>
-                  
-                  {/* Down arrows */}
-                  <line x1="790" y1="100" x2="350" y2="160" stroke="#9fb7e8" strokeWidth="3" markerEnd="url(#arrow-n8n)"/>
-                  <line x1="790" y1="100" x2="570" y2="160" stroke="#9fb7e8" strokeWidth="3" markerEnd="url(#arrow-n8n)"/>
-                  <line x1="790" y1="100" x2="790" y2="160" stroke="#9fb7e8" strokeWidth="3" markerEnd="url(#arrow-n8n)"/>
-
-                  {/* Data Sources */}
-                  <rect x="40" y="280" rx="10" ry="10" width="200" height="80" fill="#f8fafc" stroke="#e2e8f0" strokeWidth="1"/>
-                  <text x="140" y="305" fontSize="12" textAnchor="middle" fill="#0f172a" fontWeight="700">📊 Fontes de Dados</text>
-                  <text x="140" y="325" fontSize="11" textAnchor="middle" fill="#6b7280">• Milho (Investing.com)</text>
-                  <text x="140" y="340" fontSize="11" textAnchor="middle" fill="#6b7280">• Soja, Petróleo, Ouro</text>
-                  <text x="140" y="355" fontSize="11" textAnchor="middle" fill="#6b7280">• Índices de Sustentabilidade</text>
-
-                  {/* Output */}
-                  <rect x="280" y="280" rx="10" ry="10" width="200" height="80" fill="#f8fafc" stroke="#e2e8f0" strokeWidth="1"/>
-                  <text x="380" y="305" fontSize="12" textAnchor="middle" fill="#0f172a" fontWeight="700">💾 Saída</text>
-                  <text x="380" y="325" fontSize="11" textAnchor="middle" fill="#6b7280">• Firebase Firestore</text>
-                  <text x="380" y="340" fontSize="11" textAnchor="middle" fill="#6b7280">• Logs de Auditoria</text>
-                  <text x="380" y="355" fontSize="11" textAnchor="middle" fill="#6b7280">• Tratamento de Erros</text>
-
-                  {/* Schedule */}
-                  <rect x="520" y="280" rx="10" ry="10" width="200" height="80" fill="#f8fafc" stroke="#e2e8f0" strokeWidth="1"/>
-                  <text x="620" y="305" fontSize="12" textAnchor="middle" fill="#0f172a" fontWeight="700">⏱️ Agendamento</text>
-                  <text x="620" y="325" fontSize="11" textAnchor="middle" fill="#6b7280">• Execução a cada 15 min</text>
-                  <text x="620" y="340" fontSize="11" textAnchor="middle" fill="#6b7280">• Horário comercial</text>
-                  <text x="620" y="355" fontSize="11" textAnchor="middle" fill="#6b7280">• Retry automático</text>
-
-                  {/* Performance */}
-                  <rect x="760" y="280" rx="10" ry="10" width="200" height="80" fill="#f8fafc" stroke="#e2e8f0" strokeWidth="1"/>
-                  <text x="860" y="305" fontSize="12" textAnchor="middle" fill="#0f172a" fontWeight="700">⚡ Performance</text>
-                  <text x="860" y="325" fontSize="11" textAnchor="middle" fill="#6b7280">• Execução &lt; 30 segundos</text>
-                  <text x="860" y="340" fontSize="11" textAnchor="middle" fill="#6b7280">• Uptime 99.9%</text>
-                  <text x="860" y="355" fontSize="11" textAnchor="middle" fill="#6b7280">• Monitoramento 24/7</text>
+                  <rect x="32" y="32" rx="10" ry="10" width="144" height="48" fill="#fff" stroke="#dfe8f6" strokeWidth="1.2" filter="url(#shadow-n8n)"/>
+                  <text x="104" y="56" fontSize="10.4" textAnchor="middle" fill="#0f172a" fontWeight="700">⏰ Cron Trigger</text>
+                  <text x="104" y="70.4" fontSize="8.8" textAnchor="middle" fill="#6b7280">Execução programada</text>
+                  <rect x="208" y="32" rx="10" ry="10" width="144" height="48" fill="#fff" stroke="#dfe8f6" strokeWidth="1.2" filter="url(#shadow-n8n)"/>
+                  <text x="280" y="56" fontSize="10.4" textAnchor="middle" fill="#0f172a" fontWeight="700">🌐 HTTP Request</text>
+                  <text x="280" y="70.4" fontSize="8.8" textAnchor="middle" fill="#6b7280">Investing.com</text>
+                  <rect x="384" y="32" rx="10" ry="10" width="144" height="48" fill="#fff" stroke="#dfe8f6" strokeWidth="1.2" filter="url(#shadow-n8n)"/>
+                  <text x="456" y="56" fontSize="10.4" textAnchor="middle" fill="#0f172a" fontWeight="700">🔍 HTML Extract</text>
+                  <text x="456" y="70.4" fontSize="8.8" textAnchor="middle" fill="#6b7280">CSS Selectors</text>
+                  <rect x="560" y="32" rx="10" ry="10" width="144" height="48" fill="#fff" stroke="#dfe8f6" strokeWidth="1.2" filter="url(#shadow-n8n)"/>
+                  <text x="632" y="56" fontSize="10.4" textAnchor="middle" fill="#0f172a" fontWeight="700">⚙️ Code</text>
+                  <text x="632" y="70.4" fontSize="8.8" textAnchor="middle" fill="#6b7280">Processar Dados</text>
+                  <rect x="208" y="128" rx="10" ry="10" width="144" height="48" fill="#fff" stroke="#dfe8f6" strokeWidth="1.2" filter="url(#shadow-n8n)"/>
+                  <text x="280" y="152" fontSize="10.4" textAnchor="middle" fill="#0f172a" fontWeight="700">🔥 Firebase</text>
+                  <text x="280" y="166.4" fontSize="8.8" textAnchor="middle" fill="#6b7280">Write Document</text>
+                  <rect x="384" y="128" rx="10" ry="10" width="144" height="48" fill="#fff" stroke="#dfe8f6" strokeWidth="1.2" filter="url(#shadow-n8n)"/>
+                  <text x="456" y="152" fontSize="10.4" textAnchor="middle" fill="#0f172a" fontWeight="700">⚠️ Error</text>
+                  <text x="456" y="166.4" fontSize="8.8" textAnchor="middle" fill="#6b7280">Handle Errors</text>
+                  <rect x="560" y="128" rx="10" ry="10" width="144" height="48" fill="#fff" stroke="#dfe8f6" strokeWidth="1.2" filter="url(#shadow-n8n)"/>
+                  <text x="632" y="152" fontSize="10.4" textAnchor="middle" fill="#0f172a" fontWeight="700">📝 Log</text>
+                  <text x="632" y="166.4" fontSize="8.8" textAnchor="middle" fill="#6b7280">Audit Trail</text>
+                  <line x1="176" y1="56" x2="208" y2="56" stroke="#9fb7e8" strokeWidth="2.4" markerEnd="url(#arrow-n8n)"/>
+                  <line x1="352" y1="56" x2="384" y2="56" stroke="#9fb7e8" strokeWidth="2.4" markerEnd="url(#arrow-n8n)"/>
+                  <line x1="528" y1="56" x2="560" y2="56" stroke="#9fb7e8" strokeWidth="2.4" markerEnd="url(#arrow-n8n)"/>
+                  <line x1="632" y1="80" x2="280" y2="128" stroke="#9fb7e8" strokeWidth="2.4" markerEnd="url(#arrow-n8n)"/>
+                  <line x1="632" y1="80" x2="456" y2="128" stroke="#9fb7e8" strokeWidth="2.4" markerEnd="url(#arrow-n8n)"/>
+                  <line x1="632" y1="80" x2="632" y2="128" stroke="#9fb7e8" strokeWidth="2.4" markerEnd="url(#arrow-n8n)"/>
+                  <rect x="32" y="224" rx="8" ry="8" width="160" height="64" fill="#f8fafc" stroke="#e2e8f0" strokeWidth="0.8"/>
+                  <text x="112" y="244" fontSize="9.6" textAnchor="middle" fill="#0f172a" fontWeight="700">📊 Fontes de Dados</text>
+                  <text x="112" y="260" fontSize="8.8" textAnchor="middle" fill="#6b7280">• Milho (Investing.com)</text>
+                  <text x="112" y="272" fontSize="8.8" textAnchor="middle" fill="#6b7280">• Soja, Petróleo, Ouro</text>
+                  <text x="112" y="284" fontSize="8.8" textAnchor="middle" fill="#6b7280">• Índices de Sustentabilidade</text>
+                  <rect x="224" y="224" rx="8" ry="8" width="160" height="64" fill="#f8fafc" stroke="#e2e8f0" strokeWidth="0.8"/>
+                  <text x="304" y="244" fontSize="9.6" textAnchor="middle" fill="#0f172a" fontWeight="700">💾 Saída</text>
+                  <text x="304" y="260" fontSize="8.8" textAnchor="middle" fill="#6b7280">• Firebase Firestore</text>
+                  <text x="304" y="272" fontSize="8.8" textAnchor="middle" fill="#6b7280">• Logs de Auditoria</text>
+                  <text x="304" y="284" fontSize="8.8" textAnchor="middle" fill="#6b7280">• Tratamento de Erros</text>
+                  <rect x="416" y="224" rx="8" ry="8" width="160" height="64" fill="#f8fafc" stroke="#e2e8f0" strokeWidth="0.8"/>
+                  <text x="496" y="244" fontSize="9.6" textAnchor="middle" fill="#0f172a" fontWeight="700">⏱️ Agendamento</text>
+                  <text x="496" y="260" fontSize="8.8" textAnchor="middle" fill="#6b7280">• Execução a cada 15 min</text>
+                  <text x="496" y="272" fontSize="8.8" textAnchor="middle" fill="#6b7280">• Horário comercial</text>
+                  <text x="496" y="284" fontSize="8.8" textAnchor="middle" fill="#6b7280">• Retry automático</text>
+                  <rect x="608" y="224" rx="8" ry="8" width="160" height="64" fill="#f8fafc" stroke="#e2e8f0" strokeWidth="0.8"/>
+                  <text x="688" y="244" fontSize="9.6" textAnchor="middle" fill="#0f172a" fontWeight="700">⚡ Performance</text>
+                  <text x="688" y="260" fontSize="8.8" textAnchor="middle" fill="#6b7280">• Execução &lt; 30 segundos</text>
+                  <text x="688" y="272" fontSize="8.8" textAnchor="middle" fill="#6b7280">• Uptime 99.9%</text>
+                  <text x="688" y="284" fontSize="8.8" textAnchor="middle" fill="#6b7280">• Monitoramento 24/7</text>
                 </svg>
               </div>
 
@@ -699,32 +637,32 @@ export default function AdminChecklistPage() {
               <div id="preEntrega" className="coll-content">
                 <h3>🏗️ Desenvolvimento Concluído</h3>
                 <ul className="checklist-list">
-                  <li className="check-item"><label><input type="checkbox" data-key="pre_dev_func" /><span className="txt">Todas as funcionalidades implementadas conforme especificação</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="pre_dev_func" checked/><span className="txt">Todas as funcionalidades implementadas conforme especificação</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="pre_dev_tests" /><span className="txt">Testes locais realizados com sucesso</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="pre_dev_review" /><span className="txt">Código revisado e documentado</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="pre_dev_review" checked/><span className="txt">Código revisado e documentado</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="pre_dev_perf" /><span className="txt">Performance otimizada</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="pre_dev_resp" /><span className="txt">Responsividade testada em diferentes dispositivos</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="pre_dev_lint" /><span className="txt">Linting e formatação de código aplicados</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="pre_dev_types" /><span className="txt">TypeScript configurado e sem erros</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="pre_dev_build" /><span className="txt">Build de produção funcionando</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="pre_dev_resp" checked/><span className="txt">Responsividade testada em diferentes dispositivos</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="pre_dev_lint" checked/><span className="txt">Linting e formatação de código aplicados</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="pre_dev_types" checked/><span className="txt">TypeScript configurado e sem erros</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="pre_dev_build" checked/><span className="txt">Build de produção funcionando</span></label></li>
                 </ul>
                 <h3>📚 Documentação Completa</h3>
                 <ul className="checklist-list">
-                  <li className="check-item"><label><input type="checkbox" data-key="pre_doc_readme" /><span className="txt">README.md atualizado</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="pre_doc_tech" /><span className="txt">Documentação técnica de entrega criada</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="pre_doc_env" /><span className="txt">Arquivo de exemplo de variáveis de ambiente</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="pre_doc_install" /><span className="txt">Instruções de instalação e deploy</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="pre_doc_diagrams" /><span className="txt">Diagramas de arquitetura atualizados</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="pre_doc_readme" checked/><span className="txt">README.md atualizado</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="pre_doc_tech" checked/><span className="txt">Documentação técnica de entrega criada</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="pre_doc_env" checked/><span className="txt">Arquivo de exemplo de variáveis de ambiente</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="pre_doc_install" checked/><span className="txt">Instruções de instalação e deploy</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="pre_doc_diagrams" checked/><span className="txt">Diagramas de arquitetura atualizados</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="pre_doc_api" /><span className="txt">Documentação da API (se aplicável)</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="pre_doc_changelog" /><span className="txt">CHANGELOG.md atualizado</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="pre_doc_license" /><span className="txt">LICENSE.md definido</span></label></li>
                 </ul>
                 <h3>🔧 Configuração de Ambiente</h3>
                 <ul className="checklist-list">
-                  <li className="check-item"><label><input type="checkbox" data-key="pre_env_node" /><span className="txt">Node.js versão compatível especificada</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="pre_env_node" checked/><span className="txt">Node.js versão compatível especificada</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="pre_env_pnpm" /><span className="txt">pnpm configurado como gerenciador de pacotes</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="pre_env_deps" /><span className="txt">Dependências atualizadas e sem vulnerabilidades</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="pre_env_scripts" /><span className="txt">Scripts de desenvolvimento e produção configurados</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="pre_env_deps" checked/><span className="txt">Dependências atualizadas e sem vulnerabilidades</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="pre_env_scripts" checked/><span className="txt">Scripts de desenvolvimento e produção configurados</span></label></li>
                 </ul>
               </div>
 
@@ -735,14 +673,14 @@ export default function AdminChecklistPage() {
               <div id="entrega" className="coll-content">
                 <h3>📦 Arquivos Entregues</h3>
                 <ul className="checklist-list">
-                  <li className="check-item"><label><input type="checkbox" data-key="entrega_code" /><span className="txt">Código-fonte completo</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="entrega_doc" /><span className="txt">Documentação técnica (`DOCUMENTACAO_TECNICA_ENTREGA.md`)</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="entrega_readme" /><span className="txt">README atualizado</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="entrega_code" checked/><span className="txt">Código-fonte completo</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="entrega_doc" checked/><span className="txt">Documentação técnica (`DOCUMENTACAO_TECNICA_ENTREGA.md`)</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="entrega_readme" checked/><span className="txt">README atualizado</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="entrega_env" /><span className="txt">Arquivo de exemplo (`env.example`)</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="entrega_backup" /><span className="txt">Backup do banco de dados (se solicitado)</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="entrega_package" /><span className="txt">package.json com scripts configurados</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="entrega_config" /><span className="txt">Arquivos de configuração (next.config.js, tailwind.config.js)</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="entrega_assets" /><span className="txt">Assets estáticos (imagens, ícones, favicons)</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="entrega_package" checked/><span className="txt">package.json com scripts configurados</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="entrega_config" checked/><span className="txt">Arquivos de configuração (next.config.js, tailwind.config.js)</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="entrega_assets" checked/><span className="txt">Assets estáticos (imagens, ícones, favicons)</span></label></li>
                 </ul>
                 <h3>🔑 Credenciais</h3>
                 <ul className="checklist-list">
@@ -772,16 +710,16 @@ export default function AdminChecklistPage() {
               <div id="testes" className="coll-content">
                 <h3>✅ Testes Funcionais</h3>
                 <ul className="checklist-list">
-                  <li className="check-item"><label><input type="checkbox" data-key="test_func_login" /><span className="txt">Usuário consegue fazer login</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="test_func_dashboard" /><span className="txt">Dashboard exibe dados em tempo real</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="test_func_pdf" /><span className="txt">Exportação de PDF funcionando</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="test_func_admin" /><span className="txt">Admin permite CRUD de usuários</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="test_func_audit" /><span className="txt">Sistema de auditoria registra ações</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="test_func_excel" /><span className="txt">Exportação de Excel funcionando</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="test_func_charts" /><span className="txt">Gráficos sendo exibidos corretamente</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="test_func_responsive" /><span className="txt">Interface responsiva em todos os dispositivos</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="test_func_i18n" /><span className="txt">Sistema de internacionalização funcionando</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="test_func_theme" /><span className="txt">Sistema de temas funcionando</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="test_func_login" checked/><span className="txt">Usuário consegue fazer login</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="test_func_dashboard" checked/><span className="txt">Dashboard exibe dados em tempo real</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="test_func_pdf" checked/><span className="txt">Exportação de PDF funcionando</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="test_func_admin" checked/><span className="txt">Admin permite CRUD de usuários</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="test_func_audit" checked/><span className="txt">Sistema de auditoria registra ações</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="test_func_excel" checked/><span className="txt">Exportação de Excel funcionando</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="test_func_charts" checked/><span className="txt">Gráficos sendo exibidos corretamente</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="test_func_responsive" checked/><span className="txt">Interface responsiva em todos os dispositivos</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="test_func_i18n" checked/><span className="txt">Sistema de internacionalização funcionando</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="test_func_theme" checked/><span className="txt">Sistema de temas funcionando</span></label></li>
                 </ul>
                 <h3>✅ Testes de Performance</h3>
                 <ul className="checklist-list">
@@ -794,17 +732,17 @@ export default function AdminChecklistPage() {
                 </ul>
                 <h3>✅ Testes de Compatibilidade</h3>
                 <ul className="checklist-list">
-                  <li className="check-item"><label><input type="checkbox" data-key="test_comp_chrome" /><span className="txt">Chrome (últimas 2 versões)</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="test_comp_chrome" checked/><span className="txt">Chrome (últimas 2 versões)</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="test_comp_firefox" /><span className="txt">Firefox (últimas 2 versões)</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="test_comp_safari" /><span className="txt">Safari (últimas 2 versões)</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="test_comp_edge" /><span className="txt">Edge (últimas 2 versões)</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="test_comp_mobile" /><span className="txt">Dispositivos móveis (iOS/Android)</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="test_comp_mobile" checked/><span className="txt">Dispositivos móveis (iOS/Android)</span></label></li>
                 </ul>
                 <h3>✅ Testes de Segurança</h3>
                 <ul className="checklist-list">
-                  <li className="check-item"><label><input type="checkbox" data-key="test_sec_auth" /><span className="txt">Autenticação segura funcionando</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="test_sec_roles" /><span className="txt">Controle de acesso por roles</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="test_sec_input" /><span className="txt">Validação de inputs</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="test_sec_auth" checked/><span className="txt">Autenticação segura funcionando</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="test_sec_roles" checked/><span className="txt">Controle de acesso por roles</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="test_sec_input" checked/><span className="txt">Validação de inputs</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="test_sec_xss" /><span className="txt">Proteção contra XSS</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="test_sec_csrf" /><span className="txt">Proteção contra CSRF</span></label></li>
                 </ul>
@@ -817,18 +755,18 @@ export default function AdminChecklistPage() {
               <div id="seguranca" className="coll-content">
                 <h3>🔐 Autenticação e Autorização</h3>
                 <ul className="checklist-list">
-                  <li className="check-item"><label><input type="checkbox" data-key="sec_auth_login" /><span className="txt">Login seguro implementado</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="sec_auth_roles" /><span className="txt">Controle de acesso por roles</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="sec_auth_session" /><span className="txt">Gerenciamento de sessão seguro</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="sec_auth_logout" /><span className="txt">Logout seguro implementado</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="sec_auth_login" checked/><span className="txt">Login seguro implementado</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="sec_auth_roles" checked/><span className="txt">Controle de acesso por roles</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="sec_auth_session" checked/><span className="txt">Gerenciamento de sessão seguro</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="sec_auth_logout" checked/><span className="txt">Logout seguro implementado</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="sec_auth_2fa" /><span className="txt">2FA implementado (se aplicável)</span></label></li>
                 </ul>
                 <h3>🛡️ Proteção de Dados</h3>
                 <ul className="checklist-list">
                   <li className="check-item"><label><input type="checkbox" data-key="sec_data_crypto" /><span className="txt">Dados sensíveis criptografados</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="sec_data_sanitize" /><span className="txt">Validação e sanitização de inputs</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="sec_data_transport" /><span className="txt">Dados transmitidos via HTTPS</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="sec_data_storage" /><span className="txt">Armazenamento seguro configurado</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="sec_data_transport" checked/><span className="txt">Dados transmitidos via HTTPS</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="sec_data_storage" checked/><span className="txt">Armazenamento seguro configurado</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="sec_data_backup" /><span className="txt">Backup seguro dos dados</span></label></li>
                 </ul>
                 <h3>🔒 Segurança da Aplicação</h3>
@@ -836,16 +774,16 @@ export default function AdminChecklistPage() {
                   <li className="check-item"><label><input type="checkbox" data-key="sec_app_headers" /><span className="txt">Headers de segurança configurados</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="sec_app_cors" /><span className="txt">CORS configurado corretamente</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="sec_app_rate" /><span className="txt">Rate limiting implementado</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="sec_app_env" /><span className="txt">Variáveis de ambiente protegidas</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="sec_app_env" checked/><span className="txt">Variáveis de ambiente protegidas</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="sec_app_logs" /><span className="txt">Logs de segurança configurados</span></label></li>
                 </ul>
                 <h3>📋 Conformidade LGPD</h3>
                 <ul className="checklist-list">
-                  <li className="check-item"><label><input type="checkbox" data-key="lgpd_consent" /><span className="txt">Consentimento explícito implementado</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="lgpd_policy" /><span className="txt">Política de privacidade atualizada</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="lgpd_cookies" /><span className="txt">Banner de cookies implementado</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="lgpd_consent" checked/><span className="txt">Consentimento explícito implementado</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="lgpd_policy" checked/><span className="txt">Política de privacidade atualizada</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="lgpd_cookies" checked/><span className="txt">Banner de cookies implementado</span></label></li>
                   <li className="check-item"><label><input type="checkbox" data-key="lgpd_data" /><span className="txt">Direitos do titular implementados</span></label></li>
-                  <li className="check-item"><label><input type="checkbox" data-key="lgpd_audit" /><span className="txt">Auditoria de dados implementada</span></label></li>
+                  <li className="check-item"><label><input type="checkbox" data-key="lgpd_audit" checked/><span className="txt">Auditoria de dados implementada</span></label></li>
                 </ul>
               </div>
 
