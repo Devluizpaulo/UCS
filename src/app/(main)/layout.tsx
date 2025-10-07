@@ -218,12 +218,12 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
         <Sidebar className="sidebar-modern">
           <div className="flex flex-col h-full">
             <SidebarHeader className="border-b border-sidebar-border">
-              <div className="flex h-12 items-center justify-center p-3 group-data-[collapsible=icon]:hidden">
+              <Link href="/dashboard" className="flex h-12 items-center justify-center p-3 group-data-[collapsible=icon]:hidden" aria-label="Dashboard">
                 <LogoUCS className="h-8 w-auto" />
-              </div>
-              <div className="hidden h-12 items-center justify-center p-3 group-data-[collapsible=icon]:flex">
+              </Link>
+              <Link href="/dashboard" className="hidden h-12 items-center justify-center p-3 group-data-[collapsible=icon]:flex" aria-label="Dashboard">
                 <LogoUCS className="h-8 w-auto" isIcon />
-              </div>
+              </Link>
             </SidebarHeader>
             <SidebarContent className="flex-grow">
               <SidebarMenu>
