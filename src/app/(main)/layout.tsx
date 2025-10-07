@@ -20,6 +20,7 @@ import {
   Sparkles,
   History,
   PieChart,
+  CheckSquare,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -300,6 +301,18 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
                       <Link href="/admin/audit">
                         <History />
                         <span>Auditoria</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                   <SidebarMenuItem onClick={handleMenuItemClick}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={pathname.startsWith('/admin/checklist')}
+                      tooltip={{ children: 'Checklist de Entrega' }}
+                    >
+                      <Link href="/admin/checklist">
+                        <CheckSquare />
+                        <span>Checklist</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
