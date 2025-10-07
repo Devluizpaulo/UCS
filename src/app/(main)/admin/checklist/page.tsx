@@ -273,7 +273,36 @@ export default function AdminChecklistPage() {
                     <p className="muted-note">Visão geral dos componentes principais: Front-end (Next.js), Camada de API (Serverless), Banco de Dados (Firestore) e integrações (N8N, Google AI).</p>
                     <div className="diagram" role="img" aria-label="Diagrama de arquitetura técnica" onClick={(e) => e.currentTarget.classList.toggle('zoomed')}>
                         <svg viewBox="0 0 1000 360" width="100%" xmlns="http://www.w3.org/2000/svg">
-                            {/* SVG content for Arquitetura Técnica */}
+                           <defs>
+                              <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+                                <feDropShadow dx="0" dy="6" stdDeviation="10" floodColor="#000" floodOpacity="0.12"/>
+                              </filter>
+                               <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                <path d="M 0 0 L 10 5 L 0 10 z" fill="#9fb7e8" />
+                              </marker>
+                            </defs>
+                            <rect x="40" y="40" rx="12" ry="12" width="220" height="80" fill="#ffffff" stroke="#dfe8f6" strokeWidth="1.5" filter="url(#shadow)"/>
+                            <text x="150" y="70" fontSize="14" textAnchor="middle" fill="#0f172a" fontWeight="700">Front-end</text>
+                            <text x="150" y="92" fontSize="12" textAnchor="middle" fill="#6b7280">Next.js (React)</text>
+                            <rect x="300" y="40" rx="12" ry="12" width="220" height="80" fill="#ffffff" stroke="#dfe8f6" strokeWidth="1.5" filter="url(#shadow)"/>
+                            <text x="410" y="68" fontSize="14" textAnchor="middle" fill="#0f172a" fontWeight="700">API / Server</text>
+                            <text x="410" y="90" fontSize="12" textAnchor="middle" fill="#6b7280">Cloud Functions / Serverless</text>
+                            <rect x="560" y="40" rx="12" ry="12" width="220" height="80" fill="#ffffff" stroke="#dfe8f6" strokeWidth="1.5" filter="url(#shadow)"/>
+                            <text x="670" y="68" fontSize="14" textAnchor="middle" fill="#0f172a" fontWeight="700">Banco de Dados</text>
+                            <text x="670" y="90" fontSize="12" textAnchor="middle" fill="#6b7280">Firebase Firestore</text>
+                            <line x1="260" y1="80" x2="300" y2="80" stroke="#9fb7e8" strokeWidth="3" markerEnd="url(#arrow)"/>
+                            <line x1="520" y1="80" x2="560" y2="80" stroke="#9fb7e8" strokeWidth="3" markerEnd="url(#arrow)"/>
+                            <rect x="120" y="180" rx="10" ry="10" width="240" height="64" fill="#fff" stroke="#dfe8f6" strokeWidth="1.2" filter="url(#shadow)"/>
+                            <text x="240" y="205" fontSize="13" textAnchor="middle" fill="#0f172a" fontWeight="700">N8N (Automação)</text>
+                            <text x="240" y="223" fontSize="12" textAnchor="middle" fill="#6b7280">Coleta de dados e workflows</text>
+                            <rect x="440" y="180" rx="10" ry="10" width="240" height="64" fill="#fff" stroke="#dfe8f6" strokeWidth="1.2" filter="url(#shadow)"/>
+                            <text x="560" y="205" fontSize="13" textAnchor="middle" fill="#0f172a" fontWeight="700">Google AI (Genkit)</text>
+                            <text x="560" y="223" fontSize="12" textAnchor="middle" fill="#6b7280">Geração de relatórios / NLP</text>
+                            <line x1="240" y1="180" x2="240" y2="140" stroke="#b7d0f7" strokeWidth="2" markerEnd="url(#arrow)"/>
+                            <line x1="560" y1="180" x2="560" y2="140" stroke="#b7d0f7" strokeWidth="2" markerEnd="url(#arrow)"/>
+                            <rect x="40" y="270" rx="8" ry="8" width="780" height="64" fill="#fbfdff" stroke="#eef4ff" />
+                            <text x="70" y="295" fontSize="12" fill="#6b7280">Legenda:</text>
+                            <text x="140" y="295" fontSize="12" fill="#0f172a">Frontend → Server → Firestore; N8N e Google AI integram-se via API / Webhooks</text>
                         </svg>
                     </div>
                 </div>
@@ -282,7 +311,24 @@ export default function AdminChecklistPage() {
                     <p className="muted-note">Ilustra como os dados fluem desde as fontes externas (N8N), são armazenados no Firestore, e consumidos pela aplicação web e pela IA.</p>
                     <div className="diagram" role="img" aria-label="Fluxo de dados" onClick={(e) => e.currentTarget.classList.toggle('zoomed')}>
                        <svg viewBox="0 0 1000 160" width="100%" xmlns="http://www.w3.org/2000/svg">
-                          {/* SVG content for Fluxo de Dados */}
+                          <defs>
+                              <marker id="arrow2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                <path d="M 0 0 L 10 5 L 0 10 z" fill="#9fb7e8" />
+                              </marker>
+                           </defs>
+                            <rect x="30" y="30" rx="10" ry="10" width="150" height="50" fill="#ffffff" stroke="#dfe8f6"/>
+                            <text x="105" y="60" fontSize="12" textAnchor="middle" fill="#0f172a" fontWeight="700">Usuário</text>
+                            <rect x="210" y="25" rx="10" ry="10" width="200" height="60" fill="#ffffff" stroke="#dfe8f6"/>
+                            <text x="310" y="52" fontSize="12" textAnchor="middle" fill="#0f172a" fontWeight="700">Front-end / Dashboard</text>
+                            <rect x="440" y="25" rx="10" ry="10" width="160" height="60" fill="#ffffff" stroke="#dfe8f6"/>
+                            <text x="520" y="52" fontSize="12" textAnchor="middle" fill="#0f172a" fontWeight="700">API / Functions</text>
+                            <rect x="640" y="25" rx="10" ry="10" width="170" height="60" fill="#ffffff" stroke="#dfe8f6"/>
+                            <text x="725" y="52" fontSize="12" textAnchor="middle" fill="#0f172a" fontWeight="700">Firestore</text>
+                            <line x1="180" y1="55" x2="210" y2="55" stroke="#9fb7e8" strokeWidth="3" markerEnd="url(#arrow2)"/>
+                            <line x1="410" y1="55" x2="440" y2="55" stroke="#9fb7e8" strokeWidth="3" markerEnd="url(#arrow2)"/>
+                            <line x1="600" y1="55" x2="640" y2="55" stroke="#9fb7e8" strokeWidth="3" markerEnd="url(#arrow2)"/>
+                            <text x="105" y="100" fontSize="11" textAnchor="middle" fill="#6b7280">Interações do usuário</text>
+                            <text x="310" y="100" fontSize="11" textAnchor="middle" fill="#6b7280">Renderização + chamadas API</text>
                        </svg>
                     </div>
                 </div>
@@ -291,7 +337,26 @@ export default function AdminChecklistPage() {
                      <p className="muted-note">Mostra o pipeline de CI/CD do GitHub Actions e os alvos de deploy, incluindo Vercel, Hostinger/Locaweb, e a VPS para N8N.</p>
                     <div className="diagram" role="img" aria-label="Infraestrutura de deploy" onClick={(e) => e.currentTarget.classList.toggle('zoomed')}>
                        <svg viewBox="0 0 1000 220" width="100%" xmlns="http://www.w3.org/2000/svg">
-                          {/* SVG content for Infraestrutura de Deploy */}
+                          <defs>
+                              <marker id="arrow3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                <path d="M 0 0 L 10 5 L 0 10 z" fill="#9fb7e8" />
+                              </marker>
+                            </defs>
+                            <rect x="40" y="30" rx="10" ry="10" width="180" height="60" fill="#fff" stroke="#dfe8f6"/>
+                            <text x="130" y="60" fontSize="13" textAnchor="middle" fill="#0f172a" fontWeight="700">GitHub Repo</text>
+                            <rect x="260" y="30" rx="10" ry="10" width="220" height="60" fill="#fff" stroke="#dfe8f6"/>
+                            <text x="370" y="50" fontSize="13" textAnchor="middle" fill="#0f172a" fontWeight="700">CI/CD (GitHub Actions)</text>
+                            <text x="370" y="68" fontSize="11" textAnchor="middle" fill="#6b7280">Lint, Testes, Build</text>
+                            <rect x="520" y="10" rx="10" ry="10" width="200" height="40" fill="#fff" stroke="#dfe8f6"/>
+                            <text x="620" y="35" fontSize="12" textAnchor="middle" fill="#0f172a">Vercel (Recomendado)</text>
+                            <rect x="520" y="70" rx="10" ry="10" width="200" height="40" fill="#fff" stroke="#dfe8f6"/>
+                            <text x="620" y="95" fontSize="12" textAnchor="middle" fill="#0f172a">Hostinger / Locaweb</text>
+                            <rect x="760" y="40" rx="10" ry="10" width="180" height="60" fill="#fff" stroke="#dfe8f6"/>
+                            <text x="850" y="65" fontSize="12" textAnchor="middle" fill="#0f172a">VPS (N8N / Monitoramento)</text>
+                            <line x1="220" y1="60" x2="260" y2="60" stroke="#9fb7e8" strokeWidth="3" markerEnd="url(#arrow3)"/>
+                            <line x1="480" y1="50" x2="520" y2="30" stroke="#9fb7e8" strokeWidth="3" markerEnd="url(#arrow3)"/>
+                            <line x1="480" y1="80" x2="520" y2="90" stroke="#9fb7e8" strokeWidth="3" markerEnd="url(#arrow3)"/>
+                            <line x1="720" y1="70" x2="760" y2="70" stroke="#9fb7e8" strokeWidth="3" markerEnd="url(#arrow3)"/>
                        </svg>
                     </div>
                 </div>
@@ -446,3 +511,4 @@ export default function AdminChecklistPage() {
     
 
     
+
