@@ -525,7 +525,7 @@ export default function AdminChecklistPage() {
           <div className="card">
             <div className="panel-title">📊 Progresso</div>
             <div style={{ textAlign: 'center', margin: '16px 0' }}>
-              <div style={{ fontSize: '48px', fontWeight: 800 }} id="progressBig">0%</div>
+              <div style="font-size: 48px; font-weight: 800" id="progressBig">0%</div>
               <div style={{ fontSize: '14px', color: 'hsl(var(--muted-foreground))', marginTop: '8px' }}>
                 <span id="completedItems">0</span> de <span id="totalItems">0</span> itens concluídos
               </div>
@@ -545,6 +545,6 @@ export default function AdminChecklistPage() {
         </div>
       </aside>
     </div>
-  );
-}
-```
+  
+  </body>
+</html>
