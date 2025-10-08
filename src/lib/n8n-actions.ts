@@ -1,3 +1,4 @@
+
 'use server';
 
 import { format } from 'date-fns';
@@ -14,40 +15,51 @@ export async function triggerN8NRecalculation(
   editedAssets: Record<string, number>
 ): Promise<{ success: boolean; message: string }> {
   if (!process.env.N8N_WEBHOOK_URL) {
-    return { success: false, message: 'N8N webhook não configurado' };
+    console.error('[N8N Trigger] Erro: A variável de ambiente N8N_WEBHOOK_URL não está configurada.');
+    return { success: false, message: 'N8N webhook não configurado no servidor.' };
   }
   
   try {
-    const webhookUrl = `${process.env.N8N_WEBHOOK_URL}/reprocessar-ucs`;
+    // Monta o payload no formato esperado pelo N8N, com a chave "ativos"
     const payload = {
-      data_referencia: format(targetDate, 'yyyy-MM-dd'),
-      ajustes_manuais: editedAssets,
-      salvar_historico: true,
-      origem: 'painel_auditoria'
+      origem: 'painel_auditoria',
+      data_especifica: format(targetDate, 'yyyy-MM-dd'),
+      ativos: editedAssets,
     };
     
-    const response = await fetch(webhookUrl, {
+    console.log('[N8N Trigger] Enviando payload para:', process.env.N8N_WEBHOOK_URL);
+    console.log('[N8N Trigger] Payload:', JSON.stringify(payload, null, 2));
+
+    const response = await fetch(process.env.N8N_WEBHOOK_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        // Adicionando a chave de API no header para autenticação, como o código N8N espera
+        'x-audit-token': process.env.N8N_API_KEY || ''
       },
       body: JSON.stringify(payload)
     });
     
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      const errorBody = await response.text();
+      console.error(`[N8N Trigger] Resposta de erro do N8N (${response.status}):`, errorBody);
+      throw new Error(`O N8N respondeu com o status ${response.status}. Verifique os logs do N8N.`);
     }
     
     const result = await response.json();
+    console.log('[N8N Trigger] Resposta do N8N:', result);
+
+    const successMessage = result.message || result.msg || 'Solicitação recebida pelo N8N.';
+    
     return { 
       success: true, 
-      message: `N8N recálculo disparado com sucesso: ${result.mensagem || 'OK'}` 
+      message: `N8N recálculo disparado com sucesso: ${successMessage}` 
     };
   } catch (error: any) {
-    console.error('[N8N Trigger] Erro:', error);
+    console.error('[N8N Trigger] Erro ao disparar webhook:', error);
     return { 
       success: false, 
-      message: `Erro ao disparar N8N: ${error.message}` 
+      message: `Erro de comunicação com o N8N: ${error.message}` 
     };
   }
 }

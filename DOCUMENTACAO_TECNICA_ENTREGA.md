@@ -344,14 +344,13 @@ O N8N é responsável pela coleta automatizada de dados de APIs externas e cálc
 - **Payload JSON (exemplo):**
   ```json
   {
-    "data_referencia": "2024-12-01",
-    "ajustes_manuais": {
+    "origem": "painel_auditoria",
+    "data_especifica": "2024-12-01",
+    "ativos": {
       "usd": 5.42,
       "soja": 22.85,
       "milho": 65.90
-    },
-    "salvar_historico": true,
-    "origem": "painel_auditoria"
+    }
   }
   ```
 
