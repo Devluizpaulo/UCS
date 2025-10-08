@@ -208,3 +208,5 @@ Esta é a mudança mais crítica.
     - [ ] Testar de ponta a ponta.
 
 Este guia fornece uma visão geral técnica completa. Cada etapa, especialmente a criação do backend na AWS, envolve seus próprios detalhes, mas esta estrutura garante que a migração seja organizada e bem-sucedida.
+
+    
