@@ -156,7 +156,7 @@ FIREBASE_SERVICE_ACCOUNT_BASE64=base64_encoded_service_account_json
 GOOGLE_AI_API_KEY=your_google_ai_api_key
 
 # N8N Integration
-N8N_WEBHOOK_URL=https://your_n8n_instance.com/webhook/ucs
+N8N_WEBHOOK_URL=https://your_n8n_instance.com/webhook-test/ucs-recalculation
 N8N_API_KEY=your_n8n_api_key
 
 # Application Settings
@@ -323,27 +323,37 @@ O N8N é responsável pela coleta automatizada de dados de APIs externas e cálc
      - Salva dados no Firestore
      - Envia notificações de erro se necessário
 
-2. **Recálculo Manual**
-   - **Trigger**: Webhook do sistema
+2. **Recálculo Manual via Webhook**
+   - **Trigger**: Webhook acionado pelo painel de Auditoria da plataforma.
    - **Ações**:
-     - Recebe parâmetros de data e ativos
-     - Reprocessa cálculos específicos
-     - Atualiza banco de dados
-     - Retorna status da operação
+     - Recebe payload JSON com data e valores editados.
+     - Reprocessa todos os cálculos para a data especificada.
+     - Atualiza o banco de dados com os novos valores.
+     - Retorna um status da operação.
 
-**Configuração do Webhook:**
-```bash
-# URL do webhook N8N
-N8N_WEBHOOK_URL=https://your-n8n-instance.com/webhook/ucs-recalculation
+#### 📋 **Exemplo de Webhook e Payload (Auditoria → N8N)**
 
-# Exemplo de payload
-{
-  "action": "recalculate",
-  "targetDate": "2024-12-01",
-  "assets": ["usd", "eur", "soja"],
-  "force": false
-}
-```
+- **URL do Webhook (exemplo):**
+  ```
+  https://sua-instancia.n8n.cloud/webhook-test/reprocessar-ucs
+  ```
+  *(Esta URL deve ser configurada na variável de ambiente `N8N_WEBHOOK_URL`)*
+
+- **Método HTTP:** `POST`
+
+- **Payload JSON (exemplo):**
+  ```json
+  {
+    "data_referencia": "2024-12-01",
+    "ajustes_manuais": {
+      "usd": 5.42,
+      "soja": 22.85,
+      "milho": 65.90
+    },
+    "salvar_historico": true,
+    "origem": "painel_auditoria"
+  }
+  ```
 
 #### 📋 **Importação do Fluxo N8N**
 
