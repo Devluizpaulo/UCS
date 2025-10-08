@@ -367,6 +367,29 @@ N8N_WEBHOOK_URL=https://your-n8n-instance.com/webhook/ucs-recalculation
 
 ## 🚀 Procedimentos de Deploy
 
+### Deploy na Vercel (Recomendado)
+
+#### 1. **Configuração Automática**
+```bash
+# Instalar Vercel CLI
+npm i -g vercel
+
+# Deploy
+vercel --prod
+```
+
+#### 2. **Configuração de Variáveis**
+No painel Vercel:
+- `NEXT_PUBLIC_FIREBASE_API_KEY`
+- `FIREBASE_SERVICE_ACCOUNT_BASE64`
+- `GOOGLE_AI_API_KEY`
+- `N8N_WEBHOOK_URL`
+
+#### 3. **Configuração de Domínio**
+1. Adicione domínio customizado
+2. Configure DNS records
+3. SSL automático via Vercel
+
 ### Deploy na Hostinger
 
 #### 1. **Preparação do Build**
@@ -439,29 +462,6 @@ location / {
     proxy_cache_bypass $http_upgrade;
 }
 ```
-
-### Deploy na Vercel (Recomendado)
-
-#### 1. **Configuração Automática**
-```bash
-# Instalar Vercel CLI
-npm i -g vercel
-
-# Deploy
-vercel --prod
-```
-
-#### 2. **Configuração de Variáveis**
-No painel Vercel:
-- `NEXT_PUBLIC_FIREBASE_API_KEY`
-- `FIREBASE_SERVICE_ACCOUNT_BASE64`
-- `GOOGLE_AI_API_KEY`
-- `N8N_WEBHOOK_URL`
-
-#### 3. **Configuração de Domínio**
-1. Adicione domínio customizado
-2. Configure DNS records
-3. SSL automático via Vercel
 
 ### Configuração do N8N em VPS
 
