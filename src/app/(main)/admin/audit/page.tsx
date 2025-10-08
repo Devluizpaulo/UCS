@@ -9,7 +9,7 @@ import { History, Loader2, Save, ExternalLink, Edit, Search, Filter, TrendingUp,
 import { getCommodityPricesByDate } from '@/lib/data-service';
 import type { CommodityPriceData } from '@/lib/types';
 import * as Calc from '@/lib/calculation-service';
-import { recalculateAllForDate } from '@/lib/recalculation-service';
+import { triggerN8NRecalculation } from '@/lib/n8n-actions'; // Import the N8N action
 import { 
   executeAdvancedRecalculation, 
   type RecalculationProgress as AdvancedRecalculationProgress 
@@ -331,7 +331,7 @@ export default function AuditPage() {
   const [validationAlerts, setValidationAlerts] = useState<ValidationAlert[]>([]);
   
   // Estados para recálculo avançado
-  const [useAdvancedRecalculation, setUseAdvancedRecalculation] = useState<boolean | null>(null); // null = direto, true = avançado, false = tradicional
+  const [useAdvancedRecalculation, setUseAdvancedRecalculation] = useState<boolean | null>(null);
   const [showDependencyInfo, setShowDependencyInfo] = useState(false);
 
   useEffect(() => {
@@ -371,14 +371,12 @@ export default function AuditPage() {
   };
   
   const handleSaveEdit = async (assetId: string, newPrice: number) => {
-    // Simula um pequeno delay para mostrar o loading
     await new Promise(resolve => setTimeout(resolve, 500));
     
     const newEditedValues = { ...editedValues, [assetId]: newPrice };
     setEditedValues(newEditedValues);
     setEditingAsset(null);
 
-    // Update local data immediately for UI responsiveness
     const updatedData = data.map(asset => 
       asset.id === assetId ? { ...asset, price: newPrice } : asset
     );
@@ -403,170 +401,33 @@ export default function AuditPage() {
       return;
     }
 
-    // Mostra informações sobre dependências se solicitado
-    if (showDependencyInfo) {
-      const affectedAssets = calculateAffectedAssets(Object.keys(editedValues));
-      const estimatedTime = estimateRecalculationTime(Object.keys(editedValues));
-      
-      toast({
-        title: "Análise de Dependências",
-        description: `${affectedAssets.length} ativos serão afetados. Tempo estimado: ${Math.ceil(estimatedTime / 1000)}s`,
-      });
-    }
-
-    setShowProgress(true);
-    setRecalculationProgress(0);
-    setEstimatedTimeRemaining(0);
-    
     startTransition(async () => {
       try {
-        if (useAdvancedRecalculation === null) {
-          // === ATUALIZAÇÃO DIRETA (COMPLEMENTO N8N) ===
-          const allCurrentValues: Record<string, number> = {};
-          data.forEach(asset => {
-            allCurrentValues[asset.id] = asset.price;
-          });
-          
-          const result = await updateCalculatedValuesDirectly(
-            targetDate,
-            editedValues,
-            allCurrentValues,
-            'Administrador'
-          );
-          
+        const result = await triggerN8NRecalculation(targetDate, editedValues);
         if (result.success) {
-            // Limpa valores editados e alertas
-            setEditedValues({});
-            setValidationAlerts([]);
-            
-            // Recarrega dados
-            const newData = await getCommodityPricesByDate(targetDate);
-            setData(newData);
-            
-            // Recarrega logs de auditoria
-            try {
-              const logs = await getAuditLogsForDate(targetDate);
-              setAuditLogs(logs);
-            } catch (error) {
-              console.error('Erro ao carregar logs:', error);
-            }
-            
-            toast({
-              title: "Atualização Direta Concluída",
-              description: result.message,
-            });
+          toast({
+            title: "Solicitação Enviada",
+            description: "O N8N está reprocessando os dados. A página será atualizada em breve.",
+          });
+          setEditedValues({});
+          setValidationAlerts([]);
+          // Refresh data after a delay to allow N8N to process
+          setTimeout(() => {
+            getCommodityPricesByDate(targetDate).then(setData);
+            getAuditLogsForDate(targetDate).then(setAuditLogs);
+          }, 10000); // 10-second delay
         } else {
-            toast({
-              title: "Erro na Atualização",
-              description: result.message,
-              variant: "destructive",
-            });
-          }
-        } else if (useAdvancedRecalculation === true) {
-          // === RECÁLCULO AVANÇADO COM N8N ===
-          const result = await executeAdvancedRecalculation(
-            targetDate,
-            editedValues,
-            'Administrador',
-            (progress: AdvancedRecalculationProgress) => {
-              setRecalculationSteps(progress.steps);
-              setCurrentStep(progress.currentStep);
-              setRecalculationProgress(progress.percentage);
-              setEstimatedTimeRemaining(progress.estimatedTimeRemaining);
-            }
-          );
-          
-          if (result.success) {
-            // Limpa valores editados e alertas
-            setEditedValues({});
-            setValidationAlerts([]);
-            
-            // Recarrega dados
-            const newData = await getCommodityPricesByDate(targetDate);
-            setData(newData);
-            
-            // Recarrega logs de auditoria
-            setIsLoadingLogs(true);
-            try {
-              const logs = await getAuditLogsForDate(targetDate);
-              setAuditLogs(logs);
-            } catch (error) {
-              console.error('Erro ao carregar logs:', error);
-            } finally {
-              setIsLoadingLogs(false);
-            }
-            
-            toast({
-              title: "Recálculo Avançado Concluído",
-              description: `${result.message} ${result.n8nTriggered ? '(N8N sincronizado)' : ''}`,
-            });
-            
-            // Oculta progresso após delay
-            setTimeout(() => {
-              setShowProgress(false);
-              setRecalculationSteps([]);
-              setRecalculationProgress(0);
-              setEstimatedTimeRemaining(0);
-            }, 3000);
-          } else {
-            throw new Error(result.message);
-          }
-        } else {
-          // === RECÁLCULO TRADICIONAL ===
-          const result = await recalculateAllForDate(targetDate, editedValues, 'Administrador');
-          
-          if (result.success) {
-            setRecalculationProgress(100);
-            
-            // Limpa valores editados e alertas
-            setEditedValues({});
-            setValidationAlerts([]);
-            
-            // Recarrega dados
-            const newData = await getCommodityPricesByDate(targetDate);
-            setData(newData);
-            
-            // Recarrega logs de auditoria
-            setIsLoadingLogs(true);
-            try {
-              const logs = await getAuditLogsForDate(targetDate);
-              setAuditLogs(logs);
-            } catch (error) {
-              console.error('Erro ao carregar logs:', error);
-            } finally {
-              setIsLoadingLogs(false);
-            }
-            
-            toast({
-              title: "Recálculo concluído",
-              description: result.message,
-            });
-            
-            // Oculta progresso após delay
-            setTimeout(() => {
-              setShowProgress(false);
-              setRecalculationSteps([]);
-              setRecalculationProgress(0);
-            }, 2000);
-          } else {
-            throw new Error(result.message);
-          }
+          throw new Error(result.message);
         }
       } catch (error: any) {
-        console.error('Erro no recálculo:', error);
         toast({
-          title: "Erro no recálculo",
-          description: error.message || "Ocorreu um erro inesperado",
+          title: "Erro no Recálculo",
+          description: error.message || "Ocorreu um erro ao contatar o N8N.",
           variant: "destructive",
         });
-        
-        setShowProgress(false);
-        setRecalculationSteps([]);
-        setRecalculationProgress(0);
-        setEstimatedTimeRemaining(0);
-        }
+      }
     });
-  }
+  };
 
   const { baseAssets, indices, filteredBaseAssets, filteredIndices } = useMemo(() => {
     const dataWithEdits = data.map(asset => ({
@@ -579,22 +440,14 @@ export default function AuditPage() {
     const allBaseAssets = dataWithEdits.filter(asset => !calculatedAssetIds.has(asset.id));
     const calculatedAssets = dataWithEdits.filter(asset => calculatedAssetIds.has(asset.id));
     
-    // Custom sort order for base assets
     const sortOrder = ['usd', 'eur'];
     allBaseAssets.sort((a, b) => {
       const aIndex = sortOrder.indexOf(a.id);
       const bIndex = sortOrder.indexOf(b.id);
-
-      if (aIndex !== -1 && bIndex !== -1) {
-        return aIndex - bIndex; // Both are in sortOrder
-      }
-      if (aIndex !== -1) {
-        return -1; // a is in sortOrder, b is not
-      }
-      if (bIndex !== -1) {
-        return 1; // b is in sortOrder, a is not
-      }
-      return a.name.localeCompare(b.name); // Neither are in sortOrder, sort alphabetically
+      if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
+      if (aIndex !== -1) return -1;
+      if (bIndex !== -1) return 1;
+      return a.name.localeCompare(b.name);
     });
 
     const dataMap = new Map(dataWithEdits.map(item => [item.id, item.price]));
@@ -615,21 +468,14 @@ export default function AuditPage() {
             return { ...asset, rentMediaCalculada };
         });
 
-    // Aplicar filtros
     const filterAssets = (assets: typeof enrichedBaseAssets) => {
       return assets.filter(asset => {
-        // Filtro de busca
         const matchesSearch = searchTerm === '' || 
           asset.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
           asset.id.toLowerCase().includes(searchTerm.toLowerCase());
-        
-        // Filtro de categoria
         const matchesCategory = categoryFilter === 'all' || asset.category === categoryFilter;
-        
-        // Filtro de status
         const assetStatus = getAssetStatus(asset, editedValues);
         const matchesStatus = statusFilter === 'all' || assetStatus === statusFilter;
-        
         return matchesSearch && matchesCategory && matchesStatus;
       });
     };
@@ -639,12 +485,9 @@ export default function AuditPage() {
       const matchesSearch = searchTerm === '' || 
         asset.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         asset.id.toLowerCase().includes(searchTerm.toLowerCase());
-      
       const matchesCategory = categoryFilter === 'all' || asset.category === categoryFilter;
-      
       const assetStatus = getAssetStatus(asset, editedValues);
       const matchesStatus = statusFilter === 'all' || assetStatus === statusFilter;
-      
       return matchesSearch && matchesCategory && matchesStatus;
     });
 
@@ -658,7 +501,6 @@ export default function AuditPage() {
 
   const hasEdits = Object.keys(editedValues).length > 0;
 
-  // Funções para manipular alertas de validação
   const handleDismissAlert = (alertId: string) => {
     setValidationAlerts(prev => prev.filter(alert => alert.id !== alertId));
   };
@@ -669,13 +511,11 @@ export default function AuditPage() {
       const newEditedValues = { ...editedValues, [alert.assetId]: suggestedValue };
       setEditedValues(newEditedValues);
       
-      // Update local data immediately
       const updatedData = data.map(asset => 
         asset.id === alert.assetId ? { ...asset, price: suggestedValue } : asset
       );
       setData(updatedData);
       
-      // Regenerate alerts with the new data
       const newAlerts = generateValidationAlerts(updatedData, newEditedValues);
       setValidationAlerts(newAlerts);
       
@@ -706,108 +546,15 @@ export default function AuditPage() {
                     <AlertDialogContent className="max-w-2xl">
                         <AlertDialogHeader>
                             <AlertDialogTitle className="flex items-center gap-2">
-                                {(useAdvancedRecalculation === true || useAdvancedRecalculation === null) ? (
-                                  <Zap className="h-5 w-5 text-blue-600" />
-                                ) : (
-                                  <RefreshCw className="h-5 w-5 text-gray-600" />
-                                )}
-                                Confirmar Recálculo
+                                <Zap className="h-5 w-5 text-blue-600" />
+                                Confirmar Recálculo via N8N
                             </AlertDialogTitle>
                             <AlertDialogDescription asChild>
                                 <div className="space-y-4">
                                 <div>
                                   Você editou <strong>{Object.keys(editedValues).length} ativo(s)</strong> para <span className="font-bold">{format(targetDate, 'dd/MM/yyyy')}</span>. 
-                                  Isso irá recalcular automaticamente todos os índices dependentes.
+                                  Esta ação enviará os novos valores para o N8N recalcular todos os índices dependentes.
                                 </div>
-                                
-                                {/* Informações sobre dependências */}
-                                {(() => {
-                                  const affectedAssets = calculateAffectedAssets(Object.keys(editedValues));
-                                  const estimatedTime = estimateRecalculationTime(Object.keys(editedValues));
-                                  return (
-                                    <div className="bg-blue-50 p-3 rounded-lg">
-                                      <div className="text-sm">
-                                        <strong>Impacto:</strong> {affectedAssets.length} ativos serão recalculados
-                                      </div>
-                                      <div className="text-sm">
-                                        <strong>Tempo estimado:</strong> ~{Math.ceil(estimatedTime / 1000)} segundos
-                                      </div>
-                                    </div>
-                                  );
-                                })()}
-                                
-                                {/* Opções de recálculo */}
-                                <div className="space-y-3">
-                                  <div className="flex items-center space-x-2">
-                                    <input
-                                      type="radio"
-                                      id="advanced"
-                                      name="recalcType"
-                                      checked={useAdvancedRecalculation === true}
-                                      onChange={() => setUseAdvancedRecalculation(true)}
-                                      className="w-4 h-4 text-blue-600"
-                                    />
-                                    <label htmlFor="advanced" className="text-sm font-medium">
-                                      🚀 Recálculo Avançado (Recomendado)
-                                    </label>
-                                  </div>
-                                  <div className="text-xs text-gray-600 ml-6">
-                                    ✅ Integração automática com N8N<br/>
-                                    ✅ Mapeamento completo de dependências<br/>
-                                    ✅ Progresso detalhado em tempo real<br/>
-                                    ✅ Validação avançada de dados
-                                  </div>
-                                  
-                                  <div className="flex items-center space-x-2">
-                                    <input
-                                      type="radio"
-                                      id="direct"
-                                      name="recalcType"
-                                      checked={useAdvancedRecalculation === null}
-                                      onChange={() => setUseAdvancedRecalculation(null)}
-                                      className="w-4 h-4 text-green-600"
-                                    />
-                                    <label htmlFor="direct" className="text-sm font-medium">
-                                      🎯 Atualização Direta (Complemento N8N)
-                                    </label>
-                                  </div>
-                                  <div className="text-xs text-gray-600 ml-6">
-                                    🧮 Simulação com fórmulas reais do N8N<br/>
-                                    💾 Substitui valores diretamente no banco<br/>
-                                    🔧 Ideal para correções manuais
-                                  </div>
-                                  
-                                  <div className="flex items-center space-x-2">
-                                    <input
-                                      type="radio"
-                                      id="traditional"
-                                      name="recalcType"
-                                      checked={useAdvancedRecalculation === false}
-                                      onChange={() => setUseAdvancedRecalculation(false)}
-                                      className="w-4 h-4 text-gray-600"
-                                    />
-                                    <label htmlFor="traditional" className="text-sm font-medium">
-                                      🔧 Recálculo Tradicional
-                                    </label>
-                                  </div>
-                                  <div className="text-xs text-gray-600 ml-6">
-                                    Método original sem integração N8N
-                                  </div>
-                                </div>
-                                
-                                <div className="flex items-center space-x-2">
-                                  <input
-                                    type="checkbox"
-                                    id="showDeps"
-                                    checked={showDependencyInfo}
-                                    onChange={(e) => setShowDependencyInfo(e.target.checked)}
-                                    className="w-4 h-4 text-blue-600"
-                                  />
-                                  <label htmlFor="showDeps" className="text-sm">
-                                    Mostrar análise detalhada de dependências
-                                  </label>
-                                </div>
-                                
                                 <div className="text-xs text-amber-600">
                                   ⚠️ Esta ação não pode ser desfeita.
                                 </div>
@@ -818,9 +565,7 @@ export default function AuditPage() {
                             <AlertDialogCancel>Cancelar</AlertDialogCancel>
                             <AlertDialogAction onClick={handleRecalculate} disabled={isPending}>
                                {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
-                                {useAdvancedRecalculation === null ? '🎯 Executar Atualização Direta' : 
-                                 useAdvancedRecalculation === true ? '🚀 Executar Recálculo Avançado' : 
-                                 '🔧 Executar Recálculo Tradicional'}
+                                Enviar para N8N
                             </AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>
@@ -831,9 +576,7 @@ export default function AuditPage() {
           </div>
         </PageHeader>
         <main className="flex flex-1 flex-col gap-6 p-4 md:gap-8 md:p-6 bg-gradient-to-br from-slate-50 to-blue-50">
-          {/* Seção de Controles e Navegação */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Navegação de Data */}
             <Card className="lg:col-span-2 bg-white/80 backdrop-blur-sm border-0 shadow-lg">
               <CardHeader className="pb-4">
                 <CardTitle className="text-xl font-semibold text-gray-800 flex items-center gap-2">
@@ -848,7 +591,6 @@ export default function AuditPage() {
               </CardContent>
             </Card>
 
-            {/* Status da Sessão */}
             <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
               <CardHeader className="pb-4">
                 <CardTitle className="text-xl font-semibold text-gray-800 flex items-center gap-2">
@@ -879,7 +621,6 @@ export default function AuditPage() {
             </Card>
           </div>
 
-          {/* Seção de Filtros */}
           <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl">
             <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 border-b">
                 <CardTitle className="text-xl font-bold flex items-center gap-3 text-gray-800 dark:text-gray-200">
@@ -892,7 +633,6 @@ export default function AuditPage() {
             </CardHeader>
             <CardContent className="p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {/* Busca */}
                     <div className="col-span-1 md:col-span-2 space-y-2">
                         <label htmlFor="search" className="text-sm font-semibold text-gray-700 dark:text-gray-300">Buscar Ativo</label>
                         <div className="relative">
@@ -906,7 +646,6 @@ export default function AuditPage() {
                             />
                         </div>
                     </div>
-                    {/* Categoria */}
                     <div className="space-y-2">
                         <label htmlFor="category-filter" className="text-sm font-semibold text-gray-700 dark:text-gray-300">Categoria</label>
                         <Select value={categoryFilter} onValueChange={setCategoryFilter}>
@@ -924,7 +663,6 @@ export default function AuditPage() {
                             </SelectContent>
                         </Select>
                     </div>
-                    {/* Status */}
                     <div className="space-y-2">
                         <label htmlFor="status-filter" className="text-sm font-semibold text-gray-700 dark:text-gray-300">Status</label>
                         <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -941,7 +679,6 @@ export default function AuditPage() {
                         </Select>
                     </div>
                 </div>
-                {/* Botão de Limpar e Resumo Estatístico */}
                 <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="md:col-span-1 flex items-center">
                         <Button 
@@ -989,7 +726,6 @@ export default function AuditPage() {
             </CardContent>
           </Card>
 
-          {/* Progresso de Recálculo */}
           <RecalculationProgress
             isVisible={showProgress}
             steps={recalculationSteps}
@@ -1012,7 +748,6 @@ export default function AuditPage() {
             }}
           />
 
-          {/* Alertas de Validação */}
           {validationAlerts.length > 0 && (
             <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl border-l-4 border-l-yellow-500">
               <CardHeader className="bg-gradient-to-r from-yellow-50 to-orange-50">
@@ -1070,7 +805,6 @@ export default function AuditPage() {
             </Card>
           ) : (
             <div className="grid gap-8">
-              {/* Seção de Ativos Base */}
               <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl">
                 <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-lg">
                   <CardTitle className="text-xl font-bold flex items-center gap-3">
@@ -1099,7 +833,6 @@ export default function AuditPage() {
                 </CardContent>
               </Card>
 
-              {/* Seção de Índices Calculados */}
               <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl">
                 <CardHeader className="bg-gradient-to-r from-green-600 to-green-700 text-white rounded-t-lg">
                   <CardTitle className="text-xl font-bold flex items-center gap-3">
@@ -1127,18 +860,15 @@ export default function AuditPage() {
                 </CardContent>
               </Card>
               
-              {/* Comparação entre Datas */}
               <DateComparison 
                 currentDate={targetDate}
                 currentData={data}
               />
 
-              {/* Exportação de Dados */}
               <AuditExport 
                 currentDate={targetDate}
               />
 
-              {/* Histórico de Auditoria */}
               <AuditHistory 
                 targetDate={targetDate}
                 logs={auditLogs}
