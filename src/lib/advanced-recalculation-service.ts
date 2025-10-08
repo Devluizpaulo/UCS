@@ -24,6 +24,7 @@ import {
 import type { RecalculationStep } from '@/components/admin/recalculation-progress';
 import { triggerN8NRecalculation } from './n8n-actions';
 import type { FirestoreQuote } from './types';
+import { runCompleteSimulation, type SimulationInput } from './real-calculation-service';
 
 // Tipos para o progresso do recálculo
 export interface RecalculationProgress {
@@ -127,7 +128,9 @@ export async function executeAdvancedRecalculation(
       const initialValues: Record<string, number> = {};
       const quotes: Record<string, FirestoreQuote> = {};
       
-      for (const assetId of [...editedAssetIds, ...affectedAssets]) {
+      const allAssetsToRead = Array.from(new Set([...editedAssetIds, ...affectedAssets, 'usd', 'eur']));
+
+      for (const assetId of allAssetsToRead) {
         const quote = await getOrCreateQuote(db, assetId, targetDate, transaction);
         quotes[assetId] = quote;
         initialValues[assetId] = quote?.valor ?? quote?.ultimo ?? (quote as any)?.valor_brl ?? 0;
@@ -141,13 +144,8 @@ export async function executeAdvancedRecalculation(
         const newValue = editedValues[assetId];
         const assetName = commoditySettings[assetId]?.name || assetId;
         
-        editedAssets[assetId] = {
-          name: assetName,
-          oldValue,
-          newValue
-        };
+        editedAssets[assetId] = { name: assetName, oldValue, newValue };
         
-        // Atualiza valor base
         await updateQuote(db, assetId, quotes[assetId].id, {
           ultimo: newValue,
           valor: newValue,
@@ -155,41 +153,50 @@ export async function executeAdvancedRecalculation(
           fonte: `Edição Manual - ${user}`
         }, transaction);
         
-        // Recalcula rentabilidade média se aplicável
-        const rentMedia = calculateRentabilidadeMedia(assetId, newValue, initialValues);
-        if (rentMedia !== null) {
-          await updateQuote(db, assetId, quotes[assetId].id, {
-            rent_media: rentMedia
-          }, transaction);
-        }
-        
         await new Promise(resolve => setTimeout(resolve, 300));
         updateProgress(`update_${assetId}`, 'completed');
       }
       
-      // === ETAPA 4: RECÁLCULO DOS ÍNDICES DEPENDENTES ===
-      const calculationOrder = getCalculationOrder([...editedAssetIds, ...affectedAssets]);
-      const updatedValues = { ...initialValues, ...editedValues };
-      
-      for (const assetId of calculationOrder) {
-        if (editedAssetIds.includes(assetId)) continue; // Já processado
-        
-        updateProgress(`calc_${assetId}`, 'in_progress');
-        
-        const calculatedValue = calculateAssetValue(assetId, updatedValues);
-        if (calculatedValue !== null) {
-          updatedValues[assetId] = calculatedValue;
-          
-          await updateQuote(db, assetId, quotes[assetId].id, {
-            ultimo: calculatedValue,
-            valor: calculatedValue,
-            status: 'auto_calculated',
-            fonte: 'Recálculo Automático'
-          }, transaction);
+      // === ETAPA 4: RECÁLCULO DOS ÍNDICES DEPENDENTES USANDO real-calculation-service ===
+      const valuesWithEdits = { ...initialValues, ...editedValues };
+      const simulationInput: SimulationInput = {
+        usd: valuesWithEdits.usd || 0,
+        eur: valuesWithEdits.eur || 0,
+        soja: valuesWithEdits.soja || 0,
+        milho: valuesWithEdits.milho || 0,
+        boi_gordo: valuesWithEdits.boi_gordo || 0,
+        carbono: valuesWithEdits.carbono || 0,
+        madeira: valuesWithEdits.madeira || 0,
+        current_vus: valuesWithEdits.vus || 0,
+        current_vmad: valuesWithEdits.vmad || 0,
+        current_carbono_crs: valuesWithEdits.carbono_crs || 0,
+        current_ch2o_agua: valuesWithEdits.ch2o_agua || 0,
+        current_custo_agua: valuesWithEdits.custo_agua || 0,
+        current_agua_crs: valuesWithEdits.Agua_CRS || 0,
+        current_valor_uso_solo: valuesWithEdits.valor_uso_solo || 0,
+        current_pdm: valuesWithEdits.pdm || 0,
+        current_ucs: valuesWithEdits.ucs || 0,
+        current_ucs_ase: valuesWithEdits.ucs_ase || 0,
+      };
+
+      const calculationResults = runCompleteSimulation(simulationInput);
+
+      for (const result of calculationResults) {
+        if (affectedAssets.includes(result.id)) {
+           updateProgress(`calc_${result.id}`, 'in_progress');
+           await updateQuote(db, result.id, quotes[result.id].id, {
+                ultimo: result.newValue,
+                valor: result.newValue,
+                status: 'auto_calculated',
+                fonte: 'Recálculo Avançado via Auditoria',
+                componentes: result.components,
+                conversoes: result.conversions,
+                valor_usd: result.components?.resultado_final_usd,
+                valor_eur: result.components?.resultado_final_eur,
+           }, transaction);
+           await new Promise(resolve => setTimeout(resolve, 500));
+           updateProgress(`calc_${result.id}`, 'completed');
         }
-        
-        await new Promise(resolve => setTimeout(resolve, 500));
-        updateProgress(`calc_${assetId}`, 'completed');
       }
     });
     
@@ -202,7 +209,6 @@ export async function executeAdvancedRecalculation(
       
       if (!n8nResult.success) {
         console.warn('[Advanced Recalc] N8N sync falhou:', n8nResult.message);
-        // Não falha o recálculo, apenas registra o aviso
       }
       
       updateProgress('n8n_sync', n8nTriggered ? 'completed' : 'error');
@@ -211,12 +217,10 @@ export async function executeAdvancedRecalculation(
     // === ETAPA 6: ATUALIZAÇÃO DO CACHE ===
     updateProgress('cache_update', 'in_progress');
     
-    // Cria logs de auditoria
     if (Object.keys(editedAssets).length > 0) {
       await createRecalculationLog(targetDate, editedAssets, affectedAssets, user);
     }
     
-    // Invalida cache
     revalidatePath('/admin/audit', 'page');
     revalidatePath('/dashboard', 'page');
     
@@ -240,7 +244,6 @@ export async function executeAdvancedRecalculation(
   } catch (error: any) {
     console.error('[Advanced Recalc] Erro:', error);
     
-    // Marca etapa atual como erro
     if (currentStepIndex < steps.length) {
       steps[currentStepIndex].status = 'error';
     }
@@ -253,115 +256,6 @@ export async function executeAdvancedRecalculation(
       n8nTriggered,
       steps
     };
-  }
-}
-
-/**
- * Calcula rentabilidade média para ativos base
- */
-function calculateRentabilidadeMedia(
-  assetId: string, 
-  newValue: number, 
-  allValues: Record<string, number>
-): number | null {
-  switch (assetId) {
-    case 'boi_gordo':
-      return newValue * 18;
-      
-    case 'milho':
-      return (newValue / 60) * 1000 * 7.20;
-      
-    case 'soja':
-      const usdRate = allValues.usd || 5.33;
-      return ((newValue / 60) * 1000) * usdRate * 3.3;
-      
-    case 'carbono':
-      const eurRate = allValues.eur || 6.25;
-      return newValue * eurRate * 2.59;
-      
-    case 'madeira':
-      const usdRateMadeira = allValues.usd || 5.33;
-      const madeiraToraUSD = newValue * 0.375620342;
-      const madeiraToraBRL = madeiraToraUSD * usdRateMadeira;
-      return madeiraToraBRL * 1196.54547720813 * 0.10;
-      
-    default:
-      return null;
-  }
-}
-
-/**
- * Calcula valor de um ativo baseado em suas dependências
- */
-function calculateAssetValue(
-  assetId: string, 
-  allValues: Record<string, number>
-): number | null {
-  const asset = ASSET_DEPENDENCIES[assetId];
-  if (!asset) return null;
-  
-  switch (assetId) {
-    case 'ch2o_agua':
-        const rentMediaMadeiraCH2O = calculateRentabilidadeMedia('madeira', allValues.madeira || 0, allValues) || 0;
-        const rentMediaCarbonoCH2O = calculateRentabilidadeMedia('carbono', allValues.carbono || 0, allValues) || 0;
-        return (
-          (allValues.boi_gordo || 0) * 18 * 0.35 +
-          ((allValues.milho || 0) / 60 * 1000 * 7.20) * 0.30 +
-          (((allValues.soja || 0) / 60 * 1000) * (allValues.usd || 5.33) * 3.3) * 0.35 +
-          rentMediaMadeiraCH2O +
-          rentMediaCarbonoCH2O
-        );
-      
-    case 'custo_agua':
-      const ch2oValue = calculateAssetValue('ch2o_agua', allValues) || 0;
-      return ch2oValue * 0.07;
-      
-    case 'pdm':
-      const ch2o = calculateAssetValue('ch2o_agua', allValues) || 0;
-      const custoAgua = calculateAssetValue('custo_agua', allValues) || 0;
-      return ch2o + custoAgua;
-      
-    case 'ucs':
-      const pdm = calculateAssetValue('pdm', allValues) || 0;
-      return (pdm / 900) / 2;
-      
-    case 'ucs_ase':
-      const ucs = calculateAssetValue('ucs', allValues) || 0;
-      return ucs * 2;
-      
-    case 'vus':
-      const rentBoi = calculateRentabilidadeMedia('boi_gordo', allValues.boi_gordo || 0, allValues) || 0;
-      const rentMilho = calculateRentabilidadeMedia('milho', allValues.milho || 0, allValues) || 0;
-      const rentSoja = calculateRentabilidadeMedia('soja', allValues.soja || 0, allValues) || 0;
-      
-      const componenteBoi = (rentBoi * 25) * 0.35;
-      const componenteMilho = (rentMilho * 25) * 0.30;
-      const componenteSoja = (rentSoja * 25) * 0.35;
-      const somaComponentes = componenteBoi + componenteMilho + componenteSoja;
-      const descontoArrendamento = somaComponentes * 0.048;
-      
-      return somaComponentes - descontoArrendamento;
-      
-    case 'carbono_crs':
-      const rentCarbono = calculateRentabilidadeMedia('carbono', allValues.carbono || 0, allValues) || 0;
-      return rentCarbono * 25;
-      
-    case 'Agua_CRS':
-      return calculateAssetValue('ch2o_agua', allValues);
-      
-    case 'vmad':
-      const rentMadeira = calculateRentabilidadeMedia('madeira', allValues.madeira || 0, allValues) || 0;
-      return rentMadeira * 5;
-      
-    case 'valor_uso_solo':
-      const vus = calculateAssetValue('vus', allValues) || 0;
-      const vmad = calculateAssetValue('vmad', allValues) || 0;
-      const carbonoCrs = calculateAssetValue('carbono_crs', allValues) || 0;
-      const aguaCrs = calculateAssetValue('Agua_CRS', allValues) || 0;
-      return vus + vmad + carbonoCrs + aguaCrs;
-      
-    default:
-      return null;
   }
 }
 

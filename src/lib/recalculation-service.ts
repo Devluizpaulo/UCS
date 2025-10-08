@@ -5,48 +5,13 @@ import { getFirebaseAdmin } from './firebase-admin-config';
 import { format, startOfDay } from 'date-fns';
 import type { firestore as adminFirestore } from 'firebase-admin';
 import { Timestamp } from 'firebase-admin/firestore';
-import * as Calc from './calculation-service';
+import { runCompleteSimulation, type SimulationInput } from './real-calculation-service';
 import type { FirestoreQuote } from './types';
 import { revalidatePath } from 'next/cache';
 import { createRecalculationLog } from './audit-log-service';
+import { ASSET_DEPENDENCIES } from './dependency-service';
 
 type ValueMap = Record<string, number>;
-
-/**
- * Executes the full calculation cascade based on a map of asset values.
- * This is a pure function that returns the new, fully calculated values.
- * @param initialValues - A map of asset IDs to their initial values.
- * @returns A map of asset IDs to their newly calculated values.
- */
-function runCalculationCascade(initialValues: ValueMap): ValueMap {
-  const newValues: ValueMap = { ...initialValues };
-
-  // Etapa 1: Calcular as rentabilidades médias
-  const rentMedia: ValueMap = {};
-  rentMedia.boi_gordo = Calc.calculateRentMediaBoi(newValues.boi_gordo || 0);
-  rentMedia.milho = Calc.calculateRentMediaMilho(newValues.milho || 0);
-  rentMedia.soja = Calc.calculateRentMediaSoja(newValues.soja || 0, newValues.usd || 0);
-  rentMedia.carbono = Calc.calculateRentMediaCarbono(newValues.carbono || 0, newValues.eur || 0);
-  rentMedia.madeira = Calc.calculateRentMediaMadeira(newValues.madeira || 0, newValues.usd || 0);
-
-  // Etapa 2: Recalcular os índices baseados nas rentabilidades
-  newValues.vus = Calc.calculateVUS(rentMedia);
-  newValues.vmad = Calc.calculateVMAD(rentMedia);
-  newValues.carbono_crs = Calc.calculateCRS(rentMedia);
-  
-  // Etapa 3: Recalcular os índices subsequentes em cascata
-  newValues.valor_uso_solo = Calc.calculateValorUsoSolo({
-      vus: newValues.vus,
-      vmad: newValues.vmad,
-      carbono_crs: newValues.carbono_crs,
-      Agua_CRS: newValues.Agua_CRS || 0,
-  });
-  newValues.pdm = Calc.calculatePDM({ valor_uso_solo: newValues.valor_uso_solo });
-  newValues.ucs = Calc.calculateUCS({ pdm: newValues.pdm });
-  newValues.ucs_ase = Calc.calculateUCSASE({ ucs: newValues.ucs });
-
-  return newValues;
-}
 
 // --- Firestore Interaction ---
 
@@ -126,51 +91,69 @@ export async function recalculateAllForDate(
       for (const assetId of configs) {
         const quote = await getOrCreateQuote(db, assetId, targetDate, transaction);
         quotes[assetId] = quote;
-        // Usa o valor do documento, que pode ser 'valor', 'ultimo', ou 'valor_brl'
         initialValues[assetId] = quote?.valor ?? quote?.ultimo ?? (quote as any)?.valor_brl ?? 0;
       }
       
-      // Prepara dados para o log de auditoria
       for (const [assetId, newValue] of Object.entries(editedValues)) {
         const oldValue = initialValues[assetId] || 0;
         const assetName = commoditySettings[assetId]?.name || assetId;
-        editedAssets[assetId] = {
-          name: assetName,
-          oldValue,
-          newValue
-        };
+        editedAssets[assetId] = { name: assetName, oldValue, newValue };
       }
       
       const valuesWithEdits = { ...initialValues, ...editedValues };
-      const finalValues = runCalculationCascade(valuesWithEdits);
+      
+      // Use o real-calculation-service como única fonte da verdade
+      const simulationInput: SimulationInput = {
+        usd: valuesWithEdits.usd || 0,
+        eur: valuesWithEdits.eur || 0,
+        soja: valuesWithEdits.soja || 0,
+        milho: valuesWithEdits.milho || 0,
+        boi_gordo: valuesWithEdits.boi_gordo || 0,
+        carbono: valuesWithEdits.carbono || 0,
+        madeira: valuesWithEdits.madeira || 0,
+        current_vus: valuesWithEdits.vus || 0,
+        current_vmad: valuesWithEdits.vmad || 0,
+        current_carbono_crs: valuesWithEdits.carbono_crs || 0,
+        current_ch2o_agua: valuesWithEdits.ch2o_agua || 0,
+        current_custo_agua: valuesWithEdits.custo_agua || 0,
+        current_agua_crs: valuesWithEdits.Agua_CRS || 0,
+        current_valor_uso_solo: valuesWithEdits.valor_uso_solo || 0,
+        current_pdm: valuesWithEdits.pdm || 0,
+        current_ucs: valuesWithEdits.ucs || 0,
+        current_ucs_ase: valuesWithEdits.ucs_ase || 0,
+      };
 
-      // Identifica todos os ativos que foram afetados pelo recálculo
-      for (const assetId of configs) {
-        if (initialValues[assetId] !== finalValues[assetId]) {
-          affectedAssets.push(assetId);
-        }
-      }
+      const calculationResults = runCompleteSimulation(simulationInput);
+
+      const finalValues: ValueMap = { ...valuesWithEdits };
+      calculationResults.forEach(result => {
+        finalValues[result.id] = result.newValue;
+      });
+
+      affectedAssets = Object.keys(finalValues).filter(id => initialValues[id] !== finalValues[id] && !editedValues[id]);
 
       for (const assetId of configs) {
+        if (finalValues[assetId] === undefined) continue;
+
         const dataToUpdate: Partial<FirestoreQuote> = {
             ultimo: finalValues[assetId],
             valor: finalValues[assetId]
         };
-
-        if (assetId === 'valor_uso_solo') {
-            dataToUpdate.componentes = {
-                vus: finalValues.vus,
-                vmad: finalValues.vmad,
-                carbono_crs: finalValues.carbono_crs,
-                Agua_CRS: finalValues.Agua_CRS
-            };
-        }
         
+        const result = calculationResults.find(r => r.id === assetId);
+        if (result) {
+            dataToUpdate.componentes = result.components;
+            dataToUpdate.conversoes = result.conversions;
+            if(assetId === 'ucs_ase') {
+              dataToUpdate.valor_usd = result.components?.resultado_final_usd;
+              dataToUpdate.valor_eur = result.components?.resultado_final_eur;
+            }
+        }
+
         await updateQuote(db, assetId, quotes[assetId].id, dataToUpdate, transaction);
       }
     });
 
-    // Cria logs de auditoria após o sucesso da transação
     if (Object.keys(editedAssets).length > 0) {
       await createRecalculationLog(targetDate, editedAssets, affectedAssets, user);
     }
