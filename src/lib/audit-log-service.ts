@@ -1,3 +1,4 @@
+
 'use server';
 
 import { getFirebaseAdmin } from './firebase-admin-config';
@@ -147,40 +148,28 @@ export async function createRecalculationLog(
     const { db } = await getFirebaseAdmin();
     
     const batch = db.batch();
+    const timestamp = Timestamp.now();
+    const targetDateStr = format(targetDate, 'yyyy-MM-dd');
+    const targetDateFormatted = format(targetDate, 'dd/MM/yyyy');
     
-    // Cria um log para cada ativo editado
+    // Cria um log individual para cada ativo editado
     for (const [assetId, assetData] of Object.entries(editedAssets)) {
       const logRef = db.collection(AUDIT_COLLECTION).doc();
       const logEntry = {
-        timestamp: Timestamp.now(),
+        timestamp,
         action: 'edit' as const,
         assetId,
         assetName: assetData.name,
         oldValue: assetData.oldValue,
         newValue: assetData.newValue,
         user,
-        details: `Valor alterado durante auditoria`,
-        affectedAssets: [],
-        targetDate: format(targetDate, 'yyyy-MM-dd'),
-        targetDateFormatted: format(targetDate, 'dd/MM/yyyy'),
+        details: `Valor alterado durante recálculo. ${affectedAssets.length} outros ativos foram afetados.`,
+        affectedAssets: affectedAssets,
+        targetDate: targetDateStr,
+        targetDateFormatted: targetDateFormatted,
       };
       batch.set(logRef, logEntry);
     }
-    
-    // Cria um log de recálculo geral
-    const recalcLogRef = db.collection(AUDIT_COLLECTION).doc();
-    const recalcLogEntry = {
-      timestamp: Timestamp.now(),
-      action: 'recalculate' as const,
-      assetId: 'system',
-      assetName: 'Sistema de Recálculo',
-      user,
-      details: `Recálculo executado após ${Object.keys(editedAssets).length} edição(ões)`,
-      affectedAssets,
-      targetDate: format(targetDate, 'yyyy-MM-dd'),
-      targetDateFormatted: format(targetDate, 'dd/MM/yyyy'),
-    };
-    batch.set(recalcLogRef, recalcLogEntry);
     
     await batch.commit();
     
