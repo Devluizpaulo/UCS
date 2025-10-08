@@ -14,7 +14,8 @@ export async function triggerN8NRecalculation(
   targetDate: Date,
   editedAssets: Record<string, number>
 ): Promise<{ success: boolean; message: string }> {
-  if (!process.env.N8N_WEBHOOK_URL) {
+  const webhookUrl = process.env.N8N_WEBHOOK_URL;
+  if (!webhookUrl) {
     console.error('[N8N Trigger] Erro: A variável de ambiente N8N_WEBHOOK_URL não está configurada.');
     return { success: false, message: 'N8N webhook não configurado no servidor.' };
   }
@@ -34,10 +35,10 @@ export async function triggerN8NRecalculation(
       ativos: transformedAssets,
     };
     
-    console.log('[N8N Trigger] Enviando payload para:', process.env.N8N_WEBHOOK_URL);
+    console.log('[N8N Trigger] Enviando payload para:', webhookUrl);
     console.log('[N8N Trigger] Payload:', JSON.stringify(payload, null, 2));
 
-    const response = await fetch(process.env.N8N_WEBHOOK_URL, {
+    const response = await fetch(webhookUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
