@@ -1,3 +1,4 @@
+
 'use server';
 
 import { getFirebaseAdmin } from './firebase-admin-config';
@@ -56,22 +57,87 @@ export async function updateCalculatedValuesDirectly(
       
       // Executa simulação completa
       const calculationResults = runCompleteSimulation(simulationInput);
-      
+      const allAssetIds = Array.from(new Set([...Object.keys(editedValues), ...calculationResults.map(r => r.id)]));
       const formattedDate = format(targetDate, 'dd/MM/yyyy');
+      
+      // =================================================================
+      // ETAPA DE LEITURA (READS)
+      // =================================================================
+      const quoteDocs: Record<string, { ref: any, data: any }> = {};
+      const readPromises = allAssetIds.map(async (assetId) => {
+        const collectionRef = db.collection(assetId);
+        const query = collectionRef.where('data', '==', formattedDate).limit(1);
+        const snapshot = await transaction.get(query);
+        if (!snapshot.empty) {
+          quoteDocs[assetId] = { ref: snapshot.docs[0].ref, data: snapshot.docs[0].data() };
+        } else {
+          // Se não existir, marcamos para criação posterior
+          quoteDocs[assetId] = { ref: collectionRef.doc(), data: null };
+        }
+      });
+      await Promise.all(readPromises);
+
+      // =================================================================
+      // ETAPA DE ESCRITA (WRITES)
+      // =================================================================
       const timestamp = Timestamp.fromDate(startOfDay(targetDate));
       const updatedAssets: string[] = [];
-      
-      // Atualiza valores editados diretamente
-      for (const [assetId, newValue] of Object.entries(editedValues)) {
-        await updateAssetValue(db, transaction, assetId, formattedDate, timestamp, newValue, 'Edição Manual');
-        updatedAssets.push(assetId);
-      }
-      
-      // Atualiza valores calculados
-      for (const result of calculationResults) {
-        if (Math.abs(result.newValue - result.currentValue) > 0.001) {
-          await updateCalculatedAssetValue(db, transaction, result, formattedDate, timestamp);
-          updatedAssets.push(result.id);
+
+      // Escreve os valores editados e os calculados
+      for (const assetId of allAssetIds) {
+        const docInfo = quoteDocs[assetId];
+        const isEdited = editedValues.hasOwnProperty(assetId);
+        const calculatedResult = calculationResults.find(r => r.id === assetId);
+
+        if (isEdited) {
+          const newValue = editedValues[assetId];
+          const updateData = {
+            data: formattedDate,
+            timestamp: timestamp,
+            ultimo: newValue,
+            valor: newValue,
+            fonte: 'Edição Manual',
+            status: 'manual_edit',
+            moeda: getAssetCurrency(assetId),
+            ativo: getAssetName(assetId)
+          };
+          if (docInfo.data) {
+            transaction.update(docInfo.ref, updateData);
+          } else {
+            transaction.set(docInfo.ref, updateData);
+          }
+          updatedAssets.push(assetId);
+        } else if (calculatedResult) {
+           const updateData: any = {
+            data: formattedDate,
+            timestamp: timestamp,
+            valor: calculatedResult.newValue,
+            ultimo: calculatedResult.newValue, // Garante que `ultimo` também é atualizado
+            fonte: 'Cálculo Manual via Auditoria',
+            formula: calculatedResult.formula,
+            status: 'sucesso',
+            ativo: calculatedResult.name,
+            moeda: 'BRL',
+          };
+          
+          if (calculatedResult.components) {
+            updateData.componentes = calculatedResult.components;
+          }
+          if (calculatedResult.conversions) {
+            updateData.conversoes = calculatedResult.conversions;
+            if (calculatedResult.components?.resultado_final_usd) {
+              updateData.valor_usd = calculatedResult.components.resultado_final_usd;
+            }
+             if (calculatedResult.components?.resultado_final_eur) {
+              updateData.valor_eur = calculatedResult.components.resultado_final_eur;
+            }
+          }
+           if (docInfo.data) {
+            transaction.update(docInfo.ref, updateData);
+          } else {
+            transaction.set(docInfo.ref, { ...updateData, moedas: calculatedResult.conversions ? ['BRL', 'USD', 'EUR'] : ['BRL'] });
+          }
+          updatedAssets.push(calculatedResult.id);
         }
       }
       
@@ -82,7 +148,7 @@ export async function updateCalculatedValuesDirectly(
     const editedAssetsForLog: Record<string, { name: string; oldValue: number; newValue: number }> = {};
     Object.entries(editedValues).forEach(([assetId, newValue]) => {
       editedAssetsForLog[assetId] = {
-        name: assetId, // TODO: Buscar nome real
+        name: getAssetName(assetId),
         oldValue: allCurrentValues[assetId] || 0,
         newValue
       };
@@ -110,105 +176,6 @@ export async function updateCalculatedValuesDirectly(
   }
 }
 
-/**
- * Atualiza um ativo base (editado manualmente)
- */
-async function updateAssetValue(
-  db: any,
-  transaction: any,
-  assetId: string,
-  formattedDate: string,
-  timestamp: any,
-  newValue: number,
-  source: string
-) {
-  const collectionRef = db.collection(assetId);
-  const query = collectionRef.where('data', '==', formattedDate).limit(1);
-  const snapshot = await transaction.get(query);
-  
-  if (!snapshot.empty) {
-    // Atualiza documento existente
-    const doc = snapshot.docs[0];
-    transaction.update(doc.ref, {
-      ultimo: newValue,
-      valor: newValue,
-      fonte: source,
-      timestamp: timestamp,
-      status: 'manual_edit'
-    });
-  } else {
-    // Cria novo documento
-    const newDocRef = collectionRef.doc();
-    transaction.set(newDocRef, {
-      data: formattedDate,
-      timestamp: timestamp,
-      ultimo: newValue,
-      valor: newValue,
-      fonte: source,
-      status: 'manual_edit',
-      moeda: getAssetCurrency(assetId),
-      ativo: getAssetName(assetId)
-    });
-  }
-}
-
-/**
- * Atualiza um ativo calculado
- */
-async function updateCalculatedAssetValue(
-  db: any,
-  transaction: any,
-  result: CalculationResult,
-  formattedDate: string,
-  timestamp: any
-) {
-  const collectionRef = db.collection(result.id);
-  const query = collectionRef.where('data', '==', formattedDate).limit(1);
-  const snapshot = await transaction.get(query);
-  
-  const updateData: any = {
-    data: formattedDate,
-    timestamp: timestamp,
-    valor_brl: result.newValue,
-    fonte: 'Cálculo Manual via Auditoria',
-    formula: result.formula,
-    status: 'sucesso'
-  };
-  
-  // Adiciona componentes se disponível
-  if (result.components) {
-    updateData.componentes = result.components;
-  }
-  
-  // Adiciona conversões se disponível (para UCS ASE)
-  if (result.conversions) {
-    updateData.conversoes = result.conversions;
-    if (result.components?.resultado_final_usd) {
-      updateData.valor_usd = result.components.resultado_final_usd;
-    }
-    if (result.components?.resultado_final_eur) {
-      updateData.valor_eur = result.components.resultado_final_eur;
-    }
-  }
-  
-  if (!snapshot.empty) {
-    // Atualiza documento existente
-    const doc = snapshot.docs[0];
-    transaction.update(doc.ref, updateData);
-  } else {
-    // Cria novo documento
-    const newDocRef = collectionRef.doc();
-    transaction.set(newDocRef, {
-      ...updateData,
-      ativo: result.name,
-      moedas: result.conversions ? ['BRL', 'USD', 'EUR'] : ['BRL']
-    });
-  }
-}
-
-/**
- * Retorna a moeda do ativo
- */
 function getAssetCurrency(assetId: string): string {
   const currencyMap: Record<string, string> = {
     usd: 'USD',
@@ -222,9 +189,6 @@ function getAssetCurrency(assetId: string): string {
   return currencyMap[assetId] || 'BRL';
 }
 
-/**
- * Retorna o nome do ativo
- */
 function getAssetName(assetId: string): string {
   const nameMap: Record<string, string> = {
     usd: 'Dólar Comercial',
