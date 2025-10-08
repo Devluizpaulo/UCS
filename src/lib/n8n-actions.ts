@@ -20,11 +20,18 @@ export async function triggerN8NRecalculation(
   }
   
   try {
-    // Monta o payload no formato esperado pelo N8N, com a chave "ativos"
+    // Transforma a chave 'boi_gordo' para 'boi' para compatibilidade com o N8N
+    const transformedAssets: Record<string, any> = {};
+    for (const [key, value] of Object.entries(editedAssets)) {
+        const newKey = key === 'boi_gordo' ? 'boi' : key;
+        transformedAssets[newKey] = { preco: value };
+    }
+
+    // Monta o payload no formato esperado pelo N8N
     const payload = {
       origem: 'painel_auditoria',
       data_especifica: format(targetDate, 'yyyy-MM-dd'),
-      ativos: editedAssets,
+      ativos: transformedAssets,
     };
     
     console.log('[N8N Trigger] Enviando payload para:', process.env.N8N_WEBHOOK_URL);
