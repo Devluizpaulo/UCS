@@ -86,9 +86,11 @@ const DefaultTooltip = ({ active, payload, label, asset }: any) => {
 };
 
 const UCS_ASE_COMPARISON_ASSETS = ['ucs_ase', 'milho', 'boi_gordo', 'madeira', 'carbono', 'soja'];
-type TimeRange = '30d' | '1y' | 'all';
+type TimeRange = '1d' | '7d' | '30d' | '1y' | 'all';
 
 const timeRangeInDays: Record<TimeRange, number> = {
+  '1d': 1,
+  '7d': 7,
   '30d': 30,
   '1y': 365,
   'all': 3650, // 10 years as "all"
@@ -164,7 +166,6 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
                 if (!dataMap.has(dateStr)) {
                     dataMap.set(dateStr, { date: dateStr, timestamp: new Date(quote.timestamp as any).getTime() });
                 }
-                // CORREÇÃO: Usar valor_brl para o UCS ASE
                 const value = id === 'ucs_ase' ? (quote.valor_brl ?? quote.valor ?? quote.ultimo ?? 0) : (quote.valor ?? quote.ultimo ?? 0);
                 dataMap.get(dateStr)[id] = value;
             });
@@ -200,7 +201,6 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
     madeira: 'hsl(var(--chart-4))',
     carbono: 'hsl(var(--chart-5))',
     soja: 'hsl(220, 70%, 50%)',
-    custo_agua: 'hsl(190, 80%, 60%)',
     value: 'hsl(var(--chart-1))',
   };
 
@@ -247,6 +247,8 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
                     Análise Temporal
                   </CardTitle>
                   <div className="flex items-center gap-1 rounded-lg bg-muted p-1">
+                      <Button variant={timeRange === '1d' ? 'default' : 'ghost'} size="sm" onClick={() => setTimeRange('1d')} className="h-8">1D</Button>
+                      <Button variant={timeRange === '7d' ? 'default' : 'ghost'} size="sm" onClick={() => setTimeRange('7d')} className="h-8">7D</Button>
                       <Button variant={timeRange === '30d' ? 'default' : 'ghost'} size="sm" onClick={() => setTimeRange('30d')} className="h-8">30D</Button>
                       <Button variant={timeRange === '1y' ? 'default' : 'ghost'} size="sm" onClick={() => setTimeRange('1y')} className="h-8">1A</Button>
                       <Button variant={timeRange === 'all' ? 'default' : 'ghost'} size="sm" onClick={() => setTimeRange('all')} className="h-8">Tudo</Button>
