@@ -40,7 +40,6 @@ import { Button } from './ui/button';
 import { Alert, AlertDescription } from './ui/alert';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { PdfExportButton } from './pdf-export-button';
-import type { DashboardPdfData } from '@/lib/pdf-generator';
 
 // --- TYPES ---
 interface AssetDetailModalProps {
@@ -531,21 +530,18 @@ export const AssetDetailModal = memo<AssetDetailModalProps>(({
     const assetsToFetch = isMultiLineChart ? MULTI_LINE_ASSETS : [asset.id];
 
     try {
-        const promises = assetsToFetch.map(id => 
-            Promise.all([
-                getQuoteByDate(id, new Date()),
-                getCotacoesHistorico(id, TABLE_DAYS)
-            ])
-        );
-
-      const results = await Promise.all(promises);
+      const allPromises = assetsToFetch.map(id => getCotacoesHistorico(id, TABLE_DAYS));
+      const allHistory = await Promise.all(allPromises);
 
       const newHistoricalData: Record<string, FirestoreQuote[]> = {};
-      results.forEach(([_, history], index) => {
-          newHistoricalData[assetsToFetch[index]] = history;
+      allHistory.forEach((history, index) => {
+        newHistoricalData[assetsToFetch[index]] = history;
       });
-      
-      setLatestQuote(results.find(([_, history], index) => assetsToFetch[index] === asset.id)?.[0] || null);
+
+      const mainAssetHistory = newHistoricalData[asset.id] || [];
+      const latest = mainAssetHistory.length > 0 ? mainAssetHistory[0] : null;
+
+      setLatestQuote(latest);
       setHistoricalData(newHistoricalData);
       setLoadingState({ isLoading: false, error: null, retryCount: 0 });
 
@@ -566,6 +562,7 @@ export const AssetDetailModal = memo<AssetDetailModalProps>(({
     }
   }, [asset.id, isMultiLineChart]);
 
+
   useEffect(() => {
     if (isOpen) {
       fetchHistoricalData();
@@ -575,47 +572,45 @@ export const AssetDetailModal = memo<AssetDetailModalProps>(({
       setLoadingState({ isLoading: true, error: null, retryCount: 0 });
     }
   }, [isOpen, fetchHistoricalData]);
-
+  
   const chartData = useMemo((): ChartDataPoint[] => {
     if (Object.keys(historicalData).length === 0) return [];
-    
-    if (isMultiLineChart) {
-      const dataMap = new Map<string, { [assetId: string]: number }>();
-      
-      MULTI_LINE_ASSETS.forEach(assetId => {
-        const history = historicalData[assetId] || [];
-        history.forEach(quote => {
-          const date = format(parseTimestamp(quote.timestamp), 'dd/MM');
-          if (!dataMap.has(date)) {
-            dataMap.set(date, {});
-          }
-          dataMap.get(date)![assetId] = extractPrice(quote);
-        });
-      });
-      
-      return Array.from(dataMap.entries())
-        .map(([date, values]) => ({ date, timestamp: new Date(date).getTime(), ...values }))
-        .sort((a, b) => a.timestamp - b.timestamp);
-
-    } else {
-      const singleAssetHistory = historicalData[asset.id] || [];
+  
+    const processHistory = (history: FirestoreQuote[]) => {
       const thirtyDaysAgo = subDays(new Date(), CHART_DAYS);
-      return singleAssetHistory
-        .filter(quote => {
-          const quoteDate = parseTimestamp(quote.timestamp);
-          return isAfter(quoteDate, thirtyDaysAgo);
-        })
-        .map((quote) => {
-          const dateObject = parseTimestamp(quote.timestamp);
-          return {
-            date: format(dateObject, 'dd/MM', { locale: ptBR }),
-            price: extractPrice(quote),
-            timestamp: dateObject.getTime()
-          };
-        })
+      return history
+        .filter(quote => isAfter(parseTimestamp(quote.timestamp), thirtyDaysAgo))
+        .map(quote => ({
+          timestamp: parseTimestamp(quote.timestamp).getTime(),
+          date: format(parseTimestamp(quote.timestamp), 'dd/MM', { locale: ptBR }),
+          price: extractPrice(quote),
+        }))
         .sort((a, b) => a.timestamp - b.timestamp);
+    };
+  
+    if (!isMultiLineChart) {
+      const singleAssetHistory = historicalData[asset.id] || [];
+      return processHistory(singleAssetHistory);
     }
+  
+    const dataMap = new Map<string, ChartDataPoint>();
+  
+    MULTI_LINE_ASSETS.forEach(assetId => {
+      const history = historicalData[assetId] || [];
+      const processed = processHistory(history);
+      processed.forEach(point => {
+        if (!dataMap.has(point.date)) {
+          dataMap.set(point.date, { date: point.date, timestamp: point.timestamp });
+        }
+        const existingPoint = dataMap.get(point.date)!;
+        existingPoint[assetId] = point.price;
+      });
+    });
+  
+    return Array.from(dataMap.values()).sort((a, b) => a.timestamp - b.timestamp);
+  
   }, [historicalData, asset.id, isMultiLineChart]);
+  
 
   const handleRetry = useCallback(() => {
     fetchHistoricalData(0);
@@ -700,8 +695,8 @@ export const AssetDetailModal = memo<AssetDetailModalProps>(({
           <div className="flex items-center gap-2">
             <PdfExportButton
               data={{
-                mainIndex: asset.id === 'ucs_ase' ? asset : undefined,
-                secondaryIndices: asset.id !== 'ucs_ase' ? [asset] : [],
+                mainIndex: asset,
+                secondaryIndices: [],
                 currencies: [],
                 otherAssets: [],
                 targetDate: new Date()
