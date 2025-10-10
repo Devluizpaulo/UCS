@@ -3,7 +3,7 @@
 
 import * as React from 'react';
 import { useState, useEffect, useMemo } from 'react';
-import { format, parseISO, isValid, parse } from 'date-fns';
+import { format, parseISO, isValid, parse, subDays } from 'date-fns';
 import type { FirestoreQuote, CommodityConfig } from '@/lib/types';
 import { getCotacoesHistorico, getCommodityConfigs } from '@/lib/data-service';
 import { formatCurrency } from '@/lib/formatters';
@@ -54,7 +54,6 @@ const getPriceFromQuote = (quote: FirestoreQuote, assetId: string) => {
     return typeof value === 'number' ? value : undefined;
 };
 
-
 const LegendContent = ({ assets, visibleAssets, onVisibilityChange, lineColors }: { assets: CommodityConfig[], visibleAssets: Record<string, boolean>, onVisibilityChange: (id: string) => void, lineColors: Record<string, string> }) => (
     <Card>
       <CardHeader>
@@ -100,7 +99,6 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
 
   useEffect(() => {
     setIsLoading(true);
-    // Sempre busca os dados para a comparação, simplificando a lógica
     const assetsToFetch = UCS_ASE_COMPARISON_ASSETS;
     const daysToFetch = timeRangeInDays[timeRange];
     
@@ -157,6 +155,8 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
     const isMulti = selectedAssetId === 'ucs_ase';
     let finalChartData: any[];
 
+    const cutoffDate = subDays(new Date(), timeRangeInDays[timeRange]);
+
     if (isMulti) {
         const dataMap = new Map<string, any>();
         UCS_ASE_COMPARISON_ASSETS.forEach(id => {
@@ -165,7 +165,7 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
                 if(!quote || !quote.timestamp) return;
                 try {
                   const date = new Date(quote.timestamp as any);
-                  if(!isValid(date)) return;
+                  if(!isValid(date) || date < cutoffDate) return;
 
                   const dateStr = format(date, 'yyyy-MM-dd');
                   if (!dataMap.has(dateStr)) {
@@ -185,7 +185,7 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
                 if(!quote || !quote.timestamp) return null;
                  try {
                     const date = new Date(quote.timestamp as any);
-                    if(!isValid(date)) return null;
+                    if(!isValid(date) || date < cutoffDate) return null;
                     return {
                         date: format(date, 'dd/MM'),
                         value: getPriceFromQuote(quote, selectedAssetId),
@@ -208,7 +208,7 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
     };
 
     return { chartData: finalChartData, mainAssetData: mainAsset, isMultiLine: isMulti, assetNames: names };
-  }, [data, targetDate, selectedAssetConfig, selectedAssetId, assets]);
+  }, [data, targetDate, selectedAssetConfig, selectedAssetId, assets, timeRange]);
   
   const handleVisibilityChange = (assetId: string) => {
     setVisibleAssets(prev => ({
