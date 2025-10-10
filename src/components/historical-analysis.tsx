@@ -164,7 +164,9 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
                 if (!dataMap.has(dateStr)) {
                     dataMap.set(dateStr, { date: dateStr, timestamp: new Date(quote.timestamp as any).getTime() });
                 }
-                dataMap.get(dateStr)[id] = quote.valor ?? quote.ultimo ?? 0;
+                // CORREÇÃO: Usar valor_brl para o UCS ASE
+                const value = id === 'ucs_ase' ? (quote.valor_brl ?? quote.valor ?? quote.ultimo ?? 0) : (quote.valor ?? quote.ultimo ?? 0);
+                dataMap.get(dateStr)[id] = value;
             });
         });
         finalChartData = Array.from(dataMap.values()).sort((a,b) => a.timestamp - b.timestamp);
