@@ -167,6 +167,62 @@ O N8N é a fonte da verdade para os cálculos de índices e coleta de dados.
 
 ---
 
+## ☁️ Guia de Migração Estratégica: Firebase para AWS
+
+Esta seção descreve a arquitetura atual baseada no Firebase e propõe um plano de migração para uma infraestrutura 100% na AWS, visando maior controle, escalabilidade e integração com outros serviços AWS.
+
+### Situação Atual (Firebase)
+
+-   **Autenticação:**
+    -   **Serviço:** Firebase Authentication.
+    -   **Funcionalidades:** Cadastro, login com e-mail/senha, recuperação de senha e gerenciamento de sessões de usuário.
+    -   **Controle de Acesso:** O `Firebase Admin SDK` é usado no backend para gerenciar usuários e definir papéis (ex: admin). A coleção `roles_admin` no Firestore armazena os UIDs dos usuários administradores.
+
+-   **Banco de Dados:**
+    -   **Serviço:** Google Firestore (NoSQL).
+    -   **Estrutura de Coleções:**
+        -   **`[ID_DO_ATIVO]` (ex: `usd`, `milho`, `ucs_ase`):** Uma coleção por ativo, onde cada documento representa a cotação de um dia específico.
+        -   **`settings`:** Documentos de configuração, como `commodities`, que listam todos os ativos monitorados.
+        -   **`users`:** Armazena informações adicionais dos usuários, como aceitação de termos (LGPD).
+        -   **`audit_logs`:** Registra todas as alterações manuais feitas no Painel de Auditoria.
+
+### Arquitetura Proposta (AWS)
+
+-   **Autenticação:**
+    -   **Serviço Proposto:** **Amazon Cognito**.
+    -   **Mapeamento:** O *Cognito User Pools* substituirá o Firebase Authentication para gerenciar o ciclo de vida dos usuários. O controle de acesso (roles) pode ser gerenciado por meio de *Cognito Groups*.
+    -   **Benefício:** Integração nativa com o ecossistema AWS, especialmente com o API Gateway para proteger endpoints.
+
+-   **Banco de Dados:**
+    -   **Serviço Proposto:** **Amazon DynamoDB**.
+    -   **Mapeamento:**
+        -   As coleções de cotações (ex: `usd`, `milho`) podem ser unificadas em uma única tabela do DynamoDB com uma chave primária composta (ex: `assetId` como Chave de Partição e `date` como Chave de Ordenação).
+        -   As configurações e logs podem ser armazenadas em tabelas separadas ou na mesma tabela com chaves de partição distintas.
+    -   **Benefício:** Performance de latência de milissegundos, escalabilidade massiva e um modelo de custo previsível (pay-per-request).
+
+-   **Backend e Lógica de Negócio:**
+    -   **Serviço Proposto:** **AWS Lambda** + **Amazon API Gateway**.
+    -   **Mapeamento:** As funções server-side (`admin-actions.ts`, `data-service.ts`) seriam convertidas em funções Lambda. O API Gateway exporia endpoints (ex: `GET /quotes`, `POST /recalc`) que acionariam essas funções.
+    -   **Benefício:** Arquitetura serverless que escala automaticamente e reduz custos, já que você só paga pelo tempo de execução.
+
+### Serviços a Contratar/Provisionar na AWS
+
+Felizmente, todos os serviços propostos possuem um **generoso nível gratuito**, permitindo uma migração e operação inicial com custo zero ou muito baixo.
+
+1.  **Amazon Cognito:** Para autenticação de usuários.
+    -   *Nível Gratuito:* 50.000 usuários ativos mensais.
+2.  **Amazon DynamoDB:** Para o banco de dados NoSQL.
+    -   *Nível Gratuito:* 25 GB de armazenamento e capacidade de processamento para milhões de requisições por mês.
+3.  **AWS Lambda:** Para executar a lógica de backend sem servidores.
+    -   *Nível Gratuito:* 1 milhão de requisições gratuitas por mês.
+4.  **Amazon API Gateway:** Para criar e proteger os endpoints da API.
+    -   *Nível Gratuito:* 1 milhão de chamadas de API recebidas por mês.
+5.  **AWS IAM (Identity and Access Management):** Para gerenciar permissões de acesso entre os serviços (já incluído na conta AWS).
+
+Com esta arquitetura, a plataforma se torna independente, mais integrada a um único provedor de nuvem e preparada para escalar conforme a demanda, mantendo os custos operacionais sob controle.
+
+---
+
 ## 🚀 Procedimentos de Deploy
 
 ### Opção 1: Vercel (Recomendado)
