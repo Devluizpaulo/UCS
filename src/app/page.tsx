@@ -157,12 +157,12 @@ export default function LandingPage() {
             loop
             muted
             playsInline
-            className="absolute z-0 w-full h-full object-contain"
+            className="absolute z-0 h-full w-full object-cover object-center"
           >
             <source src="/video/hero.mp4" type="video/mp4" />
             Seu navegador não suporta a tag de vídeo.
           </video>
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-black/20" />
 
           <div className="relative z-10 flex flex-col items-center gap-8 py-12">
             <div className="flex flex-col items-center gap-4 px-4 md:px-6">
