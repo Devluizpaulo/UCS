@@ -157,7 +157,7 @@ export default function LandingPage() {
             loop
             muted
             playsInline
-            className="absolute z-0 w-full h-full object-cover"
+            className="absolute z-0 w-full h-full object-contain"
           >
             <source src="/video/hero.mp4" type="video/mp4" />
             Seu navegador não suporta a tag de vídeo.
