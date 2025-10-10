@@ -151,20 +151,20 @@ export default function LandingPage() {
 
       <main className="flex-1">
         {/* HERO SECTION */}
-        <section className="relative flex h-[80vh] min-h-[500px] flex-col items-center justify-center p-4 text-center">
-           <video
-            autoPlay
-            loop
-            muted
-            playsInline
-            className="absolute z-0 h-full w-full object-cover object-center"
-          >
-            <source src="/video/hero.mp4" type="video/mp4" />
-            Seu navegador não suporta a tag de vídeo.
-          </video>
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-black/20" />
-
-          <div className="relative z-10 flex flex-col items-center gap-8 py-12">
+        <section className="relative flex h-[90vh] min-h-[600px] w-full items-center justify-center overflow-hidden p-4">
+          <div className="absolute inset-0 z-0">
+            <Image
+              src="https://picsum.photos/seed/dark-forest/1920/1080"
+              alt="Fundo de floresta escura"
+              layout="fill"
+              objectFit="cover"
+              className="scale-110 blur-lg brightness-50"
+              data-ai-hint="dark forest"
+            />
+             <div className="absolute inset-0 bg-black/50" />
+          </div>
+          
+          <div className="relative z-10 flex w-full max-w-6xl flex-col items-center gap-8 text-center">
             <div className="flex flex-col items-center gap-4 px-4 md:px-6">
                 <h1 className="text-4xl font-extrabold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl text-white drop-shadow-lg animate-fade-in-down">
                     USC: O Crédito que Transforma Florestas Preservadas em Ativos Financeiros
@@ -173,40 +173,17 @@ export default function LandingPage() {
                     Uma inovação que reconhece economicamente a conservação ambiental e gera valor para produtores rurais, investidores e para o planeta.
                 </p>
             </div>
-            <div className="w-full flex justify-center animate-fade-in-up animation-delay-300">
-                <Carousel
-                    plugins={[autoplayPlugin.current]}
-                    opts={{ align: "start", loop: true }}
-                    className="w-full max-w-xs sm:max-w-sm"
-                    onMouseEnter={autoplayPlugin.current.stop}
-                    onMouseLeave={autoplayPlugin.current.reset}
-                >
-                    <CarouselContent>
-                        {indexValues.map(({ currency, value, icon: Icon, conversionRate }) => (
-                            <CarouselItem key={currency}>
-                                <div className="p-1">
-                                    <Card className="rounded-xl border border-white/20 bg-white/10 p-4 text-white shadow-lg backdrop-blur-md">
-                                        <CardHeader className="p-0 text-center flex-row items-center justify-center gap-2">
-                                            <Icon className="h-5 w-5 text-primary" />
-                                            <CardTitle className="text-base font-medium">Índice UCS</CardTitle>
-                                        </CardHeader>
-                                        <CardContent className="p-0 mt-2 text-center">
-                                            <span className="text-4xl font-bold tracking-tight">
-                                                {formatCurrency(value, currency, 'ucs_ase')}
-                                            </span>
-                                            <span className="ml-1 text-base font-medium text-gray-300">{currency}</span>
-                                            {conversionRate && (
-                                                <p className="text-xs text-gray-400 mt-1">
-                                                    (1 {currency} = {formatCurrency(conversionRate, 'BRL', 'usd')})
-                                                </p>
-                                            )}
-                                        </CardContent>
-                                    </Card>
-                                </div>
-                            </CarouselItem>
-                        ))}
-                    </CarouselContent>
-                </Carousel>
+            <div className="w-full max-w-sm rounded-xl bg-black/30 shadow-2xl backdrop-blur-sm ring-1 ring-white/10 animate-fade-in-up animation-delay-300">
+               <video
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="aspect-video w-full rounded-lg"
+              >
+                <source src="/video/hero.mp4" type="video/mp4" />
+                Seu navegador não suporta a tag de vídeo.
+              </video>
             </div>
           </div>
         </section>
