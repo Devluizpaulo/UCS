@@ -85,7 +85,7 @@ const DefaultTooltip = ({ active, payload, label, asset }: any) => {
     return null;
 };
 
-const UCS_ASE_COMPARISON_ASSETS = ['ucs_ase', 'milho', 'boi_gordo', 'madeira', 'carbono', 'soja', 'custo_agua'];
+const UCS_ASE_COMPARISON_ASSETS = ['ucs_ase', 'milho', 'boi_gordo', 'madeira', 'carbono', 'soja'];
 type TimeRange = '30d' | '1y' | 'all';
 
 const timeRangeInDays: Record<TimeRange, number> = {
