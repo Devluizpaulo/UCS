@@ -84,7 +84,7 @@ const DefaultTooltip = ({ active, payload, label, asset }: any) => {
     return null;
 };
 
-const MULTI_LINE_ASSETS = ['ucs_ase', 'ucs', 'pdm'];
+const UCS_ASE_COMPARISON_ASSETS = ['ucs_ase', 'milho', 'boi_gordo', 'madeira', 'carbono', 'soja', 'custo_agua'];
 
 export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
   const [data, setData] = useState<Record<string, FirestoreQuote[]>>({});
@@ -99,7 +99,7 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
 
   useEffect(() => {
     setIsLoading(true);
-    const assetsToFetch = selectedAssetId === 'ucs_ase' ? MULTI_LINE_ASSETS : [selectedAssetId];
+    const assetsToFetch = selectedAssetId === 'ucs_ase' ? UCS_ASE_COMPARISON_ASSETS : [selectedAssetId];
     
     Promise.all(assetsToFetch.map(id => getCotacoesHistorico(id, 90)))
       .then((histories) => {
@@ -147,7 +147,7 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
 
     if (isMulti) {
         const dataMap = new Map<string, any>();
-        MULTI_LINE_ASSETS.forEach(id => {
+        UCS_ASE_COMPARISON_ASSETS.forEach(id => {
             const assetHistory = data[id] || [];
             assetHistory.forEach(quote => {
                 const dateStr = format(new Date(quote.timestamp as any), 'dd/MM');
@@ -183,8 +183,12 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
   
   const lineColors: { [key: string]: string } = {
     ucs_ase: 'hsl(var(--chart-1))',
-    ucs: 'hsl(var(--chart-2))',
-    pdm: 'hsl(var(--chart-3))',
+    milho: 'hsl(var(--chart-2))',
+    boi_gordo: 'hsl(var(--chart-3))',
+    madeira: 'hsl(var(--chart-4))',
+    carbono: 'hsl(var(--chart-5))',
+    soja: 'hsl(220, 70%, 50%)',
+    custo_agua: 'hsl(190, 80%, 60%)',
     value: 'hsl(var(--chart-1))',
   };
 
