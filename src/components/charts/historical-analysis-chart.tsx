@@ -88,11 +88,11 @@ export function HistoricalAnalysisChart({
     return <ChartSkeleton />;
   }
 
-  if (!chartData || chartData.length === 0) {
+  if (!chartData || chartData.length < 2) {
     return (
       <div className="h-full flex items-center justify-center text-muted-foreground">
           <AlertCircle className="h-6 w-6 mr-2" />
-          <p>Sem dados históricos para exibir o gráfico.</p>
+          <p>Sem dados históricos suficientes para exibir o gráfico.</p>
       </div>
     );
   }
@@ -127,6 +127,17 @@ export function HistoricalAnalysisChart({
         <Tooltip
           content={isMultiLine ? <MultiLineTooltip /> : <DefaultTooltip asset={mainAssetData} />}
         />
+        
+        {isMultiLine && (
+            <Legend
+                verticalAlign="top"
+                align="right"
+                iconType="circle"
+                wrapperStyle={{ right: -10, top: -5 }}
+                onMouseEnter={(props) => setActiveLegend(props.dataKey as string)}
+                onMouseLeave={() => setActiveLegend(null)}
+            />
+        )}
         
         {isMultiLine ? (
           Object.keys(visibleAssets)
