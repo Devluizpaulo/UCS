@@ -153,28 +153,44 @@ export default function LandingPage() {
         {/* HERO SECTION */}
         <section className="relative flex h-[90vh] min-h-[700px] w-full items-center justify-center overflow-hidden p-4">
           <div className="absolute inset-0 z-0 h-full w-full">
-            <video
-              autoPlay
-              loop
-              muted
-              playsInline
-              className="h-full w-full object-cover object-center"
-            >
-              <source src="/video/hero.mp4" type="video/mp4" />
-              Seu navegador não suporta a tag de vídeo.
-            </video>
-            <div className="absolute inset-0 bg-black/60" />
+            {/* Background Image with blur */}
+            <Image
+              src="https://picsum.photos/seed/forest-background/1920/1080"
+              alt="Blurred forest background"
+              layout="fill"
+              objectFit="cover"
+              className="blur-xl brightness-50"
+              data-ai-hint="blurred forest"
+            />
           </div>
           
-          <div className="relative z-10 flex w-full max-w-6xl flex-col items-center gap-8 text-center">
-            <div className="flex flex-col items-center gap-4 px-4 md:px-6">
-                <h1 className="text-4xl font-extrabold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl text-white drop-shadow-lg animate-fade-in-down">
-                    USC: O Crédito que Transforma Florestas Preservadas em Ativos Financeiros
-                </h1>
-                <p className="mx-auto max-w-3xl text-lg text-gray-200 md:text-xl drop-shadow-md animate-fade-in-up">
-                    Uma inovação que reconhece economicamente a conservação ambiental e gera valor para produtores rurais, investidores e para o planeta.
-                </p>
+          {/* COMENTÁRIO: Para ajustar a altura do vídeo, modifique a classe `h-full` abaixo. */}
+          {/* Exemplos: h-[80%] para 80% da altura do "hero", h-[600px] para uma altura fixa, etc. */}
+          <div className="relative z-10 flex h-full w-full max-w-6xl flex-col items-center justify-center gap-8">
+            <div className="relative h-full w-auto max-w-full overflow-hidden rounded-2xl shadow-2xl">
+              <video
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="h-full w-auto object-cover object-center"
+              >
+                <source src="/video/hero.mp4" type="video/mp4" />
+                Seu navegador não suporta a tag de vídeo.
+              </video>
             </div>
+          </div>
+          
+          {/* Overlay Text */}
+          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-center p-4 pointer-events-none">
+              <div className="flex flex-col items-center gap-4 px-4 md:px-6">
+                  <h1 className="text-4xl font-extrabold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl text-white drop-shadow-lg animate-fade-in-down">
+                      USC: O Crédito que Transforma Florestas Preservadas em Ativos Financeiros
+                  </h1>
+                  <p className="mx-auto max-w-3xl text-lg text-gray-200 md:text-xl drop-shadow-md animate-fade-in-up">
+                      Uma inovação que reconhece economicamente a conservação ambiental e gera valor para produtores rurais, investidores e para o planeta.
+                  </p>
+              </div>
           </div>
         </section>
 
@@ -331,5 +347,7 @@ export default function LandingPage() {
     </div>
   );
 }
+
+    
 
     
