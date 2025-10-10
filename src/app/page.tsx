@@ -159,8 +159,7 @@ export default function LandingPage() {
             playsInline
             className="absolute z-0 w-full h-full object-cover"
           >
-            {/* O vídeo do broto pode ser colocado na pasta /public/videos/sprout.mp4 */}
-            <source src="/videos/sprout.mp4" type="video/mp4" />
+            <source src="/video/hero.mp4" type="video/mp4" />
             Seu navegador não suporta a tag de vídeo.
           </video>
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent" />
