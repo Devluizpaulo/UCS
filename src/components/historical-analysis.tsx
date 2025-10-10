@@ -2,21 +2,8 @@
 'use client';
 
 import * as React from 'react';
-import { useState, useEffect, useMemo, useRef } from 'react';
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  CartesianGrid,
-  Legend,
-  ReferenceLine,
-} from 'recharts';
+import { useState, useEffect, useMemo } from 'react';
 import { format, parseISO } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-
 import type { FirestoreQuote, CommodityConfig } from '@/lib/types';
 import { getCotacoesHistorico, getCommodityConfigs } from '@/lib/data-service';
 import { formatCurrency } from '@/lib/formatters';
@@ -29,10 +16,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Info, Loader2, AlertCircle, Calendar, CheckSquare } from 'lucide-react';
+import { CheckSquare, Info, Loader2, AlertCircle, Calendar } from 'lucide-react';
 import { AssetInfo } from './asset-detail-modal';
 import { PdfExportButton } from './pdf-export-button';
 import { Button } from './ui/button';
+import { HistoricalAnalysisChart } from '@/components/charts/historical-analysis-chart';
 import { Checkbox } from './ui/checkbox';
 import { Label } from './ui/label';
 
@@ -40,11 +28,11 @@ const UCS_ASE_COMPARISON_ASSETS = ['ucs_ase', 'milho', 'boi_gordo', 'madeira', '
 type TimeRange = '1d' | '7d' | '30d' | '1y' | 'all';
 
 const timeRangeInDays: Record<TimeRange, number> = {
-  '1d': 2, // 2 para ter dia anterior para variação
+  '1d': 2,
   '7d': 7,
   '30d': 30,
   '1y': 365,
-  'all': 3650, // 10 years as "all"
+  'all': 3650,
 };
 
 const lineColors: { [key: string]: string } = {
@@ -54,168 +42,20 @@ const lineColors: { [key: string]: string } = {
   boi_gordo: 'hsl(var(--chart-4))',
   madeira: 'hsl(var(--chart-5))',
   carbono: 'hsl(220, 70%, 50%)',
-  value: 'hsl(var(--chart-1))',
 };
 
 const getPriceFromQuote = (quote: FirestoreQuote, assetId: string) => {
-    if (!quote) return 0;
+    if (!quote) return undefined;
     if (assetId === 'ucs_ase') {
-        return quote.valor_brl ?? quote.resultado_final_brl ?? 0;
+        const value = quote.valor_brl ?? quote.resultado_final_brl;
+        return typeof value === 'number' ? value : undefined;
     }
-    return quote.valor_brl ?? quote.valor ?? quote.ultimo ?? 0;
+    const value = quote.valor ?? quote.ultimo;
+    return typeof value === 'number' ? value : undefined;
 };
 
-const MultiLineTooltip = ({ active, payload, label }: any) => {
-  if (active && payload && payload.length) {
-    return (
-      <div className="rounded-lg border bg-background p-2 shadow-sm">
-        <p className="text-sm font-semibold mb-2">{`Data: ${label}`}</p>
-        {payload.map((entry: any) => (
-          <div key={entry.name} className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: entry.color }} />
-            <span className="text-sm">{`${entry.name}: `}</span>
-            <span className="text-sm font-mono font-semibold">
-              {formatCurrency(entry.value, 'BRL', entry.dataKey)}
-            </span>
-          </div>
-        ))}
-      </div>
-    );
-  }
-  return null;
-};
 
-const DefaultTooltip = ({ active, payload, label, asset }: any) => {
-  if (active && payload && payload.length) {
-    return (
-      <div className="rounded-lg border bg-background p-2 shadow-sm">
-        <p className="text-sm font-semibold mb-2">{`Data: ${label}`}</p>
-        <div className="flex items-center gap-2">
-          <span className="text-sm">{`Preço: `}</span>
-          <span className="text-sm font-mono font-semibold">
-            {formatCurrency(payload[0].value, asset.currency, asset.id)}
-          </span>
-        </div>
-      </div>
-    );
-  }
-  return null;
-};
-
-const ChartSkeleton = () => (
-    <div className="h-96 w-full">
-      <Skeleton className="h-full w-full" />
-    </div>
-);
-
-export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
-  const [data, setData] = useState<Record<string, FirestoreQuote[]>>({});
-  const [assets, setAssets] = useState<CommodityConfig[]>([]);
-  const [selectedAssetId, setSelectedAssetId] = useState<string>('ucs_ase');
-  const [timeRange, setTimeRange] = useState<TimeRange>('1y');
-  const [isLoading, setIsLoading] = useState(true);
-  const [visibleAssets, setVisibleAssets] = useState<Record<string, boolean>>({});
-
-  useEffect(() => {
-    getCommodityConfigs().then(setAssets);
-  }, []);
-
-  useEffect(() => {
-    setIsLoading(true);
-    const assetsToFetch = selectedAssetId === 'ucs_ase' ? UCS_ASE_COMPARISON_ASSETS : [selectedAssetId];
-    const daysToFetch = timeRangeInDays[timeRange];
-    
-    Promise.all(assetsToFetch.map(id => getCotacoesHistorico(id, daysToFetch)))
-      .then((histories) => {
-        const newData: Record<string, FirestoreQuote[]> = {};
-        histories.forEach((history, index) => {
-          newData[assetsToFetch[index]] = history;
-        });
-        setData(newData);
-        setVisibleAssets(
-            assetsToFetch.reduce((acc, id) => ({ ...acc, [id]: true }), {})
-        );
-        setIsLoading(false);
-      })
-      .catch(() => {
-        setData({});
-        setIsLoading(false);
-      });
-  }, [selectedAssetId, timeRange]);
-
-  const selectedAssetConfig = useMemo(() => {
-    return assets.find(a => a.id === selectedAssetId);
-  }, [assets, selectedAssetId]);
-  
-  const { chartData, latestQuote, mainAssetData, isMultiLine } = useMemo(() => {
-    if (Object.keys(data).length === 0 || !selectedAssetConfig) {
-      return { chartData: [], latestQuote: null, mainAssetData: null, isMultiLine: false };
-    }
-
-    const mainHistory = data[selectedAssetId] || [];
-    const sortedData = [...mainHistory].sort((a, b) => (new Date(b.timestamp as any)).getTime() - (new Date(a.timestamp as any)).getTime());
-    const quoteForDate = sortedData.find(q => format(new Date(q.timestamp as any), 'yyyy-MM-dd') === format(targetDate, 'yyyy-MM-dd')) || sortedData[0];
-    
-    if (!quoteForDate) {
-       return { chartData: [], latestQuote: null, mainAssetData: null, isMultiLine: false };
-    }
-
-    const isMulti = selectedAssetId === 'ucs_ase';
-    let finalChartData: any[];
-
-    if (isMulti) {
-        const dataMap = new Map<string, any>();
-        UCS_ASE_COMPARISON_ASSETS.forEach(id => {
-            const assetHistory = data[id] || [];
-            assetHistory.forEach(quote => {
-                if(!quote || !quote.timestamp) return;
-                const date = new Date(quote.timestamp as any);
-                const dateStr = format(date, 'yyyy-MM-dd');
-                if (!dataMap.has(dateStr)) {
-                    dataMap.set(dateStr, { date: format(date, 'dd/MM/yyyy'), timestamp: date.getTime() });
-                }
-                const value = getPriceFromQuote(quote, id);
-                if(value !== undefined) {
-                    dataMap.get(dateStr)[id] = value;
-                }
-            });
-        });
-        finalChartData = Array.from(dataMap.values()).sort((a,b) => a.timestamp - b.timestamp);
-    } else {
-        finalChartData = sortedData
-            .map(quote => {
-                if(!quote || !quote.timestamp) return null;
-                return {
-                    date: format(new Date(quote.timestamp as any), 'dd/MM/yyyy'),
-                    value: getPriceFromQuote(quote, selectedAssetId),
-                }
-            })
-            .filter(Boolean)
-            .reverse();
-    }
-      
-    const isForexAsset = ['soja', 'carbono', 'madeira'].includes(selectedAssetConfig.id);
-
-    const mainAsset: CommodityPriceData = {
-        ...selectedAssetConfig,
-        price: isForexAsset ? (quoteForDate.ultimo ?? 0) : getPriceFromQuote(quoteForDate, selectedAssetId),
-        currency: isForexAsset ? selectedAssetConfig.currency : 'BRL',
-        change: quoteForDate.variacao_pct ?? 0,
-        absoluteChange: (quoteForDate.ultimo ?? 0) - (quoteForDate.fechamento_anterior ?? (quoteForDate.ultimo ?? 0)),
-        lastUpdated: quoteForDate.data || format(new Date(quoteForDate.timestamp as any), 'dd/MM/yyyy'),
-    };
-
-    return { chartData: finalChartData, latestQuote: quoteForDate, mainAssetData: mainAsset, isMultiLine: isMulti };
-  }, [data, targetDate, selectedAssetConfig, selectedAssetId]);
-  
-  const handleVisibilityChange = (assetId: string) => {
-    setVisibleAssets(prev => ({
-        ...prev,
-        [assetId]: !prev[assetId],
-    }));
-  };
-
-  const LegendContent = () => (
+const LegendContent = ({ assets, visibleAssets, onVisibilityChange, lineColors }: { assets: CommodityConfig[], visibleAssets: Record<string, boolean>, onVisibilityChange: (id: string) => void, lineColors: Record<string, string> }) => (
     <Card>
       <CardHeader>
         <CardTitle className="text-base flex items-center gap-2">
@@ -232,10 +72,10 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
               <Checkbox
                 id={id}
                 checked={visibleAssets[id]}
-                onCheckedChange={() => handleVisibilityChange(id)}
+                onCheckedChange={() => onVisibilityChange(id)}
                 style={{borderColor: color}}
               />
-              <Label htmlFor={id} className="text-sm font-medium leading-none flex items-center gap-2">
+              <Label htmlFor={id} className="text-sm font-medium leading-none flex items-center gap-2 cursor-pointer">
                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} />
                  {assetName}
               </Label>
@@ -244,7 +84,116 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
         })}
       </CardContent>
     </Card>
-  );
+);
+
+export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
+  const [data, setData] = useState<Record<string, FirestoreQuote[]>>({});
+  const [assets, setAssets] = useState<CommodityConfig[]>([]);
+  const [selectedAssetId, setSelectedAssetId] = useState<string>('ucs_ase');
+  const [timeRange, setTimeRange] = useState<TimeRange>('1y');
+  const [isLoading, setIsLoading] = useState(true);
+  const [visibleAssets, setVisibleAssets] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    getCommodityConfigs().then(setAssets);
+  }, []);
+
+  useEffect(() => {
+    setIsLoading(true);
+    // Sempre busca os dados para a comparação, simplificando a lógica
+    const assetsToFetch = UCS_ASE_COMPARISON_ASSETS;
+    const daysToFetch = timeRangeInDays[timeRange];
+    
+    Promise.all(assetsToFetch.map(id => getCotacoesHistorico(id, daysToFetch)))
+      .then((histories) => {
+        const newData: Record<string, FirestoreQuote[]> = {};
+        histories.forEach((history, index) => {
+          newData[assetsToFetch[index]] = history;
+        });
+        setData(newData);
+        setVisibleAssets(
+            assetsToFetch.reduce((acc, id) => ({ ...acc, [id]: true }), {})
+        );
+        setIsLoading(false);
+      })
+      .catch((err) => {
+        console.error("Error fetching historical data:", err);
+        setData({});
+        setIsLoading(false);
+      });
+  }, [timeRange]); // A busca de dados não depende mais do ativo selecionado
+
+  const selectedAssetConfig = useMemo(() => {
+    return assets.find(a => a.id === selectedAssetId);
+  }, [assets, selectedAssetId]);
+  
+  const { chartData, mainAssetData, isMultiLine } = useMemo(() => {
+    if (Object.keys(data).length === 0 || !selectedAssetConfig) {
+      return { chartData: [], mainAssetData: null, isMultiLine: false };
+    }
+
+    const mainHistory = data[selectedAssetId] || [];
+    const sortedData = [...mainHistory].sort((a, b) => (new Date(b.timestamp as any)).getTime() - (new Date(a.timestamp as any)).getTime());
+    const quoteForDate = sortedData.find(q => format(new Date(q.timestamp as any), 'yyyy-MM-dd') === format(targetDate, 'yyyy-MM-dd')) || sortedData[0];
+    
+    if (!quoteForDate) {
+       return { chartData: [], mainAssetData: null, isMultiLine: false };
+    }
+
+    const isMulti = selectedAssetId === 'ucs_ase';
+    let finalChartData: any[];
+
+    if (isMulti) {
+        const dataMap = new Map<string, any>();
+        UCS_ASE_COMPARISON_ASSETS.forEach(id => {
+            const assetHistory = data[id] || [];
+            assetHistory.forEach(quote => {
+                if(!quote || !quote.timestamp) return;
+                const date = new Date(quote.timestamp as any);
+                const dateStr = format(date, 'yyyy-MM-dd'); // Usar chave única
+                if (!dataMap.has(dateStr)) {
+                    dataMap.set(dateStr, { date: format(date, 'dd/MM'), timestamp: date.getTime() });
+                }
+                const value = getPriceFromQuote(quote, id);
+                if(value !== undefined) {
+                    dataMap.get(dateStr)[id] = value;
+                }
+            });
+        });
+        finalChartData = Array.from(dataMap.values()).sort((a,b) => a.timestamp - b.timestamp);
+    } else {
+        finalChartData = sortedData
+            .map(quote => {
+                if(!quote || !quote.timestamp) return null;
+                return {
+                    date: format(new Date(quote.timestamp as any), 'dd/MM'),
+                    value: getPriceFromQuote(quote, selectedAssetId),
+                }
+            })
+            .filter(item => item && item.value !== undefined)
+            .reverse();
+    }
+      
+    const isForexAsset = ['soja', 'carbono', 'madeira'].includes(selectedAssetConfig.id);
+
+    const mainAsset: CommodityPriceData = {
+        ...selectedAssetConfig,
+        price: isForexAsset ? (quoteForDate.ultimo ?? 0) : getPriceFromQuote(quoteForDate, selectedAssetId) ?? 0,
+        currency: isForexAsset ? selectedAssetConfig.currency : 'BRL',
+        change: quoteForDate.variacao_pct ?? 0,
+        absoluteChange: (quoteForDate.ultimo ?? 0) - (quoteForDate.fechamento_anterior ?? (quoteForDate.ultimo ?? 0)),
+        lastUpdated: quoteForDate.data || format(new Date(quoteForDate.timestamp as any), 'dd/MM/yyyy'),
+    };
+
+    return { chartData: finalChartData, mainAssetData: mainAsset, isMultiLine: isMulti };
+  }, [data, targetDate, selectedAssetConfig, selectedAssetId]);
+  
+  const handleVisibilityChange = (assetId: string) => {
+    setVisibleAssets(prev => ({
+        ...prev,
+        [assetId]: !prev[assetId],
+    }));
+  };
 
   return (
     <>
@@ -288,66 +237,24 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
           
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                 <div className="lg:col-span-3 h-96 bg-background rounded-lg p-4 border">
-                  {isLoading ? (
-                    <ChartSkeleton />
-                  ) : chartData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={true} stroke="hsl(var(--border))" opacity={0.5} />
-                        <XAxis
-                          dataKey="date"
-                          stroke="hsl(var(--muted-foreground))"
-                          fontSize={12}
-                          tickLine={false}
-                          axisLine={false}
-                          interval="preserveStartEnd"
-                        />
-                        <YAxis
-                          stroke="hsl(var(--muted-foreground))"
-                          fontSize={12}
-                          tickLine={false}
-                          axisLine={false}
-                          domain={['dataMin', 'dataMax']}
-                          tickFormatter={(value) => formatCurrency(value as number, selectedAssetConfig?.currency || 'BRL', selectedAssetConfig?.id)}
-                        />
-                        <Tooltip
-                          content={isMultiLine ? <MultiLineTooltip /> : <DefaultTooltip asset={mainAssetData} />}
-                        />
-                        
-                        {isMultiLine ? (
-                          Object.keys(visibleAssets)
-                            .filter(key => visibleAssets[key])
-                            .map(key => (
-                              <Line
-                                key={key}
-                                type="monotone"
-                                dataKey={key}
-                                name={assets.find(a => a.id === key)?.name || key.toUpperCase()}
-                                stroke={lineColors[key]}
-                                strokeWidth={2.5}
-                                dot={false}
-                                activeDot={{ r: 5, strokeWidth: 2 }}
-                              />
-                            ))
-                        ) : (
-                          <>
-                            <ReferenceLine y={mainAssetData?.price} stroke="hsl(var(--primary))" strokeDasharray="3 3" opacity={0.8} />
-                            <Line type="monotone" dataKey="value" name="Preço" stroke={lineColors['value']} strokeWidth={2.5} dot={false} activeDot={{ r: 5, strokeWidth: 2 }} />
-                          </>
-                        )}
-                      </LineChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <div className="h-full flex items-center justify-center text-muted-foreground">
-                        <AlertCircle className="h-6 w-6 mr-2" />
-                        <p>Sem dados históricos para exibir o gráfico.</p>
-                    </div>
-                  )}
+                    <HistoricalAnalysisChart 
+                        isLoading={isLoading}
+                        chartData={chartData}
+                        isMultiLine={isMultiLine}
+                        mainAssetData={mainAssetData}
+                        visibleAssets={visibleAssets}
+                        lineColors={lineColors}
+                    />
                 </div>
 
                  {isMultiLine && (
                     <div className="lg:col-span-1">
-                        <LegendContent />
+                        <LegendContent 
+                            assets={assets}
+                            visibleAssets={visibleAssets}
+                            onVisibilityChange={handleVisibilityChange}
+                            lineColors={lineColors}
+                        />
                     </div>
                 )}
             </div>
