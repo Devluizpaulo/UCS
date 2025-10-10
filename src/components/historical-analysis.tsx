@@ -19,7 +19,7 @@ import { ptBR } from 'date-fns/locale';
 import type { FirestoreQuote, CommodityConfig, CommodityPriceData } from '@/lib/types';
 import { getCotacoesHistorico, getCommodityConfigs } from '@/lib/data-service';
 import { formatCurrency } from '@/lib/formatters';
-import { Card, CardContent, CardHeader } from './ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -29,11 +29,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Info, Loader2, AlertCircle } from 'lucide-react';
+import { Info, Loader2, AlertCircle, Calendar } from 'lucide-react';
 import { HistoricalPriceTable } from './historical-price-table';
 import { AssetInfo, AssetSpecificDetails, GenericAssetDetails } from './asset-detail-modal';
 import { UcsAseDetails } from './ucs-ase-details';
 import { PdfExportButton } from './pdf-export-button';
+import { Button } from './ui/button';
 
 const ChartSkeleton = () => (
   <div className="h-72 w-full">
@@ -85,11 +86,19 @@ const DefaultTooltip = ({ active, payload, label, asset }: any) => {
 };
 
 const UCS_ASE_COMPARISON_ASSETS = ['ucs_ase', 'milho', 'boi_gordo', 'madeira', 'carbono', 'soja', 'custo_agua'];
+type TimeRange = '30d' | '1y' | 'all';
+
+const timeRangeInDays: Record<TimeRange, number> = {
+  '30d': 30,
+  '1y': 365,
+  'all': 3650, // 10 years as "all"
+};
 
 export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
   const [data, setData] = useState<Record<string, FirestoreQuote[]>>({});
   const [assets, setAssets] = useState<CommodityConfig[]>([]);
   const [selectedAssetId, setSelectedAssetId] = useState<string>('ucs_ase');
+  const [timeRange, setTimeRange] = useState<TimeRange>('1y');
   const [isLoading, setIsLoading] = useState(true);
   const chartRef = useRef<HTMLDivElement>(null);
 
@@ -100,8 +109,9 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
   useEffect(() => {
     setIsLoading(true);
     const assetsToFetch = selectedAssetId === 'ucs_ase' ? UCS_ASE_COMPARISON_ASSETS : [selectedAssetId];
+    const daysToFetch = timeRangeInDays[timeRange];
     
-    Promise.all(assetsToFetch.map(id => getCotacoesHistorico(id, 90)))
+    Promise.all(assetsToFetch.map(id => getCotacoesHistorico(id, daysToFetch)))
       .then((histories) => {
         const newData: Record<string, FirestoreQuote[]> = {};
         histories.forEach((history, index) => {
@@ -114,7 +124,7 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
         setData({});
         setIsLoading(false);
       });
-  }, [selectedAssetId]);
+  }, [selectedAssetId, timeRange]);
 
   const selectedAssetConfig = useMemo(() => {
     return assets.find(a => a.id === selectedAssetId);
@@ -150,7 +160,7 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
         UCS_ASE_COMPARISON_ASSETS.forEach(id => {
             const assetHistory = data[id] || [];
             assetHistory.forEach(quote => {
-                const dateStr = format(new Date(quote.timestamp as any), 'dd/MM');
+                const dateStr = format(new Date(quote.timestamp as any), 'dd/MM/yyyy');
                 if (!dataMap.has(dateStr)) {
                     dataMap.set(dateStr, { date: dateStr, timestamp: new Date(quote.timestamp as any).getTime() });
                 }
@@ -226,65 +236,82 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
       </CardHeader>
       <CardContent className="flex flex-col gap-8 p-4">
         {mainAssetData ? <AssetInfo asset={mainAssetData} /> : <Skeleton className="h-24 w-full" />}
-
-        <div ref={chartRef} className="h-80 w-full bg-background pt-4 pr-4" style={{ marginLeft: '-10px' }}>
-          {isLoading ? (
-            <ChartSkeleton />
-          ) : chartData.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis
-                  dataKey="date"
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                  interval="preserveStartEnd"
-                />
-                <YAxis
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                  domain={['dataMin', 'dataMax']}
-                  tickFormatter={(value) => formatCurrency(value as number, selectedAssetConfig?.currency || 'BRL', selectedAssetConfig?.id)}
-                />
-                <Tooltip
-                  content={isMultiLine ? <MultiLineTooltip /> : <DefaultTooltip asset={mainAssetData} />}
-                />
-                {isMultiLine && <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />}
-                
-                {isMultiLine ? (
-                  Object.keys(lineColors)
-                    .filter(key => key in chartData[0])
-                    .map(key => (
-                      <Line
-                        key={key}
-                        type="monotone"
-                        dataKey={key}
-                        name={assets.find(a => a.id === key)?.name || key.toUpperCase()}
-                        stroke={lineColors[key]}
-                        strokeWidth={2}
-                        dot={false}
-                        activeDot={{ r: 4, stroke: lineColors[key], strokeWidth: 2 }}
-                      />
-                    ))
-                ) : (
-                  <>
-                    <ReferenceLine y={mainAssetData?.price} stroke="hsl(var(--primary))" strokeDasharray="2 2" opacity={0.5} />
-                    <Line type="monotone" dataKey="value" name="Preço" stroke={lineColors['value']} strokeWidth={2} dot={false} />
-                  </>
-                )}
-              </LineChart>
-            </ResponsiveContainer>
-          ) : (
-             <div className="h-full flex items-center justify-center text-muted-foreground">
-                <AlertCircle className="h-6 w-6 mr-2" />
-                <p>Sem dados históricos para exibir o gráfico.</p>
+        
+        <Card>
+          <CardHeader>
+              <div className="flex justify-between items-center">
+                  <CardTitle className="flex items-center gap-2">
+                    <Calendar className="h-5 w-5 text-muted-foreground" />
+                    Análise Temporal
+                  </CardTitle>
+                  <div className="flex items-center gap-1 rounded-lg bg-muted p-1">
+                      <Button variant={timeRange === '30d' ? 'default' : 'ghost'} size="sm" onClick={() => setTimeRange('30d')} className="h-8">30D</Button>
+                      <Button variant={timeRange === '1y' ? 'default' : 'ghost'} size="sm" onClick={() => setTimeRange('1y')} className="h-8">1A</Button>
+                      <Button variant={timeRange === 'all' ? 'default' : 'ghost'} size="sm" onClick={() => setTimeRange('all')} className="h-8">Tudo</Button>
+                  </div>
+              </div>
+          </CardHeader>
+          <CardContent>
+            <div ref={chartRef} className="h-80 w-full bg-background pt-4 pr-4" style={{ marginLeft: '-10px' }}>
+              {isLoading ? (
+                <ChartSkeleton />
+              ) : chartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis
+                      dataKey="date"
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={12}
+                      tickLine={false}
+                      axisLine={false}
+                      interval="preserveStartEnd"
+                    />
+                    <YAxis
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={12}
+                      tickLine={false}
+                      axisLine={false}
+                      domain={['dataMin', 'dataMax']}
+                      tickFormatter={(value) => formatCurrency(value as number, selectedAssetConfig?.currency || 'BRL', selectedAssetConfig?.id)}
+                    />
+                    <Tooltip
+                      content={isMultiLine ? <MultiLineTooltip /> : <DefaultTooltip asset={mainAssetData} />}
+                    />
+                    {isMultiLine && <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />}
+                    
+                    {isMultiLine ? (
+                      Object.keys(lineColors)
+                        .filter(key => key in chartData[0])
+                        .map(key => (
+                          <Line
+                            key={key}
+                            type="monotone"
+                            dataKey={key}
+                            name={assets.find(a => a.id === key)?.name || key.toUpperCase()}
+                            stroke={lineColors[key]}
+                            strokeWidth={2}
+                            dot={false}
+                            activeDot={{ r: 4, stroke: lineColors[key], strokeWidth: 2 }}
+                          />
+                        ))
+                    ) : (
+                      <>
+                        <ReferenceLine y={mainAssetData?.price} stroke="hsl(var(--primary))" strokeDasharray="2 2" opacity={0.5} />
+                        <Line type="monotone" dataKey="value" name="Preço" stroke={lineColors['value']} strokeWidth={2} dot={false} />
+                      </>
+                    )}
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center text-muted-foreground">
+                    <AlertCircle className="h-6 w-6 mr-2" />
+                    <p>Sem dados históricos para exibir o gráfico.</p>
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </CardContent>
+        </Card>
         
         <Tabs defaultValue="overview">
           <TabsList>
