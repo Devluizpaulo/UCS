@@ -23,20 +23,11 @@ import { PdfExportButton } from './pdf-export-button';
 import { ExcelExportButton } from './excel-export-button';
 import type { CommodityPriceData, FirestoreQuote } from '@/lib/types';
 import * as React from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
-import { createPieChartImage, createBarChartImage, addImageToExcelWorksheet } from '@/lib/excel-chart-generator';
+import { CompositionPieChart } from '@/components/charts/composition-pie-chart';
 
 interface CompositionAnalysisProps {
   targetDate: Date;
 }
-
-const COLORS = [
-  'hsl(var(--chart-1))',
-  'hsl(var(--chart-2))',
-  'hsl(var(--chart-3))',
-  'hsl(var(--chart-4))',
-  'hsl(var(--chart-5))',
-];
 
 const componentNames: Record<string, string> = {
   vus: 'VUS (Valor de Uso do Solo)',
@@ -73,12 +64,10 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
     const componentes = data.componentes;
     const valorTotal = data.valor;
 
-    // Verificar duplicação de componentes
     const componentKeys = Object.keys(componentes);
     const uniqueKeys = new Set(componentKeys);
     const hasDuplication = componentKeys.length !== uniqueKeys.size;
 
-    // Log de duplicação se encontrada
     if (hasDuplication) {
       console.warn('⚠️ Duplicação detectada nos componentes:', {
         totalKeys: componentKeys.length,
@@ -95,12 +84,11 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
     const carbono_crs = { id: 'carbono_crs', name: componentNames.carbono_crs, value: (componentes.carbono_crs || 0) as number };
     const agua_crs = { id: 'Agua_CRS', name: componentNames.Agua_CRS, value: (componentes.agua_crs || 0) as number };
     
-    // Verificar se há valores duplicados ou inconsistentes
     const crsTotalValue = carbono_crs.value + agua_crs.value;
     const expectedTotal = vus.value + vmad.value + crsTotalValue;
     const totalDifference = Math.abs(valorTotal - expectedTotal);
     
-    if (totalDifference > 0.01) { // Tolerância de 1 centavo
+    if (totalDifference > 0.01) { 
       console.warn('⚠️ Inconsistência nos valores:', {
         valorTotal,
         expectedTotal,
@@ -146,10 +134,8 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
         workbook.creator = 'UCS Index Platform';
         workbook.created = new Date();
 
-        // --- ABA 1: RESUMO DA COMPOSIÇÃO COM GRÁFICOS ---
         const summarySheet = workbook.addWorksheet('Análise de Composição');
         
-        // Título principal
         summarySheet.mergeCells('A1:F1');
         const titleCell = summarySheet.getCell('A1');
         titleCell.value = '🍕 Relatório de Composição - Valor de Uso do Solo';
@@ -157,14 +143,12 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
         titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF16a34a' } };
         titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
 
-        // Data e informações
         summarySheet.mergeCells('A2:F2');
         const dateCell = summarySheet.getCell('A2');
         dateCell.value = `📅 Data: ${data.data} | 💰 Valor Total: ${formatCurrency(data.valor, 'BRL')}`;
         dateCell.font = { size: 12, color: { argb: 'FF4b5563' } };
         dateCell.alignment = { horizontal: 'center' };
 
-        // Cabeçalhos da tabela
         summarySheet.getRow(4).values = ['Componente', 'Valor (R$)', 'Participação (%)', 'Visualização'];
         const headerRow = summarySheet.getRow(4);
         headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
@@ -173,11 +157,10 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
             cell.alignment = { horizontal: 'center' };
         });
 
-        // Adicionar dados com formatação melhorada
         tableData.forEach((item, index) => {
             const row = summarySheet.getRow(5 + index);
             const percentage = item.percentage;
-            const barLength = Math.round(percentage / 5); // Cada 5% = 1 caractere
+            const barLength = Math.round(percentage / 5); 
             const barVisual = '█'.repeat(barLength) + '░'.repeat(20 - barLength);
             
             row.getCell(1).value = item.isSub ? `  └─ ${item.name}` : item.name;
@@ -186,34 +169,8 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
             row.getCell(3).value = item.percentage / 100;
             row.getCell(3).numFmt = '0.00%';
             row.getCell(4).value = barVisual;
-            
-            // Formatação condicional
-            if (item.id === 'crs_total') {
-                row.font = { bold: true };
-                row.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFe0e7ff' } };
-            }
-            if (item.isSub) {
-                row.getCell(1).alignment = { indent: 1 };
-                row.font = { italic: true };
-            }
-            
-            // Colorir a barra visual baseada no componente
-            const colors = [
-                { argb: 'FFFF6384' }, // VUS - Vermelho
-                { argb: 'FF36A2EB' }, // VMAD - Azul  
-                { argb: 'FF4BC0C0' }, // CRS - Verde-azulado
-            ];
-            const colorIndex = chartData.findIndex(c => c.id === item.id);
-            if (colorIndex >= 0) {
-                row.getCell(4).font = { 
-                    name: 'Courier New', 
-                    size: 10, 
-                    color: colors[colorIndex % colors.length] 
-                };
-            }
         });
         
-        // Linha total
         const totalRow = summarySheet.getRow(5 + tableData.length);
         totalRow.getCell(1).value = 'TOTAL';
         totalRow.getCell(2).value = data.valor;
@@ -222,175 +179,12 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
         totalRow.font = { bold: true, size: 12 };
         totalRow.getCell(2).numFmt = '"R$"#,##0.00';
         totalRow.getCell(3).numFmt = '0.00%';
-        totalRow.getCell(4).font = { name: 'Courier New', size: 10, color: { argb: 'FF16a34a' } };
-        totalRow.eachCell(cell => {
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFf0f9ff' } };
-        });
-
-        // Ajustar larguras das colunas
+        
         summarySheet.columns.forEach(column => {
             let maxLength = 0;
             column.eachCell!({ includeEmpty: true }, cell => {
                 let cellLength = cell.value ? cell.value.toString().length : 10;
                 if (cell.numFmt?.includes('%')) cellLength += 1;
-                if (maxLength < cellLength) maxLength = cellLength;
-            });
-            column.width = maxLength < 15 ? 15 : maxLength + 2;
-        });
-
-        // --- ABA 2: GRÁFICOS VISUAIS ---
-        const chartsSheet = workbook.addWorksheet('Gráficos e Visualizações');
-        
-        // Título da aba de gráficos
-        chartsSheet.mergeCells('A1:F1');
-        const chartsTitleCell = chartsSheet.getCell('A1');
-        chartsTitleCell.value = '📊 Gráficos de Composição';
-        chartsTitleCell.font = { size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
-        chartsTitleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2563eb' } };
-        chartsTitleCell.alignment = { horizontal: 'center', vertical: 'middle' };
-
-        // Criar dados para gráfico de pizza
-        const pieChartData = chartData.map((item, index) => ({
-            label: item.name.split(' ')[0], // Usar apenas a sigla
-            value: item.value,
-            color: COLORS[index % COLORS.length]
-        }));
-
-        // Tentar criar gráfico de pizza real
-        try {
-            const pieChartImage = await createPieChartImage(
-                pieChartData,
-                'Distribuição por Componente',
-                400,
-                300
-            );
-
-            if (pieChartImage) {
-                await addImageToExcelWorksheet(chartsSheet, pieChartImage, {
-                    row: 3,
-                    col: 0.5
-                }, { width: 400, height: 300 });
-            }
-        } catch (error) {
-            console.warn('Erro ao criar gráfico de pizza:', error);
-        }
-
-        // Criar gráfico de barras para comparação
-        try {
-            const barChartData = chartData.map((item, index) => ({
-                label: item.name.split(' ')[0],
-                value: item.value,
-                color: COLORS[index % COLORS.length]
-            }));
-
-            const barChartImage = await createBarChartImage(
-                barChartData,
-                'Comparação de Valores',
-                500,
-                300
-            );
-
-            if (barChartImage) {
-                await addImageToExcelWorksheet(chartsSheet, barChartImage, {
-                    row: 3,
-                    col: 8
-                }, { width: 500, height: 300 });
-            }
-        } catch (error) {
-            console.warn('Erro ao criar gráfico de barras:', error);
-        }
-
-        // Adicionar análise estatística
-        chartsSheet.addRow([]);
-        chartsSheet.addRow([]);
-        
-        const statsTitleRow = chartsSheet.addRow(['📈 Análise Estatística dos Componentes']);
-        statsTitleRow.getCell(1).font = { bold: true, size: 14, color: { argb: 'FF1f2937' } };
-        statsTitleRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFe0e7ff' } };
-
-        // Calcular estatísticas
-        const values = chartData.map(item => item.value);
-        const maxValue = Math.max(...values);
-        const minValue = Math.min(...values);
-        const avgValue = values.reduce((sum, val) => sum + val, 0) / values.length;
-        const totalValue = values.reduce((sum, val) => sum + val, 0);
-
-        const statsData = [
-            ['Métrica', 'Valor', 'Percentual'],
-            ['Maior Componente', formatCurrency(maxValue, 'BRL'), `${((maxValue / totalValue) * 100).toFixed(1)}%`],
-            ['Menor Componente', formatCurrency(minValue, 'BRL'), `${((minValue / totalValue) * 100).toFixed(1)}%`],
-            ['Valor Médio', formatCurrency(avgValue, 'BRL'), `${((avgValue / totalValue) * 100).toFixed(1)}%`],
-            ['Valor Total', formatCurrency(totalValue, 'BRL'), '100.0%']
-        ];
-
-        statsData.forEach((row, index) => {
-            const excelRow = chartsSheet.addRow(row);
-            if (index === 0) {
-                // Cabeçalho
-                excelRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-                excelRow.eachCell(cell => {
-                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1f2937' } };
-                    cell.alignment = { horizontal: 'center' };
-                });
-            } else {
-                // Dados
-                excelRow.getCell(2).numFmt = '"R$"#,##0.00';
-                excelRow.getCell(3).alignment = { horizontal: 'center' };
-            }
-        });
-
-        // Adicionar insights
-        chartsSheet.addRow([]);
-        chartsSheet.addRow([]);
-        
-        const insightsTitleRow = chartsSheet.addRow(['💡 Insights e Observações']);
-        insightsTitleRow.getCell(1).font = { bold: true, size: 14, color: { argb: 'FF1f2937' } };
-        insightsTitleRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFf0f9ff' } };
-
-        const insights = [
-            `• O componente dominante representa ${((maxValue / totalValue) * 100).toFixed(1)}% do total`,
-            `• A diferença entre maior e menor componente é de ${formatCurrency(maxValue - minValue, 'BRL')}`,
-            `• A distribuição mostra ${chartData.length} componentes principais`,
-            `• Data da análise: ${data.data}`,
-            `• Valor total analisado: ${formatCurrency(totalValue, 'BRL')}`
-        ];
-
-        insights.forEach(insight => {
-            const row = chartsSheet.addRow([insight]);
-            row.getCell(1).font = { size: 11 };
-            row.getCell(1).alignment = { wrapText: true };
-        });
-
-        // --- ABA 3: DADOS BRUTOS ---
-        const rawDataSheet = workbook.addWorksheet('Dados Brutos');
-        
-        const rawDataHeader = ['Data', 'ID do Ativo', 'Nome', 'Valor', 'Moeda', 'Variação (%)', 'Variação Absoluta', 'Unidade', 'Categoria'];
-        rawDataSheet.getRow(1).values = rawDataHeader;
-        rawDataSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
-        rawDataSheet.getRow(1).eachCell(cell => {
-          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1f2937' } };
-          cell.alignment = { horizontal: 'center' };
-        });
-        
-        const allRawData = await getCommodityPricesByDate(targetDate);
-        allRawData.forEach(asset => {
-            rawDataSheet.addRow([
-                asset.lastUpdated,
-                asset.id,
-                asset.name,
-                asset.price,
-                asset.currency,
-                asset.change,
-                asset.absoluteChange,
-                asset.unit,
-                asset.category
-            ]);
-        });
-        
-        rawDataSheet.columns.forEach(column => {
-            let maxLength = 0;
-            column.eachCell!({ includeEmpty: true }, cell => {
-                let cellLength = cell.value ? cell.value.toString().length : 10;
                 if (maxLength < cellLength) maxLength = cellLength;
             });
             column.width = maxLength < 15 ? 15 : maxLength + 2;
@@ -465,19 +259,17 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-8">
-      {/* Alerta de Duplicação */}
+    <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
       {hasDuplication && (
-        <Alert className="border-orange-200 bg-orange-50">
+        <Alert className="lg:col-span-5 border-orange-200 bg-orange-50">
           <AlertTriangle className="h-4 w-4 text-orange-600" />
           <AlertDescription className="text-orange-800">
-            <strong>⚠️ Duplicação Detectada:</strong> Foram encontrados componentes duplicados nos dados. 
-            Verifique o console para mais detalhes e considere revisar os dados de origem.
+            <strong>⚠️ Duplicação Detectada:</strong> Foram encontrados componentes duplicados. Verifique o console para mais detalhes.
           </AlertDescription>
         </Alert>
       )}
       
-       <Card>
+       <Card className="lg:col-span-3">
           <CardHeader>
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 <div>
@@ -486,7 +278,7 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
                        Composição do Índice "Valor de Uso do Solo"
                     </CardTitle>
                     <CardDescription>
-                        Distribuição dos componentes que formam o valor total de {formatCurrency(data.valor, 'BRL', 'valor_uso_solo')} em {data.data}.
+                        Distribuição dos componentes para {formatCurrency(data.valor, 'BRL', 'valor_uso_solo')} em {data.data}.
                     </CardDescription>
                 </div>
                  <div className="flex items-center gap-2 flex-shrink-0">
@@ -517,33 +309,14 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
             </div>
           </CardHeader>
           <CardContent className="h-96">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={chartData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  outerRadius={120}
-                  fill="#8884d8"
-                  dataKey="value"
-                  label={({ name, percent }) => `${name.split(' ')[0]}: ${(percent * 100).toFixed(0)}%`}
-                >
-                  {chartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(value: number) => [formatCurrency(value, 'BRL'), 'Valor']} />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
+            <CompositionPieChart data={chartData} />
           </CardContent>
         </Card>
 
-      <div>
+      <div className="lg:col-span-2">
         <Card>
           <CardHeader>
-            <CardTitle>Valores Detalhados dos Componentes</CardTitle>
+            <CardTitle>Valores Detalhados</CardTitle>
             <CardDescription>Análise tabular de cada componente do índice.</CardDescription>
           </CardHeader>
           <CardContent>
@@ -552,7 +325,7 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
                 <TableRow>
                   <TableHead>Componente</TableHead>
                   <TableHead className="text-right">Valor</TableHead>
-                  <TableHead className="text-right">Participação</TableHead>
+                  <TableHead className="text-right">%</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -560,7 +333,7 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
                   <React.Fragment key={item.id}>
                     <TableRow className={item.id === 'crs_total' ? 'font-bold bg-muted/30' : ''}>
                       <TableCell className="flex items-center gap-2">
-                        {item.id !== 'crs_total' && <div className="h-3 w-3 rounded-full" style={{ backgroundColor: COLORS[chartData.findIndex(c => c.id === item.id) % COLORS.length] }} />}
+                         <div className="h-3 w-3 rounded-full" style={{ backgroundColor: `hsl(var(--chart-${chartData.findIndex(c => c.id === item.id) + 1}))`}} />
                         <span className="font-medium">{item.name}</span>
                       </TableCell>
                       <TableCell className="text-right font-mono">{formatCurrency(item.value, 'BRL')}</TableCell>
