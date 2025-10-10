@@ -152,14 +152,17 @@ export default function LandingPage() {
       <main className="flex-1">
         {/* HERO SECTION */}
         <section className="relative flex h-[80vh] min-h-[500px] flex-col items-center justify-center p-4 text-center">
-          <Image
-            src="/image/hero.jpeg"
-            alt="Vastas colinas verdes sob um céu ensolarado"
-            fill
-            className="object-cover"
-            data-ai-hint="green hills"
-            priority
-          />
+           <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="absolute z-0 w-full h-full object-cover"
+          >
+            {/* O vídeo do broto pode ser colocado na pasta /public/videos/sprout.mp4 */}
+            <source src="/videos/sprout.mp4" type="video/mp4" />
+            Seu navegador não suporta a tag de vídeo.
+          </video>
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent" />
 
           <div className="relative z-10 flex flex-col items-center gap-8 py-12">
@@ -362,9 +365,3 @@ export default function LandingPage() {
     </div>
   );
 }
-
-    
-
-    
-
-    
