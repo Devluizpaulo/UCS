@@ -262,7 +262,7 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
               ) : chartData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
                     <XAxis
                       dataKey="date"
                       stroke="hsl(var(--muted-foreground))"
@@ -286,7 +286,7 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
                     
                     {isMultiLine ? (
                       Object.keys(lineColors)
-                        .filter(key => key in chartData[0])
+                        .filter(key => chartData[0] && key in chartData[0])
                         .map(key => (
                           <Line
                             key={key}
@@ -294,15 +294,15 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
                             dataKey={key}
                             name={assets.find(a => a.id === key)?.name || key.toUpperCase()}
                             stroke={lineColors[key]}
-                            strokeWidth={2}
+                            strokeWidth={2.5}
                             dot={false}
-                            activeDot={{ r: 4, stroke: lineColors[key], strokeWidth: 2 }}
+                            activeDot={{ r: 5, strokeWidth: 2 }}
                           />
                         ))
                     ) : (
                       <>
-                        <ReferenceLine y={mainAssetData?.price} stroke="hsl(var(--primary))" strokeDasharray="2 2" opacity={0.5} />
-                        <Line type="monotone" dataKey="value" name="Preço" stroke={lineColors['value']} strokeWidth={2} dot={false} />
+                        <ReferenceLine y={mainAssetData?.price} stroke="hsl(var(--primary))" strokeDasharray="3 3" opacity={0.8} />
+                        <Line type="monotone" dataKey="value" name="Preço" stroke={lineColors['value']} strokeWidth={2.5} dot={false} activeDot={{ r: 5, strokeWidth: 2 }} />
                       </>
                     )}
                   </LineChart>
