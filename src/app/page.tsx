@@ -151,17 +151,19 @@ export default function LandingPage() {
 
       <main className="flex-1">
         {/* HERO SECTION */}
-        <section className="relative flex h-[90vh] min-h-[600px] w-full items-center justify-center overflow-hidden p-4">
-          <div className="absolute inset-0 z-0">
-            <Image
-              src="https://picsum.photos/seed/dark-forest/1920/1080"
-              alt="Fundo de floresta escura"
-              layout="fill"
-              objectFit="cover"
-              className="scale-110 blur-lg brightness-50"
-              data-ai-hint="dark forest"
-            />
-             <div className="absolute inset-0 bg-black/50" />
+        <section className="relative flex h-[90vh] min-h-[700px] w-full items-center justify-center overflow-hidden p-4">
+          <div className="absolute inset-0 z-0 h-full w-full">
+            <video
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="h-full w-full object-cover object-center"
+            >
+              <source src="/video/hero.mp4" type="video/mp4" />
+              Seu navegador não suporta a tag de vídeo.
+            </video>
+            <div className="absolute inset-0 bg-black/60" />
           </div>
           
           <div className="relative z-10 flex w-full max-w-6xl flex-col items-center gap-8 text-center">
@@ -172,18 +174,6 @@ export default function LandingPage() {
                 <p className="mx-auto max-w-3xl text-lg text-gray-200 md:text-xl drop-shadow-md animate-fade-in-up">
                     Uma inovação que reconhece economicamente a conservação ambiental e gera valor para produtores rurais, investidores e para o planeta.
                 </p>
-            </div>
-            <div className="w-full max-w-sm rounded-xl bg-black/30 shadow-2xl backdrop-blur-sm ring-1 ring-white/10 animate-fade-in-up animation-delay-300">
-               <video
-                autoPlay
-                loop
-                muted
-                playsInline
-                className="aspect-video w-full rounded-lg"
-              >
-                <source src="/video/hero.mp4" type="video/mp4" />
-                Seu navegador não suporta a tag de vídeo.
-              </video>
             </div>
           </div>
         </section>
@@ -341,3 +331,5 @@ export default function LandingPage() {
     </div>
   );
 }
+
+    
