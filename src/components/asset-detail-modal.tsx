@@ -11,6 +11,7 @@ import {
   ResponsiveContainer,
   CartesianGrid,
   ReferenceLine,
+  Legend,
 } from 'recharts';
 import {
   Dialog,
@@ -50,8 +51,8 @@ interface AssetDetailModalProps {
 
 interface ChartDataPoint {
   date: string;
-  price: number;
   timestamp: number;
+  [key: string]: number | string; // Permite múltiplos ativos
 }
 
 interface LoadingState {
@@ -61,10 +62,11 @@ interface LoadingState {
 }
 
 // --- CONSTANTS ---
-const CHART_DAYS = 30;
+const CHART_DAYS = 90;
 const TABLE_DAYS = 90;
 const MAX_RETRY_ATTEMPTS = 3;
 const RETRY_DELAY = 1000;
+const MULTI_LINE_ASSETS = ['ucs_ase', 'ucs', 'pdm'];
 
 // --- UTILITY FUNCTIONS ---
 
@@ -340,6 +342,27 @@ export const AssetInfo = memo<{
 
 AssetInfo.displayName = 'AssetInfo';
 
+const MultiLineTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="rounded-lg border bg-background p-2 shadow-sm">
+        <p className="text-sm font-semibold mb-2">{`Data: ${label}`}</p>
+        {payload.map((entry: any) => (
+          <div key={entry.name} className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: entry.color }} />
+            <span className="text-sm">{`${entry.name}: `}</span>
+            <span className="text-sm font-mono font-semibold">
+              {formatCurrency(entry.value, 'BRL', entry.dataKey)}
+            </span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  return null;
+};
+
+
 /**
  * Componente do gráfico otimizado
  */
@@ -348,15 +371,8 @@ const PriceChart = memo<{
   asset: CommodityPriceData;
   isLoading: boolean;
 }>(({ data, asset, isLoading }) => {
-  const chartData = useMemo(() => {
-    if (!data.length) return [];
-    
-    const currentPrice = asset.price;
-    return data.map(point => ({
-      ...point,
-      currentPrice
-    }));
-  }, [data, asset.price]);
+
+  const isMultiLine = useMemo(() => isUcsAseAsset(asset) && data.length > 0 && Object.keys(data[0]).length > 3, [asset, data]);
 
   if (isLoading) {
     return (
@@ -371,7 +387,7 @@ const PriceChart = memo<{
     );
   }
 
-  if (!chartData.length) {
+  if (!data.length) {
     return (
       <Card>
         <CardHeader>
@@ -380,21 +396,33 @@ const PriceChart = memo<{
         <CardContent className="h-64">
           <div className="h-full flex items-center justify-center text-muted-foreground">
             <AlertCircle className="h-8 w-8 mr-2" />
-            Nenhum dado disponível
+            Nenhum dado histórico disponível
           </div>
         </CardContent>
       </Card>
     );
   }
 
+  const lineColors: { [key: string]: string } = {
+    ucs_ase: 'hsl(var(--chart-1))',
+    ucs: 'hsl(var(--chart-2))',
+    pdm: 'hsl(var(--chart-3))',
+    price: 'hsl(var(--chart-1))',
+  };
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Histórico de Preços (Últimos {CHART_DAYS} Dias)</CardTitle>
+        <CardTitle>
+          {isMultiLine
+            ? 'Comparativo de Evolução de Índices'
+            : `Histórico de Preços (Últimos ${CHART_DAYS} Dias)`
+          }
+        </CardTitle>
       </CardHeader>
-      <CardContent className="h-64">
+      <CardContent className="h-80">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={chartData}>
+          <LineChart data={data}>
             <CartesianGrid 
               strokeDasharray="3 3" 
               stroke="hsl(var(--border))" 
@@ -415,32 +443,44 @@ const PriceChart = memo<{
               axisLine={false}
               tickFormatter={(value) => formatCurrency(value as number, asset.currency, asset.id)}
             />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: "hsl(var(--background))",
-                border: "1px solid hsl(var(--border))",
-                borderRadius: "var(--radius)",
-              }}
-              formatter={(value: any) => [
-                formatCurrency(Number(value), asset.currency, asset.id), 
-                'Preço'
-              ]}
-              labelFormatter={(label) => `Data: ${label}`}
+             <Tooltip
+                content={isMultiLine ? <MultiLineTooltip /> : <DefaultTooltip asset={asset} />}
             />
-            <ReferenceLine 
-              y={asset.price} 
-              stroke="hsl(var(--primary))" 
-              strokeDasharray="2 2"
-              opacity={0.5}
-            />
-            <Line
-              type="monotone"
-              dataKey="price"
-              stroke="hsl(var(--primary))"
-              strokeWidth={2}
-              dot={false}
-              activeDot={{ r: 4, stroke: "hsl(var(--primary))", strokeWidth: 2 }}
-            />
+             {isMultiLine && <Legend iconType="circle" />}
+
+            {isMultiLine ? (
+                Object.keys(lineColors)
+                    .filter(key => key in data[0]) // Garante que a chave existe nos dados
+                    .map(key => (
+                        <Line
+                            key={key}
+                            type="monotone"
+                            dataKey={key}
+                            name={key.toUpperCase()}
+                            stroke={lineColors[key]}
+                            strokeWidth={2}
+                            dot={false}
+                            activeDot={{ r: 4, stroke: lineColors[key], strokeWidth: 2 }}
+                        />
+                    ))
+            ) : (
+                <>
+                    <ReferenceLine 
+                    y={asset.price} 
+                    stroke="hsl(var(--primary))" 
+                    strokeDasharray="2 2"
+                    opacity={0.5}
+                    />
+                    <Line
+                    type="monotone"
+                    dataKey="price"
+                    stroke={lineColors['price']}
+                    strokeWidth={2}
+                    dot={false}
+                    activeDot={{ r: 4, stroke: lineColors['price'], strokeWidth: 2 }}
+                    />
+                </>
+            )}
           </LineChart>
         </ResponsiveContainer>
       </CardContent>
@@ -450,6 +490,23 @@ const PriceChart = memo<{
 
 PriceChart.displayName = 'PriceChart';
 
+const DefaultTooltip = ({ active, payload, label, asset }: any) => {
+    if (active && payload && payload.length) {
+        return (
+            <div className="rounded-lg border bg-background p-2 shadow-sm">
+                <p className="text-sm font-semibold mb-2">{`Data: ${label}`}</p>
+                <div className="flex items-center gap-2">
+                    <span className="text-sm">{`Preço: `}</span>
+                    <span className="text-sm font-mono font-semibold">
+                        {formatCurrency(payload[0].value, asset.currency, asset.id)}
+                    </span>
+                </div>
+            </div>
+        );
+    }
+    return null;
+};
+
 // --- MAIN COMPONENT ---
 
 export const AssetDetailModal = memo<AssetDetailModalProps>(({ 
@@ -457,7 +514,7 @@ export const AssetDetailModal = memo<AssetDetailModalProps>(({
   isOpen, 
   onOpenChange 
 }) => {
-  const [historicalData, setHistoricalData] = useState<FirestoreQuote[]>([]);
+  const [historicalData, setHistoricalData] = useState<Record<string, FirestoreQuote[]>>({});
   const [latestQuote, setLatestQuote] = useState<FirestoreQuote | null>(null);
   const [loadingState, setLoadingState] = useState<LoadingState>({
     isLoading: true,
@@ -466,19 +523,32 @@ export const AssetDetailModal = memo<AssetDetailModalProps>(({
   });
 
   const isCalculated = isCalculatedAsset(asset);
-  const isUcsAse = isUcsAseAsset(asset);
+  const isMultiLineChart = isUcsAseAsset(asset);
 
   const fetchHistoricalData = useCallback(async (retryCount = 0) => {
     setLoadingState(prev => ({ ...prev, isLoading: true, error: null }));
+    
+    const assetsToFetch = isMultiLineChart ? MULTI_LINE_ASSETS : [asset.id];
 
     try {
-      const [latest, history] = await Promise.all([
-        getQuoteByDate(asset.id, new Date()),
-        isUcsAse ? Promise.resolve([]) : getCotacoesHistorico(asset.id, TABLE_DAYS)
-      ]);
-      setLatestQuote(latest);
-      setHistoricalData(history);
+        const promises = assetsToFetch.map(id => 
+            Promise.all([
+                getQuoteByDate(id, new Date()),
+                getCotacoesHistorico(id, TABLE_DAYS)
+            ])
+        );
+
+      const results = await Promise.all(promises);
+
+      const newHistoricalData: Record<string, FirestoreQuote[]> = {};
+      results.forEach(([_, history], index) => {
+          newHistoricalData[assetsToFetch[index]] = history;
+      });
+      
+      setLatestQuote(results.find(([_, history], index) => assetsToFetch[index] === asset.id)?.[0] || null);
+      setHistoricalData(newHistoricalData);
       setLoadingState({ isLoading: false, error: null, retryCount: 0 });
+
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Erro ao carregar dados históricos';
       
@@ -494,38 +564,58 @@ export const AssetDetailModal = memo<AssetDetailModalProps>(({
         retryCount
       });
     }
-  }, [asset.id, isUcsAse]);
+  }, [asset.id, isMultiLineChart]);
 
   useEffect(() => {
     if (isOpen) {
       fetchHistoricalData();
     } else {
-      setHistoricalData([]);
+      setHistoricalData({});
       setLatestQuote(null);
       setLoadingState({ isLoading: true, error: null, retryCount: 0 });
     }
   }, [isOpen, fetchHistoricalData]);
 
   const chartData = useMemo((): ChartDataPoint[] => {
-    if (!historicalData.length) return [];
-
-    const thirtyDaysAgo = subDays(new Date(), CHART_DAYS);
+    if (Object.keys(historicalData).length === 0) return [];
     
-    return historicalData
-      .filter(quote => {
-        const quoteDate = parseTimestamp(quote.timestamp);
-        return isAfter(quoteDate, thirtyDaysAgo);
-      })
-      .map((quote) => {
-        const dateObject = parseTimestamp(quote.timestamp);
-        return {
-          date: format(dateObject, 'dd/MM', { locale: ptBR }),
-          price: extractPrice(quote),
-          timestamp: dateObject.getTime()
-        };
-      })
-      .sort((a, b) => a.timestamp - b.timestamp);
-  }, [historicalData]);
+    if (isMultiLineChart) {
+      const dataMap = new Map<string, { [assetId: string]: number }>();
+      
+      MULTI_LINE_ASSETS.forEach(assetId => {
+        const history = historicalData[assetId] || [];
+        history.forEach(quote => {
+          const date = format(parseTimestamp(quote.timestamp), 'dd/MM');
+          if (!dataMap.has(date)) {
+            dataMap.set(date, {});
+          }
+          dataMap.get(date)![assetId] = extractPrice(quote);
+        });
+      });
+      
+      return Array.from(dataMap.entries())
+        .map(([date, values]) => ({ date, timestamp: new Date(date).getTime(), ...values }))
+        .sort((a, b) => a.timestamp - b.timestamp);
+
+    } else {
+      const singleAssetHistory = historicalData[asset.id] || [];
+      const thirtyDaysAgo = subDays(new Date(), CHART_DAYS);
+      return singleAssetHistory
+        .filter(quote => {
+          const quoteDate = parseTimestamp(quote.timestamp);
+          return isAfter(quoteDate, thirtyDaysAgo);
+        })
+        .map((quote) => {
+          const dateObject = parseTimestamp(quote.timestamp);
+          return {
+            date: format(dateObject, 'dd/MM', { locale: ptBR }),
+            price: extractPrice(quote),
+            timestamp: dateObject.getTime()
+          };
+        })
+        .sort((a, b) => a.timestamp - b.timestamp);
+    }
+  }, [historicalData, asset.id, isMultiLineChart]);
 
   const handleRetry = useCallback(() => {
     fetchHistoricalData(0);
@@ -547,8 +637,13 @@ export const AssetDetailModal = memo<AssetDetailModalProps>(({
        );
     }
     
-    if (isUcsAse) {
-      return <UcsAseDetails asset={asset} />;
+    if (isUcsAseAsset(asset)) {
+      return (
+        <div className="grid gap-6">
+            <PriceChart data={chartData} asset={asset} isLoading={loadingState.isLoading} />
+            <UcsAseDetails asset={asset} />
+        </div>
+      );
     }
 
     const specificDetails = AssetSpecificDetails({ asset, quote: latestQuote });
@@ -559,14 +654,14 @@ export const AssetDetailModal = memo<AssetDetailModalProps>(({
         
         {specificDetails ? specificDetails : (latestQuote && <GenericAssetDetails quote={latestQuote} asset={asset} />) }
 
-        {isCalculated && !isUcsAse && !specificDetails && (
+        {isCalculated && !isUcsAseAsset(asset) && !specificDetails && (
             <CalculatedAssetDetails asset={asset} />
         )}
 
         {!isCalculated && !specificDetails && (
             <HistoricalPriceTable 
               asset={asset}
-              historicalData={historicalData} 
+              historicalData={historicalData[asset.id] || []} 
               isLoading={loadingState.isLoading}
               onRowClick={() => {}}
             />
