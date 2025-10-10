@@ -3,7 +3,7 @@
 
 import * as React from 'react';
 import { useState, useEffect, useMemo } from 'react';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, isValid, parse } from 'date-fns';
 import type { FirestoreQuote, CommodityConfig } from '@/lib/types';
 import { getCotacoesHistorico, getCommodityConfigs } from '@/lib/data-service';
 import { formatCurrency } from '@/lib/formatters';
@@ -121,23 +121,37 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
         setData({});
         setIsLoading(false);
       });
-  }, [timeRange]); // A busca de dados não depende mais do ativo selecionado
+  }, [timeRange]);
 
   const selectedAssetConfig = useMemo(() => {
     return assets.find(a => a.id === selectedAssetId);
   }, [assets, selectedAssetId]);
   
-  const { chartData, mainAssetData, isMultiLine } = useMemo(() => {
+  const { chartData, mainAssetData, isMultiLine, assetNames } = useMemo(() => {
+    const names: Record<string, string> = {};
+    assets.forEach(a => {
+        names[a.id] = a.name;
+    });
+
     if (Object.keys(data).length === 0 || !selectedAssetConfig) {
-      return { chartData: [], mainAssetData: null, isMultiLine: false };
+      return { chartData: [], mainAssetData: null, isMultiLine: false, assetNames: names };
     }
 
     const mainHistory = data[selectedAssetId] || [];
     const sortedData = [...mainHistory].sort((a, b) => (new Date(b.timestamp as any)).getTime() - (new Date(a.timestamp as any)).getTime());
-    const quoteForDate = sortedData.find(q => format(new Date(q.timestamp as any), 'yyyy-MM-dd') === format(targetDate, 'yyyy-MM-dd')) || sortedData[0];
+    
+    const quoteForDate = sortedData.find(q => {
+        if (!q || !q.timestamp) return false;
+        try {
+            const quoteDate = new Date(q.timestamp as any);
+            return format(quoteDate, 'yyyy-MM-dd') === format(targetDate, 'yyyy-MM-dd');
+        } catch {
+            return false;
+        }
+    }) || sortedData[0];
     
     if (!quoteForDate) {
-       return { chartData: [], mainAssetData: null, isMultiLine: false };
+       return { chartData: [], mainAssetData: null, isMultiLine: false, assetNames: names };
     }
 
     const isMulti = selectedAssetId === 'ucs_ase';
@@ -149,15 +163,19 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
             const assetHistory = data[id] || [];
             assetHistory.forEach(quote => {
                 if(!quote || !quote.timestamp) return;
-                const date = new Date(quote.timestamp as any);
-                const dateStr = format(date, 'yyyy-MM-dd'); // Usar chave única
-                if (!dataMap.has(dateStr)) {
-                    dataMap.set(dateStr, { date: format(date, 'dd/MM'), timestamp: date.getTime() });
-                }
-                const value = getPriceFromQuote(quote, id);
-                if(value !== undefined) {
-                    dataMap.get(dateStr)[id] = value;
-                }
+                try {
+                  const date = new Date(quote.timestamp as any);
+                  if(!isValid(date)) return;
+
+                  const dateStr = format(date, 'yyyy-MM-dd');
+                  if (!dataMap.has(dateStr)) {
+                      dataMap.set(dateStr, { date: format(date, 'dd/MM'), timestamp: date.getTime() });
+                  }
+                  const value = getPriceFromQuote(quote, id);
+                  if(value !== undefined) {
+                      dataMap.get(dateStr)[id] = value;
+                  }
+                } catch {}
             });
         });
         finalChartData = Array.from(dataMap.values()).sort((a,b) => a.timestamp - b.timestamp);
@@ -165,10 +183,14 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
         finalChartData = sortedData
             .map(quote => {
                 if(!quote || !quote.timestamp) return null;
-                return {
-                    date: format(new Date(quote.timestamp as any), 'dd/MM'),
-                    value: getPriceFromQuote(quote, selectedAssetId),
-                }
+                 try {
+                    const date = new Date(quote.timestamp as any);
+                    if(!isValid(date)) return null;
+                    return {
+                        date: format(date, 'dd/MM'),
+                        value: getPriceFromQuote(quote, selectedAssetId),
+                    }
+                } catch { return null; }
             })
             .filter(item => item && item.value !== undefined)
             .reverse();
@@ -178,15 +200,15 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
 
     const mainAsset: CommodityPriceData = {
         ...selectedAssetConfig,
-        price: isForexAsset ? (quoteForDate.ultimo ?? 0) : getPriceFromQuote(quoteForDate, selectedAssetId) ?? 0,
-        currency: isForexAsset ? selectedAssetConfig.currency : 'BRL',
+        price: isForexAsset ? (quoteForDate.ultimo_brl ?? 0) : getPriceFromQuote(quoteForDate, selectedAssetId) ?? 0,
+        currency: 'BRL', // Mostra sempre BRL
         change: quoteForDate.variacao_pct ?? 0,
-        absoluteChange: (quoteForDate.ultimo ?? 0) - (quoteForDate.fechamento_anterior ?? (quoteForDate.ultimo ?? 0)),
-        lastUpdated: quoteForDate.data || format(new Date(quoteForDate.timestamp as any), 'dd/MM/yyyy'),
+        absoluteChange: (getPriceFromQuote(quoteForDate, selectedAssetId) ?? 0) - (getPriceFromQuote(quoteForDate.fechamento_anterior_quote, selectedAssetId) ?? (getPriceFromQuote(quoteForDate, selectedAssetId) ?? 0)),
+        lastUpdated: quoteForDate.data || (quoteForDate.timestamp ? format(new Date(quoteForDate.timestamp as any), 'dd/MM/yyyy') : 'N/A'),
     };
 
-    return { chartData: finalChartData, mainAssetData: mainAsset, isMultiLine: isMulti };
-  }, [data, targetDate, selectedAssetConfig, selectedAssetId]);
+    return { chartData: finalChartData, mainAssetData: mainAsset, isMultiLine: isMulti, assetNames: names };
+  }, [data, targetDate, selectedAssetConfig, selectedAssetId, assets]);
   
   const handleVisibilityChange = (assetId: string) => {
     setVisibleAssets(prev => ({
@@ -244,6 +266,7 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
                         mainAssetData={mainAssetData}
                         visibleAssets={visibleAssets}
                         lineColors={lineColors}
+                        assetNames={assetNames}
                     />
                 </div>
 

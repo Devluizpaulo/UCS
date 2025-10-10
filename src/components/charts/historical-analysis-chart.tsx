@@ -69,6 +69,7 @@ interface HistoricalAnalysisChartProps {
     mainAssetData: CommodityPriceData | null;
     visibleAssets: Record<string, boolean>;
     lineColors: Record<string, string>;
+    assetNames: Record<string, string>;
 }
 
 export function HistoricalAnalysisChart({ 
@@ -78,6 +79,7 @@ export function HistoricalAnalysisChart({
     mainAssetData,
     visibleAssets,
     lineColors,
+    assetNames
 }: HistoricalAnalysisChartProps) {
   const { resolvedTheme } = useTheme();
   const [activeLegend, setActiveLegend] = React.useState<string | null>(null);
@@ -134,7 +136,7 @@ export function HistoricalAnalysisChart({
                 key={key}
                 type="monotone"
                 dataKey={key}
-                name={mainAssetData?.name || key.toUpperCase()}
+                name={assetNames[key] || key.toUpperCase()}
                 stroke={lineColors[key]}
                 strokeWidth={activeLegend === key ? 4 : 2.5}
                 dot={false}
