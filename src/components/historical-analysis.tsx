@@ -1,5 +1,7 @@
+
 'use client';
 
+import * as React from 'react';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import {
   LineChart,
@@ -47,12 +49,20 @@ const timeRangeInDays: Record<TimeRange, number> = {
 
 const lineColors: { [key: string]: string } = {
   ucs_ase: 'hsl(var(--chart-1))',
-  milho: 'hsl(var(--chart-2))',
-  boi_gordo: 'hsl(var(--chart-3))',
-  madeira: 'hsl(var(--chart-4))',
-  carbono: 'hsl(var(--chart-5))',
-  soja: 'hsl(220, 70%, 50%)',
+  soja: 'hsl(var(--chart-2))',
+  milho: 'hsl(var(--chart-3))',
+  boi_gordo: 'hsl(var(--chart-4))',
+  madeira: 'hsl(var(--chart-5))',
+  carbono: 'hsl(220, 70%, 50%)',
   value: 'hsl(var(--chart-1))',
+};
+
+const getPriceFromQuote = (quote: FirestoreQuote, assetId: string) => {
+    if (!quote) return 0;
+    if (assetId === 'ucs_ase') {
+        return quote.valor_brl ?? quote.resultado_final_brl ?? 0;
+    }
+    return quote.valor_brl ?? quote.valor ?? quote.ultimo ?? 0;
 };
 
 const MultiLineTooltip = ({ active, payload, label }: any) => {
@@ -151,28 +161,36 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
     }
 
     const isMulti = selectedAssetId === 'ucs_ase';
-    let finalChartData;
+    let finalChartData: any[];
 
     if (isMulti) {
         const dataMap = new Map<string, any>();
         UCS_ASE_COMPARISON_ASSETS.forEach(id => {
             const assetHistory = data[id] || [];
             assetHistory.forEach(quote => {
-                const dateStr = format(new Date(quote.timestamp as any), 'dd/MM/yyyy');
+                if(!quote || !quote.timestamp) return;
+                const date = new Date(quote.timestamp as any);
+                const dateStr = format(date, 'yyyy-MM-dd');
                 if (!dataMap.has(dateStr)) {
-                    dataMap.set(dateStr, { date: dateStr, timestamp: new Date(quote.timestamp as any).getTime() });
+                    dataMap.set(dateStr, { date: format(date, 'dd/MM/yyyy'), timestamp: date.getTime() });
                 }
-                const value = quote.valor_brl ?? quote.valor ?? quote.ultimo ?? 0;
-                dataMap.get(dateStr)[id] = value;
+                const value = getPriceFromQuote(quote, id);
+                if(value !== undefined) {
+                    dataMap.get(dateStr)[id] = value;
+                }
             });
         });
         finalChartData = Array.from(dataMap.values()).sort((a,b) => a.timestamp - b.timestamp);
     } else {
         finalChartData = sortedData
-            .map(quote => ({
-                date: format(new Date(quote.timestamp as any), 'dd/MM', { locale: ptBR }),
-                value: quote.valor ?? quote.ultimo ?? 0,
-            }))
+            .map(quote => {
+                if(!quote || !quote.timestamp) return null;
+                return {
+                    date: format(new Date(quote.timestamp as any), 'dd/MM/yyyy'),
+                    value: getPriceFromQuote(quote, selectedAssetId),
+                }
+            })
+            .filter(Boolean)
             .reverse();
     }
       
@@ -180,7 +198,7 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
 
     const mainAsset: CommodityPriceData = {
         ...selectedAssetConfig,
-        price: isForexAsset ? (quoteForDate.ultimo ?? 0) : (quoteForDate.valor_brl ?? quoteForDate.valor ?? quoteForDate.ultimo ?? 0),
+        price: isForexAsset ? (quoteForDate.ultimo ?? 0) : getPriceFromQuote(quoteForDate, selectedAssetId),
         currency: isForexAsset ? selectedAssetConfig.currency : 'BRL',
         change: quoteForDate.variacao_pct ?? 0,
         absoluteChange: (quoteForDate.ultimo ?? 0) - (quoteForDate.fechamento_anterior ?? (quoteForDate.ultimo ?? 0)),
@@ -275,7 +293,7 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
                   ) : chartData.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={true} horizontal={true} stroke="hsl(var(--border))" opacity={0.5} />
+                        <CartesianGrid strokeDasharray="3 3" vertical={true} stroke="hsl(var(--border))" opacity={0.5} />
                         <XAxis
                           dataKey="date"
                           stroke="hsl(var(--muted-foreground))"
