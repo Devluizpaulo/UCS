@@ -151,9 +151,9 @@ export default function LandingPage() {
 
       <main className="flex-1">
         {/* HERO SECTION */}
-        <section className="relative flex h-[90vh] min-h-[700px] w-full items-center justify-center overflow-hidden p-4">
+        <section className="relative flex h-[90vh] min-h-[700px] w-full flex-col items-center justify-center overflow-hidden p-4">
+          {/* Fundo com Imagem e Blur */}
           <div className="absolute inset-0 z-0 h-full w-full">
-            {/* Background Image with blur */}
             <Image
               src="https://picsum.photos/seed/forest-background/1920/1080"
               alt="Blurred forest background"
@@ -164,33 +164,65 @@ export default function LandingPage() {
             />
           </div>
           
-          {/* COMENTÁRIO: Para ajustar a altura do vídeo, modifique a classe `h-full` abaixo. */}
-          {/* Exemplos: h-[80%] para 80% da altura do "hero", h-[600px] para uma altura fixa, etc. */}
-          <div className="relative z-10 flex h-full w-full max-w-6xl flex-col items-center justify-center gap-8">
-            <div className="relative h-full w-auto max-w-full overflow-hidden rounded-2xl shadow-2xl">
-              <video
-                autoPlay
-                loop
-                muted
-                playsInline
-                className="h-full w-auto object-cover object-center"
-              >
-                <source src="/video/hero.mp4" type="video/mp4" />
-                Seu navegador não suporta a tag de vídeo.
-              </video>
+          {/* Conteúdo Principal: Título e Cotação */}
+          <div className="relative z-10 flex h-full w-full max-w-6xl flex-col items-center justify-center gap-8 text-center">
+            
+            {/* Título e Subtítulo */}
+            <div className="flex flex-col items-center gap-4 px-4 md:px-6">
+              <h1 className="text-4xl font-extrabold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl text-white drop-shadow-lg animate-fade-in-down">
+                USC: O Crédito que Transforma Florestas Preservadas em Ativos Financeiros
+              </h1>
+              <p className="mx-auto max-w-3xl text-lg text-gray-200 md:text-xl drop-shadow-md animate-fade-in-up">
+                Uma inovação que reconhece economicamente a conservação ambiental e gera valor para produtores rurais, investidores e para o planeta.
+              </p>
             </div>
-          </div>
-          
-          {/* Overlay Text */}
-          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-center p-4 pointer-events-none">
-              <div className="flex flex-col items-center gap-4 px-4 md:px-6">
-                  <h1 className="text-4xl font-extrabold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl text-white drop-shadow-lg animate-fade-in-down">
-                      USC: O Crédito que Transforma Florestas Preservadas em Ativos Financeiros
-                  </h1>
-                  <p className="mx-auto max-w-3xl text-lg text-gray-200 md:text-xl drop-shadow-md animate-fade-in-up">
-                      Uma inovação que reconhece economicamente a conservação ambiental e gera valor para produtores rurais, investidores e para o planeta.
-                  </p>
-              </div>
+
+            {/* Painel de Cotação */}
+            <div className="w-full max-w-4xl p-4 animate-fade-in-up animation-delay-400">
+               <Card className="bg-background/20 backdrop-blur-md border-white/20 text-white shadow-2xl">
+                <CardHeader className="text-center">
+                    <CardTitle className="text-xl font-bold">Índice UCS ASE</CardTitle>
+                    <CardDescription className="text-gray-300">Cotação em tempo real</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Carousel
+                    opts={{ align: "start", loop: true }}
+                    plugins={[autoplayPlugin.current]}
+                    onMouseEnter={() => autoplayPlugin.current.stop()}
+                    onMouseLeave={() => autoplayPlugin.current.play()}
+                    className="w-full"
+                  >
+                    <CarouselContent>
+                      {indexValues.map((item, index) => (
+                        <CarouselItem key={index} className="basis-full">
+                          <div className="flex flex-col items-center justify-center p-4">
+                            <div className="flex items-baseline gap-4">
+                              <item.icon className="h-10 w-10 text-primary-foreground" />
+                              <span className="text-5xl font-extrabold">
+                                {formatCurrency(item.value, item.currency, item.currency.toLowerCase())}
+                              </span>
+                            </div>
+                            {item.conversionRate && (
+                              <div className="mt-2 text-sm text-gray-300">
+                                Taxa de conversão: {formatCurrency(item.conversionRate, 'BRL')}
+                              </div>
+                            )}
+                          </div>
+                        </CarouselItem>
+                      ))}
+                    </CarouselContent>
+                  </Carousel>
+                  <div className="mt-6 text-center">
+                    <Button asChild className="bg-primary/90 hover:bg-primary">
+                        <Link href="/dashboard">
+                            Acessar Dashboard
+                            <ChevronRight className="ml-2 h-4 w-4"/>
+                        </Link>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </section>
 
@@ -347,7 +379,3 @@ export default function LandingPage() {
     </div>
   );
 }
-
-    
-
-    
