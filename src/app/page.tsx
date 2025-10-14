@@ -261,7 +261,7 @@ export default function LandingPage() {
                   </Carousel>
                   <div className="mt-6 text-center">
                     <Button asChild className="bg-primary/90 hover:bg-primary">
-                        <Link href="/analysis/trends">
+                        <Link href="/index-details">
                             Saiba mais
                             <ChevronRight className="ml-2 h-4 w-4"/>
                         </Link>
