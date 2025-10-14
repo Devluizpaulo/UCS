@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { DollarSign, Euro, Leaf, User, ShieldCheck, Target, BarChart3, Scale, Microscope, FileText, Landmark, FileJson, CheckCircle, Search, GitBranch, Banknote, Building, Trees, Globe, ChevronRight } from "lucide-react";
+import { DollarSign, Euro, Leaf, User, ShieldCheck, Target, BarChart3, Scale, Microscope, FileText, Landmark, FileJson, CheckCircle, Search, GitBranch, Banknote, Building, Trees, Globe, ChevronRight, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import Image from 'next/image';
 import Link from 'next/link';
 import { LogoUCS } from "@/components/logo-bvm";
@@ -11,10 +11,11 @@ import { LanguageSwitcher } from "@/components/language-switcher";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
-import { formatCurrency } from "@/lib/formatters";
+import { formatCurrency, formatPercentage } from "@/lib/formatters";
 import type { CommodityPriceData } from '@/lib/types';
 import Autoplay from "embla-carousel-autoplay";
 import { getCommodityPrices } from '@/lib/data-service';
+import { cn } from '@/lib/utils';
 
 const lastros = [
     { 
@@ -120,15 +121,55 @@ export default function LandingPage() {
   const usdAsset = allPrices.find(p => p.id === 'usd');
   const eurAsset = allPrices.find(p => p.id === 'eur');
   
-  const ucsAseBRL = ucsAseAsset?.price || 0;
-  const ucsAseUSD = (usdAsset?.price && ucsAseAsset?.price) ? ucsAseAsset.price / usdAsset.price : 0;
-  const ucsAseEUR = (eurAsset?.price && ucsAseAsset?.price) ? ucsAseAsset.price / eurAsset.price : 0;
+  const getIndexValues = () => {
+    if (!ucsAseAsset) return [];
 
-  const indexValues = [
-    { currency: 'BRL', value: ucsAseBRL, icon: Leaf },
-    { currency: 'USD', value: ucsAseUSD, icon: DollarSign, conversionRate: usdAsset?.price },
-    { currency: 'EUR', value: ucsAseEUR, icon: Euro, conversionRate: eurAsset?.price },
-  ]
+    const ucsAseBRL = ucsAseAsset.price || 0;
+    const changeBRL = ucsAseAsset.change || 0;
+    
+    let indexValues = [{ 
+      currency: 'BRL', 
+      value: ucsAseBRL, 
+      change: changeBRL, 
+      icon: Leaf 
+    }];
+
+    if (usdAsset?.price) {
+      const ucsAseUSD = ucsAseBRL / usdAsset.price;
+      const prevUcsAseBRL = ucsAseBRL - ucsAseAsset.absoluteChange;
+      const prevUsdPrice = usdAsset.price - usdAsset.absoluteChange;
+      const prevUcsAseUSD = prevUsdPrice > 0 ? prevUcsAseBRL / prevUsdPrice : 0;
+      const changeUSD = prevUcsAseUSD > 0 ? ((ucsAseUSD - prevUcsAseUSD) / prevUcsAseUSD) * 100 : 0;
+      
+      indexValues.push({ 
+        currency: 'USD', 
+        value: ucsAseUSD, 
+        change: changeUSD, 
+        icon: DollarSign, 
+        conversionRate: usdAsset?.price 
+      });
+    }
+    
+    if (eurAsset?.price) {
+      const ucsAseEUR = ucsAseBRL / eurAsset.price;
+      const prevUcsAseBRL = ucsAseBRL - ucsAseAsset.absoluteChange;
+      const prevEurPrice = eurAsset.price - eurAsset.absoluteChange;
+      const prevUcsAseEUR = prevEurPrice > 0 ? prevUcsAseBRL / prevEurPrice : 0;
+      const changeEUR = prevUcsAseEUR > 0 ? ((ucsAseEUR - prevUcsAseEUR) / prevUcsAseEUR) * 100 : 0;
+
+      indexValues.push({ 
+        currency: 'EUR', 
+        value: ucsAseEUR, 
+        change: changeEUR,
+        icon: Euro, 
+        conversionRate: eurAsset?.price 
+      });
+    }
+    
+    return indexValues;
+  };
+  
+  const indexValues = getIndexValues();
   
   return (
     <div className="flex min-h-screen w-full flex-col overflow-x-hidden bg-background text-foreground">
@@ -196,11 +237,17 @@ export default function LandingPage() {
                       {indexValues.map((item, index) => (
                         <CarouselItem key={index} className="basis-full">
                           <div className="flex flex-col items-center justify-center p-4">
-                            <div className="flex items-baseline gap-4">
-                              <item.icon className="h-10 w-10 text-primary-foreground" />
-                              <span className="text-5xl font-extrabold">
-                                {formatCurrency(item.value, item.currency, item.currency.toLowerCase())}
-                              </span>
+                            <div className="flex items-center gap-4">
+                                <item.icon className="h-10 w-10 text-primary-foreground" />
+                                <div className="flex items-baseline gap-3">
+                                  <span className="text-5xl font-extrabold">
+                                    {formatCurrency(item.value, item.currency, item.currency.toLowerCase())}
+                                  </span>
+                                  <div className={cn('flex items-center text-lg font-semibold', item.change >= 0 ? 'text-green-400' : 'text-red-400')}>
+                                      {item.change >= 0 ? <TrendingUp className="h-5 w-5 mr-1" /> : <TrendingDown className="h-5 w-5 mr-1" />}
+                                      {item.change.toFixed(2)}%
+                                  </div>
+                                </div>
                             </div>
                             {item.conversionRate && (
                               <div className="mt-2 text-sm text-gray-300">
@@ -379,3 +426,5 @@ export default function LandingPage() {
     </div>
   );
 }
+
+    

@@ -7,21 +7,35 @@ export function formatCurrency(value: number, currency: string, assetId?: string
   if (typeof value !== 'number' || isNaN(value)) return '';
 
   const isExchangeRate = assetId === 'usd' || assetId === 'eur';
+  const isBRL = currency === 'BRL';
 
   const options: Intl.NumberFormatOptions = {
     style: 'currency',
     currency: currency,
-    minimumFractionDigits: isExchangeRate ? 4 : 2,
-    maximumFractionDigits: isExchangeRate ? 4 : 2,
+    minimumFractionDigits: isBRL ? 2 : (isExchangeRate ? 4 : 2),
+    maximumFractionDigits: isBRL ? 2 : (isExchangeRate ? 4 : 2),
   };
+
+  // Para USD e EUR, o padrão é exibir o código da moeda, não o símbolo.
+  if (!isBRL) {
+      options.currencyDisplay = 'code';
+  }
   
   try {
-    // Usa 'pt-BR' para todas as moedas para garantir o formato R$ 1.234,56
-    return new Intl.NumberFormat('pt-BR', options).format(value);
+    // Usa 'pt-BR' para BRL e 'en-US'/'de-DE' para consistência do símbolo/código.
+    const locale = isBRL ? 'pt-BR' : (currency === 'USD' ? 'en-US' : 'de-DE');
+    let formatted = new Intl.NumberFormat(locale, options).format(value);
+    
+    // Remove o código da moeda e adiciona o símbolo manualmente se não for BRL
+    if (!isBRL) {
+        formatted = formatted.replace(currency, '').trim();
+        const symbol = currency === 'USD' ? 'US$' : '€';
+        formatted = `${symbol} ${formatted}`;
+    }
+    
+    return formatted;
 
   } catch (e) {
-    // console.error("Error formatting currency:", e);
-    
     // Fallback em caso de erro na API de internacionalização
     const fallbackOptions = { 
         minimumFractionDigits: 2,
@@ -46,3 +60,5 @@ export function formatPercentage(value: number): string {
     maximumFractionDigits: 2,
   }).format(value / 100);
 }
+
+    
