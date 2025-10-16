@@ -161,11 +161,11 @@ export const translations: Record<SupportedLanguage, Translations> = {
       },
       quote: {
         title: "Índice UCS",
-        subtitle: "Cotação em tempo real",
+        subtitle: "Cotação Atual",
         conversionRate: "Taxa de conversão:",
       },
       whatIs: {
-        title: "O que é o UCS Crédito de Sustentabilidade?",
+        title: "O que é o UCS?",
         description: "O UCS (Crédito de Sostenibilidad) es un producto financiero innovador, respaldado por la actividad rural de conservación de bosques nativos. Convierte la preservación ambiental en un activo económico tangible y legalmente reconocido.",
       },
       stakeholders: {
@@ -320,11 +320,11 @@ export const translations: Record<SupportedLanguage, Translations> = {
       },
       quote: {
         title: "UCS Index",
-        subtitle: "Real-time quote",
+        subtitle: "Current Quote",
         conversionRate: "Conversion rate:",
       },
       whatIs: {
-        title: "What is the UCS Sustainability Credit?",
+        title: "What is UCS?",
         description: "The UCS (Sustainability Credit) is an innovative financial product, backed by the rural activity of conserving native forests. It converts environmental preservation into a tangible and legally recognized economic asset.",
       },
       stakeholders: {
@@ -479,11 +479,11 @@ export const translations: Record<SupportedLanguage, Translations> = {
       },
       quote: {
         title: "Índice UCS",
-        subtitle: "Cotización en tiempo real",
+        subtitle: "Cotización Actual",
         conversionRate: "Tasa de conversión:",
       },
       whatIs: {
-        title: "¿Qué es el Crédito de Sostenibilidad UCS?",
+        title: "¿Qué es UCS?",
         description: "El UCS (Crédito de Sostenibilidad) es un producto financiero innovador, respaldado por la actividad rural de conservación de bosques nativos. Convierte la preservación ambiental en un activo económico tangible y legalmente reconocido.",
       },
       stakeholders: {
