@@ -1,3 +1,4 @@
+
 export type SupportedLanguage = 'pt' | 'en' | 'es';
 
 export interface Translations {
@@ -159,19 +160,19 @@ export const translations: Record<SupportedLanguage, Translations> = {
         cta: "Saiba mais",
       },
       quote: {
-        title: "Índice UCS ASE",
+        title: "Índice UCS",
         subtitle: "Cotação em tempo real",
         conversionRate: "Taxa de conversão:",
       },
       whatIs: {
         title: "O que é o UCS Crédito de Sustentabilidade?",
-        description: "O UCS (Crédito de Sustentabilidade) é um produto financeiro inovador, lastreado na atividade rural de conservação de florestas nativas. Ele converte a preservação ambiental em um ativo econômico tangível e legalmente reconhecido.",
+        description: "O UCS (Crédito de Sostenibilidad) es un producto financiero innovador, respaldado por la actividad rural de conservación de bosques nativos. Convierte la preservación ambiental en un activo económico tangible y legalmente reconocido.",
       },
       stakeholders: {
-        producers: { title: "Produtores Rurais", description: "São remunerados por manter e conservar áreas de floresta nativa em suas propriedades." },
-        investors: { title: "Investidores", description: "Adquirem créditos que representam benefícios ambientais mensuráveis." },
-        institutions: { title: "Instituições Financeiras", description: "Participam de um mercado sustentável e regulamentado." },
-        environment: { title: "Meio Ambiente", description: "Ganha com a proteção efetiva de ecossistemas florestais." },
+        producers: { title: "Productores Rurales", description: "Son remunerados por mantener y conservar áreas de bosque nativo en sus propiedades." },
+        investors: { title: "Inversores", description: "Adquieren créditos que representan beneficios ambientales medibles." },
+        institutions: { title: "Instituciones Financieras", description: "Participan en un mercado sostenible y regulado." },
+        environment: { title: "Medio Ambiente", description: "Gana con la protección efectiva de los ecosistemas forestales." },
       },
       pillars: {
         title: "Por que o UCS é um Investimento Seguro e Inovador?",
@@ -318,7 +319,7 @@ export const translations: Record<SupportedLanguage, Translations> = {
         cta: "Learn more",
       },
       quote: {
-        title: "UCS ASE Index",
+        title: "UCS Index",
         subtitle: "Real-time quote",
         conversionRate: "Conversion rate:",
       },
@@ -477,7 +478,7 @@ export const translations: Record<SupportedLanguage, Translations> = {
         cta: "Saber más",
       },
       quote: {
-        title: "Índice UCS ASE",
+        title: "Índice UCS",
         subtitle: "Cotización en tiempo real",
         conversionRate: "Tasa de conversión:",
       },
