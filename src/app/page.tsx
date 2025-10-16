@@ -91,15 +91,15 @@ export default function LandingPage() {
   ];
 
   const lastros = [
-      { icon: Globe, title: homeT.pillars.monitoring.title, details: homeT.pillars.monitoring.details },
-      { icon: Trees, title: homeT.pillars.real.title, details: homeT.pillars.real.details },
-      { icon: GitBranch, title: homeT.pillars.technological.title, details: homeT.pillars.technological.details },
-      { icon: Banknote, title: homeT.pillars.financial.title, details: homeT.pillars.financial.details },
-      { icon: ShieldCheck, title: homeT.pillars.audit.title, details: homeT.pillars.audit.details },
-      { icon: Microscope, title: homeT.pillars.scientific.title, details: homeT.pillars.scientific.details },
-      { icon: BarChart3, title: homeT.pillars.technical.title, details: homeT.pillars.technical.details },
-      { icon: Scale, title: homeT.pillars.legal.title, details: homeT.pillars.legal.details },
-      { icon: FileText, title: homeT.pillars.regulatory.title, details: homeT.pillars.regulatory.details },
+      { key: 'monitoring', icon: Globe, title: homeT.pillars.monitoring.title, details: homeT.pillars.monitoring.details },
+      { key: 'real', icon: Trees, title: homeT.pillars.real.title, details: homeT.pillars.real.details },
+      { key: 'technological', icon: GitBranch, title: homeT.pillars.technological.title, details: homeT.pillars.technological.details },
+      { key: 'financial', icon: Banknote, title: homeT.pillars.financial.title, details: homeT.pillars.financial.details },
+      { key: 'audit', icon: ShieldCheck, title: homeT.pillars.audit.title, details: homeT.pillars.audit.details },
+      { key: 'scientific', icon: Microscope, title: homeT.pillars.scientific.title, details: homeT.pillars.scientific.details },
+      { key: 'technical', icon: BarChart3, title: homeT.pillars.technical.title, details: homeT.pillars.technical.details },
+      { key: 'legal', icon: Scale, title: homeT.pillars.legal.title, details: homeT.pillars.legal.details },
+      { key: 'regulatory', icon: FileText, title: homeT.pillars.regulatory.title, details: homeT.pillars.regulatory.details },
   ];
 
   const legalBasis = [
@@ -255,7 +255,7 @@ export default function LandingPage() {
                 
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
                     {lastros.map((lastro, index) => (
-                        <Card key={lastro.title} className="flex flex-col hover:shadow-lg transition-shadow animate-fade-in-up" style={{ animationDelay: `${index * 100}ms` }}>
+                        <Card key={lastro.key} className="flex flex-col hover:shadow-lg transition-shadow animate-fade-in-up" style={{ animationDelay: `${index * 100}ms` }}>
                             <CardHeader>
                                 <div className="flex items-center gap-4">
                                     <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
