@@ -213,7 +213,7 @@ export default function LandingPage() {
             {/* Título e Subtítulo */}
             <div className="flex flex-col items-center gap-4 px-4 md:px-6">
               <h1 className="text-4xl font-extrabold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl text-white drop-shadow-lg animate-fade-in-down">
-                USC: O Crédito que Transforma Florestas Preservadas em Ativos Financeiros
+                UCS: O Crédito que Transforma Florestas Preservadas em Ativos Financeiros
               </h1>
               <p className="mx-auto max-w-3xl text-lg text-gray-200 md:text-xl drop-shadow-md animate-fade-in-up">
                 Uma inovação que reconhece economicamente a conservação ambiental e gera valor para produtores rurais, investidores e para o planeta.
@@ -280,9 +280,9 @@ export default function LandingPage() {
             <div className="container mx-auto px-4 md:px-6">
                 <div className="grid md:grid-cols-2 gap-12 items-center">
                     <div className="animate-fade-in-right">
-                        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">O que é o USC Crédito de Sustentabilidade?</h2>
+                        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">O que é o UCS Crédito de Sustentabilidade?</h2>
                         <p className="mt-4 text-lg text-muted-foreground">
-                            O USC (Crédito de Sustentabilidade) é um produto financeiro inovador, lastreado na atividade rural de conservação de florestas nativas. Ele converte a preservação ambiental em um ativo econômico tangível e legalmente reconhecido.
+                            O UCS (Crédito de Sustentabilidade) é um produto financeiro inovador, lastreado na atividade rural de conservação de florestas nativas. Ele converte a preservação ambiental em um ativo econômico tangível e legalmente reconhecido.
                         </p>
                         <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-6">
                             {stakeholders.map((stakeholder) => (
@@ -315,7 +315,7 @@ export default function LandingPage() {
         <section className="py-16 md:py-24">
             <div className="container mx-auto px-4 md:px-6">
                  <div className="mx-auto max-w-4xl text-center mb-12 animate-fade-in-up">
-                    <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Por que o USC é um Investimento Seguro e Inovador?</h2>
+                    <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Por que o UCS é um Investimento Seguro e Inovador?</h2>
                     <p className="mt-4 text-lg text-muted-foreground">
                         Nossa metodologia incorpora múltiplos pilares de lastro que garantem transparência, segurança e confiabilidade em cada crédito emitido.
                     </p>
@@ -364,7 +364,7 @@ export default function LandingPage() {
                     <div className="animate-fade-in-left">
                         <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Amparo Legal Sólido e Inovador</h2>
                         <p className="mt-4 text-lg text-muted-foreground">
-                            O USC Crédito de Sustentabilidade está ancorado em um marco regulatório robusto que lhe confere segurança e validade jurídica.
+                            O UCS Crédito de Sustentabilidade está ancorado em um marco regulatório robusto que lhe confere segurança e validade jurídica.
                         </p>
                         <div className="mt-8 space-y-6">
                             {legalBasis.map((item) => (
@@ -428,5 +428,3 @@ export default function LandingPage() {
     </div>
   );
 }
-
-    
