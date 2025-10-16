@@ -193,17 +193,19 @@ export default function LandingPage() {
       <main className="flex-1">
         {/* HERO SECTION */}
         <section className="relative flex h-[90vh] min-h-[700px] w-full flex-col items-center justify-center overflow-hidden p-4">
-          {/* Fundo com Imagem e Blur */}
-          <div className="absolute inset-0 z-0 h-full w-full">
-            <Image
-              src="https://picsum.photos/seed/forest-background/1920/1080"
-              alt="Blurred forest background"
-              layout="fill"
-              objectFit="cover"
-              className="blur-xl brightness-50"
-              data-ai-hint="blurred forest"
-            />
-          </div>
+          {/* Fundo com Vídeo e Blur */}
+           <div className="absolute inset-0 z-0 h-full w-full">
+                <video
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="h-full w-full object-cover blur-sm brightness-50"
+                >
+                    <source src="https://firebasestorage.googleapis.com/v0/b/ucs-index-tracker.appspot.com/o/assets%2Fforest_background.mp4?alt=media&token=25574768-a461-4828-8789-08a8f1b620e2" type="video/mp4" />
+                    Your browser does not support the video tag.
+                </video>
+            </div>
           
           {/* Conteúdo Principal: Título e Cotação */}
           <div className="relative z-10 flex h-full w-full max-w-6xl flex-col items-center justify-center gap-8 text-center">
