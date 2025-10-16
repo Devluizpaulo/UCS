@@ -1,4 +1,5 @@
 
+
 import { cn } from "@/lib/utils";
 import type { SVGProps } from "react";
 
@@ -70,6 +71,50 @@ export function SpainFlag({ className, ...props }: SVGProps<SVGSVGElement>) {
     >
       <rect width="750" height="500" fill="#c60b1e" />
       <rect y="125" width="750" height="250" fill="#ffc400" />
+    </svg>
+  );
+}
+
+export function RussiaFlag({ className, ...props }: SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 900 600"
+      className={cn("h-4 w-auto rounded-sm", className)}
+      {...props}
+    >
+      <rect width="900" height="600" fill="#fff" />
+      <rect width="900" height="400" fill="#0039a6" />
+      <rect width="900" height="200" fill="#d52b1e" />
+    </svg>
+  );
+}
+
+export function ChinaFlag({ className, ...props }: SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 900 600"
+      className={cn("h-4 w-auto rounded-sm", className)}
+      {...props}
+    >
+      <rect width="900" height="600" fill="#de2910" />
+      <path
+        d="M150 150l23.511 72.541-60.771-44.82h75.116L127.07 222.54z"
+        fill="#ffde00"
+      />
+      <g fill="#ffde00" transform="rotate(-23.236 211.233 71.22)">
+        <path d="M300 90l7.837 24.18-20.257-14.94h25.038l-20.257 14.94z" />
+      </g>
+      <g fill="#ffde00" transform="rotate(-45.385 242.062 108.528)">
+        <path d="M300 150l7.837 24.18-20.257-14.94h25.038l-20.257 14.94z" />
+      </g>
+      <g fill="#ffde00" transform="rotate(-69.215 236.42 165.437)">
+        <path d="M300 210l7.837 24.18-20.257-14.94h25.038l-20.257 14.94z" />
+      </g>
+      <g fill="#ffde00" transform="rotate(23.236 78.767 348.78)">
+        <path d="M210 270l7.837 24.18-20.257-14.94h25.038l-20.257 14.94z" />
+      </g>
     </svg>
   );
 }

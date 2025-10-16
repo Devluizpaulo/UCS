@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -8,7 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { BrazilFlag, USFlag, SpainFlag } from './flags';
+import { BrazilFlag, USFlag, SpainFlag, RussiaFlag, ChinaFlag } from './flags';
 import { useLanguage } from '@/lib/language-context';
 import { SupportedLanguage } from '@/lib/i18n';
 
@@ -16,6 +17,8 @@ const languages = [
   { code: 'pt' as SupportedLanguage, label: 'Português', Flag: BrazilFlag },
   { code: 'en' as SupportedLanguage, label: 'English', Flag: USFlag },
   { code: 'es' as SupportedLanguage, label: 'Español', Flag: SpainFlag },
+  { code: 'ru' as SupportedLanguage, label: 'Русский', Flag: RussiaFlag },
+  { code: 'zh' as SupportedLanguage, label: '中文', Flag: ChinaFlag },
 ];
 
 export function LanguageSwitcher() {

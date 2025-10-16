@@ -1,3 +1,5 @@
+
+
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
@@ -17,7 +19,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   // Load language from localStorage on mount
   useEffect(() => {
     const savedLanguage = localStorage.getItem('language') as SupportedLanguage;
-    if (savedLanguage && ['pt', 'en', 'es'].includes(savedLanguage)) {
+    if (savedLanguage && ['pt', 'en', 'es', 'ru', 'zh'].includes(savedLanguage)) {
       setLanguage(savedLanguage);
     }
   }, []);

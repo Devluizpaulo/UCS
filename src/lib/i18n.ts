@@ -1,5 +1,6 @@
 
-export type SupportedLanguage = 'pt' | 'en' | 'es';
+
+export type SupportedLanguage = 'pt' | 'en' | 'es' | 'ru' | 'zh';
 
 export interface Translations {
   home: {
@@ -166,13 +167,13 @@ export const translations: Record<SupportedLanguage, Translations> = {
       },
       whatIs: {
         title: "O que é o UCS?",
-        description: "O UCS (Crédito de Sostenibilidad) es un producto financiero innovador, respaldado por la actividad rural de conservación de bosques nativos. Convierte la preservación ambiental en un activo económico tangible y legalmente reconocido.",
+        description: "O UCS (Crédito de Sustentabilidade) é um produto financeiro inovador, lastreado na atividade rural de conservação de florestas nativas. Ele converte a preservação ambiental em um ativo econômico tangível e com amparo legal.",
       },
       stakeholders: {
-        producers: { title: "Productores Rurales", description: "Son remunerados por mantener y conservar áreas de bosque nativo en sus propiedades." },
-        investors: { title: "Inversores", description: "Adquieren créditos que representan beneficios ambientales medibles." },
-        institutions: { title: "Instituciones Financieras", description: "Participan en un mercado sostenible y regulado." },
-        environment: { title: "Medio Ambiente", description: "Gana con la protección efectiva de los ecosistemas forestales." },
+        producers: { title: "Produtores Rurais", description: "São remunerados por manter e conservar áreas de floresta nativa em suas propriedades." },
+        investors: { title: "Investidores", description: "Adquirem créditos que representam benefícios ambientais mensuráveis." },
+        institutions: { title: "Instituições Financeiras", description: "Participam de um mercado sustentável e regulado." },
+        environment: { title: "Meio Ambiente", description: "Ganha com a proteção efetiva dos ecossistemas florestais." },
       },
       pillars: {
         title: "Por que o UCS é um Investimento Seguro e Inovador?",
@@ -627,6 +628,324 @@ export const translations: Record<SupportedLanguage, Translations> = {
         date: 'Fecha',
         price: 'Precio',
       },
+    },
+  },
+  ru: {
+    home: {
+      hero: {
+        title: "UCS: Кредит, который превращает сохраненные леса в финансовые активы",
+        subtitle: "Инновация, которая экономически признает охрану окружающей среды и создает ценность для сельских производителей, инвесторов и планеты.",
+        cta: "Узнать больше",
+      },
+      quote: {
+        title: "Индекс UCS",
+        subtitle: "Текущая котировка",
+        conversionRate: "Курс обмена:",
+      },
+      whatIs: {
+        title: "Что такое UCS?",
+        description: "UCS (Кредит на устойчивое развитие) — это инновационный финансовый продукт, обеспеченный сельской деятельностью по сохранению коренных лесов. Он превращает охрану окружающей среды в материальный и юридически признанный экономический актив.",
+      },
+      stakeholders: {
+        producers: { title: "Сельские производители", description: "Получают вознаграждение за поддержание и сохранение коренных лесов на своих землях." },
+        investors: { title: "Инвесторы", description: "Приобретают кредиты, представляющие измеримые экологические выгоды." },
+        institutions: { title: "Финансовые учреждения", description: "Участвуют в устойчивом и регулируемом рынке." },
+        environment: { title: "Окружающая среда", description: "Выигрывает от эффективной защиты лесных экосистем." },
+      },
+      pillars: {
+        title: "Почему UCS — это безопасная и инновационная инвестиция?",
+        subtitle: "Наша методология включает в себя несколько уровней обеспечения, которые гарантируют прозрачность, безопасность и надежность каждого выпущенного кредита.",
+        monitoring: { title: "Обеспечение мониторингом", details: ["Доступ к спутниковым изображениям в реальном времени"] },
+        real: { title: "Реальное обеспечение", details: ["Материализуется в виде сохраненной коренной растительности"] },
+        technological: { title: "Технологическое обеспечение", details: ["Регистрация в блокчейне при выводе/использовании UCS", "Регистрация происхождения UCS в блокчейне"] },
+        financial: { title: "Финансовое обеспечение", details: ["Международный идентификационный код ISIN", "Регулируемый финансовый инструмент для сотрудничества на рынке капитала", "Регистрация на бразильской фондовой бирже (B3)"] },
+        audit: { title: "Обеспечение независимым аудитом", details: ["Проверка независимой третьей стороной с международной репутацией", "Валидация независимой третьей стороной с международной репутацией"] },
+        scientific: { title: "Научное обеспечение", details: ["Руководящие принципы МГЭИК", "Руководящие принципы ISO"] },
+        technical: { title: "Техническое обеспечение", details: ["Международный лабораторный анализ", "Национальный лабораторный анализ", "Полевой анализ (27 экосистемных услуг)"] },
+        legal: { title: "Юридическое обеспечение", details: ["Определение продукта", "Определение экономической деятельности", "Регистрация собственности в нотариальной конторе", "Договор о сельском партнерстве и присоединении"] },
+        regulatory: { title: "Регуляторное обеспечение", details: ["Международное: Регламент ЕС 2020/852", "Глобальные соглашения: Парижское соглашение (статья 5), Монреальский протокол (биоразнообразие)", "Национальная политика по изменению климата", "Конституция Бразилии, право собственности, экологическое право", "Лесной кодекс Бразилии"] },
+      },
+      legal: {
+        title: "Прочная и инновационная правовая основа",
+        subtitle: "Кредит на устойчивое развитие UCS опирается на надежную нормативно-правовую базу, которая обеспечивает его безопасность и юридическую силу.",
+        cnae: "Признает сельскую деятельность по сохранению коренных лесов.",
+        law: "Устанавливает, что сельская продукция может быть создана в результате природоохранной деятельности.",
+        decree: "Регулирует «Зеленый CPR», интегрируя сохранение как экономический актив.",
+      },
+      summary: {
+        title: "Сохранение, создающее ценность",
+        points: [
+          'Превращает охрану окружающей среды в финансовый актив',
+          'Обеспечивает полную прозрачность благодаря нескольким уровням обеспечения',
+          'Гарантирует юридическую и нормативную безопасность',
+          'Генерирует экономическую отдачу без ущерба для окружающей среды',
+          'Объединяет производителей, инвесторов и учреждения в добродетельном цикле'
+        ],
+      },
+      cta: {
+        title: "Хотите узнать больше?",
+        subtitle: "Присоединяйтесь к новой зеленой экономике, которая ценит сохраненные леса!",
+        button: "Посетите BMV Digital",
+      },
+      footer: {
+        rights: "Все права защищены.",
+        source: "Источник данных:",
+      }
+    },
+    excelPreview: {
+      title: 'Предварительный просмотр отчета Excel',
+      subtitle: 'Данные за',
+      totalAssets: 'Всего активов',
+      rising: 'Растущие',
+      falling: 'Падающие',
+      stable: 'Стабильные',
+      tabs: {
+        mainData: '📊 Основные данные',
+        distribution: '🍕 Распределение',
+        topVariations: '📈 Топ изменений',
+      },
+      table: {
+        asset: 'Актив',
+        price: 'Цена',
+        variation: 'Изменение',
+      },
+      distribution: {
+        title: 'Распределение по категориям',
+        assets: 'актив(ов)',
+      },
+      topVariations: {
+        title: 'Топ-10 самых больших изменений',
+      },
+      features: {
+        title: 'Возможности экспортированного Excel:',
+        features: [
+          'Три организованные вкладки: Данные, Анализ и Сводка.',
+          'Условное форматирование с цветами для роста и падения.',
+          'Интерактивные круговые и столбчатые диаграммы.',
+        ],
+      },
+      buttons: {
+        cancel: 'Отмена',
+        generating: 'Создание...',
+        exportToExcel: 'Экспорт в Excel',
+      },
+    },
+    excelExport: {
+        buttons: {
+            previewExcel: 'Предпросмотр Excel',
+            exportExcel: 'Экспорт в Excel',
+            exporting: 'Экспорт...',
+        },
+        messages: {
+            exportSuccess: 'Excel успешно экспортирован!',
+            exportError: 'Ошибка при экспорте в Excel',
+            noDataToExport: 'Нет данных для экспорта',
+        },
+        headers: {
+            category: '🏷️ Категория',
+            asset: '📋 Актив',
+            lastPrice: '💰 Последняя цена',
+            variationPercent: '📊 Изменение (%)',
+            absoluteVariation: '📈 Абсолютное изменение',
+            unit: '📏 Единица',
+            currency: '💱 Валюта',
+            status: '🎯 Статус',
+            lastUpdate: '🕐 Последнее обновление',
+            notes: '📝 Примечания',
+        },
+        summary: {
+            title: '📊 СТАТИСТИЧЕСКАЯ СВОДКА',
+            total: 'Всего',
+            rising: '📈 Рост',
+            falling: '📉 Падение',
+            stable: '➡️ Стабильно',
+        },
+        analysis: {
+            title: '📈 Анализ',
+            topGains: 'Лидеры роста',
+            topLosses: 'Лидеры падения',
+            mostVolatile: 'Самые волатильные',
+        },
+        executiveSummary: {
+            title: '📋 Сводный отчет',
+            generatedOn: 'Сгенерировано',
+            dataFor: 'Данные за',
+            marketOverview: 'Обзор рынка',
+            keyMetrics: 'Ключевые показатели',
+            recommendations: 'Рекомендации',
+        },
+        charts: {
+            categoryDistribution: 'Распределение по категориям',
+            topVariations: 'Топ-15 самых больших изменений',
+            priceTrends: 'Ценовые тренды',
+            category: 'Категория',
+            quantity: 'Количество',
+            percentage: 'Процент',
+            rank: 'Ранг',
+            asset: 'Актив',
+            variation: 'Изменение (%)',
+            date: 'Дата',
+            price: 'Цена',
+        },
+    },
+  },
+  zh: {
+    home: {
+      hero: {
+        title: "UCS：将受保护的森林转变为金融资产的信用",
+        subtitle: "一项经济上认可环境保护并为农村生产者、投资者和地球创造价值的创新。",
+        cta: "了解更多",
+      },
+      quote: {
+        title: "UCS指数",
+        subtitle: "当前报价",
+        conversionRate: "换算率:",
+      },
+      whatIs: {
+        title: "什么是UCS？",
+        description: "UCS（可持续发展信用）是一种创新的金融产品，以保护本地森林的农村活动为支持。它将环境保护转变为有形的、受法律承认的经济资产。",
+      },
+      stakeholders: {
+        producers: { title: "农村生产者", description: "因在其土地上维护和保护本地森林而获得报酬。" },
+        investors: { title: "投资者", description: "获得代表可衡量环境效益的信用。" },
+        institutions: { title: "金融机构", description: "参与一个可持续且受监管的市场。" },
+        environment: { title: "环境", description: "从森林生态系统的有效保护中受益。" },
+      },
+      pillars: {
+        title: "为什么UCS是一项安全且创新的投资？",
+        subtitle: "我们的方法论包含了多重支持支柱，确保了每个发行信用的透明度、安全性和可靠性。",
+        monitoring: { title: "监控支持", details: ["通过实时卫星图像访问"] },
+        real: { title: "实物支持", details: ["通过维护的本地植被实现有形化"] },
+        technological: { title: "技术支持", details: ["UCS退役/消费时的区块链注册", "UCS来源的区块链注册"] },
+        financial: { title: "金融支持", details: ["国际证券识别码（ISIN）", "用于资本市场合作的受监管金融工具", "在巴西证券交易所（B3）注册"] },
+        audit: { title: "独立审计支持", details: ["由具有国际声誉的独立第三方进行验证", "由具有国际声誉的独立第三方进行确认"] },
+        scientific: { title: "科学支持", details: ["IPCC（政府间气候变化专门委员会）指南", "ISO（国际标准化组织）指南"] },
+        technical: { title: "技术支持", details: ["国际实验室分析", "国家实验室分析", "实地分析（27项生态系统服务）"] },
+        legal: { title: "法律支持", details: ["产品定义", "经济活动定义", "在公证处进行财产登记", "农村合作与加入合同"] },
+        regulatory: { title: "监管支持", details: ["国际：欧盟法规2020/852", "全球契约：《巴黎协定》（第5条）、《蒙特利尔议定书》（生物多样性）", "国家气候变化政策", "巴西宪法、财产权、环境法", "巴西森林法"] },
+      },
+      legal: {
+        title: "坚实创新的法律支持",
+        subtitle: "UCS可持续发展信用建立在健全的监管框架之上，为其提供了安全性和法律效力。",
+        cnae: "承认保护本地森林的农村活动。",
+        law: "规定农村产品可以通过保护活动产生。",
+        decree: "规范绿色CPR，将保护整合为经济资产。",
+      },
+      summary: {
+        title: "创造价值的保护",
+        points: [
+          '将环境保护转变为金融资产',
+          '通过多重支持提供完全透明度',
+          '保障法律和监管安全',
+          '在不损害环境的情况下产生经济回报',
+          '将生产者、投资者和机构连接成一个良性循环'
+        ],
+      },
+      cta: {
+        title: "有兴趣了解更多吗？",
+        subtitle: "加入重视現存森林的新绿色经济！",
+        button: "访问 BMV Digital",
+      },
+      footer: {
+        rights: "版权所有。",
+        source: "数据来源:",
+      }
+    },
+    excelPreview: {
+      title: 'Excel报告预览',
+      subtitle: '数据日期',
+      totalAssets: '总资产',
+      rising: '上涨',
+      falling: '下跌',
+      stable: '稳定',
+      tabs: {
+        mainData: '📊 主要数据',
+        distribution: '🍕 分布',
+        topVariations: '📈 主要变动',
+      },
+      table: {
+        asset: '资产',
+        price: '价格',
+        variation: '变动',
+      },
+      distribution: {
+        title: '按类别分布',
+        assets: '项资产',
+      },
+      topVariations: {
+        title: '前10大变动',
+      },
+      features: {
+        title: '导出的Excel功能：',
+        features: [
+          '三个有组织的标签页：数据、分析和摘要。',
+          '带有颜色标记高低点的条件格式。',
+          '交互式饼图和条形图。',
+        ],
+      },
+      buttons: {
+        cancel: '取消',
+        generating: '生成中...',
+        exportToExcel: '导出到Excel',
+      },
+    },
+    excelExport: {
+        buttons: {
+            previewExcel: '预览Excel',
+            exportExcel: '导出Excel',
+            exporting: '导出中...',
+        },
+        messages: {
+            exportSuccess: 'Excel导出成功！',
+            exportError: '导出Excel时出错',
+            noDataToExport: '无数据可导出',
+        },
+        headers: {
+            category: '🏷️ 类别',
+            asset: '📋 资产',
+            lastPrice: '💰 最新价格',
+            variationPercent: '📊 变动(%)',
+            absoluteVariation: '📈 绝对变动',
+            unit: '📏 单位',
+            currency: '💱 货币',
+            status: '🎯 状态',
+            lastUpdate: '🕐 最后更新',
+            notes: '📝 备注',
+        },
+        summary: {
+            title: '📊 统计摘要',
+            total: '总计',
+            rising: '📈 上涨',
+            falling: '📉 下跌',
+            stable: '➡️ 稳定',
+        },
+        analysis: {
+            title: '📈 分析',
+            topGains: '最大涨幅',
+            topLosses: '最大跌幅',
+            mostVolatile: '最不稳定',
+        },
+        executiveSummary: {
+            title: '📋 执行摘要',
+            generatedOn: '生成于',
+            dataFor: '数据日期',
+            marketOverview: '市场概览',
+            keyMetrics: '关键指标',
+            recommendations: '建议',
+        },
+        charts: {
+            categoryDistribution: '按类别分布',
+            topVariations: '前15大变动',
+            priceTrends: '价格趋势',
+            category: '类别',
+            quantity: '数量',
+            percentage: '百分比',
+            rank: '排名',
+            asset: '资产',
+            variation: '变动(%)',
+            date: '日期',
+            price: '价格',
+        },
     },
   },
 };
