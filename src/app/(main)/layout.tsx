@@ -11,6 +11,7 @@ import {
   SidebarProvider,
   SidebarInset,
   useSidebar,
+  SidebarTrigger,
 } from '@/components/ui/sidebar';
 import {
   LayoutDashboard,
@@ -37,6 +38,7 @@ import { updateUser, acceptLgpd } from '@/lib/admin-actions';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import { LgpdConsentModal } from '@/components/lgpd-consent-modal';
+import { PageHeader } from '@/components/page-header';
 
 function UserProfile() {
     const { user, isUserLoading } = useUser();

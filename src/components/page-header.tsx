@@ -1,5 +1,5 @@
+
 import type { ElementType, ReactNode } from 'react';
-import { SidebarTrigger } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
 
 type PageHeaderProps = {
@@ -7,16 +7,17 @@ type PageHeaderProps = {
   description?: string;
   icon?: ElementType;
   children?: ReactNode;
+  trigger?: ReactNode;
 };
 
-export function PageHeader({ title, description, icon: Icon, children }: PageHeaderProps) {
+export function PageHeader({ title, description, icon: Icon, children, trigger }: PageHeaderProps) {
   return (
     <header className={cn(
         "flex h-auto min-h-16 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-border/50 bg-background/95 backdrop-blur-sm px-4 py-3 sm:px-6",
         "sticky top-0 z-30 shadow-sm"
       )}>
       <div className="flex flex-1 items-center gap-3 min-w-0">
-        <SidebarTrigger className="lg:hidden hover:bg-accent/50" />
+        {trigger}
         {Icon && <Icon className="h-6 w-6 text-primary hidden sm:block" />}
         <div className="flex-1 min-w-0">
           <h1 className="font-semibold text-lg md:text-2xl truncate text-gradient">{title}</h1>
