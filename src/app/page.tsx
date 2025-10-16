@@ -142,7 +142,7 @@ export default function LandingPage() {
                     playsInline
                     className="h-full w-full object-cover blur-sm brightness-50"
                 >
-                    <source src="https://firebasestorage.googleapis.com/v0/b/ucs-index-tracker.appspot.com/o/assets%2Fforest_background.mp4?alt=media&token=25574768-a461-4828-8789-08a8f1b620e2" type="video/mp4" />
+                    <source src="/video/hero.mp4" type="video/mp4" />
                     Your browser does not support the video tag.
                 </video>
             </div>
