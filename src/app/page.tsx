@@ -16,98 +16,11 @@ import type { CommodityPriceData } from '@/lib/types';
 import Autoplay from "embla-carousel-autoplay";
 import { getCommodityPrices } from '@/lib/data-service';
 import { cn } from '@/lib/utils';
-
-const lastros = [
-    { 
-        icon: Globe, 
-        title: "Lastro Monitoramento", 
-        details: ["Acesso por imagem satélite em tempo real"] 
-    },
-    { 
-        icon: Trees, 
-        title: "Lastro Real", 
-        details: ["Tangível pela vegetação nativa mantida"] 
-    },
-    { 
-        icon: GitBranch, 
-        title: "Lastro Tecnológico", 
-        details: [
-            "Registro Blockchain na aposentadoria/consumo das UCS",
-            "Registro Blockchain na origem das UCS"
-        ] 
-    },
-    { 
-        icon: Banknote, 
-        title: "Lastro Financeiro", 
-        details: [
-            "Identificação Internacional, código ISIN (International Securities Identification Number)",
-            "Instrumento Financeiro regulado para cooperação no mercado de capitais",
-            "Registro na bolsa brasileira (B3)"
-        ] 
-    },
-    { 
-        icon: ShieldCheck, 
-        title: "Lastro Auditoria Independente", 
-        details: [
-            "Verificação por terceira parte independente com notoriedade internacional",
-            "Validação por terceira parte independente com notoriedade internacional"
-        ] 
-    },
-    { 
-        icon: Microscope, 
-        title: "Lastro Científico", 
-        details: [
-            "Diretrizes do IPCC (Intergovernmental Panel on Climate Change)",
-            "Diretrizes das ISOs (International Organization for Standardization)"
-        ] 
-    },
-    { 
-        icon: BarChart3, 
-        title: "Lastro Técnico", 
-        details: [
-            "Análise laboratorial internacional",
-            "Análise laboratorial nacional",
-            "Análise de campo (27 serviços ecossistêmicos)"
-        ] 
-    },
-    { 
-        icon: Scale, 
-        title: "Lastro Jurídico", 
-        details: [
-            "Definição do produto",
-            "Definição da atividade econômica",
-            "Registro em cartório da propriedade",
-            "Contrato de Parceria Rural e adesão"
-        ] 
-    },
-    { 
-        icon: FileText, 
-        title: "Lastro Regulatório", 
-        details: [
-            "Internacional: Regulação União Europeia 2020/852",
-            "Pactos globais: Acordo de Paris (artigo 5), Acordo de Montreal (Biodiversidade)",
-            "Política Nacional de Mudanças Climáticas",
-            "Constituição Brasileira, Direito de Propriedade, Direito Ambiental",
-            "Código Florestal Brasileiro"
-        ] 
-    },
-];
-
-const stakeholders = [
-    { icon: User, title: 'Produtores Rurais', description: 'São remunerados por manter e conservar áreas de floresta nativa em suas propriedades.' },
-    { icon: Building, title: 'Investidores', description: 'Adquirem créditos que representam benefícios ambientais mensuráveis.' },
-    { icon: Landmark, title: 'Instituições Financeiras', description: 'Participam de um mercado sustentável e regulamentado.' },
-    { icon: Globe, title: 'Meio Ambiente', description: 'Ganha com a proteção efetiva de ecossistemas florestais.' },
-];
-
-const legalBasis = [
-    { icon: FileText, title: 'CNAE 0220-9/06', description: 'Reconhece a atividade rural de conservação de floresta nativa.' },
-    { icon: Landmark, title: 'Lei 13.986/2020', description: 'Estabelece que produtos rurais podem ser gerados por atividades de conservação.' },
-    { icon: FileJson, title: 'Decreto 10.828/2021', description: 'Regulamenta a CPR Verde, integrando a conservação como ativo econômico.' },
-]
+import { useLanguage } from '@/lib/language-context';
 
 export default function LandingPage() {
   const [allPrices, setAllPrices] = React.useState<CommodityPriceData[]>([]);
+  const { t } = useLanguage();
   
   React.useEffect(() => {
     getCommodityPrices().then(setAllPrices);
@@ -171,6 +84,33 @@ export default function LandingPage() {
   
   const indexValues = getIndexValues();
   
+  const homeT = t.home;
+
+  const stakeholders = [
+    { icon: User, title: homeT.stakeholders.producers.title, description: homeT.stakeholders.producers.description },
+    { icon: Building, title: homeT.stakeholders.investors.title, description: homeT.stakeholders.investors.description },
+    { icon: Landmark, title: homeT.stakeholders.institutions.title, description: homeT.stakeholders.institutions.description },
+    { icon: Globe, title: homeT.stakeholders.environment.title, description: homeT.stakeholders.environment.description },
+  ];
+
+  const lastros = [
+      { icon: Globe, title: homeT.pillars.monitoring.title, details: homeT.pillars.monitoring.details },
+      { icon: Trees, title: homeT.pillars.real.title, details: homeT.pillars.real.details },
+      { icon: GitBranch, title: homeT.pillars.technological.title, details: homeT.pillars.technological.details },
+      { icon: Banknote, title: homeT.pillars.financial.title, details: homeT.pillars.financial.details },
+      { icon: ShieldCheck, title: homeT.pillars.audit.title, details: homeT.pillars.audit.details },
+      { icon: Microscope, title: homeT.pillars.scientific.title, details: homeT.pillars.scientific.details },
+      { icon: BarChart3, title: homeT.pillars.technical.title, details: homeT.pillars.technical.details },
+      { icon: Scale, title: homeT.pillars.legal.title, details: homeT.pillars.legal.details },
+      { icon: FileText, title: homeT.pillars.regulatory.title, details: homeT.pillars.regulatory.details },
+  ];
+
+  const legalBasis = [
+      { icon: FileText, title: "CNAE 0220-9/06", description: homeT.legal.cnae },
+      { icon: Landmark, title: "Lei 13.986/2020", description: homeT.legal.law },
+      { icon: FileJson, title: "Decreto 10.828/2021", description: homeT.legal.decree },
+  ]
+  
   return (
     <div className="flex min-h-screen w-full flex-col overflow-x-hidden bg-background text-foreground">
       <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-sm">
@@ -213,10 +153,10 @@ export default function LandingPage() {
             {/* Título e Subtítulo */}
             <div className="flex flex-col items-center gap-4 px-4 md:px-6">
               <h1 className="text-4xl font-extrabold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl text-white drop-shadow-lg animate-fade-in-down">
-                UCS: O Crédito que Transforma Florestas Preservadas em Ativos Financeiros
+                {homeT.hero.title}
               </h1>
               <p className="mx-auto max-w-3xl text-lg text-gray-200 md:text-xl drop-shadow-md animate-fade-in-up">
-                Uma inovação que reconhece economicamente a conservação ambiental e gera valor para produtores rurais, investidores e para o planeta.
+                {homeT.hero.subtitle}
               </p>
             </div>
 
@@ -224,8 +164,8 @@ export default function LandingPage() {
             <div className="w-full max-w-4xl p-4 animate-fade-in-up animation-delay-400">
                <Card className="bg-background/20 backdrop-blur-md border-white/20 text-white shadow-2xl">
                 <CardHeader className="text-center">
-                    <CardTitle className="text-xl font-bold">Índice UCS ASE</CardTitle>
-                    <CardDescription className="text-gray-300">Cotação em tempo real</CardDescription>
+                    <CardTitle className="text-xl font-bold">{homeT.quote.title}</CardTitle>
+                    <CardDescription className="text-gray-300">{homeT.quote.subtitle}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Carousel
@@ -253,7 +193,7 @@ export default function LandingPage() {
                             </div>
                             {item.conversionRate && (
                               <div className="mt-2 text-sm text-gray-300">
-                                Taxa de conversão: {formatCurrency(item.conversionRate, 'BRL')}
+                                {homeT.quote.conversionRate}: {formatCurrency(item.conversionRate, 'BRL')}
                               </div>
                             )}
                           </div>
@@ -264,7 +204,7 @@ export default function LandingPage() {
                   <div className="mt-6 text-center">
                     <Button asChild className="bg-primary/90 hover:bg-primary">
                         <Link href="/index-details">
-                            Saiba mais
+                            {homeT.hero.cta}
                             <ChevronRight className="ml-2 h-4 w-4"/>
                         </Link>
                     </Button>
@@ -280,9 +220,9 @@ export default function LandingPage() {
             <div className="container mx-auto px-4 md:px-6">
                 <div className="grid md:grid-cols-2 gap-12 items-center">
                     <div className="animate-fade-in-right">
-                        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">O que é o UCS Crédito de Sustentabilidade?</h2>
+                        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.whatIs.title}</h2>
                         <p className="mt-4 text-lg text-muted-foreground">
-                            O UCS (Crédito de Sustentabilidade) é um produto financeiro inovador, lastreado na atividade rural de conservação de florestas nativas. Ele converte a preservação ambiental em um ativo econômico tangível e legalmente reconhecido.
+                            {homeT.whatIs.description}
                         </p>
                         <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-6">
                             {stakeholders.map((stakeholder) => (
@@ -315,9 +255,9 @@ export default function LandingPage() {
         <section className="py-16 md:py-24">
             <div className="container mx-auto px-4 md:px-6">
                  <div className="mx-auto max-w-4xl text-center mb-12 animate-fade-in-up">
-                    <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Por que o UCS é um Investimento Seguro e Inovador?</h2>
+                    <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.pillars.title}</h2>
                     <p className="mt-4 text-lg text-muted-foreground">
-                        Nossa metodologia incorpora múltiplos pilares de lastro que garantem transparência, segurança e confiabilidade em cada crédito emitido.
+                        {homeT.pillars.subtitle}
                     </p>
                 </div>
                 
@@ -362,9 +302,9 @@ export default function LandingPage() {
                         />
                     </div>
                     <div className="animate-fade-in-left">
-                        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Amparo Legal Sólido e Inovador</h2>
+                        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.legal.title}</h2>
                         <p className="mt-4 text-lg text-muted-foreground">
-                            O UCS Crédito de Sustentabilidade está ancorado em um marco regulatório robusto que lhe confere segurança e validade jurídica.
+                            {homeT.legal.subtitle}
                         </p>
                         <div className="mt-8 space-y-6">
                             {legalBasis.map((item) => (
@@ -388,16 +328,10 @@ export default function LandingPage() {
         <section className="py-16 md:py-24">
             <div className="container mx-auto px-4 md:px-6">
                 <div className="mx-auto max-w-4xl text-center animate-fade-in-up">
-                    <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Conservação que Gera Valor</h2>
+                    <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.summary.title}</h2>
                 </div>
                 <div className="mx-auto mt-8 grid max-w-4xl grid-cols-1 gap-6 sm:grid-cols-2 animate-fade-in-up animation-delay-200">
-                  {[
-                      'Transforma conservação ambiental em ativo financeiro', 
-                      'Oferece transparência total através de múltiplos lastros', 
-                      'Garante segurança jurídica e regulatória', 
-                      'Gera retorno econômico sem comprometer o meio ambiente', 
-                      'Conecta produtores, investidores e instituições em um ciclo virtuoso'
-                    ].map(item => (
+                  {homeT.summary.points.map((item: string) => (
                     <div key={item} className="flex items-center gap-3">
                       <CheckCircle className="h-5 w-5 flex-shrink-0 text-primary" />
                       <span className="text-base text-muted-foreground">{item}</span>
@@ -405,11 +339,11 @@ export default function LandingPage() {
                   ))}
                 </div>
                 <div className="mt-16 text-center animate-fade-in-up animation-delay-400">
-                    <h3 className="text-2xl font-bold">Interessado em Saber Mais?</h3>
-                    <p className="mt-2 text-muted-foreground">Junte-se à nova economia verde que valoriza a floresta em pé!</p>
+                    <h3 className="text-2xl font-bold">{homeT.cta.title}</h3>
+                    <p className="mt-2 text-muted-foreground">{homeT.cta.subtitle}</p>
                      <Button size="lg" className="mt-8 text-lg" asChild>
                         <a href="https://bmvdigital.global/" target="_blank" rel="noopener noreferrer">
-                          Visite a BMV Digital <ChevronRight className="ml-2 h-5 w-5" />
+                          {homeT.cta.button} <ChevronRight className="ml-2 h-5 w-5" />
                         </a>
                       </Button>
                 </div>
@@ -420,8 +354,8 @@ export default function LandingPage() {
       <footer className="border-t">
         <div className="container mx-auto flex flex-col items-center justify-between gap-4 px-4 py-8 md:flex-row md:px-6">
           <div className="flex flex-col items-center gap-2 text-center md:flex-row md:gap-4 md:text-left">
-            <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} UCS Index. Todos os direitos reservados.</p>
-            <p className="text-sm text-muted-foreground">Fonte dos dados: <a href="https://br.investing.com/" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">investing.com.br</a></p>
+            <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} UCS Index. {homeT.footer.rights}</p>
+            <p className="text-sm text-muted-foreground">{homeT.footer.source} <a href="https://br.investing.com/" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">investing.com.br</a></p>
           </div>
         </div>
       </footer>
