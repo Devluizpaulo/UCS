@@ -179,17 +179,14 @@ export default function LandingPage() {
                       {indexValues.map((item, index) => (
                         <CarouselItem key={index} className="basis-full">
                           <div className="flex flex-col items-center justify-center p-4">
-                            <div className="flex items-center gap-4">
-                                <item.icon className="h-10 w-10 text-primary-foreground" />
-                                <div className="flex items-baseline gap-3">
-                                  <span className="text-5xl font-extrabold">
-                                    {formatCurrency(item.value, item.currency, item.currency.toLowerCase())}
-                                  </span>
-                                  <div className={cn('flex items-center text-lg font-semibold', item.change >= 0 ? 'text-green-400' : 'text-red-400')}>
-                                      {item.change >= 0 ? <TrendingUp className="h-5 w-5 mr-1" /> : <TrendingDown className="h-5 w-5 mr-1" />}
-                                      {item.change.toFixed(2)}%
-                                  </div>
-                                </div>
+                            <div className="flex items-baseline gap-3">
+                              <span className="text-5xl font-extrabold">
+                                {formatCurrency(item.value, item.currency, item.currency.toLowerCase())}
+                              </span>
+                              <div className={cn('flex items-center text-lg font-semibold', item.change >= 0 ? 'text-green-400' : 'text-red-400')}>
+                                  {item.change >= 0 ? <TrendingUp className="h-5 w-5 mr-1" /> : <TrendingDown className="h-5 w-5 mr-1" />}
+                                  {item.change.toFixed(2)}%
+                              </div>
                             </div>
                             {item.conversionRate && (
                               <div className="mt-2 text-sm text-gray-300">
