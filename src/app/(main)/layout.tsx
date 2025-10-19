@@ -22,7 +22,6 @@ import {
   History,
   PieChart,
   CheckSquare,
-  FileText
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -39,6 +38,7 @@ import { updateUser, acceptLgpd } from '@/lib/admin-actions';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import { LgpdConsentModal } from '@/components/lgpd-consent-modal';
+import { PageHeader } from '@/components/page-header';
 
 function UserProfile() {
     const { user, isUserLoading } = useUser();
@@ -282,18 +282,6 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-                 <SidebarMenuItem onClick={handleMenuItemClick}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={pathname.startsWith('/admin/checklist')}
-                      tooltip={{ children: 'Checklist' }}
-                    >
-                      <Link href="/admin/checklist">
-                        <CheckSquare />
-                        <span>Checklist</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
               </SidebarMenu>
               {isAdmin && (
                 <SidebarMenu>
@@ -321,18 +309,6 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
                       <Link href="/admin/audit">
                         <History />
                         <span>Auditoria</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem onClick={handleMenuItemClick}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={pathname.startsWith('/privacy-policy')}
-                      tooltip={{ children: 'Política de Privacidade' }}
-                    >
-                      <Link href="/privacy-policy">
-                        <FileText />
-                        <span>Política de Privacidade</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -367,7 +343,7 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
 }
 
 
-export function MainLayout({ children }: { children: React.ReactNode }) {
+export default function MainLayout({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
       <MainLayoutContent>{children}</MainLayoutContent>

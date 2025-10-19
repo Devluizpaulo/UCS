@@ -1,4 +1,3 @@
-
 import { ForgotPasswordForm } from "@/components/auth/forgot-password-form";
 import { LogoUCS } from "@/components/logo-bvm";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
