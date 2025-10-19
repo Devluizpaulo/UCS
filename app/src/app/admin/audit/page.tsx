@@ -53,6 +53,7 @@ import { ValidationAlerts, generateValidationAlerts, type ValidationAlert } from
 import { DateComparison } from '@/components/admin/date-comparison';
 import { AuditExport } from '@/components/admin/audit-export';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { MainLayout } from '@/app/main-layout';
 
 
 function getValidatedDate(dateString?: string | null): Date {
@@ -299,7 +300,7 @@ const IndexTable = ({ indices, editedValues }: { indices: CommodityPriceData[], 
 };
 
 
-export default function AuditPage() {
+function AuditPageContent() {
   const searchParams = useSearchParams();
   const dateParam = searchParams.get('date');
   const { toast } = useToast();
@@ -559,382 +560,380 @@ export default function AuditPage() {
 
   return (
     <>
-      <div className="flex min-h-screen w-full flex-col">
-        <PageHeader
-          title="Auditoria de Dados"
-          description="Verifique, corrija e recalcule os dados históricos da plataforma."
-          icon={History}
-        />
-        <main className="flex flex-1 flex-col gap-6 p-4 md:gap-8 md:p-6 bg-gradient-to-br from-slate-50 to-blue-50">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Card className="lg:col-span-2 bg-white/80 backdrop-blur-sm border-0 shadow-lg">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-xl font-semibold text-gray-800 flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-blue-600" />
-                  Seleção de Data
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <DateNavigator 
-                  targetDate={targetDate} 
-                />
-              </CardContent>
-            </Card>
-
-            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-xl font-semibold text-gray-800 flex items-center gap-2">
-                  <Activity className="h-5 w-5 text-green-600" />
-                  Status
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Edições pendentes:</span>
-                  <Badge variant={hasEdits ? "destructive" : "secondary"} className="font-medium">
-                    {Object.keys(editedValues).length}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Data selecionada:</span>
-                  <Badge variant="outline" className="font-mono text-xs">
-                    {format(targetDate, 'dd/MM/yyyy')}
-                  </Badge>
-                </div>
-                {isLoading && (
-                  <div className="flex items-center gap-2 text-blue-600">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span className="text-sm">Carregando dados...</span>
-                  </div>
-                )}
-                 {hasEdits && (
-                  <div className="pt-2">
-                     <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                             <Button disabled={isPending} className="w-full bg-green-600 hover:bg-green-700">
-                                <Save className="mr-2 h-4 w-4" />
-                                Salvar e Recalcular ({Object.keys(editedValues).length})
-                            </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent className="max-w-2xl">
-                            <AlertDialogHeader>
-                                <AlertDialogTitle className="flex items-center gap-2">
-                                    <Zap className="h-5 w-5 text-blue-600" />
-                                    Revisar e Confirmar Recálculo via N8N
-                                </AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Confirme os novos valores que serão enviados ao N8N para o dia <span className="font-bold">{format(targetDate, 'dd/MM/yyyy')}</span>.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            
-                            <div className="space-y-4 max-h-[60vh] overflow-y-auto p-1">
-                                <div className="p-4 border rounded-lg">
-                                  <h3 className="font-semibold mb-2">Alterações a serem enviadas:</h3>
-                                  <Table>
-                                    <TableHeader>
-                                      <TableRow>
-                                        <TableHead>Ativo</TableHead>
-                                        <TableHead className="text-right">Valor Anterior</TableHead>
-                                        <TableHead className="text-right">Novo Valor</TableHead>
-                                      </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                      {reviewChanges.map(change => (
-                                        <TableRow key={change.id}>
-                                          <TableCell className="font-medium">{change.name}</TableCell>
-                                          <TableCell className="text-right font-mono text-muted-foreground line-through">
-                                            {formatCurrency(change.oldValue, change.currency, change.id)}
-                                          </TableCell>
-                                          <TableCell className="text-right font-mono font-bold text-green-600">
-                                            {formatCurrency(change.newValue, change.currency, change.id)}
-                                          </TableCell>
-                                        </TableRow>
-                                      ))}
-                                    </TableBody>
-                                  </Table>
-                                </div>
-                                <div className="p-4 border rounded-lg bg-muted/50">
-                                  <h3 className="font-semibold mb-2">Payload para Webhook N8N:</h3>
-                                  <pre className="text-xs bg-background p-3 rounded-md overflow-x-auto">
-                                    <code>
-                                      {JSON.stringify(n8nPayload, null, 2)}
-                                    </code>
-                                  </pre>
-                                </div>
-                            </div>
-
-                            <AlertDialogFooter className="mt-4">
-                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleRecalculate} disabled={isPending}>
-                                   {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
-                                    Confirmar e Enviar
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl">
-            <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 border-b">
-                <CardTitle className="text-xl font-bold flex items-center gap-3 text-gray-800 dark:text-gray-200">
-                    <Filter className="h-6 w-6 text-primary" />
-                    Filtros e Busca
-                </CardTitle>
-                <CardDescription className="text-gray-600 dark:text-gray-400">
-                    Use os filtros abaixo para encontrar ativos específicos ou filtrar por status.
-                </CardDescription>
+      <PageHeader
+        title="Auditoria de Dados"
+        description="Verifique, corrija e recalcule os dados históricos da plataforma."
+        icon={History}
+      />
+      <main className="flex flex-1 flex-col gap-6 p-4 md:gap-8 md:p-6 bg-gradient-to-br from-slate-50 to-blue-50">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <Card className="lg:col-span-2 bg-white/80 backdrop-blur-sm border-0 shadow-lg">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-xl font-semibold text-gray-800 flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-blue-600" />
+                Seleção de Data
+              </CardTitle>
             </CardHeader>
-            <CardContent className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <div className="col-span-1 md:col-span-2 space-y-2">
-                        <label htmlFor="search" className="text-sm font-semibold text-gray-700 dark:text-gray-300">Buscar Ativo</label>
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                            <Input
-                                id="search"
-                                placeholder="Digite o nome ou ID do ativo..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="pl-10 border-gray-300 dark:border-gray-700 focus:border-primary focus:ring-primary"
-                            />
-                        </div>
-                    </div>
-                    <div className="space-y-2">
-                        <label htmlFor="category-filter" className="text-sm font-semibold text-gray-700 dark:text-gray-300">Categoria</label>
-                        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                            <SelectTrigger className="border-gray-300 dark:border-gray-700 focus:border-primary focus:ring-primary">
-                                <SelectValue placeholder="Todas" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">Todas as categorias</SelectItem>
-                                <SelectItem value="exchange">Moedas</SelectItem>
-                                <SelectItem value="agricultural">Commodities</SelectItem>
-                                <SelectItem value="material">Materiais</SelectItem>
-                                <SelectItem value="index">Índices</SelectItem>
-                                <SelectItem value="sub-index">Sub-índices</SelectItem>
-                                <SelectItem value="crs">CRS</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="space-y-2">
-                        <label htmlFor="status-filter" className="text-sm font-semibold text-gray-700 dark:text-gray-300">Status</label>
-                        <Select value={statusFilter} onValueChange={setStatusFilter}>
-                            <SelectTrigger className="border-gray-300 dark:border-gray-700 focus:border-primary focus:ring-primary">
-                                <SelectValue placeholder="Todos" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">Todos os status</SelectItem>
-                                <SelectItem value="normal">Normal</SelectItem>
-                                <SelectItem value="edited">Editado</SelectItem>
-                                <SelectItem value="zero">Valor Zero</SelectItem>
-                                <SelectItem value="calculated">Calculado</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </div>
-                <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="md:col-span-1 flex items-center">
-                        <Button 
-                          variant="outline" 
-                          onClick={() => {
-                            setSearchTerm('');
-                            setCategoryFilter('all');
-                            setStatusFilter('all');
-                          }}
-                          className="w-full"
-                        >
-                          <RefreshCw className="h-4 w-4 mr-2" />
-                          Limpar Filtros
-                        </Button>
-                    </div>
-                    {!isLoading && data.length > 0 && (
-                        <div className="md:col-span-2 grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-muted/50 rounded-lg">
-                            <div className="text-center">
-                                <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                                    {filteredBaseAssets.length + filteredIndices.length}
-                                </div>
-                                <div className="text-xs text-muted-foreground">Ativos Exibidos</div>
-                            </div>
-                            <div className="text-center">
-                                <div className="text-lg font-bold text-yellow-600">
-                                    {[...filteredBaseAssets, ...filteredIndices].filter(a => getAssetStatus(a, editedValues) === 'edited').length}
-                                </div>
-                                <div className="text-xs text-muted-foreground">Editados</div>
-                            </div>
-                            <div className="text-center">
-                                <div className="text-lg font-bold text-red-600">
-                                    {[...filteredBaseAssets, ...filteredIndices].filter(a => getAssetStatus(a, editedValues) === 'zero').length}
-                                </div>
-                                <div className="text-xs text-muted-foreground">Valor Zero</div>
-                            </div>
-                            <div className="text-center">
-                                <div className="text-lg font-bold text-green-600">
-                                    {[...filteredBaseAssets, ...filteredIndices].filter(a => getAssetStatus(a, editedValues) === 'normal').length}
-                                </div>
-                                <div className="text-xs text-muted-foreground">Normais</div>
-                            </div>
-                        </div>
-                    )}
-                </div>
+            <CardContent>
+              <DateNavigator 
+                targetDate={targetDate} 
+              />
             </CardContent>
           </Card>
 
-          <RecalculationProgress
-            isVisible={showProgress}
-            steps={recalculationSteps}
-            currentStep={currentStep}
-            progress={recalculationProgress}
-            estimatedTimeRemaining={estimatedTimeRemaining}
-            onComplete={() => {
-              setShowProgress(false);
-              setRecalculationSteps([]);
-              setCurrentStep('');
-              setRecalculationProgress(0);
-              setEstimatedTimeRemaining(0);
-            }}
-            onCancel={() => {
-              setShowProgress(false);
-              setRecalculationSteps([]);
-              setCurrentStep('');
-              setRecalculationProgress(0);
-              setEstimatedTimeRemaining(0);
-            }}
-          />
+          <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-xl font-semibold text-gray-800 flex items-center gap-2">
+                <Activity className="h-5 w-5 text-green-600" />
+                Status
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">Edições pendentes:</span>
+                <Badge variant={hasEdits ? "destructive" : "secondary"} className="font-medium">
+                  {Object.keys(editedValues).length}
+                </Badge>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">Data selecionada:</span>
+                <Badge variant="outline" className="font-mono text-xs">
+                  {format(targetDate, 'dd/MM/yyyy')}
+                </Badge>
+              </div>
+              {isLoading && (
+                <div className="flex items-center gap-2 text-blue-600">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span className="text-sm">Carregando dados...</span>
+                </div>
+              )}
+               {hasEdits && (
+                <div className="pt-2">
+                   <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                           <Button disabled={isPending} className="w-full bg-green-600 hover:bg-green-700">
+                              <Save className="mr-2 h-4 w-4" />
+                              Salvar e Recalcular ({Object.keys(editedValues).length})
+                          </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent className="max-w-2xl">
+                          <AlertDialogHeader>
+                              <AlertDialogTitle className="flex items-center gap-2">
+                                  <Zap className="h-5 w-5 text-blue-600" />
+                                  Revisar e Confirmar Recálculo via N8N
+                              </AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Confirme os novos valores que serão enviados ao N8N para o dia <span className="font-bold">{format(targetDate, 'dd/MM/yyyy')}</span>.
+                              </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          
+                          <div className="space-y-4 max-h-[60vh] overflow-y-auto p-1">
+                              <div className="p-4 border rounded-lg">
+                                <h3 className="font-semibold mb-2">Alterações a serem enviadas:</h3>
+                                <Table>
+                                  <TableHeader>
+                                    <TableRow>
+                                      <TableHead>Ativo</TableHead>
+                                      <TableHead className="text-right">Valor Anterior</TableHead>
+                                      <TableHead className="text-right">Novo Valor</TableHead>
+                                    </TableRow>
+                                  </TableHeader>
+                                  <TableBody>
+                                    {reviewChanges.map(change => (
+                                      <TableRow key={change.id}>
+                                        <TableCell className="font-medium">{change.name}</TableCell>
+                                        <TableCell className="text-right font-mono text-muted-foreground line-through">
+                                          {formatCurrency(change.oldValue, change.currency, change.id)}
+                                        </TableCell>
+                                        <TableCell className="text-right font-mono font-bold text-green-600">
+                                          {formatCurrency(change.newValue, change.currency, change.id)}
+                                        </TableCell>
+                                      </TableRow>
+                                    ))}
+                                  </TableBody>
+                                </Table>
+                              </div>
+                              <div className="p-4 border rounded-lg bg-muted/50">
+                                <h3 className="font-semibold mb-2">Payload para Webhook N8N:</h3>
+                                <pre className="text-xs bg-background p-3 rounded-md overflow-x-auto">
+                                  <code>
+                                    {JSON.stringify(n8nPayload, null, 2)}
+                                  </code>
+                                </pre>
+                              </div>
+                          </div>
 
-          {validationAlerts.length > 0 && (
-            <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl border-l-4 border-l-yellow-500">
-              <CardHeader className="bg-gradient-to-r from-yellow-50 to-orange-50">
-                <CardTitle className="flex items-center gap-3 text-yellow-800">
-                  <AlertTriangle className="h-6 w-6 text-yellow-600" />
-                  Alertas de Validação
-                  <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
-                    {validationAlerts.length}
-                  </Badge>
+                          <AlertDialogFooter className="mt-4">
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction onClick={handleRecalculate} disabled={isPending}>
+                                 {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
+                                  Confirmar e Enviar
+                              </AlertDialogAction>
+                          </AlertDialogFooter>
+                      </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl">
+          <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 border-b">
+              <CardTitle className="text-xl font-bold flex items-center gap-3 text-gray-800 dark:text-gray-200">
+                  <Filter className="h-6 w-6 text-primary" />
+                  Filtros e Busca
+              </CardTitle>
+              <CardDescription className="text-gray-600 dark:text-gray-400">
+                  Use os filtros abaixo para encontrar ativos específicos ou filtrar por status.
+              </CardDescription>
+          </CardHeader>
+          <CardContent className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <div className="col-span-1 md:col-span-2 space-y-2">
+                      <label htmlFor="search" className="text-sm font-semibold text-gray-700 dark:text-gray-300">Buscar Ativo</label>
+                      <div className="relative">
+                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                          <Input
+                              id="search"
+                              placeholder="Digite o nome ou ID do ativo..."
+                              value={searchTerm}
+                              onChange={(e) => setSearchTerm(e.target.value)}
+                              className="pl-10 border-gray-300 dark:border-gray-700 focus:border-primary focus:ring-primary"
+                          />
+                      </div>
+                  </div>
+                  <div className="space-y-2">
+                      <label htmlFor="category-filter" className="text-sm font-semibold text-gray-700 dark:text-gray-300">Categoria</label>
+                      <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                          <SelectTrigger className="border-gray-300 dark:border-gray-700 focus:border-primary focus:ring-primary">
+                              <SelectValue placeholder="Todas" />
+                          </SelectTrigger>
+                          <SelectContent>
+                              <SelectItem value="all">Todas as categorias</SelectItem>
+                              <SelectItem value="exchange">Moedas</SelectItem>
+                              <SelectItem value="agricultural">Commodities</SelectItem>
+                              <SelectItem value="material">Materiais</SelectItem>
+                              <SelectItem value="index">Índices</SelectItem>
+                              <SelectItem value="sub-index">Sub-índices</SelectItem>
+                              <SelectItem value="crs">CRS</SelectItem>
+                          </SelectContent>
+                      </Select>
+                  </div>
+                  <div className="space-y-2">
+                      <label htmlFor="status-filter" className="text-sm font-semibold text-gray-700 dark:text-gray-300">Status</label>
+                      <Select value={statusFilter} onValueChange={setStatusFilter}>
+                          <SelectTrigger className="border-gray-300 dark:border-gray-700 focus:border-primary focus:ring-primary">
+                              <SelectValue placeholder="Todos" />
+                          </SelectTrigger>
+                          <SelectContent>
+                              <SelectItem value="all">Todos os status</SelectItem>
+                              <SelectItem value="normal">Normal</SelectItem>
+                              <SelectItem value="edited">Editado</SelectItem>
+                              <SelectItem value="zero">Valor Zero</SelectItem>
+                              <SelectItem value="calculated">Calculado</SelectItem>
+                          </SelectContent>
+                      </Select>
+                  </div>
+              </div>
+              <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="md:col-span-1 flex items-center">
+                      <Button 
+                        variant="outline" 
+                        onClick={() => {
+                          setSearchTerm('');
+                          setCategoryFilter('all');
+                          setStatusFilter('all');
+                        }}
+                        className="w-full"
+                      >
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Limpar Filtros
+                      </Button>
+                  </div>
+                  {!isLoading && data.length > 0 && (
+                      <div className="md:col-span-2 grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-muted/50 rounded-lg">
+                          <div className="text-center">
+                              <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                                  {filteredBaseAssets.length + filteredIndices.length}
+                              </div>
+                              <div className="text-xs text-muted-foreground">Ativos Exibidos</div>
+                          </div>
+                          <div className="text-center">
+                              <div className="text-lg font-bold text-yellow-600">
+                                  {[...filteredBaseAssets, ...filteredIndices].filter(a => getAssetStatus(a, editedValues) === 'edited').length}
+                              </div>
+                              <div className="text-xs text-muted-foreground">Editados</div>
+                          </div>
+                          <div className="text-center">
+                              <div className="text-lg font-bold text-red-600">
+                                  {[...filteredBaseAssets, ...filteredIndices].filter(a => getAssetStatus(a, editedValues) === 'zero').length}
+                              </div>
+                              <div className="text-xs text-muted-foreground">Valor Zero</div>
+                          </div>
+                          <div className="text-center">
+                              <div className="text-lg font-bold text-green-600">
+                                  {[...filteredBaseAssets, ...filteredIndices].filter(a => getAssetStatus(a, editedValues) === 'normal').length}
+                              </div>
+                              <div className="text-xs text-muted-foreground">Normais</div>
+                          </div>
+                      </div>
+                  )}
+              </div>
+          </CardContent>
+        </Card>
+
+        <RecalculationProgress
+          isVisible={showProgress}
+          steps={recalculationSteps}
+          currentStep={currentStep}
+          progress={recalculationProgress}
+          estimatedTimeRemaining={estimatedTimeRemaining}
+          onComplete={() => {
+            setShowProgress(false);
+            setRecalculationSteps([]);
+            setCurrentStep('');
+            setRecalculationProgress(0);
+            setEstimatedTimeRemaining(0);
+          }}
+          onCancel={() => {
+            setShowProgress(false);
+            setRecalculationSteps([]);
+            setCurrentStep('');
+            setRecalculationProgress(0);
+            setEstimatedTimeRemaining(0);
+          }}
+        />
+
+        {validationAlerts.length > 0 && (
+          <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl border-l-4 border-l-yellow-500">
+            <CardHeader className="bg-gradient-to-r from-yellow-50 to-orange-50">
+              <CardTitle className="flex items-center gap-3 text-yellow-800">
+                <AlertTriangle className="h-6 w-6 text-yellow-600" />
+                Alertas de Validação
+                <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+                  {validationAlerts.length}
+                </Badge>
+              </CardTitle>
+              <CardDescription className="text-yellow-700">
+                Foram detectados possíveis problemas com os valores editados. Revise os alertas abaixo.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-6">
+              <ValidationAlerts
+                alerts={validationAlerts}
+                onDismiss={handleDismissAlert}
+                onAcceptSuggestion={handleAcceptSuggestion}
+              />
+            </CardContent>
+          </Card>
+        )}
+
+        {isLoading ? (
+          <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl">
+            <CardContent className="p-12">
+              <div className="flex flex-col items-center justify-center space-y-4">
+                <div className="relative">
+                  <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
+                  <div className="absolute inset-0 h-12 w-12 border-2 border-blue-200 rounded-full"></div>
+                </div>
+                <div className="text-center space-y-2">
+                  <h3 className="text-lg font-semibold text-gray-900">Carregando Dados</h3>
+                  <p className="text-sm text-gray-600">Buscando informações para {format(targetDate, 'dd/MM/yyyy')}</p>
+                </div>
+          </div>
+            </CardContent>
+          </Card>
+        ) : data.length === 0 ? (
+          <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl">
+            <CardContent className="p-12">
+              <div className="flex flex-col items-center justify-center space-y-4 text-center">
+                <div className="p-4 bg-gray-100 rounded-full">
+                  <Search className="h-8 w-8 text-gray-400" />
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold text-gray-900">Nenhum Dado Encontrado</h3>
+                  <p className="text-sm text-gray-600">
+                    Não há dados disponíveis para a data {format(targetDate, 'dd/MM/yyyy')}
+                  </p>
+                </div>
+              </div>
+              </CardContent>
+          </Card>
+        ) : (
+          <div className="grid gap-8">
+            <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl">
+              <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-lg">
+                <CardTitle className="text-xl font-bold flex items-center gap-3">
+                  <TrendingUp className="h-6 w-6" />
+                  Moedas e Ativos Base
                 </CardTitle>
-                <CardDescription className="text-yellow-700">
-                  Foram detectados possíveis problemas com os valores editados. Revise os alertas abaixo.
+                <CardDescription className="text-blue-100">
+                  Cotações de câmbio e commodities primárias que servem de entrada para os cálculos. 
+                  <span className="font-semibold text-yellow-200 ml-1">Estes são os únicos valores editáveis.</span>
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-6">
-                <ValidationAlerts
-                  alerts={validationAlerts}
-                  onDismiss={handleDismissAlert}
-                  onAcceptSuggestion={handleAcceptSuggestion}
-                />
+                <AssetActionTable assets={filteredBaseAssets} onEdit={handleEdit} editedValues={editedValues} />
+                {filteredBaseAssets.length === 0 && baseAssets.length > 0 && (
+                  <div className="text-center text-sm text-muted-foreground p-6 bg-gray-50 rounded-lg">
+                    Nenhum ativo encontrado com os filtros aplicados. 
+                    <Button variant="link" onClick={() => {
+                      setSearchTerm('');
+                      setCategoryFilter('all');
+                      setStatusFilter('all');
+                    }} className="ml-2">
+                      Limpar filtros
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
-          )}
 
-          {isLoading ? (
             <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl">
-              <CardContent className="p-12">
-                <div className="flex flex-col items-center justify-center space-y-4">
-                  <div className="relative">
-                    <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
-                    <div className="absolute inset-0 h-12 w-12 border-2 border-blue-200 rounded-full"></div>
+              <CardHeader className="bg-gradient-to-r from-green-600 to-green-700 text-white rounded-t-lg">
+                <CardTitle className="text-xl font-bold flex items-center gap-3">
+                  <BarChart3 className="h-6 w-6" />
+                  Índices Calculados
+                </CardTitle>
+                <CardDescription className="text-green-100">
+                  Resultados dos índices e sub-índices da plataforma. Estes valores são recalculados automaticamente com base nos ativos base.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-0">
+                <IndexTable indices={filteredIndices} editedValues={editedValues} />
+                {filteredIndices.length === 0 && indices.length > 0 && (
+                  <div className="text-center text-sm text-muted-foreground p-4">
+                    Nenhum índice encontrado com os filtros aplicados.
+                    <Button variant="link" onClick={() => {
+                      setSearchTerm('');
+                      setCategoryFilter('all');
+                      setStatusFilter('all');
+                    }}>
+                      Limpar filtros
+                    </Button>
                   </div>
-                  <div className="text-center space-y-2">
-                    <h3 className="text-lg font-semibold text-gray-900">Carregando Dados</h3>
-                    <p className="text-sm text-gray-600">Buscando informações para {format(targetDate, 'dd/MM/yyyy')}</p>
-                  </div>
-            </div>
+                )}
               </CardContent>
             </Card>
-          ) : data.length === 0 ? (
-            <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl">
-              <CardContent className="p-12">
-                <div className="flex flex-col items-center justify-center space-y-4 text-center">
-                  <div className="p-4 bg-gray-100 rounded-full">
-                    <Search className="h-8 w-8 text-gray-400" />
-                  </div>
-                  <div className="space-y-2">
-                    <h3 className="text-lg font-semibold text-gray-900">Nenhum Dado Encontrado</h3>
-                    <p className="text-sm text-gray-600">
-                      Não há dados disponíveis para a data {format(targetDate, 'dd/MM/yyyy')}
-                    </p>
-                  </div>
-                </div>
-                </CardContent>
-            </Card>
-          ) : (
-            <div className="grid gap-8">
-              <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl">
-                <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-lg">
-                  <CardTitle className="text-xl font-bold flex items-center gap-3">
-                    <TrendingUp className="h-6 w-6" />
-                    Moedas e Ativos Base
-                  </CardTitle>
-                  <CardDescription className="text-blue-100">
-                    Cotações de câmbio e commodities primárias que servem de entrada para os cálculos. 
-                    <span className="font-semibold text-yellow-200 ml-1">Estes são os únicos valores editáveis.</span>
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="p-6">
-                  <AssetActionTable assets={filteredBaseAssets} onEdit={handleEdit} editedValues={editedValues} />
-                  {filteredBaseAssets.length === 0 && baseAssets.length > 0 && (
-                    <div className="text-center text-sm text-muted-foreground p-6 bg-gray-50 rounded-lg">
-                      Nenhum ativo encontrado com os filtros aplicados. 
-                      <Button variant="link" onClick={() => {
-                        setSearchTerm('');
-                        setCategoryFilter('all');
-                        setStatusFilter('all');
-                      }} className="ml-2">
-                        Limpar filtros
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+            
+            <DateComparison 
+              currentDate={targetDate}
+              currentData={data}
+            />
 
-              <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl">
-                <CardHeader className="bg-gradient-to-r from-green-600 to-green-700 text-white rounded-t-lg">
-                  <CardTitle className="text-xl font-bold flex items-center gap-3">
-                    <BarChart3 className="h-6 w-6" />
-                    Índices Calculados
-                  </CardTitle>
-                  <CardDescription className="text-green-100">
-                    Resultados dos índices e sub-índices da plataforma. Estes valores são recalculados automaticamente com base nos ativos base.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <IndexTable indices={filteredIndices} editedValues={editedValues} />
-                  {filteredIndices.length === 0 && indices.length > 0 && (
-                    <div className="text-center text-sm text-muted-foreground p-4">
-                      Nenhum índice encontrado com os filtros aplicados.
-                      <Button variant="link" onClick={() => {
-                        setSearchTerm('');
-                        setCategoryFilter('all');
-                        setStatusFilter('all');
-                      }}>
-                        Limpar filtros
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-              
-              <DateComparison 
-                currentDate={targetDate}
-                currentData={data}
-              />
+            <AuditExport 
+              currentDate={targetDate}
+            />
 
-              <AuditExport 
-                currentDate={targetDate}
-              />
-
-              <AuditHistory 
-                targetDate={targetDate}
-                logs={auditLogs}
-                isLoading={isLoadingLogs}
-              />
-            </div>
-          )}
-        </main>
-      </div>
+            <AuditHistory 
+              targetDate={targetDate}
+              logs={auditLogs}
+              isLoading={isLoadingLogs}
+            />
+          </div>
+        )}
+      </main>
       {editingAsset && (
         <AssetEditModal
           asset={editingAsset}
@@ -949,5 +948,12 @@ export default function AuditPage() {
   );
 }
 
+export default function AuditPage() {
+    return (
+        <MainLayout>
+            <AuditPageContent />
+        </MainLayout>
+    );
+}
 
     

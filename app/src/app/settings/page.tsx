@@ -1,13 +1,15 @@
 
+
 'use client';
 
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Settings as SettingsIcon } from 'lucide-react';
+import { MainLayout } from '@/app/main-layout';
 
 export default function SettingsPage() {
   return (
-    <>
+    <MainLayout>
       <div className="flex min-h-screen w-full flex-col">
         <PageHeader 
             title="Configurações" 
@@ -42,6 +44,6 @@ export default function SettingsPage() {
           </div>
         </main>
       </div>
-    </>
+    </MainLayout>
   );
 }

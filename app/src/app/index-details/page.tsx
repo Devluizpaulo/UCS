@@ -7,7 +7,15 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useLanguage } from '@/lib/language-context';
 import imageData from '@/lib/placeholder-images.json';
 
-const getImage = (id: string) => imageData.find(img => img.id === id);
+interface ImageData {
+  id: string;
+  src: string;
+  alt: string;
+  hint: string;
+}
+
+const getImage = (id: string): ImageData | undefined => (imageData as ImageData[]).find((img: ImageData) => img.id === id);
+
 
 function IndexDetailsContent() {
   const { t } = useLanguage();

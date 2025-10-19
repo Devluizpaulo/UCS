@@ -5,7 +5,7 @@
 import { useState, useEffect, useMemo, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CommodityPrices } from '@/components/commodity-prices';
-import { getCommodityPricesByDate, getCommodityPrices, clearCacheAndRevalidate, reprocessDate } from '@/lib/data-service';
+import { getCommodityPricesByDate, getCommodityPrices, clearCacheAndRefresh, reprocessDate } from '@/lib/data-service';
 import { PageHeader } from '@/components/page-header';
 import { addDays, format, parseISO, isValid, isToday, isFuture } from 'date-fns';
 import { ptBR, enUS, es } from 'date-fns/locale';
@@ -34,6 +34,7 @@ import { saveAs } from 'file-saver';
 import { formatCurrency } from '@/lib/formatters';
 import { PdfExportButton } from '@/components/pdf-export-button';
 import { ExcelExportButton } from '@/components/excel-export-button';
+import { MainLayout } from '@/app/main-layout';
 
 
 function getValidatedDate(dateString?: string | null): Date | null {
@@ -98,7 +99,7 @@ function useRealtimeData(initialDate: Date | null) {
 }
 
 
-export default function DashboardPage() {
+function DashboardPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { language, t } = useLanguage();
@@ -125,7 +126,7 @@ export default function DashboardPage() {
   
   const handleRefresh = () => {
     startTransition(async () => {
-      await clearCacheAndRevalidate();
+      await clearCacheAndRefresh();
       router.refresh();
       toast({
         title: "Dados Atualizados",
@@ -502,6 +503,14 @@ export default function DashboardPage() {
         </main>
     </>
   );
+}
+
+export default function DashboardPage() {
+    return (
+        <MainLayout>
+            <DashboardPageContent />
+        </MainLayout>
+    );
 }
 
     

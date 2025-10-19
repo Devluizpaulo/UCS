@@ -18,6 +18,14 @@ import { getCommodityPrices } from '@/lib/data-service';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/language-context';
 
+interface IndexValue {
+  currency: string;
+  value: number;
+  change: number;
+  conversionRate?: number;
+}
+
+
 export default function LandingPage() {
   const [allPrices, setAllPrices] = React.useState<CommodityPriceData[]>([]);
   const { t } = useLanguage();
@@ -34,13 +42,13 @@ export default function LandingPage() {
   const usdAsset = allPrices.find(p => p.id === 'usd');
   const eurAsset = allPrices.find(p => p.id === 'eur');
   
-  const getIndexValues = () => {
+  const getIndexValues = (): IndexValue[] => {
     if (!ucsAseAsset) return [];
 
     const ucsAseBRL = ucsAseAsset.price || 0;
     const changeBRL = ucsAseAsset.change || 0;
     
-    let indexValues = [{ 
+    let indexValues: IndexValue[] = [{ 
       currency: 'BRL', 
       value: ucsAseBRL, 
       change: changeBRL, 

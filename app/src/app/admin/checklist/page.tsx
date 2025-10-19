@@ -6,8 +6,9 @@ import Head from 'next/head';
 import { Button } from '@/components/ui/button';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { MainLayout } from '@/app/main-layout';
 
-export default function AdminChecklistPage() {
+function AdminChecklistContent() {
   useEffect(() => {
     // A lógica interativa do checklist é executada aqui no cliente.
     const STORAGE_KEY = 'ucs_checklist_v2';
@@ -1009,4 +1010,12 @@ export default function AdminChecklistPage() {
       </aside>
     </div>
   );
+}
+
+export default function AdminChecklistPage() {
+    return (
+        <MainLayout>
+            <AdminChecklistContent />
+        </MainLayout>
+    );
 }
