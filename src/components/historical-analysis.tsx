@@ -4,7 +4,7 @@
 import * as React from 'react';
 import { useState, useEffect, useMemo } from 'react';
 import { format, parseISO, isValid, parse, subDays } from 'date-fns';
-import type { FirestoreQuote, CommodityConfig } from '@/lib/types';
+import type { FirestoreQuote, CommodityConfig, CommodityPriceData } from '@/lib/types';
 import { getCotacoesHistorico, getCommodityConfigs } from '@/lib/data-service';
 import { formatCurrency } from '@/lib/formatters';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';

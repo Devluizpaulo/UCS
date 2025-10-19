@@ -40,7 +40,12 @@ export default function LandingPage() {
     const ucsAseBRL = ucsAseAsset.price || 0;
     const changeBRL = ucsAseAsset.change || 0;
     
-    let indexValues = [{ 
+    let indexValues: Array<{ 
+      currency: string; 
+      value: number; 
+      change: number; 
+      conversionRate?: number;
+    }> = [{ 
       currency: 'BRL', 
       value: ucsAseBRL, 
       change: changeBRL, 
