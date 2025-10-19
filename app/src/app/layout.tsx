@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { Metadata, Viewport } from 'next';
@@ -49,6 +50,12 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
   }
 
   if (isPublicPage) {
+    // Simplified public layout
+    if (['/', '/index-details', '/privacy-policy'].includes(pathname)) {
+        return <div className="w-full">{children}</div>;
+    }
+    
+    // Layout for login, forgot-password, etc.
     return (
       <div className="flex min-h-screen w-full flex-col bg-gradient-to-br from-white to-gray-100 text-foreground">
         <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur-sm">
@@ -68,15 +75,8 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
             </div>
         </header>
 
-        <main className="relative flex-1">
-             {/* Condicional para o layout de página de detalhes */}
-            {pathname === '/index-details' || pathname === '/privacy-policy' ? (
-                 <div className="w-full">{children}</div>
-            ) : (
-                <div className="flex items-center justify-center p-4 h-full">
-                    <div className="relative z-10 w-full max-w-sm sm:max-w-md">{children}</div>
-                </div>
-            )}
+        <main className="relative flex-1 flex items-center justify-center p-4">
+             <div className="relative z-10 w-full max-w-sm sm:max-w-md">{children}</div>
         </main>
         
         <footer className="border-t bg-background">
@@ -91,7 +91,7 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Se for uma página autenticada, usa o layout principal
+  // If authenticated, use the main layout with sidebar
   return <MainLayout>{children}</MainLayout>;
 }
 

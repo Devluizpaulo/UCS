@@ -112,7 +112,7 @@ function IndexDetailsContent() {
 
         {/* Impact Section */}
         <section className="relative rounded-lg overflow-hidden py-20 text-center text-white animate-fade-in">
-          {getImage('impact-stats') && <Image src={getImage('impact-stats')?.src || ''} alt={getImage('impact-stats')?.alt || ''} layout="fill" className="object-cover" data-ai-hint={getImage('impact-stats')?.hint} />}
+          {getImage('impact-stats') && <Image src={getImage('impact-stats')?.src || ''} alt={getImage('impact-stats')?.alt || ''} fill className="object-cover" data-ai-hint={getImage('impact-stats')?.hint} />}
           <div className="absolute inset-0 bg-primary/80"></div>
           <div className="relative z-10 container mx-auto px-4">
             <h2 className="text-3xl md:text-4xl font-bold mb-8">O Impacto Transformador do PDM</h2>
