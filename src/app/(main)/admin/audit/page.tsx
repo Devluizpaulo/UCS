@@ -305,6 +305,7 @@ export default function AuditPage() {
 
   const [targetDate, setTargetDate] = useState<Date>(new Date());
   const [data, setData] = useState<CommodityPriceData[]>([]);
+  const [originalData, setOriginalData] = useState<Map<string, CommodityPriceData>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
 
@@ -344,12 +345,15 @@ export default function AuditPage() {
     
     getCommodityPricesByDate(newDate)
       .then((fetchedData) => {
+        const dataMap = new Map(fetchedData.map(item => [item.id, item]));
         setData(fetchedData);
+        setOriginalData(dataMap);
         setValidationAlerts(generateValidationAlerts(fetchedData, {}));
       })
       .catch((err) => {
         console.error(err);
         setData([]);
+        setOriginalData(new Map());
         setValidationAlerts([]);
       })
       .finally(() => setIsLoading(false));
@@ -525,6 +529,32 @@ export default function AuditPage() {
       });
     }
   };
+  
+  const reviewChanges = useMemo(() => {
+    return Object.entries(editedValues).map(([id, newValue]) => {
+      const originalAsset = originalData.get(id);
+      return {
+        id,
+        name: originalAsset?.name || id,
+        oldValue: originalAsset?.price ?? 0,
+        newValue,
+        currency: originalAsset?.currency ?? 'BRL'
+      };
+    });
+  }, [editedValues, originalData]);
+
+  const n8nPayload = useMemo(() => {
+    const transformedAssets: Record<string, any> = {};
+    for (const [key, value] of Object.entries(editedValues)) {
+        const newKey = key === 'boi_gordo' ? 'boi' : key;
+        transformedAssets[newKey] = { preco: value };
+    }
+    return {
+      origem: 'painel_auditoria',
+      data_especifica: format(targetDate, 'yyyy-MM-dd'),
+      ativos: transformedAssets,
+    };
+  }, [editedValues, targetDate]);
 
   return (
     <>
@@ -533,48 +563,7 @@ export default function AuditPage() {
           title="Auditoria de Dados"
           description="Verifique, corrija e recalcule os dados históricos da plataforma."
           icon={History}
-        >
-          <div className="flex w-full items-center justify-end gap-2">
-            {hasEdits && (
-                 <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                         <Button disabled={isPending} className="bg-green-600 hover:bg-green-700">
-                            <Save className="mr-2 h-4 w-4" />
-                            Salvar e Recalcular ({Object.keys(editedValues).length})
-                        </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent className="max-w-2xl">
-                        <AlertDialogHeader>
-                            <AlertDialogTitle className="flex items-center gap-2">
-                                <Zap className="h-5 w-5 text-blue-600" />
-                                Confirmar Recálculo via N8N
-                            </AlertDialogTitle>
-                            <AlertDialogDescription asChild>
-                                <div className="space-y-4">
-                                <div>
-                                  Você editou <strong>{Object.keys(editedValues).length} ativo(s)</strong> para <span className="font-bold">{format(targetDate, 'dd/MM/yyyy')}</span>. 
-                                  Esta ação enviará os novos valores para o N8N recalcular todos os índices dependentes.
-                                </div>
-                                <div className="text-xs text-amber-600">
-                                  ⚠️ Esta ação não pode ser desfeita.
-                                </div>
-                                </div>
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleRecalculate} disabled={isPending}>
-                               {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
-                                Enviar para N8N
-                            </AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
-            )}
-            <div className="flex-grow" />
-            <DateNavigator targetDate={targetDate} />
-          </div>
-        </PageHeader>
+        />
         <main className="flex flex-1 flex-col gap-6 p-4 md:gap-8 md:p-6 bg-gradient-to-br from-slate-50 to-blue-50">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <Card className="lg:col-span-2 bg-white/80 backdrop-blur-sm border-0 shadow-lg">
@@ -615,6 +604,73 @@ export default function AuditPage() {
                   <div className="flex items-center gap-2 text-blue-600">
                     <Loader2 className="h-4 w-4 animate-spin" />
                     <span className="text-sm">Carregando dados...</span>
+                  </div>
+                )}
+                 {hasEdits && (
+                  <div className="pt-2">
+                     <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                             <Button disabled={isPending} className="w-full bg-green-600 hover:bg-green-700">
+                                <Save className="mr-2 h-4 w-4" />
+                                Salvar e Recalcular ({Object.keys(editedValues).length})
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent className="max-w-2xl">
+                            <AlertDialogHeader>
+                                <AlertDialogTitle className="flex items-center gap-2">
+                                    <Zap className="h-5 w-5 text-blue-600" />
+                                    Revisar e Confirmar Recálculo via N8N
+                                </AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Confirme os novos valores que serão enviados ao N8N para o dia <span className="font-bold">{format(targetDate, 'dd/MM/yyyy')}</span>.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            
+                            <div className="space-y-4 max-h-[60vh] overflow-y-auto p-1">
+                                <div className="p-4 border rounded-lg">
+                                  <h3 className="font-semibold mb-2">Alterações a serem enviadas:</h3>
+                                  <Table>
+                                    <TableHeader>
+                                      <TableRow>
+                                        <TableHead>Ativo</TableHead>
+                                        <TableHead className="text-right">Valor Anterior</TableHead>
+                                        <TableHead className="text-right">Novo Valor</TableHead>
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                      {reviewChanges.map(change => (
+                                        <TableRow key={change.id}>
+                                          <TableCell className="font-medium">{change.name}</TableCell>
+                                          <TableCell className="text-right font-mono text-muted-foreground line-through">
+                                            {formatCurrency(change.oldValue, change.currency, change.id)}
+                                          </TableCell>
+                                          <TableCell className="text-right font-mono font-bold text-green-600">
+                                            {formatCurrency(change.newValue, change.currency, change.id)}
+                                          </TableCell>
+                                        </TableRow>
+                                      ))}
+                                    </TableBody>
+                                  </Table>
+                                </div>
+                                <div className="p-4 border rounded-lg bg-muted/50">
+                                  <h3 className="font-semibold mb-2">Payload para Webhook N8N:</h3>
+                                  <pre className="text-xs bg-background p-3 rounded-md overflow-x-auto">
+                                    <code>
+                                      {JSON.stringify(n8nPayload, null, 2)}
+                                    </code>
+                                  </pre>
+                                </div>
+                            </div>
+
+                            <AlertDialogFooter className="mt-4">
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleRecalculate} disabled={isPending}>
+                                   {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
+                                    Confirmar e Enviar
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 )}
               </CardContent>
@@ -891,3 +947,6 @@ export default function AuditPage() {
     </>
   );
 }
+
+
+    
