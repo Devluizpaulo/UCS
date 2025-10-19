@@ -195,12 +195,14 @@ export default function LandingPage() {
                       ))}
                     </CarouselContent>
                   </Carousel>
-                  {/* <div className="mt-6 text-center">
-                    <Button disabled className="bg-primary/90 hover:bg-primary">
-                        {homeT.hero.cta}
-                        <ChevronRight className="ml-2 h-4 w-4"/>
+                  <div className="mt-6 text-center">
+                    <Button asChild size="lg" className="bg-primary/90 hover:bg-primary text-lg">
+                        <Link href="/index-details">
+                          {homeT.hero.cta}
+                          <ChevronRight className="ml-2 h-4 w-4"/>
+                        </Link>
                     </Button>
-                  </div> */}
+                  </div>
                 </CardContent>
               </Card>
             </div>
