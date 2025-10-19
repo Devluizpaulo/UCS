@@ -3,7 +3,7 @@
 
 import { Suspense } from 'react';
 import { PageHeader } from '@/components/page-header';
-import { TrendingUp, Scale, Leaf, TreePine, LandPlot, ShieldCheck, Milestone, Search, University } from 'lucide-react';
+import { TreePine, LandPlot, ShieldCheck, Milestone, Search, University } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { parseISO, isValid } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
