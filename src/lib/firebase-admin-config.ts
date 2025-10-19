@@ -25,7 +25,10 @@ export async function getFirebaseAdmin() {
             throw new Error('FIREBASE_SERVICE_ACCOUNT_BASE64 environment variable is not set.');
         }
 
-        const serviceAccount = JSON.parse(Buffer.from(serviceAccountString, 'base64').toString('utf-8'));
+        // Limpar o valor Base64 removendo quebras de linha e espaços
+        const cleanBase64 = serviceAccountString.replace(/\s/g, '');
+        
+        const serviceAccount = JSON.parse(Buffer.from(cleanBase64, 'base64').toString('utf-8'));
 
         app = admin.initializeApp({
             credential: admin.credential.cert(serviceAccount)
