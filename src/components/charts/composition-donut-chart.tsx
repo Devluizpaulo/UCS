@@ -11,7 +11,7 @@ interface ChartDataItem {
   value: number;
 }
 
-interface CompositionPieChartProps {
+interface CompositionDonutChartProps {
   data: ChartDataItem[];
 }
 
@@ -67,7 +67,9 @@ const CustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, name
   );
 };
 
-export function CompositionPieChart({ data }: CompositionPieChartProps) {
+export function CompositionDonutChart({ data }: CompositionDonutChartProps) {
+  const total = data.reduce((sum, item) => sum + item.value, 0);
+
   // Adicionar cores aos dados
   const dataWithColors = data.map(item => ({
     ...item,
@@ -76,14 +78,14 @@ export function CompositionPieChart({ data }: CompositionPieChartProps) {
 
   return (
     <div className="relative w-full h-full">
-      {/* Fundo com gradiente mais vibrante */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-100/40 to-green-100/40 rounded-2xl" />
+      {/* Fundo com gradiente sutil */}
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-50/30 to-green-50/30 rounded-2xl" />
       
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
           <defs>
             {dataWithColors.map((item, index) => (
-              <linearGradient key={index} id={`gradient-${index}`} x1="0%" y1="0%" x2="100%" y2="100%">
+              <linearGradient key={index} id={`donut-gradient-${index}`} x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" stopColor={item.color} stopOpacity={0.9} />
                 <stop offset="100%" stopColor={item.color} stopOpacity={0.7} />
               </linearGradient>
@@ -98,7 +100,7 @@ export function CompositionPieChart({ data }: CompositionPieChartProps) {
             cy="50%"
             labelLine={false}
             outerRadius="80%"
-            innerRadius="0%"
+            innerRadius="40%"
             fill="#8884d8"
             dataKey="value"
             label={<CustomLabel />}
@@ -108,20 +110,36 @@ export function CompositionPieChart({ data }: CompositionPieChartProps) {
             {dataWithColors.map((entry, index) => (
               <Cell 
                 key={`cell-${index}`} 
-                fill={`url(#gradient-${index})`}
+                fill={`url(#donut-gradient-${index})`}
                 stroke="white"
                 strokeWidth={1}
                 style={{ 
-                  filter: `
-                    drop-shadow(0px 6px 12px ${entry.color}60)
-                    drop-shadow(0px 2px 4px rgba(0,0,0,0.2))
-                    brightness(1.05)
-                  `,
-                  transition: 'all 0.4s ease'
+                  filter: `drop-shadow(0px 4px 8px ${entry.color}40)`,
+                  transition: 'all 0.3s ease'
                 }}
               />
             ))}
           </Pie>
+          
+          {/* Centro do donut com informações */}
+          <text 
+            x="50%" 
+            y="45%" 
+            textAnchor="middle" 
+            dominantBaseline="middle" 
+            className="text-2xl font-bold text-gray-800"
+          >
+            Total
+          </text>
+          <text 
+            x="50%" 
+            y="55%" 
+            textAnchor="middle" 
+            dominantBaseline="middle" 
+            className="text-lg font-semibold text-gray-600"
+          >
+            {formatCurrency(total, 'BRL', { compact: true })}
+          </text>
           
           <Legend 
             iconType="circle"

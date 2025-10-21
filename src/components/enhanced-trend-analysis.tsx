@@ -1,0 +1,635 @@
+'use client';
+
+import * as React from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { format, parseISO, isValid, subDays } from 'date-fns';
+import type { FirestoreQuote, CommodityConfig } from '@/lib/types';
+import { getCotacoesHistorico, getCommodityConfigs, calculateFrequencyAwareMetrics } from '@/lib/data-service';
+import { formatCurrency } from '@/lib/formatters';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { 
+  TrendingUp, 
+  TrendingDown, 
+  Calendar,
+  Activity,
+  DollarSign,
+  Percent,
+  Target,
+  BarChart3,
+  Table,
+  Eye,
+  EyeOff,
+  Download,
+  RefreshCw
+} from 'lucide-react';
+import { Button } from './ui/button';
+import { HistoricalAnalysisChart } from '@/components/charts/historical-analysis-chart';
+import { Checkbox } from './ui/checkbox';
+import { Label } from './ui/label';
+import { Table as UITable, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+
+// Lista de ativos disponíveis
+const AVAILABLE_ASSETS = ['PDM', 'milho', 'boi_gordo', 'madeira', 'carbono', 'soja', 'ucs_ase'];
+type TimeRange = '7d' | '30d' | '90d' | '1y' | 'all';
+
+const timeRangeInDays: Record<TimeRange, number> = {
+  '7d': 7,
+  '30d': 30,
+  '90d': 90,
+  '1y': 365,
+  'all': 3650,
+};
+
+const lineColors: { [key: string]: string } = {
+  ucs_ase: 'hsl(var(--chart-1))',
+  soja: 'hsl(var(--chart-2))',
+  milho: 'hsl(var(--chart-3))',
+  boi_gordo: 'hsl(var(--chart-4))',
+  madeira: 'hsl(var(--chart-5))',
+  carbono: 'hsl(220, 70%, 50%)',
+  PDM: 'hsl(var(--primary))',
+};
+
+// Função para extrair preço de uma cotação
+const getPriceFromQuote = (quote: FirestoreQuote, assetId: string): number | undefined => {
+  if (!quote) return undefined;
+  
+  if (assetId === 'ucs_ase') {
+    // Para UCS ASE, usar valor_brl como principal, com fallbacks
+    const value = quote.valor_brl ?? quote.resultado_final_brl ?? quote.valor_eur ?? quote.valor_usd;
+    return typeof value === 'number' ? value : undefined;
+  }
+  
+  const value = quote.valor ?? quote.ultimo;
+  return typeof value === 'number' ? value : undefined;
+};
+
+// Componente de tabela histórica para um ativo específico
+const AssetHistoricalTable = ({ 
+  assetId, 
+  data, 
+  assetConfig, 
+  isLoading 
+}: { 
+  assetId: string; 
+  data: FirestoreQuote[]; 
+  assetConfig: CommodityConfig | undefined;
+  isLoading: boolean;
+}) => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Table className="h-5 w-5" />
+            <Skeleton className="h-6 w-32" />
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-12 w-full" />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!data || data.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Table className="h-5 w-5" />
+            {assetConfig?.name || assetId.toUpperCase()} - Histórico
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8 text-muted-foreground">
+            <Table className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p>Nenhum dado histórico disponível</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Ordenar dados por data real da cotação (mais recente primeiro)
+  const sortedData = [...data].sort((a, b) => {
+    // Usar o campo 'data' que contém a data real da cotação
+    const dateA = a.data ? parseISO(a.data.split('/').reverse().join('-')) : new Date(a.timestamp as any);
+    const dateB = b.data ? parseISO(b.data.split('/').reverse().join('-')) : new Date(b.timestamp as any);
+    return dateB.getTime() - dateA.getTime();
+  });
+
+  const totalPages = Math.ceil(sortedData.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const currentData = sortedData.slice(startIndex, endIndex);
+
+  const formatDate = (quote: FirestoreQuote) => {
+    try {
+      // Priorizar o campo 'data' que contém a data real da cotação
+      if (quote.data) {
+        // Converter de DD/MM/YYYY para Date
+        const [day, month, year] = quote.data.split('/');
+        const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        return isValid(date) ? format(date, 'dd/MM/yyyy') : quote.data;
+      }
+      
+      // Fallback para timestamp se não houver campo 'data'
+      const date = new Date(quote.timestamp as any);
+      return isValid(date) ? format(date, 'dd/MM/yyyy') : 'N/A';
+    } catch {
+      return 'N/A';
+    }
+  };
+
+  const formatTime = (quote: FirestoreQuote) => {
+    try {
+      // Usar timestamp para hora, já que o campo 'data' só tem a data
+      const date = new Date(quote.timestamp as any);
+      return isValid(date) ? format(date, 'HH:mm') : 'N/A';
+    } catch {
+      return 'N/A';
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Table className="h-5 w-5" />
+          {assetConfig?.name || assetId.toUpperCase()} - Histórico
+          <Badge variant="secondary" className="ml-auto">
+            {sortedData.length} registros
+          </Badge>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="rounded-md border">
+          <UITable>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Data</TableHead>
+                <TableHead>Horário</TableHead>
+                <TableHead>Preço</TableHead>
+                <TableHead>Variação %</TableHead>
+                <TableHead>Variação Abs.</TableHead>
+                {assetId === 'ucs_ase' && (
+                  <>
+                    <TableHead>USD</TableHead>
+                    <TableHead>EUR</TableHead>
+                  </>
+                )}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {currentData.map((quote, index) => {
+                const price = getPriceFromQuote(quote, assetId);
+                const variation = quote.variacao_pct ?? 0;
+                const previousPrice = index < sortedData.length - 1 ? 
+                  getPriceFromQuote(sortedData[index + 1], assetId) : price;
+                const absoluteChange = price && previousPrice ? price - previousPrice : 0;
+
+                // Criar uma chave única combinando documentId, timestamp e index
+                const uniqueKey = `${quote.documentId || 'no-id'}-${quote.timestamp || 'no-timestamp'}-${startIndex + index}`;
+
+                return (
+                  <TableRow key={uniqueKey}>
+                    <TableCell className="font-medium">
+                      {formatDate(quote)}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {formatTime(quote)}
+                    </TableCell>
+                    <TableCell className="font-mono">
+                      {price ? formatCurrency(price, 'BRL', assetId) : 'N/A'}
+                    </TableCell>
+                    <TableCell className={variation >= 0 ? 'text-green-600' : 'text-red-600'}>
+                      {variation >= 0 ? '+' : ''}{variation.toFixed(2)}%
+                    </TableCell>
+                    <TableCell className={absoluteChange >= 0 ? 'text-green-600' : 'text-red-600'}>
+                      {absoluteChange >= 0 ? '+' : ''}{formatCurrency(absoluteChange, 'BRL', assetId)}
+                    </TableCell>
+                    {assetId === 'ucs_ase' && (
+                      <>
+                        <TableCell className="font-mono text-muted-foreground">
+                          {quote.valor_usd ? formatCurrency(quote.valor_usd, 'USD', 'ucs_ase') : 'N/A'}
+                        </TableCell>
+                        <TableCell className="font-mono text-muted-foreground">
+                          {quote.valor_eur ? formatCurrency(quote.valor_eur, 'EUR', 'ucs_ase') : 'N/A'}
+                        </TableCell>
+                      </>
+                    )}
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </UITable>
+        </div>
+
+        {/* Paginação */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between mt-4">
+            <div className="text-sm text-muted-foreground">
+              Página {currentPage} de {totalPages}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+              >
+                Anterior
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                disabled={currentPage === totalPages}
+              >
+                Próxima
+              </Button>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
+// Componente de métricas de performance
+const PerformanceMetrics = ({ 
+  assetId, 
+  data, 
+  isLoading 
+}: { 
+  assetId: string; 
+  data: FirestoreQuote[]; 
+  isLoading: boolean;
+}) => {
+  const [metrics, setMetrics] = useState<any>(null);
+  const [isCalculating, setIsCalculating] = useState(false);
+
+  useEffect(() => {
+    const calculateMetrics = async () => {
+      if (!data || data.length === 0) {
+        setMetrics(null);
+        return;
+      }
+      
+      setIsCalculating(true);
+      try {
+        const analysis = await calculateFrequencyAwareMetrics(data, assetId);
+        setMetrics(analysis.metrics);
+      } catch (error) {
+        console.error('Erro ao calcular métricas:', error);
+        setMetrics(null);
+      } finally {
+        setIsCalculating(false);
+      }
+    };
+
+    calculateMetrics();
+  }, [data, assetId]);
+
+  if (isLoading || isCalculating) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BarChart3 className="h-5 w-5" />
+            Métricas de Performance
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center py-8">
+            <RefreshCw className="h-6 w-6 animate-spin mr-2" />
+            <span className="text-sm text-muted-foreground">Calculando métricas...</span>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!metrics) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BarChart3 className="h-5 w-5" />
+            Métricas de Performance
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8 text-muted-foreground">
+            <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p>Dados insuficientes para calcular métricas</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <BarChart3 className="h-5 w-5" />
+          Métricas de Performance
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
+            <TrendingUp className="h-8 w-8 mx-auto mb-2 text-green-600" />
+            <p className="text-sm font-medium text-green-700">Retorno Total</p>
+            <p className="text-2xl font-bold text-green-800">
+              {metrics.totalReturn >= 0 ? '+' : ''}{metrics.totalReturn.toFixed(2)}%
+            </p>
+          </div>
+          <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <Activity className="h-8 w-8 mx-auto mb-2 text-blue-600" />
+            <p className="text-sm font-medium text-blue-700">Volatilidade</p>
+            <p className="text-2xl font-bold text-blue-800">
+              {metrics.volatility.toFixed(2)}%
+            </p>
+          </div>
+          <div className="text-center p-4 bg-red-50 rounded-lg border border-red-200">
+            <TrendingDown className="h-8 w-8 mx-auto mb-2 text-red-600" />
+            <p className="text-sm font-medium text-red-700">Max Drawdown</p>
+            <p className="text-2xl font-bold text-red-800">
+              {metrics.maxDrawdown.toFixed(2)}%
+            </p>
+          </div>
+          <div className="text-center p-4 bg-purple-50 rounded-lg border border-purple-200">
+            <Target className="h-8 w-8 mx-auto mb-2 text-purple-600" />
+            <p className="text-sm font-medium text-purple-700">Sharpe Ratio</p>
+            <p className="text-2xl font-bold text-purple-800">
+              {metrics.sharpeRatio.toFixed(2)}
+            </p>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+          <div className="text-center p-4 bg-muted/50 rounded-lg">
+            <p className="text-sm text-muted-foreground">Preço Atual</p>
+            <p className="text-xl font-bold">{formatCurrency(metrics.currentPrice, 'BRL', assetId)}</p>
+          </div>
+          <div className="text-center p-4 bg-muted/50 rounded-lg">
+            <p className="text-sm text-muted-foreground">Máximo</p>
+            <p className="text-xl font-bold text-green-600">{formatCurrency(metrics.high, 'BRL', assetId)}</p>
+          </div>
+          <div className="text-center p-4 bg-muted/50 rounded-lg">
+            <p className="text-sm text-muted-foreground">Mínimo</p>
+            <p className="text-xl font-bold text-red-600">{formatCurrency(metrics.low, 'BRL', assetId)}</p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+// Componente principal melhorado
+export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
+  const [data, setData] = useState<Record<string, FirestoreQuote[]>>({});
+  const [assets, setAssets] = useState<CommodityConfig[]>([]);
+  const [selectedAssetId, setSelectedAssetId] = useState<string>('PDM');
+  const [timeRange, setTimeRange] = useState<TimeRange>('1y');
+  const [isLoading, setIsLoading] = useState(true);
+  const [visibleAssets, setVisibleAssets] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    console.log('🔧 [EnhancedTrendAnalysis] Carregando configurações de commodities...');
+    getCommodityConfigs()
+      .then(configs => {
+        console.log('✅ [EnhancedTrendAnalysis] Configurações carregadas:', configs.length, 'ativos');
+        setAssets(configs);
+      })
+      .catch(error => {
+        console.error('❌ [EnhancedTrendAnalysis] Erro ao carregar configurações:', error);
+      });
+  }, []);
+
+  useEffect(() => {
+    setIsLoading(true);
+    const daysToFetch = timeRangeInDays[timeRange];
+    
+    console.log(`🔍 [EnhancedTrendAnalysis] Buscando dados históricos para ${selectedAssetId}, ${daysToFetch} dias`);
+    
+    getCotacoesHistorico(selectedAssetId, daysToFetch)
+      .then(history => {
+        console.log(`📊 [EnhancedTrendAnalysis] ${selectedAssetId}: ${history.length} registros encontrados`);
+        setData({ [selectedAssetId]: history });
+        setIsLoading(false);
+      })
+      .catch(error => {
+        console.error(`❌ [EnhancedTrendAnalysis] Erro ao buscar dados para ${selectedAssetId}:`, error);
+        setData({});
+        setIsLoading(false);
+      });
+  }, [selectedAssetId, timeRange]);
+
+  const selectedAssetConfig = useMemo(() => {
+    return assets.find(a => a.id === selectedAssetId);
+  }, [assets, selectedAssetId]);
+
+  const currentData = data[selectedAssetId] || [];
+
+  // Processar dados para o gráfico
+  const chartData = useMemo(() => {
+    if (!currentData || currentData.length === 0) return [];
+
+    return currentData
+      .map(quote => {
+        const price = getPriceFromQuote(quote, selectedAssetId);
+        if (price === undefined) return null;
+        
+        // Priorizar o campo 'data' para a data da cotação
+        let date: Date | null = null;
+        
+        if (quote.data) {
+          try {
+            // Converter de DD/MM/YYYY para Date
+            const [day, month, year] = quote.data.split('/');
+            date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+          } catch {
+            date = null;
+          }
+        }
+        
+        // Fallback para timestamp se não houver campo 'data' válido
+        if (!date || !isValid(date)) {
+          date = quote.timestamp ? new Date(quote.timestamp as any) : null;
+        }
+        
+        if (!date || !isValid(date)) return null;
+        
+        return {
+          date: format(date, 'dd/MM'),
+          value: price,
+          timestamp: date.getTime(),
+          variation: quote.variacao_pct ?? 0
+        };
+      })
+      .filter((item): item is NonNullable<typeof item> => item !== null)
+      .sort((a, b) => a.timestamp - b.timestamp);
+  }, [currentData, selectedAssetId]);
+
+  const handleVisibilityChange = (assetId: string) => {
+    setVisibleAssets(prev => ({
+      ...prev,
+      [assetId]: !prev[assetId],
+    }));
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header com seleção de ativo e período */}
+      <Card>
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 border-b">
+          <div className="flex-1">
+            <Select value={selectedAssetId} onValueChange={setSelectedAssetId}>
+              <SelectTrigger className="w-full sm:w-[280px]">
+                <SelectValue placeholder="Selecione um ativo" />
+              </SelectTrigger>
+              <SelectContent>
+                {assets.map(asset => (
+                  <SelectItem key={asset.id} value={asset.id}>{asset.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 rounded-lg bg-muted p-1">
+              <Button variant={timeRange === '7d' ? 'default' : 'ghost'} size="sm" onClick={() => setTimeRange('7d')} className="h-8">7D</Button>
+              <Button variant={timeRange === '30d' ? 'default' : 'ghost'} size="sm" onClick={() => setTimeRange('30d')} className="h-8">30D</Button>
+              <Button variant={timeRange === '90d' ? 'default' : 'ghost'} size="sm" onClick={() => setTimeRange('90d')} className="h-8">90D</Button>
+              <Button variant={timeRange === '1y' ? 'default' : 'ghost'} size="sm" onClick={() => setTimeRange('1y')} className="h-8">1A</Button>
+              <Button variant={timeRange === 'all' ? 'default' : 'ghost'} size="sm" onClick={() => setTimeRange('all')} className="h-8">Tudo</Button>
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
+
+      {/* Tabs para diferentes visualizações */}
+      <Tabs defaultValue="overview" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+          <TabsTrigger value="chart">Gráfico</TabsTrigger>
+          <TabsTrigger value="table">Tabela Histórica</TabsTrigger>
+          <TabsTrigger value="metrics">Métricas</TabsTrigger>
+        </TabsList>
+
+        {/* Tab: Visão Geral */}
+        <TabsContent value="overview" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Gráfico */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5" />
+                  Gráfico de Performance
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-80">
+                  <HistoricalAnalysisChart 
+                    isLoading={isLoading}
+                    chartData={chartData}
+                    isMultiLine={false}
+                    mainAssetData={selectedAssetConfig ? {
+                      ...selectedAssetConfig,
+                      price: chartData[chartData.length - 1]?.value || 0,
+                      currency: 'BRL',
+                      change: chartData[chartData.length - 1]?.variation || 0,
+                      absoluteChange: 0,
+                      lastUpdated: new Date().toISOString(),
+                    } : null}
+                    visibleAssets={visibleAssets}
+                    lineColors={lineColors}
+                    assetNames={{ [selectedAssetId]: selectedAssetConfig?.name || selectedAssetId }}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Métricas rápidas */}
+            <PerformanceMetrics 
+              assetId={selectedAssetId}
+              data={currentData}
+              isLoading={isLoading}
+            />
+          </div>
+        </TabsContent>
+
+        {/* Tab: Gráfico */}
+        <TabsContent value="chart" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" />
+                Análise Gráfica Detalhada
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-96">
+                <HistoricalAnalysisChart 
+                  isLoading={isLoading}
+                  chartData={chartData}
+                  isMultiLine={false}
+                  mainAssetData={selectedAssetConfig ? {
+                    ...selectedAssetConfig,
+                    price: chartData[chartData.length - 1]?.value || 0,
+                    currency: 'BRL',
+                    change: chartData[chartData.length - 1]?.variation || 0,
+                    absoluteChange: 0,
+                    lastUpdated: new Date().toISOString(),
+                  } : null}
+                  visibleAssets={visibleAssets}
+                  lineColors={lineColors}
+                  assetNames={{ [selectedAssetId]: selectedAssetConfig?.name || selectedAssetId }}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Tab: Tabela Histórica */}
+        <TabsContent value="table" className="space-y-6">
+          <AssetHistoricalTable 
+            assetId={selectedAssetId}
+            data={currentData}
+            assetConfig={selectedAssetConfig}
+            isLoading={isLoading}
+          />
+        </TabsContent>
+
+        {/* Tab: Métricas */}
+        <TabsContent value="metrics" className="space-y-6">
+          <PerformanceMetrics 
+            assetId={selectedAssetId}
+            data={currentData}
+            isLoading={isLoading}
+          />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}

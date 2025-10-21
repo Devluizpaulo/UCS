@@ -27,9 +27,9 @@ export default function PublicLayout({
       return; // Não faça nada enquanto o status do usuário está sendo carregado
     }
     
-    // Se o usuário está logado e tenta acessar uma página pública (que não seja a de checklist),
+    // Se o usuário está logado e tenta acessar uma página pública (que não seja a de checklist ou index-details),
     // redireciona para o dashboard.
-    if (user && PUBLIC_PAGES.includes(pathname) && pathname !== '/checklist') {
+    if (user && PUBLIC_PAGES.includes(pathname) && pathname !== '/checklist' && pathname !== '/index-details') {
       router.replace('/dashboard');
     }
   }, [isUserLoading, user, router, pathname]);

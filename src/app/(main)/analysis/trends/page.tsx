@@ -2,7 +2,7 @@
 
 import { Suspense } from 'react';
 import { PageHeader } from '@/components/page-header';
-import { HistoricalAnalysis } from '@/components/historical-analysis';
+import { EnhancedTrendAnalysis } from '@/components/enhanced-trend-analysis';
 import { TrendingUp } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { DateNavigator } from '@/components/date-navigator';
@@ -26,14 +26,14 @@ function TrendAnalysisContent() {
   return (
     <div className="flex min-h-screen w-full flex-col">
       <PageHeader
-        title="Análise Histórica de Ativos"
-        description="Analise a performance histórica do índice e de seus componentes."
+        title="Análise de Trends e Séries Históricas"
+        description="Analise a performance histórica com gráficos interativos, tabelas detalhadas e métricas avançadas para cada ativo."
         icon={TrendingUp}
       >
         <DateNavigator targetDate={targetDate} />
       </PageHeader>
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
-        <HistoricalAnalysis targetDate={targetDate} />
+        <EnhancedTrendAnalysis targetDate={targetDate} />
       </main>
     </div>
   )

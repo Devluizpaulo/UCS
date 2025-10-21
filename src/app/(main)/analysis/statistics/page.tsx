@@ -1,12 +1,12 @@
 'use client';
 
-import { PageHeader } from '@/components/page-header';
-import { PieChart, Calendar } from 'lucide-react';
-import { CompositionAnalysis } from '@/components/composition-analysis';
+import { Suspense, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { isValid, parseISO } from 'date-fns';
+import { PageHeader } from '@/components/page-header';
 import { DateNavigator } from '@/components/date-navigator';
-import { parseISO, isValid } from 'date-fns';
-import { Suspense } from 'react';
+import { StatisticsAnalysis } from '@/components/statistics-analysis';
+import { BarChart3 } from 'lucide-react';
 
 function getValidatedDate(dateString?: string | null): Date {
   if (dateString) {
@@ -15,11 +15,10 @@ function getValidatedDate(dateString?: string | null): Date {
       return parsed;
     }
   }
-  // Sempre começar pela data atual
   return new Date();
 }
 
-function CompositionPageContent() {
+function StatisticsPageContent() {
   const searchParams = useSearchParams();
   const dateParam = searchParams.get('date');
   const targetDate = getValidatedDate(dateParam);
@@ -27,23 +26,23 @@ function CompositionPageContent() {
   return (
     <div className="flex min-h-screen w-full flex-col">
       <PageHeader
-        title="Análise de Composição"
-        description="Visualize a participação de cada componente no índice Valor de Uso do Solo."
-        icon={PieChart}
+        title="Estatísticas e Performance"
+        description="Análise detalhada de performance, histórico completo de cotações e métricas estatísticas dos ativos."
+        icon={BarChart3}
       >
         <DateNavigator targetDate={targetDate} />
       </PageHeader>
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
-        <CompositionAnalysis targetDate={targetDate} />
+        <StatisticsAnalysis targetDate={targetDate} />
       </main>
     </div>
   );
 }
 
-export default function CompositionAnalysisPage() {
+export default function StatisticsPage() {
   return (
     <Suspense fallback={<div>Carregando...</div>}>
-      <CompositionPageContent />
+      <StatisticsPageContent />
     </Suspense>
   );
 }

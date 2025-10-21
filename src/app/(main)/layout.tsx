@@ -22,6 +22,8 @@ import {
   History,
   PieChart,
   CheckSquare,
+  BarChart3,
+  Database,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -282,6 +284,18 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
+                <SidebarMenuItem onClick={handleMenuItemClick}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith('/analysis/statistics')}
+                    tooltip={{ children: 'Estatísticas e Performance' }}
+                  >
+                    <Link href="/analysis/statistics">
+                      <BarChart3 />
+                      <span>Estatísticas</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               </SidebarMenu>
               {isAdmin && (
                 <SidebarMenu>
@@ -309,6 +323,18 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
                       <Link href="/admin/audit">
                         <History />
                         <span>Auditoria</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem onClick={handleMenuItemClick}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={pathname.startsWith('/debug')}
+                      tooltip={{ children: 'Debug do Firestore' }}
+                    >
+                      <Link href="/debug">
+                        <Database />
+                        <span>Debug</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

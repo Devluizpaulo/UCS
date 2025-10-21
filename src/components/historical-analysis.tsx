@@ -24,7 +24,8 @@ import { HistoricalAnalysisChart } from '@/components/charts/historical-analysis
 import { Checkbox } from './ui/checkbox';
 import { Label } from './ui/label';
 
-const UCS_ASE_COMPARISON_ASSETS = ['ucs_ase', 'milho', 'boi_gordo', 'madeira', 'carbono', 'soja'];
+// Lista de ativos disponíveis baseada no que temos dados no banco
+const UCS_ASE_COMPARISON_ASSETS = ['PDM', 'milho', 'boi_gordo', 'madeira', 'carbono', 'soja'];
 type TimeRange = '1d' | '7d' | '30d' | '1y' | 'all';
 
 const timeRangeInDays: Record<TimeRange, number> = {
@@ -47,7 +48,8 @@ const lineColors: { [key: string]: string } = {
 const getPriceFromQuote = (quote: FirestoreQuote, assetId: string) => {
     if (!quote) return undefined;
     if (assetId === 'ucs_ase') {
-        const value = quote.valor_brl ?? quote.resultado_final_brl;
+        // Para UCS ASE, usar valor_brl como principal, com fallbacks
+        const value = quote.valor_brl ?? quote.resultado_final_brl ?? quote.valor_eur ?? quote.valor_usd;
         return typeof value === 'number' ? value : undefined;
     }
     const value = quote.valor ?? quote.ultimo;
@@ -88,13 +90,21 @@ const LegendContent = ({ assets, visibleAssets, onVisibilityChange, lineColors }
 export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
   const [data, setData] = useState<Record<string, FirestoreQuote[]>>({});
   const [assets, setAssets] = useState<CommodityConfig[]>([]);
-  const [selectedAssetId, setSelectedAssetId] = useState<string>('ucs_ase');
+  const [selectedAssetId, setSelectedAssetId] = useState<string>('PDM');
   const [timeRange, setTimeRange] = useState<TimeRange>('1y');
   const [isLoading, setIsLoading] = useState(true);
   const [visibleAssets, setVisibleAssets] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    getCommodityConfigs().then(setAssets);
+    console.log('🔧 [HistoricalAnalysis] Carregando configurações de commodities...');
+    getCommodityConfigs()
+      .then(configs => {
+        console.log('✅ [HistoricalAnalysis] Configurações carregadas:', configs.length, 'ativos');
+        setAssets(configs);
+      })
+      .catch(error => {
+        console.error('❌ [HistoricalAnalysis] Erro ao carregar configurações:', error);
+      });
   }, []);
 
   useEffect(() => {
@@ -102,12 +112,25 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
     const assetsToFetch = UCS_ASE_COMPARISON_ASSETS;
     const daysToFetch = timeRangeInDays[timeRange];
     
-    Promise.all(assetsToFetch.map(id => getCotacoesHistorico(id, daysToFetch)))
+    console.log(`🔍 Fetching historical data for ${assetsToFetch.length} assets, ${daysToFetch} days`);
+    
+    Promise.all(assetsToFetch.map(async (id) => {
+      console.log(`📊 Fetching data for ${id}...`);
+      const history = await getCotacoesHistorico(id, daysToFetch);
+      console.log(`📊 ${id}: ${history.length} records found`);
+      return history;
+    }))
       .then((histories) => {
         const newData: Record<string, FirestoreQuote[]> = {};
         histories.forEach((history, index) => {
           newData[assetsToFetch[index]] = history;
+          console.log(`✅ ${assetsToFetch[index]}: ${history.length} records loaded`);
         });
+        
+        // Log total data
+        const totalRecords = Object.values(newData).reduce((sum, arr) => sum + arr.length, 0);
+        console.log(`📈 Total records loaded: ${totalRecords}`);
+        
         setData(newData);
         setVisibleAssets(
             assetsToFetch.reduce((acc, id) => ({ ...acc, [id]: true }), {})
@@ -115,7 +138,7 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
         setIsLoading(false);
       })
       .catch((err) => {
-        console.error("Error fetching historical data:", err);
+        console.error("❌ Error fetching historical data:", err);
         setData({});
         setIsLoading(false);
       });
@@ -131,69 +154,146 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
         names[a.id] = a.name;
     });
 
+    console.log(`🔄 Processing chart data for ${selectedAssetId}`);
+    console.log(`📊 Data keys:`, Object.keys(data));
+    console.log(`📊 Selected asset config:`, selectedAssetConfig);
+
     if (Object.keys(data).length === 0 || !selectedAssetConfig) {
+      console.log(`⚠️ No data or config found. Data keys: ${Object.keys(data).length}, Config: ${!!selectedAssetConfig}`);
       return { chartData: [], mainAssetData: null, isMultiLine: false, assetNames: names };
     }
 
     const mainHistory = data[selectedAssetId] || [];
-    const sortedData = [...mainHistory].sort((a, b) => (new Date(b.timestamp as any)).getTime() - (new Date(a.timestamp as any)).getTime());
+    console.log(`📈 Main history for ${selectedAssetId}: ${mainHistory.length} records`);
+    
+    const sortedData = [...mainHistory].sort((a, b) => {
+      // Priorizar o campo 'data' que contém a data real da cotação
+      const dateA = a.data ? parseISO(a.data.split('/').reverse().join('-')) : new Date(a.timestamp as any);
+      const dateB = b.data ? parseISO(b.data.split('/').reverse().join('-')) : new Date(b.timestamp as any);
+      return dateB.getTime() - dateA.getTime();
+    });
+    console.log(`📈 Sorted data: ${sortedData.length} records`);
     
     const quoteForDate = sortedData.find(q => {
-        if (!q || !q.timestamp) return false;
+        if (!q) return false;
         try {
-            const quoteDate = new Date(q.timestamp as any);
+            // Priorizar o campo 'data' para comparação
+            let quoteDate: Date;
+            if (q.data) {
+                // Converter de DD/MM/YYYY para Date
+                const [day, month, year] = q.data.split('/');
+                quoteDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+            } else {
+                quoteDate = new Date(q.timestamp as any);
+            }
             return format(quoteDate, 'yyyy-MM-dd') === format(targetDate, 'yyyy-MM-dd');
         } catch {
             return false;
         }
     }) || sortedData[0];
     
+    console.log(`📈 Quote for date: ${!!quoteForDate}`);
     if (!quoteForDate) {
+       console.log(`⚠️ No quote found for date ${format(targetDate, 'yyyy-MM-dd')}`);
        return { chartData: [], mainAssetData: null, isMultiLine: false, assetNames: names };
     }
 
-    const isMulti = selectedAssetId === 'ucs_ase';
+    const isMulti = selectedAssetId === 'PDM' || selectedAssetId === 'ucs_ase';
     let finalChartData: any[];
 
     const cutoffDate = subDays(new Date(), timeRangeInDays[timeRange]);
 
     if (isMulti) {
         const dataMap = new Map<string, any>();
-        UCS_ASE_COMPARISON_ASSETS.forEach(id => {
-            const assetHistory = data[id] || [];
-            assetHistory.forEach(quote => {
-                if(!quote || !quote.timestamp) return;
+        
+        // Para PDM, mostrar componentes individuais
+        if (selectedAssetId === 'PDM') {
+            const pdmHistory = data['PDM'] || [];
+            pdmHistory.forEach(quote => {
+                if(!quote || !quote.componentes) return;
                 try {
-                  const date = new Date(quote.timestamp as any);
+                  // Priorizar o campo 'data' para a data da cotação
+                  let date: Date;
+                  if (quote.data) {
+                    const [day, month, year] = quote.data.split('/');
+                    date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                  } else {
+                    date = new Date(quote.timestamp as any);
+                  }
+                  
                   if(!isValid(date) || date < cutoffDate) return;
 
                   const dateStr = format(date, 'yyyy-MM-dd');
                   if (!dataMap.has(dateStr)) {
                       dataMap.set(dateStr, { date: format(date, 'dd/MM'), timestamp: date.getTime() });
                   }
-                  const value = getPriceFromQuote(quote, id);
-                  if(value !== undefined) {
-                      dataMap.get(dateStr)[id] = value;
-                  }
+                  
+                  // Adicionar componentes do PDM
+                  Object.entries(quote.componentes).forEach(([key, value]) => {
+                      if (typeof value === 'number' && value > 0) {
+                          dataMap.get(dateStr)[key] = value;
+                      }
+                  });
                 } catch {}
             });
-        });
+        } else {
+            // Para outros ativos multi-linha
+            UCS_ASE_COMPARISON_ASSETS.forEach(id => {
+                const assetHistory = data[id] || [];
+                assetHistory.forEach(quote => {
+                    if(!quote) return;
+                    try {
+                      // Priorizar o campo 'data' para a data da cotação
+                      let date: Date;
+                      if (quote.data) {
+                        const [day, month, year] = quote.data.split('/');
+                        date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                      } else {
+                        date = new Date(quote.timestamp as any);
+                      }
+                      
+                      if(!isValid(date) || date < cutoffDate) return;
+
+                      const dateStr = format(date, 'yyyy-MM-dd');
+                      if (!dataMap.has(dateStr)) {
+                          dataMap.set(dateStr, { date: format(date, 'dd/MM'), timestamp: date.getTime() });
+                      }
+                      const value = getPriceFromQuote(quote, id);
+                      if(value !== undefined) {
+                          dataMap.get(dateStr)[id] = value;
+                      }
+                    } catch {}
+                });
+            });
+        }
+        
         finalChartData = Array.from(dataMap.values()).sort((a,b) => a.timestamp - b.timestamp);
+        console.log(`📊 Multi-line chart data: ${finalChartData.length} points`);
     } else {
         finalChartData = sortedData
             .map(quote => {
-                if(!quote || !quote.timestamp) return null;
+                if(!quote) return null;
                  try {
-                    const date = new Date(quote.timestamp as any);
+                    // Priorizar o campo 'data' para a data da cotação
+                    let date: Date;
+                    if (quote.data) {
+                      const [day, month, year] = quote.data.split('/');
+                      date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                    } else {
+                      date = new Date(quote.timestamp as any);
+                    }
+                    
                     if(!isValid(date) || date < cutoffDate) return null;
+                    const price = getPriceFromQuote(quote, selectedAssetId);
                     return {
                         date: format(date, 'dd/MM'),
-                        value: getPriceFromQuote(quote, selectedAssetId),
+                        value: price,
                     }
                 } catch { return null; }
             })
             .filter(item => item && item.value !== undefined)
             .reverse();
+        console.log(`📊 Single-line chart data: ${finalChartData.length} points`);
     }
       
     const isForexAsset = ['soja', 'carbono', 'madeira'].includes(selectedAssetConfig.id);
@@ -207,6 +307,8 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
         lastUpdated: quoteForDate.data || (quoteForDate.timestamp ? format(new Date(quoteForDate.timestamp as any), 'dd/MM/yyyy') : 'N/A'),
     };
 
+    console.log(`✅ Final result: ${finalChartData.length} chart points, mainAsset: ${!!mainAsset}`);
+    
     return { chartData: finalChartData, mainAssetData: mainAsset, isMultiLine: isMulti, assetNames: names };
   }, [data, targetDate, selectedAssetConfig, selectedAssetId, assets, timeRange]);
   

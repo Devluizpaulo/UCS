@@ -9,10 +9,10 @@ export function formatCurrency(value: number, currency: string, assetId?: string
 
   const isExchangeRate = assetId === 'usd' || assetId === 'eur';
   
-  // No painel principal (hero), queremos sempre duas casas decimais para USD e EUR.
-  // Em outros locais, taxas de câmbio podem ter 4.
-  const minimumFractionDigits = isExchangeRate && assetId ? 2 : 2;
-  const maximumFractionDigits = isExchangeRate && assetId ? 2 : 2;
+  // Para USD e EUR (taxas de câmbio), usar formato americano com 4 casas decimais
+  // Para outros ativos, usar 2 casas decimais
+  const minimumFractionDigits = isExchangeRate ? 4 : 2;
+  const maximumFractionDigits = isExchangeRate ? 4 : 2;
 
 
   const options: Intl.NumberFormatOptions = {
@@ -23,9 +23,15 @@ export function formatCurrency(value: number, currency: string, assetId?: string
   };
   
   try {
-    // Usar 'pt-BR' para BRL, mas 'en-US'/'en-GB' para USD/EUR para garantir o símbolo correto ($/€) antes do número.
-    const locale = currency === 'BRL' ? 'pt-BR' : currency === 'USD' ? 'en-US' : 'de-DE';
+    // Para USD e EUR, usar formato americano (ponto como decimal)
+    // Para BRL, usar formato brasileiro (vírgula como decimal)
+    const locale = currency === 'BRL' ? 'pt-BR' : 'en-US';
     let formatted = new Intl.NumberFormat(locale, options).format(value);
+    
+    // Debug: log para verificar formatação
+    if (isExchangeRate) {
+      console.log(`🔍 Formatting ${assetId}: ${value} -> ${formatted} (locale: ${locale}, currency: ${currency})`);
+    }
     
     return formatted;
 
@@ -33,10 +39,13 @@ export function formatCurrency(value: number, currency: string, assetId?: string
     // Fallback em caso de erro na API de internacionalização
     console.error("Currency formatting error:", e);
     const fallbackOptions = { 
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2 
+        minimumFractionDigits: isExchangeRate ? 4 : 2,
+        maximumFractionDigits: isExchangeRate ? 4 : 2 
     };
-    const fallbackFormatter = new Intl.NumberFormat('pt-BR', fallbackOptions);
+    
+    // Para fallback, usar formato americano para USD/EUR
+    const fallbackLocale = currency === 'BRL' ? 'pt-BR' : 'en-US';
+    const fallbackFormatter = new Intl.NumberFormat(fallbackLocale, fallbackOptions);
 
     return `${currency} ${fallbackFormatter.format(value)}`;
   }
