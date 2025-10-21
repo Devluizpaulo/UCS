@@ -31,66 +31,63 @@ function IndexDetailsContent() {
   const targetDate = getValidatedDate(dateParam);
   const { t } = useLanguage();
 
-  // Composição Detalhada dos Pilares da UCS
-  const ucsPillars = [
-    {
-      icon: TreePine,
-      title: "VUS - Valor de Uso do Solo",
-      subtitle: "Fator: 1.0 (Principal)",
-      description: "Ativo principal indexado às commodities agrícolas mais importantes do Brasil",
-      weight: 1.0,
-      weightLabel: "Ativo Principal",
-      color: "bg-green-500/10 text-green-700 border-green-200",
-      iconColor: "text-green-600",
-      composition: {
-        title: "Composição do VUS",
-        commodities: [
-          { name: "Boi Gordo", weight: "40%", currentPrice: "R$ 280,00/@", trend: "+5.2%" },
-          { name: "Milho", weight: "35%", currentPrice: "R$ 85,00/sc", trend: "+3.8%" },
-          { name: "Soja", weight: "25%", currentPrice: "R$ 180,00/sc", trend: "+2.1%" }
-        ],
-        explanation: "O VUS é reajustado mensalmente baseado nas cotações das principais commodities agrícolas brasileiras, garantindo valorização contínua e proteção contra inflação."
-      },
-      commercialValue: "Ativo principal com fator 1.0, reajustado mensalmente pelas cotações de boi, milho e soja."
-    },
-    {
-      icon: Mountain,
-      title: "VMAD - Valor da Madeira",
-      subtitle: "Fator: 0.21 (Secundário)", 
-      description: "Ativo secundário indexado ao mercado madeireiro sustentável certificado",
-      weight: 0.21,
-      weightLabel: "Ativo Secundário",
-      color: "bg-amber-500/10 text-amber-700 border-amber-200",
-      iconColor: "text-amber-600",
-      composition: {
-        title: "Composição do VMAD",
-        commodities: [
-          { name: "Madeira Certificada", weight: "100%", currentPrice: "R$ 1.200,00/m³", trend: "+4.5%" }
-        ],
-        explanation: "O VMAD é indexado exclusivamente ao mercado de madeira certificada, garantindo sustentabilidade e valorização do manejo florestal responsável."
-      },
-      commercialValue: "Ativo secundário com fator 0.21, indexado ao mercado madeireiro com reajuste trimestral."
-    },
-    {
-      icon: Shield,
-      title: "CRS - Custo de Responsabilidade Socioambiental",
-      subtitle: "Fator: 0.25 (Terciário)",
-      description: "Ativo terciário indexado aos mercados de créditos ambientais e serviços ecossistêmicos",
-      weight: 0.25,
-      weightLabel: "Ativo Terciário",
-      color: "bg-blue-500/10 text-blue-700 border-blue-200",
-      iconColor: "text-blue-600",
-      composition: {
-        title: "Composição do CRS",
-        commodities: [
-          { name: "Créditos de Carbono", weight: "80%", currentPrice: "R$ 45,00/tCO₂", trend: "+8.5%" },
-          { name: "Créditos de Água", weight: "20%", currentPrice: "R$ 12,00/m³", trend: "+4.2%" }
-        ],
-        explanation: "O CRS valoriza os serviços ambientais da floresta amazônica, focando no sequestro de carbono e proteção dos recursos hídricos."
-      },
-      commercialValue: "Ativo terciário com fator 0.25, indexado aos mercados de carbono e água."
+// Composição Detalhada dos Pilares da UCS
+const ucsPillars = [
+  {
+    icon: TreePine,
+    title: "VUS - Valor de Uso do Solo",
+    subtitle: "Fator: 1.0 (Principal)",
+    description: "O VUS representa um ativo financeiro inovador, lastreado no potencial produtivo das principais commodities agrícolas brasileiras. Através de uma curadoria técnica criteriosa, o VUS captura a solidez do agronegócio nacional, oferecendo uma alternativa de investimento diretamente conectada à economia real. Sua composição diversificada e rebalanceamento periódico garantem resiliência e uma valorização consistente, funcionando como um hedge natural contra a inflação.",
+    weight: 1.0,
+    weightLabel: "Ativo Principal",
+    color: "bg-green-500/10 text-green-700 border-green-200",
+    iconColor: "text-green-600",
+    composition: {
+      title: "Exemplos de Ativos",
+      commodities: [
+        { name: "Boi Gordo", currentPrice: "R$ 280,00/@" },
+        { name: "Milho", currentPrice: "R$ 85,00/sc" },
+        { name: "Soja", currentPrice: "R$ 180,00/sc" }
+      ],
+      explanation: "O VUS é registrado mensalmente com base nas cotações de mercado, assegurando transparência, liquidez e uma gestão de risco baseada em dados concretos do setor."
     }
-  ];
+  },
+  {
+    icon: Mountain,
+    title: "VMAD - Valor da Madeira",
+    subtitle: "Fator: 0.21 (Secundário)", 
+    description: "Mais do que um ativo, o VMAD é um compromisso com a economia verde. Ele é exclusivamente indexado ao mercado de madeira de manejo florestal sustentável certificada, promovendo uma exploração que preserva o bioma para as futuras gerações. Ao investir no VMAD, o detentor não apenas acessa um nicho de mercado em franca expansão, mas também financia diretamente a conservação da floresta em pé, recebendo dividendos ambientais e econômicos.",
+    weight: 0.21,
+    weightLabel: "Ativo Secundário",
+    color: "bg-amber-500/10 text-amber-700 border-amber-200",
+    iconColor: "text-amber-600",
+    composition: {
+      title: "Exemplo de Ativo",
+      commodities: [
+        { name: "Madeira Certificada", currentPrice: "R$ 1.200,00/m³" }
+      ],
+      explanation: "Sua valorização está intrinsicamente ligada à crescente demanda global por produtos florestais éticos e com rastreabilidade garantida, tornando-o um pilar para carteiras de investimento com foco em ESG."
+    }
+  },
+  {
+    icon: Shield,
+    title: "CRS - Custo de Responsabilidade Socioambiental",
+    subtitle: "Fator: 0.25 (Terciário)",
+    description: "O CRS é um ativo de vanguarda que monetiza os serviços ecossistêmicos prestados pela floresta amazônica. Ele traduz em valor financeiro tangível benefícios intangíveis, porém cruciais, como o sequestro de carbono e a proteção de recursos hídricos. Este ativo conecta investidores à nova economia de baixo carbono, permitindo que eles participem ativamente da criação de um futuro mais sustentável, com retornos associados ao desempenho ambiental.",
+    weight: 0.25,
+    weightLabel: "Ativo Terciário",
+    color: "bg-blue-500/10 text-blue-700 border-blue-200",
+    iconColor: "text-blue-600",
+    composition: {
+      title: "Exemplos de Ativos",
+      commodities: [
+        { name: "Créditos de Carbono", currentPrice: "R$ 45,00/tCO₂" },
+        { name: "Créditos de Água", currentPrice: "R$ 12,00/m³" }
+      ],
+      explanation: "O CRS é a materialização financeira da responsabilidade socioambiental, criando um fluxo de capital positivo que recompensa a preservação e gera impacto mensurável tanto para o planeta quanto para o portfólio."
+    }
+  }
+];
 
   // Exemplos Práticos de Composição - Pesos Relativos
   const compositionExamples = [
@@ -167,37 +164,10 @@ function IndexDetailsContent() {
               </div>
               <CardTitle className="text-3xl md:text-4xl font-bold text-gray-800">O que é a UCS?</CardTitle>
               <CardDescription className="text-lg text-gray-600 mt-4">
-                A Unidade de Crédito de Sustentabilidade é um ativo financeiro revolucionário que combina preservação ambiental com valorização econômica
+                A UCS (Unidade de Crédito de Sustentabilidade) é um ECOASSET estratégico que transforma a preservação de florestas nativas em valor financeiro, representando os benefícios ambientais mensuráveis de áreas conservadas por meio da metodologia BMV Standard, criando uma ponte inovadora entre economia e sustentabilidade.
               </CardDescription>
-              <div className="bg-green-50 border-2 border-green-200 rounded-lg p-6 mt-6">
-                <p className="text-xl font-semibold mb-4 text-green-800">
-                  🌱 UCS - Unidade de Crédito de Sustentabilidade
-                </p>
-                <p className="text-lg text-gray-700 mb-4">
-                  Representa os benefícios ambientais de uma área preservada de floresta nativa, produzida a partir da aplicação do BMV Standard.
-                </p>
-                <div className="bg-green-100 border border-green-300 rounded-lg p-4">
-                  <p className="text-xl font-bold text-center text-green-800">
-                    🎯 A UCS é um ECOASSET
-                  </p>
-                </div>
-              </div>
             </CardHeader>
             <CardContent className="space-y-6 text-center">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h3 className="text-lg font-bold mb-2 text-blue-800">📈 Reajuste Automático</h3>
-                  <p className="text-sm text-gray-600">Valorização baseada em cotações reais de mercado</p>
-                </div>
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <h3 className="text-lg font-bold mb-2 text-green-800">🌍 Impacto Ambiental</h3>
-                  <p className="text-sm text-gray-600">Preservação da floresta amazônica certificada</p>
-                </div>
-                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                  <h3 className="text-lg font-bold mb-2 text-purple-800">💼 Diversificação</h3>
-                  <p className="text-sm text-gray-600">Ativo não-correlacionado com mercados tradicionais</p>
-                </div>
-              </div>
             </CardContent>
           </Card>
         </section>
@@ -232,11 +202,7 @@ function IndexDetailsContent() {
                         <div key={idx} className="bg-gray-50 rounded-lg p-3">
                           <div className="flex justify-between items-center">
                             <span className="font-semibold text-sm">{commodity.name}</span>
-                            <span className="text-xs font-bold text-primary">{commodity.weight}</span>
-                          </div>
-                          <div className="flex justify-between items-center mt-1">
                             <span className="text-sm font-bold text-gray-800">{commodity.currentPrice}</span>
-                            <span className="text-xs font-bold text-green-600">{commodity.trend}</span>
                           </div>
                         </div>
                       ))}
@@ -244,10 +210,6 @@ function IndexDetailsContent() {
                     <p className="text-xs text-gray-600 mt-3 italic">{pillar.composition.explanation}</p>
                   </div>
                   
-                  <div className="bg-primary/5 rounded-lg p-3">
-                    <h4 className="font-semibold text-sm mb-2 text-primary">Valor Comercial:</h4>
-                    <p className="text-xs text-gray-600">{pillar.commercialValue}</p>
-                  </div>
                 </CardContent>
               </Card>
             ))}
@@ -266,8 +228,8 @@ function IndexDetailsContent() {
                 <CardTitle className="text-xl text-red-700 flex items-center gap-2">
                   <TrendingUp className="h-6 w-6" />
                   Investimentos Tradicionais
-                </CardTitle>
-              </CardHeader>
+              </CardTitle>
+            </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-3">
                   <div className="bg-white rounded-lg p-4 border border-red-200">
@@ -320,9 +282,9 @@ function IndexDetailsContent() {
                     <p className="text-xs text-gray-600">• Certificação internacional</p>
                     <p className="text-xs text-gray-600">• ESG compliance</p>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+              </div>
+            </CardContent>
+          </Card>
           </div>
         </section>
 
@@ -338,7 +300,7 @@ function IndexDetailsContent() {
                   <div className="flex justify-center mb-4">
                     <div className="p-4 bg-primary/10 rounded-full">
                       <advantage.icon className="h-8 w-8 text-primary" />
-                    </div>
+                  </div>
                   </div>
                   <CardTitle className="text-lg font-bold">{advantage.title}</CardTitle>
                 </CardHeader>
