@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { DollarSign, Euro, Leaf, User, ShieldCheck, Target, BarChart3, Scale, Microscope, FileText, Landmark, FileJson, CheckCircle, Search, GitBranch, Banknote, Building, Trees, Globe, ChevronRight, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { DollarSign, Euro, Leaf, User, ShieldCheck, Target, BarChart3, Scale, Microscope, FileText, Landmark, FileJson, CheckCircle, Search, GitBranch, Banknote, Building, Trees, Globe, ChevronRight, TrendingUp, TrendingDown, Minus, Blocks, TreePine, LandPlot, Briefcase, Award } from "lucide-react";
 import Image from 'next/image';
 import Link from 'next/link';
 import { LogoUCS } from "@/components/logo-bvm";
@@ -17,8 +17,19 @@ import Autoplay from "embla-carousel-autoplay";
 import { getCommodityPrices } from '@/lib/data-service';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/language-context';
+import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 
-export default function LandingPage() {
+// Tipo local para incluir dados de conversão
+type IndexValue = {
+  currency: 'BRL' | 'USD' | 'EUR';
+  value: number;
+  change: number;
+  conversionRate?: number;
+};
+
+
+export default function PDMDetailsPage() {
   const [allPrices, setAllPrices] = React.useState<CommodityPriceData[]>([]);
   const { t } = useLanguage();
   
@@ -31,48 +42,38 @@ export default function LandingPage() {
   );
 
   const ucsAseAsset = allPrices.find(p => p.id === 'ucs_ase');
-  const usdAsset = allPrices.find(p => p.id === 'usd');
-  const eurAsset = allPrices.find(p => p.id === 'eur');
   
-  const getIndexValues = () => {
+  const getIndexValues = (): IndexValue[] => {
     if (!ucsAseAsset) return [];
 
-    const ucsAseBRL = ucsAseAsset.price || 0;
-    const changeBRL = ucsAseAsset.change || 0;
-    
-    let indexValues = [{ 
-      currency: 'BRL', 
-      value: ucsAseBRL, 
-      change: changeBRL, 
-    }];
+    let indexValues: IndexValue[] = [];
 
-    if (usdAsset?.price) {
-      const ucsAseUSD = ucsAseBRL / usdAsset.price;
-      const prevUcsAseBRL = ucsAseBRL - ucsAseAsset.absoluteChange;
-      const prevUsdPrice = usdAsset.price - usdAsset.absoluteChange;
-      const prevUcsAseUSD = prevUsdPrice > 0 ? prevUcsAseBRL / prevUsdPrice : 0;
-      const changeUSD = prevUcsAseUSD > 0 ? ((ucsAseUSD - prevUcsAseUSD) / prevUcsAseUSD) * 100 : 0;
-      
+    // Valor em BRL
+    if (ucsAseAsset.price) {
+        indexValues.push({ 
+          currency: 'BRL', 
+          value: ucsAseAsset.price, 
+          change: ucsAseAsset.change || 0, 
+        });
+    }
+
+    // Valor em USD (se disponível)
+    if (ucsAseAsset.valor_usd) {
       indexValues.push({ 
         currency: 'USD', 
-        value: ucsAseUSD, 
-        change: changeUSD, 
-        conversionRate: usdAsset?.price 
+        value: ucsAseAsset.valor_usd, 
+        change: ucsAseAsset.change || 0,
+        conversionRate: ucsAseAsset.valores_originais?.cotacao_usd
       });
     }
     
-    if (eurAsset?.price) {
-      const ucsAseEUR = ucsAseBRL / eurAsset.price;
-      const prevUcsAseBRL = ucsAseBRL - ucsAseAsset.absoluteChange;
-      const prevEurPrice = eurAsset.price - eurAsset.absoluteChange;
-      const prevUcsAseEUR = prevEurPrice > 0 ? prevUcsAseBRL / prevEurPrice : 0;
-      const changeEUR = prevUcsAseEUR > 0 ? ((ucsAseEUR - prevUcsAseEUR) / prevUcsAseEUR) * 100 : 0;
-
+    // Valor em EUR (se disponível)
+    if (ucsAseAsset.valor_eur) {
       indexValues.push({ 
         currency: 'EUR', 
-        value: ucsAseEUR, 
-        change: changeEUR,
-        conversionRate: eurAsset?.price 
+        value: ucsAseAsset.valor_eur, 
+        change: ucsAseAsset.change || 0,
+        conversionRate: ucsAseAsset.valores_originais?.cotacao_eur
       });
     }
     
@@ -90,23 +91,52 @@ export default function LandingPage() {
     { icon: Globe, title: homeT.stakeholders.environment.title, description: homeT.stakeholders.environment.description },
   ];
 
-  const lastros = [
-      { key: 'monitoring', icon: Globe, title: homeT.pillars.monitoring.title, details: homeT.pillars.monitoring.details },
-      { key: 'real', icon: Trees, title: homeT.pillars.real.title, details: homeT.pillars.real.details },
-      { key: 'technological', icon: GitBranch, title: homeT.pillars.technological.title, details: homeT.pillars.technological.details },
-      { key: 'financial', icon: Banknote, title: homeT.pillars.financial.title, details: homeT.pillars.financial.details },
-      { key: 'audit', icon: ShieldCheck, title: homeT.pillars.audit.title, details: homeT.pillars.audit.details },
-      { key: 'scientific', icon: Microscope, title: homeT.pillars.scientific.title, details: homeT.pillars.scientific.details },
-      { key: 'technical', icon: BarChart3, title: homeT.pillars.technical.title, details: homeT.pillars.technical.details },
-      { key: 'legal', icon: Scale, title: homeT.pillars.legal.title, details: homeT.pillars.legal.details },
-      { key: 'regulatory', icon: FileText, title: homeT.pillars.regulatory.title, details: homeT.pillars.regulatory.details },
+  const pilaresPDM = [
+    {
+      icon: TreePine,
+      title: "Valor Econômico da Floresta (VMAD)",
+      description: "Representa o potencial econômico direto da floresta através da exploração madeireira sustentável, refletindo o retorno imediato do recurso.",
+      perspective: "Evidencia o valor de mercado do recurso florestal, servindo como base para licenças e projetos de manejo.",
+      methodology: "Combina o Método Americano de avaliação com a análise de Custo de Oportunidade, considerando espécies, custos e preços de mercado."
+    },
+    {
+      icon: LandPlot,
+      title: "Valor de Transformação Territorial (VUS)",
+      description: "Estima o valor da terra se fosse convertida para outros usos produtivos (agropecuário, industrial, etc.), representando o custo de oportunidade da preservação.",
+      perspective: "Indica o custo econômico de manter a floresta intacta, essencial para planejamento territorial e compensações.",
+      methodology: "Baseado no Método Americano adaptado, considerando produtividade potencial, retorno financeiro e custos operacionais."
+    },
+    {
+      icon: ShieldCheck,
+      title: "Valor Socioambiental da Conservação (CRS)",
+      description: "Quantifica o investimento necessário para manter os serviços ecossistêmicos da floresta (clima, água, carbono), expressando o valor da floresta viva.",
+      perspective: "Traduz a preservação em ativo econômico real, gerando créditos de carbono e fortalecendo a imagem corporativa.",
+      methodology: "Fundamentado no modelo internacional TEEB, contemplando sequestro de carbono, ciclagem de água e proteção da biodiversidade."
+    }
   ];
 
-  const legalBasis = [
-      { icon: FileText, title: "CNAE 0220-9/06", description: homeT.legal.cnae },
-      { icon: Landmark, title: "Lei 13.986/2020", description: homeT.legal.law },
-      { icon: FileJson, title: "Decreto 10.828/2021", description: homeT.legal.decree },
-  ]
+  const aplicacoesPDM = [
+    {
+      icon: TrendingUp,
+      title: "Compensação Ambiental",
+      description: "Base para cálculo de valores justos por supressão vegetal, com métricas padronizadas."
+    },
+    {
+      icon: BarChart3,
+      title: "Créditos de Carbono",
+      description: "Valoração precisa do sequestro de carbono, criando ativos negociáveis em mercados."
+    },
+    {
+      icon: FileText,
+      title: "Licenciamento Ambiental",
+      description: "Suporte técnico-econômico para definir condicionantes e medidas compensatórias."
+    },
+    {
+      icon: Briefcase,
+      title: "Gestão de Ativos",
+      description: "Inclusão de ativos ambientais em balanços patrimoniais com metodologia de valuation reconhecida."
+    }
+  ];
   
   return (
     <div className="flex min-h-screen w-full flex-col overflow-x-hidden bg-background text-foreground">
@@ -130,7 +160,6 @@ export default function LandingPage() {
       <main className="flex-1">
         {/* HERO SECTION */}
         <section className="relative flex h-[90vh] min-h-[700px] w-full flex-col items-center justify-center overflow-hidden p-4">
-          {/* Fundo com Vídeo e Blur */}
            <div className="absolute inset-0 z-0 h-full w-full">
                 <video
                     autoPlay
@@ -144,20 +173,17 @@ export default function LandingPage() {
                 </video>
             </div>
           
-          {/* Conteúdo Principal: Título e Cotação */}
           <div className="relative z-10 flex h-full w-full max-w-6xl flex-col items-center justify-center gap-8 text-center">
             
-            {/* Título e Subtítulo */}
             <div className="flex flex-col items-center gap-4 px-4 md:px-6">
               <h1 className="text-4xl font-extrabold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl text-white drop-shadow-lg animate-fade-in-down">
-                {homeT.hero.title}
+                PDM – Potencial Desflorestador Monetizado
               </h1>
               <p className="mx-auto max-w-3xl text-lg text-gray-200 md:text-xl drop-shadow-md animate-fade-in-up">
-                {homeT.hero.subtitle}
+                Transformando o valor da floresta em ativos econômicos mensuráveis
               </p>
             </div>
 
-            {/* Painel de Cotação */}
             <div className="w-full max-w-4xl p-4 animate-fade-in-up animation-delay-400">
                <Card className="bg-background/20 backdrop-blur-md border-white/20 text-white shadow-2xl">
                 <CardHeader className="text-center">
@@ -178,7 +204,7 @@ export default function LandingPage() {
                           <div className="flex flex-col items-center justify-center p-4">
                             <div className="flex items-baseline gap-3">
                               <span className="text-5xl font-extrabold">
-                                {formatCurrency(item.value, item.currency, item.currency.toLowerCase())}
+                                {formatCurrency(item.value, item.currency, item.currency)}
                               </span>
                               <div className={cn('flex items-center text-lg font-semibold', item.change >= 0 ? 'text-green-400' : 'text-red-400')}>
                                   {item.change >= 0 ? <TrendingUp className="h-5 w-5 mr-1" /> : <TrendingDown className="h-5 w-5 mr-1" />}
@@ -195,153 +221,149 @@ export default function LandingPage() {
                       ))}
                     </CarouselContent>
                   </Carousel>
-                  <div className="mt-6 text-center">
-                    <Button asChild size="lg" className="bg-primary/90 hover:bg-primary text-lg">
-                        <Link href="/index-details">
-                          {homeT.hero.cta}
-                          <ChevronRight className="ml-2 h-4 w-4"/>
-                        </Link>
-                    </Button>
-                  </div>
                 </CardContent>
               </Card>
             </div>
           </div>
         </section>
 
-        {/* EXPLANATORY SECTION */}
+        {/* INTRODUCTION SECTION */}
         <section className="py-16 md:py-24 bg-muted/30">
-            <div className="container mx-auto px-4 md:px-6">
-                <div className="grid md:grid-cols-2 gap-12 items-center">
-                    <div className="animate-fade-in-right">
-                        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.whatIs.title}</h2>
-                        <p className="mt-4 text-lg text-muted-foreground">
-                            {homeT.whatIs.description}
-                        </p>
-                        <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-6">
-                            {stakeholders.map((stakeholder) => (
-                                <div key={stakeholder.title} className="flex gap-4">
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary flex-shrink-0">
-                                        <stakeholder.icon className="h-5 w-5" />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-base font-semibold">{stakeholder.title}</h3>
-                                        <p className="mt-1 text-sm text-muted-foreground">{stakeholder.description}</p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                    <div className="relative h-64 md:h-full w-full rounded-xl overflow-hidden shadow-xl animate-fade-in-left">
-                        <Image
-                            src="https://picsum.photos/seed/river-forest/800/600"
-                            alt="Rio serpenteando por uma floresta densa"
-                            layout="fill"
-                            objectFit="cover"
-                            data-ai-hint="river forest"
-                        />
-                    </div>
-                </div>
+          <div className="container mx-auto px-4 md:px-6">
+            <div className="mx-auto max-w-4xl text-center">
+              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">O que é o PDM</h2>
+              <p className="mt-4 text-lg text-muted-foreground">
+                O **Potencial Desflorestador Monetizado (PDM)** é um modelo inovador de **valoração econômica ambiental** que quantifica, em termos financeiros, o valor das áreas de floresta a partir de três dimensões complementares: ganho direto pela exploração, oportunidade perdida ao preservar e o investimento necessário para manter os serviços ambientais.
+              </p>
+              <p className="mt-4 text-lg text-muted-foreground">
+                Ele transforma a floresta em um **ativo financeiro mensurável**, capaz de expressar tanto o lucro potencial da exploração quanto o retorno econômico da conservação.
+              </p>
             </div>
+          </div>
         </section>
 
-        {/* DIFFERENTIALS SECTION */}
+        {/* PILLARS SECTION */}
+        <section className="py-16 md:py-24">
+          <div className="container mx-auto px-4 md:px-6">
+            <div className="mx-auto max-w-4xl text-center mb-12">
+              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Os Três Pilares do PDM</h2>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {pilaresPDM.map((pilar, index) => (
+                <Card key={index} className="flex flex-col hover:shadow-lg transition-shadow">
+                  <CardHeader>
+                    <div className="flex items-center gap-4">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                        <pilar.icon className="h-6 w-6" />
+                      </div>
+                      <CardTitle className="text-lg font-bold">{pilar.title}</CardTitle>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="flex-grow space-y-4">
+                    <p className="text-sm text-muted-foreground">{pilar.description}</p>
+                    <Separator />
+                    <div>
+                      <h4 className="font-semibold text-sm mb-2">Perspectiva Comercial</h4>
+                      <p className="text-xs text-muted-foreground">{pilar.perspective}</p>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-sm mb-2">Metodologia</h4>
+                      <p className="text-xs text-muted-foreground">{pilar.methodology}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* APPLICATIONS SECTION */}
+        <section className="py-16 md:py-24 bg-muted/30">
+          <div className="container mx-auto px-4 md:px-6">
+            <div className="mx-auto max-w-4xl text-center mb-12">
+              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Aplicações Práticas do PDM</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {aplicacoesPDM.map((app, index) => (
+                <Card key={index} className="text-center p-6 hover:shadow-lg transition-shadow">
+                  <div className="flex justify-center mb-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                      <app.icon className="h-6 w-6" />
+                    </div>
+                  </div>
+                  <h3 className="text-md font-semibold mb-2">{app.title}</h3>
+                  <p className="text-sm text-muted-foreground">{app.description}</p>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* UCS SECTION */}
         <section className="py-16 md:py-24">
             <div className="container mx-auto px-4 md:px-6">
-                 <div className="mx-auto max-w-4xl text-center mb-12 animate-fade-in-up">
-                    <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.pillars.title}</h2>
-                    <p className="mt-4 text-lg text-muted-foreground">
-                        {homeT.pillars.subtitle}
-                    </p>
-                </div>
-                
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                    {lastros.map((lastro, index) => (
-                        <Card key={lastro.key} className="flex flex-col hover:shadow-lg transition-shadow animate-fade-in-up" style={{ animationDelay: `${index * 100}ms` }}>
-                            <CardHeader>
-                                <div className="flex items-center gap-4">
-                                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                                        <lastro.icon className="h-6 w-6" />
-                                    </div>
-                                    <CardTitle className="text-lg font-bold">{lastro.title}</CardTitle>
-                                </div>
-                            </CardHeader>
-                            <CardContent className="flex-grow">
-                                <ul className="space-y-2 text-sm text-muted-foreground">
-                                    {lastro.details.map((detail, i) => (
-                                        <li key={i} className="flex items-start gap-2">
-                                            <CheckCircle className="h-4 w-4 text-primary flex-shrink-0 mt-1" />
-                                            <span>{detail}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </CardContent>
-                        </Card>
-                    ))}
+                <div className="grid md:grid-cols-2 gap-12 items-center">
+                    <div>
+                        <Badge variant="secondary" className="mb-4">O Ativo Final</Badge>
+                        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Unidade de Créditos de Sustentabilidade – UCS</h2>
+                        <p className="mt-4 text-lg text-muted-foreground">
+                            As Unidades de Crédito de Sustentabilidade (UCS) são a materialização do valor gerado pelo PDM. Elas permitem que corporações contribuam com a proteção e restauração de biomas, alinhando-se às diretrizes do Acordo de Paris.
+                        </p>
+                        <p className="mt-4 text-muted-foreground">
+                            Empresas com passivos de emissões podem comprar créditos UCS para compensar seu impacto, financiando diretamente projetos que mantêm estoques de carbono e reduzem emissões de GEE, equilibrando o nível de emissões na atmosfera.
+                        </p>
+                    </div>
+                    <div className="relative h-64 md:h-full w-full rounded-xl overflow-hidden shadow-xl">
+                        <Image
+                            src="https://picsum.photos/seed/sustainability/800/600"
+                            alt="Mãos segurando uma planta jovem"
+                            layout="fill"
+                            objectFit="cover"
+                            data-ai-hint="sustainability hands"
+                        />
+                    </div>
                 </div>
             </div>
         </section>
 
-        {/* LEGAL BASIS SECTION */}
+        {/* BLOCKCHAIN SECTION */}
         <section className="py-16 md:py-24 bg-muted/30">
             <div className="container mx-auto px-4 md:px-6">
                 <div className="grid md:grid-cols-2 gap-12 items-center">
-                    <div className="relative h-64 md:h-full w-full rounded-xl overflow-hidden shadow-xl animate-fade-in-right">
+                    <div className="relative h-64 md:h-full w-full rounded-xl overflow-hidden shadow-xl">
                          <Image
-                            src="https://picsum.photos/seed/forest-waterfall/800/600"
-                            alt="Cachoeira em meio a uma floresta verde"
+                            src="https://picsum.photos/seed/blockchain-tech/800/600"
+                            alt="Visualização abstrata de uma rede blockchain"
                             layout="fill"
                             objectFit="cover"
-                            data-ai-hint="forest waterfall"
+                            data-ai-hint="blockchain technology"
                         />
                     </div>
-                    <div className="animate-fade-in-left">
-                        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.legal.title}</h2>
+                    <div>
+                        <Badge variant="secondary" className="mb-4">Tecnologia e Segurança</Badge>
+                        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Blockchain na Preservação do Meio Ambiente</h2>
                         <p className="mt-4 text-lg text-muted-foreground">
-                            {homeT.legal.subtitle}
+                            O uso de blockchain na área da sustentabilidade revoluciona a forma como rastreamos e validamos o impacto ambiental. A tecnologia oferece um registro imutável e transparente de todas as transações.
                         </p>
-                        <div className="mt-8 space-y-6">
-                            {legalBasis.map((item) => (
-                                <div key={item.title} className="flex items-start gap-4">
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary flex-shrink-0">
-                                        <item.icon className="h-5 w-5" />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-base font-semibold">{item.title}</h3>
-                                        <p className="mt-1 text-sm text-muted-foreground">{item.description}</p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+                        <p className="mt-4 text-muted-foreground">
+                            Por ser segura e rastreável, ela aumenta a confiança entre compradores e vendedores. A plataforma de UCS conta com a segurança do registro em Blockchain como um de seus principais diferenciais, garantindo a integridade e a origem de cada crédito de sustentabilidade.
+                        </p>
                     </div>
                 </div>
             </div>
         </section>
 
         {/* FINAL SUMMARY & CTA */}
-        <section className="py-16 md:py-24">
-            <div className="container mx-auto px-4 md:px-6">
-                <div className="mx-auto max-w-4xl text-center animate-fade-in-up">
-                    <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.summary.title}</h2>
-                </div>
-                <div className="mx-auto mt-8 grid max-w-4xl grid-cols-1 gap-6 sm:grid-cols-2 animate-fade-in-up animation-delay-200">
-                  {homeT.summary.points.map((item: string) => (
-                    <div key={item} className="flex items-center gap-3">
-                      <CheckCircle className="h-5 w-5 flex-shrink-0 text-primary" />
-                      <span className="text-base text-muted-foreground">{item}</span>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-16 text-center animate-fade-in-up animation-delay-400">
-                    <h3 className="text-2xl font-bold">{homeT.cta.title}</h3>
-                    <p className="mt-2 text-muted-foreground">{homeT.cta.subtitle}</p>
-                     <Button size="lg" className="mt-8 text-lg" asChild>
-                        <a href="https://bmvdigital.global/" target="_blank" rel="noopener noreferrer">
-                          {homeT.cta.button} <ChevronRight className="ml-2 h-5 w-5" />
-                        </a>
-                      </Button>
-                </div>
+        <section className="py-16 md:py-24 text-center">
+          <div className="container mx-auto px-4 md:px-6">
+            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Equilíbrio Econômico-Ambiental</h2>
+            <p className="mx-auto mt-4 max-w-3xl text-lg text-muted-foreground">
+              O PDM quantifica o equilíbrio entre explorar e preservar. Com base em dados financeiros concretos, o modelo demonstra que a preservação também tem valor econômico, permitindo que tomadores de decisão comparem cenários e investidores identifiquem oportunidades na economia verde.
+            </p>
+            <div className="mt-8">
+              <Award className="mx-auto h-12 w-12 text-primary" />
             </div>
+          </div>
         </section>
       </main>
 

@@ -23,6 +23,14 @@ export interface CommodityPriceData extends CommodityConfig {
     change: number;
     absoluteChange: number;
     lastUpdated: string;
+    // Campos específicos para o UCS ASE
+    valor_usd?: number;
+    valor_eur?: number;
+    valores_originais?: {
+        cotacao_usd?: number;
+        cotacao_eur?: number;
+        [key: string]: any;
+    };
 }
 
 // Defines the structure for a historical quote from Firestore

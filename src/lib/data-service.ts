@@ -124,7 +124,7 @@ function normalizeAssetData(data: any): any {
     // Campos numéricos principais que podem estar formatados
     const mainNumericFields = [
       'valor', 'ultimo', 'abertura', 'maxima', 'minima', 'fechamento_anterior',
-      'valor_usd', 'valor_eur', 'resultado_final_brl', 'resultado_final_usd', 'resultado_final_eur',
+      'valor_brl', 'valor_eur', 'valor_usd', 'resultado_final_brl', 'resultado_final_usd', 'resultado_final_eur',
       'ton', 'vol', 'volume', 'variacao_pct', 'rent_media', 'variacao_abs'
     ];
     
@@ -159,9 +159,14 @@ function normalizeAssetData(data: any): any {
     
     // Normalizar valores originais
     if (normalized.valores_originais && typeof normalized.valores_originais === 'object') {
-      const normalizedOriginals: { [key: string]: number } = {};
+      const normalizedOriginals: { [key: string]: any } = {}; // Permitir strings e números
       for (const [key, value] of Object.entries(normalized.valores_originais)) {
-        normalizedOriginals[key] = parseBrazilianNumber(value);
+        // Tentar normalizar apenas se for um número provável em string
+        if (typeof value === 'string' && /[\d.,]/.test(value)) {
+           normalizedOriginals[key] = parseBrazilianNumber(value);
+        } else {
+           normalizedOriginals[key] = value;
+        }
       }
       normalized.valores_originais = normalizedOriginals;
     }
@@ -170,8 +175,7 @@ function normalizeAssetData(data: any): any {
     if (normalized.conversoes && typeof normalized.conversoes === 'object') {
       const normalizedConversions: { [key: string]: any } = {};
       for (const [key, value] of Object.entries(normalized.conversoes)) {
-        // Conversões podem ser strings ou números
-        normalizedConversions[key] = parseBrazilianNumber(value);
+        normalizedConversions[key] = value; // Manter como string, pois contém a fórmula
       }
       normalized.conversoes = normalizedConversions;
     }
@@ -259,14 +263,9 @@ function extractPriceFromQuote(quoteData: any): PriceExtractionResult {
     // Para UCS ASE, priorizar valor_brl, valor_eur, valor_usd
     const priceFields = [
       { field: 'valor_brl', source: 'valor_brl (ucs_ase)' },
-      { field: 'valor_eur', source: 'valor_eur (ucs_ase)' },
-      { field: 'valor_usd', source: 'valor_usd (ucs_ase)' },
       { field: 'resultado_final_brl', source: 'resultado_final_brl (ucs_ase)' },
-      { field: 'resultado_final_eur', source: 'resultado_final_eur (ucs_ase)' },
-      { field: 'resultado_final_usd', source: 'resultado_final_usd (ucs_ase)' },
       { field: 'valor', source: 'valor (padrão)' },
       { field: 'ultimo', source: 'ultimo (padrão)' },
-      { field: 'componentes.valor_brl', source: 'componentes.valor_brl (ucs_ase)' },
       { field: 'componentes.resultado_final_brl', source: 'componentes.resultado_final_brl (ucs_ase)' },
     ];
 
@@ -295,12 +294,6 @@ function extractPriceFromQuote(quoteData: any): PriceExtractionResult {
       }
     }
     
-    // Fallback para componentes (caso ucs_ase)
-    if (normalizedData.componentes && typeof normalizedData.componentes.resultado_final_brl === 'number') {
-      console.debug(`[extractPriceFromQuote] Preço encontrado em componentes.resultado_final_brl: ${normalizedData.componentes.resultado_final_brl}`);
-      return { price: normalizedData.componentes.resultado_final_brl, source: 'componentes.resultado_final_brl' };
-    }
-
     // Log quando não encontra preço válido
     console.warn(`[extractPriceFromQuote] Nenhum preço válido encontrado para cotação:`, {
       hasValor: !!normalizedData.valor,
@@ -1070,6 +1063,20 @@ export async function getCommodityPricesByDate(date: Date): Promise<CommodityPri
       
       const { change, absoluteChange } = calculatePriceChange(latestPrice, previousPrice);
       
+      // Para o UCS ASE, incluir os valores já convertidos
+      if (config.id === 'ucs_ase' && latestDoc) {
+        return {
+          ...config,
+          price: latestDoc.valor_brl || latestPrice,
+          valor_usd: latestDoc.valor_usd,
+          valor_eur: latestDoc.valor_eur,
+          valores_originais: latestDoc.valores_originais,
+          change,
+          absoluteChange,
+          lastUpdated: latestDoc?.data || displayDate,
+        };
+      }
+      
       return { 
         ...config, 
         price: latestPrice, 
@@ -1115,6 +1122,20 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
       const lastUpdated = latestDoc?.timestamp 
         ? formatTimestamp(latestDoc.timestamp)
         : 'N/A';
+      
+      // Para o UCS ASE, incluir os valores já convertidos
+      if (config.id === 'ucs_ase' && latestDoc) {
+        return {
+          ...config,
+          price: latestDoc.valor_brl || latestPrice,
+          valor_usd: latestDoc.valor_usd,
+          valor_eur: latestDoc.valor_eur,
+          valores_originais: latestDoc.valores_originais,
+          change,
+          absoluteChange,
+          lastUpdated: lastUpdated,
+        };
+      }
 
       return {
         ...config,
