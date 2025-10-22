@@ -11,7 +11,7 @@ import { LanguageSwitcher } from "@/components/language-switcher";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
-import { formatCurrency, formatPercentage } from "@/lib/formatters";
+import { formatCurrency } from "@/lib/formatters";
 import type { CommodityPriceData } from '@/lib/types';
 import Autoplay from "embla-carousel-autoplay";
 import { getCommodityPrices } from '@/lib/data-service';
@@ -84,57 +84,50 @@ export default function PDMDetailsPage() {
   
   const homeT = t.home;
 
-  const stakeholders = [
-    { icon: User, title: homeT.stakeholders.producers.title, description: homeT.stakeholders.producers.description },
-    { icon: Building, title: homeT.stakeholders.investors.title, description: homeT.stakeholders.investors.description },
-    { icon: Landmark, title: homeT.stakeholders.institutions.title, description: homeT.stakeholders.institutions.description },
-    { icon: Globe, title: homeT.stakeholders.environment.title, description: homeT.stakeholders.environment.description },
-  ];
-
   const pilaresPDM = [
     {
       icon: TreePine,
-      title: "Valor Econômico da Floresta (VMAD)",
-      description: "Representa o potencial econômico direto da floresta através da exploração madeireira sustentável, refletindo o retorno imediato do recurso.",
-      perspective: "Evidencia o valor de mercado do recurso florestal, servindo como base para licenças e projetos de manejo.",
-      methodology: "Combina o Método Americano de avaliação com a análise de Custo de Oportunidade, considerando espécies, custos e preços de mercado."
+      title: homeT.pdm.pillars.vmad.title,
+      description: homeT.pdm.pillars.vmad.definition,
+      perspective: homeT.pdm.pillars.vmad.perspective,
+      methodology: homeT.pdm.pillars.vmad.methodology,
     },
     {
       icon: LandPlot,
-      title: "Valor de Transformação Territorial (VUS)",
-      description: "Estima o valor da terra se fosse convertida para outros usos produtivos (agropecuário, industrial, etc.), representando o custo de oportunidade da preservação.",
-      perspective: "Indica o custo econômico de manter a floresta intacta, essencial para planejamento territorial e compensações.",
-      methodology: "Baseado no Método Americano adaptado, considerando produtividade potencial, retorno financeiro e custos operacionais."
+      title: homeT.pdm.pillars.vus.title,
+      description: homeT.pdm.pillars.vus.definition,
+      perspective: homeT.pdm.pillars.vus.perspective,
+      methodology: homeT.pdm.pillars.vus.methodology,
     },
     {
       icon: ShieldCheck,
-      title: "Valor Socioambiental da Conservação (CRS)",
-      description: "Quantifica o investimento necessário para manter os serviços ecossistêmicos da floresta (clima, água, carbono), expressando o valor da floresta viva.",
-      perspective: "Traduz a preservação em ativo econômico real, gerando créditos de carbono e fortalecendo a imagem corporativa.",
-      methodology: "Fundamentado no modelo internacional TEEB, contemplando sequestro de carbono, ciclagem de água e proteção da biodiversidade."
+      title: homeT.pdm.pillars.crs.title,
+      description: homeT.pdm.pillars.crs.definition,
+      perspective: homeT.pdm.pillars.crs.perspective,
+      methodology: homeT.pdm.pillars.crs.methodology,
     }
   ];
 
   const aplicacoesPDM = [
     {
       icon: TrendingUp,
-      title: "Compensação Ambiental",
-      description: "Base para cálculo de valores justos por supressão vegetal, com métricas padronizadas."
+      title: homeT.pdm.applications.compensation,
+      description: "Base para o cálculo de valores justos de compensação por supressão vegetal, com métricas padronizadas e embasamento econômico."
     },
     {
       icon: BarChart3,
-      title: "Créditos de Carbono",
-      description: "Valoração precisa do sequestro de carbono, criando ativos negociáveis em mercados."
+      title: homeT.pdm.applications.carbon_credits,
+      description: "Valoração precisa do sequestro de carbono, permitindo a criação de ativos negociáveis em mercados voluntários e regulados."
     },
     {
       icon: FileText,
-      title: "Licenciamento Ambiental",
-      description: "Suporte técnico-econômico para definir condicionantes e medidas compensatórias."
+      title: homeT.pdm.applications.licensing,
+      description: "Suporte técnico-econômico em processos de licenciamento, auxiliando na definição de condicionantes e medidas compensatórias."
     },
     {
       icon: Briefcase,
-      title: "Gestão de Ativos",
-      description: "Inclusão de ativos ambientais em balanços patrimoniais com metodologia de valuation reconhecida."
+      title: homeT.pdm.applications.asset_management,
+      description: "Inclusão de ativos ambientais nos balanços patrimoniais de empresas e governos, com metodologia de valuation reconhecida."
     }
   ];
   
@@ -177,10 +170,10 @@ export default function PDMDetailsPage() {
             
             <div className="flex flex-col items-center gap-4 px-4 md:px-6">
               <h1 className="text-4xl font-extrabold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl text-white drop-shadow-lg animate-fade-in-down">
-                PDM – Potencial Desflorestador Monetizado
+                {homeT.pdm.title}
               </h1>
               <p className="mx-auto max-w-3xl text-lg text-gray-200 md:text-xl drop-shadow-md animate-fade-in-up">
-                Transformando o valor da floresta em ativos econômicos mensuráveis
+                {homeT.pdm.subtitle}
               </p>
             </div>
 
@@ -231,13 +224,9 @@ export default function PDMDetailsPage() {
         <section className="py-16 md:py-24 bg-muted/30">
           <div className="container mx-auto px-4 md:px-6">
             <div className="mx-auto max-w-4xl text-center">
-              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">O que é o PDM</h2>
-              <p className="mt-4 text-lg text-muted-foreground">
-                O **Potencial Desflorestador Monetizado (PDM)** é um modelo inovador de **valoração econômica ambiental** que quantifica, em termos financeiros, o valor das áreas de floresta a partir de três dimensões complementares: ganho direto pela exploração, oportunidade perdida ao preservar e o investimento necessário para manter os serviços ambientais.
-              </p>
-              <p className="mt-4 text-lg text-muted-foreground">
-                Ele transforma a floresta em um **ativo financeiro mensurável**, capaz de expressar tanto o lucro potencial da exploração quanto o retorno econômico da conservação.
-              </p>
+              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.pdm.what_is.title}</h2>
+              <p className="mt-4 text-lg text-muted-foreground" dangerouslySetInnerHTML={{ __html: homeT.pdm.what_is.p1 }}></p>
+              <p className="mt-4 text-lg text-muted-foreground" dangerouslySetInnerHTML={{ __html: homeT.pdm.what_is.p2 }}></p>
             </div>
           </div>
         </section>
@@ -246,7 +235,7 @@ export default function PDMDetailsPage() {
         <section className="py-16 md:py-24">
           <div className="container mx-auto px-4 md:px-6">
             <div className="mx-auto max-w-4xl text-center mb-12">
-              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Os Três Pilares do PDM</h2>
+              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.pdm.pillars_title}</h2>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               {pilaresPDM.map((pilar, index) => (
@@ -263,11 +252,11 @@ export default function PDMDetailsPage() {
                     <p className="text-sm text-muted-foreground">{pilar.description}</p>
                     <Separator />
                     <div>
-                      <h4 className="font-semibold text-sm mb-2">Perspectiva Comercial</h4>
+                      <h4 className="font-semibold text-sm mb-2">{homeT.pdm.perspective}</h4>
                       <p className="text-xs text-muted-foreground">{pilar.perspective}</p>
                     </div>
                     <div>
-                      <h4 className="font-semibold text-sm mb-2">Metodologia</h4>
+                      <h4 className="font-semibold text-sm mb-2">{homeT.pdm.methodology}</h4>
                       <p className="text-xs text-muted-foreground">{pilar.methodology}</p>
                     </div>
                   </CardContent>
@@ -281,7 +270,7 @@ export default function PDMDetailsPage() {
         <section className="py-16 md:py-24 bg-muted/30">
           <div className="container mx-auto px-4 md:px-6">
             <div className="mx-auto max-w-4xl text-center mb-12">
-              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Aplicações Práticas do PDM</h2>
+              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.pdm.applications_title}</h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {aplicacoesPDM.map((app, index) => (
@@ -298,26 +287,26 @@ export default function PDMDetailsPage() {
             </div>
           </div>
         </section>
-
+        
         {/* UCS SECTION */}
         <section className="py-16 md:py-24">
             <div className="container mx-auto px-4 md:px-6">
                 <div className="grid md:grid-cols-2 gap-12 items-center">
                     <div>
-                        <Badge variant="secondary" className="mb-4">O Ativo Final</Badge>
-                        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Unidade de Créditos de Sustentabilidade – UCS</h2>
+                        <Badge variant="secondary" className="mb-4">{homeT.ucs.badge}</Badge>
+                        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.ucs.title}</h2>
                         <p className="mt-4 text-lg text-muted-foreground">
-                            As Unidades de Crédito de Sustentabilidade (UCS) são a materialização do valor gerado pelo PDM. Elas permitem que corporações contribuam com a proteção e restauração de biomas, alinhando-se às diretrizes do Acordo de Paris.
+                            {homeT.ucs.p1}
                         </p>
                         <p className="mt-4 text-muted-foreground">
-                            Empresas com passivos de emissões podem comprar créditos UCS para compensar seu impacto, financiando diretamente projetos que mantêm estoques de carbono e reduzem emissões de GEE, equilibrando o nível de emissões na atmosfera.
+                            {homeT.ucs.p2}
                         </p>
                     </div>
                     <div className="relative h-64 md:h-full w-full rounded-xl overflow-hidden shadow-xl">
                         <Image
                             src="https://picsum.photos/seed/sustainability/800/600"
-                            alt="Mãos segurando uma planta jovem"
-                            layout="fill"
+                            alt={homeT.ucs.image_alt}
+                            fill
                             objectFit="cover"
                             data-ai-hint="sustainability hands"
                         />
@@ -330,23 +319,23 @@ export default function PDMDetailsPage() {
         <section className="py-16 md:py-24 bg-muted/30">
             <div className="container mx-auto px-4 md:px-6">
                 <div className="grid md:grid-cols-2 gap-12 items-center">
-                    <div className="relative h-64 md:h-full w-full rounded-xl overflow-hidden shadow-xl">
+                    <div className="relative h-64 md:h-full w-full rounded-xl overflow-hidden shadow-xl order-last md:order-first">
                          <Image
                             src="https://picsum.photos/seed/blockchain-tech/800/600"
-                            alt="Visualização abstrata de uma rede blockchain"
-                            layout="fill"
+                            alt={homeT.blockchain.image_alt}
+                            fill
                             objectFit="cover"
                             data-ai-hint="blockchain technology"
                         />
                     </div>
-                    <div>
-                        <Badge variant="secondary" className="mb-4">Tecnologia e Segurança</Badge>
-                        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Blockchain na Preservação do Meio Ambiente</h2>
+                    <div className="md:order-last">
+                        <Badge variant="secondary" className="mb-4">{homeT.blockchain.badge}</Badge>
+                        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.blockchain.title}</h2>
                         <p className="mt-4 text-lg text-muted-foreground">
-                            O uso de blockchain na área da sustentabilidade revoluciona a forma como rastreamos e validamos o impacto ambiental. A tecnologia oferece um registro imutável e transparente de todas as transações.
+                            {homeT.blockchain.p1}
                         </p>
                         <p className="mt-4 text-muted-foreground">
-                            Por ser segura e rastreável, ela aumenta a confiança entre compradores e vendedores. A plataforma de UCS conta com a segurança do registro em Blockchain como um de seus principais diferenciais, garantindo a integridade e a origem de cada crédito de sustentabilidade.
+                            {homeT.blockchain.p2}
                         </p>
                     </div>
                 </div>
@@ -356,9 +345,9 @@ export default function PDMDetailsPage() {
         {/* FINAL SUMMARY & CTA */}
         <section className="py-16 md:py-24 text-center">
           <div className="container mx-auto px-4 md:px-6">
-            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Equilíbrio Econômico-Ambiental</h2>
+            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.pdm.conclusion.title}</h2>
             <p className="mx-auto mt-4 max-w-3xl text-lg text-muted-foreground">
-              O PDM quantifica o equilíbrio entre explorar e preservar. Com base em dados financeiros concretos, o modelo demonstra que a preservação também tem valor econômico, permitindo que tomadores de decisão comparem cenários e investidores identifiquem oportunidades na economia verde.
+              {homeT.pdm.conclusion.p1}
             </p>
             <div className="mt-8">
               <Award className="mx-auto h-12 w-12 text-primary" />
