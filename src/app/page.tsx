@@ -228,7 +228,7 @@ export default function PDMDetailsPage() {
         <section className="py-16 md:py-24 bg-muted/30">
           <div className="container mx-auto px-4 md:px-6">
             <div className="mx-auto max-w-4xl">
-              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl text-center">{homeT.pdm.what_is.title}</h2>
+              <h2 className="text-3xl font-bold tracking-tight text-center sm:text-4xl">{homeT.pdm.what_is.title}</h2>
               <p className="mt-4 text-lg text-muted-foreground text-justify" dangerouslySetInnerHTML={{ __html: homeT.pdm.what_is.p1 }}></p>
               <p className="mt-4 text-lg text-muted-foreground text-justify" dangerouslySetInnerHTML={{ __html: homeT.pdm.what_is.p2 }}></p>
             </div>
@@ -253,15 +253,15 @@ export default function PDMDetailsPage() {
                     </div>
                   </CardHeader>
                   <CardContent className="flex-grow space-y-4">
-                    <p className="text-sm text-muted-foreground">{pilar.description}</p>
+                    <p className="text-sm text-muted-foreground text-justify">{pilar.description}</p>
                     <Separator />
                     <div>
                       <h4 className="font-semibold text-sm mb-2">{homeT.pdm.perspective}</h4>
-                      <p className="text-xs text-muted-foreground">{pilar.perspective}</p>
+                      <p className="text-xs text-muted-foreground text-justify">{pilar.perspective}</p>
                     </div>
                     <div>
                       <h4 className="font-semibold text-sm mb-2">{homeT.pdm.methodology}</h4>
-                      <p className="text-xs text-muted-foreground">{pilar.methodology}</p>
+                      <p className="text-xs text-muted-foreground text-justify">{pilar.methodology}</p>
                     </div>
                   </CardContent>
                 </Card>
@@ -291,6 +291,16 @@ export default function PDMDetailsPage() {
             </div>
           </div>
         </section>
+
+        {/* CONCLUSION SECTION */}
+        <section className="py-16 md:py-24 bg-background">
+          <div className="container mx-auto px-4 md:px-6">
+            <div className="mx-auto max-w-4xl text-center">
+              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.pdm.conclusion.title}</h2>
+              <p className="mt-4 text-lg text-muted-foreground text-justify">{homeT.pdm.conclusion.p1}</p>
+            </div>
+          </div>
+        </section>
         
         {/* UCS SECTION */}
         <section className="py-16 md:py-24">
@@ -299,10 +309,10 @@ export default function PDMDetailsPage() {
                     <div>
                         <Badge variant="secondary" className="mb-4">{homeT.ucs.badge}</Badge>
                         <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.ucs.title}</h2>
-                        <p className="mt-4 text-lg text-muted-foreground">
+                        <p className="mt-4 text-lg text-muted-foreground text-justify">
                             {homeT.ucs.p1}
                         </p>
-                        <p className="mt-4 text-muted-foreground">
+                        <p className="mt-4 text-muted-foreground text-justify">
                             {homeT.ucs.p2}
                         </p>
                     </div>
@@ -335,10 +345,10 @@ export default function PDMDetailsPage() {
                     <div className="md:order-last">
                         <Badge variant="secondary" className="mb-4">{homeT.blockchain.badge}</Badge>
                         <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.blockchain.title}</h2>
-                        <p className="mt-4 text-lg text-muted-foreground">
+                        <p className="mt-4 text-lg text-muted-foreground text-justify">
                             {homeT.blockchain.p1}
                         </p>
-                        <p className="mt-4 text-muted-foreground">
+                        <p className="mt-4 text-muted-foreground text-justify">
                             {homeT.blockchain.p2}
                         </p>
                     </div>
@@ -371,3 +381,4 @@ export default function PDMDetailsPage() {
     </div>
   );
 }
+
