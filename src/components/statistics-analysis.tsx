@@ -1,9 +1,10 @@
+
 'use client';
 
 import * as React from 'react';
 import { useState, useEffect, useMemo } from 'react';
 import { format, parseISO, isValid, subDays } from 'date-fns';
-import type { FirestoreQuote, CommodityConfig } from '@/lib/types';
+import type { FirestoreQuote, CommodityConfig, CommodityPriceData } from '@/lib/types';
 import { getCotacoesHistorico, getCommodityConfigs, calculateFrequencyAwareMetrics } from '@/lib/data-service';
 import { formatCurrency } from '@/lib/formatters';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -65,7 +66,7 @@ const calculatePerformanceMetrics = (quotes: FirestoreQuote[], assetId: string) 
   
   const prices = quotes
     .map(quote => getPriceFromQuote(quote, assetId))
-    .filter((price): price is number => price !== undefined);
+    .filter((price): price is number => price !== undefined && price > 0);
     
   if (prices.length < 2) return null;
   
@@ -232,7 +233,17 @@ export function StatisticsAnalysis({ targetDate }: { targetDate: Date }) {
   const metrics = frequencyAnalysis?.metrics;
 
   const handleQuoteClick = (quote: FirestoreQuote) => {
-    setSelectedQuote(quote);
+    const asset = assets.find(a => a.id === selectedAssetId);
+    if(asset) {
+        const priceData: CommodityPriceData = {
+            ...asset,
+            price: getPriceFromQuote(quote, selectedAssetId) || 0,
+            change: quote.variacao_pct || 0,
+            absoluteChange: quote.variacao_abs || 0,
+            lastUpdated: quote.data,
+        };
+        setSelectedQuote(asset as any);
+    }
   };
 
   // Componente para mostrar informações de frequência
@@ -553,7 +564,7 @@ export function StatisticsAnalysis({ targetDate }: { targetDate: Date }) {
                   historicalData={currentData}
                   isLoading={isLoading}
                   onRowClick={(quote) => {
-                    setSelectedQuote(quote);
+                    handleQuoteClick(quote)
                   }}
                 />
               )}
@@ -563,11 +574,17 @@ export function StatisticsAnalysis({ targetDate }: { targetDate: Date }) {
       </Tabs>
 
       {/* Modal de detalhes da cotação */}
-      {selectedQuote && (
+      {selectedQuote && selectedAssetConfig && (
         <AssetDetailModal
-          quote={selectedQuote}
+          asset={{
+              ...selectedAssetConfig,
+              price: getPriceFromQuote(selectedQuote, selectedAssetId) || 0,
+              change: selectedQuote.variacao_pct || 0,
+              absoluteChange: selectedQuote.variacao_abs || 0,
+              lastUpdated: selectedQuote.data,
+          }}
           isOpen={!!selectedQuote}
-          onClose={() => setSelectedQuote(null)}
+          onOpenChange={() => setSelectedQuote(null)}
         />
       )}
     </div>

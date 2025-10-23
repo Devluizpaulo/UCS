@@ -1,10 +1,11 @@
 
+
 'use client';
 
 import * as React from 'react';
 import { useState, useEffect, useMemo } from 'react';
 import { format, parseISO, isValid, parse, subDays } from 'date-fns';
-import type { FirestoreQuote, CommodityConfig } from '@/lib/types';
+import type { FirestoreQuote, CommodityConfig, CommodityPriceData } from '@/lib/types';
 import { getCotacoesHistorico, getCommodityConfigs } from '@/lib/data-service';
 import { formatCurrency } from '@/lib/formatters';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -299,11 +300,11 @@ export function HistoricalAnalysis({ targetDate }: { targetDate: Date }) {
     const isForexAsset = ['soja', 'carbono', 'madeira'].includes(selectedAssetConfig.id);
 
     const mainAsset: CommodityPriceData = {
-        ...selectedAssetConfig,
+        ...(selectedAssetConfig as CommodityConfig),
         price: isForexAsset ? (quoteForDate.ultimo_brl ?? 0) : getPriceFromQuote(quoteForDate, selectedAssetId) ?? 0,
         currency: 'BRL', // Mostra sempre BRL
         change: quoteForDate.variacao_pct ?? 0,
-        absoluteChange: (getPriceFromQuote(quoteForDate, selectedAssetId) ?? 0) - (getPriceFromQuote(quoteForDate.fechamento_anterior_quote, selectedAssetId) ?? (getPriceFromQuote(quoteForDate, selectedAssetId) ?? 0)),
+        absoluteChange: (getPriceFromQuote(quoteForDate as FirestoreQuote, selectedAssetId) ?? 0) - (getPriceFromQuote(quoteForDate.fechamento_anterior_quote, selectedAssetId) ?? (getPriceFromQuote(quoteForDate as FirestoreQuote, selectedAssetId) ?? 0)),
         lastUpdated: quoteForDate.data || (quoteForDate.timestamp ? format(new Date(quoteForDate.timestamp as any), 'dd/MM/yyyy') : 'N/A'),
     };
 

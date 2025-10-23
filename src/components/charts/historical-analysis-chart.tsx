@@ -36,7 +36,8 @@ import {
   BarChart3,
   Activity,
   RefreshCw,
-  LineChart
+  LineChart,
+  Loader2
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
@@ -277,7 +278,7 @@ export const HistoricalAnalysisChart = React.memo(({
       const slice = chartData.slice(index - period + 1, index + 1);
       const sum = slice.reduce((acc, item) => {
         const value = isMultiLine ? Object.values(item).find(val => typeof val === 'number' && val > 0) || 0 : item.value || 0;
-        return acc + value;
+        return acc + (value as number);
       }, 0);
       
       return sum / period;

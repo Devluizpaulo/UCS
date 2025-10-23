@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { User, ShieldCheck, FileText, BarChart3, TrendingUp, Briefcase, Award, Blocks, TreePine, LandPlot, Globe } from "lucide-react";
+import { User, ShieldCheck, FileText, BarChart3, TrendingUp, Briefcase, Award, Blocks, TreePine, LandPlot, Globe, TrendingDown } from "lucide-react";
 import Image from 'next/image';
 import Link from 'next/link';
 import { LogoUCS } from "@/components/logo-bvm";

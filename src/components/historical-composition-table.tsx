@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -142,7 +143,7 @@ export function HistoricalCompositionTable({ className }: HistoricalCompositionT
     const doc = new jsPDF('landscape', 'mm', 'a4');
     
     // Obter a quantidade de registros selecionada pelo usuário
-    const selectedData = pdfRecordsCount === 'all' ? data : data.slice(0, pdfRecordsCount);
+    const recordsToExport = pdfRecordsCount === 'all' ? data : data.slice(0, pdfRecordsCount as number);
     
     // Título principal
     doc.setFontSize(18);
@@ -152,16 +153,16 @@ export function HistoricalCompositionTable({ className }: HistoricalCompositionT
     // Data atual/selecionada em destaque
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
-    doc.text(`Foco na Data: ${selectedData[0]?.data || 'N/A'}`, 20, 35);
+    doc.text(`Foco na Data: ${recordsToExport[0]?.data || 'N/A'}`, 20, 35);
     
     // Data de geração e quantidade de registros
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
     doc.text(`Gerado em: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`, 20, 45);
-    doc.text(`Mostrando ${pdfRecordsCount === 'all' ? 'todos os' : 'os últimos'} ${selectedData.length} registros`, 20, 52);
+    doc.text(`Mostrando ${pdfRecordsCount === 'all' ? 'todos os' : 'os últimos'} ${recordsToExport.length} registros`, 20, 52);
     
     // Preparar dados da tabela
-    const tableData = selectedData.map(item => [
+    const tableData = recordsToExport.map(item => [
       item.data,
       formatCurrency(item.valor, 'BRL'),
       formatCurrency(item.valores_originais?.vus || 0, 'BRL'),
@@ -181,8 +182,8 @@ export function HistoricalCompositionTable({ className }: HistoricalCompositionT
       body: tableData,
       startY: 60,
       styles: {
-        fontSize: selectedData.length > 20 ? 8 : 9, // Fonte menor se muitos registros
-        cellPadding: selectedData.length > 20 ? 2 : 3,
+        fontSize: recordsToExport.length > 20 ? 8 : 9, // Fonte menor se muitos registros
+        cellPadding: recordsToExport.length > 20 ? 2 : 3,
         overflow: 'linebreak',
         halign: 'center'
       },

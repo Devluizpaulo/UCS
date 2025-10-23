@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -182,7 +183,7 @@ export function CompositionBarChart({ data }: CompositionBarChartProps) {
       {/* Tooltip customizado */}
       <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg p-2 shadow-lg">
         <div className="text-xs text-gray-600">
-          Max: {formatCurrency(maxValue, 'BRL', { compact: true })}
+          Max: {formatCurrency(maxValue, 'BRL')}
         </div>
       </div>
     </div>

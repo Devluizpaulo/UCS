@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -138,7 +139,7 @@ export function CompositionDonutChart({ data }: CompositionDonutChartProps) {
             dominantBaseline="middle" 
             className="text-lg font-semibold text-gray-600"
           >
-            {formatCurrency(total, 'BRL', { compact: true })}
+            {formatCurrency(total, 'BRL')}
           </text>
           
           <Legend 

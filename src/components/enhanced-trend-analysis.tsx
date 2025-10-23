@@ -5,7 +5,7 @@
 import * as React from 'react';
 import { useState, useEffect, useMemo } from 'react';
 import { format, parseISO, isValid, subDays } from 'date-fns';
-import type { FirestoreQuote, CommodityConfig } from '@/lib/types';
+import type { FirestoreQuote, CommodityConfig, CommodityPriceData } from '@/lib/types';
 import { getCotacoesHistorico, getCommodityConfigs, calculateFrequencyAwareMetrics, getQuoteByDate } from '@/lib/data-service';
 import { formatCurrency } from '@/lib/formatters';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -383,15 +383,15 @@ const PerformanceMetrics = ({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
           <div className="text-center p-4 bg-muted/50 rounded-lg">
             <p className="text-sm text-muted-foreground">Preço Atual</p>
-            <p className="text-xl font-bold">{formatCurrency(metrics.currentPrice, 'BRL', selectedAssetId)}</p>
+            <p className="text-xl font-bold">{formatCurrency(metrics.currentPrice, 'BRL', assetId)}</p>
           </div>
           <div className="text-center p-4 bg-muted/50 rounded-lg">
             <p className="text-sm text-muted-foreground">Máximo</p>
-            <p className="text-xl font-bold text-green-600">{formatCurrency(metrics.high, 'BRL', selectedAssetId)}</p>
+            <p className="text-xl font-bold text-green-600">{formatCurrency(metrics.high, 'BRL', assetId)}</p>
           </div>
           <div className="text-center p-4 bg-muted/50 rounded-lg">
             <p className="text-sm text-muted-foreground">Mínimo</p>
-            <p className="text-xl font-bold text-red-600">{formatCurrency(metrics.low, 'BRL', selectedAssetId)}</p>
+            <p className="text-xl font-bold text-red-600">{formatCurrency(metrics.low, 'BRL', assetId)}</p>
           </div>
         </div>
       </CardContent>
@@ -483,10 +483,10 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
     const latestPrice = latestQuote ? getPriceFromQuote(latestQuote, selectedAssetId) : 0;
     
     const mainAsset: CommodityPriceData = {
-      ...selectedAssetConfig,
+      ...(selectedAssetConfig as CommodityConfig),
       price: latestPrice || 0,
       change: latestQuote?.variacao_pct ?? 0,
-      absoluteChange: latestQuote?.variacao_abs ?? 0,
+      absoluteChange: (getPriceFromQuote(latestQuote as FirestoreQuote, selectedAssetId) ?? 0) - (getPriceFromQuote(latestQuote?.fechamento_anterior_quote, selectedAssetId) ?? (getPriceFromQuote(latestQuote as FirestoreQuote, selectedAssetId) ?? 0)),
       lastUpdated: latestQuote?.data || new Date().toLocaleDateString('pt-BR'),
       currency: 'BRL',
     };
