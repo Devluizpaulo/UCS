@@ -175,7 +175,7 @@ export default function PDMDetailsPage() {
         if (!date) return null;
 
         return {
-          date: date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' }),
+          date: format(date, 'dd/MM/yy'),
           value,
           timestamp: date.getTime()
         };
@@ -230,7 +230,7 @@ export default function PDMDetailsPage() {
               </p>
             </div>
 
-            <div className="w-full max-w-4xl p-4 animate-fade-in-up animation-delay-400">
+            <div className="sticky top-20 z-40 w-full max-w-4xl p-4 animate-fade-in-up animation-delay-400">
                <Card className="bg-background/20 backdrop-blur-md border-white/20 text-white shadow-2xl">
                 <CardHeader className="text-center">
                     <CardTitle className="text-xl font-bold">{homeT.quote.title}</CardTitle>
