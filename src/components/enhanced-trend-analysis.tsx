@@ -24,12 +24,13 @@ import {
   DollarSign,
   Percent,
   Target,
-  BarChart3,
+  BarChart,
   Table,
   Eye,
   EyeOff,
   Download,
-  RefreshCw
+  RefreshCw,
+  LineChart
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { HistoricalAnalysisChart } from '@/components/charts/historical-analysis-chart';
@@ -64,8 +65,10 @@ const lineColors: { [key: string]: string } = {
 const getPriceFromQuote = (quote: FirestoreQuote, assetId: string): number | undefined => {
   if (!quote) return undefined;
   
+  // Prioriza o valor já convertido para BRL se existir
+  if (quote.ultimo_brl) return quote.ultimo_brl;
+  
   if (assetId === 'ucs_ase') {
-    // Para UCS ASE, usar valor_brl como principal, com fallbacks
     const value = quote.valor_brl ?? quote.resultado_final_brl ?? quote.valor_eur ?? quote.valor_usd;
     return typeof value === 'number' ? value : undefined;
   }
@@ -73,6 +76,7 @@ const getPriceFromQuote = (quote: FirestoreQuote, assetId: string): number | und
   const value = quote.valor ?? quote.ultimo;
   return typeof value === 'number' ? value : undefined;
 };
+
 
 // Componente de tabela histórica para um ativo específico
 const AssetHistoricalTable = ({ 
@@ -130,7 +134,6 @@ const AssetHistoricalTable = ({
 
   // Ordenar dados por data real da cotação (mais recente primeiro)
   const sortedData = [...data].sort((a, b) => {
-    // Usar o campo 'data' que contém a data real da cotação
     const dateA = a.data ? parseISO(a.data.split('/').reverse().join('-')) : new Date(a.timestamp as any);
     const dateB = b.data ? parseISO(b.data.split('/').reverse().join('-')) : new Date(b.timestamp as any);
     return dateB.getTime() - dateA.getTime();
@@ -140,18 +143,17 @@ const AssetHistoricalTable = ({
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const endIndex = startIndex + ITEMS_PER_PAGE;
   const currentData = sortedData.slice(startIndex, endIndex);
+  
+  const isForexAsset = assetId === 'soja' || assetId === 'carbono';
 
   const formatDate = (quote: FirestoreQuote) => {
     try {
-      // Priorizar o campo 'data' que contém a data real da cotação
       if (quote.data) {
-        // Converter de DD/MM/YYYY para Date
         const [day, month, year] = quote.data.split('/');
         const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
         return isValid(date) ? format(date, 'dd/MM/yyyy') : quote.data;
       }
       
-      // Fallback para timestamp se não houver campo 'data'
       const date = new Date(quote.timestamp as any);
       return isValid(date) ? format(date, 'dd/MM/yyyy') : 'N/A';
     } catch {
@@ -161,7 +163,6 @@ const AssetHistoricalTable = ({
 
   const formatTime = (quote: FirestoreQuote) => {
     try {
-      // Usar timestamp para hora, já que o campo 'data' só tem a data
       const date = new Date(quote.timestamp as any);
       return isValid(date) ? format(date, 'HH:mm') : 'N/A';
     } catch {
@@ -187,26 +188,21 @@ const AssetHistoricalTable = ({
               <TableRow>
                 <TableHead>Data</TableHead>
                 <TableHead>Horário</TableHead>
-                <TableHead>Preço</TableHead>
-                <TableHead>Variação %</TableHead>
-                <TableHead>Variação Abs.</TableHead>
-                {assetId === 'ucs_ase' && (
-                  <>
-                    <TableHead>USD</TableHead>
-                    <TableHead>EUR</TableHead>
-                  </>
-                )}
+                {isForexAsset && <TableHead className="text-right">Preço Original</TableHead>}
+                <TableHead className="text-right">Preço (BRL)</TableHead>
+                <TableHead className="text-right">Variação %</TableHead>
+                <TableHead className="text-right">Variação Abs.</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {currentData.map((quote, index) => {
-                const price = getPriceFromQuote(quote, assetId);
+                const priceBRL = getPriceFromQuote(quote, assetId);
+                const originalPrice = quote.ultimo;
                 const variation = quote.variacao_pct ?? 0;
-                const previousPrice = index < sortedData.length - 1 ? 
-                  getPriceFromQuote(sortedData[index + 1], assetId) : price;
-                const absoluteChange = price && previousPrice ? price - previousPrice : 0;
+                const previousPriceBRL = index < sortedData.length - 1 ? 
+                  getPriceFromQuote(sortedData[index + 1], assetId) : priceBRL;
+                const absoluteChange = priceBRL && previousPriceBRL ? priceBRL - previousPriceBRL : 0;
 
-                // Criar uma chave única combinando documentId, timestamp e index
                 const uniqueKey = `${quote.documentId || 'no-id'}-${quote.timestamp || 'no-timestamp'}-${startIndex + index}`;
 
                 return (
@@ -217,25 +213,20 @@ const AssetHistoricalTable = ({
                     <TableCell className="text-muted-foreground">
                       {formatTime(quote)}
                     </TableCell>
-                    <TableCell className="font-mono">
-                      {price ? formatCurrency(price, 'BRL', assetId) : 'N/A'}
+                     {isForexAsset && (
+                        <TableCell className="text-right font-mono text-muted-foreground">
+                            {originalPrice ? formatCurrency(originalPrice, assetConfig?.currency || 'BRL', assetId) : 'N/A'}
+                        </TableCell>
+                    )}
+                    <TableCell className="font-mono text-right">
+                      {priceBRL ? formatCurrency(priceBRL, 'BRL', assetId) : 'N/A'}
                     </TableCell>
-                    <TableCell className={variation >= 0 ? 'text-green-600' : 'text-red-600'}>
+                    <TableCell className={`text-right ${variation >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                       {variation >= 0 ? '+' : ''}{variation.toFixed(2)}%
                     </TableCell>
-                    <TableCell className={absoluteChange >= 0 ? 'text-green-600' : 'text-red-600'}>
+                    <TableCell className={`text-right ${absoluteChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                       {absoluteChange >= 0 ? '+' : ''}{formatCurrency(absoluteChange, 'BRL', assetId)}
                     </TableCell>
-                    {assetId === 'ucs_ase' && (
-                      <>
-                        <TableCell className="font-mono text-muted-foreground">
-                          {quote.valor_usd ? formatCurrency(quote.valor_usd, 'USD', 'ucs_ase') : 'N/A'}
-                        </TableCell>
-                        <TableCell className="font-mono text-muted-foreground">
-                          {quote.valor_eur ? formatCurrency(quote.valor_eur, 'EUR', 'ucs_ase') : 'N/A'}
-                        </TableCell>
-                      </>
-                    )}
                   </TableRow>
                 );
               })}
@@ -243,7 +234,6 @@ const AssetHistoricalTable = ({
           </UITable>
         </div>
 
-        {/* Paginação */}
         {totalPages > 1 && (
           <div className="flex items-center justify-between mt-4">
             <div className="text-sm text-muted-foreground">
@@ -314,7 +304,7 @@ const PerformanceMetrics = ({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5" />
+            <BarChart className="h-5 w-5" />
             Métricas de Performance
           </CardTitle>
         </CardHeader>
@@ -333,13 +323,13 @@ const PerformanceMetrics = ({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5" />
+            <BarChart className="h-5 w-5" />
             Métricas de Performance
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8 text-muted-foreground">
-            <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <BarChart className="h-12 w-12 mx-auto mb-4 opacity-50" />
             <p>Dados insuficientes para calcular métricas</p>
           </div>
         </CardContent>
@@ -351,7 +341,7 @@ const PerformanceMetrics = ({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <BarChart3 className="h-5 w-5" />
+          <BarChart className="h-5 w-5" />
           Métricas de Performance
         </CardTitle>
       </CardHeader>
@@ -461,12 +451,10 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
         const price = getPriceFromQuote(quote, selectedAssetId);
         if (price === undefined) return null;
         
-        // Priorizar o campo 'data' para a data da cotação
         let date: Date | null = null;
         
         if (quote.data) {
           try {
-            // Converter de DD/MM/YYYY para Date
             const [day, month, year] = quote.data.split('/');
             date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
           } catch {
@@ -474,7 +462,6 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
           }
         }
         
-        // Fallback para timestamp se não houver campo 'data' válido
         if (!date || !isValid(date)) {
           date = quote.timestamp ? new Date(quote.timestamp as any) : null;
         }
@@ -530,11 +517,10 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
 
       {/* Tabs para diferentes visualizações */}
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-          <TabsTrigger value="chart">Gráfico</TabsTrigger>
-          <TabsTrigger value="table">Tabela Histórica</TabsTrigger>
-          <TabsTrigger value="metrics">Métricas</TabsTrigger>
+          <TabsTrigger value="performance">Performance</TabsTrigger>
+          <TabsTrigger value="history">Histórico Completo</TabsTrigger>
         </TabsList>
 
         {/* Tab: Visão Geral */}
@@ -565,6 +551,7 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
                     visibleAssets={visibleAssets}
                     lineColors={lineColors}
                     assetNames={{ [selectedAssetId]: selectedAssetConfig?.name || selectedAssetId }}
+                    showMetrics={false}
                   />
                 </div>
               </CardContent>
@@ -579,53 +566,23 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
           </div>
         </TabsContent>
 
-        {/* Tab: Gráfico */}
-        <TabsContent value="chart" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5" />
-                Análise Gráfica Detalhada
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-96">
-                <HistoricalAnalysisChart 
-                  isLoading={isLoading}
-                  chartData={chartData}
-                  isMultiLine={false}
-                  mainAssetData={selectedAssetConfig ? {
-                    ...selectedAssetConfig,
-                    price: chartData[chartData.length - 1]?.value || 0,
-                    currency: 'BRL',
-                    change: chartData[chartData.length - 1]?.variation || 0,
-                    absoluteChange: 0,
-                    lastUpdated: new Date().toISOString(),
-                  } : null}
-                  visibleAssets={visibleAssets}
-                  lineColors={lineColors}
-                  assetNames={{ [selectedAssetId]: selectedAssetConfig?.name || selectedAssetId }}
-                />
-              </div>
-            </CardContent>
-          </Card>
+        {/* Tab: Performance */}
+        <TabsContent value="performance" className="space-y-6">
+          <AdvancedPerformanceChart 
+            quotes={currentData} 
+            assetId={selectedAssetId} 
+            isLoading={isLoading}
+            title="Análise Detalhada de Performance"
+            showMetrics={true}
+          />
         </TabsContent>
 
-        {/* Tab: Tabela Histórica */}
-        <TabsContent value="table" className="space-y-6">
+        {/* Tab: Histórico Completo */}
+        <TabsContent value="history" className="space-y-6">
           <AssetHistoricalTable 
             assetId={selectedAssetId}
             data={currentData}
             assetConfig={selectedAssetConfig}
-            isLoading={isLoading}
-          />
-        </TabsContent>
-
-        {/* Tab: Métricas */}
-        <TabsContent value="metrics" className="space-y-6">
-          <PerformanceMetrics 
-            assetId={selectedAssetId}
-            data={currentData}
             isLoading={isLoading}
           />
         </TabsContent>

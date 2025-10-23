@@ -1,5 +1,3 @@
-
-
 'use server';
 
 import { getFirebaseAdmin } from '@/lib/firebase-admin-config';
@@ -87,7 +85,6 @@ function validateDate(date: Date): ValidationResult {
 
 /**
  * Converte strings formatadas brasileiras para números
- * Ex: "1.312.50" -> 1312.50, "172.983.64" -> 172983.64
  */
 function parseBrazilianNumber(value: any): number {
   if (typeof value === 'number') {
@@ -96,12 +93,10 @@ function parseBrazilianNumber(value: any): number {
   
   if (typeof value === 'string') {
     try {
-      // Remove pontos (separadores de milhares) e converte vírgula em ponto decimal
       const cleanValue = value.replace(/\./g, '').replace(',', '.');
       const parsed = parseFloat(cleanValue);
       return isNaN(parsed) ? 0 : parsed;
     } catch (error) {
-      console.warn(`[parseBrazilianNumber] Erro ao parsear valor: "${value}"`, error);
       return 0;
     }
   }
@@ -111,7 +106,6 @@ function parseBrazilianNumber(value: any): number {
 
 /**
  * Normaliza dados de qualquer ativo que podem ter formatação brasileira
- * Lida com diferenças entre modelos Python e N8N
  */
 function normalizeAssetData(data: any): any {
   if (!data || typeof data !== 'object') {
@@ -120,48 +114,29 @@ function normalizeAssetData(data: any): any {
   
   try {
     const normalized = { ...data };
-    
-    // Campos numéricos principais que podem estar formatados
-    const mainNumericFields = [
+    const numericFields = [
       'valor', 'ultimo', 'abertura', 'maxima', 'minima', 'fechamento_anterior',
       'valor_brl', 'valor_eur', 'valor_usd', 'resultado_final_brl', 'resultado_final_usd', 'resultado_final_eur',
       'ton', 'vol', 'volume', 'variacao_pct', 'rent_media', 'variacao_abs'
     ];
     
-    // Normalizar campos numéricos principais
-    for (const field of mainNumericFields) {
+    for (const field of numericFields) {
       if (normalized[field] !== undefined && normalized[field] !== null) {
-        const originalValue = normalized[field];
-        normalized[field] = parseBrazilianNumber(originalValue);
-        
-        // Log se houve transformação significativa
-        if (typeof originalValue === 'string' && normalized[field] !== 0) {
-          console.debug(`[normalizeAssetData] Normalizado ${field}: "${originalValue}" -> ${normalized[field]}`);
-        }
+        normalized[field] = parseBrazilianNumber(normalized[field]);
       }
     }
     
-    // Normalizar componentes (PDM, UCS, etc.)
     if (normalized.componentes && typeof normalized.componentes === 'object') {
       const normalizedComponents: { [key: string]: number } = {};
       for (const [key, value] of Object.entries(normalized.componentes)) {
-        const originalValue = value;
-        const normalizedValue = parseBrazilianNumber(value);
-        normalizedComponents[key] = normalizedValue;
-        
-        // Log se houve transformação
-        if (typeof originalValue === 'string' && normalizedValue !== 0) {
-          console.debug(`[normalizeAssetData] Componente ${key}: "${originalValue}" -> ${normalizedValue}`);
-        }
+        normalizedComponents[key] = parseBrazilianNumber(value);
       }
       normalized.componentes = normalizedComponents;
     }
     
-    // Normalizar valores originais
     if (normalized.valores_originais && typeof normalized.valores_originais === 'object') {
-      const normalizedOriginals: { [key: string]: any } = {}; // Permitir strings e números
+      const normalizedOriginals: { [key: string]: any } = {};
       for (const [key, value] of Object.entries(normalized.valores_originais)) {
-        // Tentar normalizar apenas se for um número provável em string
         if (typeof value === 'string' && /[\d.,]/.test(value)) {
            normalizedOriginals[key] = parseBrazilianNumber(value);
         } else {
@@ -171,44 +146,24 @@ function normalizeAssetData(data: any): any {
       normalized.valores_originais = normalizedOriginals;
     }
     
-    // Normalizar conversões (UCS ASE)
     if (normalized.conversoes && typeof normalized.conversoes === 'object') {
       const normalizedConversions: { [key: string]: any } = {};
       for (const [key, value] of Object.entries(normalized.conversoes)) {
-        normalizedConversions[key] = value; // Manter como string, pois contém a fórmula
+        normalizedConversions[key] = value;
       }
       normalized.conversoes = normalizedConversions;
     }
     
-    // Normalizar moedas (pode ser array ou object)
-    if (normalized.moedas) {
-      if (Array.isArray(normalized.moedas)) {
-        // Manter como array se já for array
-        normalized.moedas = normalized.moedas;
-      } else if (typeof normalized.moedas === 'object') {
-        // Converter object para array se necessário
-        normalized.moedas = Object.values(normalized.moedas);
-      }
-    }
-    
-    // Normalizar campos específicos do UCS ASE
-    const ucsAseFields = ['valor_brl', 'valor_eur', 'valor_usd', 'resultado_final_brl', 'resultado_final_eur', 'resultado_final_usd'];
-    for (const field of ucsAseFields) {
-      if (normalized[field] !== undefined && normalized[field] !== null) {
-        const originalValue = normalized[field];
-        normalized[field] = parseBrazilianNumber(originalValue);
-        
-        // Log se houve transformação significativa
-        if (typeof originalValue === 'string' && normalized[field] !== 0) {
-          console.debug(`[normalizeAssetData] UCS ASE ${field}: "${originalValue}" -> ${normalized[field]}`);
+    // Prioriza `ultimo_brl` para ativos como soja e carbono
+    if (data.id === 'soja' || data.id === 'carbono') {
+        if (normalized.ultimo_brl !== undefined && normalized.ultimo_brl > 0) {
+            normalized.valor = normalized.ultimo_brl;
         }
-      }
     }
     
     return normalized;
   } catch (error) {
-    console.error(`[normalizeAssetData] Erro ao normalizar dados:`, error);
-    return data; // Retorna dados originais em caso de erro
+    return data;
   }
 }
 
@@ -248,7 +203,6 @@ function serializeFirestoreTimestamp(data: any): any {
 
 /**
  * Extrai o preço de uma cotação seguindo uma ordem de prioridade clara
- * Agora lida com dados formatados brasileiros (strings com pontos/vírgulas)
  */
 function extractPriceFromQuote(quoteData: any): PriceExtractionResult {
   if (!quoteData) {
@@ -256,13 +210,11 @@ function extractPriceFromQuote(quoteData: any): PriceExtractionResult {
   }
 
   try {
-    // Normalizar dados primeiro para lidar com formatação brasileira
     const normalizedData = normalizeAssetData(quoteData);
 
-    // Ordem de prioridade para extração do preço
-    // Para UCS ASE, priorizar valor_brl, valor_eur, valor_usd
     const priceFields = [
       { field: 'valor_brl', source: 'valor_brl (ucs_ase)' },
+      { field: 'ultimo_brl', source: 'ultimo_brl (forex)' },
       { field: 'resultado_final_brl', source: 'resultado_final_brl (ucs_ase)' },
       { field: 'valor', source: 'valor (padrão)' },
       { field: 'ultimo', source: 'ultimo (padrão)' },
@@ -272,7 +224,6 @@ function extractPriceFromQuote(quoteData: any): PriceExtractionResult {
     for (const { field, source } of priceFields) {
       let value: any;
       
-      // Lidar com campos aninhados (ex: componentes.valor_brl)
       if (field.includes('.')) {
         const parts = field.split('.');
         value = normalizedData;
@@ -289,23 +240,12 @@ function extractPriceFromQuote(quoteData: any): PriceExtractionResult {
       }
       
       if (typeof value === 'number' && !isNaN(value) && value > 0) {
-        console.debug(`[extractPriceFromQuote] Preço encontrado em ${field}: ${value}`);
         return { price: value, source };
       }
     }
     
-    // Log quando não encontra preço válido
-    console.warn(`[extractPriceFromQuote] Nenhum preço válido encontrado para cotação:`, {
-      hasValor: !!normalizedData.valor,
-      hasUltimo: !!normalizedData.ultimo,
-      hasValorBrl: !!normalizedData.valor_brl,
-      hasResultadoFinal: !!normalizedData.resultado_final_brl,
-      hasComponentes: !!normalizedData.componentes
-    });
-
     return { price: 0, source: 'none' };
   } catch (error) {
-    console.error(`[extractPriceFromQuote] Erro ao extrair preço:`, error);
     return { price: 0, source: 'error' };
   }
 }
@@ -313,8 +253,6 @@ function extractPriceFromQuote(quoteData: any): PriceExtractionResult {
 
 /**
  * Detecta a frequência das cotações baseado na data de transição
- * Até 01/10/2025: cotações mensais (todo dia 01)
- * A partir de 02/10/2025: cotações diárias (segunda a sexta)
  */
 export async function detectQuoteFrequency(quotes: FirestoreQuote[]): Promise<{
   frequency: 'monthly' | 'daily' | 'mixed';
@@ -387,11 +325,10 @@ export async function calculateFrequencyAwareMetrics(quotes: FirestoreQuote[], a
   const prices = quotes
     .map(quote => {
       if (assetId === 'ucs_ase') {
-        // Para UCS ASE, usar valor_brl como principal, com fallbacks
         const value = quote.valor_brl ?? quote.resultado_final_brl ?? quote.valor_eur ?? quote.valor_usd;
         return typeof value === 'number' ? value : undefined;
       }
-      const value = quote.valor ?? quote.ultimo;
+      const value = quote.ultimo_brl ?? quote.valor ?? quote.ultimo;
       return typeof value === 'number' ? value : undefined;
     })
     .filter((price): price is number => price !== undefined);
@@ -408,10 +345,8 @@ export async function calculateFrequencyAwareMetrics(quotes: FirestoreQuote[], a
   const maxPrice = Math.max(...prices);
   const minPrice = Math.min(...prices);
   
-  // Calcular retorno total
   const totalReturn = ((lastPrice - firstPrice) / firstPrice) * 100;
   
-  // Calcular retornos periódicos baseado na frequência
   const periodicReturns = [];
   for (let i = 1; i < prices.length; i++) {
     const periodicReturn = ((prices[i] - prices[i-1]) / prices[i-1]) * 100;
@@ -421,22 +356,17 @@ export async function calculateFrequencyAwareMetrics(quotes: FirestoreQuote[], a
   const avgReturn = periodicReturns.reduce((sum, ret) => sum + ret, 0) / periodicReturns.length;
   const variance = periodicReturns.reduce((sum, ret) => sum + Math.pow(ret - avgReturn, 2), 0) / periodicReturns.length;
   
-  // Ajustar volatilidade baseado na frequência
   let volatility: number;
   if (frequencyInfo.frequency === 'monthly') {
-    // Para dados mensais, converter para volatilidade anual
     volatility = Math.sqrt(variance) * Math.sqrt(12);
   } else if (frequencyInfo.frequency === 'daily') {
-    // Para dados diários, converter para volatilidade anual
     volatility = Math.sqrt(variance) * Math.sqrt(252);
   } else {
-    // Para dados mistos, usar volatilidade ponderada
     const monthlyVol = Math.sqrt(variance) * Math.sqrt(12);
     const dailyVol = Math.sqrt(variance) * Math.sqrt(252);
     volatility = (monthlyVol + dailyVol) / 2;
   }
   
-  // Calcular máximo drawdown
   let maxDrawdown = 0;
   let peak = prices[0];
   
@@ -450,8 +380,7 @@ export async function calculateFrequencyAwareMetrics(quotes: FirestoreQuote[], a
     }
   }
   
-  // Calcular Sharpe Ratio ajustado pela frequência
-  const riskFreeRate = frequencyInfo.frequency === 'monthly' ? 0.5 : 0.1; // Taxa livre de risco ajustada
+  const riskFreeRate = frequencyInfo.frequency === 'monthly' ? 0.5 : 0.1;
   const excessReturn = avgReturn - riskFreeRate;
   const sharpeRatio = volatility > 0 ? excessReturn / volatility : 0;
   
@@ -506,8 +435,6 @@ function formatTimestamp(timestamp: any): string {
             return format(dateToFormat, "HH:mm:ss");
         }
     } catch (error) {
-        // Silently fail but log for debugging
-        // console.warn('Erro ao formatar timestamp:', error, 'Valor original:', timestamp);
     }
     
     return 'Inválido';
@@ -521,7 +448,6 @@ function formatTimestamp(timestamp: any): string {
 export async function getCommodityConfigs(): Promise<CommodityConfig[]> {
   const cachedConfigs = getCache<CommodityConfig[]>(CACHE_KEYS.COMMODITIES_CONFIG);
   if (cachedConfigs) {
-    console.log('✅ [getCommodityConfigs] Configurações encontradas no cache:', cachedConfigs.length);
     return cachedConfigs;
   }
   
@@ -529,12 +455,8 @@ export async function getCommodityConfigs(): Promise<CommodityConfig[]> {
   const docRef = db.collection(COLLECTIONS.SETTINGS).doc(COLLECTIONS.COMMODITIES_DOC);
   
   try {
-    console.log('🔍 [getCommodityConfigs] Buscando configurações no Firestore...');
     const doc = await docRef.get();
     if (!doc.exists) {
-      console.warn("⚠️ [getCommodityConfigs] Documento de configuração não encontrado. Usando fallback.");
-      
-      // Fallback com configurações básicas
       const fallbackConfigs: CommodityConfig[] = [
         { id: 'PDM', name: 'PDM', category: 'index', description: 'Potencial Desflorestador Monetizado', currency: 'BRL', unit: 'Pontos' },
         { id: 'milho', name: 'Milho', category: 'agricultural', description: 'Commodity agrícola', currency: 'BRL', unit: 'R$/ton' },
@@ -543,8 +465,6 @@ export async function getCommodityConfigs(): Promise<CommodityConfig[]> {
         { id: 'carbono', name: 'Carbono', category: 'sustainability', description: 'Commodity ambiental', currency: 'EUR', unit: '€/tCO₂' },
         { id: 'soja', name: 'Soja', category: 'agricultural', description: 'Commodity agrícola', currency: 'BRL', unit: 'R$/ton' }
       ];
-      
-      console.log('📋 [getCommodityConfigs] Usando configurações fallback:', fallbackConfigs.length);
       setCache(CACHE_KEYS.COMMODITIES_CONFIG, fallbackConfigs, CACHE_TTL.CONFIG);
       return fallbackConfigs;
     }
@@ -555,14 +475,10 @@ export async function getCommodityConfigs(): Promise<CommodityConfig[]> {
       ...config,
     }));
     
-    console.log('✅ [getCommodityConfigs] Configurações carregadas do Firestore:', configsArray.length);
     setCache(CACHE_KEYS.COMMODITIES_CONFIG, configsArray, CACHE_TTL.CONFIG);
     return configsArray;
     
   } catch (error) {
-    console.error("❌ [getCommodityConfigs] Erro ao buscar configurações:", error);
-    
-    // Fallback em caso de erro
     const fallbackConfigs: CommodityConfig[] = [
       { id: 'PDM', name: 'PDM', category: 'index', description: 'Potencial Desflorestador Monetizado', currency: 'BRL', unit: 'Pontos' },
       { id: 'milho', name: 'Milho', category: 'agricultural', description: 'Commodity agrícola', currency: 'BRL', unit: 'R$/ton' },
@@ -571,8 +487,6 @@ export async function getCommodityConfigs(): Promise<CommodityConfig[]> {
       { id: 'carbono', name: 'Carbono', category: 'sustainability', description: 'Commodity ambiental', currency: 'EUR', unit: '€/tCO₂' },
       { id: 'soja', name: 'Soja', category: 'agricultural', description: 'Commodity agrícola', currency: 'BRL', unit: 'R$/ton' }
     ];
-    
-    console.log('📋 [getCommodityConfigs] Usando configurações fallback após erro:', fallbackConfigs.length);
     return fallbackConfigs;
   }
 }
@@ -592,8 +506,6 @@ export async function checkCompositionData(targetDate: Date): Promise<{
   const { db } = await getFirebaseAdmin();
   const formattedDate = format(targetDate, 'dd/MM/yyyy');
   
-  console.log(`🔍 [checkCompositionData] Verificando dados para composition em ${formattedDate}`);
-  
   const result: {
     valor_uso_solo: any | null;
     PDM: any | null;
@@ -609,25 +521,19 @@ export async function checkCompositionData(targetDate: Date): Promise<{
   };
   
   try {
-    // Listar todas as coleções disponíveis
     const collectionsSnapshot = await db.listCollections();
     const allCollections = collectionsSnapshot.map(col => col.id);
     result.availableCollections = allCollections;
     
-    console.log(`📊 [checkCompositionData] Coleções disponíveis:`, allCollections);
-    
-    // Verificar cada coleção necessária
     const requiredCollections = ['valor_uso_solo', 'PDM', 'ucs_ase'];
     
     for (const collectionId of requiredCollections) {
       if (!allCollections.includes(collectionId)) {
-        console.log(`❌ [checkCompositionData] Coleção ${collectionId} não existe`);
         result.recommendations.push(`Criar coleção ${collectionId}`);
         continue;
       }
       
       try {
-        // Buscar dados para a data específica
         const snapshot = await db.collection(collectionId)
           .where('data', '==', formattedDate)
           .limit(1)
@@ -644,9 +550,7 @@ export async function checkCompositionData(targetDate: Date): Promise<{
             componentes: serializedData.componentes,
             hasRequiredFields: !!(serializedData.valor && serializedData.componentes)
           };
-          console.log(`✅ [checkCompositionData] ${collectionId}: dados encontrados para ${formattedDate}`);
         } else {
-          // Buscar dados mais recentes
           const historicalSnapshot = await db.collection(collectionId)
             .orderBy('data', 'desc')
             .limit(5)
@@ -664,31 +568,24 @@ export async function checkCompositionData(targetDate: Date): Promise<{
               hasRequiredFields: !!(serializedData.valor && serializedData.componentes),
               isHistorical: true
             };
-            console.log(`⚠️ [checkCompositionData] ${collectionId}: usando dados históricos de ${serializedData.data}`);
             result.recommendations.push(`Importar dados para ${collectionId} na data ${formattedDate}`);
           } else {
-            console.log(`❌ [checkCompositionData] ${collectionId}: nenhum dado encontrado`);
             result.recommendations.push(`Importar dados para ${collectionId}`);
           }
         }
       } catch (error) {
-        console.error(`❌ [checkCompositionData] Erro ao verificar ${collectionId}:`, error);
         result.recommendations.push(`Corrigir estrutura de dados em ${collectionId}`);
       }
     }
     
-    // Verificar se há dados suficientes
     const hasAnyData = result.valor_uso_solo || result.PDM || result.ucs_ase;
     if (!hasAnyData) {
       result.recommendations.push('Nenhum dado encontrado. Verificar processo de importação.');
     }
     
-    console.log(`📋 [checkCompositionData] Recomendações:`, result.recommendations);
-    
     return result;
     
   } catch (error) {
-    console.error('❌ [checkCompositionData] Erro geral:', error);
     result.recommendations.push('Erro ao verificar dados. Verificar conexão com Firestore.');
     return result;
   }
@@ -701,13 +598,10 @@ export async function getCompositionHistoricalData(limit: number = 50): Promise<
   const { db } = await getFirebaseAdmin();
   
   try {
-    console.log(`🔍 [getCompositionHistoricalData] Fetching historical data with limit ${limit}`);
-    
     const collections = ['valor_uso_solo', 'pdm', 'ucs_ase'];
     const allData: FirestoreQuote[] = [];
     
     for (const collection of collections) {
-      console.log(`🔍 [getCompositionHistoricalData] Fetching from collection: ${collection}`);
       
       const snapshot = await db.collection(collection)
         .orderBy('data', 'desc')
@@ -726,18 +620,15 @@ export async function getCompositionHistoricalData(limit: number = 50): Promise<
       }
     }
     
-    // Ordenar por data (mais recente primeiro)
     allData.sort((a, b) => {
       const dateA = new Date(a.data.split('/').reverse().join('-'));
       const dateB = new Date(b.data.split('/').reverse().join('-'));
       return dateB.getTime() - dateA.getTime();
     });
     
-    console.log(`✅ [getCompositionHistoricalData] Found ${allData.length} historical records`);
     return allData.slice(0, limit);
     
   } catch (error) {
-    console.error('❌ [getCompositionHistoricalData] Error:', error);
     return [];
   }
 }
@@ -746,26 +637,17 @@ export async function getCompositionDataWithComponents(targetDate: Date): Promis
   const { db } = await getFirebaseAdmin();
   
   try {
-    console.log(`🔍 [getCompositionDataWithComponents] Searching for data with valores_originais starting from ${targetDate.toISOString().split('T')[0]}`);
     
-    // Tentar buscar dados em ordem de prioridade
     const collections = ['valor_uso_solo', 'pdm', 'ucs_ase'];
     
     for (const collection of collections) {
-      console.log(`🔍 [getCompositionDataWithComponents] Trying collection: ${collection}`);
       
-      // Buscar dados para a data específica primeiro
       let result = await getQuoteByDate(collection, targetDate);
       
       if (result && result.valores_originais && result.porcentagens) {
-        console.log(`✅ [getCompositionDataWithComponents] Found data with valores_originais in ${collection} for ${targetDate.toISOString().split('T')[0]}`);
         return result;
       }
       
-      // Se não encontrou com componentes, buscar dados mais antigos
-      console.log(`⚠️ [getCompositionDataWithComponents] No valores_originais found for ${targetDate.toISOString().split('T')[0]}, searching older data`);
-      
-      // Buscar dados mais antigos com componentes
       const snapshot = await db.collection(collection)
         .orderBy('data', 'desc')
         .limit(50) // Buscar os 50 mais recentes
@@ -777,23 +659,15 @@ export async function getCompositionDataWithComponents(targetDate: Date): Promis
           const serializedData = serializeFirestoreTimestamp(rawData);
           
           if (serializedData.valores_originais && serializedData.porcentagens && serializedData.valor) {
-            console.log(`✅ [getCompositionDataWithComponents] Found older data with valores_originais in ${collection}:`, {
-              data: serializedData.data,
-              hasValoresOriginais: !!serializedData.valores_originais,
-              hasPorcentagens: !!serializedData.porcentagens,
-              hasValor: !!serializedData.valor
-            });
             return { id: doc.id, ...serializedData } as FirestoreQuote;
           }
         }
       }
     }
     
-    console.log(`❌ [getCompositionDataWithComponents] No data with valores_originais found in any collection`);
     return null;
     
   } catch (error) {
-    console.error('❌ [getCompositionDataWithComponents] Error:', error);
     return null;
   }
 }
@@ -806,9 +680,7 @@ export async function createTestCompositionData(targetDate: Date): Promise<{ suc
   const formattedDate = format(targetDate, 'dd/MM/yyyy');
   
   try {
-    console.log(`🔧 [createTestCompositionData] Criando dados de teste para ${formattedDate}`);
     
-    // Dados de teste para valor_uso_solo com componentes válidos
     const testData = {
       data: formattedDate,
       valor: 308762.15,
@@ -825,10 +697,8 @@ export async function createTestCompositionData(targetDate: Date): Promise<{ suc
       status: 'sucesso'
     };
     
-    // Criar documento na coleção valor_uso_solo
     await db.collection('valor_uso_solo').add(testData);
     
-    // Dados de teste para PDM (com componentes diferentes)
     const pdmTestData = {
       data: formattedDate,
       valor: 1200,
@@ -847,15 +717,11 @@ export async function createTestCompositionData(targetDate: Date): Promise<{ suc
       status: 'sucesso'
     };
     
-    // Criar documento na coleção PDM
     await db.collection('PDM').add(pdmTestData);
-    
-    console.log(`✅ [createTestCompositionData] Dados de teste criados com sucesso`);
     
     return { success: true };
     
   } catch (error) {
-    console.error('❌ [createTestCompositionData] Erro ao criar dados de teste:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Erro desconhecido' };
   }
 }
@@ -871,24 +737,18 @@ export async function debugFirestoreData(): Promise<{
   const { db } = await getFirebaseAdmin();
   
   try {
-    console.log('🔍 [debugFirestoreData] Iniciando debug do Firestore...');
     
-    // Listar todas as coleções
     const collectionsSnapshot = await db.listCollections();
     const collections = collectionsSnapshot.map(col => col.id);
-    
-    console.log(`📊 [debugFirestoreData] Coleções encontradas:`, collections);
     
     const sampleData: Record<string, any[]> = {};
     const dateRange: Record<string, { earliest: string; latest: string; count: number }> = {};
     
-    // Para cada coleção, buscar dados de exemplo
     for (const collectionId of collections) {
       try {
         const snapshot = await db.collection(collectionId).limit(5).get();
         const docs = snapshot.docs.map(doc => {
           const rawData = doc.data();
-          // Serializar dados para evitar problemas com objetos complexos
           const serializedData = serializeFirestoreTimestamp(rawData);
           return {
             id: doc.id,
@@ -898,7 +758,6 @@ export async function debugFirestoreData(): Promise<{
         
         sampleData[collectionId] = docs;
         
-        // Buscar range de datas
         const dateSnapshot = await db.collection(collectionId)
           .orderBy('data', 'asc')
           .limit(1)
@@ -917,21 +776,11 @@ export async function debugFirestoreData(): Promise<{
           count: countSnapshot.size
         };
         
-        console.log(`📈 [debugFirestoreData] ${collectionId}:`, {
-          count: countSnapshot.size,
-          earliest: dateRange[collectionId].earliest,
-          latest: dateRange[collectionId].latest,
-          sampleFields: docs.length > 0 ? Object.keys(docs[0]) : []
-        });
-        
       } catch (error) {
-        console.warn(`⚠️ [debugFirestoreData] Erro ao processar coleção ${collectionId}:`, error);
         sampleData[collectionId] = [];
         dateRange[collectionId] = { earliest: 'Error', latest: 'Error', count: 0 };
       }
     }
-    
-    console.log('✅ [debugFirestoreData] Debug concluído');
     
     return {
       collections,
@@ -940,7 +789,6 @@ export async function debugFirestoreData(): Promise<{
     };
     
   } catch (error) {
-    console.error('❌ [debugFirestoreData] Erro no debug:', error);
     return {
       collections: [],
       sampleData: {},
@@ -953,16 +801,13 @@ export async function debugFirestoreData(): Promise<{
  * Obtém cotação de um ativo para uma data específica
  */
 export async function getQuoteByDate(assetId: string, date: Date): Promise<FirestoreQuote | null> {
-  // Validação de entrada
   const assetValidation = validateAssetId(assetId);
   if (!assetValidation.isValid) {
-    console.error(`❌ [getQuoteByDate] AssetId inválido: ${assetValidation.errors.join(', ')}`);
     return null;
   }
   
   const dateValidation = validateDate(date);
   if (!dateValidation.isValid) {
-    console.error(`❌ [getQuoteByDate] Data inválida: ${dateValidation.errors.join(', ')}`);
     return null;
   }
   
@@ -970,9 +815,7 @@ export async function getQuoteByDate(assetId: string, date: Date): Promise<Fires
   const formattedDate = format(date, 'dd/MM/yyyy');
   
   try {
-    console.log(`🔍 [getQuoteByDate] Buscando cotação para ${assetId} em ${formattedDate}`);
     
-    // Primeira tentativa: buscar por data exata
     const snapshot = await db.collection(assetId)
       .where('data', '==', formattedDate)
       .limit(1)
@@ -983,46 +826,36 @@ export async function getQuoteByDate(assetId: string, date: Date): Promise<Fires
       const rawData = doc.data();
       const normalizedData = normalizeAssetData(rawData);
       const result = serializeFirestoreTimestamp({ id: doc.id, ...normalizedData }) as FirestoreQuote;
-      console.log(`✅ [getQuoteByDate] Cotação encontrada por data exata para ${assetId}`);
       return result;
     }
     
-    console.log(`⚠️ [getQuoteByDate] Nenhuma cotação encontrada por data exata para ${assetId}, tentando histórico`);
-    
-    // Segunda tentativa: buscar histórico mais recente usando campo 'data'
     const historicalSnapshot = await db.collection(assetId)
       .orderBy('data', 'desc')
       .limit(10)
       .get();
       
     if (!historicalSnapshot.empty) {
-        // Encontrar a cotação mais recente antes da data solicitada
         for (const doc of historicalSnapshot.docs) {
           const rawData = doc.data();
           if (rawData.data) {
             try {
-              // Converter data DD/MM/YYYY para Date para comparação
               const [day, month, year] = rawData.data.split('/');
               const quoteDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
               
               if (quoteDate <= date) {
                 const normalizedData = normalizeAssetData(rawData);
                 const result = serializeFirestoreTimestamp({ id: doc.id, ...normalizedData }) as FirestoreQuote;
-                console.log(`✅ [getQuoteByDate] Cotação histórica encontrada para ${assetId} em ${rawData.data}`);
                 return result;
               }
             } catch (error) {
-              console.warn(`⚠️ [getQuoteByDate] Erro ao processar data ${rawData.data}:`, error);
               continue;
             }
           }
         }
     }
 
-    console.log(`❌ [getQuoteByDate] Nenhuma cotação encontrada para ${assetId} em ${formattedDate}`);
     return null;
   } catch (error) {
-    console.error(`❌ [getQuoteByDate] Erro ao buscar cotação para ${assetId} em ${formattedDate}:`, error);
     return null;
   }
 }
@@ -1063,7 +896,6 @@ export async function getCommodityPricesByDate(date: Date): Promise<CommodityPri
       
       const { change, absoluteChange } = calculatePriceChange(latestPrice, previousPrice);
       
-      // Para o UCS ASE, incluir os valores já convertidos
       if (config.id === 'ucs_ase' && latestDoc) {
         return {
           ...config,
@@ -1091,7 +923,6 @@ export async function getCommodityPricesByDate(date: Date): Promise<CommodityPri
     return results;
 
   } catch (error) {
-    console.error("Erro ao buscar preços por data:", error);
     throw new Error("Falha ao obter as cotações para a data especificada.");
   }
 }
@@ -1123,7 +954,6 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
         ? formatTimestamp(latestDoc.timestamp)
         : 'N/A';
       
-      // Para o UCS ASE, incluir os valores já convertidos
       if (config.id === 'ucs_ase' && latestDoc) {
         return {
           ...config,
@@ -1151,7 +981,6 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
     return results;
 
   } catch (error) {
-    console.error("Erro ao buscar preços em tempo real:", error);
     throw new Error("Falha ao obter as cotações mais recentes.");
   }
 }
@@ -1160,31 +989,24 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
  * Obtém histórico de cotações para um ativo
  */
 export async function getCotacoesHistorico(assetId: string, days: number): Promise<FirestoreQuote[]> {
-  // Validação de entrada
   const assetValidation = validateAssetId(assetId);
   if (!assetValidation.isValid) {
-    console.error(`❌ [getCotacoesHistorico] AssetId inválido: ${assetValidation.errors.join(', ')}`);
     return [];
   }
   
   if (typeof days !== 'number' || days <= 0 || days > 3650) {
-    console.error(`❌ [getCotacoesHistorico] Número de dias inválido: ${days}. Deve ser entre 1 e 3650`);
     return [];
   }
   
   const { db } = await getFirebaseAdmin();
   try {
-    console.log(`🔍 [getCotacoesHistorico] Searching for ${assetId}, ${days} days`);
     
     const snapshot = await db.collection(assetId)
       .orderBy('timestamp', 'desc')
       .limit(days)
       .get();
 
-    console.log(`📊 [getCotacoesHistorico] Found ${snapshot.size} documents for ${assetId}`);
-
     if (snapshot.empty) {
-      console.log(`⚠️ [getCotacoesHistorico] No documents found for ${assetId}`);
       return [];
     }
     
@@ -1194,11 +1016,9 @@ export async function getCotacoesHistorico(assetId: string, days: number): Promi
       return serializeFirestoreTimestamp({ id: doc.id, ...normalizedData });
     }) as FirestoreQuote[];
 
-    console.log(`✅ [getCotacoesHistorico] Returning ${results.length} normalized records for ${assetId}`);
     return results;
 
   } catch (error) {
-    console.error(`❌ [getCotacoesHistorico] Error fetching ${days} days for ${assetId}:`, error);
     return [];
   }
 }
@@ -1230,7 +1050,6 @@ export async function getCotacoesHistoricoPorRange(
     }) as FirestoreQuote[];
 
   } catch (error) {
-    console.error(`Erro ao buscar histórico por período para ${assetId}:`, error);
     return [];
   }
 }
@@ -1242,14 +1061,11 @@ export async function getCotacoesHistoricoPorRange(
  */
 export async function clearCacheAndRefresh(): Promise<void> {
   try {
-    console.log('🔄 [clearCacheAndRefresh] Limpando cache e revalidando páginas');
     clearMemoryCache();
     revalidatePath('/dashboard');
     revalidatePath('/analysis/trends');
     revalidatePath('/analysis/composition');
-    console.log('✅ [clearCacheAndRefresh] Cache limpo e páginas revalidadas');
   } catch (error) {
-    console.error('❌ [clearCacheAndRefresh] Erro ao limpar cache:', error);
   }
 }
 
@@ -1260,13 +1076,11 @@ export async function clearCacheAndRefresh(): Promise<void> {
  */
 export async function analyzeUCSASEData(): Promise<any> {
   try {
-    console.log('🔍 [analyzeUCSASEData] Analisando dados do UCS ASE...');
     
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
     
-    // Buscar dados recentes
     const recentData = await getCotacoesHistorico('ucs_ase', 10);
     
     const analysis = {
@@ -1291,7 +1105,6 @@ export async function analyzeUCSASEData(): Promise<any> {
       
       analysis.dataVariations.push(variations);
       
-      // Verificar inconsistências de tipo
       if (typeof record.valor_eur === 'string') {
         analysis.typeInconsistencies.push({
           field: 'valor_eur',
@@ -1301,7 +1114,6 @@ export async function analyzeUCSASEData(): Promise<any> {
         });
       }
       
-      // Verificar diferenças estruturais
       if (!Array.isArray(record.moedas) && record.moedas) {
         analysis.structureDifferences.push({
           field: 'moedas',
@@ -1312,11 +1124,9 @@ export async function analyzeUCSASEData(): Promise<any> {
       }
     });
     
-    console.log('📊 [analyzeUCSASEData] Análise concluída:', analysis);
     return analysis;
     
   } catch (error: any) {
-    console.error('❌ [analyzeUCSASEData] Erro na análise:', error);
     return { error: error?.message || 'Erro desconhecido' };
   }
 }
@@ -1326,16 +1136,13 @@ export async function analyzeUCSASEData(): Promise<any> {
  */
 export async function debugDataFetching(): Promise<any> {
   try {
-    console.log('🔍 [debugDataFetching] Iniciando teste de busca de dados');
     
     const testAssets = ['PDM', 'milho', 'boi_gordo', 'madeira', 'carbono', 'soja'];
     const today = new Date();
     const results: any = {};
     
     for (const assetId of testAssets) {
-      console.log(`📊 [debugDataFetching] Testando ${assetId}...`);
       
-      // Teste 1: Buscar cotação atual
       const currentQuote = await getQuoteByDate(assetId, today);
       results[assetId] = {
         currentQuote: currentQuote ? 'Found' : 'Not Found',
@@ -1345,24 +1152,18 @@ export async function debugDataFetching(): Promise<any> {
         timestamp: currentQuote?.timestamp || null
       };
       
-      // Teste 2: Buscar histórico
       const history = await getCotacoesHistorico(assetId, 30);
       results[assetId].historyCount = history.length;
       results[assetId].hasHistory = history.length > 0;
       
       if (currentQuote) {
-        console.log(`✅ [debugDataFetching] ${assetId}: Cotação encontrada`);
-        console.log(`📈 [debugDataFetching] ${assetId}: ${history.length} registros históricos`);
       } else {
-        console.log(`❌ [debugDataFetching] ${assetId}: Nenhuma cotação encontrada`);
       }
     }
     
-    console.log('📋 [debugDataFetching] Resultado final:', results);
     return results;
     
   } catch (error: any) {
-    console.error('❌ [debugDataFetching] Erro no teste:', error);
     return { error: error?.message || 'Erro desconhecido' };
   }
 }
@@ -1377,7 +1178,6 @@ export async function reprocessDate(date: Date): Promise<{ success: boolean; mes
   
   if (!webhookUrl) {
     const errorMessage = "A URL do webhook de reprocessamento não está configurada no servidor.";
-    console.error(`[reprocessDate] ${errorMessage}`);
     return { success: false, message: errorMessage };
   }
 
@@ -1402,7 +1202,6 @@ export async function reprocessDate(date: Date): Promise<{ success: boolean; mes
     return { success: true, message: successMessage };
 
   } catch (error: any) {
-    console.error(`[reprocessDate] Falha ao acionar o webhook:`, error);
     return { 
       success: false, 
       message: error.message || "Ocorreu um erro desconhecido ao tentar reprocessar a data." 
