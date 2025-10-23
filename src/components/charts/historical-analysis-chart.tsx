@@ -486,7 +486,6 @@ export const HistoricalAnalysisChart = React.memo(({
         .filter(key => visibleAssets[key])
         .map((key, index) => {
           const commonProps = {
-            key: key,
             type: "monotone" as const,
             dataKey: key,
             name: assetNames[key] || key.toUpperCase(),
@@ -506,9 +505,9 @@ export const HistoricalAnalysisChart = React.memo(({
             animationEasing: "ease-in-out" as const,
             connectNulls: false,
           };
-          if (chartType === 'bar') return <Bar {...commonProps} fill={lineColors[key]} />;
-          if (chartType === 'area') return <Area {...commonProps} fill={`url(#gradient-${key})`} />;
-          return <Line {...commonProps} />;
+          if (chartType === 'bar') return <Bar key={key} {...commonProps} fill={lineColors[key]} />;
+          if (chartType === 'area') return <Area key={key} {...commonProps} fill={`url(#gradient-${key})`} />;
+          return <Line key={key} {...commonProps} />;
         })
     : (() => {
         const commonProps = {
