@@ -18,7 +18,7 @@ import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/language-context';
 import { getLandingPageSettings, type LandingPageSettings } from '@/lib/settings-actions';
 import { HistoricalAnalysisChart } from '@/components/charts/historical-analysis-chart';
-import { format, parse } from 'date-fns';
+import { parse, format } from 'date-fns';
 
 // Tipo local para incluir dados de conversão
 type IndexValue = {
@@ -224,7 +224,7 @@ export default function PDMDetailsPage() {
 
       <main className="flex-1">
         {/* HERO SECTION */}
-        <section className="relative flex h-[90vh] min-h-[700px] w-full flex-col items-center justify-center overflow-hidden bg-black p-4 pb-12">
+        <section className="relative flex h-[90vh] min-h-[700px] w-full flex-col items-center justify-center overflow-hidden bg-black p-4 pb-20">
            <div className="absolute inset-0 z-0 h-full w-full">
                 <video
                     autoPlay
@@ -248,10 +248,17 @@ export default function PDMDetailsPage() {
               </p>
             </div>
              <div className="w-full max-w-4xl p-4 animate-fade-in-up animation-delay-400">
-               <Card className="bg-background/20 backdrop-blur-md border-white/20 text-white">
+               <div className={cn(
+                  "rounded-lg transition-all duration-300",
+                  isScrolled 
+                    ? "bg-background border shadow-xl text-foreground"
+                    : "bg-background/20 backdrop-blur-md border-white/20 text-white"
+               )}>
                 <CardHeader className="text-center">
                     <CardTitle className="text-xl font-bold">{homeT.quote.title}</CardTitle>
-                    <CardDescription className="text-gray-300">{homeT.quote.subtitle}</CardDescription>
+                    <CardDescription className={isScrolled ? "text-muted-foreground" : "text-gray-300"}>
+                        {homeT.quote.subtitle}
+                    </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Carousel
@@ -269,13 +276,18 @@ export default function PDMDetailsPage() {
                               <span className="text-5xl font-extrabold">
                                 {formatCurrency(item.value, item.currency, item.currency)}
                               </span>
-                              <div className={cn('flex items-center text-lg font-semibold', item.change >= 0 ? 'text-green-400' : 'text-red-400')}>
+                              <div className={cn(
+                                'flex items-center text-lg font-semibold', 
+                                item.change >= 0 ? 
+                                  (isScrolled ? 'text-green-600' : 'text-green-400') : 
+                                  (isScrolled ? 'text-red-600' : 'text-red-400')
+                              )}>
                                   {item.change >= 0 ? <TrendingUp className="h-5 w-5 mr-1" /> : <TrendingDown className="h-5 w-5 mr-1" />}
                                   {item.change.toFixed(2)}%
                               </div>
                             </div>
                             {item.conversionRate && (
-                              <div className="mt-2 text-sm text-gray-300">
+                              <div className={cn("mt-2 text-sm", isScrolled ? "text-muted-foreground" : "text-gray-300")}>
                                 {homeT.quote.conversionRate} {formatCurrency(item.conversionRate, 'BRL')}
                               </div>
                             )}
@@ -285,7 +297,7 @@ export default function PDMDetailsPage() {
                     </CarouselContent>
                   </Carousel>
                 </CardContent>
-              </Card>
+              </div>
             </div>
           </div>
         </section>
@@ -459,14 +471,30 @@ export default function PDMDetailsPage() {
             <div className="flex items-center gap-3">
               <span className="font-semibold">{ucsAseAsset.name}</span>
               <div className="h-6 w-px bg-white/30" />
-              <span className="font-mono font-bold text-lg">{formatCurrency(ucsAseAsset.price, 'BRL')}</span>
-              <div className={cn(
-                "flex items-center text-sm font-semibold",
-                ucsAseAsset.change >= 0 ? "text-green-300" : "text-red-300"
-              )}>
-                {ucsAseAsset.change >= 0 ? <TrendingUp className="h-4 w-4 mr-1" /> : <TrendingDown className="h-4 w-4 mr-1" />}
-                {ucsAseAsset.change.toFixed(2)}%
-              </div>
+              <Carousel
+                opts={{ align: "start", loop: true }}
+                plugins={[Autoplay({ delay: 3000, stopOnInteraction: true })]}
+                className="w-48"
+              >
+                <CarouselContent>
+                  {indexValues.map((item, index) => (
+                    <CarouselItem key={index}>
+                      <div className="flex items-center justify-center gap-2">
+                         <span className="font-mono font-bold text-lg">
+                           {formatCurrency(item.value, item.currency, item.currency)}
+                         </span>
+                         <div className={cn(
+                            "flex items-center text-sm font-semibold",
+                            ucsAseAsset.change >= 0 ? "text-green-300" : "text-red-300"
+                          )}>
+                            {ucsAseAsset.change >= 0 ? <TrendingUp className="h-4 w-4 mr-1" /> : <TrendingDown className="h-4 w-4 mr-1" />}
+                            {ucsAseAsset.change.toFixed(2)}%
+                         </div>
+                      </div>
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+              </Carousel>
               <div className="ml-2 p-1 bg-white/20 rounded-full">
                 <ArrowUp className="h-4 w-4" />
               </div>
