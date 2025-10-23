@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -38,6 +39,7 @@ import { Checkbox } from './ui/checkbox';
 import { Label } from './ui/label';
 import { Table as UITable, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { AdvancedPerformanceChart } from '@/components/charts/advanced-performance-chart';
 
 // Lista de ativos disponíveis
 const AVAILABLE_ASSETS = ['PDM', 'milho', 'boi_gordo', 'madeira', 'carbono', 'soja', 'ucs_ase'];
@@ -590,3 +592,5 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
     </div>
   );
 }
+
+    
