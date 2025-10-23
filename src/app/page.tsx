@@ -48,10 +48,8 @@ export default function PDMDetailsPage() {
     
     // Fetch historical data for the chart
     setIsLoadingHistory(true);
-    const startDate = new Date('2022-01-01');
-    const today = new Date();
-    const days = Math.ceil((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 30; // 30 dias de margem
-    getCotacoesHistorico('ucs_ase', days) 
+    const startDate = new Date('2023-01-01');
+    getCotacoesHistorico('ucs_ase', 365 * 10) 
       .then(history => {
         setUcsHistory(history);
         setIsLoadingHistory(false);
@@ -111,6 +109,7 @@ export default function PDMDetailsPage() {
   };
   
   const indexValues = getIndexValues();
+  const euroValue = indexValues.find(v => v.currency === 'EUR');
   
   const heroContent = settings ? settings[language] : { title: t.home.hero.title, subtitle: t.home.hero.subtitle };
 
@@ -226,7 +225,7 @@ export default function PDMDetailsPage() {
 
       <main className="flex-1">
         {/* HERO SECTION */}
-        <section className="relative flex h-[90vh] min-h-[700px] w-full flex-col items-center justify-center overflow-hidden bg-black p-4 pb-40">
+        <section className="relative flex h-[90vh] min-h-[700px] w-full flex-col items-center justify-center overflow-hidden bg-black p-4 pb-24">
            <div className="absolute inset-0 z-0 h-full w-full">
                 <video
                     autoPlay
@@ -249,62 +248,42 @@ export default function PDMDetailsPage() {
                 {heroContent.subtitle}
               </p>
             </div>
-          </div>
-        </section>
-        
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="relative -mt-32">
-            <div className={cn(
-                  "transition-all duration-300",
-                  "bg-background/20 backdrop-blur-md border-white/20 text-white"
-            )}>
-              <CardHeader className="text-center">
-                  <CardTitle className="text-xl font-bold">{homeT.quote.title}</CardTitle>
-                  <CardDescription className="text-gray-300">
-                      {homeT.quote.subtitle}
-                  </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Carousel
-                  opts={{ align: "start", loop: true }}
-                  plugins={[autoplayPlugin.current]}
-                  onMouseEnter={() => autoplayPlugin.current.stop()}
-                  onMouseLeave={() => autoplayPlugin.current.play()}
-                  className="w-full"
-                >
-                  <CarouselContent>
-                    {indexValues.map((item, index) => (
-                      <CarouselItem key={index} className="basis-full">
-                        <div className="flex flex-col items-center justify-center p-4">
-                          <div className="flex items-baseline gap-3">
-                            <span className="text-5xl font-extrabold">
-                              {formatCurrency(item.value, item.currency, item.currency)}
+             {euroValue && (
+                <div className="w-full max-w-md p-6 bg-black/30 backdrop-blur-md rounded-xl border border-white/10 text-white shadow-2xl">
+                    <div className="text-center">
+                        <p className="font-bold text-lg">{homeT.quote.title}</p>
+                        <p className="text-sm text-gray-300">{homeT.quote.subtitle}</p>
+                        <div className="my-4 flex items-center justify-center gap-3">
+                            <span className="text-6xl font-extrabold tracking-tight">
+                            {formatCurrency(euroValue.value, euroValue.currency, euroValue.currency)}
                             </span>
                             <div className={cn(
-                              'flex items-center text-lg font-semibold', 
-                              item.change >= 0 ? 
+                                'flex items-center text-lg font-semibold', 
+                                euroValue.change >= 0 ? 
                                 'text-green-400' : 
                                 'text-red-400'
                             )}>
-                                {item.change >= 0 ? <TrendingUp className="h-5 w-5 mr-1" /> : <TrendingDown className="h-5 w-5 mr-1" />}
-                                {item.change.toFixed(2)}%
+                                <TrendingUp className="h-5 w-5 mr-1" />
+                                {euroValue.change.toFixed(2)}%
                             </div>
-                          </div>
-                          {item.conversionRate && (
-                            <div className="mt-2 text-sm text-gray-300">
-                              {homeT.quote.conversionRate} {formatCurrency(item.conversionRate, 'BRL')}
-                            </div>
-                          )}
                         </div>
-                      </CarouselItem>
-                    ))}
-                  </CarouselContent>
-                </Carousel>
-              </CardContent>
-            </div>
+                        {euroValue.conversionRate && (
+                        <p className="text-xs text-gray-400">
+                            {homeT.quote.conversionRate} {formatCurrency(euroValue.conversionRate, 'BRL')}
+                        </p>
+                        )}
+                    </div>
+                </div>
+            )}
           </div>
+        </section>
+        
+        <div className={cn(
+            "sticky top-20 z-40 mx-auto max-w-md transition-all duration-300",
+            isScrolled ? "opacity-0 pointer-events-none" : "opacity-0 pointer-events-none" // Logic for floating card was removed, keeping this for potential future use.
+        )}>
         </div>
-
+        
         {/* INTRODUCTION SECTION */}
         <section className="pt-16 md:pt-24 bg-muted/30">
           <div className="container mx-auto px-4 md:px-6">
