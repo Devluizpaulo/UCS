@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { DollarSign, Euro, User, ShieldCheck, Target, BarChart3, Scale, Microscope, FileText, Landmark, FileJson, CheckCircle, Search, GitBranch, Banknote, Building, Trees, Globe, ChevronRight, TrendingUp, TrendingDown, Minus, Blocks, TreePine, LandPlot, Briefcase, Award } from "lucide-react";
+import { DollarSign, Euro, User, ShieldCheck, Target, BarChart3, Scale, Microscope, FileText, Landmark, FileJson, CheckCircle, Search, GitBranch, Banknote, Building, Trees, Globe, ChevronRight, TrendingUp, TrendingDown, Minus, Blocks, Award, Briefcase, LandPlot, TreePine } from "lucide-react";
 import Image from 'next/image';
 import Link from 'next/link';
 import { LogoUCS } from "@/components/logo-bvm";
@@ -30,12 +30,17 @@ type IndexValue = {
 
 
 export default function PDMDetailsPage() {
-  const [allPrices, setAllPrices] = React.useState<CommodityPriceData[]>([]);
+  const [ucsAseAsset, setUcsAseAsset] = React.useState<CommodityPriceData | null>(null);
   const [settings, setSettings] = React.useState<LandingPageSettings | null>(null);
   const { language, t } = useLanguage();
   
   React.useEffect(() => {
-    getCommodityPrices().then(setAllPrices);
+    getCommodityPrices().then(prices => {
+        const ucsAsset = prices.find(p => p.id === 'ucs_ase');
+        if (ucsAsset) {
+            setUcsAseAsset(ucsAsset);
+        }
+    });
     getLandingPageSettings().then(setSettings);
   }, []);
   
@@ -43,8 +48,6 @@ export default function PDMDetailsPage() {
     Autoplay({ delay: 4000, stopOnInteraction: true })
   );
 
-  const ucsAseAsset = allPrices.find(p => p.id === 'ucs_ase');
-  
   const getIndexValues = (): IndexValue[] => {
     if (!ucsAseAsset) return [];
 
@@ -93,21 +96,18 @@ export default function PDMDetailsPage() {
       icon: TreePine,
       title: homeT.pdm.pillars.vmad.title,
       description: homeT.pdm.pillars.vmad.definition,
-      perspective: homeT.pdm.pillars.vmad.perspective,
       methodology: homeT.pdm.pillars.vmad.methodology,
     },
     {
       icon: LandPlot,
       title: homeT.pdm.pillars.vus.title,
       description: homeT.pdm.pillars.vus.definition,
-      perspective: homeT.pdm.pillars.vus.perspective,
       methodology: homeT.pdm.pillars.vus.methodology,
     },
     {
       icon: ShieldCheck,
       title: homeT.pdm.pillars.crs.title,
       description: homeT.pdm.pillars.crs.definition,
-      perspective: homeT.pdm.pillars.crs.perspective,
       methodology: homeT.pdm.pillars.crs.methodology,
     }
   ];
@@ -156,7 +156,7 @@ export default function PDMDetailsPage() {
 
       <main className="flex-1">
         {/* HERO SECTION */}
-        <section className="relative flex h-[90vh] min-h-[700px] w-full flex-col items-center justify-center overflow-hidden p-4">
+        <section className="relative flex h-[90vh] min-h-[700px] w-full flex-col items-center justify-center overflow-hidden bg-black p-4">
            <div className="absolute inset-0 z-0 h-full w-full">
                 <video
                     autoPlay
@@ -256,10 +256,6 @@ export default function PDMDetailsPage() {
                     <p className="text-sm text-muted-foreground text-justify">{pilar.description}</p>
                     <Separator />
                     <div>
-                      <h4 className="font-semibold text-sm mb-2">{homeT.pdm.perspective}</h4>
-                      <p className="text-xs text-muted-foreground text-justify">{pilar.perspective}</p>
-                    </div>
-                    <div>
                       <h4 className="font-semibold text-sm mb-2">{homeT.pdm.methodology}</h4>
                       <p className="text-xs text-muted-foreground text-justify">{pilar.methodology}</p>
                     </div>
@@ -321,7 +317,7 @@ export default function PDMDetailsPage() {
                             src="https://picsum.photos/seed/sustainability/800/600"
                             alt={homeT.ucs.image_alt}
                             fill
-                            objectFit="cover"
+                            style={{objectFit: 'cover'}}
                             data-ai-hint="sustainability hands"
                         />
                     </div>
@@ -338,7 +334,7 @@ export default function PDMDetailsPage() {
                             src="https://picsum.photos/seed/blockchain-tech/800/600"
                             alt={homeT.blockchain.image_alt}
                             fill
-                            objectFit="cover"
+                            style={{objectFit: 'cover'}}
                             data-ai-hint="blockchain technology"
                         />
                     </div>
@@ -360,7 +356,7 @@ export default function PDMDetailsPage() {
         <section className="py-16 md:py-24 text-center">
           <div className="container mx-auto px-4 md:px-6">
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.pdm.conclusion.title}</h2>
-            <p className="mx-auto mt-4 max-w-3xl text-lg text-muted-foreground">
+            <p className="mx-auto mt-4 max-w-3xl text-lg text-muted-foreground text-justify">
               {homeT.pdm.conclusion.p1}
             </p>
             <div className="mt-8">
@@ -381,4 +377,3 @@ export default function PDMDetailsPage() {
     </div>
   );
 }
-

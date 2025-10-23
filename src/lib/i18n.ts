@@ -34,23 +34,19 @@ export interface Translations {
         vmad: {
           title: string;
           definition: string;
-          perspective: string;
           methodology: string;
         };
         vus: {
           title: string;
           definition: string;
-          perspective: string;
           methodology: string;
         };
         crs: {
           title: string;
           definition: string;
-          perspective: string;
           methodology: string;
         };
       };
-      perspective: string;
       methodology: string;
       applications_title: string;
       applications: {
@@ -203,23 +199,19 @@ export const translations: Record<SupportedLanguage, Translations> = {
             vmad: {
                 title: 'Valor Econômico da Floresta (VMAD)',
                 definition: 'Representa o potencial econômico direto da floresta por meio da exploração madeireira sustentável, calculando o preço comercial da madeira extraída e vendida.',
-                perspective: 'Evidencia o valor de mercado do recurso florestal — quanto vale a floresta como ativo produtivo. Serve como base para licenças, concessões e projetos de manejo sustentável.',
                 methodology: 'Combina o Método Americano de avaliação de ativos com a análise de Custo de Oportunidade, considerando: espécies, custos e preço médio por espécie.'
             },
             vus: {
                 title: 'Valor de Transformação Territorial (VUS)',
                 definition: 'Estima o valor econômico da terra caso fosse convertida para outros usos produtivos — agropecuário, industrial ou urbano. Representa o valor de oportunidade do uso alternativo.',
-                perspective: 'Demonstra o custo econômico da preservação, indicando quanto se deixaria de lucrar ao manter a floresta intacta. Essencial para planejamento territorial e compensações.',
                 methodology: 'Baseada no Método Americano adaptado à valoração de terras, considerando: produtividade potencial, retorno esperado e custos operacionais.'
             },
             crs: {
                 title: 'Valor Socioambiental da Conservação (CRS)',
                 definition: 'Quantifica o investimento necessário para manter os serviços ecossistêmicos que a floresta oferece — como regulação climática, água, carbono e biodiversidade.',
-                perspective: 'Traduz o valor da preservação como ativo econômico real, gerando benefícios como créditos de carbono e fortalecimento da imagem corporativa sustentável.',
                 methodology: 'Fundamentada no modelo internacional TEEB (The Economics of Ecosystems and Biodiversity), contemplando: sequestro de carbono, ciclagem de água e proteção da biodiversidade.'
             }
         },
-        perspective: "Perspectiva Comercial",
         methodology: "Metodologia de Avaliação",
         applications_title: "Aplicações Práticas do PDM",
         applications: {
@@ -374,23 +366,19 @@ export const translations: Record<SupportedLanguage, Translations> = {
             vmad: {
                 title: 'Economic Value of the Forest (VMAD)',
                 definition: 'Represents the direct economic potential of the forest through sustainable timber exploitation, calculating the commercial price of the extracted and sold wood.',
-                perspective: 'Highlights the market value of the forest resource—what the forest is worth as a productive asset. It serves as a basis for licenses, concessions, and sustainable management projects.',
                 methodology: 'Combines the American Method of asset valuation with Opportunity Cost analysis, considering: species, costs, and average price per species.'
             },
             vus: {
                 title: 'Territorial Transformation Value (VUS)',
                 definition: 'Estimates the economic value of the land if it were converted to other productive uses—agriculture, industry, or urban. It represents the opportunity cost of alternative land use.',
-                perspective: 'Demonstrates the economic cost of preservation, indicating how much profit would be forgone by keeping the forest intact. Essential for territorial planning and compensation.',
                 methodology: 'Based on the American Method adapted for land valuation, considering: potential productivity, expected return, and operational costs.'
             },
             crs: {
                 title: 'Socio-environmental Conservation Value (CRS)',
                 definition: 'Quantifies the investment needed to maintain the ecosystem services the forest provides—such as climate regulation, water, carbon, and biodiversity.',
-                perspective: 'Translates the value of preservation into a real economic asset, generating benefits like carbon credits and strengthening a sustainable corporate image.',
                 methodology: 'Based on the international TEEB (The Economics of Ecosystems and Biodiversity) model, contemplating: carbon sequestration, water cycling, and biodiversity protection.'
             }
         },
-        perspective: "Commercial Perspective",
         methodology: "Valuation Methodology",
         applications_title: "Practical Applications of PDM",
         applications: {
@@ -545,23 +533,19 @@ export const translations: Record<SupportedLanguage, Translations> = {
             vmad: {
                 title: 'Valor Económico del Bosque (VMAD)',
                 definition: 'Representa el potencial económico directo del bosque a través de la explotación maderera sostenible, calculando el precio comercial de la madera extraída y vendida.',
-                perspective: 'Destaca el valor de mercado del recurso forestal, cuánto vale el bosque como activo productivo. Sirve como base para licencias, concesiones y proyectos de manejo sostenible.',
                 methodology: 'Combina el Método Americano de valoración de activos con el análisis de Costo de Oportunidad, considerando: especies, costos y precio promedio por especie.'
             },
             vus: {
                 title: 'Valor de Transformación Territorial (VUS)',
                 definition: 'Estima el valor económico de la tierra si se convirtiera a otros usos productivos (agrícola, industrial o urbano). Representa el costo de oportunidad del uso alternativo del suelo.',
-                perspective: 'Demuestra el costo económico de la preservación, indicando cuánta ganancia se dejaría de obtener al mantener el bosque intacto. Esencial para la planificación territorial y las compensaciones.',
                 methodology: 'Basado en el Método Americano adaptado a la valoración de tierras, considerando: productividad potencial, retorno esperado y costos operativos.'
             },
             crs: {
                 title: 'Valor Socioambiental de la Conservación (CRS)',
                 definition: 'Cuantifica la inversión necesaria para mantener los servicios ecosistémicos que ofrece el bosque, como la regulación climática, el agua, el carbono y la biodiversidad.',
-                perspective: 'Traduce el valor de la preservación en un activo económico real, generando beneficios como créditos de carbono y fortaleciendo la imagen corporativa sostenible.',
                 methodology: 'Basado en el modelo internacional TEEB (La Economía de los Ecosistemas y la Biodiversidad), contemplando: secuestro de carbono, ciclo del agua y protección de la biodiversidad.'
             }
         },
-        perspective: "Perspectiva Comercial",
         methodology: "Metodología de Valoración",
         applications_title: "Aplicaciones Prácticas del PDM",
         applications: {
@@ -633,62 +617,62 @@ export const translations: Record<SupportedLanguage, Translations> = {
       },
     },
     excelExport: {
-      buttons: {
-        previewExcel: 'Vista Previa Excel',
-        exportExcel: 'Exportar Excel',
-        exporting: 'Exportando...',
-      },
-      messages: {
-        exportSuccess: '¡Excel exportado exitosamente!',
-        exportError: 'Error al exportar Excel',
-        noDataToExport: 'No hay datos para exportar',
-      },
-      headers: {
-        category: '🏷️ Categoría',
-        asset: '📋 Activo',
-        lastPrice: '💰 Último Precio',
-        variationPercent: '📊 Variación (%)',
-        absoluteVariation: '📈 Variación Absoluta',
-        unit: '📏 Unidad',
-        currency: '💱 Moneda',
-        status: '🎯 Estado',
-        lastUpdate: '🕐 Última Actualización',
-        notes: '📝 Notas',
-      },
-      summary: {
-        title: '📊 RESUMEN ESTADÍSTICO',
-        total: 'Total',
-        rising: '📈 Subiendo',
-        falling: '📉 Bajando',
-        stable: '➡️ Estables',
-      },
-      analysis: {
-        title: '📈 Análisis',
-        topGains: 'Mayores Subidas',
-        topLosses: 'Mayores Bajadas',
-        mostVolatile: 'Más Volátiles',
-      },
-      executiveSummary: {
-        title: '📋 Resumen Ejecutivo',
-        generatedOn: 'Generado el',
-        dataFor: 'Datos para',
-        marketOverview: 'Resumen del Mercado',
-        keyMetrics: 'Métricas Clave',
-        recommendations: 'Recomendaciones',
-      },
-      charts: {
-        categoryDistribution: 'Distribución por Categoría',
-        topVariations: 'Top 15 Mayores Variaciones',
-        priceTrends: 'Tendencias de Precios',
-        category: 'Categoría',
-        quantity: 'Cantidad',
-        percentage: 'Porcentaje',
-        rank: 'Rango',
-        asset: 'Activo',
-        variation: 'Variación (%)',
-        date: 'Fecha',
-        price: 'Precio',
-      },
+        buttons: {
+            previewExcel: 'Vista Previa Excel',
+            exportExcel: 'Exportar Excel',
+            exporting: 'Exportando...',
+        },
+        messages: {
+            exportSuccess: '¡Excel exportado exitosamente!',
+            exportError: 'Error al exportar Excel',
+            noDataToExport: 'No hay datos para exportar',
+        },
+        headers: {
+            category: '🏷️ Categoría',
+            asset: '📋 Activo',
+            lastPrice: '💰 Último Precio',
+            variationPercent: '📊 Variación (%)',
+            absoluteVariation: '📈 Variación Absoluta',
+            unit: '📏 Unidad',
+            currency: '💱 Moneda',
+            status: '🎯 Estado',
+            lastUpdate: '🕐 Última Actualización',
+            notes: '📝 Notas',
+        },
+        summary: {
+            title: '📊 RESUMEN ESTADÍSTICO',
+            total: 'Total',
+            rising: '📈 Subiendo',
+            falling: '📉 Bajando',
+            stable: '➡️ Estables',
+        },
+        analysis: {
+            title: '📈 Análisis',
+            topGains: 'Mayores Subidas',
+            topLosses: 'Mayores Bajadas',
+            mostVolatile: 'Más Volátiles',
+        },
+        executiveSummary: {
+            title: '📋 Resumen Ejecutivo',
+            generatedOn: 'Generado el',
+            dataFor: 'Datos para',
+            marketOverview: 'Resumen del Mercado',
+            keyMetrics: 'Métricas Clave',
+            recommendations: 'Recomendaciones',
+        },
+        charts: {
+            categoryDistribution: 'Distribución por Categoría',
+            topVariations: 'Top 15 Mayores Variaciones',
+            priceTrends: 'Tendencias de Precios',
+            category: 'Categoría',
+            quantity: 'Cantidad',
+            percentage: 'Porcentaje',
+            rank: 'Rango',
+            asset: 'Activo',
+            variation: 'Variación (%)',
+            date: 'Fecha',
+            price: 'Precio',
+        },
     },
   },
   ru: {
@@ -716,23 +700,19 @@ export const translations: Record<SupportedLanguage, Translations> = {
             vmad: {
                 title: 'Экономическая ценность леса (VMAD)',
                 definition: 'Представляет прямой экономический потенциал леса за счет устойчивой лесозаготовки, рассчитывая коммерческую цену добытой и проданной древесины.',
-                perspective: 'Подчеркивает рыночную стоимость лесного ресурса — чего стоит лес как производственный актив. Служит основой для лицензий, концессий и проектов устойчивого лесопользования.',
                 methodology: 'Сочетает американский метод оценки активов с анализом альтернативных издержек, учитывая: виды, затраты и среднюю цену за вид.'
             },
             vus: {
                 title: 'Ценность территориальной трансформации (VUS)',
                 definition: 'Оценивает экономическую стоимость земли, если бы она была преобразована для других производственных целей — сельского хозяйства, промышленности или городского строительства. Представляет собой альтернативную стоимость использования земли.',
-                perspective: 'Демонстрирует экономические издержки сохранения, показывая, какая прибыль была бы упущена при сохранении леса. Важно для территориального планирования и компенсаций.',
                 methodology: 'Основано на американском методе, адаптированном для оценки земель, с учетом: потенциальной производительности, ожидаемой доходности и операционных расходов.'
             },
             crs: {
                 title: 'Социально-экологическая ценность сохранения (CRS)',
                 definition: 'Количественно определяет инвестиции, необходимые для поддержания экосистемных услуг, которые предоставляет лес, — таких как регулирование климата, вода, углерод и биоразнообразие.',
-                perspective: 'Переводит ценность сохранения в реальный экономический актив, создавая выгоды, такие как углеродные кредиты, и укрепляя устойчивый корпоративный имидж.',
                 methodology: 'Основано на международной модели TEEB (Экономика экосистем и биоразнообразия), включая: поглощение углерода, круговорот воды и защиту биоразнообразия.'
             }
         },
-        perspective: "Коммерческая перспектива",
         methodology: "Методология оценки",
         applications_title: "Практическое применение PDM",
         applications: {
@@ -887,23 +867,19 @@ export const translations: Record<SupportedLanguage, Translations> = {
             vmad: {
                 title: '森林的经济价值 (VMAD)',
                 definition: '通过可持续的木材开采，代表森林的直接经济潜力，计算提取和销售的木材的商业价格。',
-                perspective: '突显森林资源的市场价值——森林作为生产性资产的价值。它作为许可证、特许权和可持续管理项目的基础。',
                 methodology: '将美国资产评估方法与机会成本分析相结合，考虑：物种、成本和每种物种的平均价格。'
             },
             vus: {
                 title: '土地转型价值 (VUS)',
                 definition: '估算土地如果转为其他生产性用途（农业、工业或城市）的经济价值。它代表了土地替代用途的机会成本。',
-                perspective: '展示了保护的经济成本，指出了如果保持森林完整会放弃多少利润。这对于土地规划和补偿至关重要。',
                 methodology: '基于适用于土地评估的美国方法，考虑：潜在生产力、预期回报和运营成本。'
             },
             crs: {
                 title: '社会环境保育价值 (CRS)',
                 definition: '量化维持森林提供的生态系统服务（如气候调节、水、碳和生物多样性）所需的投资。',
-                perspective: '将保护的价值转化为真正的经济资产，产生碳信用等效益，并加强可持续的企业形象。',
                 methodology: '基于国际TEBB（生态系统和生物多样性经济学）模型，包括：碳封存、水循环和生物多样性保护。'
             }
         },
-        perspective: "商业视角",
         methodology: "评估方法",
         applications_title: "PDM的实际应用",
         applications: {
