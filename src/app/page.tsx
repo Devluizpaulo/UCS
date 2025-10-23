@@ -287,16 +287,6 @@ export default function PDMDetailsPage() {
             </div>
           </div>
         </section>
-
-        {/* CONCLUSION SECTION */}
-        <section className="py-16 md:py-24 bg-background">
-          <div className="container mx-auto px-4 md:px-6">
-            <div className="mx-auto max-w-4xl text-center">
-              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.pdm.conclusion.title}</h2>
-              <p className="mt-4 text-lg text-muted-foreground text-justify">{homeT.pdm.conclusion.p1}</p>
-            </div>
-          </div>
-        </section>
         
         {/* UCS SECTION */}
         <section className="py-16 md:py-24">
@@ -353,14 +343,16 @@ export default function PDMDetailsPage() {
         </section>
 
         {/* FINAL SUMMARY & CTA */}
-        <section className="py-16 md:py-24 text-center">
+        <section className="py-16 md:py-24 text-center bg-background">
           <div className="container mx-auto px-4 md:px-6">
-            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.pdm.conclusion.title}</h2>
-            <p className="mx-auto mt-4 max-w-3xl text-lg text-muted-foreground text-justify">
-              {homeT.pdm.conclusion.p1}
-            </p>
-            <div className="mt-8">
-              <Award className="mx-auto h-12 w-12 text-primary" />
+            <div className="mx-auto max-w-4xl">
+              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.pdm.conclusion.title}</h2>
+              <p className="mx-auto mt-4 max-w-3xl text-lg text-muted-foreground text-justify">
+                {homeT.pdm.conclusion.p1}
+              </p>
+              <div className="mt-8">
+                <Award className="mx-auto h-12 w-12 text-primary" />
+              </div>
             </div>
           </div>
         </section>
@@ -377,3 +369,4 @@ export default function PDMDetailsPage() {
     </div>
   );
 }
+
