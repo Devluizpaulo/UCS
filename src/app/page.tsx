@@ -18,7 +18,7 @@ import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/language-context';
 import { getLandingPageSettings, type LandingPageSettings } from '@/lib/settings-actions';
 import { HistoricalAnalysisChart } from '@/components/charts/historical-analysis-chart';
-import { format } from 'date-fns';
+import { format, parse } from 'date-fns';
 
 // Tipo local para incluir dados de conversão
 type IndexValue = {
@@ -35,6 +35,7 @@ export default function PDMDetailsPage() {
   const [isLoadingHistory, setIsLoadingHistory] = React.useState(true);
   const [settings, setSettings] = React.useState<LandingPageSettings | null>(null);
   const { language, t } = useLanguage();
+  const [isScrolled, setIsScrolled] = React.useState(false);
   
   React.useEffect(() => {
     getCommodityPrices().then(prices => {
@@ -47,8 +48,8 @@ export default function PDMDetailsPage() {
     
     // Fetch historical data for the chart
     setIsLoadingHistory(true);
-    const today = new Date();
     const startDate = new Date('2022-01-01');
+    const today = new Date();
     const days = Math.ceil((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 30; // 30 dias de margem
     getCotacoesHistorico('ucs_ase', days) 
       .then(history => {
@@ -59,6 +60,13 @@ export default function PDMDetailsPage() {
         console.error("Failed to fetch UCS history:", error);
         setIsLoadingHistory(false);
       });
+
+    const handleScroll = () => {
+        setIsScrolled(window.scrollY > 100);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
   
   const autoplayPlugin = React.useRef(
@@ -232,10 +240,15 @@ export default function PDMDetailsPage() {
             </div>
 
             <div className="sticky top-20 z-40 w-full max-w-4xl p-4 animate-fade-in-up animation-delay-400">
-               <Card className="bg-background/20 backdrop-blur-md border-white/20 text-white shadow-2xl">
+               <Card className={cn(
+                   "transition-all duration-300",
+                   isScrolled 
+                     ? "bg-background border shadow-xl text-foreground"
+                     : "bg-background/20 backdrop-blur-md border-white/20 text-white"
+               )}>
                 <CardHeader className="text-center">
                     <CardTitle className="text-xl font-bold">{homeT.quote.title}</CardTitle>
-                    <CardDescription className="text-gray-300">{homeT.quote.subtitle}</CardDescription>
+                    <CardDescription className={cn(isScrolled ? "text-muted-foreground" : "text-gray-300")}>{homeT.quote.subtitle}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Carousel
@@ -259,7 +272,7 @@ export default function PDMDetailsPage() {
                               </div>
                             </div>
                             {item.conversionRate && (
-                              <div className="mt-2 text-sm text-gray-300">
+                              <div className={cn("mt-2 text-sm", isScrolled ? "text-muted-foreground" : "text-gray-300")}>
                                 {homeT.quote.conversionRate} {formatCurrency(item.conversionRate, 'BRL')}
                               </div>
                             )}
