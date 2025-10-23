@@ -152,15 +152,18 @@ export function AssetHistoricalTable({ assetId, data, assetConfig, isLoading, on
                 const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
                 const priceBRL = getPriceFromQuote(quote, assetId);
                 const originalPrice = quote.ultimo;
-                const variation = quote.variacao_pct ?? 0;
                 
-                const previousQuote = index < sortedData.length - 1 ? sortedData[startIndex + index + 1] : null;
+                const previousQuote = sortedData[startIndex + index + 1] ?? null;
                 const previousPriceBRL = previousQuote ? getPriceFromQuote(previousQuote, assetId) : undefined;
                 
-                const absoluteChange = (priceBRL !== undefined && previousPriceBRL !== undefined) 
-                    ? priceBRL - previousPriceBRL 
-                    : quote.variacao_abs ?? 0;
+                let variation = quote.variacao_pct ?? 0;
+                let absoluteChange = quote.variacao_abs ?? 0;
 
+                if (priceBRL !== undefined && previousPriceBRL !== undefined && previousPriceBRL > 0) {
+                    absoluteChange = priceBRL - previousPriceBRL;
+                    variation = (absoluteChange / previousPriceBRL) * 100;
+                }
+                
                 const uniqueKey = `${quote.id || 'no-id'}-${quote.timestamp || 'no-timestamp'}-${startIndex + index}`;
 
                 return (
