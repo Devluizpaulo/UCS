@@ -11,13 +11,14 @@ import { LanguageSwitcher } from "@/components/language-switcher";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 import { formatCurrency } from "@/lib/formatters";
-import type { CommodityPriceData } from '@/lib/types';
+import type { CommodityPriceData, FirestoreQuote } from '@/lib/types';
 import Autoplay from "embla-carousel-autoplay";
-import { getCommodityPrices } from '@/lib/data-service';
+import { getCommodityPrices, getCotacoesHistorico } from '@/lib/data-service';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/language-context';
 import { Badge } from '@/components/ui/badge';
 import { getLandingPageSettings, type LandingPageSettings } from '@/lib/settings-actions';
+import { HistoricalAnalysisChart } from '@/components/charts/historical-analysis-chart';
 
 // Tipo local para incluir dados de conversão
 type IndexValue = {
@@ -30,6 +31,8 @@ type IndexValue = {
 
 export default function PDMDetailsPage() {
   const [ucsAseAsset, setUcsAseAsset] = React.useState<CommodityPriceData | null>(null);
+  const [ucsHistory, setUcsHistory] = React.useState<FirestoreQuote[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = React.useState(true);
   const [settings, setSettings] = React.useState<LandingPageSettings | null>(null);
   const { language, t } = useLanguage();
   
@@ -41,6 +44,18 @@ export default function PDMDetailsPage() {
         }
     });
     getLandingPageSettings().then(setSettings);
+    
+    // Fetch historical data for the chart
+    setIsLoadingHistory(true);
+    getCotacoesHistorico('ucs_ase', 365) // Fetch last year of data
+      .then(history => {
+        setUcsHistory(history);
+        setIsLoadingHistory(false);
+      })
+      .catch(error => {
+        console.error("Failed to fetch UCS history:", error);
+        setIsLoadingHistory(false);
+      });
   }, []);
   
   const autoplayPlugin = React.useRef(
@@ -134,6 +149,33 @@ export default function PDMDetailsPage() {
     }
   ];
   
+  const chartData = React.useMemo(() => {
+    if (!ucsHistory || ucsHistory.length === 0) return [];
+    
+    return ucsHistory
+      .map(quote => {
+        const value = quote.valor_brl ?? quote.resultado_final_brl ?? quote.valor;
+        if (typeof value !== 'number') return null;
+
+        let date: Date | null = null;
+        if (quote.data) {
+          try {
+            const [day, month, year] = quote.data.split('/');
+            date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+          } catch { date = null; }
+        }
+        if (!date) date = new Date(quote.timestamp as any);
+
+        return {
+          date: date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+          value,
+          timestamp: date.getTime()
+        };
+      })
+      .filter((item): item is NonNullable<typeof item> => item !== null)
+      .sort((a, b) => a.timestamp - b.timestamp);
+  }, [ucsHistory]);
+
   return (
     <div className="flex min-h-screen w-full flex-col overflow-x-hidden bg-background text-foreground">
       <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-sm">
@@ -240,7 +282,7 @@ export default function PDMDetailsPage() {
             <div className="mx-auto max-w-5xl text-center mb-12">
               <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.pdm.pillars_title}</h2>
             </div>
-            <div className="mx-auto max-w-5xl grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-5xl">
               {pilaresPDM.map((pilar, index) => (
                 <Card key={index} className="flex flex-col hover:shadow-lg transition-shadow">
                   <CardHeader>
@@ -270,7 +312,7 @@ export default function PDMDetailsPage() {
             <div className="mx-auto max-w-5xl text-center mb-12">
               <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.pdm.applications_title}</h2>
             </div>
-            <div className="mx-auto max-w-5xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl">
               {aplicacoesPDM.map((app, index) => (
                 <Card key={index} className="text-center p-6 hover:shadow-lg transition-shadow">
                   <div className="flex justify-center mb-4">
@@ -285,9 +327,30 @@ export default function PDMDetailsPage() {
             </div>
           </div>
         </section>
+
+        {/* UCS EVOLUTION SECTION */}
+        <section className="py-16 md:py-24">
+            <div className="container mx-auto px-4 md:px-6">
+                <div className="mx-auto max-w-5xl text-center mb-12">
+                    <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.ucs_section.title}</h2>
+                    <p className="mt-4 text-lg text-muted-foreground">{homeT.ucs_section.description}</p>
+                </div>
+                <div className="mx-auto max-w-5xl h-96">
+                    <HistoricalAnalysisChart 
+                        isLoading={isLoadingHistory}
+                        chartData={chartData}
+                        isMultiLine={false}
+                        mainAssetData={ucsAseAsset}
+                        visibleAssets={{}}
+                        lineColors={{}}
+                        assetNames={{}}
+                    />
+                </div>
+            </div>
+        </section>
         
         {/* UCS SECTION */}
-        <section className="py-16 md:py-24">
+        <section className="py-16 md:py-24 bg-muted/30">
             <div className="container mx-auto px-4 md:px-6">
                 <div className="mx-auto max-w-5xl grid md:grid-cols-2 gap-12 items-center">
                     <div>
@@ -314,7 +377,7 @@ export default function PDMDetailsPage() {
         </section>
 
         {/* BLOCKCHAIN SECTION */}
-        <section className="py-16 md:py-24 bg-muted/30">
+        <section className="py-16 md:py-24">
             <div className="container mx-auto px-4 md:px-6">
                 <div className="mx-auto max-w-5xl grid md:grid-cols-2 gap-12 items-center">
                     <div className="relative h-64 md:h-full w-full rounded-xl overflow-hidden shadow-xl md:order-last">
@@ -344,13 +407,15 @@ export default function PDMDetailsPage() {
         <section className="py-16 md:py-24 text-center bg-background">
           <div className="container mx-auto px-4 md:px-6">
             <div className="mx-auto max-w-5xl">
-              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.pdm.conclusion.title}</h2>
-              <p className="mx-auto mt-4 max-w-3xl text-lg text-muted-foreground text-justify">
-                {homeT.pdm.conclusion.p1}
-              </p>
-              <div className="mt-8">
-                <Award className="mx-auto h-12 w-12 text-primary" />
-              </div>
+                <div className="text-center">
+                  <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.pdm.conclusion.title}</h2>
+                  <p className="mx-auto mt-4 max-w-3xl text-lg text-muted-foreground text-justify">
+                    {homeT.pdm.conclusion.p1}
+                  </p>
+                  <div className="mt-8">
+                    <Award className="mx-auto h-12 w-12 text-primary" />
+                  </div>
+                </div>
             </div>
           </div>
         </section>
