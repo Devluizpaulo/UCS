@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -385,15 +384,15 @@ const PerformanceMetrics = ({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
           <div className="text-center p-4 bg-muted/50 rounded-lg">
             <p className="text-sm text-muted-foreground">Preço Atual</p>
-            <p className="text-xl font-bold">{formatCurrency(metrics.currentPrice, 'BRL', assetId)}</p>
+            <p className="text-xl font-bold">{formatCurrency(metrics.currentPrice, 'BRL', selectedAssetId)}</p>
           </div>
           <div className="text-center p-4 bg-muted/50 rounded-lg">
             <p className="text-sm text-muted-foreground">Máximo</p>
-            <p className="text-xl font-bold text-green-600">{formatCurrency(metrics.high, 'BRL', assetId)}</p>
+            <p className="text-xl font-bold text-green-600">{formatCurrency(metrics.high, 'BRL', selectedAssetId)}</p>
           </div>
           <div className="text-center p-4 bg-muted/50 rounded-lg">
             <p className="text-sm text-muted-foreground">Mínimo</p>
-            <p className="text-xl font-bold text-red-600">{formatCurrency(metrics.low, 'BRL', assetId)}</p>
+            <p className="text-xl font-bold text-red-600">{formatCurrency(metrics.low, 'BRL', selectedAssetId)}</p>
           </div>
         </div>
       </CardContent>
@@ -453,12 +452,11 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
     });
 
     const processData = (history: FirestoreQuote[], assetId: string, range: TimeRange) => {
-      const dateFormat = range === '7d' || range === '30d' || range === '90d' ? 'dd/MM' : 'MM/yy';
+      const dateFormat = range === '7d' || range === '30d' ? 'dd/MM' : 'dd/MM/yy';
+      const cutoffDate = subDays(new Date(), timeRangeInDays[range]);
+
       return history
         .map(quote => {
-          const price = getPriceFromQuote(quote, assetId);
-          if (price === undefined) return null;
-  
           let date: Date | null = null;
           if (quote.data) {
             try {
@@ -469,7 +467,10 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
           if (!date || !isValid(date)) {
             date = quote.timestamp ? new Date(quote.timestamp as any) : null;
           }
-          if (!date || !isValid(date)) return null;
+          if (!date || !isValid(date) || date < cutoffDate) return null;
+
+          const price = getPriceFromQuote(quote, assetId);
+          if (price === undefined) return null;
   
           return {
             date: format(date, dateFormat),
@@ -602,3 +603,4 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
     </div>
   );
 }
+
