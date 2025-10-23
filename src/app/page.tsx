@@ -46,7 +46,10 @@ export default function PDMDetailsPage() {
     
     // Fetch historical data for the chart
     setIsLoadingHistory(true);
-    getCotacoesHistorico('ucs_ase', 365 * 3) // Fetch last 3 years of data
+    const today = new Date();
+    const startDate = new Date('2022-01-01');
+    const days = Math.ceil((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 30; // 30 dias de margem
+    getCotacoesHistorico('ucs_ase', days) 
       .then(history => {
         setUcsHistory(history);
         setIsLoadingHistory(false);
@@ -163,7 +166,13 @@ export default function PDMDetailsPage() {
             date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
           } catch { date = null; }
         }
-        if (!date) date = new Date(quote.timestamp as any);
+        if (!date && quote.timestamp) {
+            try {
+                date = new Date(quote.timestamp as any);
+            } catch { date = null; }
+        }
+
+        if (!date) return null;
 
         return {
           date: date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' }),
