@@ -207,7 +207,7 @@ const calculateVolatility = (prices: number[]) => {
   const returns = prices.slice(1).map((price, i) => (price - prices[i]) / prices[i]);
   const mean = returns.reduce((a, b) => a + b, 0) / returns.length;
   const variance = returns.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / returns.length;
-  return Math.sqrt(variance) * 100;
+  return Math.sqrt(variance) * Math.sqrt(252) * 100; // Annualized volatility
 };
 
 const calculateMaxDrawdown = (prices: number[]) => {
@@ -231,9 +231,10 @@ const calculateSharpeRatio = (prices: number[]) => {
   if (prices.length < 2) return 0;
   const returns = prices.slice(1).map((price, i) => (price - prices[i]) / prices[i]);
   const meanReturn = returns.reduce((a, b) => a + b, 0) / returns.length;
-  const volatility = calculateVolatility(prices) / 100;
+  const volatility = (Math.sqrt(returns.reduce((a, b) => a + Math.pow(b - meanReturn, 2), 0) / returns.length) * Math.sqrt(252));
   
-  return volatility > 0 ? meanReturn / volatility : 0;
+  // Assume risk-free rate of 0 for simplicity
+  return volatility > 0 ? (meanReturn * 252) / volatility : 0;
 };
 
 interface HistoricalAnalysisChartProps {
@@ -593,7 +594,7 @@ export const HistoricalAnalysisChart = React.memo(({
               fontSize={isMobile ? 10 : 12}
               tickLine={false}
               axisLine={false}
-              domain={[0, 1000]}
+              domain={[0, 'dataMax + 100']}
               tickFormatter={(value) => formatCurrency(value as number, mainAssetData?.currency || 'BRL', mainAssetData?.id)}
               yAxisId="left"
               width={isMobile ? 60 : 80}
