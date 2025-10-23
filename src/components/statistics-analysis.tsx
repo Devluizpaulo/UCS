@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -60,73 +61,6 @@ const getPriceFromQuote = (quote: FirestoreQuote, assetId: string): number | und
   return typeof value === 'number' ? value : undefined;
 };
 
-// Função para calcular métricas de performance
-const calculatePerformanceMetrics = (quotes: FirestoreQuote[], assetId: string) => {
-  if (quotes.length < 2) return null;
-  
-  // Garante que os dados estejam ordenados do mais antigo para o mais recente
-  const sortedQuotes = [...quotes].sort((a, b) => {
-    const dateA = a.timestamp ? new Date(a.timestamp as any) : new Date(0);
-    const dateB = b.timestamp ? new Date(b.timestamp as any) : new Date(0);
-    return dateA.getTime() - dateB.getTime();
-  });
-
-  const prices = sortedQuotes
-    .map(quote => getPriceFromQuote(quote, assetId))
-    .filter((price): price is number => price !== undefined && price > 0);
-    
-  if (prices.length < 2) return null;
-  
-  const firstPrice = prices[0];
-  const lastPrice = prices[prices.length - 1];
-  const maxPrice = Math.max(...prices);
-  const minPrice = Math.min(...prices);
-  
-  // Calcular retorno total
-  const totalReturn = ((lastPrice - firstPrice) / firstPrice) * 100;
-  
-  // Calcular volatilidade (desvio padrão dos retornos diários)
-  const dailyReturns = [];
-  for (let i = 1; i < prices.length; i++) {
-    const dailyReturn = ((prices[i] - prices[i-1]) / prices[i-1]) * 100;
-    dailyReturns.push(dailyReturn);
-  }
-  
-  const avgReturn = dailyReturns.reduce((sum, ret) => sum + ret, 0) / dailyReturns.length;
-  const variance = dailyReturns.reduce((sum, ret) => sum + Math.pow(ret - avgReturn, 2), 0) / dailyReturns.length;
-  const volatility = Math.sqrt(variance);
-  
-  // Calcular máximo drawdown
-  let maxDrawdown = 0;
-  let peak = prices[0];
-  
-  for (const price of prices) {
-    if (price > peak) {
-      peak = price;
-    }
-    const drawdown = ((peak - price) / peak) * 100;
-    if (drawdown > maxDrawdown) {
-      maxDrawdown = drawdown;
-    }
-  }
-  
-  // Calcular Sharpe Ratio (simplificado)
-  const riskFreeRate = 0.1; // 0.1% ao dia (aproximação)
-  const excessReturn = avgReturn - riskFreeRate;
-  const sharpeRatio = volatility > 0 ? excessReturn / volatility : 0;
-  
-  return {
-    totalReturn,
-    volatility,
-    maxDrawdown,
-    sharpeRatio,
-    high: maxPrice,
-    low: minPrice,
-    currentPrice: lastPrice,
-    firstPrice,
-    totalDays: quotes.length
-  };
-};
 
 // Componente de métrica individual
 const MetricCard = ({ 
@@ -428,25 +362,25 @@ export function StatisticsAnalysis({ targetDate }: { targetDate: Date }) {
                 subtitle={`${metrics.totalDays} dias`}
               />
               <MetricCard
-                title="Volatilidade"
+                title="Volatilidade (Anual.)"
                 value={`${metrics.volatility.toFixed(2)}%`}
                 icon={<Activity className="h-5 w-5" />}
                 trend="neutral"
-                subtitle="Desvio padrão diário"
+                subtitle="Desvio padrão anualizado"
               />
               <MetricCard
                 title="Max Drawdown"
                 value={`${metrics.maxDrawdown.toFixed(2)}%`}
                 icon={<TrendingDown className="h-5 w-5" />}
                 trend="negative"
-                subtitle="Maior perda"
+                subtitle="Maior perda do pico"
               />
               <MetricCard
                 title="Sharpe Ratio"
                 value={metrics.sharpeRatio.toFixed(2)}
                 icon={<Target className="h-5 w-5" />}
                 trend={metrics.sharpeRatio >= 1 ? 'positive' : metrics.sharpeRatio >= 0 ? 'neutral' : 'negative'}
-                subtitle="Retorno/risco"
+                subtitle="Retorno/Risco (Anualizado)"
               />
             </div>
           )}
@@ -461,13 +395,13 @@ export function StatisticsAnalysis({ targetDate }: { targetDate: Date }) {
                 trend="neutral"
               />
               <MetricCard
-                title="Máximo"
+                title="Máximo do Período"
                 value={formatCurrency(metrics.high, 'BRL', selectedAssetId)}
                 icon={<TrendingUp className="h-5 w-5" />}
                 trend="positive"
               />
               <MetricCard
-                title="Mínimo"
+                title="Mínimo do Período"
                 value={formatCurrency(metrics.low, 'BRL', selectedAssetId)}
                 icon={<TrendingDown className="h-5 w-5" />}
                 trend="negative"
@@ -506,7 +440,7 @@ export function StatisticsAnalysis({ targetDate }: { targetDate: Date }) {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">Volatilidade</span>
+                    <span className="text-sm font-medium">Volatilidade (Anualizada)</span>
                     <span className="font-mono">{metrics.volatility.toFixed(2)}%</span>
                   </div>
                   <div className="flex justify-between items-center">
@@ -514,7 +448,7 @@ export function StatisticsAnalysis({ targetDate }: { targetDate: Date }) {
                     <span className="font-mono text-red-600">{metrics.maxDrawdown.toFixed(2)}%</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">Sharpe Ratio</span>
+                    <span className="text-sm font-medium">Sharpe Ratio (Anualizado)</span>
                     <span className="font-mono">{metrics.sharpeRatio.toFixed(2)}</span>
                   </div>
                 </CardContent>
@@ -529,18 +463,18 @@ export function StatisticsAnalysis({ targetDate }: { targetDate: Date }) {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">Retorno Total</span>
+                    <span className="text-sm font-medium">Retorno Total no Período</span>
                     <span className={`font-mono ${metrics.totalReturn >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                       {metrics.totalReturn >= 0 ? '+' : ''}{metrics.totalReturn.toFixed(2)}%
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-medium">Período</span>
-                    <span className="font-mono">{metrics.totalDays} dias</span>
+                    <span className="font-mono">{metrics.totalDays} dias de cotação</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">Retorno Médio Diário</span>
-                    <span className="font-mono">{(metrics.totalReturn / metrics.totalDays).toFixed(3)}%</span>
+                    <span className="text-sm font-medium">Retorno Médio por Período</span>
+                    <span className="font-mono">{(metrics.avgPeriodicReturn).toFixed(3)}%</span>
                   </div>
                 </CardContent>
               </Card>
@@ -591,3 +525,4 @@ export function StatisticsAnalysis({ targetDate }: { targetDate: Date }) {
     </div>
   );
 }
+

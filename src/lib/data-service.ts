@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { getFirebaseAdmin } from '@/lib/firebase-admin-config';
@@ -94,6 +95,7 @@ function parseBrazilianNumber(value: any): number {
   
   if (typeof value === 'string') {
     try {
+      // Remove pontos de milhar, substitui vírgula por ponto
       const cleanValue = value.replace(/\./g, '').replace(',', '.');
       const parsed = parseFloat(cleanValue);
       return isNaN(parsed) ? 0 : parsed;
@@ -138,7 +140,8 @@ function normalizeAssetData(data: any): any {
     if (normalized.valores_originais && typeof normalized.valores_originais === 'object') {
       const normalizedOriginals: { [key: string]: any } = {};
       for (const [key, value] of Object.entries(normalized.valores_originais)) {
-        if (typeof value === 'string' && /[\d.,]/.test(value)) {
+        // Tenta converter para número se parecer um número, senão mantém como está
+        if (typeof value === 'string' && /^[0-9.,-]+$/.test(value)) {
            normalizedOriginals[key] = parseBrazilianNumber(value);
         } else {
            normalizedOriginals[key] = value;
@@ -349,22 +352,24 @@ export async function calculateFrequencyAwareMetrics(quotes: FirestoreQuote[], a
   
   const periodicReturns = [];
   for (let i = 1; i < prices.length; i++) {
-    const periodicReturn = ((prices[i] - prices[i-1]) / prices[i-1]) * 100;
+    const periodicReturn = ((prices[i] - prices[i-1]) / prices[i-1]);
     periodicReturns.push(periodicReturn);
   }
   
   const avgReturn = periodicReturns.reduce((sum, ret) => sum + ret, 0) / periodicReturns.length;
   const variance = periodicReturns.reduce((sum, ret) => sum + Math.pow(ret - avgReturn, 2), 0) / periodicReturns.length;
-  
+  const stdDev = Math.sqrt(variance);
+
+  // Annualize volatility based on frequency
   let volatility: number;
+  let annualizedReturn: number;
+  
   if (frequencyInfo.frequency === 'monthly') {
-    volatility = Math.sqrt(variance) * Math.sqrt(12);
-  } else if (frequencyInfo.frequency === 'daily') {
-    volatility = Math.sqrt(variance) * Math.sqrt(252);
-  } else {
-    const monthlyVol = Math.sqrt(variance) * Math.sqrt(12);
-    const dailyVol = Math.sqrt(variance) * Math.sqrt(252);
-    volatility = (monthlyVol + dailyVol) / 2;
+    volatility = stdDev * Math.sqrt(12);
+    annualizedReturn = avgReturn * 12;
+  } else { // daily or mixed, treat as daily for conservative volatility
+    volatility = stdDev * Math.sqrt(252);
+    annualizedReturn = avgReturn * 252;
   }
   
   let maxDrawdown = 0;
@@ -374,27 +379,27 @@ export async function calculateFrequencyAwareMetrics(quotes: FirestoreQuote[], a
     if (price > peak) {
       peak = price;
     }
-    const drawdown = ((peak - price) / peak) * 100;
+    const drawdown = ((peak - price) / peak);
     if (drawdown > maxDrawdown) {
       maxDrawdown = drawdown;
     }
   }
   
-  const riskFreeRate = frequencyInfo.frequency === 'monthly' ? 0.5 : 0.1;
-  const excessReturn = avgReturn - riskFreeRate;
-  const sharpeRatio = volatility > 0 ? excessReturn / volatility : 0;
+  // Assuming a simplified annual risk-free rate of 2%
+  const riskFreeRate = 0.02;
+  const sharpeRatio = volatility > 0 ? (annualizedReturn - riskFreeRate) / volatility : 0;
   
   const metrics = {
     totalReturn,
-    volatility,
-    maxDrawdown,
+    volatility: volatility * 100, // as percentage
+    maxDrawdown: maxDrawdown * 100, // as percentage
     sharpeRatio,
     high: maxPrice,
     low: minPrice,
     currentPrice: lastPrice,
     firstPrice,
     totalDays: quotes.length,
-    avgPeriodicReturn: avgReturn,
+    avgPeriodicReturn: avgReturn * 100,
     frequency: frequencyInfo.frequency
   };
   
@@ -829,8 +834,9 @@ export async function getQuoteByDate(assetId: string, date: Date): Promise<Fires
       return result;
     }
     
+    // Fallback: se não encontrar na data exata, busca a mais recente ANTERIOR à data
     const historicalSnapshot = await db.collection(assetId)
-      .where('data', '<', formattedDate)
+      .where('data', '<', formattedDate) // Busca datas estritamente menores
       .orderBy('data', 'desc')
       .limit(1)
       .get();
