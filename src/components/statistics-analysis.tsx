@@ -64,7 +64,14 @@ const getPriceFromQuote = (quote: FirestoreQuote, assetId: string): number | und
 const calculatePerformanceMetrics = (quotes: FirestoreQuote[], assetId: string) => {
   if (quotes.length < 2) return null;
   
-  const prices = quotes
+  // Garante que os dados estejam ordenados do mais antigo para o mais recente
+  const sortedQuotes = [...quotes].sort((a, b) => {
+    const dateA = a.timestamp ? new Date(a.timestamp as any) : new Date(0);
+    const dateB = b.timestamp ? new Date(b.timestamp as any) : new Date(0);
+    return dateA.getTime() - dateB.getTime();
+  });
+
+  const prices = sortedQuotes
     .map(quote => getPriceFromQuote(quote, assetId))
     .filter((price): price is number => price !== undefined && price > 0);
     
@@ -166,7 +173,7 @@ export function StatisticsAnalysis({ targetDate }: { targetDate: Date }) {
   const [selectedAssetId, setSelectedAssetId] = useState<string>('PDM');
   const [timeRange, setTimeRange] = useState<TimeRange>('1y');
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedQuote, setSelectedQuote] = useState<FirestoreQuote | null>(null);
+  const [selectedAssetForModal, setSelectedAssetForModal] = useState<CommodityPriceData | null>(null);
 
   useEffect(() => {
     console.log('🔧 [StatisticsAnalysis] Carregando configurações de commodities...');
@@ -242,7 +249,7 @@ export function StatisticsAnalysis({ targetDate }: { targetDate: Date }) {
             absoluteChange: quote.variacao_abs || 0,
             lastUpdated: quote.data,
         };
-        setSelectedQuote(asset as any);
+        setSelectedAssetForModal(priceData);
     }
   };
 
@@ -574,17 +581,11 @@ export function StatisticsAnalysis({ targetDate }: { targetDate: Date }) {
       </Tabs>
 
       {/* Modal de detalhes da cotação */}
-      {selectedQuote && selectedAssetConfig && (
+      {selectedAssetForModal && (
         <AssetDetailModal
-          asset={{
-              ...selectedAssetConfig,
-              price: getPriceFromQuote(selectedQuote, selectedAssetId) || 0,
-              change: selectedQuote.variacao_pct || 0,
-              absoluteChange: selectedQuote.variacao_abs || 0,
-              lastUpdated: selectedQuote.data,
-          }}
-          isOpen={!!selectedQuote}
-          onOpenChange={() => setSelectedQuote(null)}
+          asset={selectedAssetForModal}
+          isOpen={!!selectedAssetForModal}
+          onOpenChange={() => setSelectedAssetForModal(null)}
         />
       )}
     </div>
