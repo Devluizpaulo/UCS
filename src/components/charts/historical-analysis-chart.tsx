@@ -36,7 +36,7 @@ import {
   BarChart3,
   Activity,
   RefreshCw,
-  LineChart,
+  LineChart as LineChartIcon,
   Loader2
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
@@ -396,7 +396,7 @@ export const HistoricalAnalysisChart = React.memo(({
           onClick={() => setChartType('line')}
           className="h-8 px-2"
         >
-          <LineChart className="h-4 w-4" />
+          <LineChartIcon className="h-4 w-4" />
         </Button>
         <Button
           variant={chartType === 'area' ? 'default' : 'ghost'}
@@ -593,7 +593,7 @@ export const HistoricalAnalysisChart = React.memo(({
               fontSize={isMobile ? 10 : 12}
               tickLine={false}
               axisLine={false}
-              domain={['dataMin', 'dataMax']}
+              domain={['dataMin - (dataMax - dataMin) * 0.1', 'dataMax + (dataMax - dataMin) * 0.1']}
               tickFormatter={(value) => formatCurrency(value as number, mainAssetData?.currency || 'BRL', mainAssetData?.id)}
               yAxisId="left"
               width={isMobile ? 60 : 80}
