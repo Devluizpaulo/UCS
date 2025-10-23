@@ -18,7 +18,9 @@ import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/language-context';
 import { getLandingPageSettings, type LandingPageSettings } from '@/lib/settings-actions';
 import { HistoricalAnalysisChart } from '@/components/charts/historical-analysis-chart';
-import { parse, format } from 'date-fns';
+import { parse, isValid } from 'date-fns';
+import { format as formatDateFns } from 'date-fns';
+
 
 // Tipo local para incluir dados de conversão
 type IndexValue = {
@@ -48,8 +50,12 @@ export default function PDMDetailsPage() {
     
     // Fetch historical data for the chart
     setIsLoadingHistory(true);
+    // Calcular o número de dias desde 01/01/2023 até hoje
     const startDate = new Date('2023-01-01');
-    getCotacoesHistorico('ucs_ase', 365 * 10) 
+    const today = new Date();
+    const daysToFetch = Math.ceil((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 30; // 30 dias de margem
+
+    getCotacoesHistorico('ucs_ase', daysToFetch) 
       .then(history => {
         setUcsHistory(history);
         setIsLoadingHistory(false);
@@ -188,7 +194,7 @@ export default function PDMDetailsPage() {
         if (!date || date < startDate) return null;
 
         return {
-          date: format(date, 'dd/MM/yy'),
+          date: formatDateFns(date, 'dd/MM/yy'),
           value,
           timestamp: date.getTime()
         };
@@ -269,7 +275,7 @@ export default function PDMDetailsPage() {
                         </div>
                         {euroValue.conversionRate && (
                         <p className="text-xs text-gray-400">
-                            {homeT.quote.conversionRate} {formatCurrency(euroValue.conversionRate, 'BRL')}
+                            {homeT.quote.conversionRate} {formatCurrency(euroValue.conversionRate, 'BRL', 'eur')}
                         </p>
                         )}
                     </div>
@@ -280,7 +286,6 @@ export default function PDMDetailsPage() {
         
         <div className={cn(
             "sticky top-20 z-40 mx-auto max-w-md transition-all duration-300",
-            isScrolled ? "opacity-0 pointer-events-none" : "opacity-0 pointer-events-none" // Logic for floating card was removed, keeping this for potential future use.
         )}>
         </div>
         

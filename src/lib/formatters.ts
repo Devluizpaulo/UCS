@@ -7,13 +7,12 @@
 export function formatCurrency(value: number, currency: string, assetId?: string): string {
   if (typeof value !== 'number' || isNaN(value)) return '';
 
-  const isExchangeRate = assetId === 'usd' || assetId === 'eur';
+  // Uma taxa de câmbio é quando o assetId é 'usd' ou 'eur', OU quando estamos formatando um valor em BRL
+  // que representa a cotação de uma moeda estrangeira.
+  const isExchangeRate = assetId === 'usd' || assetId === 'eur' || (currency === 'BRL' && (assetId === 'usd' || assetId === 'eur'));
   
-  // Para USD e EUR (taxas de câmbio), usar formato americano com 4 casas decimais
-  // Para outros ativos, usar 2 casas decimais
   const minimumFractionDigits = isExchangeRate ? 4 : 2;
   const maximumFractionDigits = isExchangeRate ? 4 : 2;
-
 
   const options: Intl.NumberFormatOptions = {
     style: 'currency',
@@ -23,15 +22,8 @@ export function formatCurrency(value: number, currency: string, assetId?: string
   };
   
   try {
-    // Para USD e EUR, usar formato americano (ponto como decimal)
-    // Para BRL, usar formato brasileiro (vírgula como decimal)
     const locale = currency === 'BRL' ? 'pt-BR' : 'en-US';
     let formatted = new Intl.NumberFormat(locale, options).format(value);
-    
-    // Debug: log para verificar formatação
-    if (isExchangeRate) {
-      console.log(`🔍 Formatting ${assetId}: ${value} -> ${formatted} (locale: ${locale}, currency: ${currency})`);
-    }
     
     return formatted;
 
@@ -43,7 +35,6 @@ export function formatCurrency(value: number, currency: string, assetId?: string
         maximumFractionDigits: isExchangeRate ? 4 : 2 
     };
     
-    // Para fallback, usar formato americano para USD/EUR
     const fallbackLocale = currency === 'BRL' ? 'pt-BR' : 'en-US';
     const fallbackFormatter = new Intl.NumberFormat(fallbackLocale, fallbackOptions);
 
