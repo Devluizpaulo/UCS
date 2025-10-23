@@ -1,3 +1,4 @@
+
 'use server';
 
 import { getFirebaseAdmin } from '@/lib/firebase-admin-config';
@@ -323,15 +324,8 @@ export async function calculateFrequencyAwareMetrics(quotes: FirestoreQuote[], a
   }
   
   const prices = quotes
-    .map(quote => {
-      if (assetId === 'ucs_ase') {
-        const value = quote.valor_brl ?? quote.resultado_final_brl ?? quote.valor_eur ?? quote.valor_usd;
-        return typeof value === 'number' ? value : undefined;
-      }
-      const value = quote.ultimo_brl ?? quote.valor ?? quote.ultimo;
-      return typeof value === 'number' ? value : undefined;
-    })
-    .filter((price): price is number => price !== undefined);
+    .map(quote => extractPriceFromQuote(quote).price)
+    .filter((price): price is number => price !== undefined && price > 0);
     
   if (prices.length < 2) {
     return {
