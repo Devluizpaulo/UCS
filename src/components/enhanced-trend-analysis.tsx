@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -153,9 +154,13 @@ const AssetHistoricalTable = ({
   const formatDate = (quote: FirestoreQuote) => {
     try {
       if (quote.data) {
-        const [day, month, year] = quote.data.split('/');
-        const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-        return isValid(date) ? format(date, 'dd/MM/yyyy') : quote.data;
+        if (typeof quote.data === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(quote.data)) {
+          const [day, month, year] = quote.data.split('/');
+          const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+          return isValid(date) ? format(date, 'dd/MM/yyyy') : quote.data;
+        }
+        const dateFromTs = new Date(quote.timestamp as any);
+        return isValid(dateFromTs) ? format(dateFromTs, 'dd/MM/yyyy') : 'N/A';
       }
       
       const date = new Date(quote.timestamp as any);
@@ -452,22 +457,35 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
     });
 
     const processData = (history: FirestoreQuote[], assetId: string, range: TimeRange) => {
-      const dateFormat = range === '7d' || range === '30d' ? 'dd/MM' : 'dd/MM/yy';
-      const cutoffDate = subDays(new Date(), timeRangeInDays[range]);
+        const dateFormat = range === '7d' || range === '30d' ? 'dd/MM' : 'dd/MM/yy';
+        const cutoffDate = subDays(new Date(), timeRangeInDays[range]);
 
-      return history
+        const filteredHistory = history.filter(quote => {
+            if (!quote) return false;
+            try {
+                let date: Date;
+                if (typeof quote.data === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(quote.data)) {
+                    date = parse(quote.data, 'dd/MM/yyyy', new Date());
+                } else if (quote.timestamp) {
+                    date = new Date(quote.timestamp as any);
+                } else {
+                    return false;
+                }
+                return isValid(date) && date >= cutoffDate;
+            } catch {
+                return false;
+            }
+        });
+
+      return filteredHistory
         .map(quote => {
           let date: Date | null = null;
-          if (quote.data) {
-            try {
-              const [day, month, year] = quote.data.split('/');
-              date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-            } catch { date = null; }
-          }
-          if (!date || !isValid(date)) {
-            date = quote.timestamp ? new Date(quote.timestamp as any) : null;
-          }
-          if (!date || !isValid(date) || date < cutoffDate) return null;
+            if (typeof quote.data === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(quote.data)) {
+                date = parse(quote.data, 'dd/MM/yyyy', new Date());
+            } else if (quote.timestamp) {
+                date = new Date(quote.timestamp as any);
+            }
+          if (!date || !isValid(date)) return null;
 
           const price = getPriceFromQuote(quote, assetId);
           if (price === undefined) return null;
@@ -485,49 +503,141 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
     const processedChartData = processData(currentData, selectedAssetId, timeRange);
     
     const sortedByDate = [...currentData].sort((a, b) => {
-        const dateA = a.data ? parse(a.data, 'dd/MM/yyyy', new Date()).getTime() : 0;
-        const dateB = b.data ? parse(b.data, 'dd/MM/yyyy', new Date()).getTime() : 0;
-        return dateB - dateA;
+        let dateA;
+        if (typeof a.data === 'string' && a.data.match(/^\d{2,2}\/\d{2,2}\/\d{4}$/)) {
+            dateA = parse(a.data, 'dd/MM/yyyy', new Date());
+        } else if (a.timestamp) {
+            dateA = new Date(a.timestamp as any);
+        } else {
+            return 1; // Coloca itens sem data no final
+        }
+
+        let dateB;
+        if (typeof b.data === 'string' && b.data.match(/^\d{2,2}\/\d{2,2}\/\d{4}$/)) {
+            dateB = parse(b.data, 'dd/MM/yyyy', new Date());
+        } else if (b.timestamp) {
+            dateB = new Date(b.timestamp as any);
+        } else {
+            return -1; // Coloca itens sem data no final
+        }
+
+        if (!isValid(dateA)) return 1;
+        if (!isValid(dateB)) return -1;
+        
+        return dateB.getTime() - dateA.getTime();
     });
 
     const quoteForDate = sortedByDate.find(q => {
-        if (!q || !q.data) return false;
+        if (!q) return false;
         try {
-            const quoteDate = parse(q.data, 'dd/MM/yyyy', new Date());
-            return format(quoteDate, 'yyyy-MM-dd') <= format(targetDate, 'yyyy-MM-dd');
+            let quoteDate: Date;
+            if (typeof q.data === 'string' && q.data.match(/^\d{2,2}\/\d{2,2}\/\d{4}$/)) {
+                quoteDate = parse(q.data, 'dd/MM/yyyy', new Date());
+            } else if(q.timestamp) {
+                quoteDate = new Date(q.timestamp as any);
+            } else {
+                return false;
+            }
+            return isValid(quoteDate) && quoteDate <= targetDate;
         } catch { return false; }
     }) || sortedByDate[0];
     
-    const latestPrice = quoteForDate ? getPriceFromQuote(quoteForDate, selectedAssetId) : 0;
-    
+    if (!quoteForDate) {
+       return { chartData: [], mainAssetData: null, isMultiLine: false, assetNames: names };
+    }
+
+    const isMulti = selectedAssetId === 'PDM' || selectedAssetId === 'ucs_ase';
+    let finalChartData: any[];
+
+    const cutoffDate = subDays(new Date(), timeRangeInDays[timeRange]);
+
+    if (isMulti) {
+        const dataMap = new Map<string, any>();
+        
+        // Para PDM, mostrar componentes individuais
+        if (selectedAssetId === 'PDM') {
+            const pdmHistory = data['PDM'] || [];
+            pdmHistory.forEach(quote => {
+                if(!quote || !quote.componentes) return;
+                try {
+                  let date: Date;
+                  if (typeof quote.data === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(quote.data)) {
+                    date = parse(quote.data, 'dd/MM/yyyy', new Date());
+                  } else {
+                    date = new Date(quote.timestamp as any);
+                  }
+                  
+                  if(!isValid(date) || date < cutoffDate) return;
+
+                  const dateStr = format(date, 'yyyy-MM-dd');
+                  if (!dataMap.has(dateStr)) {
+                      dataMap.set(dateStr, { date: format(date, 'dd/MM/yy'), timestamp: date.getTime() });
+                  }
+                  
+                  Object.entries(quote.componentes).forEach(([key, value]) => {
+                      if (typeof value === 'number' && value > 0) {
+                          dataMap.get(dateStr)[key] = value;
+                      }
+                  });
+                } catch {}
+            });
+        } else {
+            // Para outros ativos multi-linha
+            UCS_ASE_COMPARISON_ASSETS.forEach(id => {
+                const assetHistory = data[id] || [];
+                assetHistory.forEach(quote => {
+                    if(!quote) return;
+                    try {
+                      let date: Date;
+                       if (typeof quote.data === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(quote.data)) {
+                        date = parse(quote.data, 'dd/MM/yyyy', new Date());
+                      } else {
+                        date = new Date(quote.timestamp as any);
+                      }
+                      
+                      if(!isValid(date) || date < cutoffDate) return;
+
+                      const dateStr = format(date, 'yyyy-MM-dd');
+                      if (!dataMap.has(dateStr)) {
+                          dataMap.set(dateStr, { date: format(date, 'dd/MM/yy'), timestamp: date.getTime() });
+                      }
+                      const value = getPriceFromQuote(quote, id);
+                      if(value !== undefined) {
+                          dataMap.get(dateStr)[id] = value;
+                      }
+                    } catch {}
+                });
+            });
+        }
+        
+        finalChartData = Array.from(dataMap.values()).sort((a,b) => a.timestamp - b.timestamp);
+    } else {
+        finalChartData = processedChartData;
+    }
+      
+    const isForexAsset = ['soja', 'carbono', 'madeira'].includes(selectedAssetConfig.id);
+
     const mainAsset: CommodityPriceData = {
-      ...(selectedAssetConfig as CommodityConfig),
-      price: latestPrice || 0,
-      change: quoteForDate?.variacao_pct ?? 0,
-      absoluteChange: (getPriceFromQuote(quoteForDate as FirestoreQuote, selectedAssetId) ?? 0) - (getPriceFromQuote(quoteForDate?.fechamento_anterior_quote, selectedAssetId) ?? (getPriceFromQuote(quoteForDate as FirestoreQuote, selectedAssetId) ?? 0)),
-      lastUpdated: quoteForDate?.data || new Date().toLocaleDateString('pt-BR'),
-      currency: 'BRL',
+        ...(selectedAssetConfig as CommodityConfig),
+        price: isForexAsset ? (quoteForDate.ultimo_brl ?? 0) : getPriceFromQuote(quoteForDate, selectedAssetId) ?? 0,
+        currency: 'BRL', // Mostra sempre BRL
+        change: quoteForDate.variacao_pct ?? 0,
+        absoluteChange: (getPriceFromQuote(quoteForDate as FirestoreQuote, selectedAssetId) ?? 0) - (getPriceFromQuote(quoteForDate.fechamento_anterior_quote, selectedAssetId) ?? (getPriceFromQuote(quoteForDate as FirestoreQuote, selectedAssetId) ?? 0)),
+        lastUpdated: (typeof quoteForDate.data === 'string' ? quoteForDate.data : (quoteForDate.timestamp ? format(new Date(quoteForDate.timestamp as any), 'dd/MM/yyyy') : 'N/A')),
     };
-  
-    return {
-      chartData: processedChartData,
-      mainAssetData: mainAsset,
-      isMultiLine: false, 
-      assetNames: names
-    };
+    
+    return { chartData: finalChartData, mainAssetData: mainAsset, isMultiLine: isMulti, assetNames: names };
   }, [currentData, selectedAssetId, assets, selectedAssetConfig, isLoading, targetDate, timeRange]);
-
-
+  
   const handleVisibilityChange = (assetId: string) => {
     setVisibleAssets(prev => ({
-      ...prev,
-      [assetId]: !prev[assetId],
+        ...prev,
+        [assetId]: !prev[assetId],
     }));
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header com seleção de ativo e período */}
+    <>
       <Card>
         <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 border-b">
           <div className="flex-1">
@@ -543,64 +653,45 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
             </Select>
           </div>
           <div className="flex items-center gap-2">
-              <Select value={timeRange} onValueChange={(value) => setTimeRange(value as TimeRange)}>
-                <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Selecione o período" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="7d">Últimos 7 dias</SelectItem>
-                    <SelectItem value="30d">Últimos 30 dias</SelectItem>
-                    <SelectItem value="90d">Últimos 90 dias</SelectItem>
-                    <SelectItem value="1y">Último Ano</SelectItem>
-                    <SelectItem value="5y">Últimos 5 Anos</SelectItem>
-                    <SelectItem value="all">Desde o Início</SelectItem>
-                </SelectContent>
-            </Select>
+              <div className="flex items-center gap-1 rounded-lg bg-muted p-1">
+                  <Button variant={timeRange === '7d' ? 'default' : 'ghost'} size="sm" onClick={() => setTimeRange('7d')} className="h-8">7D</Button>
+                  <Button variant={timeRange === '30d' ? 'default' : 'ghost'} size="sm" onClick={() => setTimeRange('30d')} className="h-8">30D</Button>
+                  <Button variant={timeRange === '90d' ? 'default' : 'ghost'} size="sm" onClick={() => setTimeRange('90d')} className="h-8">90D</Button>
+                  <Button variant={timeRange === '1y' ? 'default' : 'ghost'} size="sm" onClick={() => setTimeRange('1y')} className="h-8">1A</Button>
+                  <Button variant={timeRange === '5y' ? 'default' : 'ghost'} size="sm" onClick={() => setTimeRange('5y')} className="h-8">5A</Button>
+                  <Button variant={timeRange === 'all' ? 'default' : 'ghost'} size="sm" onClick={() => setTimeRange('all')} className="h-8">Tudo</Button>
+              </div>
+              <PdfExportButton
+                  data={{ 
+                      mainIndex: mainAssetData || undefined,
+                      secondaryIndices: [],
+                      currencies: [],
+                      otherAssets: [],
+                      targetDate,
+                  }}
+                  reportType="asset-detail"
+                  disabled={isLoading || chartData.length === 0}
+              />
           </div>
         </CardHeader>
+        <CardContent className="flex flex-col gap-8 p-4">
+          {mainAssetData ? <AssetInfo asset={mainAssetData} /> : <Skeleton className="h-24 w-full" />}
+          
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                <div className="lg:col-span-4 h-96 bg-background rounded-lg p-4 border">
+                    <HistoricalAnalysisChart 
+                        isLoading={isLoading}
+                        chartData={chartData}
+                        isMultiLine={isMultiLine}
+                        mainAssetData={mainAssetData}
+                        visibleAssets={visibleAssets}
+                        lineColors={lineColors}
+                        assetNames={assetNames}
+                    />
+                </div>
+            </div>
+        </CardContent>
       </Card>
-
-      {/* Tabs para diferentes visualizações */}
-      <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-          <TabsTrigger value="performance">Performance</TabsTrigger>
-          <TabsTrigger value="history">Histórico Completo</TabsTrigger>
-        </TabsList>
-
-        {/* Tab: Visão Geral */}
-        <TabsContent value="overview" className="space-y-6">
-          <AdvancedPerformanceChart 
-            quotes={currentData} 
-            assetId={selectedAssetId} 
-            isLoading={isLoading}
-            title="Análise de Performance"
-            showMetrics={true}
-          />
-        </TabsContent>
-
-        {/* Tab: Performance */}
-        <TabsContent value="performance" className="space-y-6">
-          <AdvancedPerformanceChart 
-            quotes={currentData} 
-            assetId={selectedAssetId} 
-            isLoading={isLoading}
-            title="Análise Detalhada de Performance"
-            showMetrics={true}
-          />
-        </TabsContent>
-
-        {/* Tab: Histórico Completo */}
-        <TabsContent value="history" className="space-y-6">
-          <AssetHistoricalTable 
-            assetId={selectedAssetId}
-            data={currentData}
-            assetConfig={selectedAssetConfig}
-            isLoading={isLoading}
-          />
-        </TabsContent>
-      </Tabs>
-    </div>
+    </>
   );
 }
-
