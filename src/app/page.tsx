@@ -166,7 +166,7 @@ export default function PDMDetailsPage() {
         if (!date) date = new Date(quote.timestamp as any);
 
         return {
-          date: date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+          date: date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' }),
           value,
           timestamp: date.getTime()
         };
