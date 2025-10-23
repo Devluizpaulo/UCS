@@ -227,10 +227,10 @@ export default function PDMDetailsPage() {
         {/* INTRODUCTION SECTION */}
         <section className="py-16 md:py-24 bg-muted/30">
           <div className="container mx-auto px-4 md:px-6">
-            <div className="mx-auto max-w-4xl text-center">
-              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.pdm.what_is.title}</h2>
-              <p className="mt-4 text-lg text-muted-foreground" dangerouslySetInnerHTML={{ __html: homeT.pdm.what_is.p1 }}></p>
-              <p className="mt-4 text-lg text-muted-foreground" dangerouslySetInnerHTML={{ __html: homeT.pdm.what_is.p2 }}></p>
+            <div className="mx-auto max-w-4xl">
+              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl text-center">{homeT.pdm.what_is.title}</h2>
+              <p className="mt-4 text-lg text-muted-foreground text-justify" dangerouslySetInnerHTML={{ __html: homeT.pdm.what_is.p1 }}></p>
+              <p className="mt-4 text-lg text-muted-foreground text-justify" dangerouslySetInnerHTML={{ __html: homeT.pdm.what_is.p2 }}></p>
             </div>
           </div>
         </section>
