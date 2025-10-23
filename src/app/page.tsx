@@ -163,7 +163,7 @@ export default function PDMDetailsPage() {
   const chartData = React.useMemo(() => {
     if (!ucsHistory || ucsHistory.length === 0) return [];
     
-    const startDate = new Date('2022-01-01');
+    const startDate = new Date('2023-01-01');
 
     return ucsHistory
       .map(quote => {
@@ -253,58 +253,56 @@ export default function PDMDetailsPage() {
         </section>
         
         <div className="container mx-auto px-4 md:px-6">
-            <div className="relative z-40 -mt-32">
-                <div className={cn(
-                      "transition-all duration-300",
-                      isScrolled 
-                        ? "sticky top-20 z-40 rounded-lg bg-background border shadow-xl text-foreground"
-                        : "bg-background/20 backdrop-blur-md border-white/20 text-white"
-                )}>
-                  <CardHeader className="text-center">
-                      <CardTitle className="text-xl font-bold">{homeT.quote.title}</CardTitle>
-                      <CardDescription className={isScrolled ? "text-muted-foreground" : "text-gray-300"}>
-                          {homeT.quote.subtitle}
-                      </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Carousel
-                      opts={{ align: "start", loop: true }}
-                      plugins={[autoplayPlugin.current]}
-                      onMouseEnter={() => autoplayPlugin.current.stop()}
-                      onMouseLeave={() => autoplayPlugin.current.play()}
-                      className="w-full"
-                    >
-                      <CarouselContent>
-                        {indexValues.map((item, index) => (
-                          <CarouselItem key={index} className="basis-full">
-                            <div className="flex flex-col items-center justify-center p-4">
-                              <div className="flex items-baseline gap-3">
-                                <span className="text-5xl font-extrabold">
-                                  {formatCurrency(item.value, item.currency, item.currency)}
-                                </span>
-                                <div className={cn(
-                                  'flex items-center text-lg font-semibold', 
-                                  item.change >= 0 ? 
-                                    (isScrolled ? 'text-green-600' : 'text-green-400') : 
-                                    (isScrolled ? 'text-red-600' : 'text-red-400')
-                                )}>
-                                    {item.change >= 0 ? <TrendingUp className="h-5 w-5 mr-1" /> : <TrendingDown className="h-5 w-5 mr-1" />}
-                                    {item.change.toFixed(2)}%
-                                </div>
-                              </div>
-                              {item.conversionRate && (
-                                <div className={cn("mt-2 text-sm", isScrolled ? "text-muted-foreground" : "text-gray-300")}>
-                                  {homeT.quote.conversionRate} {formatCurrency(item.conversionRate, 'BRL')}
-                                </div>
-                              )}
+          <div className="relative -mt-32">
+            <div className={cn(
+                  "transition-all duration-300",
+                  "bg-background/20 backdrop-blur-md border-white/20 text-white"
+            )}>
+              <CardHeader className="text-center">
+                  <CardTitle className="text-xl font-bold">{homeT.quote.title}</CardTitle>
+                  <CardDescription className="text-gray-300">
+                      {homeT.quote.subtitle}
+                  </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Carousel
+                  opts={{ align: "start", loop: true }}
+                  plugins={[autoplayPlugin.current]}
+                  onMouseEnter={() => autoplayPlugin.current.stop()}
+                  onMouseLeave={() => autoplayPlugin.current.play()}
+                  className="w-full"
+                >
+                  <CarouselContent>
+                    {indexValues.map((item, index) => (
+                      <CarouselItem key={index} className="basis-full">
+                        <div className="flex flex-col items-center justify-center p-4">
+                          <div className="flex items-baseline gap-3">
+                            <span className="text-5xl font-extrabold">
+                              {formatCurrency(item.value, item.currency, item.currency)}
+                            </span>
+                            <div className={cn(
+                              'flex items-center text-lg font-semibold', 
+                              item.change >= 0 ? 
+                                'text-green-400' : 
+                                'text-red-400'
+                            )}>
+                                {item.change >= 0 ? <TrendingUp className="h-5 w-5 mr-1" /> : <TrendingDown className="h-5 w-5 mr-1" />}
+                                {item.change.toFixed(2)}%
                             </div>
-                          </CarouselItem>
-                        ))}
-                      </CarouselContent>
-                    </Carousel>
-                  </CardContent>
-                </div>
-              </div>
+                          </div>
+                          {item.conversionRate && (
+                            <div className="mt-2 text-sm text-gray-300">
+                              {homeT.quote.conversionRate} {formatCurrency(item.conversionRate, 'BRL')}
+                            </div>
+                          )}
+                        </div>
+                      </CarouselItem>
+                    ))}
+                  </CarouselContent>
+                </Carousel>
+              </CardContent>
+            </div>
+          </div>
         </div>
 
         {/* INTRODUCTION SECTION */}
@@ -519,5 +517,3 @@ export default function PDMDetailsPage() {
     </div>
   );
 }
-
-    
