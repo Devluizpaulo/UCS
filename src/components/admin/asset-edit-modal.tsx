@@ -43,6 +43,7 @@ import type { CommodityPriceData } from '@/lib/types';
 import { formatCurrency } from '@/lib/formatters';
 import { runCompleteSimulation, type SimulationInput, type CalculationResult } from '@/lib/real-calculation-service';
 import { cn } from '@/lib/utils';
+import { ImpactPreview } from './impact-preview';
 
 const editSchema = z.object({
   price: z.preprocess(
@@ -224,93 +225,11 @@ export function AssetEditModal({ isOpen, onOpenChange, onSave, asset, allAssets 
                 </Form>
                 
                 {hasChanges && (
-                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
-                    <div className="flex items-center gap-2 mb-4">
-                      <TrendingUp className="h-5 w-5 text-blue-600" />
-                      <h3 className="font-semibold text-blue-900">Análise de Impacto</h3>
-                      <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                        {calculationResults.length} ativo(s) serão recalculados
-                      </Badge>
-                    </div>
-
-                    <div className="bg-green-100 border border-green-300 p-3 rounded-lg mb-4">
-                      <div className="flex items-start gap-2">
-                        <TrendingUp className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-                        <div className="text-sm text-green-800">
-                          <p className="font-medium">📊 Mudança Detectada</p>
-                          <p className="mt-1">
-                            <strong>{asset.name}:</strong> {formatCurrency(asset.price, asset.currency, asset.id)} → {formatCurrency(numericPrice, asset.currency, asset.id)}
-                            {' '}({((numericPrice - asset.price) / asset.price * 100).toFixed(4)}%)
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-blue-100 border border-blue-300 p-3 rounded-lg mb-4">
-                      <div className="flex items-start gap-2">
-                        <AlertTriangle className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                        <div className="text-sm text-blue-800">
-                          <p className="font-medium">⚠️ Cálculos em Tempo Real</p>
-                          <p className="mt-1">
-                            Os valores são calculados usando as fórmulas exatas do N8N. 
-                            Esta prévia mostra os cálculos que serão aplicados ao salvar.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {calculationResults.length > 0 ? (
-                      <div className="space-y-3 max-h-64 overflow-y-auto">
-                        {calculationResults.map((result, index) => {
-                          const percentChange = result.currentValue > 0 
-                            ? ((result.newValue - result.currentValue) / result.currentValue) * 100 
-                            : (result.newValue > 0 ? 100 : 0);
-
-                          return (
-                            <div key={result.id}>
-                              {index > 0 && <Separator className="my-2" />}
-                              <div className="flex items-center justify-between">
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <span className="font-medium text-sm">{result.name}</span>
-                                    <Badge variant="outline" className="text-xs">
-                                      Calculado
-                                    </Badge>
-                                  </div>
-                                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                                    <span>
-                                      Atual: {formatCurrency(result.currentValue, 'BRL', result.id)}
-                                    </span>
-                                    <span>→</span>
-                                    <span className="text-green-600 font-medium">
-                                      Novo: {formatCurrency(result.newValue, 'BRL', result.id)}
-                                    </span>
-                                    <span className={`font-medium ${percentChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                      {result.currentValue === 0 && result.newValue > 0 
-                                        ? 'Novo' 
-                                        : `${percentChange >= 0 ? '+' : ''}${percentChange.toFixed(2)}%`
-                                      }
-                                    </span>
-                                  </div>
-                                  <div className="text-xs text-blue-600 mt-1">
-                                    {result.formula}
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <TrendingUp className="h-4 w-4 text-blue-500" />
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <div className="text-center py-4 text-muted-foreground">
-                        <AlertTriangle className="h-8 w-8 mx-auto mb-2 text-yellow-500" />
-                        <p className="text-sm">Calculando impactos...</p>
-                      </div>
-                    )}
-                  </div>
+                  <ImpactPreview 
+                    editedAsset={asset}
+                    newValue={numericPrice}
+                    allAssets={allAssets}
+                  />
                 )}
               </div>
           </DialogBody>
@@ -454,3 +373,5 @@ export function AssetEditModal({ isOpen, onOpenChange, onSave, asset, allAssets 
     </>
   );
 }
+
+    
