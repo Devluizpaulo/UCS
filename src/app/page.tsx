@@ -163,6 +163,8 @@ export default function PDMDetailsPage() {
   const chartData = React.useMemo(() => {
     if (!ucsHistory || ucsHistory.length === 0) return [];
     
+    const startDate = new Date('2022-01-01');
+
     return ucsHistory
       .map(quote => {
         const value = quote.valor_brl ?? quote.resultado_final_brl ?? quote.valor;
@@ -184,7 +186,7 @@ export default function PDMDetailsPage() {
             } catch { date = null; }
         }
 
-        if (!date) return null;
+        if (!date || date < startDate) return null;
 
         return {
           date: format(date, 'dd/MM/yy'),
@@ -249,60 +251,60 @@ export default function PDMDetailsPage() {
             </div>
           </div>
         </section>
-
-        <div className="relative z-40 -mt-32">
-          <div className="container mx-auto px-4 md:px-6">
-            <div className={cn(
-                  "sticky top-20 z-40 rounded-lg transition-all duration-300",
-                  isScrolled 
-                    ? "bg-background border shadow-xl text-foreground"
-                    : "bg-background/20 backdrop-blur-md border-white/20 text-white"
-            )}>
-              <CardHeader className="text-center">
-                  <CardTitle className="text-xl font-bold">{homeT.quote.title}</CardTitle>
-                  <CardDescription className={isScrolled ? "text-muted-foreground" : "text-gray-300"}>
-                      {homeT.quote.subtitle}
-                  </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Carousel
-                  opts={{ align: "start", loop: true }}
-                  plugins={[autoplayPlugin.current]}
-                  onMouseEnter={() => autoplayPlugin.current.stop()}
-                  onMouseLeave={() => autoplayPlugin.current.play()}
-                  className="w-full"
-                >
-                  <CarouselContent>
-                    {indexValues.map((item, index) => (
-                      <CarouselItem key={index} className="basis-full">
-                        <div className="flex flex-col items-center justify-center p-4">
-                          <div className="flex items-baseline gap-3">
-                            <span className="text-5xl font-extrabold">
-                              {formatCurrency(item.value, item.currency, item.currency)}
-                            </span>
-                            <div className={cn(
-                              'flex items-center text-lg font-semibold', 
-                              item.change >= 0 ? 
-                                (isScrolled ? 'text-green-600' : 'text-green-400') : 
-                                (isScrolled ? 'text-red-600' : 'text-red-400')
-                            )}>
-                                {item.change >= 0 ? <TrendingUp className="h-5 w-5 mr-1" /> : <TrendingDown className="h-5 w-5 mr-1" />}
-                                {item.change.toFixed(2)}%
+        
+        <div className="container mx-auto px-4 md:px-6">
+            <div className="relative z-40 -mt-32">
+                <div className={cn(
+                      "transition-all duration-300",
+                      isScrolled 
+                        ? "sticky top-20 z-40 rounded-lg bg-background border shadow-xl text-foreground"
+                        : "bg-background/20 backdrop-blur-md border-white/20 text-white"
+                )}>
+                  <CardHeader className="text-center">
+                      <CardTitle className="text-xl font-bold">{homeT.quote.title}</CardTitle>
+                      <CardDescription className={isScrolled ? "text-muted-foreground" : "text-gray-300"}>
+                          {homeT.quote.subtitle}
+                      </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Carousel
+                      opts={{ align: "start", loop: true }}
+                      plugins={[autoplayPlugin.current]}
+                      onMouseEnter={() => autoplayPlugin.current.stop()}
+                      onMouseLeave={() => autoplayPlugin.current.play()}
+                      className="w-full"
+                    >
+                      <CarouselContent>
+                        {indexValues.map((item, index) => (
+                          <CarouselItem key={index} className="basis-full">
+                            <div className="flex flex-col items-center justify-center p-4">
+                              <div className="flex items-baseline gap-3">
+                                <span className="text-5xl font-extrabold">
+                                  {formatCurrency(item.value, item.currency, item.currency)}
+                                </span>
+                                <div className={cn(
+                                  'flex items-center text-lg font-semibold', 
+                                  item.change >= 0 ? 
+                                    (isScrolled ? 'text-green-600' : 'text-green-400') : 
+                                    (isScrolled ? 'text-red-600' : 'text-red-400')
+                                )}>
+                                    {item.change >= 0 ? <TrendingUp className="h-5 w-5 mr-1" /> : <TrendingDown className="h-5 w-5 mr-1" />}
+                                    {item.change.toFixed(2)}%
+                                </div>
+                              </div>
+                              {item.conversionRate && (
+                                <div className={cn("mt-2 text-sm", isScrolled ? "text-muted-foreground" : "text-gray-300")}>
+                                  {homeT.quote.conversionRate} {formatCurrency(item.conversionRate, 'BRL')}
+                                </div>
+                              )}
                             </div>
-                          </div>
-                          {item.conversionRate && (
-                            <div className={cn("mt-2 text-sm", isScrolled ? "text-muted-foreground" : "text-gray-300")}>
-                              {homeT.quote.conversionRate} {formatCurrency(item.conversionRate, 'BRL')}
-                            </div>
-                          )}
-                        </div>
-                      </CarouselItem>
-                    ))}
-                  </CarouselContent>
-                </Carousel>
-              </CardContent>
-            </div>
-          </div>
+                          </CarouselItem>
+                        ))}
+                      </CarouselContent>
+                    </Carousel>
+                  </CardContent>
+                </div>
+              </div>
         </div>
 
         {/* INTRODUCTION SECTION */}
