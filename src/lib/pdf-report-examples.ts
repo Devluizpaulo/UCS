@@ -1,4 +1,3 @@
-
 /**
  * Exemplos de uso dos novos tipos de relatório do UCS Index
  * Este arquivo demonstra como configurar dados para cada tipo de relatório
