@@ -3,8 +3,12 @@
 
 import * as React from 'react';
 import {
-  LineChart,
+  LineChart as RechartsLineChart,
+  BarChart as RechartsBarChart,
   Line,
+  Bar,
+  Area,
+  AreaChart,
   XAxis,
   YAxis,
   Tooltip,
@@ -17,7 +21,7 @@ import {
 import { formatCurrency } from '@/lib/formatters';
 import type { CommodityPriceData } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertCircle, TrendingUp, Download, Share2, ZoomIn, ZoomOut, RotateCcw, BarChart3, TrendingDown, Calendar, BarChart, Activity, RefreshCw } from 'lucide-react';
+import { AlertCircle, TrendingUp, Download, Share2, ZoomIn, ZoomOut, RotateCcw, BarChart3, TrendingDown, Calendar, BarChart, Activity, RefreshCw, LineChart } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -440,6 +444,61 @@ export const HistoricalAnalysisChart = React.memo(({
     return <EnhancedChartSkeleton />;
   }
 
+  const ChartComponent = chartType === 'bar' ? RechartsBarChart : chartType === 'area' ? AreaChart : RechartsLineChart;
+  
+  const ChartElement = isMultiLine
+    ? Object.keys(visibleAssets)
+        .filter(key => visibleAssets[key])
+        .map((key, index) => {
+          const commonProps = {
+            key: key,
+            type: "monotone" as const,
+            dataKey: key,
+            name: assetNames[key] || key.toUpperCase(),
+            stroke: lineColors[key],
+            strokeWidth: activeLegend === key ? 4 : 2.5,
+            dot: false,
+            activeDot: { 
+              r: 6, 
+              strokeWidth: 2, 
+              stroke: lineColors[key],
+              fill: 'white',
+              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))'
+            },
+            yAxisId: "left" as const,
+            strokeOpacity: activeLegend && activeLegend !== key ? 0.3 : 1,
+            animationDuration: 800 + (index * 100),
+            animationEasing: "ease-in-out" as const,
+            connectNulls: false,
+          };
+          if (chartType === 'bar') return <Bar {...commonProps} fill={lineColors[key]} />;
+          if (chartType === 'area') return <Area {...commonProps} fill={`url(#gradient-${key})`} />;
+          return <Line {...commonProps} />;
+        })
+    : (() => {
+        const commonProps = {
+            type: "monotone" as const,
+            dataKey: "value",
+            name: "Preço",
+            stroke: "hsl(var(--chart-1))",
+            strokeWidth: 3,
+            dot: false,
+            activeDot: { 
+              r: 6, 
+              strokeWidth: 2, 
+              stroke: 'hsl(var(--chart-1))',
+              fill: 'white',
+              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))'
+            },
+            yAxisId: "left" as const,
+            animationDuration: 1000,
+            animationEasing: "ease-in-out" as const,
+          };
+          if (chartType === 'bar') return <Bar {...commonProps} fill="hsl(var(--chart-1))" />;
+          if (chartType === 'area') return <Area {...commonProps} fill="url(#chart-bg)" />;
+          return <Line {...commonProps} />;
+    })();
+
   return (
     <div className="w-full h-full space-y-4">
       {/* Chart Controls */}
@@ -451,7 +510,7 @@ export const HistoricalAnalysisChart = React.memo(({
               width="100%" 
               height={isMobile ? 300 : 450}
             >
-              <LineChart 
+              <ChartComponent 
                 data={calculateMovingAverage || chartData} 
                 margin={{ top: 20, right: 30, bottom: 20, left: 20 }}
               >
@@ -493,11 +552,6 @@ export const HistoricalAnalysisChart = React.memo(({
               tickLine={false}
               axisLine={false}
               interval="preserveStartEnd"
-              tickFormatter={(value) => {
-                const date = new Date(value);
-                return isMobile ? date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) 
-                               : date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
-              }}
             />
             
             <YAxis
@@ -537,7 +591,7 @@ export const HistoricalAnalysisChart = React.memo(({
               <>
                 <ReferenceLine 
                   y={mainAssetData.price} 
-                  stroke="hsl(var(--primary))" _
+                  stroke="hsl(var(--primary))"
                   strokeDasharray="5 5" 
                   opacity={0.8}
                   label={{ value: "Preço Atual", position: "top" }}
@@ -546,76 +600,29 @@ export const HistoricalAnalysisChart = React.memo(({
             )}
             
             {/* Dynamic Lines with enhanced animations */}
-            {isMultiLine ? (
-              Object.keys(visibleAssets)
-                .filter(key => visibleAssets[key])
-                .map((key, index) => (
-                  <Line
-                    key={key}
-                    type="monotone"
-                    dataKey={key}
-                    name={assetNames[key] || key.toUpperCase()}
-                    stroke={lineColors[key]}
-                    strokeWidth={activeLegend === key ? 4 : 2.5}
-                    dot={false}
-                    activeDot={{ 
-                      r: 6, 
-                      strokeWidth: 2, 
-                      stroke: lineColors[key],
-                      fill: 'white',
-                      filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))'
-                    }}
-                    yAxisId="left"
-                    strokeOpacity={activeLegend && activeLegend !== key ? 0.3 : 1}
-                    animationDuration={800 + (index * 100)}
-                    animationEasing="ease-in-out"
-                    connectNulls={false}
-                  />
-                ))
-            ) : (
-              <>
-                <Line 
-                  type="monotone" 
-                  dataKey="value" 
-                  name="Preço" 
-                  stroke="hsl(var(--chart-1))" 
-                  strokeWidth={3}
-                  dot={false} 
-                  activeDot={{ 
-                    r: 6, 
-                    strokeWidth: 2, 
-                    stroke: 'hsl(var(--chart-1))',
-                    fill: 'white',
-                    filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))'
-                  }} 
-                  yAxisId="left"
-                  animationDuration={1000}
-                  animationEasing="ease-in-out"
-                />
-                
-                {/* Moving Average Line */}
-                {showMovingAverage && calculateMovingAverage && (
-                  <Line 
-                    type="monotone" 
-                    dataKey="movingAverage" 
-                    name="Média Móvel (7 dias)" 
-                    stroke="#8884d8" 
-                    strokeWidth={2}
-                    strokeDasharray="5 5"
-                    dot={false} 
-                    activeDot={{ 
-                      r: 4, 
-                      strokeWidth: 2, 
-                      stroke: "#8884d8",
-                      fill: 'white',
-                      filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))'
-                    }} 
-                    yAxisId="left"
-                    animationDuration={1200}
-                    animationEasing="ease-in-out"
-                  />
-                )}
-              </>
+            {ChartElement}
+            
+            {/* Moving Average Line */}
+            {showMovingAverage && calculateMovingAverage && (
+              <Line 
+                type="monotone" 
+                dataKey="movingAverage" 
+                name="Média Móvel (7 dias)" 
+                stroke="#8884d8" 
+                strokeWidth={2}
+                strokeDasharray="5 5"
+                dot={false} 
+                activeDot={{ 
+                  r: 4, 
+                  strokeWidth: 2, 
+                  stroke: "#8884d8",
+                  fill: 'white',
+                  filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))'
+                }} 
+                yAxisId="left"
+                animationDuration={1200}
+                animationEasing="ease-in-out"
+              />
             )}
             
             {/* Brush for zoom functionality */}
@@ -632,7 +639,7 @@ export const HistoricalAnalysisChart = React.memo(({
                 }}
               />
             )}
-          </LineChart>
+          </ChartComponent>
         </ResponsiveContainer>
       </div>
       
