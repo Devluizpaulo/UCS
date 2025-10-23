@@ -3,13 +3,12 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { DollarSign, Euro, Leaf, User, ShieldCheck, Target, BarChart3, Scale, Microscope, FileText, Landmark, FileJson, CheckCircle, Search, GitBranch, Banknote, Building, Trees, Globe, ChevronRight, TrendingUp, TrendingDown, Minus, Blocks, TreePine, LandPlot, Briefcase, Award } from "lucide-react";
+import { DollarSign, Euro, User, ShieldCheck, Target, BarChart3, Scale, Microscope, FileText, Landmark, FileJson, CheckCircle, Search, GitBranch, Banknote, Building, Trees, Globe, ChevronRight, TrendingUp, TrendingDown, Minus, Blocks, TreePine, LandPlot, Briefcase, Award } from "lucide-react";
 import Image from 'next/image';
 import Link from 'next/link';
 import { LogoUCS } from "@/components/logo-bvm";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 import { formatCurrency } from "@/lib/formatters";
 import type { CommodityPriceData } from '@/lib/types';
@@ -19,6 +18,7 @@ import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/language-context';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { getLandingPageSettings, type LandingPageSettings } from '@/lib/settings-actions';
 
 // Tipo local para incluir dados de conversão
 type IndexValue = {
@@ -31,10 +31,12 @@ type IndexValue = {
 
 export default function PDMDetailsPage() {
   const [allPrices, setAllPrices] = React.useState<CommodityPriceData[]>([]);
-  const { t } = useLanguage();
+  const [settings, setSettings] = React.useState<LandingPageSettings | null>(null);
+  const { language, t } = useLanguage();
   
   React.useEffect(() => {
     getCommodityPrices().then(setAllPrices);
+    getLandingPageSettings().then(setSettings);
   }, []);
   
   const autoplayPlugin = React.useRef(
@@ -82,6 +84,8 @@ export default function PDMDetailsPage() {
   
   const indexValues = getIndexValues();
   
+  const heroContent = settings ? settings[language] : { title: t.home.hero.title, subtitle: t.home.hero.subtitle };
+
   const homeT = t.home;
 
   const pilaresPDM = [
@@ -170,10 +174,10 @@ export default function PDMDetailsPage() {
             
             <div className="flex flex-col items-center gap-4 px-4 md:px-6">
               <h1 className="text-4xl font-extrabold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl text-white drop-shadow-lg animate-fade-in-down">
-                {homeT.pdm.title}
+                {heroContent.title}
               </h1>
               <p className="mx-auto max-w-3xl text-lg text-gray-200 md:text-xl drop-shadow-md animate-fade-in-up">
-                {homeT.pdm.subtitle}
+                {heroContent.subtitle}
               </p>
             </div>
 
