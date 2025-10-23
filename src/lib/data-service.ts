@@ -1,3 +1,4 @@
+
 'use server';
 
 import { getFirebaseAdmin } from '@/lib/firebase-admin-config';
@@ -560,10 +561,10 @@ export async function checkCompositionData(targetDate: Date): Promise<{
             const serializedData = serializeFirestoreTimestamp(rawData);
             result[collectionId as keyof typeof result] = {
               id: latestDoc.id,
-              data: serializedData.data,
-              valor: serializedData.valor,
-              componentes: serializedData.componentes,
-              hasRequiredFields: !!(serializedData.valor && serializedData.componentes),
+              data: rawData.data,
+              valor: rawData.valor,
+              componentes: rawData.componentes,
+              hasRequiredFields: !!(rawData.valor && rawData.componentes),
               isHistorical: true
             };
             result.recommendations.push(`Importar dados para ${collectionId} na data ${formattedDate}`);
@@ -821,10 +822,37 @@ export async function getQuoteByDate(assetId: string, date: Date): Promise<Fires
 
     if (!snapshot.empty) {
       const doc = snapshot.docs[0];
-      const rawData = doc.data();
-      const normalizedData = normalizeAssetData(rawData);
-      const result = serializeFirestoreTimestamp({ id: doc.id, ...normalizedData }) as FirestoreQuote;
-      return result;
+      let docData = doc.data();
+
+      // Verifica se a variação precisa ser calculada
+      if (docData.variacao_pct === null || docData.variacao_pct === undefined) {
+        const previousDate = subDays(date, 1);
+        const previousDoc = await getQuoteByDate(assetId, previousDate);
+        
+        if (previousDoc) {
+          const { price: currentPrice } = extractPriceFromQuote(docData);
+          const { price: previousPrice } = extractPriceFromQuote(previousDoc);
+          
+          if (currentPrice > 0 && previousPrice > 0) {
+            const { change, absoluteChange } = calculatePriceChange(currentPrice, previousPrice);
+            
+            // Prepara os dados para atualização, garantindo que não sejam nulos
+            const updateData = {
+              variacao_pct: change,
+              variacao_abs: absoluteChange
+            };
+
+            // Atualiza o documento no Firestore
+            await doc.ref.update(updateData);
+            
+            // Atualiza os dados em memória para retornar o valor correto
+            docData = { ...docData, ...updateData };
+          }
+        }
+      }
+
+      const normalizedData = normalizeAssetData(docData);
+      return serializeFirestoreTimestamp({ id: doc.id, ...normalizedData }) as FirestoreQuote;
     }
     
     // Fallback: se não encontrar na data exata, busca a mais recente ANTERIOR à data
@@ -870,20 +898,15 @@ export async function getCommodityPricesByDate(date: Date): Promise<CommodityPri
 
   try {
     const configs = await getCommodityConfigs();
-    const previousDate = subDays(date, 1);
     const displayDate = format(date, 'dd/MM/yyyy');
 
     const assetPromises = configs.map(async (config) => {
-      const [latestDoc, previousDoc] = await Promise.all([
-        getQuoteByDate(config.id, date),
-        getQuoteByDate(config.id, previousDate)
-      ]);
+      const latestDoc = await getQuoteByDate(config.id, date);
       
       const { price: latestPrice } = extractPriceFromQuote(latestDoc);
-      const { price: previousPrice } = extractPriceFromQuote(previousDoc);
-      
-      const { change, absoluteChange } = calculatePriceChange(latestPrice, previousPrice);
-      
+      const change = latestDoc?.variacao_pct ?? 0;
+      const absoluteChange = latestDoc?.variacao_abs ?? 0;
+
       if (config.id === 'ucs_ase' && latestDoc) {
         return {
           ...config,
@@ -925,18 +948,13 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
   try {
     const configs = await getCommodityConfigs();
     const today = new Date();
-    const yesterday = subDays(today, 1);
     
     const assetPromises = configs.map(async (config) => {
-      const [latestDoc, previousDoc] = await Promise.all([
-        getQuoteByDate(config.id, today),
-        getQuoteByDate(config.id, yesterday)
-      ]);
+      const latestDoc = await getQuoteByDate(config.id, today);
 
       const { price: latestPrice } = extractPriceFromQuote(latestDoc);
-      const { price: previousPrice } = extractPriceFromQuote(previousDoc);
-      
-      const { change, absoluteChange } = calculatePriceChange(latestPrice, previousPrice);
+      const change = latestDoc?.variacao_pct ?? 0;
+      const absoluteChange = latestDoc?.variacao_abs ?? 0;
 
       const lastUpdated = latestDoc?.timestamp 
         ? formatTimestamp(latestDoc.timestamp)
