@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -301,7 +302,7 @@ const AdvancedPerformanceChart = ({
                 value={`${metrics.volatility.toFixed(2)}%`}
                 icon={<Activity className="h-5 w-5" />}
                 trend="neutral"
-                subtitle="Desvio padrão diário"
+                subtitle="Desvio padrão anualizado"
               />
               <MetricCard
                 title="Max Drawdown"
@@ -315,7 +316,7 @@ const AdvancedPerformanceChart = ({
                 value={metrics.sharpeRatio.toFixed(2)}
                 icon={<Target className="h-5 w-5" />}
                 trend={metrics.sharpeRatio >= 1 ? 'positive' : metrics.sharpeRatio >= 0 ? 'neutral' : 'negative'}
-                subtitle="Retorno/risco"
+                subtitle="Retorno/risco (anualizado)"
               />
             </div>
           </div>

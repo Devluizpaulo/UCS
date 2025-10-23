@@ -580,3 +580,4 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
   );
 }
 
+
