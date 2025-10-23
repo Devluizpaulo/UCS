@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -525,147 +526,149 @@ export const HistoricalAnalysisChart = React.memo(({
       {/* Chart Controls */}
       {showMetrics && <ChartControls />}
       
-          {/* Main Chart */}
-          <div className="relative">
-            <ResponsiveContainer 
-              width="100%" 
-              height={isMobile ? 300 : 450}
-            >
-              <ChartComponent 
-                data={calculateMovingAverage || chartData} 
-                margin={{ top: 20, right: 30, bottom: 20, left: 20 }}
-              >
-            <defs>
-              <linearGradient id="chart-bg" x1="0" y1="0" x2="0" y2="1">
-                <stop 
-                  offset="5%" 
-                  stopColor={resolvedTheme === 'dark' ? "hsl(var(--chart-1) / 0.15)" : "hsl(var(--chart-1) / 0.08)"} 
-                  stopOpacity={0.15}
-                />
-                <stop 
-                  offset="95%" 
-                  stopColor={resolvedTheme === 'dark' ? "hsl(var(--chart-1) / 0.02)" : "hsl(var(--chart-1) / 0.02)"} 
-                  stopOpacity={0.02}
-                />
-              </linearGradient>
-              
-              {/* Gradient for each line */}
-              {Object.keys(lineColors).map(key => (
-                <linearGradient key={key} id={`gradient-${key}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={lineColors[key]} stopOpacity={0.8} />
-                  <stop offset="95%" stopColor={lineColors[key]} stopOpacity={0.1} />
-                </linearGradient>
-              ))}
-            </defs>
-            
-            <CartesianGrid 
-              vertical={false} 
-              horizontal={true}
-              stroke="hsl(var(--border))" 
-              opacity={0.3}
-              strokeDasharray="2 4"
-            />
-            
-            <XAxis
-              dataKey="date"
-              stroke="hsl(var(--muted-foreground))"
-              fontSize={isMobile ? 10 : 12}
-              tickLine={false}
-              axisLine={false}
-              interval="preserveStartEnd"
-            />
-            
-            <YAxis
-              stroke="hsl(var(--muted-foreground))"
-              fontSize={isMobile ? 10 : 12}
-              tickLine={false}
-              axisLine={false}
-              domain={[0, 'dataMax + 100']}
-              tickFormatter={(value) => formatCurrency(value as number, mainAssetData?.currency || 'BRL', mainAssetData?.id)}
-              yAxisId="left"
-              width={isMobile ? 60 : 80}
-            />
-            
-            <Tooltip
-              content={isMultiLine ? <EnhancedMultiLineTooltip /> : <EnhancedDefaultTooltip asset={mainAssetData} />}
-              cursor={{ stroke: 'hsl(var(--primary))', strokeWidth: 1, strokeDasharray: '3 3', opacity: 0.5 }}
-              animationDuration={200}
-            />
-            
-            {isMultiLine && (
-              <Legend
-                verticalAlign="top"
-                align="right"
-                iconType="circle"
-                wrapperStyle={{ 
-                  right: -10, 
-                  top: -5,
-                  fontSize: isMobile ? '10px' : '12px'
-                }}
-                onMouseEnter={(props) => setActiveLegend(props.dataKey as string)}
-                onMouseLeave={() => setActiveLegend(null)}
-              />
-            )}
-            
-            {/* Reference Lines for better analysis */}
-            {mainAssetData?.price && !isMultiLine && (
-              <>
-                <ReferenceLine 
-                  y={mainAssetData.price} 
-                  stroke="hsl(var(--primary))"
-                  strokeDasharray="5 5" 
-                  opacity={0.8}
-                  label={{ value: "Preço Atual", position: "top" }}
-                />
-              </>
-            )}
-            
-            {/* Dynamic Lines with enhanced animations */}
-            {ChartElement}
-            
-            {/* Moving Average Line */}
-            {showMovingAverage && calculateMovingAverage && (
-              <Line 
-                type="monotone" 
-                dataKey="movingAverage" 
-                name="Média Móvel (7 dias)" 
-                stroke="#8884d8" 
-                strokeWidth={2}
-                strokeDasharray="5 5"
-                dot={false} 
-                activeDot={{ 
-                  r: 4, 
-                  strokeWidth: 2, 
-                  stroke: "#8884d8",
-                  fill: 'white',
-                  filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))'
-                }} 
-                yAxisId="left"
-                animationDuration={1200}
-                animationEasing="ease-in-out"
-              />
-            )}
-            
-            {/* Brush for zoom functionality */}
-            {showBrush && (
-              <Brush
-                dataKey="date"
-                height={30}
-                stroke="hsl(var(--primary))"
-                fill="hsl(var(--primary) / 0.1)"
-                onChange={(domain) => {
-                  if (domain && domain.startIndex !== undefined && domain.endIndex !== undefined) {
-                    setZoomDomain([domain.startIndex, domain.endIndex]);
-                  }
-                }}
-              />
-            )}
-          </ChartComponent>
-        </ResponsiveContainer>
-      </div>
-      
-      {/* Performance Metrics */}
-      {showMetrics && <PerformanceMetrics data={chartData} mainAsset={mainAssetData} />}
+        <div className="h-full w-full">
+            {/* Main Chart */}
+            <div className="relative">
+                <ResponsiveContainer 
+                width="100%" 
+                height={isMobile ? 300 : 450}
+                >
+                <ChartComponent 
+                    data={calculateMovingAverage || chartData} 
+                    margin={{ top: 20, right: 30, bottom: 20, left: 20 }}
+                >
+                    <defs>
+                    <linearGradient id="chart-bg" x1="0" y1="0" x2="0" y2="1">
+                        <stop 
+                        offset="5%" 
+                        stopColor={resolvedTheme === 'dark' ? "hsl(var(--chart-1) / 0.15)" : "hsl(var(--chart-1) / 0.08)"} 
+                        stopOpacity={0.15}
+                        />
+                        <stop 
+                        offset="95%" 
+                        stopColor={resolvedTheme === 'dark' ? "hsl(var(--chart-1) / 0.02)" : "hsl(var(--chart-1) / 0.02)"} 
+                        stopOpacity={0.02}
+                        />
+                    </linearGradient>
+                    
+                    {/* Gradient for each line */}
+                    {Object.keys(lineColors).map(key => (
+                        <linearGradient key={key} id={`gradient-${key}`} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor={lineColors[key]} stopOpacity={0.8} />
+                        <stop offset="95%" stopColor={lineColors[key]} stopOpacity={0.1} />
+                        </linearGradient>
+                    ))}
+                    </defs>
+                    
+                    <CartesianGrid 
+                    vertical={false} 
+                    horizontal={true}
+                    stroke="hsl(var(--border))" 
+                    opacity={0.3}
+                    strokeDasharray="2 4"
+                    />
+                    
+                    <XAxis
+                    dataKey="date"
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={isMobile ? 10 : 12}
+                    tickLine={false}
+                    axisLine={false}
+                    interval="preserveStartEnd"
+                    />
+                    
+                    <YAxis
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={isMobile ? 10 : 12}
+                    tickLine={false}
+                    axisLine={false}
+                    domain={[0, 'dataMax + 100']}
+                    tickFormatter={(value) => formatCurrency(value as number, mainAssetData?.currency || 'BRL', mainAssetData?.id)}
+                    yAxisId="left"
+                    width={isMobile ? 60 : 80}
+                    />
+                    
+                    <Tooltip
+                    content={isMultiLine ? <EnhancedMultiLineTooltip /> : <EnhancedDefaultTooltip asset={mainAssetData} />}
+                    cursor={{ stroke: 'hsl(var(--primary))', strokeWidth: 1, strokeDasharray: '3 3', opacity: 0.5 }}
+                    animationDuration={200}
+                    />
+                    
+                    {isMultiLine && (
+                    <Legend
+                        verticalAlign="top"
+                        align="right"
+                        iconType="circle"
+                        wrapperStyle={{ 
+                        right: -10, 
+                        top: -5,
+                        fontSize: isMobile ? '10px' : '12px'
+                        }}
+                        onMouseEnter={(props) => setActiveLegend(props.dataKey as string)}
+                        onMouseLeave={() => setActiveLegend(null)}
+                    />
+                    )}
+                    
+                    {/* Reference Lines for better analysis */}
+                    {mainAssetData?.price && !isMultiLine && (
+                    <>
+                        <ReferenceLine 
+                        y={mainAssetData.price} 
+                        stroke="hsl(var(--primary))"
+                        strokeDasharray="5 5" 
+                        opacity={0.8}
+                        label={{ value: "Preço Atual", position: "top" }}
+                        />
+                    </>
+                    )}
+                    
+                    {/* Dynamic Lines with enhanced animations */}
+                    {ChartElement}
+                    
+                    {/* Moving Average Line */}
+                    {showMovingAverage && calculateMovingAverage && (
+                    <Line 
+                        type="monotone" 
+                        dataKey="movingAverage" 
+                        name="Média Móvel (7 dias)" 
+                        stroke="#8884d8" 
+                        strokeWidth={2}
+                        strokeDasharray="5 5"
+                        dot={false} 
+                        activeDot={{ 
+                        r: 4, 
+                        strokeWidth: 2, 
+                        stroke: "#8884d8",
+                        fill: 'white',
+                        filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))'
+                        }} 
+                        yAxisId="left"
+                        animationDuration={1200}
+                        animationEasing="ease-in-out"
+                    />
+                    )}
+                    
+                    {/* Brush for zoom functionality */}
+                    {showBrush && (
+                    <Brush
+                        dataKey="date"
+                        height={30}
+                        stroke="hsl(var(--primary))"
+                        fill="hsl(var(--primary) / 0.1)"
+                        onChange={(domain) => {
+                        if (domain && domain.startIndex !== undefined && domain.endIndex !== undefined) {
+                            setZoomDomain([domain.startIndex, domain.endIndex]);
+                        }
+                        }}
+                    />
+                    )}
+                </ChartComponent>
+                </ResponsiveContainer>
+            </div>
+        
+            {/* Performance Metrics */}
+            {showMetrics && <PerformanceMetrics data={chartData} mainAsset={mainAssetData} />}
+        </div>
     </div>
   );
 });
