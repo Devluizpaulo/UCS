@@ -18,8 +18,7 @@ import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/language-context';
 import { getLandingPageSettings, type LandingPageSettings } from '@/lib/settings-actions';
 import { HistoricalAnalysisChart } from '@/components/charts/historical-analysis-chart';
-import { parse, isValid } from 'date-fns';
-import { format as formatDateFns } from 'date-fns';
+import { parse, isValid, format } from 'date-fns';
 
 
 // Tipo local para incluir dados de conversão
@@ -115,7 +114,6 @@ export default function PDMDetailsPage() {
   };
   
   const indexValues = getIndexValues();
-  const euroValue = indexValues.find(v => v.currency === 'EUR');
   
   const heroContent = settings ? settings[language] : { title: t.home.hero.title, subtitle: t.home.hero.subtitle };
 
@@ -194,7 +192,7 @@ export default function PDMDetailsPage() {
         if (!date || date < startDate) return null;
 
         return {
-          date: formatDateFns(date, 'dd/MM/yy'),
+          date: format(date, 'dd/MM/yy'),
           value,
           timestamp: date.getTime()
         };
@@ -254,32 +252,42 @@ export default function PDMDetailsPage() {
                 {heroContent.subtitle}
               </p>
             </div>
-             {euroValue && (
-                <div className="w-full max-w-md p-6 bg-black/30 backdrop-blur-md rounded-xl border border-white/10 text-white shadow-2xl">
-                    <div className="text-center">
-                        <p className="font-bold text-lg">{homeT.quote.title}</p>
-                        <p className="text-sm text-gray-300">{homeT.quote.subtitle}</p>
-                        <div className="my-4 flex items-center justify-center gap-3">
+            {indexValues.length > 0 && (
+              <div className="w-full max-w-md p-6 bg-background/20 backdrop-blur-md rounded-xl border border-white/20 text-white shadow-2xl">
+                <Carousel
+                  opts={{ align: "start", loop: true }}
+                  plugins={[autoplayPlugin.current]}
+                  className="w-full"
+                >
+                  <CarouselContent>
+                    {indexValues.map((item, index) => (
+                      <CarouselItem key={index}>
+                        <div className="text-center">
+                          <p className="font-bold text-lg">{homeT.quote.title}</p>
+                          <p className="text-sm text-gray-300">{homeT.quote.subtitle}</p>
+                          <div className="my-4 flex items-center justify-center gap-3">
                             <span className="text-6xl font-extrabold tracking-tight">
-                            {formatCurrency(euroValue.value, euroValue.currency, euroValue.currency)}
+                              {formatCurrency(item.value, item.currency, item.currency)}
                             </span>
                             <div className={cn(
-                                'flex items-center text-lg font-semibold', 
-                                euroValue.change >= 0 ? 
-                                'text-green-400' : 
-                                'text-red-400'
+                                'flex items-center text-lg font-semibold',
+                                item.change >= 0 ? 'text-green-400' : 'text-red-400'
                             )}>
-                                <TrendingUp className="h-5 w-5 mr-1" />
-                                {euroValue.change.toFixed(2)}%
+                              <TrendingUp className="h-5 w-5 mr-1" />
+                              {item.change.toFixed(2)}%
                             </div>
+                          </div>
+                          {item.conversionRate && (
+                            <p className="text-xs text-gray-400">
+                              {homeT.quote.conversionRate} {formatCurrency(item.conversionRate, 'BRL', item.currency)}
+                            </p>
+                          )}
                         </div>
-                        {euroValue.conversionRate && (
-                        <p className="text-xs text-gray-400">
-                            {homeT.quote.conversionRate} {formatCurrency(euroValue.conversionRate, 'BRL', 'eur')}
-                        </p>
-                        )}
-                    </div>
-                </div>
+                      </CarouselItem>
+                    ))}
+                  </CarouselContent>
+                </Carousel>
+              </div>
             )}
           </div>
         </section>
