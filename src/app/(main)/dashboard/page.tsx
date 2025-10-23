@@ -34,6 +34,7 @@ import { saveAs } from 'file-saver';
 import { formatCurrency } from '@/lib/formatters';
 import { PdfExportButton } from '@/components/pdf-export-button';
 import { ExcelExportButton } from '@/components/excel-export-button';
+import { DateComparison } from '@/components/admin/date-comparison';
 
 
 function getValidatedDate(dateString?: string | null): Date | null {
@@ -499,9 +500,13 @@ export default function DashboardPage() {
                     />
                 </div>
             )}
+            <div className="mt-8">
+              <DateComparison
+                currentDate={targetDate}
+                currentData={data}
+              />
+            </div>
         </main>
     </>
   );
 }
-
-    
