@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import { getFirebaseAdmin } from '@/lib/firebase-admin-config';
@@ -317,14 +316,20 @@ export async function calculateFrequencyAwareMetrics(quotes: FirestoreQuote[], a
 }> {
   const frequencyInfo = await detectQuoteFrequency(quotes);
   
-  if (quotes.length < 2) {
+  const sortedQuotes = [...quotes].sort((a, b) => {
+    const dateA = new Date(a.timestamp as any);
+    const dateB = new Date(b.timestamp as any);
+    return dateA.getTime() - dateB.getTime();
+  });
+
+  if (sortedQuotes.length < 2) {
     return {
       metrics: null,
       ...frequencyInfo
     };
   }
   
-  const prices = quotes
+  const prices = sortedQuotes
     .map(quote => extractPriceFromQuote(quote).price)
     .filter((price): price is number => price !== undefined && price > 0);
     
@@ -825,28 +830,17 @@ export async function getQuoteByDate(assetId: string, date: Date): Promise<Fires
     }
     
     const historicalSnapshot = await db.collection(assetId)
+      .where('data', '<', formattedDate)
       .orderBy('data', 'desc')
-      .limit(10)
+      .limit(1)
       .get();
       
     if (!historicalSnapshot.empty) {
-        for (const doc of historicalSnapshot.docs) {
-          const rawData = doc.data();
-          if (rawData.data) {
-            try {
-              const [day, month, year] = rawData.data.split('/');
-              const quoteDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-              
-              if (quoteDate <= date) {
-                const normalizedData = normalizeAssetData(rawData);
-                const result = serializeFirestoreTimestamp({ id: doc.id, ...normalizedData }) as FirestoreQuote;
-                return result;
-              }
-            } catch (error) {
-              continue;
-            }
-          }
-        }
+        const doc = historicalSnapshot.docs[0];
+        const rawData = doc.data();
+        const normalizedData = normalizeAssetData(rawData);
+        const result = serializeFirestoreTimestamp({ id: doc.id, ...normalizedData }) as FirestoreQuote;
+        return result;
     }
 
     return null;
@@ -1203,3 +1197,5 @@ export async function reprocessDate(date: Date): Promise<{ success: boolean; mes
     };
   }
 }
+
+    
