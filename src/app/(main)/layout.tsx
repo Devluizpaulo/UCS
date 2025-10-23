@@ -264,11 +264,11 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
                   <SidebarMenuButton
                     asChild
                     isActive={pathname.startsWith('/analysis/trends')}
-                    tooltip={{ children: 'Análise Histórica' }}
+                    tooltip={{ children: 'Análise Avançada' }}
                   >
                     <Link href="/analysis/trends">
                       <TrendingUp />
-                      <span>Análise Histórica</span>
+                      <span>Análise Avançada</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -281,18 +281,6 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
                     <Link href="/analysis/composition">
                       <PieChart />
                       <span>Composição</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem onClick={handleMenuItemClick}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname.startsWith('/analysis/statistics')}
-                    tooltip={{ children: 'Estatísticas e Performance' }}
-                  >
-                    <Link href="/analysis/statistics">
-                      <BarChart3 />
-                      <span>Estatísticas</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

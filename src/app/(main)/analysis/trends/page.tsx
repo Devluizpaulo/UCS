@@ -26,7 +26,7 @@ function TrendAnalysisContent() {
   return (
     <div className="flex min-h-screen w-full flex-col">
       <PageHeader
-        title="Análise de Trends e Séries Históricas"
+        title="Análise Avançada e Séries Históricas"
         description="Analise a performance histórica com gráficos interativos, tabelas detalhadas e métricas avançadas para cada ativo."
         icon={TrendingUp}
       >
