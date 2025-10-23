@@ -32,7 +32,8 @@ import {
   EyeOff,
   Download,
   RefreshCw,
-  LineChart
+  LineChart,
+  Loader2
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { HistoricalAnalysisChart } from '@/components/charts/historical-analysis-chart';
@@ -479,15 +480,24 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
     };
   
     const processedChartData = processData(currentData, selectedAssetId);
-    const latestQuote = currentData.length > 0 ? currentData[0] : null;
-    const latestPrice = latestQuote ? getPriceFromQuote(latestQuote, selectedAssetId) : 0;
+    
+    // CORREÇÃO: Usar a data alvo para encontrar a cotação correta
+    const quoteForDate = currentData.find(q => {
+        if (!q || !q.data) return false;
+        try {
+            const quoteDate = parse(q.data, 'dd/MM/yyyy', new Date());
+            return format(quoteDate, 'yyyy-MM-dd') === format(targetDate, 'yyyy-MM-dd');
+        } catch { return false; }
+    }) || currentData[0]; // Fallback para o mais recente se não achar
+    
+    const latestPrice = quoteForDate ? getPriceFromQuote(quoteForDate, selectedAssetId) : 0;
     
     const mainAsset: CommodityPriceData = {
       ...(selectedAssetConfig as CommodityConfig),
       price: latestPrice || 0,
-      change: latestQuote?.variacao_pct ?? 0,
-      absoluteChange: (getPriceFromQuote(latestQuote as FirestoreQuote, selectedAssetId) ?? 0) - (getPriceFromQuote(latestQuote?.fechamento_anterior_quote, selectedAssetId) ?? (getPriceFromQuote(latestQuote as FirestoreQuote, selectedAssetId) ?? 0)),
-      lastUpdated: latestQuote?.data || new Date().toLocaleDateString('pt-BR'),
+      change: quoteForDate?.variacao_pct ?? 0,
+      absoluteChange: (getPriceFromQuote(quoteForDate as FirestoreQuote, selectedAssetId) ?? 0) - (getPriceFromQuote(quoteForDate?.fechamento_anterior_quote, selectedAssetId) ?? (getPriceFromQuote(quoteForDate as FirestoreQuote, selectedAssetId) ?? 0)),
+      lastUpdated: quoteForDate?.data || new Date().toLocaleDateString('pt-BR'),
       currency: 'BRL',
     };
   
@@ -497,7 +507,7 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
       isMultiLine: false, 
       assetNames: names
     };
-  }, [currentData, selectedAssetId, assets, selectedAssetConfig, isLoading]);
+  }, [currentData, selectedAssetId, assets, selectedAssetConfig, isLoading, targetDate]);
 
 
   const handleVisibilityChange = (assetId: string) => {
@@ -579,5 +589,6 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
     </div>
   );
 }
+
 
 
