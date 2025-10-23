@@ -1,11 +1,12 @@
 
+
 'use client';
 
 import * as React from 'react';
 import { useState, useEffect, useMemo } from 'react';
 import { format, parseISO, isValid, subDays, parse } from 'date-fns';
 import type { FirestoreQuote, CommodityConfig, CommodityPriceData } from '@/lib/types';
-import { getCotacoesHistorico, getCommodityConfigs, calculateFrequencyAwareMetrics, getQuoteByDate } from '@/lib/data-service';
+import { getCotacoesHistorico, getCommodityConfigs, calculateFrequencyAwareMetrics } from '@/lib/data-service';
 import { formatCurrency } from '@/lib/formatters';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -41,9 +42,10 @@ import { Label } from './ui/label';
 import { Table as UITable, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { AdvancedPerformanceChart } from './charts/advanced-performance-chart';
+import { PdfExportButton } from './pdf-export-button';
 
 // Lista de ativos disponíveis
-const AVAILABLE_ASSETS = ['PDM', 'milho', 'boi_gordo', 'madeira', 'carbono', 'soja', 'ucs_ase'];
+const UCS_ASE_COMPARISON_ASSETS = ['PDM', 'milho', 'boi_gordo', 'madeira', 'carbono', 'soja'];
 type TimeRange = '7d' | '30d' | '90d' | '1y' | '5y' | 'all';
 
 
@@ -139,10 +141,37 @@ const AssetHistoricalTable = ({
 
   // Ordenar dados por data real da cotação (mais recente primeiro)
   const sortedData = [...data].sort((a, b) => {
-    const dateA = a.data ? parseISO(a.data.split('/').reverse().join('-')) : new Date(a.timestamp as any);
-    const dateB = b.data ? parseISO(b.data.split('/').reverse().join('-')) : new Date(b.timestamp as any);
+    let dateA, dateB;
+
+    try {
+        if (typeof a.data === 'string' && a.data.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+            dateA = parse(a.data, 'dd/MM/yyyy', new Date());
+        } else if (a.timestamp) {
+            dateA = new Date(a.timestamp as any);
+        } else {
+            return 1;
+        }
+    } catch {
+        return 1;
+    }
+
+    try {
+        if (typeof b.data === 'string' && b.data.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+            dateB = parse(b.data, 'dd/MM/yyyy', new Date());
+        } else if (b.timestamp) {
+            dateB = new Date(b.timestamp as any);
+        } else {
+            return -1;
+        }
+    } catch {
+        return -1;
+    }
+
+    if (!isValid(dateA)) return 1;
+    if (!isValid(dateB)) return -1;
+    
     return dateB.getTime() - dateA.getTime();
-  });
+});
 
   const totalPages = Math.ceil(sortedData.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -458,19 +487,19 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
 
     const processData = (history: FirestoreQuote[], assetId: string, range: TimeRange) => {
         const dateFormat = range === '7d' || range === '30d' ? 'dd/MM' : 'dd/MM/yy';
-        const cutoffDate = subDays(new Date(), timeRangeInDays[range]);
-
+        
         const filteredHistory = history.filter(quote => {
             if (!quote) return false;
             try {
                 let date: Date;
-                if (typeof quote.data === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(quote.data)) {
+                if (typeof quote.data === 'string' && quote.data.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
                     date = parse(quote.data, 'dd/MM/yyyy', new Date());
                 } else if (quote.timestamp) {
                     date = new Date(quote.timestamp as any);
                 } else {
                     return false;
                 }
+                const cutoffDate = subDays(new Date(), timeRangeInDays[range]);
                 return isValid(date) && date >= cutoffDate;
             } catch {
                 return false;
@@ -480,7 +509,7 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
       return filteredHistory
         .map(quote => {
           let date: Date | null = null;
-            if (typeof quote.data === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(quote.data)) {
+            if (typeof quote.data === 'string' && quote.data.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
                 date = parse(quote.data, 'dd/MM/yyyy', new Date());
             } else if (quote.timestamp) {
                 date = new Date(quote.timestamp as any);
@@ -503,41 +532,49 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
     const processedChartData = processData(currentData, selectedAssetId, timeRange);
     
     const sortedByDate = [...currentData].sort((a, b) => {
-        let dateA;
-        if (typeof a.data === 'string' && a.data.match(/^\d{2,2}\/\d{2,2}\/\d{4}$/)) {
+      let dateA, dateB;
+      try {
+        if (typeof a.data === 'string' && a.data.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
             dateA = parse(a.data, 'dd/MM/yyyy', new Date());
         } else if (a.timestamp) {
             dateA = new Date(a.timestamp as any);
         } else {
-            return 1; // Coloca itens sem data no final
+            return 1;
         }
-
-        let dateB;
-        if (typeof b.data === 'string' && b.data.match(/^\d{2,2}\/\d{2,2}\/\d{4}$/)) {
+      } catch {
+        return 1;
+      }
+  
+      try {
+        if (typeof b.data === 'string' && b.data.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
             dateB = parse(b.data, 'dd/MM/yyyy', new Date());
         } else if (b.timestamp) {
             dateB = new Date(b.timestamp as any);
         } else {
-            return -1; // Coloca itens sem data no final
+            return -1;
         }
+      } catch {
+        return -1;
+      }
+      
+      if (!isValid(dateA)) return 1;
+      if (!isValid(dateB)) return -1;
 
-        if (!isValid(dateA)) return 1;
-        if (!isValid(dateB)) return -1;
-        
-        return dateB.getTime() - dateA.getTime();
+      return dateB.getTime() - dateA.getTime();
     });
 
     const quoteForDate = sortedByDate.find(q => {
         if (!q) return false;
         try {
             let quoteDate: Date;
-            if (typeof q.data === 'string' && q.data.match(/^\d{2,2}\/\d{2,2}\/\d{4}$/)) {
+            if (typeof q.data === 'string' && q.data.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
                 quoteDate = parse(q.data, 'dd/MM/yyyy', new Date());
             } else if(q.timestamp) {
                 quoteDate = new Date(q.timestamp as any);
             } else {
                 return false;
             }
+            // Procurar a cotação mais recente ANTERIOR ou IGUAL à data alvo
             return isValid(quoteDate) && quoteDate <= targetDate;
         } catch { return false; }
     }) || sortedByDate[0];
@@ -636,6 +673,37 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
     }));
   };
 
+  const LegendContent = ({ assets, visibleAssets, onVisibilityChange, lineColors }: { assets: CommodityConfig[], visibleAssets: Record<string, boolean>, onVisibilityChange: (id: string) => void, lineColors: Record<string, string> }) => (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base flex items-center gap-2">
+            <CheckSquare className="h-4 w-4" />
+            Ativos no Gráfico
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {UCS_ASE_COMPARISON_ASSETS.map(id => {
+          const assetName = assets.find(a => a.id === id)?.name || id.toUpperCase();
+          const color = lineColors[id];
+          return (
+            <div key={id} className="flex items-center space-x-2">
+              <Checkbox
+                id={id}
+                checked={visibleAssets[id]}
+                onCheckedChange={() => onVisibilityChange(id)}
+                style={{borderColor: color}}
+              />
+              <Label htmlFor={id} className="text-sm font-medium leading-none flex items-center gap-2 cursor-pointer">
+                 <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} />
+                 {assetName}
+              </Label>
+            </div>
+          );
+        })}
+      </CardContent>
+    </Card>
+);
+
   return (
     <>
       <Card>
@@ -695,3 +763,32 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
     </>
   );
 }
+
+
+const AssetInfo = ({ asset }: { asset: CommodityPriceData }) => {
+    if (!asset) return null;
+  
+    const changeColor = asset.change >= 0 ? 'text-green-600' : 'text-red-600';
+    const ChangeIcon = asset.change >= 0 ? TrendingUp : TrendingDown;
+  
+    return (
+      <div className="space-y-1 p-2 rounded-lg bg-muted/50">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+          <div className="flex items-baseline gap-2">
+            <span className="text-3xl font-bold text-foreground">
+              {formatCurrency(asset.price, asset.currency, asset.id)}
+            </span>
+            <span className="text-sm text-muted-foreground">{asset.currency}</span>
+          </div>
+          <div className={`flex items-center gap-1 font-semibold ${changeColor}`}>
+            <ChangeIcon className="h-4 w-4" />
+            <span>{asset.change.toFixed(2)}%</span>
+            <span className="text-xs font-normal text-muted-foreground">({formatCurrency(asset.absoluteChange, asset.currency, asset.id)})</span>
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Última atualização em {asset.lastUpdated}
+        </p>
+      </div>
+    );
+};
