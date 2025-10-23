@@ -1,10 +1,9 @@
 
-
 'use client';
 
 import * as React from 'react';
 import { useState, useEffect, useMemo } from 'react';
-import { format, parseISO, isValid, subDays } from 'date-fns';
+import { format, parseISO, isValid, subDays, parse } from 'date-fns';
 import type { FirestoreQuote, CommodityConfig, CommodityPriceData } from '@/lib/types';
 import { getCotacoesHistorico, getCommodityConfigs, calculateFrequencyAwareMetrics, getQuoteByDate } from '@/lib/data-service';
 import { formatCurrency } from '@/lib/formatters';
@@ -45,14 +44,16 @@ import { AdvancedPerformanceChart } from './charts/advanced-performance-chart';
 
 // Lista de ativos disponíveis
 const AVAILABLE_ASSETS = ['PDM', 'milho', 'boi_gordo', 'madeira', 'carbono', 'soja', 'ucs_ase'];
-type TimeRange = '7d' | '30d' | '90d' | '1y' | 'all';
+type TimeRange = '7d' | '30d' | '90d' | '1y' | '5y' | 'all';
+
 
 const timeRangeInDays: Record<TimeRange, number> = {
   '7d': 7,
   '30d': 30,
   '90d': 90,
   '1y': 365,
-  'all': 3650,
+  '5y': 365 * 5,
+  'all': 365 * 10, // 10 anos para "Tudo"
 };
 
 const lineColors: { [key: string]: string } = {
@@ -451,7 +452,8 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
         names[a.id] = a.name;
     });
 
-    const processData = (history: FirestoreQuote[], assetId: string) => {
+    const processData = (history: FirestoreQuote[], assetId: string, range: TimeRange) => {
+      const dateFormat = range === '7d' || range === '30d' || range === '90d' ? 'dd/MM' : 'MM/yy';
       return history
         .map(quote => {
           const price = getPriceFromQuote(quote, assetId);
@@ -470,7 +472,7 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
           if (!date || !isValid(date)) return null;
   
           return {
-            date: format(date, 'dd/MM/yyyy'),
+            date: format(date, dateFormat),
             value: price,
             timestamp: date.getTime(),
           };
@@ -479,16 +481,21 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
         .sort((a, b) => a.timestamp - b.timestamp);
     };
   
-    const processedChartData = processData(currentData, selectedAssetId);
+    const processedChartData = processData(currentData, selectedAssetId, timeRange);
     
-    // CORREÇÃO: Usar a data alvo para encontrar a cotação correta
-    const quoteForDate = currentData.find(q => {
+    const sortedByDate = [...currentData].sort((a, b) => {
+        const dateA = a.data ? parse(a.data, 'dd/MM/yyyy', new Date()).getTime() : 0;
+        const dateB = b.data ? parse(b.data, 'dd/MM/yyyy', new Date()).getTime() : 0;
+        return dateB - dateA;
+    });
+
+    const quoteForDate = sortedByDate.find(q => {
         if (!q || !q.data) return false;
         try {
             const quoteDate = parse(q.data, 'dd/MM/yyyy', new Date());
-            return format(quoteDate, 'yyyy-MM-dd') === format(targetDate, 'yyyy-MM-dd');
+            return format(quoteDate, 'yyyy-MM-dd') <= format(targetDate, 'yyyy-MM-dd');
         } catch { return false; }
-    }) || currentData[0]; // Fallback para o mais recente se não achar
+    }) || sortedByDate[0];
     
     const latestPrice = quoteForDate ? getPriceFromQuote(quoteForDate, selectedAssetId) : 0;
     
@@ -507,7 +514,7 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
       isMultiLine: false, 
       assetNames: names
     };
-  }, [currentData, selectedAssetId, assets, selectedAssetConfig, isLoading, targetDate]);
+  }, [currentData, selectedAssetId, assets, selectedAssetConfig, isLoading, targetDate, timeRange]);
 
 
   const handleVisibilityChange = (assetId: string) => {
@@ -535,13 +542,19 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
             </Select>
           </div>
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1 rounded-lg bg-muted p-1">
-              <Button variant={timeRange === '7d' ? 'default' : 'ghost'} size="sm" onClick={() => setTimeRange('7d')} className="h-8">7D</Button>
-              <Button variant={timeRange === '30d' ? 'default' : 'ghost'} size="sm" onClick={() => setTimeRange('30d')} className="h-8">30D</Button>
-              <Button variant={timeRange === '90d' ? 'default' : 'ghost'} size="sm" onClick={() => setTimeRange('90d')} className="h-8">90D</Button>
-              <Button variant={timeRange === '1y' ? 'default' : 'ghost'} size="sm" onClick={() => setTimeRange('1y')} className="h-8">1A</Button>
-              <Button variant={timeRange === 'all' ? 'default' : 'ghost'} size="sm" onClick={() => setTimeRange('all')} className="h-8">Tudo</Button>
-            </div>
+              <Select value={timeRange} onValueChange={(value) => setTimeRange(value as TimeRange)}>
+                <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Selecione o período" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="7d">Últimos 7 dias</SelectItem>
+                    <SelectItem value="30d">Últimos 30 dias</SelectItem>
+                    <SelectItem value="90d">Últimos 90 dias</SelectItem>
+                    <SelectItem value="1y">Último Ano</SelectItem>
+                    <SelectItem value="5y">Últimos 5 Anos</SelectItem>
+                    <SelectItem value="all">Desde o Início</SelectItem>
+                </SelectContent>
+            </Select>
           </div>
         </CardHeader>
       </Card>
@@ -589,6 +602,3 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
     </div>
   );
 }
-
-
-
