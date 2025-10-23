@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { User, ShieldCheck, FileText, BarChart3, TrendingUp, Briefcase, Award, Blocks, LandPlot, TreePine, Globe } from "lucide-react";
+import { User, ShieldCheck, FileText, BarChart3, TrendingUp, Briefcase, Award, Blocks, TreePine, LandPlot, Globe } from "lucide-react";
 import Image from 'next/image';
 import Link from 'next/link';
 import { LogoUCS } from "@/components/logo-bvm";
@@ -16,7 +16,6 @@ import Autoplay from "embla-carousel-autoplay";
 import { getCommodityPrices } from '@/lib/data-service';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/language-context';
-import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { getLandingPageSettings, type LandingPageSettings } from '@/lib/settings-actions';
 
@@ -254,8 +253,7 @@ export default function PDMDetailsPage() {
                   </CardHeader>
                   <CardContent className="flex-grow space-y-4">
                     <p className="text-sm text-muted-foreground text-justify">{pilar.definition}</p>
-                    <Separator />
-                    <div>
+                    <div className="border-t pt-4">
                       <h4 className="font-semibold text-sm mb-2">{homeT.pdm.methodology}</h4>
                       <p className="text-xs text-muted-foreground text-justify">{pilar.methodology}</p>
                     </div>
@@ -319,7 +317,7 @@ export default function PDMDetailsPage() {
         <section className="py-16 md:py-24 bg-muted/30">
             <div className="container mx-auto px-4 md:px-6">
                 <div className="mx-auto max-w-5xl grid md:grid-cols-2 gap-12 items-center">
-                    <div className="relative h-64 md:h-full w-full rounded-xl overflow-hidden shadow-xl order-last md:order-first">
+                    <div className="relative h-64 md:h-full w-full rounded-xl overflow-hidden shadow-xl md:order-last">
                          <Image
                             src="https://picsum.photos/seed/blockchain-tech/800/600"
                             alt={homeT.blockchain.image_alt}
@@ -328,7 +326,7 @@ export default function PDMDetailsPage() {
                             data-ai-hint="blockchain technology"
                         />
                     </div>
-                    <div className="md:order-last">
+                    <div className="md:order-first">
                         <Badge variant="secondary" className="mb-4">{homeT.blockchain.badge}</Badge>
                         <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.blockchain.title}</h2>
                         <p className="mt-4 text-lg text-muted-foreground text-justify">
@@ -342,12 +340,12 @@ export default function PDMDetailsPage() {
             </div>
         </section>
 
-        {/* FINAL SUMMARY & CTA */}
+        {/* FINAL SUMMARY */}
         <section className="py-16 md:py-24 text-center bg-background">
           <div className="container mx-auto px-4 md:px-6">
-            <div className="mx-auto max-w-4xl">
+            <div className="mx-auto max-w-5xl">
               <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.pdm.conclusion.title}</h2>
-              <p className="mx-auto mt-4 max-w-3xl text-lg text-muted-foreground">
+              <p className="mx-auto mt-4 max-w-3xl text-lg text-muted-foreground text-justify">
                 {homeT.pdm.conclusion.p1}
               </p>
               <div className="mt-8">
