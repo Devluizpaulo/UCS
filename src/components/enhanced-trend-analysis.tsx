@@ -32,7 +32,7 @@ import {
   EyeOff,
   Download,
   RefreshCw,
-  LineChart,
+  LineChart as LineChartIcon,
   Loader2
 } from 'lucide-react';
 import { Button } from './ui/button';
@@ -42,7 +42,9 @@ import { Label } from './ui/label';
 import { Table as UITable, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { AdvancedPerformanceChart } from './charts/advanced-performance-chart';
-import { PdfExportButton } from './pdf-export-button';
+import { PdfExportButton } from '@/components/pdf-export-button';
+import { AssetHistoricalTable } from './historical-price-table';
+import { AssetDetailModal } from './asset-detail-modal';
 
 // Lista de ativos disponíveis
 const UCS_ASE_COMPARISON_ASSETS = ['PDM', 'milho', 'boi_gordo', 'madeira', 'carbono', 'soja'];
@@ -82,224 +84,6 @@ const getPriceFromQuote = (quote: FirestoreQuote, assetId: string): number | und
   
   const value = quote.valor ?? quote.ultimo;
   return typeof value === 'number' ? value : undefined;
-};
-
-
-// Componente de tabela histórica para um ativo específico
-const AssetHistoricalTable = ({ 
-  assetId, 
-  data, 
-  assetConfig, 
-  isLoading 
-}: { 
-  assetId: string; 
-  data: FirestoreQuote[]; 
-  assetConfig: CommodityConfig | undefined;
-  isLoading: boolean;
-}) => {
-  const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 10;
-
-  if (isLoading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Table className="h-5 w-5" />
-            <Skeleton className="h-6 w-32" />
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-12 w-full" />
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (!data || data.length === 0) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Table className="h-5 w-5" />
-            {assetConfig?.name || assetId.toUpperCase()} - Histórico
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8 text-muted-foreground">
-            <Table className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>Nenhum dado histórico disponível</p>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // Ordenar dados por data real da cotação (mais recente primeiro)
-  const sortedData = [...data].sort((a, b) => {
-    let dateA, dateB;
-
-    try {
-        if (typeof a.data === 'string' && a.data.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
-            dateA = parse(a.data, 'dd/MM/yyyy', new Date());
-        } else if (a.timestamp) {
-            dateA = new Date(a.timestamp as any);
-        } else {
-            return 1;
-        }
-    } catch {
-        return 1;
-    }
-
-    try {
-        if (typeof b.data === 'string' && b.data.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
-            dateB = parse(b.data, 'dd/MM/yyyy', new Date());
-        } else if (b.timestamp) {
-            dateB = new Date(b.timestamp as any);
-        } else {
-            return -1;
-        }
-    } catch {
-        return -1;
-    }
-
-    if (!isValid(dateA)) return 1;
-    if (!isValid(dateB)) return -1;
-    
-    return dateB.getTime() - dateA.getTime();
-});
-
-  const totalPages = Math.ceil(sortedData.length / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const endIndex = startIndex + ITEMS_PER_PAGE;
-  const currentData = sortedData.slice(startIndex, endIndex);
-  
-  const isForexAsset = assetId === 'soja' || assetId === 'carbono';
-
-  const formatDate = (quote: FirestoreQuote) => {
-    try {
-      if (quote.data) {
-        if (typeof quote.data === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(quote.data)) {
-          const [day, month, year] = quote.data.split('/');
-          const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-          return isValid(date) ? format(date, 'dd/MM/yyyy') : quote.data;
-        }
-        const dateFromTs = new Date(quote.timestamp as any);
-        return isValid(dateFromTs) ? format(dateFromTs, 'dd/MM/yyyy') : 'N/A';
-      }
-      
-      const date = new Date(quote.timestamp as any);
-      return isValid(date) ? format(date, 'dd/MM/yyyy') : 'N/A';
-    } catch {
-      return 'N/A';
-    }
-  };
-
-  const formatTime = (quote: FirestoreQuote) => {
-    try {
-      const date = new Date(quote.timestamp as any);
-      return isValid(date) ? format(date, 'HH:mm') : 'N/A';
-    } catch {
-      return 'N/A';
-    }
-  };
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Table className="h-5 w-5" />
-          {assetConfig?.name || assetId.toUpperCase()} - Histórico
-          <Badge variant="secondary" className="ml-auto">
-            {sortedData.length} registros
-          </Badge>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="rounded-md border">
-          <UITable>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Data</TableHead>
-                <TableHead>Horário</TableHead>
-                {isForexAsset && <TableHead className="text-right">Preço Original</TableHead>}
-                <TableHead className="text-right">Preço (BRL)</TableHead>
-                <TableHead className="text-right">Variação %</TableHead>
-                <TableHead className="text-right">Variação Abs.</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {currentData.map((quote, index) => {
-                const priceBRL = getPriceFromQuote(quote, assetId);
-                const originalPrice = quote.ultimo;
-                const variation = quote.variacao_pct ?? 0;
-                const previousPriceBRL = index < sortedData.length - 1 ? 
-                  getPriceFromQuote(sortedData[index + 1], assetId) : priceBRL;
-                const absoluteChange = priceBRL && previousPriceBRL ? priceBRL - previousPriceBRL : 0;
-
-                const uniqueKey = `${quote.documentId || 'no-id'}-${quote.timestamp || 'no-timestamp'}-${startIndex + index}`;
-
-                return (
-                  <TableRow key={uniqueKey}>
-                    <TableCell className="font-medium">
-                      {formatDate(quote)}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {formatTime(quote)}
-                    </TableCell>
-                     {isForexAsset && (
-                        <TableCell className="text-right font-mono text-muted-foreground">
-                            {originalPrice ? formatCurrency(originalPrice, assetConfig?.currency || 'BRL', assetId) : 'N/A'}
-                        </TableCell>
-                    )}
-                    <TableCell className="font-mono text-right">
-                      {priceBRL ? formatCurrency(priceBRL, 'BRL', assetId) : 'N/A'}
-                    </TableCell>
-                    <TableCell className={`text-right ${variation >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {variation >= 0 ? '+' : ''}{variation.toFixed(2)}%
-                    </TableCell>
-                    <TableCell className={`text-right ${absoluteChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {absoluteChange >= 0 ? '+' : ''}{formatCurrency(absoluteChange, 'BRL', assetId)}
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </UITable>
-        </div>
-
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between mt-4">
-            <div className="text-sm text-muted-foreground">
-              Página {currentPage} de {totalPages}
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                disabled={currentPage === 1}
-              >
-                Anterior
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                disabled={currentPage === totalPages}
-              >
-                Próxima
-              </Button>
-            </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
 };
 
 // Componente de métricas de performance
@@ -442,6 +226,7 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
   const [timeRange, setTimeRange] = useState<TimeRange>('1y');
   const [isLoading, setIsLoading] = useState(true);
   const [visibleAssets, setVisibleAssets] = useState<Record<string, boolean>>({});
+  const [selectedQuote, setSelectedQuote] = useState<FirestoreQuote | null>(null);
 
   useEffect(() => {
     getCommodityConfigs()
@@ -473,10 +258,12 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
     return assets.find(a => a.id === selectedAssetId);
   }, [assets, selectedAssetId]);
 
-  const currentData = data[selectedAssetId] || [];
-
+  const currentData = useMemo(() => {
+    return data[selectedAssetId] || [];
+  }, [data, selectedAssetId]);
+  
   const { chartData, mainAssetData, isMultiLine, assetNames } = useMemo(() => {
-    if (isLoading || !selectedAssetConfig || currentData.length === 0) {
+    if (!selectedAssetConfig) {
       return { chartData: [], mainAssetData: null, isMultiLine: false, assetNames: {} };
     }
   
@@ -486,8 +273,10 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
     });
 
     const processData = (history: FirestoreQuote[], assetId: string, range: TimeRange) => {
-        const dateFormat = range === '7d' || range === '30d' ? 'dd/MM' : 'dd/MM/yy';
+        const dateFormat = range === '1y' || range === '5y' || range === 'all' ? 'MM/yy' : 'dd/MM/yy';
         
+        const cutoffDate = subDays(new Date(), timeRangeInDays[range]);
+
         const filteredHistory = history.filter(quote => {
             if (!quote) return false;
             try {
@@ -499,7 +288,6 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
                 } else {
                     return false;
                 }
-                const cutoffDate = subDays(new Date(), timeRangeInDays[range]);
                 return isValid(date) && date >= cutoffDate;
             } catch {
                 return false;
@@ -532,7 +320,7 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
     const processedChartData = processData(currentData, selectedAssetId, timeRange);
     
     const sortedByDate = [...currentData].sort((a, b) => {
-      let dateA, dateB;
+      let dateA: Date, dateB: Date;
       try {
         if (typeof a.data === 'string' && a.data.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
             dateA = parse(a.data, 'dd/MM/yyyy', new Date());
@@ -591,7 +379,6 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
     if (isMulti) {
         const dataMap = new Map<string, any>();
         
-        // Para PDM, mostrar componentes individuais
         if (selectedAssetId === 'PDM') {
             const pdmHistory = data['PDM'] || [];
             pdmHistory.forEach(quote => {
@@ -619,7 +406,6 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
                 } catch {}
             });
         } else {
-            // Para outros ativos multi-linha
             UCS_ASE_COMPARISON_ASSETS.forEach(id => {
                 const assetHistory = data[id] || [];
                 assetHistory.forEach(quote => {
@@ -664,7 +450,7 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
     };
     
     return { chartData: finalChartData, mainAssetData: mainAsset, isMultiLine: isMulti, assetNames: names };
-  }, [currentData, selectedAssetId, assets, selectedAssetConfig, isLoading, targetDate, timeRange]);
+  }, [currentData, selectedAssetId, assets, selectedAssetConfig, targetDate, timeRange]);
   
   const handleVisibilityChange = (assetId: string) => {
     setVisibleAssets(prev => ({
@@ -742,24 +528,49 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
               />
           </div>
         </CardHeader>
-        <CardContent className="flex flex-col gap-8 p-4">
-          {mainAssetData ? <AssetInfo asset={mainAssetData} /> : <Skeleton className="h-24 w-full" />}
-          
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                <div className="lg:col-span-4 h-96 bg-background rounded-lg p-4 border">
-                    <HistoricalAnalysisChart 
+        <Tabs defaultValue="overview" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="overview">Visão Geral e Gráfico</TabsTrigger>
+                <TabsTrigger value="data">Dados Históricos</TabsTrigger>
+            </TabsList>
+            <TabsContent value="overview">
+                <CardContent className="flex flex-col gap-8 p-4">
+                  {mainAssetData ? <AssetInfo asset={mainAssetData} /> : <Skeleton className="h-24 w-full" />}
+                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                        <div className="lg:col-span-4 h-96 bg-background rounded-lg p-4 border">
+                            <HistoricalAnalysisChart 
+                                isLoading={isLoading}
+                                chartData={chartData}
+                                isMultiLine={isMultiLine}
+                                mainAssetData={mainAssetData}
+                                visibleAssets={visibleAssets}
+                                lineColors={lineColors}
+                                assetNames={assetNames}
+                            />
+                        </div>
+                    </div>
+                </CardContent>
+            </TabsContent>
+            <TabsContent value="data">
+                 <CardContent className="p-4">
+                    <AssetHistoricalTable
+                        assetId={selectedAssetId}
+                        data={currentData}
+                        assetConfig={selectedAssetConfig}
                         isLoading={isLoading}
-                        chartData={chartData}
-                        isMultiLine={isMultiLine}
-                        mainAssetData={mainAssetData}
-                        visibleAssets={visibleAssets}
-                        lineColors={lineColors}
-                        assetNames={assetNames}
+                        onRowClick={(quote) => setSelectedQuote(quote)}
                     />
-                </div>
-            </div>
-        </CardContent>
+                 </CardContent>
+            </TabsContent>
+        </Tabs>
       </Card>
+      {selectedQuote && selectedAssetConfig && (
+        <AssetDetailModal
+          asset={{ ...selectedAssetConfig, price: getPriceFromQuote(selectedQuote, selectedAssetId) || 0, change: selectedQuote.variacao_pct || 0, absoluteChange: 0, lastUpdated: '' }}
+          isOpen={!!selectedQuote}
+          onOpenChange={(isOpen) => !isOpen && setSelectedQuote(null)}
+        />
+      )}
     </>
   );
 }
