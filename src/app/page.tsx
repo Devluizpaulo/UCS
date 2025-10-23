@@ -224,7 +224,7 @@ export default function PDMDetailsPage() {
 
       <main className="flex-1">
         {/* HERO SECTION */}
-        <section className="relative flex h-[90vh] min-h-[700px] w-full flex-col items-center justify-center overflow-hidden bg-black p-4 pb-20">
+        <section className="relative flex h-[90vh] min-h-[700px] w-full flex-col items-center justify-center overflow-hidden bg-black p-4 pb-40">
            <div className="absolute inset-0 z-0 h-full w-full">
                 <video
                     autoPlay
@@ -247,63 +247,66 @@ export default function PDMDetailsPage() {
                 {heroContent.subtitle}
               </p>
             </div>
-             <div className="w-full max-w-4xl p-4 animate-fade-in-up animation-delay-400">
-               <div className={cn(
-                  "rounded-lg transition-all duration-300",
-                  isScrolled 
-                    ? "bg-background border shadow-xl text-foreground"
-                    : "bg-background/20 backdrop-blur-md border-white/20 text-white"
-               )}>
-                <CardHeader className="text-center">
-                    <CardTitle className="text-xl font-bold">{homeT.quote.title}</CardTitle>
-                    <CardDescription className={isScrolled ? "text-muted-foreground" : "text-gray-300"}>
-                        {homeT.quote.subtitle}
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Carousel
-                    opts={{ align: "start", loop: true }}
-                    plugins={[autoplayPlugin.current]}
-                    onMouseEnter={() => autoplayPlugin.current.stop()}
-                    onMouseLeave={() => autoplayPlugin.current.play()}
-                    className="w-full"
-                  >
-                    <CarouselContent>
-                      {indexValues.map((item, index) => (
-                        <CarouselItem key={index} className="basis-full">
-                          <div className="flex flex-col items-center justify-center p-4">
-                            <div className="flex items-baseline gap-3">
-                              <span className="text-5xl font-extrabold">
-                                {formatCurrency(item.value, item.currency, item.currency)}
-                              </span>
-                              <div className={cn(
-                                'flex items-center text-lg font-semibold', 
-                                item.change >= 0 ? 
-                                  (isScrolled ? 'text-green-600' : 'text-green-400') : 
-                                  (isScrolled ? 'text-red-600' : 'text-red-400')
-                              )}>
-                                  {item.change >= 0 ? <TrendingUp className="h-5 w-5 mr-1" /> : <TrendingDown className="h-5 w-5 mr-1" />}
-                                  {item.change.toFixed(2)}%
-                              </div>
-                            </div>
-                            {item.conversionRate && (
-                              <div className={cn("mt-2 text-sm", isScrolled ? "text-muted-foreground" : "text-gray-300")}>
-                                {homeT.quote.conversionRate} {formatCurrency(item.conversionRate, 'BRL')}
-                              </div>
-                            )}
-                          </div>
-                        </CarouselItem>
-                      ))}
-                    </CarouselContent>
-                  </Carousel>
-                </CardContent>
-              </div>
-            </div>
           </div>
         </section>
 
+        <div className="relative z-40 -mt-32">
+          <div className="container mx-auto px-4 md:px-6">
+            <div className={cn(
+                  "sticky top-20 z-40 rounded-lg transition-all duration-300",
+                  isScrolled 
+                    ? "bg-background border shadow-xl text-foreground"
+                    : "bg-background/20 backdrop-blur-md border-white/20 text-white"
+            )}>
+              <CardHeader className="text-center">
+                  <CardTitle className="text-xl font-bold">{homeT.quote.title}</CardTitle>
+                  <CardDescription className={isScrolled ? "text-muted-foreground" : "text-gray-300"}>
+                      {homeT.quote.subtitle}
+                  </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Carousel
+                  opts={{ align: "start", loop: true }}
+                  plugins={[autoplayPlugin.current]}
+                  onMouseEnter={() => autoplayPlugin.current.stop()}
+                  onMouseLeave={() => autoplayPlugin.current.play()}
+                  className="w-full"
+                >
+                  <CarouselContent>
+                    {indexValues.map((item, index) => (
+                      <CarouselItem key={index} className="basis-full">
+                        <div className="flex flex-col items-center justify-center p-4">
+                          <div className="flex items-baseline gap-3">
+                            <span className="text-5xl font-extrabold">
+                              {formatCurrency(item.value, item.currency, item.currency)}
+                            </span>
+                            <div className={cn(
+                              'flex items-center text-lg font-semibold', 
+                              item.change >= 0 ? 
+                                (isScrolled ? 'text-green-600' : 'text-green-400') : 
+                                (isScrolled ? 'text-red-600' : 'text-red-400')
+                            )}>
+                                {item.change >= 0 ? <TrendingUp className="h-5 w-5 mr-1" /> : <TrendingDown className="h-5 w-5 mr-1" />}
+                                {item.change.toFixed(2)}%
+                            </div>
+                          </div>
+                          {item.conversionRate && (
+                            <div className={cn("mt-2 text-sm", isScrolled ? "text-muted-foreground" : "text-gray-300")}>
+                              {homeT.quote.conversionRate} {formatCurrency(item.conversionRate, 'BRL')}
+                            </div>
+                          )}
+                        </div>
+                      </CarouselItem>
+                    ))}
+                  </CarouselContent>
+                </Carousel>
+              </CardContent>
+            </div>
+          </div>
+        </div>
+
         {/* INTRODUCTION SECTION */}
-        <section className="py-16 md:py-24 bg-muted/30">
+        <section className="pt-16 md:pt-24 bg-muted/30">
           <div className="container mx-auto px-4 md:px-6">
             <div className="mx-auto max-w-5xl text-center">
               <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.pdm.what_is.title}</h2>
@@ -469,7 +472,7 @@ export default function PDMDetailsPage() {
             onClick={scrollToTop}
           >
             <div className="flex items-center gap-3">
-              <span className="font-semibold">{ucsAseAsset.name}</span>
+              <span className="font-semibold">Índice UCS</span>
               <div className="h-6 w-px bg-white/30" />
               <Carousel
                 opts={{ align: "start", loop: true }}
