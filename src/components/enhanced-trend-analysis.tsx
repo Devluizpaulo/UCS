@@ -17,7 +17,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -35,7 +34,7 @@ import { Label } from './ui/label';
 import { Checkbox } from './ui/checkbox';
 import { AssetHistoricalTable } from './historical-price-table';
 import { AssetDetailModal } from './asset-detail-modal';
-import { PdfExportButton } from './pdf-export-button';
+import { PdfExportButton } from '@/components/pdf-export-button';
 
 
 // Lista de ativos disponíveis
@@ -388,7 +387,7 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
                     <AssetHistoricalTable
                         assetId={selectedAssetId}
                         data={currentData}
-                        assetConfig={selectedAssetConfig}
+                        assetConfig={mainAssetData}
                         isLoading={isLoading}
                         onRowClick={(quote) => setSelectedQuote(quote)}
                     />

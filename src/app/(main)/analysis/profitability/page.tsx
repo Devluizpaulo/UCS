@@ -42,7 +42,7 @@ import type { CommodityPriceData } from '@/lib/types';
 import { formatCurrency } from '@/lib/formatters';
 import { runCompleteSimulation, type SimulationInput, type CalculationResult } from '@/lib/real-calculation-service';
 import { cn } from '@/lib/utils';
-import { ImpactPreview } from './impact-preview';
+import { ImpactPreview } from '@/components/admin/impact-preview';
 
 const editSchema = z.object({
   price: z.preprocess(
