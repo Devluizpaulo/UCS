@@ -26,15 +26,17 @@ import {
   BarChart,
   Table,
   RefreshCw,
-  Loader2
+  Loader2,
+  CheckSquare
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { HistoricalAnalysisChart } from '@/components/charts/historical-analysis-chart';
-import { Checkbox } from './ui/checkbox';
 import { Label } from './ui/label';
+import { Checkbox } from './ui/checkbox';
 import { AssetHistoricalTable } from './historical-price-table';
 import { AssetDetailModal } from './asset-detail-modal';
 import { PdfExportButton } from './pdf-export-button';
+
 
 // Lista de ativos disponíveis
 const UCS_ASE_COMPARISON_ASSETS = ['PDM', 'milho', 'boi_gordo', 'madeira', 'carbono', 'soja'];
@@ -210,7 +212,7 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
                 if(!quote) return;
                 try {
                   let date: Date;
-                   if (typeof quote.data === 'string' && /^\d{2}\/\d{2}\/\d{4}{2}$/.test(quote.data)) {
+                   if (typeof quote.data === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(quote.data)) {
                     date = parse(quote.data, 'dd/MM/yyyy', new Date());
                   } else {
                     date = new Date(quote.timestamp as any);
@@ -238,7 +240,7 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
                 if(!quote) return null;
                  try {
                     let date: Date;
-                    if (typeof quote.data === 'string' && quote.data.match(/^\d{2}\/\d{2}\/\d{4}{2}$/)) {
+                    if (typeof quote.data === 'string' && quote.data.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
                         date = parse(quote.data, 'dd/MM/yyyy', new Date());
                     } else if (quote.timestamp) {
                         date = new Date(quote.timestamp as any);
@@ -433,4 +435,3 @@ const AssetInfo = ({ asset }: { asset: CommodityPriceData }) => {
       </div>
     );
 };
-
