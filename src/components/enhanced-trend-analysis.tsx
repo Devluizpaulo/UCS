@@ -39,7 +39,7 @@ import { Checkbox } from './ui/checkbox';
 import { Label } from './ui/label';
 import { Table as UITable, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { AdvancedPerformanceChart } from '@/components/charts/advanced-performance-chart';
+import { AdvancedPerformanceChart } from './charts/advanced-performance-chart';
 
 // Lista de ativos disponíveis
 const AVAILABLE_ASSETS = ['PDM', 'milho', 'boi_gordo', 'madeira', 'carbono', 'soja', 'ucs_ase'];
@@ -382,15 +382,15 @@ const PerformanceMetrics = ({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
           <div className="text-center p-4 bg-muted/50 rounded-lg">
             <p className="text-sm text-muted-foreground">Preço Atual</p>
-            <p className="text-xl font-bold">{formatCurrency(metrics.currentPrice, 'BRL', assetId)}</p>
+            <p className="text-xl font-bold">{formatCurrency(metrics.currentPrice, 'BRL', selectedAssetId)}</p>
           </div>
           <div className="text-center p-4 bg-muted/50 rounded-lg">
             <p className="text-sm text-muted-foreground">Máximo</p>
-            <p className="text-xl font-bold text-green-600">{formatCurrency(metrics.high, 'BRL', assetId)}</p>
+            <p className="text-xl font-bold text-green-600">{formatCurrency(metrics.high, 'BRL', selectedAssetId)}</p>
           </div>
           <div className="text-center p-4 bg-muted/50 rounded-lg">
             <p className="text-sm text-muted-foreground">Mínimo</p>
-            <p className="text-xl font-bold text-red-600">{formatCurrency(metrics.low, 'BRL', assetId)}</p>
+            <p className="text-xl font-bold text-red-600">{formatCurrency(metrics.low, 'BRL', selectedAssetId)}</p>
           </div>
         </div>
       </CardContent>
@@ -408,14 +408,12 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
   const [visibleAssets, setVisibleAssets] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    console.log('🔧 [EnhancedTrendAnalysis] Carregando configurações de commodities...');
     getCommodityConfigs()
       .then(configs => {
-        console.log('✅ [EnhancedTrendAnalysis] Configurações carregadas:', configs.length, 'ativos');
         setAssets(configs);
       })
       .catch(error => {
-        console.error('❌ [EnhancedTrendAnalysis] Erro ao carregar configurações:', error);
+        console.error('Erro ao carregar configurações:', error);
       });
   }, []);
 
@@ -423,16 +421,13 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
     setIsLoading(true);
     const daysToFetch = timeRangeInDays[timeRange];
     
-    console.log(`🔍 [EnhancedTrendAnalysis] Buscando dados históricos para ${selectedAssetId}, ${daysToFetch} dias`);
-    
     getCotacoesHistorico(selectedAssetId, daysToFetch)
       .then(history => {
-        console.log(`📊 [EnhancedTrendAnalysis] ${selectedAssetId}: ${history.length} registros encontrados`);
         setData({ [selectedAssetId]: history });
         setIsLoading(false);
       })
       .catch(error => {
-        console.error(`❌ [EnhancedTrendAnalysis] Erro ao buscar dados para ${selectedAssetId}:`, error);
+        console.error(`Erro ao buscar dados para ${selectedAssetId}:`, error);
         setData({});
         setIsLoading(false);
       });
@@ -444,42 +439,62 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
 
   const currentData = data[selectedAssetId] || [];
 
-  // Processar dados para o gráfico
-  const chartData = useMemo(() => {
-    if (!currentData || currentData.length === 0) return [];
-
-    return currentData
-      .map(quote => {
-        const price = getPriceFromQuote(quote, selectedAssetId);
-        if (price === undefined) return null;
-        
-        let date: Date | null = null;
-        
-        if (quote.data) {
-          try {
-            const [day, month, year] = quote.data.split('/');
-            date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-          } catch {
-            date = null;
+  const { chartData, mainAssetData, isMultiLine, assetNames } = useMemo(() => {
+    if (!selectedAssetConfig) {
+      return { chartData: [], mainAssetData: null, isMultiLine: false, assetNames: {} };
+    }
+  
+    const processData = (history: FirestoreQuote[], assetId: string) => {
+      return history
+        .map(quote => {
+          const price = getPriceFromQuote(quote, assetId);
+          if (price === undefined) return null;
+  
+          let date: Date | null = null;
+          if (quote.data) {
+            try {
+              const [day, month, year] = quote.data.split('/');
+              date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+            } catch { date = null; }
           }
-        }
-        
-        if (!date || !isValid(date)) {
-          date = quote.timestamp ? new Date(quote.timestamp as any) : null;
-        }
-        
-        if (!date || !isValid(date)) return null;
-        
-        return {
-          date: format(date, 'dd/MM'),
-          value: price,
-          timestamp: date.getTime(),
-          variation: quote.variacao_pct ?? 0
-        };
-      })
-      .filter((item): item is NonNullable<typeof item> => item !== null)
-      .sort((a, b) => a.timestamp - b.timestamp);
-  }, [currentData, selectedAssetId]);
+          if (!date || !isValid(date)) {
+            date = quote.timestamp ? new Date(quote.timestamp as any) : null;
+          }
+          if (!date || !isValid(date)) return null;
+  
+          return {
+            date: format(date, 'dd/MM/yyyy'),
+            value: price,
+            timestamp: date.getTime(),
+          };
+        })
+        .filter((item): item is NonNullable<typeof item> => item !== null)
+        .sort((a, b) => a.timestamp - b.timestamp);
+    };
+  
+    const mainHistory = data[selectedAssetId] || [];
+    const processedChartData = processData(mainHistory, selectedAssetId);
+  
+    const latestQuote = mainHistory.length > 0 ? mainHistory[0] : null;
+    const latestPrice = latestQuote ? getPriceFromQuote(latestQuote, selectedAssetId) : 0;
+    
+    const mainAsset: CommodityPriceData = {
+      ...selectedAssetConfig,
+      price: latestPrice || 0,
+      change: latestQuote?.variacao_pct ?? 0,
+      absoluteChange: latestQuote?.variacao_abs ?? 0,
+      lastUpdated: latestQuote?.data || new Date().toLocaleDateString('pt-BR'),
+      currency: 'BRL',
+    };
+  
+    return {
+      chartData: processedChartData,
+      mainAssetData: mainAsset,
+      isMultiLine: false, 
+      assetNames: { [selectedAssetId]: selectedAssetConfig.name },
+    };
+  }, [data, selectedAssetId, assets, selectedAssetConfig]);
+
 
   const handleVisibilityChange = (assetId: string) => {
     setVisibleAssets(prev => ({
@@ -527,45 +542,13 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
 
         {/* Tab: Visão Geral */}
         <TabsContent value="overview" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Gráfico */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5" />
-                  Gráfico de Performance
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-80">
-                  <HistoricalAnalysisChart 
-                    isLoading={isLoading}
-                    chartData={chartData}
-                    isMultiLine={false}
-                    mainAssetData={selectedAssetConfig ? {
-                      ...selectedAssetConfig,
-                      price: chartData[chartData.length - 1]?.value || 0,
-                      currency: 'BRL',
-                      change: chartData[chartData.length - 1]?.variation || 0,
-                      absoluteChange: 0,
-                      lastUpdated: new Date().toISOString(),
-                    } : null}
-                    visibleAssets={visibleAssets}
-                    lineColors={lineColors}
-                    assetNames={{ [selectedAssetId]: selectedAssetConfig?.name || selectedAssetId }}
-                    showMetrics={false}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Métricas rápidas */}
-            <PerformanceMetrics 
-              assetId={selectedAssetId}
-              data={currentData}
-              isLoading={isLoading}
-            />
-          </div>
+          <AdvancedPerformanceChart 
+            quotes={currentData} 
+            assetId={selectedAssetId} 
+            isLoading={isLoading}
+            title="Análise de Performance"
+            showMetrics={true}
+          />
         </TabsContent>
 
         {/* Tab: Performance */}
@@ -592,5 +575,3 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
     </div>
   );
 }
-
-    
