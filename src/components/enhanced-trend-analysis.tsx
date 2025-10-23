@@ -16,6 +16,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  SelectGroup,
+  SelectLabel,
 } from '@/components/ui/select';
 import { 
   TrendingUp, 
@@ -36,6 +38,7 @@ import { AssetHistoricalTable } from './historical-price-table';
 import { AssetDetailModal } from './asset-detail-modal';
 import { PdfExportButton } from '@/components/pdf-export-button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { AssetIcon } from '@/lib/icons';
 
 
 // Lista de ativos disponíveis
@@ -81,7 +84,7 @@ const getPriceFromQuote = (quote: FirestoreQuote, assetId: string): number | und
 export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
   const [data, setData] = useState<Record<string, FirestoreQuote[]>>({});
   const [assets, setAssets] = useState<CommodityConfig[]>([]);
-  const [selectedAssetId, setSelectedAssetId] = useState<string>('pdm');
+  const [selectedAssetId, setSelectedAssetId] = useState<string>('ucs_ase');
   const [timeRange, setTimeRange] = useState<TimeRange>('1y');
   const [isLoading, setIsLoading] = useState(true);
   const [visibleAssets, setVisibleAssets] = useState<Record<string, boolean>>({});
@@ -148,14 +151,20 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
     return data[selectedAssetId] || [];
   }, [data, selectedAssetId]);
   
-  const { chartData, mainAssetData, assetNames } = useMemo(() => {
+  const { chartData, mainAssetData, assetNames, groupedAssets } = useMemo(() => {
     const names: Record<string, string> = {};
+    const groups: Record<string, CommodityConfig[]> = {};
+    
     assets.forEach(a => {
         names[a.id] = a.name;
+        if (!groups[a.category]) {
+            groups[a.category] = [];
+        }
+        groups[a.category].push(a);
     });
 
     if (Object.keys(data).length === 0 || !selectedAssetConfig) {
-      return { chartData: [], mainAssetData: null, assetNames: names };
+      return { chartData: [], mainAssetData: null, assetNames: names, groupedAssets: groups };
     }
   
     const mainHistory = data[selectedAssetId] || [];
@@ -194,7 +203,7 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
     const quoteForDate = sortedByDate[0];
     
     if (!quoteForDate) {
-       return { chartData: [], mainAssetData: null, assetNames: names };
+       return { chartData: [], mainAssetData: null, assetNames: names, groupedAssets: groups };
     }
 
     let finalChartData: any[];
@@ -270,7 +279,7 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
         lastUpdated: (typeof quoteForDate.data === 'string' ? quoteForDate.data : (quoteForDate.timestamp ? format(new Date(quoteForDate.timestamp as any), 'dd/MM/yyyy') : 'N/A')),
     };
     
-    return { chartData: finalChartData, mainAssetData: mainAsset, assetNames: names };
+    return { chartData: finalChartData, mainAssetData: mainAsset, assetNames: names, groupedAssets: groups };
   }, [data, targetDate, selectedAssetConfig, selectedAssetId, assets, timeRange, isMultiLine]);
   
   const handleVisibilityChange = (assetId: string) => {
@@ -311,20 +320,49 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
     </Card>
 );
 
+  const categoryLabels: Record<string, string> = {
+    'main-index': 'Índice Principal',
+    'index': 'Índices',
+    'sub-index': 'Sub-Índices',
+    'agricultural': 'Commodities Agrícolas',
+    'material': 'Materiais e Recursos',
+    'sustainability': 'Sustentabilidade',
+    'exchange': 'Moedas',
+    'calculated': 'Índices Calculados',
+  };
+
+  const categoryOrder = ['main-index', 'index', 'sub-index', 'agricultural', 'material', 'sustainability', 'exchange', 'calculated'];
+
+
   return (
     <>
       <Card>
         <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 border-b">
           <div className="flex-1">
             <Select value={selectedAssetId} onValueChange={setSelectedAssetId}>
-              <SelectTrigger className="w-full sm:w-[280px]">
-                <SelectValue placeholder="Selecione um ativo" />
-              </SelectTrigger>
-              <SelectContent>
-                {assets.map(asset => (
-                  <SelectItem key={asset.id} value={asset.id}>{asset.name}</SelectItem>
-                ))}
-              </SelectContent>
+                <SelectTrigger className="w-full sm:w-[280px]">
+                    <SelectValue placeholder="Selecione um ativo" />
+                </SelectTrigger>
+                <SelectContent>
+                    {categoryOrder.map(categoryKey => {
+                        if (groupedAssets[categoryKey] && groupedAssets[categoryKey].length > 0) {
+                            return (
+                                <SelectGroup key={categoryKey}>
+                                    <SelectLabel>{categoryLabels[categoryKey] || categoryKey}</SelectLabel>
+                                    {groupedAssets[categoryKey].map(asset => (
+                                        <SelectItem key={asset.id} value={asset.id}>
+                                            <div className="flex items-center gap-2">
+                                                <AssetIcon asset={asset as CommodityPriceData} />
+                                                <span>{asset.name}</span>
+                                            </div>
+                                        </SelectItem>
+                                    ))}
+                                </SelectGroup>
+                            );
+                        }
+                        return null;
+                    })}
+                </SelectContent>
             </Select>
           </div>
           <div className="flex items-center gap-2">
@@ -358,7 +396,7 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
                 <CardContent className="flex flex-col gap-8 p-4">
                   {mainAssetData ? <AssetInfo asset={mainAssetData} /> : <Skeleton className="h-24 w-full" />}
                     <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                        <div className={`rounded-lg p-4 border ${isMultiLine ? 'lg:col-span-3' : 'lg:col-span-4'}`}>
+                        <div className="rounded-lg p-4 border lg:col-span-4">
                             <HistoricalAnalysisChart 
                                 isLoading={isLoading}
                                 chartData={chartData}
