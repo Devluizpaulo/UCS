@@ -54,12 +54,12 @@ const timeRangeInDays: Record<TimeRange, number> = {
 
 const lineColors: { [key: string]: string } = {
   ucs_ase: 'hsl(var(--chart-1))',
+  pdm: '#f97316', // orange-500
   soja: 'hsl(var(--chart-2))',
   milho: 'hsl(var(--chart-3))',
   boi_gordo: 'hsl(var(--chart-4))',
   madeira: 'hsl(var(--chart-5))',
   carbono: 'hsl(220, 70%, 50%)',
-  pdm: 'hsl(var(--primary))',
 };
 
 // Função para extrair preço de uma cotação
@@ -102,7 +102,7 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
 
   useEffect(() => {
     setIsLoading(true);
-    const assetsToFetch = isMultiLine ? Array.from(new Set([selectedAssetId, ...UCS_ASE_COMPARISON_ASSETS])) : [selectedAssetId];
+    const assetsToFetch = isMultiLine ? UCS_ASE_COMPARISON_ASSETS : [selectedAssetId];
     const daysToFetch = timeRangeInDays[timeRange];
     
     console.log(`🔍 Fetching historical data for ${assetsToFetch.length} assets, ${daysToFetch} days`);
@@ -204,7 +204,7 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
     if (isMultiLine) {
         const dataMap = new Map<string, any>();
         
-        const assetsToProcess = Array.from(new Set([selectedAssetId, ...UCS_ASE_COMPARISON_ASSETS]));
+        const assetsToProcess = UCS_ASE_COMPARISON_ASSETS;
 
         assetsToProcess.forEach(id => {
             const assetHistory = data[id] || [];
@@ -435,3 +435,4 @@ const AssetInfo = ({ asset }: { asset: CommodityPriceData }) => {
       </div>
     );
 };
+
