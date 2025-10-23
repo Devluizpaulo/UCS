@@ -33,7 +33,7 @@ import { AssetIcon } from '@/lib/icons';
 import { getCotacoesHistorico, getQuoteByDate } from '@/lib/data-service';
 import { formatCurrency } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
-import { HistoricalPriceTable } from './historical-price-table';
+import { AssetHistoricalTable } from './historical-price-table';
 import { CalculatedAssetDetails } from './calculated-asset-details';
 import { UcsAseDetails } from './ucs-ase-details';
 import { Button } from './ui/button';
@@ -668,11 +668,12 @@ export const AssetDetailModal = memo<AssetDetailModalProps>(({
             )}
 
             {!isCalculated && !specificDetails && (
-                <HistoricalPriceTable 
-                asset={asset}
-                historicalData={historicalData[asset.id] || []} 
-                isLoading={loadingState.isLoading}
-                onRowClick={() => {}}
+                <AssetHistoricalTable
+                    assetId={asset.id}
+                    data={historicalData[asset.id] || []}
+                    assetConfig={asset}
+                    isLoading={loadingState.isLoading}
+                    onRowClick={() => {}}
                 />
             )}
         </div>
