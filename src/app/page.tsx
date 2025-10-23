@@ -227,7 +227,7 @@ export default function PDMDetailsPage() {
         {/* INTRODUCTION SECTION */}
         <section className="py-16 md:py-24 bg-muted/30">
           <div className="container mx-auto px-4 md:px-6">
-            <div className="mx-auto max-w-4xl text-center">
+            <div className="mx-auto max-w-5xl text-center">
               <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.pdm.what_is.title}</h2>
               <p className="mt-4 text-lg text-muted-foreground text-justify" dangerouslySetInnerHTML={{ __html: homeT.pdm.what_is.p1 }}></p>
               <p className="mt-4 text-lg text-muted-foreground text-justify" dangerouslySetInnerHTML={{ __html: homeT.pdm.what_is.p2 }}></p>
@@ -238,10 +238,10 @@ export default function PDMDetailsPage() {
         {/* PILLARS SECTION */}
         <section className="py-16 md:py-24">
           <div className="container mx-auto px-4 md:px-6">
-            <div className="mx-auto max-w-4xl text-center mb-12">
+            <div className="mx-auto max-w-5xl text-center mb-12">
               <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.pdm.pillars_title}</h2>
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="mx-auto max-w-5xl grid grid-cols-1 lg:grid-cols-3 gap-8">
               {pilaresPDM.map((pilar, index) => (
                 <Card key={index} className="flex flex-col hover:shadow-lg transition-shadow">
                   <CardHeader>
@@ -269,10 +269,10 @@ export default function PDMDetailsPage() {
         {/* APPLICATIONS SECTION */}
         <section className="py-16 md:py-24 bg-muted/30">
           <div className="container mx-auto px-4 md:px-6">
-            <div className="mx-auto max-w-4xl text-center mb-12">
+            <div className="mx-auto max-w-5xl text-center mb-12">
               <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.pdm.applications_title}</h2>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="mx-auto max-w-5xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {aplicacoesPDM.map((app, index) => (
                 <Card key={index} className="text-center p-6 hover:shadow-lg transition-shadow">
                   <div className="flex justify-center mb-4">
@@ -291,7 +291,7 @@ export default function PDMDetailsPage() {
         {/* UCS SECTION */}
         <section className="py-16 md:py-24">
             <div className="container mx-auto px-4 md:px-6">
-                <div className="grid md:grid-cols-2 gap-12 items-center">
+                <div className="mx-auto max-w-5xl grid md:grid-cols-2 gap-12 items-center">
                     <div>
                         <Badge variant="secondary" className="mb-4">{homeT.ucs.badge}</Badge>
                         <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.ucs.title}</h2>
@@ -318,7 +318,7 @@ export default function PDMDetailsPage() {
         {/* BLOCKCHAIN SECTION */}
         <section className="py-16 md:py-24 bg-muted/30">
             <div className="container mx-auto px-4 md:px-6">
-                <div className="grid md:grid-cols-2 gap-12 items-center">
+                <div className="mx-auto max-w-5xl grid md:grid-cols-2 gap-12 items-center">
                     <div className="relative h-64 md:h-full w-full rounded-xl overflow-hidden shadow-xl order-last md:order-first">
                          <Image
                             src="https://picsum.photos/seed/blockchain-tech/800/600"
@@ -347,7 +347,7 @@ export default function PDMDetailsPage() {
           <div className="container mx-auto px-4 md:px-6">
             <div className="mx-auto max-w-4xl">
               <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.pdm.conclusion.title}</h2>
-              <p className="mx-auto mt-4 max-w-3xl text-lg text-muted-foreground text-justify">
+              <p className="mx-auto mt-4 max-w-3xl text-lg text-muted-foreground">
                 {homeT.pdm.conclusion.p1}
               </p>
               <div className="mt-8">
@@ -369,4 +369,3 @@ export default function PDMDetailsPage() {
     </div>
   );
 }
-
