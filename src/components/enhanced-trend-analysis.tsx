@@ -35,10 +35,11 @@ import { Checkbox } from './ui/checkbox';
 import { AssetHistoricalTable } from './historical-price-table';
 import { AssetDetailModal } from './asset-detail-modal';
 import { PdfExportButton } from '@/components/pdf-export-button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 
 // Lista de ativos disponíveis
-const UCS_ASE_COMPARISON_ASSETS = ['PDM', 'milho', 'boi_gordo', 'madeira', 'carbono', 'soja'];
+const UCS_ASE_COMPARISON_ASSETS = ['ucs_ase', 'pdm', 'milho', 'boi_gordo', 'madeira', 'carbono', 'soja'];
 type TimeRange = '7d' | '30d' | '90d' | '1y' | '5y' | 'all';
 
 
@@ -58,7 +59,7 @@ const lineColors: { [key: string]: string } = {
   boi_gordo: 'hsl(var(--chart-4))',
   madeira: 'hsl(var(--chart-5))',
   carbono: 'hsl(220, 70%, 50%)',
-  PDM: 'hsl(var(--primary))',
+  pdm: 'hsl(var(--primary))',
 };
 
 // Função para extrair preço de uma cotação
@@ -81,7 +82,7 @@ const getPriceFromQuote = (quote: FirestoreQuote, assetId: string): number | und
 export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
   const [data, setData] = useState<Record<string, FirestoreQuote[]>>({});
   const [assets, setAssets] = useState<CommodityConfig[]>([]);
-  const [selectedAssetId, setSelectedAssetId] = useState<string>('PDM');
+  const [selectedAssetId, setSelectedAssetId] = useState<string>('pdm');
   const [timeRange, setTimeRange] = useState<TimeRange>('1y');
   const [isLoading, setIsLoading] = useState(true);
   const [visibleAssets, setVisibleAssets] = useState<Record<string, boolean>>({});
@@ -239,7 +240,7 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
                 if(!quote) return null;
                  try {
                     let date: Date;
-                    if (typeof quote.data === 'string' && quote.data.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                    if (typeof quote.data === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(quote.data)) {
                         date = parse(quote.data, 'dd/MM/yyyy', new Date());
                     } else if (quote.timestamp) {
                         date = new Date(quote.timestamp as any);
@@ -387,7 +388,7 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
                     <AssetHistoricalTable
                         assetId={selectedAssetId}
                         data={currentData}
-                        assetConfig={mainAssetData}
+                        assetConfig={mainAssetData || undefined}
                         isLoading={isLoading}
                         onRowClick={(quote) => setSelectedQuote(quote)}
                     />
@@ -395,9 +396,9 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
             </TabsContent>
         </Tabs>
       </Card>
-      {selectedQuote && selectedAssetConfig && (
+      {selectedQuote && mainAssetData && (
         <AssetDetailModal
-          asset={{ ...selectedAssetConfig, price: getPriceFromQuote(selectedQuote, selectedAssetId) || 0, change: selectedQuote.variacao_pct || 0, absoluteChange: 0, lastUpdated: '' }}
+          asset={{ ...mainAssetData, price: getPriceFromQuote(selectedQuote, selectedAssetId) || 0, change: selectedQuote.variacao_pct || 0, absoluteChange: 0, lastUpdated: '' }}
           isOpen={!!selectedQuote}
           onOpenChange={(isOpen) => !isOpen && setSelectedQuote(null)}
         />
