@@ -406,7 +406,7 @@ const PriceChart = memo<{
     ucs_ase: 'hsl(var(--chart-1))',
     ucs: 'hsl(var(--chart-2))',
     pdm: 'hsl(var(--chart-3))',
-    price: 'hsl(var(--chart-1))',
+    value: 'hsl(var(--chart-1))', // Corrigido de 'price' para 'value'
   };
 
   return (
@@ -472,11 +472,11 @@ const PriceChart = memo<{
                     />
                     <Line
                     type="monotone"
-                    dataKey="price"
-                    stroke={lineColors['price']}
+                    dataKey="value" // Corrigido de 'price' para 'value'
+                    stroke={lineColors['value']}
                     strokeWidth={2}
                     dot={false}
-                    activeDot={{ r: 4, stroke: lineColors['price'], strokeWidth: 2 }}
+                    activeDot={{ r: 4, stroke: lineColors['value'], strokeWidth: 2 }}
                     />
                 </>
             )}
@@ -576,15 +576,20 @@ export const AssetDetailModal = memo<AssetDetailModalProps>(({
   const chartData = useMemo((): ChartDataPoint[] => {
     if (Object.keys(historicalData).length === 0) return [];
   
+    const thirtyDaysAgo = subDays(new Date(), CHART_DAYS);
+  
     const processHistory = (history: FirestoreQuote[]) => {
-      const thirtyDaysAgo = subDays(new Date(), CHART_DAYS);
       return history
-        .filter(quote => isAfter(parseTimestamp(quote.timestamp), thirtyDaysAgo))
-        .map(quote => ({
-          timestamp: parseTimestamp(quote.timestamp).getTime(),
-          date: format(parseTimestamp(quote.timestamp), 'dd/MM', { locale: ptBR }),
-          price: extractPrice(quote),
-        }))
+        .map(quote => {
+          const timestamp = parseTimestamp(quote.timestamp);
+          if (!isAfter(timestamp, thirtyDaysAgo)) return null;
+          return {
+            timestamp: timestamp.getTime(),
+            date: format(timestamp, 'dd/MM', { locale: ptBR }),
+            value: extractPrice(quote),
+          };
+        })
+        .filter((item): item is { timestamp: number; date: string; value: number } => item !== null && item.value > 0)
         .sort((a, b) => a.timestamp - b.timestamp);
     };
   
@@ -597,13 +602,20 @@ export const AssetDetailModal = memo<AssetDetailModalProps>(({
   
     MULTI_LINE_ASSETS.forEach(assetId => {
       const history = historicalData[assetId] || [];
-      const processed = processHistory(history);
-      processed.forEach(point => {
-        if (!dataMap.has(point.date)) {
-          dataMap.set(point.date, { date: point.date, timestamp: point.timestamp });
+      history.forEach(quote => {
+        const timestamp = parseTimestamp(quote.timestamp);
+        if (!isAfter(timestamp, thirtyDaysAgo)) return;
+  
+        const dateStr = format(timestamp, 'dd/MM');
+        if (!dataMap.has(dateStr)) {
+          dataMap.set(dateStr, { date: dateStr, timestamp: timestamp.getTime() });
         }
-        const existingPoint = dataMap.get(point.date)!;
-        existingPoint[assetId] = point.price;
+        
+        const price = extractPrice(quote);
+        if (price > 0) {
+            const existingPoint = dataMap.get(dateStr)!;
+            existingPoint[assetId] = price;
+        }
       });
     });
   
@@ -644,23 +656,26 @@ export const AssetDetailModal = memo<AssetDetailModalProps>(({
     const specificDetails = AssetSpecificDetails({ asset, quote: latestQuote });
 
     return (
-      <div className="grid gap-6">
-        <PriceChart data={chartData} asset={asset} isLoading={loadingState.isLoading} />
+      <div className="grid lg:grid-cols-2 gap-6">
+        <div className="space-y-6">
+          <PriceChart data={chartData} asset={asset} isLoading={loadingState.isLoading} />
+          {specificDetails ? specificDetails : (latestQuote && <GenericAssetDetails quote={latestQuote} asset={asset} />) }
+        </div>
         
-        {specificDetails ? specificDetails : (latestQuote && <GenericAssetDetails quote={latestQuote} asset={asset} />) }
+        <div className="space-y-6">
+            {isCalculated && !isUcsAseAsset(asset) && !specificDetails && (
+                <CalculatedAssetDetails asset={asset} />
+            )}
 
-        {isCalculated && !isUcsAseAsset(asset) && !specificDetails && (
-            <CalculatedAssetDetails asset={asset} />
-        )}
-
-        {!isCalculated && !specificDetails && (
-            <HistoricalPriceTable 
-              asset={asset}
-              historicalData={historicalData[asset.id] || []} 
-              isLoading={loadingState.isLoading}
-              onRowClick={() => {}}
-            />
-        )}
+            {!isCalculated && !specificDetails && (
+                <HistoricalPriceTable 
+                asset={asset}
+                historicalData={historicalData[asset.id] || []} 
+                isLoading={loadingState.isLoading}
+                onRowClick={() => {}}
+                />
+            )}
+        </div>
       </div>
     );
   };
@@ -668,7 +683,7 @@ export const AssetDetailModal = memo<AssetDetailModalProps>(({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent 
-        className="max-w-4xl w-full"
+        className="max-w-6xl w-full"
         aria-describedby="asset-description"
       >
         <DialogHeader>
