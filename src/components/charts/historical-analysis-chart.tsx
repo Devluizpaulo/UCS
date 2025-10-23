@@ -75,8 +75,6 @@ const EnhancedMultiLineTooltip = ({ active, payload, label }: any) => {
 const EnhancedDefaultTooltip = ({ active, payload, label, asset }: any) => {
   if (active && payload && payload.length && asset) {
     const value = payload[0].value;
-    const change = asset?.change || 0;
-    const isPositive = change >= 0;
     
     return (
       <div className="bg-background border rounded-xl p-4 shadow-xl backdrop-blur-sm animate-in fade-in-0 zoom-in-95 duration-200">
@@ -90,17 +88,6 @@ const EnhancedDefaultTooltip = ({ active, payload, label, asset }: any) => {
               {formatCurrency(value, asset.currency, asset.id)}
             </span>
           </div>
-          {asset?.change !== undefined && (
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-sm font-medium">📊 Variação</span>
-              <div className="flex items-center gap-1">
-                {isPositive ? <TrendingUp className="h-3 w-3 text-green-500" /> : <TrendingDown className="h-3 w-3 text-red-500" />}
-                <span className={`text-sm font-mono font-semibold ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
-                  {isPositive ? '+' : ''}{change.toFixed(2)}%
-                </span>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     );
