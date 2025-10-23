@@ -156,8 +156,8 @@ export function AssetHistoricalTable({ assetId, data, assetConfig, isLoading, on
                 const previousQuote = sortedData[startIndex + index + 1] ?? null;
                 const previousPriceBRL = previousQuote ? getPriceFromQuote(previousQuote, assetId) : undefined;
                 
-                let variation = quote.variacao_pct ?? 0;
-                let absoluteChange = quote.variacao_abs ?? 0;
+                let variation = 0;
+                let absoluteChange = 0;
 
                 if (priceBRL !== undefined && previousPriceBRL !== undefined && previousPriceBRL > 0) {
                     absoluteChange = priceBRL - previousPriceBRL;
