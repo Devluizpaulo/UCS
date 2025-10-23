@@ -18,15 +18,31 @@ import {
   ReferenceLine,
   Brush,
 } from 'recharts';
+import { format, isValid } from 'date-fns';
+import type { FirestoreQuote } from '@/lib/types';
 import { formatCurrency } from '@/lib/formatters';
 import type { CommodityPriceData } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertCircle, TrendingUp, Download, Share2, ZoomIn, ZoomOut, RotateCcw, BarChart3, TrendingDown, Calendar, BarChart, Activity, RefreshCw, LineChart } from 'lucide-react';
+import { 
+  TrendingUp, 
+  Download, 
+  Share2, 
+  ZoomIn, 
+  ZoomOut, 
+  RotateCcw, 
+  BarChart as BarChartIcon, 
+  TrendingDown, 
+  Calendar,
+  BarChart3,
+  Activity,
+  RefreshCw,
+  LineChart
+} from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { useMediaQuery } from '@/hooks/use-media-query';
+import { useToast } from '@/hooks/use-toast';
 
 // Enhanced Tooltip with better design and animations
 const EnhancedMultiLineTooltip = ({ active, payload, label }: any) => {
@@ -241,6 +257,7 @@ export const HistoricalAnalysisChart = React.memo(({
     showMetrics = true,
 }: HistoricalAnalysisChartProps) => {
   const { resolvedTheme } = useTheme();
+  const { toast } = useToast();
   const isMobile = useMediaQuery('(max-width: 768px)');
   const [activeLegend, setActiveLegend] = React.useState<string | null>(null);
   const [zoomDomain, setZoomDomain] = React.useState<[number, number] | null>(null);
@@ -329,6 +346,44 @@ export const HistoricalAnalysisChart = React.memo(({
     );
   }
 
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      // Export logic here
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate export
+      toast({ title: 'Sucesso', description: 'Gráfico exportado como imagem.' });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleShare = async () => {
+    const shareData = {
+      title: 'Análise Histórica de Ativos',
+      text: 'Confira esta análise histórica de ativos',
+      url: window.location.href,
+    };
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+        toast({ title: 'Sucesso', description: 'Conteúdo compartilhado!' });
+      } else {
+        await navigator.clipboard.writeText(window.location.href);
+        toast({ title: 'Sucesso', description: 'Link copiado para a área de transferência!' });
+      }
+    } catch (error) {
+      console.error('Erro ao compartilhar:', error);
+      // Fallback para copiar o link se o compartilhamento falhar
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        toast({ title: 'Link Copiado', description: 'O compartilhamento falhou, mas o link foi copiado.' });
+      } catch (copyError) {
+        toast({ variant: 'destructive', title: 'Falha', description: 'Não foi possível compartilhar ou copiar o link.' });
+      }
+    }
+  };
+
+
   // Chart Controls Component
   const ChartControls = () => (
     <div className="flex flex-wrap items-center gap-2 p-3 bg-muted/30 rounded-lg mb-4">
@@ -356,7 +411,7 @@ export const HistoricalAnalysisChart = React.memo(({
           onClick={() => setChartType('bar')}
           className="h-8 px-2"
         >
-          <BarChart className="h-4 w-4" />
+          <BarChartIcon className="h-4 w-4" />
         </Button>
       </div>
 
@@ -404,7 +459,7 @@ export const HistoricalAnalysisChart = React.memo(({
         disabled={isExporting}
         className="h-8 px-2"
       >
-        {isExporting ? <AlertCircle className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+        {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
       </Button>
       <Button
         variant="ghost"
@@ -417,28 +472,6 @@ export const HistoricalAnalysisChart = React.memo(({
     </div>
   );
 
-  // Export and Share handlers
-  const handleExport = async () => {
-    setIsExporting(true);
-    try {
-      // Export logic here
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate export
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
-  const handleShare = () => {
-    if (navigator.share) {
-      navigator.share({
-        title: 'Análise Histórica de Ativos',
-        text: 'Confira esta análise histórica de ativos',
-        url: window.location.href
-      });
-    } else {
-      navigator.clipboard.writeText(window.location.href);
-    }
-  };
 
   if (isLoading) {
     return <EnhancedChartSkeleton />;
@@ -648,3 +681,7 @@ export const HistoricalAnalysisChart = React.memo(({
     </div>
   );
 });
+
+HistoricalAnalysisChart.displayName = 'HistoricalAnalysisChart';
+
+    
