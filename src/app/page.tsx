@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { User, ShieldCheck, FileText, BarChart3, TrendingUp, Briefcase, Award, Blocks, TreePine, LandPlot, Globe, TrendingDown } from "lucide-react";
+import { User, ShieldCheck, FileText, BarChart3, TrendingUp, Briefcase, Award, Blocks, TreePine, LandPlot, Globe, TrendingDown, ArrowUp } from "lucide-react";
 import Image from 'next/image';
 import Link from 'next/link';
 import { LogoUCS } from "@/components/logo-bvm";
@@ -171,8 +171,11 @@ export default function PDMDetailsPage() {
         let date: Date | null = null;
         if (quote.data) {
           try {
-            const [day, month, year] = quote.data.split('/');
-            date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+             if (typeof quote.data === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(quote.data)) {
+                date = parse(quote.data, 'dd/MM/yyyy', new Date());
+             } else if (quote.timestamp) {
+                date = new Date(quote.timestamp as any);
+             }
           } catch { date = null; }
         }
         if (!date && quote.timestamp) {
@@ -192,6 +195,13 @@ export default function PDMDetailsPage() {
       .filter((item): item is NonNullable<typeof item> => item !== null)
       .sort((a, b) => a.timestamp - b.timestamp);
   }, [ucsHistory]);
+
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  };
 
   return (
     <div className="flex min-h-screen w-full flex-col overflow-x-hidden bg-background text-foreground">
@@ -214,7 +224,7 @@ export default function PDMDetailsPage() {
 
       <main className="flex-1">
         {/* HERO SECTION */}
-        <section className="relative flex h-[90vh] min-h-[700px] w-full flex-col items-center justify-center overflow-hidden bg-black p-4 pb-48">
+        <section className="relative flex h-[90vh] min-h-[700px] w-full flex-col items-center justify-center overflow-hidden bg-black p-4 pb-12">
            <div className="absolute inset-0 z-0 h-full w-full">
                 <video
                     autoPlay
@@ -237,20 +247,11 @@ export default function PDMDetailsPage() {
                 {heroContent.subtitle}
               </p>
             </div>
-          </div>
-        </section>
-
-        <div className="sticky top-20 z-40 -mt-40 w-full">
-            <div className="container mx-auto max-w-4xl p-4 animate-fade-in-up animation-delay-400">
-               <Card className={cn(
-                   "transition-all duration-300",
-                   isScrolled 
-                     ? "bg-background border shadow-xl text-foreground"
-                     : "bg-background/20 backdrop-blur-md border-white/20 text-white"
-               )}>
+             <div className="w-full max-w-4xl p-4 animate-fade-in-up animation-delay-400">
+               <Card className="bg-background/20 backdrop-blur-md border-white/20 text-white">
                 <CardHeader className="text-center">
                     <CardTitle className="text-xl font-bold">{homeT.quote.title}</CardTitle>
-                    <CardDescription className={cn(isScrolled ? "text-muted-foreground" : "text-gray-300")}>{homeT.quote.subtitle}</CardDescription>
+                    <CardDescription className="text-gray-300">{homeT.quote.subtitle}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Carousel
@@ -274,7 +275,7 @@ export default function PDMDetailsPage() {
                               </div>
                             </div>
                             {item.conversionRate && (
-                              <div className={cn("mt-2 text-sm", isScrolled ? "text-muted-foreground" : "text-gray-300")}>
+                              <div className="mt-2 text-sm text-gray-300">
                                 {homeT.quote.conversionRate} {formatCurrency(item.conversionRate, 'BRL')}
                               </div>
                             )}
@@ -286,7 +287,8 @@ export default function PDMDetailsPage() {
                 </CardContent>
               </Card>
             </div>
-        </div>
+          </div>
+        </section>
 
         {/* INTRODUCTION SECTION */}
         <section className="py-16 md:py-24 bg-muted/30">
@@ -443,6 +445,36 @@ export default function PDMDetailsPage() {
         </section>
       </main>
 
+      {/* Floating Quote Button */}
+      {ucsAseAsset && (
+        <div className={cn(
+          "fixed bottom-6 right-6 z-50 transition-opacity duration-300",
+          isScrolled ? "opacity-100" : "opacity-0 pointer-events-none"
+        )}>
+          <Button
+            variant="default"
+            className="h-14 w-auto px-5 rounded-full shadow-2xl bg-gradient-to-r from-primary to-green-600 hover:scale-105 transition-transform"
+            onClick={scrollToTop}
+          >
+            <div className="flex items-center gap-3">
+              <span className="font-semibold">{ucsAseAsset.name}</span>
+              <div className="h-6 w-px bg-white/30" />
+              <span className="font-mono font-bold text-lg">{formatCurrency(ucsAseAsset.price, 'BRL')}</span>
+              <div className={cn(
+                "flex items-center text-sm font-semibold",
+                ucsAseAsset.change >= 0 ? "text-green-300" : "text-red-300"
+              )}>
+                {ucsAseAsset.change >= 0 ? <TrendingUp className="h-4 w-4 mr-1" /> : <TrendingDown className="h-4 w-4 mr-1" />}
+                {ucsAseAsset.change.toFixed(2)}%
+              </div>
+              <div className="ml-2 p-1 bg-white/20 rounded-full">
+                <ArrowUp className="h-4 w-4" />
+              </div>
+            </div>
+          </Button>
+        </div>
+      )}
+
       <footer className="border-t">
         <div className="container mx-auto flex flex-col items-center justify-between gap-4 px-4 py-8 md:flex-row md:px-6">
           <div className="flex flex-col items-center gap-2 text-center md:flex-row md:gap-4 md:text-left">
@@ -454,3 +486,5 @@ export default function PDMDetailsPage() {
     </div>
   );
 }
+
+    
