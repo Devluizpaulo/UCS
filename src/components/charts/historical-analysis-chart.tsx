@@ -593,7 +593,7 @@ export const HistoricalAnalysisChart = React.memo(({
               fontSize={isMobile ? 10 : 12}
               tickLine={false}
               axisLine={false}
-              domain={['dataMin - (dataMax - dataMin) * 0.1', 'dataMax + (dataMax - dataMin) * 0.1']}
+              domain={[0, 1000]}
               tickFormatter={(value) => formatCurrency(value as number, mainAssetData?.currency || 'BRL', mainAssetData?.id)}
               yAxisId="left"
               width={isMobile ? 60 : 80}
