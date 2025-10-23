@@ -39,68 +39,6 @@ const getPriceFromQuote = (quote: FirestoreQuote, assetId: string): number | und
   return typeof value === 'number' ? value : undefined;
 };
 
-// Função para calcular métricas de performance
-const calculatePerformanceMetrics = (quotes: FirestoreQuote[], assetId: string) => {
-  if (quotes.length < 2) return null;
-  
-  const prices = quotes
-    .map(quote => getPriceFromQuote(quote, assetId))
-    .filter((price): price is number => price !== undefined);
-    
-  if (prices.length < 2) return null;
-  
-  const firstPrice = prices[0];
-  const lastPrice = prices[prices.length - 1];
-  const maxPrice = Math.max(...prices);
-  const minPrice = Math.min(...prices);
-  
-  // Calcular retorno total
-  const totalReturn = ((lastPrice - firstPrice) / firstPrice) * 100;
-  
-  // Calcular volatilidade (desvio padrão dos retornos diários)
-  const dailyReturns = [];
-  for (let i = 1; i < prices.length; i++) {
-    const dailyReturn = ((prices[i] - prices[i-1]) / prices[i-1]) * 100;
-    dailyReturns.push(dailyReturn);
-  }
-  
-  const avgReturn = dailyReturns.reduce((sum, ret) => sum + ret, 0) / dailyReturns.length;
-  const variance = dailyReturns.reduce((sum, ret) => sum + Math.pow(ret - avgReturn, 2), 0) / dailyReturns.length;
-  const volatility = Math.sqrt(variance);
-  
-  // Calcular máximo drawdown
-  let maxDrawdown = 0;
-  let peak = prices[0];
-  
-  for (const price of prices) {
-    if (price > peak) {
-      peak = price;
-    }
-    const drawdown = ((peak - price) / peak) * 100;
-    if (drawdown > maxDrawdown) {
-      maxDrawdown = drawdown;
-    }
-  }
-  
-  // Calcular Sharpe Ratio (simplificado)
-  const riskFreeRate = 0.1; // 0.1% ao dia (aproximação)
-  const excessReturn = avgReturn - riskFreeRate;
-  const sharpeRatio = volatility > 0 ? excessReturn / volatility : 0;
-  
-  return {
-    totalReturn,
-    volatility,
-    maxDrawdown,
-    sharpeRatio,
-    high: maxPrice,
-    low: minPrice,
-    currentPrice: lastPrice,
-    firstPrice,
-    totalDays: quotes.length,
-    avgDailyReturn: avgReturn
-  };
-};
-
 // Componente de métrica individual
 const MetricCard = ({ 
   title, 
@@ -405,4 +343,4 @@ const AdvancedPerformanceChart = ({
   );
 };
 
-export { AdvancedPerformanceChart, calculatePerformanceMetrics, MetricCard };
+export { AdvancedPerformanceChart, MetricCard };
