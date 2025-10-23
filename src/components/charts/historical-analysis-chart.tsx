@@ -684,5 +684,3 @@ export const HistoricalAnalysisChart = React.memo(({
 });
 
 HistoricalAnalysisChart.displayName = 'HistoricalAnalysisChart';
-
-    
