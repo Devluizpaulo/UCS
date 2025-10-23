@@ -223,6 +223,7 @@ interface HistoricalAnalysisChartProps {
     visibleAssets: Record<string, boolean>;
     lineColors: Record<string, string>;
     assetNames: Record<string, string>;
+    showMetrics?: boolean;
 }
 
 export const HistoricalAnalysisChart = React.memo(({ 
@@ -232,7 +233,8 @@ export const HistoricalAnalysisChart = React.memo(({
     mainAssetData,
     visibleAssets,
     lineColors,
-    assetNames
+    assetNames,
+    showMetrics = true,
 }: HistoricalAnalysisChartProps) => {
   const { resolvedTheme } = useTheme();
   const isMobile = useMediaQuery('(max-width: 768px)');
@@ -441,7 +443,7 @@ export const HistoricalAnalysisChart = React.memo(({
   return (
     <div className="w-full h-full space-y-4">
       {/* Chart Controls */}
-      <ChartControls />
+      {showMetrics && <ChartControls />}
       
           {/* Main Chart */}
           <div className="relative">
@@ -535,7 +537,7 @@ export const HistoricalAnalysisChart = React.memo(({
               <>
                 <ReferenceLine 
                   y={mainAssetData.price} 
-                  stroke="hsl(var(--primary))" 
+                  stroke="hsl(var(--primary))" _
                   strokeDasharray="5 5" 
                   opacity={0.8}
                   label={{ value: "Preço Atual", position: "top" }}
@@ -635,7 +637,7 @@ export const HistoricalAnalysisChart = React.memo(({
       </div>
       
       {/* Performance Metrics */}
-      <PerformanceMetrics data={chartData} mainAsset={mainAssetData} />
+      {showMetrics && <PerformanceMetrics data={chartData} mainAsset={mainAssetData} />}
     </div>
   );
 });

@@ -16,7 +16,6 @@ import Autoplay from "embla-carousel-autoplay";
 import { getCommodityPrices, getCotacoesHistorico } from '@/lib/data-service';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/language-context';
-import { Badge } from '@/components/ui/badge';
 import { getLandingPageSettings, type LandingPageSettings } from '@/lib/settings-actions';
 import { HistoricalAnalysisChart } from '@/components/charts/historical-analysis-chart';
 
@@ -344,6 +343,7 @@ export default function PDMDetailsPage() {
                         visibleAssets={{}}
                         lineColors={{}}
                         assetNames={{}}
+                        showMetrics={false}
                     />
                 </div>
             </div>
@@ -354,7 +354,6 @@ export default function PDMDetailsPage() {
             <div className="container mx-auto px-4 md:px-6">
                 <div className="mx-auto max-w-5xl grid md:grid-cols-2 gap-12 items-center">
                     <div>
-                        <Badge variant="secondary" className="mb-4">{homeT.ucs.badge}</Badge>
                         <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.ucs.title}</h2>
                         <p className="mt-4 text-lg text-muted-foreground text-justify">
                             {homeT.ucs.p1}
@@ -390,7 +389,6 @@ export default function PDMDetailsPage() {
                         />
                     </div>
                     <div className="md:order-first">
-                        <Badge variant="secondary" className="mb-4">{homeT.blockchain.badge}</Badge>
                         <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.blockchain.title}</h2>
                         <p className="mt-4 text-lg text-muted-foreground text-justify">
                             {homeT.blockchain.p1}
