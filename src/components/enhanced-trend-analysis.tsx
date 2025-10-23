@@ -39,7 +39,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 
 // Lista de ativos disponíveis
-const UCS_ASE_COMPARISON_ASSETS = ['ucs_ase', 'pdm', 'milho', 'boi_gordo', 'madeira', 'carbono', 'soja'];
+const UCS_ASE_COMPARISON_ASSETS = ['ucs_ase', 'milho', 'boi_gordo', 'madeira', 'carbono', 'soja'];
 type TimeRange = '7d' | '30d' | '90d' | '1y' | '5y' | 'all';
 
 
@@ -435,4 +435,3 @@ const AssetInfo = ({ asset }: { asset: CommodityPriceData }) => {
       </div>
     );
 };
-
