@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/language-context';
 import { getLandingPageSettings, type LandingPageSettings } from '@/lib/settings-actions';
 import { HistoricalAnalysisChart } from '@/components/charts/historical-analysis-chart';
+import { format } from 'date-fns';
 
 // Tipo local para incluir dados de conversão
 type IndexValue = {
