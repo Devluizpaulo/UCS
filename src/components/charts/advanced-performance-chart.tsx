@@ -5,7 +5,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { format, isValid } from 'date-fns';
 import type { FirestoreQuote } from '@/lib/types';
 import { formatCurrency } from '@/lib/formatters';
-import { calculateFrequencyAwareMetrics } from '@/lib/data-service';
+import { calculateFrequencyAwareMetrics, getCotacoesHistorico } from '@/lib/data-service';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { 

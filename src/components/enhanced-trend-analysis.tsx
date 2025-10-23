@@ -1,11 +1,12 @@
 
+
 'use client';
 
 import * as React from 'react';
 import { useState, useEffect, useMemo } from 'react';
 import { format, parseISO, isValid, subDays } from 'date-fns';
 import type { FirestoreQuote, CommodityConfig } from '@/lib/types';
-import { getCotacoesHistorico, getCommodityConfigs, calculateFrequencyAwareMetrics } from '@/lib/data-service';
+import { getCotacoesHistorico, getCommodityConfigs, calculateFrequencyAwareMetrics, getQuoteByDate } from '@/lib/data-service';
 import { formatCurrency } from '@/lib/formatters';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -440,10 +441,15 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
   const currentData = data[selectedAssetId] || [];
 
   const { chartData, mainAssetData, isMultiLine, assetNames } = useMemo(() => {
-    if (!selectedAssetConfig) {
+    if (isLoading || !selectedAssetConfig || currentData.length === 0) {
       return { chartData: [], mainAssetData: null, isMultiLine: false, assetNames: {} };
     }
   
+    const names: Record<string, string> = {};
+    assets.forEach(a => {
+        names[a.id] = a.name;
+    });
+
     const processData = (history: FirestoreQuote[], assetId: string) => {
       return history
         .map(quote => {
@@ -472,10 +478,8 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
         .sort((a, b) => a.timestamp - b.timestamp);
     };
   
-    const mainHistory = data[selectedAssetId] || [];
-    const processedChartData = processData(mainHistory, selectedAssetId);
-  
-    const latestQuote = mainHistory.length > 0 ? mainHistory[0] : null;
+    const processedChartData = processData(currentData, selectedAssetId);
+    const latestQuote = currentData.length > 0 ? currentData[0] : null;
     const latestPrice = latestQuote ? getPriceFromQuote(latestQuote, selectedAssetId) : 0;
     
     const mainAsset: CommodityPriceData = {
@@ -491,9 +495,9 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
       chartData: processedChartData,
       mainAssetData: mainAsset,
       isMultiLine: false, 
-      assetNames: { [selectedAssetId]: selectedAssetConfig.name },
+      assetNames: names
     };
-  }, [data, selectedAssetId, assets, selectedAssetConfig]);
+  }, [currentData, selectedAssetId, assets, selectedAssetConfig, isLoading]);
 
 
   const handleVisibilityChange = (assetId: string) => {
@@ -575,3 +579,4 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
     </div>
   );
 }
+
