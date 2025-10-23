@@ -1,10 +1,12 @@
+
 /**
  * Exemplos de uso dos novos tipos de relatório do UCS Index
  * Este arquivo demonstra como configurar dados para cada tipo de relatório
  */
 
 import { DashboardPdfData, CommodityPriceData } from '@/lib/types';
-import { MarketInsight, PerformanceMetric, RiskAnalysis, CustomSection } from './pdf-generator';
+import { MarketInsight, PerformanceMetric, RiskAnalysis, CustomSection } from './types';
+
 
 // ===================================================================================
 // EXEMPLO: Relatório Comercial Executivo

@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import type { User as FirebaseUser } from 'firebase/auth';
@@ -60,6 +59,41 @@ export interface AppUserRecord extends UserRecord {
     isAdmin: boolean;
 }
 
+
+// --- NOVAS ESTRUTURAS PARA RELATÓRIOS AVANÇADOS ---
+
+export interface MarketInsight {
+    title: string;
+    description: string;
+    impact: 'positive' | 'negative' | 'neutral';
+    confidence: number; // 0-100
+}
+
+export interface PerformanceMetric {
+    name: string;
+    value: number;
+    unit: string;
+    trend: 'up' | 'down' | 'stable';
+    period: string;
+}
+
+export interface RiskAnalysis {
+    overallRisk: 'low' | 'medium' | 'high';
+    factors: {
+        name: string;
+        level: 'low' | 'medium' | 'high';
+        description: string;
+    }[];
+}
+
+export interface CustomSection {
+    title: string;
+    content: string;
+    type: 'text' | 'table' | 'chart' | 'kpi';
+    data?: any[];
+}
+
+
 // Defines the data structure needed for generating PDF reports
 export interface DashboardPdfData {
     mainIndex?: CommodityPriceData;
@@ -67,5 +101,11 @@ export interface DashboardPdfData {
     currencies: CommodityPriceData[];
     otherAssets: CommodityPriceData[];
     targetDate: Date;
+    // Dados para o relatório de IA
     aiReportData?: ReportOutput;
+    // Dados avançados para relatórios comerciais
+    marketInsights?: MarketInsight[];
+    performanceMetrics?: PerformanceMetric[];
+    riskAnalysis?: RiskAnalysis;
+    customSections?: CustomSection[];
 }

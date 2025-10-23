@@ -1,12 +1,11 @@
 
-
 'use client';
 
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import type { CommodityPriceData } from './types';
+import type { CommodityPriceData, DashboardPdfData, MarketInsight, PerformanceMetric, RiskAnalysis, CustomSection } from './types';
 import { formatCurrency } from './formatters';
 import type { ReportOutput } from '@/ai/flows/report-flow';
 
@@ -14,52 +13,6 @@ import type { ReportOutput } from '@/ai/flows/report-flow';
 // Extende a interface do jsPDF para incluir o autoTable
 interface jsPDFWithAutoTable extends jsPDF {
   autoTable: (options: any) => jsPDFWithAutoTable;
-}
-
-export interface DashboardPdfData {
-    mainIndex?: CommodityPriceData;
-    secondaryIndices: CommodityPriceData[];
-    currencies: CommodityPriceData[];
-    otherAssets: CommodityPriceData[];
-    targetDate: Date;
-    // Dados para o relatório de IA
-    aiReportData?: ReportOutput;
-    // Dados adicionais para relatórios comerciais
-    marketInsights?: MarketInsight[];
-    performanceMetrics?: PerformanceMetric[];
-    riskAnalysis?: RiskAnalysis;
-    customSections?: CustomSection[];
-}
-
-export interface MarketInsight {
-    title: string;
-    description: string;
-    impact: 'positive' | 'negative' | 'neutral';
-    confidence: number; // 0-100
-}
-
-export interface PerformanceMetric {
-    name: string;
-    value: number;
-    unit: string;
-    trend: 'up' | 'down' | 'stable';
-    period: string;
-}
-
-export interface RiskAnalysis {
-    overallRisk: 'low' | 'medium' | 'high';
-    factors: {
-        name: string;
-        level: 'low' | 'medium' | 'high';
-        description: string;
-    }[];
-}
-
-export interface CustomSection {
-    title: string;
-    content: string;
-    type: 'text' | 'table' | 'chart' | 'kpi';
-    data?: any[];
 }
 
 const COLORS = {
@@ -709,176 +662,6 @@ const generateRecommendations = (data: DashboardPdfData) => {
 };
 
 // ===================================================================================
-// === TEMPLATE PERSONALIZADO =======================================================
-// ===================================================================================
-const generateCustomPdf = (data: DashboardPdfData): jsPDF => {
-    const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' }) as jsPDFWithAutoTable;
-    const { targetDate, customSections } = data;
-    
-    const pageW = doc.internal.pageSize.getWidth();
-    const pageH = doc.internal.pageSize.getHeight();
-    const margin = 50;
-    const sectionSpacing = 25;
-    const elementSpacing = 15;
-    let y = 60;
-
-    // --- CABEÇALHO PERSONALIZADO ---
-    doc.setFillColor(COLORS.primary);
-    doc.roundedRect(0, 0, pageW, 90, 0, 0, 'F');
-    
-    doc.setTextColor(255, 255, 255);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(18);
-    doc.text('UCS INDEX', margin, 30);
-    doc.setFontSize(14);
-    doc.text('Relatório Personalizado', margin, 50);
-    doc.setFontSize(10);
-    doc.text(`Gerado em ${format(targetDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}`, margin, 70);
-    
-    // Logo BMV no lado direito substituindo "UCS Index"
-    addBMVLogo(doc, pageW - margin - 50, 25, 50, 25);
-    
-    y = 110;
-
-    // --- SEÇÕES PERSONALIZADAS ---
-    if (customSections && customSections.length > 0) {
-        customSections.forEach((section, index) => {
-            if (y > pageH - 150) {
-                doc.addPage();
-                y = 50;
-            }
-            
-            // Título da seção
-            doc.setTextColor(COLORS.textPrimary);
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(14);
-            doc.text(section.title, margin, y);
-            y += elementSpacing + 5;
-            
-            // Conteúdo da seção baseado no tipo
-            switch (section.type) {
-                case 'text':
-                    doc.setTextColor(COLORS.textSecondary);
-                    doc.setFont('helvetica', 'normal');
-                    doc.setFontSize(10);
-                    const textLines = doc.splitTextToSize(section.content, pageW - margin * 2);
-                    doc.text(textLines, margin, y);
-                    y += textLines.length * 12 + sectionSpacing;
-                    break;
-                    
-                case 'kpi':
-                    if (section.data && section.data.length > 0) {
-                        const kpiWidth = (pageW - margin * 2 - 40) / Math.min(section.data.length, 3);
-                        const kpiHeight = 60;
-                        const kpiRows = Math.ceil(section.data.length / 3);
-                        
-                        section.data.forEach((kpi: any, kpiIndex: number) => {
-                            const col = kpiIndex % 3;
-                            const row = Math.floor(kpiIndex / 3);
-                            const x = margin + (kpiWidth + 20) * col;
-                            const yPos = y + (kpiHeight + 15) * row;
-                            
-                            if (yPos + kpiHeight > pageH - 100) {
-                                doc.addPage();
-                                y = 50;
-                                const newYPos = y + (kpiHeight + 15) * row;
-                                drawCustomKpiBlock(kpi, x, newYPos, kpiWidth, doc);
-                            } else {
-                                drawCustomKpiBlock(kpi, x, yPos, kpiWidth, doc);
-                            }
-                        });
-                        y += kpiRows * (kpiHeight + 15) + sectionSpacing;
-                    }
-                    break;
-                    
-                case 'table':
-                    if (section.data && section.data.length > 0) {
-                        doc.autoTable({
-                            startY: y,
-                            head: section.data[0] ? Object.keys(section.data[0]).map(key => key.toUpperCase()) : [],
-                            body: section.data.map((row: any) => Object.values(row)),
-                            theme: 'striped',
-                            headStyles: { fillColor: COLORS.primary, textColor: 255 },
-                            styles: { cellPadding: 5, fontSize: 8 },
-                            margin: { left: margin, right: margin },
-                        });
-                        y = (doc as any).lastAutoTable.finalY + sectionSpacing;
-                    }
-                    break;
-                    
-                case 'chart':
-                    // Para gráficos, vamos criar uma representação textual
-                    doc.setFillColor(249, 250, 251);
-                    doc.roundedRect(margin, y, pageW - margin * 2, 80, 8, 8, 'F');
-                    doc.setTextColor(COLORS.textSecondary);
-                    doc.setFontSize(9);
-                    doc.text('📊 Gráfico: ' + section.content, margin + 20, y + 40);
-                    y += 100;
-                    break;
-            }
-            
-            // Separador entre seções
-            if (index < customSections.length - 1) {
-                doc.setDrawColor(COLORS.border);
-                doc.setLineWidth(0.5);
-                doc.line(margin, y - 10, pageW - margin, y - 10);
-                y += sectionSpacing;
-            }
-        });
-    } else {
-        // Seção padrão quando não há seções personalizadas
-        doc.setTextColor(COLORS.textPrimary);
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(14);
-        doc.text('Relatório Personalizado', margin, y);
-        y += elementSpacing + 5;
-        
-        doc.setTextColor(COLORS.textSecondary);
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(10);
-        doc.text('Este é um relatório personalizado gerado pelo UCS Index. Use as configurações de personalização para adicionar seções específicas.', margin, y);
-    }
-
-    // --- RODAPÉ PERSONALIZADO ---
-    for (let i = 1; i <= doc.internal.pages.length; i++) {
-        doc.setPage(i);
-        doc.setFillColor(COLORS.primary);
-        doc.roundedRect(0, pageH - 40, pageW, 40, 0, 0, 'F');
-        
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(9);
-        doc.text('UCS Index - Relatório Personalizado', margin, pageH - 20);
-        doc.text(`Página ${i}`, pageW - margin, pageH - 20, { align: 'right' });
-    }
-
-    return doc;
-};
-
-const drawCustomKpiBlock = (kpi: any, x: number, y: number, width: number, doc: jsPDF) => {
-    doc.setDrawColor(COLORS.border);
-    doc.setLineWidth(1);
-    doc.roundedRect(x, y, width, 60, 6, 6, 'S');
-
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9);
-    doc.setTextColor(COLORS.textSecondary);
-    const titleLines = doc.splitTextToSize(kpi.title || 'KPI', width - 20);
-    doc.text(titleLines, x + 10, y + 12);
-
-    doc.setFontSize(14);
-    doc.setTextColor(COLORS.textPrimary);
-    const valueText = `${kpi.value || '0'} ${kpi.unit || ''}`;
-    doc.text(valueText, x + 10, y + 30);
-
-    doc.setFontSize(8);
-    doc.setTextColor(COLORS.textSecondary);
-    if (kpi.trend) {
-        const trendIcon = kpi.trend === 'up' ? '📈' : kpi.trend === 'down' ? '📉' : '➡️';
-        doc.text(trendIcon, x + 10, y + 45);
-    }
-};
-
-// ===================================================================================
 // === TEMPLATE DE COMPOSIÇÃO ========================================================
 // ===================================================================================
 const generateCompositionPdf = (data: DashboardPdfData): jsPDF => {
@@ -1163,6 +946,176 @@ const generateCompositionPdf = (data: DashboardPdfData): jsPDF => {
 
 
 // ===================================================================================
+// === TEMPLATE PERSONALIZADO =======================================================
+// ===================================================================================
+const generateCustomPdf = (data: DashboardPdfData): jsPDF => {
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' }) as jsPDFWithAutoTable;
+    const { targetDate, customSections } = data;
+    
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const margin = 50;
+    const sectionSpacing = 25;
+    const elementSpacing = 15;
+    let y = 60;
+
+    // --- CABEÇALHO PERSONALIZADO ---
+    doc.setFillColor(COLORS.primary);
+    doc.roundedRect(0, 0, pageW, 90, 0, 0, 'F');
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(18);
+    doc.text('UCS INDEX', margin, 30);
+    doc.setFontSize(14);
+    doc.text('Relatório Personalizado', margin, 50);
+    doc.setFontSize(10);
+    doc.text(`Gerado em ${format(targetDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}`, margin, 70);
+    
+    // Logo BMV no lado direito substituindo "UCS Index"
+    addBMVLogo(doc, pageW - margin - 50, 25, 50, 25);
+    
+    y = 110;
+
+    // --- SEÇÕES PERSONALIZADAS ---
+    if (customSections && customSections.length > 0) {
+        customSections.forEach((section, index) => {
+            if (y > pageH - 150) {
+                doc.addPage();
+                y = 50;
+            }
+            
+            // Título da seção
+            doc.setTextColor(COLORS.textPrimary);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(14);
+            doc.text(section.title, margin, y);
+            y += elementSpacing + 5;
+            
+            // Conteúdo da seção baseado no tipo
+            switch (section.type) {
+                case 'text':
+                    doc.setTextColor(COLORS.textSecondary);
+                    doc.setFont('helvetica', 'normal');
+                    doc.setFontSize(10);
+                    const textLines = doc.splitTextToSize(section.content, pageW - margin * 2);
+                    doc.text(textLines, margin, y);
+                    y += textLines.length * 12 + sectionSpacing;
+                    break;
+                    
+                case 'kpi':
+                    if (section.data && section.data.length > 0) {
+                        const kpiWidth = (pageW - margin * 2 - 40) / Math.min(section.data.length, 3);
+                        const kpiHeight = 60;
+                        const kpiRows = Math.ceil(section.data.length / 3);
+                        
+                        section.data.forEach((kpi: any, kpiIndex: number) => {
+                            const col = kpiIndex % 3;
+                            const row = Math.floor(kpiIndex / 3);
+                            const x = margin + (kpiWidth + 20) * col;
+                            const yPos = y + (kpiHeight + 15) * row;
+                            
+                            if (yPos + kpiHeight > pageH - 100) {
+                                doc.addPage();
+                                y = 50;
+                                const newYPos = y + (kpiHeight + 15) * row;
+                                drawCustomKpiBlock(kpi, x, newYPos, kpiWidth, doc);
+                            } else {
+                                drawCustomKpiBlock(kpi, x, yPos, kpiWidth, doc);
+                            }
+                        });
+                        y += kpiRows * (kpiHeight + 15) + sectionSpacing;
+                    }
+                    break;
+                    
+                case 'table':
+                    if (section.data && section.data.length > 0) {
+                        doc.autoTable({
+                            startY: y,
+                            head: section.data[0] ? Object.keys(section.data[0]).map(key => key.toUpperCase()) : [],
+                            body: section.data.map((row: any) => Object.values(row)),
+                            theme: 'striped',
+                            headStyles: { fillColor: COLORS.primary, textColor: 255 },
+                            styles: { cellPadding: 5, fontSize: 8 },
+                            margin: { left: margin, right: margin },
+                        });
+                        y = (doc as any).lastAutoTable.finalY + sectionSpacing;
+                    }
+                    break;
+                    
+                case 'chart':
+                    // Para gráficos, vamos criar uma representação textual
+                    doc.setFillColor(249, 250, 251);
+                    doc.roundedRect(margin, y, pageW - margin * 2, 80, 8, 8, 'F');
+                    doc.setTextColor(COLORS.textSecondary);
+                    doc.setFontSize(9);
+                    doc.text('📊 Gráfico: ' + section.content, margin + 20, y + 40);
+                    y += 100;
+                    break;
+            }
+            
+            // Separador entre seções
+            if (index < customSections.length - 1) {
+                doc.setDrawColor(COLORS.border);
+                doc.setLineWidth(0.5);
+                doc.line(margin, y - 10, pageW - margin, y - 10);
+                y += sectionSpacing;
+            }
+        });
+    } else {
+        // Seção padrão quando não há seções personalizadas
+        doc.setTextColor(COLORS.textPrimary);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(14);
+        doc.text('Relatório Personalizado', margin, y);
+        y += elementSpacing + 5;
+        
+        doc.setTextColor(COLORS.textSecondary);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
+        doc.text('Este é um relatório personalizado gerado pelo UCS Index. Use as configurações de personalização para adicionar seções específicas.', margin, y);
+    }
+
+    // --- RODAPÉ PERSONALIZADO ---
+    for (let i = 1; i <= doc.internal.pages.length; i++) {
+        doc.setPage(i);
+        doc.setFillColor(COLORS.primary);
+        doc.roundedRect(0, pageH - 40, pageW, 40, 0, 0, 'F');
+        
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(9);
+        doc.text('UCS Index - Relatório Personalizado', margin, pageH - 20);
+        doc.text(`Página ${i}`, pageW - margin, pageH - 20, { align: 'right' });
+    }
+
+    return doc;
+};
+
+const drawCustomKpiBlock = (kpi: any, x: number, y: number, width: number, doc: jsPDF) => {
+    doc.setDrawColor(COLORS.border);
+    doc.setLineWidth(1);
+    doc.roundedRect(x, y, width, 60, 6, 6, 'S');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(COLORS.textSecondary);
+    const titleLines = doc.splitTextToSize(kpi.title || 'KPI', width - 20);
+    doc.text(titleLines, x + 10, y + 12);
+
+    doc.setFontSize(14);
+    doc.setTextColor(COLORS.textPrimary);
+    const valueText = `${kpi.value || '0'} ${kpi.unit || ''}`;
+    doc.text(valueText, x + 10, y + 30);
+
+    doc.setFontSize(8);
+    doc.setTextColor(COLORS.textSecondary);
+    if (kpi.trend) {
+        const trendIcon = kpi.trend === 'up' ? '📈' : kpi.trend === 'down' ? '📉' : '➡️';
+        doc.text(trendIcon, x + 10, y + 45);
+    }
+};
+
+// ===================================================================================
 // === FUNÇÃO PRINCIPAL DE GERAÇÃO =================================================
 // ===================================================================================
 export const generatePdf = (
@@ -1220,5 +1173,3 @@ export const generatePdf = (
         throw new Error(`Falha na geração do PDF: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
     }
 };
-
-

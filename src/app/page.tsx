@@ -253,7 +253,7 @@ export default function PDMDetailsPage() {
               </p>
             </div>
             {indexValues.length > 0 && (
-              <div className="w-full max-w-md p-6 bg-background/20 backdrop-blur-md rounded-xl border border-white/20 text-white shadow-2xl">
+               <div className="w-full max-w-md p-6 bg-black/30 backdrop-blur-md rounded-2xl border border-white/10 text-white shadow-2xl">
                 <Carousel
                   opts={{ align: "start", loop: true }}
                   plugins={[autoplayPlugin.current]}
@@ -263,11 +263,11 @@ export default function PDMDetailsPage() {
                     {indexValues.map((item, index) => (
                       <CarouselItem key={index}>
                         <div className="text-center">
-                          <p className="font-bold text-lg">{homeT.quote.title}</p>
-                          <p className="text-sm text-gray-300">{homeT.quote.subtitle}</p>
+                          <p className="font-bold text-lg">{t.home.quote.title}</p>
+                          <p className="text-sm text-gray-300">{item.currency}</p>
                           <div className="my-4 flex items-center justify-center gap-3">
                             <span className="text-6xl font-extrabold tracking-tight">
-                              {formatCurrency(item.value, item.currency, item.currency)}
+                               {formatCurrency(item.value, item.currency, item.currency)}
                             </span>
                             <div className={cn(
                                 'flex items-center text-lg font-semibold',
@@ -277,9 +277,9 @@ export default function PDMDetailsPage() {
                               {item.change.toFixed(2)}%
                             </div>
                           </div>
-                          {item.conversionRate && (
+                           {item.conversionRate && (
                             <p className="text-xs text-gray-400">
-                              {homeT.quote.conversionRate} {formatCurrency(item.conversionRate, 'BRL', item.currency)}
+                                {t.home.quote.conversionRate} {formatCurrency(item.conversionRate, 'BRL', item.currency)}
                             </p>
                           )}
                         </div>
@@ -464,7 +464,7 @@ export default function PDMDetailsPage() {
             onClick={scrollToTop}
           >
             <div className="flex items-center gap-3">
-              <span className="font-semibold">Índice UCS</span>
+              <span className="font-semibold">{t.home.quote.title}</span>
               <div className="h-6 w-px bg-white/30" />
               <Carousel
                 opts={{ align: "start", loop: true }}
