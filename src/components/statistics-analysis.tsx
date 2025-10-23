@@ -1,10 +1,8 @@
-
-
 'use client';
 
 import * as React from 'react';
 import { useState, useEffect, useMemo } from 'react';
-import { format, parseISO, isValid, subDays } from 'date-fns';
+import { format, parseISO, isValid, subDays, parse } from 'date-fns';
 import type { FirestoreQuote, CommodityConfig, CommodityPriceData } from '@/lib/types';
 import { getCotacoesHistorico, getCommodityConfigs, calculateFrequencyAwareMetrics } from '@/lib/data-service';
 import { formatCurrency } from '@/lib/formatters';
@@ -28,7 +26,8 @@ import {
   Percent,
   Target,
   Zap,
-  AlertTriangle
+  AlertTriangle,
+  RefreshCw
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { HistoricalPriceTable } from './historical-price-table';
@@ -36,7 +35,7 @@ import { AssetDetailModal } from './asset-detail-modal';
 import { AdvancedPerformanceChart } from './charts/advanced-performance-chart';
 
 // Lista de ativos disponíveis
-const AVAILABLE_ASSETS = ['PDM', 'milho', 'boi_gordo', 'madeira', 'carbono', 'soja'];
+const AVAILABLE_ASSETS = ['PDM', 'milho', 'boi_gordo', 'madeira', 'carbono', 'soja', 'ucs_ase'];
 type TimeRange = '7d' | '30d' | '90d' | '1y' | 'all';
 
 const timeRangeInDays: Record<TimeRange, number> = {
@@ -52,11 +51,14 @@ const getPriceFromQuote = (quote: FirestoreQuote, assetId: string): number | und
   if (!quote) return undefined;
   
   if (assetId === 'ucs_ase') {
-    // Para UCS ASE, usar valor_brl como principal, com fallbacks
     const value = quote.valor_brl ?? quote.resultado_final_brl ?? quote.valor_eur ?? quote.valor_usd;
     return typeof value === 'number' ? value : undefined;
   }
   
+  if (quote.ultimo_brl) {
+      return quote.ultimo_brl;
+  }
+
   const value = quote.valor ?? quote.ultimo;
   return typeof value === 'number' ? value : undefined;
 };
@@ -110,14 +112,12 @@ export function StatisticsAnalysis({ targetDate }: { targetDate: Date }) {
   const [selectedAssetForModal, setSelectedAssetForModal] = useState<CommodityPriceData | null>(null);
 
   useEffect(() => {
-    console.log('🔧 [StatisticsAnalysis] Carregando configurações de commodities...');
     getCommodityConfigs()
       .then(configs => {
-        console.log('✅ [StatisticsAnalysis] Configurações carregadas:', configs.length, 'ativos');
         setAssets(configs);
       })
       .catch(error => {
-        console.error('❌ [StatisticsAnalysis] Erro ao carregar configurações:', error);
+        console.error('Erro ao carregar configurações:', error);
       });
   }, []);
 
@@ -125,16 +125,13 @@ export function StatisticsAnalysis({ targetDate }: { targetDate: Date }) {
     setIsLoading(true);
     const daysToFetch = timeRangeInDays[timeRange];
     
-    console.log(`🔍 [StatisticsAnalysis] Buscando dados históricos para ${selectedAssetId}, ${daysToFetch} dias`);
-    
     getCotacoesHistorico(selectedAssetId, daysToFetch)
       .then(history => {
-        console.log(`📊 [StatisticsAnalysis] ${selectedAssetId}: ${history.length} registros encontrados`);
         setData({ [selectedAssetId]: history });
         setIsLoading(false);
       })
       .catch(error => {
-        console.error(`❌ [StatisticsAnalysis] Erro ao buscar dados para ${selectedAssetId}:`, error);
+        console.error(`Erro ao buscar dados para ${selectedAssetId}:`, error);
         setData({});
         setIsLoading(false);
       });
@@ -187,7 +184,6 @@ export function StatisticsAnalysis({ targetDate }: { targetDate: Date }) {
     }
   };
 
-  // Componente para mostrar informações de frequência
   const FrequencyInfo = () => {
     if (!frequencyAnalysis || !frequencyAnalysis.frequency || currentData.length === 0) return null;
     
@@ -238,11 +234,10 @@ export function StatisticsAnalysis({ targetDate }: { targetDate: Date }) {
     );
   };
 
-  // Componente para mostrar valores detalhados do UCS ASE
   const UCSASEValues = () => {
     if (selectedAssetId !== 'ucs_ase' || currentData.length === 0) return null;
     
-    const latestQuote = currentData[0]; // Mais recente
+    const latestQuote = currentData[0];
     
     return (
       <Card className="border-green-200 bg-green-50">
@@ -297,24 +292,6 @@ export function StatisticsAnalysis({ targetDate }: { targetDate: Date }) {
 
   return (
     <div className="space-y-6">
-      {/* Valores detalhados do UCS ASE */}
-      <UCSASEValues />
-      
-      {/* Informações de frequência */}
-      {isCalculatingMetrics ? (
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              <span className="ml-2 text-sm text-gray-600">Calculando métricas...</span>
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <FrequencyInfo />
-      )}
-      
-      {/* Header com seleção de ativo e período */}
       <Card>
         <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 border-b">
           <div className="flex-1">
@@ -341,7 +318,6 @@ export function StatisticsAnalysis({ targetDate }: { targetDate: Date }) {
         </CardHeader>
       </Card>
 
-      {/* Tabs para diferentes visualizações */}
       <Tabs defaultValue="overview" className="space-y-6">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
@@ -349,172 +325,40 @@ export function StatisticsAnalysis({ targetDate }: { targetDate: Date }) {
           <TabsTrigger value="history">Histórico Completo</TabsTrigger>
         </TabsList>
 
-        {/* Tab: Visão Geral */}
         <TabsContent value="overview" className="space-y-6">
-          {/* Métricas principais */}
-          {metrics && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <MetricCard
-                title="Retorno Total"
-                value={`${metrics.totalReturn >= 0 ? '+' : ''}${metrics.totalReturn.toFixed(2)}%`}
-                icon={<TrendingUp className="h-5 w-5" />}
-                trend={metrics.totalReturn >= 0 ? 'positive' : 'negative'}
-                subtitle={`${metrics.totalDays} dias`}
-              />
-              <MetricCard
-                title="Volatilidade (Anual.)"
-                value={`${metrics.volatility.toFixed(2)}%`}
-                icon={<Activity className="h-5 w-5" />}
-                trend="neutral"
-                subtitle="Desvio padrão anualizado"
-              />
-              <MetricCard
-                title="Max Drawdown"
-                value={`${metrics.maxDrawdown.toFixed(2)}%`}
-                icon={<TrendingDown className="h-5 w-5" />}
-                trend="negative"
-                subtitle="Maior perda do pico"
-              />
-              <MetricCard
-                title="Sharpe Ratio"
-                value={metrics.sharpeRatio.toFixed(2)}
-                icon={<Target className="h-5 w-5" />}
-                trend={metrics.sharpeRatio >= 1 ? 'positive' : metrics.sharpeRatio >= 0 ? 'neutral' : 'negative'}
-                subtitle="Retorno/Risco (Anualizado)"
-              />
-            </div>
-          )}
-
-          {/* Preços extremos */}
-          {metrics && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <MetricCard
-                title="Preço Atual"
-                value={formatCurrency(metrics.currentPrice, 'BRL', selectedAssetId)}
-                icon={<DollarSign className="h-5 w-5" />}
-                trend="neutral"
-              />
-              <MetricCard
-                title="Máximo do Período"
-                value={formatCurrency(metrics.high, 'BRL', selectedAssetId)}
-                icon={<TrendingUp className="h-5 w-5" />}
-                trend="positive"
-              />
-              <MetricCard
-                title="Mínimo do Período"
-                value={formatCurrency(metrics.low, 'BRL', selectedAssetId)}
-                icon={<TrendingDown className="h-5 w-5" />}
-                trend="negative"
-              />
-            </div>
-          )}
-
-          {/* Gráfico de performance avançado */}
+           <FrequencyInfo />
+           <UCSASEValues />
+          
           <AdvancedPerformanceChart 
             quotes={currentData} 
             assetId={selectedAssetId} 
-            isLoading={isLoading}
+            isLoading={isLoading || isCalculatingMetrics}
             title="Análise de Performance"
             showMetrics={true}
           />
         </TabsContent>
 
-        {/* Tab: Performance */}
         <TabsContent value="performance" className="space-y-6">
           <AdvancedPerformanceChart 
             quotes={currentData} 
             assetId={selectedAssetId} 
-            isLoading={isLoading}
+            isLoading={isLoading || isCalculatingMetrics}
             title="Análise Detalhada de Performance"
             showMetrics={true}
           />
-          
-          {metrics && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <BarChart3 className="h-5 w-5" />
-                    Análise de Risco
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">Volatilidade (Anualizada)</span>
-                    <span className="font-mono">{metrics.volatility.toFixed(2)}%</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">Max Drawdown</span>
-                    <span className="font-mono text-red-600">{metrics.maxDrawdown.toFixed(2)}%</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">Sharpe Ratio (Anualizado)</span>
-                    <span className="font-mono">{metrics.sharpeRatio.toFixed(2)}</span>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5" />
-                    Retornos
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">Retorno Total no Período</span>
-                    <span className={`font-mono ${metrics.totalReturn >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {metrics.totalReturn >= 0 ? '+' : ''}{metrics.totalReturn.toFixed(2)}%
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">Período</span>
-                    <span className="font-mono">{metrics.totalDays} dias de cotação</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">Retorno Médio por Período</span>
-                    <span className="font-mono">{(metrics.avgPeriodicReturn).toFixed(3)}%</span>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
         </TabsContent>
 
-        {/* Tab: Histórico Completo */}
         <TabsContent value="history" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
-                Histórico Completo de Cotações
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {selectedAssetConfig && (
-                <HistoricalPriceTable
-                  asset={{
-                    ...selectedAssetConfig,
-                    price: metrics?.currentPrice || 0,
-                    change: 0,
-                    absoluteChange: 0,
-                    lastUpdated: new Date().toISOString(),
-                    currency: 'BRL'
-                  }}
-                  historicalData={currentData}
-                  isLoading={isLoading}
-                  onRowClick={(quote) => {
-                    handleQuoteClick(quote)
-                  }}
-                />
-              )}
-            </CardContent>
-          </Card>
+          <HistoricalPriceTable
+            assetId={selectedAssetId}
+            assetConfig={selectedAssetConfig}
+            data={currentData}
+            isLoading={isLoading}
+            onRowClick={handleQuoteClick}
+          />
         </TabsContent>
       </Tabs>
 
-      {/* Modal de detalhes da cotação */}
       {selectedAssetForModal && (
         <AssetDetailModal
           asset={selectedAssetForModal}
@@ -525,4 +369,3 @@ export function StatisticsAnalysis({ targetDate }: { targetDate: Date }) {
     </div>
   );
 }
-
