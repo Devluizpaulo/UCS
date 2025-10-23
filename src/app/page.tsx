@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { DollarSign, Euro, User, ShieldCheck, Target, BarChart3, Scale, Microscope, FileText, Landmark, FileJson, CheckCircle, Search, GitBranch, Banknote, Building, Trees, Globe, ChevronRight, TrendingUp, TrendingDown, Minus, Blocks, Award, Briefcase, LandPlot, TreePine } from "lucide-react";
+import { User, ShieldCheck, FileText, BarChart3, TrendingUp, Briefcase, Award, Blocks, LandPlot, TreePine, Globe } from "lucide-react";
 import Image from 'next/image';
 import Link from 'next/link';
 import { LogoUCS } from "@/components/logo-bvm";
@@ -95,19 +95,19 @@ export default function PDMDetailsPage() {
     {
       icon: TreePine,
       title: homeT.pdm.pillars.vmad.title,
-      description: homeT.pdm.pillars.vmad.definition,
+      definition: homeT.pdm.pillars.vmad.definition,
       methodology: homeT.pdm.pillars.vmad.methodology,
     },
     {
       icon: LandPlot,
       title: homeT.pdm.pillars.vus.title,
-      description: homeT.pdm.pillars.vus.definition,
+      definition: homeT.pdm.pillars.vus.definition,
       methodology: homeT.pdm.pillars.vus.methodology,
     },
     {
       icon: ShieldCheck,
       title: homeT.pdm.pillars.crs.title,
-      description: homeT.pdm.pillars.crs.definition,
+      definition: homeT.pdm.pillars.crs.definition,
       methodology: homeT.pdm.pillars.crs.methodology,
     }
   ];
@@ -173,7 +173,7 @@ export default function PDMDetailsPage() {
           <div className="relative z-10 flex h-full w-full max-w-6xl flex-col items-center justify-center gap-8 text-center">
             
             <div className="flex flex-col items-center gap-4 px-4 md:px-6">
-              <h1 className="text-4xl font-extrabold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl text-white drop-shadow-lg animate-fade-in-down">
+              <h1 className="text-4xl font-extrabold tracking-tighter text-white sm:text-5xl md:text-6xl lg:text-7xl drop-shadow-lg animate-fade-in-down">
                 {heroContent.title}
               </h1>
               <p className="mx-auto max-w-3xl text-lg text-gray-200 md:text-xl drop-shadow-md animate-fade-in-up">
@@ -210,7 +210,7 @@ export default function PDMDetailsPage() {
                             </div>
                             {item.conversionRate && (
                               <div className="mt-2 text-sm text-gray-300">
-                                {homeT.quote.conversionRate}: {formatCurrency(item.conversionRate, 'BRL')}
+                                {homeT.quote.conversionRate} {formatCurrency(item.conversionRate, 'BRL')}
                               </div>
                             )}
                           </div>
@@ -227,8 +227,8 @@ export default function PDMDetailsPage() {
         {/* INTRODUCTION SECTION */}
         <section className="py-16 md:py-24 bg-muted/30">
           <div className="container mx-auto px-4 md:px-6">
-            <div className="mx-auto max-w-4xl">
-              <h2 className="text-3xl font-bold tracking-tight text-center sm:text-4xl">{homeT.pdm.what_is.title}</h2>
+            <div className="mx-auto max-w-4xl text-center">
+              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.pdm.what_is.title}</h2>
               <p className="mt-4 text-lg text-muted-foreground text-justify" dangerouslySetInnerHTML={{ __html: homeT.pdm.what_is.p1 }}></p>
               <p className="mt-4 text-lg text-muted-foreground text-justify" dangerouslySetInnerHTML={{ __html: homeT.pdm.what_is.p2 }}></p>
             </div>
@@ -253,7 +253,7 @@ export default function PDMDetailsPage() {
                     </div>
                   </CardHeader>
                   <CardContent className="flex-grow space-y-4">
-                    <p className="text-sm text-muted-foreground text-justify">{pilar.description}</p>
+                    <p className="text-sm text-muted-foreground text-justify">{pilar.definition}</p>
                     <Separator />
                     <div>
                       <h4 className="font-semibold text-sm mb-2">{homeT.pdm.methodology}</h4>
