@@ -214,7 +214,7 @@ export default function PDMDetailsPage() {
 
       <main className="flex-1">
         {/* HERO SECTION */}
-        <section className="relative flex h-[90vh] min-h-[700px] w-full flex-col items-center justify-center overflow-hidden bg-black p-4">
+        <section className="relative flex h-[90vh] min-h-[700px] w-full flex-col items-center justify-center overflow-hidden bg-black p-4 pb-48">
            <div className="absolute inset-0 z-0 h-full w-full">
                 <video
                     autoPlay
@@ -229,7 +229,6 @@ export default function PDMDetailsPage() {
             </div>
           
           <div className="relative z-10 flex h-full w-full max-w-6xl flex-col items-center justify-center gap-8 text-center">
-            
             <div className="flex flex-col items-center gap-4 px-4 md:px-6">
               <h1 className="text-4xl font-extrabold tracking-tighter text-white sm:text-5xl md:text-6xl lg:text-7xl drop-shadow-lg animate-fade-in-down">
                 {heroContent.title}
@@ -238,8 +237,11 @@ export default function PDMDetailsPage() {
                 {heroContent.subtitle}
               </p>
             </div>
+          </div>
+        </section>
 
-            <div className="sticky top-20 z-40 w-full max-w-4xl p-4 animate-fade-in-up animation-delay-400">
+        <div className="sticky top-20 z-40 -mt-40 w-full">
+            <div className="container mx-auto max-w-4xl p-4 animate-fade-in-up animation-delay-400">
                <Card className={cn(
                    "transition-all duration-300",
                    isScrolled 
@@ -284,8 +286,7 @@ export default function PDMDetailsPage() {
                 </CardContent>
               </Card>
             </div>
-          </div>
-        </section>
+        </div>
 
         {/* INTRODUCTION SECTION */}
         <section className="py-16 md:py-24 bg-muted/30">
