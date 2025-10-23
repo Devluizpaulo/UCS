@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import { getFirebaseAdmin } from '@/lib/firebase-admin-config';
@@ -89,13 +88,12 @@ function validateDate(date: Date): ValidationResult {
  * Converte strings formatadas brasileiras para números
  */
 function parseBrazilianNumber(value: any): number {
-  if (typeof value === 'number') {
-    return isNaN(value) ? 0 : value;
+  if (typeof value === 'number' && !isNaN(value)) {
+    return value;
   }
   
   if (typeof value === 'string') {
     try {
-      // Remove pontos de milhar, substitui vírgula por ponto
       const cleanValue = value.replace(/\./g, '').replace(',', '.');
       const parsed = parseFloat(cleanValue);
       return isNaN(parsed) ? 0 : parsed;
@@ -115,60 +113,52 @@ function normalizeAssetData(data: any): any {
     return data;
   }
   
-  try {
-    const normalized = { ...data };
-    const numericFields = [
-      'valor', 'ultimo', 'abertura', 'maxima', 'minima', 'fechamento_anterior',
-      'valor_brl', 'valor_eur', 'valor_usd', 'resultado_final_brl', 'resultado_final_usd', 'resultado_final_eur',
-      'ton', 'vol', 'volume', 'variacao_pct', 'rent_media', 'variacao_abs'
-    ];
-    
-    for (const field of numericFields) {
-      if (normalized[field] !== undefined && normalized[field] !== null) {
-        normalized[field] = parseBrazilianNumber(normalized[field]);
-      }
+  const normalized = { ...data };
+
+  // Helper para normalizar um campo
+  const normalizeField = (obj: any, field: string) => {
+    if (obj[field] !== undefined && obj[field] !== null) {
+      obj[field] = parseBrazilianNumber(obj[field]);
     }
-    
-    if (normalized.componentes && typeof normalized.componentes === 'object') {
-      const normalizedComponents: { [key: string]: number } = {};
-      for (const [key, value] of Object.entries(normalized.componentes)) {
-        normalizedComponents[key] = parseBrazilianNumber(value);
-      }
-      normalized.componentes = normalizedComponents;
+  };
+
+  const numericFields = [
+    'valor', 'ultimo', 'abertura', 'maxima', 'minima', 'fechamento_anterior',
+    'valor_brl', 'valor_eur', 'valor_usd', 'resultado_final_brl', 'resultado_final_usd', 'resultado_final_eur',
+    'ton', 'vol', 'volume', 'variacao_pct', 'rent_media', 'variacao_abs'
+  ];
+
+  numericFields.forEach(field => normalizeField(normalized, field));
+
+  if (normalized.componentes && typeof normalized.componentes === 'object') {
+    for (const key in normalized.componentes) {
+      normalizeField(normalized.componentes, key);
     }
-    
-    if (normalized.valores_originais && typeof normalized.valores_originais === 'object') {
-      const normalizedOriginals: { [key: string]: any } = {};
-      for (const [key, value] of Object.entries(normalized.valores_originais)) {
-        // Tenta converter para número se parecer um número, senão mantém como está
-        if (typeof value === 'string' && /^[0-9.,-]+$/.test(value)) {
-           normalizedOriginals[key] = parseBrazilianNumber(value);
-        } else {
-           normalizedOriginals[key] = value;
-        }
-      }
-      normalized.valores_originais = normalizedOriginals;
-    }
-    
-    if (normalized.conversoes && typeof normalized.conversoes === 'object') {
-      const normalizedConversions: { [key: string]: any } = {};
-      for (const [key, value] of Object.entries(normalized.conversoes)) {
-        normalizedConversions[key] = value;
-      }
-      normalized.conversoes = normalizedConversions;
-    }
-    
-    // Prioriza `ultimo_brl` para ativos como soja e carbono
-    if (data.id === 'soja' || data.id === 'carbono') {
-        if (normalized.ultimo_brl !== undefined && normalized.ultimo_brl > 0) {
-            normalized.valor = normalized.ultimo_brl;
-        }
-    }
-    
-    return normalized;
-  } catch (error) {
-    return data;
   }
+
+  if (normalized.valores_originais && typeof normalized.valores_originais === 'object') {
+    for (const key in normalized.valores_originais) {
+        if (typeof normalized.valores_originais[key] === 'string' && /^[0-9.,-]+$/.test(normalized.valores_originais[key])) {
+             normalizeField(normalized.valores_originais, key);
+        }
+    }
+  }
+  
+  if (normalized.conversoes && typeof normalized.conversoes === 'object') {
+    for (const key in normalized.conversoes) {
+        if (typeof normalized.conversoes[key] === 'string' && /^[0-9.,-]+$/.test(normalized.conversoes[key])) {
+            normalizeField(normalized.conversoes, key);
+        }
+    }
+  }
+  
+  if (data.id === 'soja' || data.id === 'carbono') {
+      if (normalized.ultimo_brl !== undefined && normalized.ultimo_brl > 0) {
+          normalized.valor = normalized.ultimo_brl;
+      }
+  }
+
+  return normalized;
 }
 
 
@@ -1204,4 +1194,5 @@ export async function reprocessDate(date: Date): Promise<{ success: boolean; mes
   }
 }
 
+    
     
