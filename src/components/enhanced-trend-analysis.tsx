@@ -53,13 +53,12 @@ const timeRangeInDays: Record<TimeRange, number> = {
 };
 
 const lineColors: { [key: string]: string } = {
-  ucs_ase: 'hsl(var(--chart-1))',
-  pdm: '#f97316', // orange-500
-  soja: 'hsl(var(--chart-2))',
-  milho: 'hsl(var(--chart-3))',
-  boi_gordo: 'hsl(var(--chart-4))',
-  madeira: 'hsl(var(--chart-5))',
-  carbono: 'hsl(220, 70%, 50%)',
+  ucs_ase: 'hsl(142, 70%, 40%)',   // Verde
+  milho: 'hsl(30, 80%, 55%)',     // Laranja
+  boi_gordo: 'hsl(260, 65%, 60%)',  // Roxo
+  madeira: 'hsl(350, 75%, 55%)',   // Vermelho Rosado
+  carbono: 'hsl(220, 70%, 50%)',   // Azul
+  soja: 'hsl(170, 60%, 45%)',    // Ciano/Turquesa
 };
 
 // Função para extrair preço de uma cotação
@@ -359,7 +358,7 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
                 <CardContent className="flex flex-col gap-8 p-4">
                   {mainAssetData ? <AssetInfo asset={mainAssetData} /> : <Skeleton className="h-24 w-full" />}
                     <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                        <div className={`h-96 bg-background rounded-lg p-4 border ${isMultiLine ? 'lg:col-span-3' : 'lg:col-span-4'}`}>
+                        <div className={`rounded-lg p-4 border ${isMultiLine ? 'lg:col-span-3' : 'lg:col-span-4'}`}>
                             <HistoricalAnalysisChart 
                                 isLoading={isLoading}
                                 chartData={chartData}
