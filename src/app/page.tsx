@@ -46,7 +46,7 @@ export default function PDMDetailsPage() {
     
     // Fetch historical data for the chart
     setIsLoadingHistory(true);
-    getCotacoesHistorico('ucs_ase', 365) // Fetch last year of data
+    getCotacoesHistorico('ucs_ase', 365 * 3) // Fetch last 3 years of data
       .then(history => {
         setUcsHistory(history);
         setIsLoadingHistory(false);
