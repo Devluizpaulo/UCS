@@ -29,8 +29,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import ExcelJS from 'exceljs';
-import { saveAs } from 'file-saver';
+// ExcelJS e file-saver são importados sob demanda nos handlers de exportação para reduzir o bundle
 import { formatCurrency } from '@/lib/formatters';
 import { PdfExportButton } from '@/components/pdf-export-button';
 import { ExcelExportButton } from '@/components/excel-export-button';
@@ -159,7 +158,7 @@ export default function DashboardPage() {
       });
   }
 
-  const handleExportExcel = async () => {
+  const handleExportExcel = async (fileFormat: 'xlsx' | 'csv' = 'xlsx') => {
     if (!targetDate || data.length === 0) {
         toast({
             variant: 'destructive',
@@ -171,6 +170,45 @@ export default function DashboardPage() {
     setIsExporting(true);
     
     try {
+        if (fileFormat === 'csv') {
+          const allData = [mainIndex, ...secondaryIndices, ...currencies, ...otherAssets].filter(Boolean) as CommodityPriceData[];
+          const headers = [
+            t.excelExport.headers.category,
+            t.excelExport.headers.asset,
+            t.excelExport.headers.lastPrice,
+            t.excelExport.headers.variationPercent,
+            t.excelExport.headers.absoluteVariation,
+            t.excelExport.headers.unit,
+            t.excelExport.headers.currency,
+            t.excelExport.headers.status,
+            t.excelExport.headers.lastUpdate,
+          ];
+          const rows = allData.map(asset => {
+            const status = asset.change > 0 ? 'Alta' : asset.change < 0 ? 'Baixa' : 'Estável';
+            return [
+              asset.category,
+              asset.name,
+              asset.price,
+              (asset.change / 100).toFixed(4),
+              asset.absoluteChange,
+              asset.unit,
+              asset.currency,
+              status,
+              asset.lastUpdated,
+            ];
+          });
+          const csv = [headers, ...rows]
+            .map(r => r.map(v => (typeof v === 'string' && v.includes(',') ? `"${v.replace(/"/g, '""')}"` : String(v))).join(','))
+            .join('\n');
+          const { saveAs } = await import('file-saver');
+          const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+          saveAs(blob, `UCS_Index_${format(targetDate, 'yyyy-MM-dd')}.csv`);
+          toast({ title: t.excelExport.messages.exportSuccess });
+          return;
+        }
+
+        const { default: ExcelJS } = await import('exceljs');
+        const { saveAs } = await import('file-saver');
         const workbook = new ExcelJS.Workbook();
         workbook.creator = 'UCS Index Platform';
         workbook.created = new Date();

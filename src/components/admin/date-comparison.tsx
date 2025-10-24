@@ -12,6 +12,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { CalendarIcon, TrendingUp, TrendingDown, Minus, BarChart3, RefreshCw, Download, FileText } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { getBrazilHolidays } from '@/lib/holidays';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/formatters';
 import { getCommodityPricesByDate } from '@/lib/data-service';
@@ -68,6 +69,7 @@ interface jsPDFWithAutoTable extends jsPDF {
 }
 
 export function DateComparison({ currentDate, currentData }: DateComparisonProps) {
+  const BR_HOLIDAYS_2025 = getBrazilHolidays(2025)
   const [compareDate, setCompareDate] = useState<Date | undefined>();
   const [compareData, setCompareData] = useState<CommodityPriceData[]>([]);
   const [comparisonResults, setComparisonResults] = useState<ComparisonData[]>([]);
@@ -394,11 +396,12 @@ export function DateComparison({ currentDate, currentData }: DateComparisonProps
                   mode="single"
                   selected={compareDate}
                   onSelect={handleDateSelect}
-                  disabled={(date) => 
-                    date > new Date() || date.getTime() === currentDate.getTime()
-                  }
+                  disabled={(date) => date.getTime() === currentDate.getTime()}
                   initialFocus
                   locale={ptBR}
+                  blockFuture
+                  blockWeekends
+                  holidays={BR_HOLIDAYS_2025}
                 />
               </PopoverContent>
             </Popover>

@@ -2,6 +2,12 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { FileSpreadsheet, Download, Eye, Loader2 } from 'lucide-react';
 import { ExcelPreviewModal } from '@/components/excel-preview-modal';
 import { format } from 'date-fns';
@@ -17,7 +23,7 @@ interface ExcelExportButtonProps {
     otherAssets: CommodityPriceData[];
     targetDate: Date;
   };
-  onExport: () => Promise<void>;
+  onExport: (format: 'xlsx' | 'csv') => Promise<void>;
   className?: string;
   variant?: 'default' | 'outline' | 'secondary' | 'ghost' | 'link' | 'destructive';
   size?: 'default' | 'sm' | 'lg' | 'icon';
@@ -62,10 +68,10 @@ export function ExcelExportButton({
     stableChanges,
   };
 
-  const handleExport = async () => {
+  const handleExport = async (format: 'xlsx' | 'csv' = 'xlsx') => {
     setIsExporting(true);
     try {
-      await onExport();
+      await onExport(format);
       setIsPreviewOpen(false);
     } finally {
       setIsExporting(false);
@@ -85,32 +91,42 @@ export function ExcelExportButton({
           <Eye className="h-4 w-4 mr-2" />
           {t.excelExport.buttons.previewExcel}
         </Button>
-        
-        <Button
-          variant="default"
-          size={size}
-          onClick={handleExport}
-          disabled={allData.length === 0 || isExporting}
-          className={className}
-        >
-          {isExporting ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              {t.excelExport.buttons.exporting}
-            </>
-          ) : (
-            <>
-              <Download className="h-4 w-4 mr-2" />
-              {t.excelExport.buttons.exportExcel}
-            </>
-          )}
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="default"
+              size={size}
+              disabled={allData.length === 0 || isExporting}
+              className={className}
+            >
+              {isExporting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  {t.excelExport.buttons.exporting}
+                </>
+              ) : (
+                <>
+                  <Download className="h-4 w-4 mr-2" />
+                  {t.excelExport.buttons.exportExcel}
+                </>
+              )}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => handleExport('xlsx')}>
+              Excel (.xlsx)
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleExport('csv')}>
+              CSV (Google Sheets)
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <ExcelPreviewModal
         isOpen={isPreviewOpen}
         onClose={() => setIsPreviewOpen(false)}
-        onExport={handleExport}
+        onExport={() => handleExport('xlsx')}
         data={previewData}
         isExporting={isExporting}
       />

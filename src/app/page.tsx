@@ -124,18 +124,21 @@ export default function PDMDetailsPage() {
       icon: TreePine,
       title: homeT.pdm.pillars.vmad.title,
       definition: homeT.pdm.pillars.vmad.definition,
+      origin: homeT.pdm.pillars.vmad.origin,
       methodology: homeT.pdm.pillars.vmad.methodology,
     },
     {
       icon: LandPlot,
       title: homeT.pdm.pillars.vus.title,
       definition: homeT.pdm.pillars.vus.definition,
+      origin: homeT.pdm.pillars.vus.origin,
       methodology: homeT.pdm.pillars.vus.methodology,
     },
     {
       icon: ShieldCheck,
       title: homeT.pdm.pillars.crs.title,
       definition: homeT.pdm.pillars.crs.definition,
+      origin: homeT.pdm.pillars.crs.origin,
       methodology: homeT.pdm.pillars.crs.methodology,
     }
   ];
@@ -229,19 +232,22 @@ export default function PDMDetailsPage() {
 
       <main className="flex-1">
         {/* HERO SECTION */}
-        <section className="relative flex h-[90vh] min-h-[700px] w-full flex-col items-center justify-center overflow-hidden bg-black p-4 pb-24">
-           <div className="absolute inset-0 z-0 h-full w-full">
-                <video
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    className="h-full w-full object-cover blur-sm brightness-50"
-                >
-                    <source src="/video/hero.mp4" type="video/mp4" />
-                    Your browser does not support the video tag.
-                </video>
+        <section className="relative flex w-full flex-col items-center justify-center overflow-hidden bg-black p-4 pb-24 h-[70vh] md:h-[80vh] lg:h-[90vh] min-h-[60vh] md:min-h-[70vh]">
+          <div className="absolute inset-0 z-0 h-full w-full">
+            <Image
+              src="/image/amazon-hero.jpg"
+              alt="Floresta Amazônica ao entardecer, vista panorâmica sobre o rio"
+              fill
+              priority
+              quality={85}
+              sizes="100vw"
+              className="object-cover object-center"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent" aria-hidden="true" />
+            <div className="absolute bottom-3 right-3 text-[10px] md:text-xs text-white/80">
+              Foto: <a href="https://commons.wikimedia.org/wiki/File:Amazon_rainforest_-_panoramio.jpg" target="_blank" rel="noopener noreferrer" className="underline">James Martins</a> / <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener noreferrer" className="underline">CC BY 3.0</a>
             </div>
+          </div>
           
           <div className="relative z-10 flex h-full w-full max-w-6xl flex-col items-center justify-center gap-8 text-center">
             <div className="flex flex-col items-center gap-4 px-4 md:px-6">
@@ -327,6 +333,12 @@ export default function PDMDetailsPage() {
                   </CardHeader>
                   <CardContent className="flex-grow space-y-4">
                     <p className="text-sm text-muted-foreground text-justify">{pilar.definition}</p>
+                    {pilar.origin && (
+                      <div className="border-t pt-4">
+                        <h4 className="font-semibold text-sm mb-2">Origem do Valor</h4>
+                        <p className="text-xs text-muted-foreground text-justify">{pilar.origin}</p>
+                      </div>
+                    )}
                     <div className="border-t pt-4">
                       <h4 className="font-semibold text-sm mb-2">{homeT.pdm.methodology}</h4>
                       <p className="text-xs text-muted-foreground text-justify">{pilar.methodology}</p>

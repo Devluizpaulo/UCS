@@ -1,3 +1,15 @@
+// Feriados nacionais Brasil (exemplos principais; ajuste conforme necessário)
+const BR_HOLIDAYS_2025: Date[] = [
+  new Date('2025-01-01'), // Confraternização Universal
+  new Date('2025-04-18'), // Sexta-feira Santa
+  new Date('2025-04-21'), // Tiradentes
+  new Date('2025-05-01'), // Dia do Trabalho
+  new Date('2025-09-07'), // Independência do Brasil
+  new Date('2025-10-12'), // Nossa Senhora Aparecida
+  new Date('2025-11-02'), // Finados
+  new Date('2025-11-15'), // Proclamação da República
+  new Date('2025-12-25'), // Natal
+]
 
 
 'use client';
@@ -23,7 +35,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Loader2, Sparkles, FileDown } from 'lucide-react';
-import { DateRangePicker } from './date-range-picker';
+import { DateRangePicker } from "@/components/date-range-picker";
 import { Separator } from './ui/separator';
 import { generateReport, type ReportInput, type ReportOutput } from '@/ai/flows/report-flow';
 import { useToast } from '@/hooks/use-toast';
@@ -160,7 +172,13 @@ export function ReportGenerator() {
             <CardContent className="grid gap-6">
               <div className="grid gap-2">
                 <Label htmlFor="dateRange">Período de Análise</Label>
-                 <DateRangePicker date={date} setDate={setDate} />
+                 <DateRangePicker
+                   date={date}
+                   setDate={setDate}
+                   blockFuture
+                   blockWeekends
+                   holidays={BR_HOLIDAYS_2025}
+                 />
                  {errors.dateRange && <p className="text-sm text-destructive">{errors.dateRange.from?.message || errors.dateRange.to?.message}</p>}
               </div>
 

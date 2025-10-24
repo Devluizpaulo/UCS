@@ -34,16 +34,19 @@ export interface Translations {
         vmad: {
           title: string;
           definition: string;
+          origin?: string;
           methodology: string;
         };
         vus: {
           title: string;
           definition: string;
+          origin?: string;
           methodology: string;
         };
         crs: {
           title: string;
           definition: string;
+          origin?: string;
           methodology: string;
         };
       };
@@ -182,7 +185,7 @@ export const translations: Record<SupportedLanguage, Translations> = {
     home: {
       hero: {
         title: "UCS: O Crédito que Transforma Florestas Preservadas em Ativos Financeiros",
-        subtitle: "Uma inovação que reconhece economicamente a conservação ambiental e gera valor para produtores rurais, investidores e para o planeta.",
+        subtitle: "Um Ecoasset que reconhece economicamente a conservação ambiental e gera valor para produtores rurais, investidores e para o planeta.",
         cta: "Saiba mais",
       },
       quote: {
@@ -191,33 +194,36 @@ export const translations: Record<SupportedLanguage, Translations> = {
         conversionRate: "Taxa de conversão:",
       },
       pdm: {
-        title: "PDM – Potencial Desflorestador Monetizado",
-        subtitle: "Transformando o valor da floresta em ativos econômicos mensuráveis",
+        title: "UCS – Unidade de Créditos de Sustentabilidade",
+        subtitle: "Transformando a conservação em ativos financeiros mensuráveis",
         what_is: {
-          title: "O que é o PDM",
-          p1: "O **Potencial Desflorestador Monetizado (PDM)** é um modelo inovador de **valoração econômica ambiental** que quantifica, em termos financeiros, o valor das áreas de floresta a partir de três dimensões complementares: ganho direto pela exploração, oportunidade perdida ao preservar e o investimento necessário para manter os serviços ambientais.",
-          p2: "Ele transforma a floresta em um **ativo financeiro mensurável**, capaz de expressar tanto o lucro potencial da exploração quanto o retorno econômico da conservação."
+          title: "O que é a UCS",
+          p1: "A **Unidade de Créditos de Sustentabilidade (UCS)** é um **Ecoasset** — a representação financeira do valor gerado pela conservação da floresta. Ela converte benefícios ambientais — como manutenção de estoques de carbono, proteção da água e biodiversidade — em um ativo econômico mensurável, transparente e auditável.",
+          p2: "A UCS utiliza uma base metodológica que considera dimensões econômicas e socioambientais da floresta, permitindo que empresas e investidores apoiem a preservação com métricas claras de desempenho e impacto."
         },
-        pillars_title: "Os Três Pilares do PDM",
+        pillars_title: "Os Três Pilares da UCS",
         pillars: {
             vmad: {
                 title: 'Valor Econômico da Floresta (VMAD)',
-                definition: 'Representa o potencial econômico direto da floresta por meio da exploração madeireira sustentável, calculando o preço comercial da madeira extraída e vendida.',
-                methodology: 'Combina o Método Americano de avaliação de ativos com a análise de Custo de Oportunidade, considerando: espécies, custos e preço médio por espécie.'
+                definition: 'Mede o potencial econômico direto da floresta a partir da exploração sustentável de seus recursos, principalmente madeireiros. O cálculo considera o preço comercial das espécies exploradas sob manejo de baixo impacto, ciclos de corte controlados e custos operacionais, refletindo o uso responsável da floresta como ativo produtivo.',
+                origin: 'O valor é obtido com base nas cotações de mercado da madeira extraída, considerando espécies regionais e índices de commodities florestais.',
+                methodology: 'Baseada em modelos consagrados de valoração de ativos florestais, combinando análise de custo de oportunidade e o método americano de avaliação, levando em conta composição de espécies, custos logísticos, preço médio por metro cúbico e variações de mercado.'
             },
             vus: {
                 title: 'Valor de Transformação Territorial (VUS)',
-                definition: 'Estima o valor econômico da terra caso fosse convertida para outros usos produtivos — agropecuário, industrial ou urbano. Representa o valor de oportunidade do uso alternativo.',
-                methodology: 'Baseada no Método Americano adaptado à valoração de terras, considerando: produtividade potencial, retorno esperado e custos operacionais.'
+                definition: 'Estima o valor que a terra teria caso a cobertura florestal fosse convertida para outros usos produtivos — como agricultura, pecuária, indústria ou expansão urbana. Esse pilar reflete o valor alternativo da área, ou seja, o potencial econômico de substituição da floresta por outra atividade.',
+                origin: 'É derivado das cotações de commodities agrícolas, como milho, soja e boi gordo, utilizadas como referência para estimar a produtividade e o retorno financeiro dos usos alternativos da terra.',
+                methodology: 'Adota uma adaptação do método americano de valoração de terras, considerando produtividade potencial, retorno esperado, custos de conversão e operação, além de variáveis regionais como acesso, infraestrutura e logística.'
             },
             crs: {
                 title: 'Valor Socioambiental da Conservação (CRS)',
-                definition: 'Quantifica o investimento necessário para manter os serviços ecossistêmicos que a floresta oferece — como regulação climática, água, carbono e biodiversidade.',
-                methodology: 'Fundamentada no modelo internacional TEEB (The Economics of Ecosystems and Biodiversity), contemplando: sequestro de carbono, ciclagem de água e proteção da biodiversidade.'
+                definition: 'Traduz o valor dos benefícios que a floresta em pé gera para a sociedade, como regulação do clima, sequestro de carbono, purificação da água, proteção do solo e manutenção da biodiversidade. Representa o investimento necessário para manter esses serviços ecossistêmicos e o retorno econômico e social associado à preservação.',
+                origin: 'Baseia-se nos serviços ambientais mensuráveis, especialmente o uso da água e o crédito de carbono, que expressam financeiramente o papel da floresta como infraestrutura natural.',
+                methodology: 'Inspirada em referências internacionais, como o TEEB (The Economics of Ecosystems and Biodiversity), combina a quantificação dos serviços ecossistêmicos com custos de conservação e métricas de impacto social e ambiental, ajustadas à realidade local.'
             }
         },
         methodology: "Metodologia de Avaliação",
-        applications_title: "Aplicações Práticas do PDM",
+        applications_title: "Aplicações Práticas da UCS",
         applications: {
             compensation: 'Compensação Ambiental',
             carbon_credits: 'Créditos de Carbono',
@@ -226,7 +232,7 @@ export const translations: Record<SupportedLanguage, Translations> = {
         },
         conclusion: {
           title: "Equilíbrio Econômico-Ambiental",
-          p1: "O PDM quantifica o equilíbrio entre explorar e preservar. Com base em dados financeiros concretos, o modelo demonstra que a preservação também tem valor econômico, permitindo que tomadores de decisão comparem cenários e investidores identifiquem oportunidades na economia verde."
+          p1: "A UCS quantifica o equilíbrio entre explorar e preservar. Com base em dados financeiros concretos, o modelo demonstra que a preservação também tem valor econômico, permitindo que tomadores de decisão comparem cenários e investidores identifiquem oportunidades na economia verde."
         }
       },
       ucs: {
@@ -362,14 +368,14 @@ export const translations: Record<SupportedLanguage, Translations> = {
         conversionRate: "Conversion rate:",
       },
       pdm: {
-        title: "PDM – Monetized Deforestation Potential",
-        subtitle: "Transforming the value of the forest into measurable economic assets",
+        title: "UCS – Unit of Sustainability Credits",
+        subtitle: "Transforming conservation into measurable financial assets",
         what_is: {
-          title: "What is PDM",
-          p1: "The **Monetized Deforestation Potential (PDM)** is an innovative model of **environmental economic valuation** that quantifies, in financial terms, the value of forest areas from three complementary dimensions: direct gain from exploitation, opportunity cost of preservation, and the investment needed to maintain environmental services.",
-          p2: "It transforms the forest into a **measurable financial asset**, capable of expressing both the potential profit from exploitation and the economic return from conservation."
+          title: "What is UCS",
+          p1: "The **Unit of Sustainability Credits (UCS)** is an **Ecoasset** — the financial representation of the value generated by forest conservation. It converts environmental benefits — such as carbon stocks, water protection and biodiversity — into a measurable, transparent and auditable economic asset.",
+          p2: "UCS applies a methodological basis that considers both economic and socio-environmental dimensions of the forest, enabling companies and investors to support preservation with clear performance and impact metrics."
         },
-        pillars_title: "The Three Pillars of PDM",
+        pillars_title: "The Three Pillars of UCS",
         pillars: {
             vmad: {
                 title: 'Economic Value of the Forest (VMAD)',
@@ -388,7 +394,7 @@ export const translations: Record<SupportedLanguage, Translations> = {
             }
         },
         methodology: "Valuation Methodology",
-        applications_title: "Practical Applications of PDM",
+        applications_title: "Practical Applications of UCS",
         applications: {
             compensation: 'Environmental Compensation',
             carbon_credits: 'Carbon Credits',
@@ -397,7 +403,7 @@ export const translations: Record<SupportedLanguage, Translations> = {
         },
         conclusion: {
           title: "Economic-Environmental Balance",
-          p1: "PDM quantifies the balance between exploiting and preserving. Based on concrete financial data, the model demonstrates that preservation also has economic value, allowing decision-makers to compare scenarios and investors to identify opportunities in the green economy."
+          p1: "UCS quantifies the balance between exploiting and preserving. Based on concrete financial data, the model demonstrates that preservation also has economic value, allowing decision-makers to compare scenarios and investors to identify opportunities in the green economy."
         }
       },
       ucs: {
@@ -533,14 +539,14 @@ export const translations: Record<SupportedLanguage, Translations> = {
         conversionRate: "Tasa de conversión:",
       },
       pdm: {
-        title: "PDM – Potencial de Deforestación Monetizado",
-        subtitle: "Transformando el valor del bosque en activos económicos medibles",
+        title: "UCS – Unidad de Créditos de Sostenibilidad",
+        subtitle: "Transformando la conservación en activos financieros medibles",
         what_is: {
-          title: "¿Qué es el PDM?",
-          p1: "El **Potencial de Deforestación Monetizado (PDM)** es un modelo innovador de **valoración económica ambiental** que cuantifica, en términos financieros, el valor de las áreas forestales a partir de tres dimensiones complementarias: ganancia directa por explotación, costo de oportunidad de la preservación y la inversión necesaria para mantener los servicios ambientales.",
-          p2: "Transforma el bosque en un **activo financiero medible**, capaz de expresar tanto el beneficio potencial de la explotación como el retorno económico de la conservación."
+          title: "¿Qué es la UCS?",
+          p1: "La **Unidad de Créditos de Sostenibilidad (UCS)** es un **Ecoasset** — la representación financiera del valor generado por la conservación del bosque. Convierte beneficios ambientales — como stocks de carbono, protección del agua y biodiversidad — en un activo económico medible, transparente y auditable.",
+          p2: "La UCS utiliza una base metodológica que considera dimensiones económicas y socioambientales del bosque, permitiendo a empresas e inversores apoyar la preservación con métricas claras de desempeño e impacto."
         },
-        pillars_title: "Los Tres Pilares del PDM",
+        pillars_title: "Los Tres Pilares de la UCS",
         pillars: {
             vmad: {
                 title: 'Valor Económico del Bosque (VMAD)',
@@ -559,7 +565,7 @@ export const translations: Record<SupportedLanguage, Translations> = {
             }
         },
         methodology: "Metodología de Valoración",
-        applications_title: "Aplicaciones Prácticas del PDM",
+        applications_title: "Aplicaciones Prácticas de la UCS",
         applications: {
             compensation: 'Compensación Ambiental',
             carbon_credits: 'Créditos de Carbono',
@@ -568,7 +574,7 @@ export const translations: Record<SupportedLanguage, Translations> = {
         },
         conclusion: {
           title: "Equilibrio Económico-Ambiental",
-          p1: "El PDM cuantifica el equilibrio entre explotar y preservar. Basado en datos financieros concretos, el modelo demuestra que la preservación también tiene valor económico, permitiendo a los responsables de la toma de decisiones comparar escenarios y a los inversores identificar oportunidades en la economía verde."
+          p1: "La UCS cuantifica el equilibrio entre explotar y preservar. Basado en datos financieros concretos, el modelo demuestra que la preservación también tiene valor económico, permitiendo comparar escenarios e identificar oportunidades en la economía verde."
         }
       },
       ucs: {
@@ -704,14 +710,14 @@ export const translations: Record<SupportedLanguage, Translations> = {
         conversionRate: "Курс обмена:",
       },
        pdm: {
-        title: "PDM – Монетизированный потенциал обезлесения",
-        subtitle: "Превращение ценности леса в измеримые экономические активы",
+        title: "UCS – Единица кредитов на устойчивое развитие",
+        subtitle: "Преобразование сохранения в измеримые финансовые активы",
         what_is: {
-          title: "Что такое PDM",
-          p1: "**Монетизированный потенциал обезлесения (PDM)** — это инновационная модель **экологической экономической оценки**, которая в финансовых терминах количественно определяет ценность лесных территорий по трем взаимодополняющим аспектам: прямая выгода от эксплуатации, упущенная выгода от сохранения и инвестиции, необходимые для поддержания экологических услуг.",
-          p2: "Он превращает лес в **измеримый финансовый актив**, способный выразить как потенциальную прибыль от эксплуатации, так и экономическую отдачу от сохранения."
+          title: "Что такое UCS",
+          p1: "**Единица кредитов на устойчивое развитие (UCS)** — это **Ecoasset** — финансовое представление ценности, создаваемой сохранением леса. Она конвертирует экологические выгоды — запасы углерода, защиту воды и биоразнообразие — в измеряемый, прозрачный и поддающийся аудиту экономический актив.",
+          p2: "UCS опирается на методологическую базу, учитывающую экономические и социально-экологические измерения леса, что позволяет компаниям и инвесторам поддерживать сохранение с понятными метриками эффективности и воздействия."
         },
-        pillars_title: "Три столпа PDM",
+        pillars_title: "Три столпа UCS",
         pillars: {
             vmad: {
                 title: 'Экономическая ценность леса (VMAD)',
@@ -730,7 +736,7 @@ export const translations: Record<SupportedLanguage, Translations> = {
             }
         },
         methodology: "Методология оценки",
-        applications_title: "Практическое применение PDM",
+        applications_title: "Практическое применение UCS",
         applications: {
             compensation: 'Экологическая компенсация',
             carbon_credits: 'Углеродные кредиты',
@@ -739,7 +745,7 @@ export const translations: Record<SupportedLanguage, Translations> = {
         },
         conclusion: {
           title: "Экономико-экологический баланс",
-          p1: "PDM количественно определяет баланс между эксплуатацией и сохранением. На основе конкретных финансовых данных модель демонстрирует, что сохранение также имеет экономическую ценность, что позволяет лицам, принимающим решения, сравнивать сценарии, а инвесторам — выявлять возможности в зеленой экономике."
+          p1: "UCS количественно определяет баланс между эксплуатацией и сохранением. На основе конкретных финансовых данных модель демонстрирует экономическую ценность сохранения, позволяя сравнивать сценарии и выявлять возможности зеленой экономики."
         }
       },
       ucs: {
@@ -875,14 +881,14 @@ export const translations: Record<SupportedLanguage, Translations> = {
         conversionRate: "换算率:",
       },
       pdm: {
-        title: "PDM – 货币化毁林潜力",
-        subtitle: "将森林的价值转化为可衡量的经济资产",
+        title: "UCS – 可持续发展信用单位",
+        subtitle: "将保护转化为可衡量的金融资产",
         what_is: {
-          title: "什么是PDM",
-          p1: "**货币化毁林潜力 (PDM)** 是一种创新的 **环境经济评估** 模型，它从三个互补的维度（直接开采收益、保护的机会成本以及维持环境服务所需的投资）以金融术语量化森林区域的价值。",
-          p2: "它将森林转化为一个 **可衡量的金融资产**，能够表达开采的潜在利润和保护的经济回报。"
+          title: "什么是UCS",
+          p1: "**可持续发展信用单位 (UCS)** 是一种 **Ecoasset** —— 对森林保护所创造价值的金融化表示。它把环境效益（碳储量、水资源保护与生物多样性）转化为可衡量、透明且可审计的经济资产。",
+          p2: "UCS 采用同时考虑经济与社会—环境维度的方法学基础，使企业和投资者能够以清晰的绩效与影响指标支持保护。"
         },
-        pillars_title: "PDM的三大支柱",
+        pillars_title: "UCS的三大支柱",
         pillars: {
             vmad: {
                 title: '森林的经济价值 (VMAD)',
@@ -901,23 +907,23 @@ export const translations: Record<SupportedLanguage, Translations> = {
             }
         },
         methodology: "评估方法",
-        applications_title: "PDM的实际应用",
+        applications_title: "UCS的实际应用",
         applications: {
             compensation: '环境补偿',
             carbon_credits: '碳信用',
             licensing: '环境许可',
-            asset_management: '资产管理'
+            asset_management: '资产管理',
         },
         conclusion: {
-          title: "经济-环境平衡",
-          p1: "PDM量化了开发与保护之间的平衡。基于具体的财务数据，该模型表明保护也具有经济价值，使决策者能够比较各种情景，投资者能够识别绿色经济中的机会。"
+          title: "经济—环境平衡",
+          p1: "UCS 量化了开发与保护之间的平衡。基于具体的财务数据，该模型表明保护也具有经济价值，使决策者能够比较各种情景、投资者能够识别绿色经济中的机会。"
         }
       },
       ucs: {
         badge: "最终资产",
         title: "可持续发展信用单位 – UCS",
-        p1: "可持续发展信用单位 (UCS) 是PDM所产生价值的体现。它们允许企业为保护和恢复生物群落做出贡献，符合《巴黎协定》的指导方针。",
-        p2: "有排放负债的公司可以购买UCS信用额度来抵消其影响，直接资助维持碳储量和减少温室气体排放的项目，从而平衡大气中的温室气体排放水平。",
+        p1: "可持续发展信用单位（UCS）是由PDM产生的价值的实体化。它使企业能够为生物群系的保护与修复做出贡献，并与《巴黎协定》的指导方针保持一致。",
+        p2: "具有排放负债的公司可以购买UCS信用以抵消其影响，直接资助维持碳储量并减少温室气体排放的项目，从而平衡大气中的排放水平。",
         image_alt: "手捧幼苗"
       },
       ucs_section: {
