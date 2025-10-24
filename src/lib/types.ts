@@ -108,4 +108,32 @@ export interface DashboardPdfData {
     performanceMetrics?: PerformanceMetric[];
     riskAnalysis?: RiskAnalysis;
     customSections?: CustomSection[];
+    chartImageDataUrl?: string;
+    analysisMeta?: {
+        timeRange?: string;
+        compareMode?: 'absolute' | 'index100' | 'percent';
+        visibleAssetIds?: string[];
+        assetNames?: Record<string, string>;
+    };
+    reportOptions?: {
+        includeChart?: boolean;
+        includeContext?: boolean;
+        includeTable?: boolean;
+        chartOnSeparatePage?: boolean;
+        chartScale?: number; // 1, 2, 3
+        kpiOrderBy?: 'price_desc' | 'change_desc' | 'change_asc';
+    };
+    periodMetrics?: PeriodMetrics;
+    reportMeta?: {
+        title?: string;
+        logoDataUrl?: string; // base64 data URL
+    };
+}
+
+export interface PeriodMetrics {
+    returnPct: number;
+    volatilityPct: number;
+    maxDrawdownPct: number;
+    high: number;
+    low: number;
 }

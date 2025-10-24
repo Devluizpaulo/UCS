@@ -255,29 +255,73 @@ export const HistoricalAnalysisChart = React.memo(({
   const [isExporting, setIsExporting] = React.useState(false);
   const [chartType, setChartType] = React.useState<'line' | 'area' | 'bar'>('line');
   const [showMovingAverage, setShowMovingAverage] = React.useState(false);
+  const [compareMode, setCompareMode] = React.useState<'absolute' | 'index100' | 'percent'>('absolute');
 
   // Calculate moving average for enhanced analysis
+  // Transform data according to compare mode
+  const transformedData = React.useMemo(() => {
+    if (!chartData || chartData.length === 0) return chartData;
+
+    if (compareMode === 'absolute') return chartData;
+
+    // helper to find first non-null value
+    const firstNonNull = (arr: any[], key: string) => {
+      for (const d of arr) {
+        const v = key === 'value' ? d.value : d[key];
+        if (typeof v === 'number' && !Number.isNaN(v)) return v;
+      }
+      return null as number | null;
+    };
+
+    if (!isMultiLine) {
+      const base = firstNonNull(chartData, 'value') ?? 0;
+      if (!base) return chartData;
+      return chartData.map(d => {
+        const v = typeof d.value === 'number' ? d.value : null;
+        if (v == null) return d;
+        return {
+          ...d,
+          value: compareMode === 'index100' ? (v / base) * 100 : ((v / base) - 1) * 100,
+        };
+      });
+    }
+
+    // multi-line: transform each visible series independently
+    const keys = Object.keys(visibleAssets).filter(k => visibleAssets[k]);
+    const bases: Record<string, number> = {};
+    keys.forEach(k => {
+      bases[k] = firstNonNull(chartData, k) ?? 0;
+    });
+    return chartData.map(d => {
+      const nd: any = { ...d };
+      keys.forEach(k => {
+        const v = typeof d[k] === 'number' ? d[k] : null;
+        const base = bases[k];
+        if (v != null && base) {
+          nd[k] = compareMode === 'index100' ? (v / base) * 100 : ((v / base) - 1) * 100;
+        }
+      });
+      return nd;
+    });
+  }, [chartData, compareMode, isMultiLine, visibleAssets]);
+
   const calculateMovingAverage = React.useMemo(() => {
-    if (!showMovingAverage || !chartData || chartData.length < 7) return null;
-    
+    if (!showMovingAverage || !transformedData || transformedData.length < 7) return null;
     const period = 7; // 7-day moving average
-    const movingAvg = chartData.map((_, index) => {
+    const movingAvg = transformedData.map((_, index) => {
       if (index < period - 1) return null;
-      
-      const slice = chartData.slice(index - period + 1, index + 1);
+      const slice = transformedData.slice(index - period + 1, index + 1);
       const sum = slice.reduce((acc, item) => {
-        const value = isMultiLine ? Object.values(item).find(val => typeof val === 'number' && val > 0) || 0 : item.value || 0;
+        const value = isMultiLine ? (Object.values(item).find(val => typeof val === 'number' && val > 0) || 0) : (item as any).value || 0;
         return acc + (value as number);
       }, 0);
-      
       return sum / period;
     });
-    
-    return chartData.map((item, index) => ({
+    return transformedData.map((item, index) => ({
       ...item,
       movingAverage: movingAvg[index]
     }));
-  }, [chartData, showMovingAverage, isMultiLine]);
+  }, [transformedData, showMovingAverage, isMultiLine]);
 
   // Enhanced error state with better design and more helpful information
   if (!chartData || chartData.length < 2) {
@@ -441,6 +485,36 @@ export const HistoricalAnalysisChart = React.memo(({
 
       <div className="w-px h-6 bg-border" />
 
+      {/* Compare Modes */}
+      <div className="flex items-center gap-1 bg-background rounded-md p-1">
+        <Button
+          variant={compareMode === 'absolute' ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => setCompareMode('absolute')}
+          className="h-8 px-2"
+        >
+          Abs
+        </Button>
+        <Button
+          variant={compareMode === 'index100' ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => setCompareMode('index100')}
+          className="h-8 px-2"
+        >
+          Idx100
+        </Button>
+        <Button
+          variant={compareMode === 'percent' ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => setCompareMode('percent')}
+          className="h-8 px-2"
+        >
+          %
+        </Button>
+      </div>
+
+      <div className="w-px h-6 bg-border" />
+
       {/* Export Controls */}
       <Button
         variant="ghost"
@@ -491,7 +565,7 @@ export const HistoricalAnalysisChart = React.memo(({
             strokeOpacity: activeLegend && activeLegend !== key ? 0.3 : 1,
             animationDuration: 800 + (index * 100),
             animationEasing: "ease-in-out" as const,
-            connectNulls: false,
+            connectNulls: true,
           };
           if (chartType === 'bar') return <Bar key={key} {...commonProps} fill={lineColors[key]} />;
           if (chartType === 'area') return <Area key={key} {...commonProps} fill={`url(#gradient-${key})`} />;
@@ -515,6 +589,7 @@ export const HistoricalAnalysisChart = React.memo(({
             yAxisId: "left" as const,
             animationDuration: 1000,
             animationEasing: "ease-in-out" as const,
+            connectNulls: true,
           };
           if (chartType === 'bar') return <Bar {...commonProps} fill="hsl(var(--chart-1))" />;
           if (chartType === 'area') return <Area {...commonProps} fill="url(#chart-bg)" />;
@@ -528,13 +603,13 @@ export const HistoricalAnalysisChart = React.memo(({
       
         <div className="h-full w-full">
             {/* Main Chart */}
-            <div className="relative">
+            <div id="trend-chart-capture" className="relative">
                 <ResponsiveContainer 
                 width="100%" 
                 height={isMobile ? 300 : 450}
                 >
                 <ChartComponent 
-                    data={calculateMovingAverage || chartData} 
+                    data={calculateMovingAverage || transformedData} 
                     margin={{ top: 20, right: 30, bottom: 20, left: 20 }}
                 >
                     <defs>
@@ -582,8 +657,13 @@ export const HistoricalAnalysisChart = React.memo(({
                     fontSize={isMobile ? 10 : 12}
                     tickLine={false}
                     axisLine={false}
-                    domain={[0, 'dataMax + 100']}
-                    tickFormatter={(value) => formatCurrency(value as number, mainAssetData?.currency || 'BRL', mainAssetData?.id)}
+                    domain={['auto', 'auto']}
+                    tickFormatter={(value) => {
+                      const v = value as number;
+                      if (compareMode === 'percent') return `${v.toFixed(0)}%`;
+                      if (compareMode === 'index100') return v.toFixed(0);
+                      return formatCurrency(v, mainAssetData?.currency || 'BRL', mainAssetData?.id);
+                    }}
                     yAxisId="left"
                     width={isMobile ? 60 : 80}
                     />

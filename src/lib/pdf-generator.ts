@@ -46,6 +46,21 @@ const COLORS = {
   }
 };
 
+// Uses external logo when provided in reportMeta.logoDataUrl, otherwise falls back to BMV logo
+const drawLogo = (doc: jsPDF, data: DashboardPdfData, x: number, y: number, width: number = 40, height: number = 20): boolean => {
+  try {
+    const src = data.reportMeta?.logoDataUrl;
+    if (src && typeof src === 'string') {
+      const format = src.startsWith('data:image/jpeg') ? 'JPEG' : 'PNG';
+      doc.addImage(src, format as any, x, y, width, height, undefined, 'FAST');
+      return true;
+    }
+  } catch {}
+  return addBMVLogo(doc, x, y, width, height);
+};
+
+ 
+
 // Função para adicionar o logo BMV nos PDFs
 const addBMVLogo = (doc: jsPDF, x: number, y: number, width: number = 40, height: number = 20) => {
   try {
@@ -66,7 +81,6 @@ const addBMVLogo = (doc: jsPDF, x: number, y: number, width: number = 40, height
     return false;
   }
 };
-
 // ===================================================================================
 // === TEMPLATE DE ANÁLISE GERADA PELA IA ============================================
 // ===================================================================================
@@ -96,6 +110,16 @@ const generateAiAnalysisPdf = (data: DashboardPdfData): jsPDF => {
     doc.text(`Gerado em: ${format(new Date(), "dd/MM/yyyy HH:mm")}`, pageW - margin - 200, 65);
     
     y = 130;
+
+    // Sumário (simples)
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(COLORS.textPrimary);
+    doc.text('Sumário', margin, y);
+    y += 16;
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(COLORS.textSecondary);
+    ['Resumo Executivo','Analise de Tendencia','Analise de Volatilidade','Conclusao'].forEach((item, i) => {
+        doc.text(`• ${item}`, margin, y + i * 14);
+    });
+    y += 70;
 
     if (!aiReportData) {
         doc.setFont('helvetica', 'normal');
@@ -133,9 +157,9 @@ const generateAiAnalysisPdf = (data: DashboardPdfData): jsPDF => {
     
     // --- RENDERIZA AS SEÇÕES DO RELATÓRIO ---
     drawSection('Resumo Executivo', aiReportData.executiveSummary);
-    drawSection('Análise de Tendência', aiReportData.trendAnalysis);
-    drawSection('Análise de Volatilidade', aiReportData.volatilityAnalysis);
-    drawSection('Conclusão', aiReportData.conclusion);
+    drawSection('Analise de Tendencia', aiReportData.trendAnalysis);
+    drawSection('Analise de Volatilidade', aiReportData.volatilityAnalysis);
+    drawSection('Conclusao', aiReportData.conclusion);
     
     // --- RODAPÉ ---
     for (let i = 1; i <= doc.internal.pages.length; i++) {
@@ -171,8 +195,8 @@ const generateExecutiveDashboardPdf = (data: DashboardPdfData): jsPDF => {
     doc.setTextColor(COLORS.primary);
     doc.text('UCS INDEX', margin, y);
 
-    // Logo BMV no lado direito
-    addBMVLogo(doc, pageW - margin - 50, y - 10, 50, 25);
+    // Logo no lado direito (externa se definida, senão BMV)
+    drawLogo(doc, data, pageW - margin - 50, y - 10, 50, 25);
 
     doc.setDrawColor(229, 231, 235); // gray-200
     doc.setLineWidth(1);
@@ -207,7 +231,6 @@ const generateExecutiveDashboardPdf = (data: DashboardPdfData): jsPDF => {
 
     // --- BLOCOS DE KPI ---
     const drawKpiBlock = (title: string, value: string, change: string, isPositive: boolean, x: number, yPos: number, width: number) => {
-        const icon = isPositive ? '📈' : '📉';
         const color = isPositive ? COLORS.kpi.green : COLORS.kpi.red;
         
         doc.setDrawColor(229, 231, 235);
@@ -224,7 +247,7 @@ const generateExecutiveDashboardPdf = (data: DashboardPdfData): jsPDF => {
 
         doc.setFontSize(14);
         doc.setTextColor(color);
-        doc.text(`${icon} ${change}`, x + 15, yPos + 65);
+        doc.text(change, x + 15, yPos + 65);
     };
 
     if (mainIndex) {
@@ -232,7 +255,7 @@ const generateExecutiveDashboardPdf = (data: DashboardPdfData): jsPDF => {
         drawKpiBlock(
             `Índice Principal: ${mainIndex.name}`,
             formatCurrency(mainIndex.price, mainIndex.currency, mainIndex.id),
-            `${changeValue.toFixed(2)}%`,
+            `${changeValue >= 0 ? '+' : ''}${changeValue.toFixed(2)}%`,
             changeValue >= 0,
             margin, y, pageW - margin * 2
         );
@@ -247,7 +270,7 @@ const generateExecutiveDashboardPdf = (data: DashboardPdfData): jsPDF => {
         drawKpiBlock(
             asset1.name,
             formatCurrency(asset1.price, asset1.currency, asset1.id),
-            `${change1.toFixed(2)}%`,
+            `${change1 >= 0 ? '+' : ''}${change1.toFixed(2)}%`,
             change1 >= 0,
             margin, y, kpiCardWidth
         );
@@ -258,7 +281,7 @@ const generateExecutiveDashboardPdf = (data: DashboardPdfData): jsPDF => {
         drawKpiBlock(
             asset2.name,
             formatCurrency(asset2.price, asset2.currency, asset2.id),
-            `${change2.toFixed(2)}%`,
+            `${change2 >= 0 ? '+' : ''}${change2.toFixed(2)}%`,
             change2 >= 0,
             margin + kpiCardWidth + 20, y, kpiCardWidth
         );
@@ -267,8 +290,149 @@ const generateExecutiveDashboardPdf = (data: DashboardPdfData): jsPDF => {
         y += 100;
     }
 
+    // Resolve report options with sensible defaults
+    const opts = {
+        includeChart: data.reportOptions?.includeChart !== false,
+        includeContext: data.reportOptions?.includeContext !== false,
+        includeTable: data.reportOptions?.includeTable !== false,
+        chartOnSeparatePage: data.reportOptions?.chartOnSeparatePage === true,
+    };
+
+    // --- GRÁFICO DE TENDÊNCIA (se disponível e habilitado) ---
+    if (opts.includeChart && data.chartImageDataUrl) {
+        if (opts.chartOnSeparatePage) {
+            doc.addPage();
+            y = 50;
+        }
+        const imgMargin = margin;
+        const imgWidth = pageW - imgMargin * 2;
+        const imgHeight = 220; // altura fixa para manter proporção agradável
+        if (y + imgHeight + 30 > pageH - 80) {
+            doc.addPage();
+            y = 50;
+        }
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(12);
+        doc.setTextColor(COLORS.textPrimary);
+        doc.text('Gráfico de Tendência', imgMargin, y);
+        y += 10;
+        try {
+            doc.addImage(data.chartImageDataUrl, 'PNG', imgMargin, y, imgWidth, imgHeight, undefined, 'FAST');
+            y += imgHeight + 20;
+        } catch (e) {
+            // Se falhar, apenas segue sem imagem
+            y += 10;
+        }
+    }
+
+    // --- CONTEXTO DA ANÁLISE ---
+    if (opts.includeContext && data.analysisMeta) {
+        if (y > pageH - 140) {
+            doc.addPage();
+            y = 50;
+        }
+        const boxH = 80;
+        doc.setFillColor(249, 250, 251); // gray-50
+        doc.setDrawColor(COLORS.border);
+        doc.roundedRect(margin, y, pageW - margin * 2, boxH, 8, 8, 'FD');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(12);
+        doc.setTextColor(COLORS.textPrimary);
+        doc.text('Contexto da Análise', margin + 14, y + 22);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
+        doc.setTextColor(COLORS.textSecondary);
+        const meta = data.analysisMeta;
+        const leftX = margin + 14;
+        const midX = margin + (pageW - margin * 2) / 2;
+        doc.text(`Período: ${meta.timeRange || 'N/A'}`, leftX, y + 40);
+        if (meta.compareMode) doc.text(`Modo do Gráfico: ${meta.compareMode}`, leftX, y + 56);
+        const names = meta.assetNames || {};
+        const assets = (meta.visibleAssetIds || []).map(a => names[a] || a.toUpperCase()).join(', ');
+        const lines = doc.splitTextToSize(`Ativos no Gráfico: ${assets || 'N/A'}`, (pageW - margin * 2) - (leftX - margin));
+        doc.text(lines, leftX, y + 72);
+        y += boxH + 20;
+    }
+
+    // --- TOP 2 ATIVOS (KPIs adicionais) ---
+    if (otherAssets && otherAssets.length > 0) {
+        const order = data.reportOptions?.kpiOrderBy || 'price_desc';
+        const sorted = [...otherAssets].sort((a, b) => {
+            if (order === 'change_desc') return (b.change || 0) - (a.change || 0);
+            if (order === 'change_asc') return (a.change || 0) - (b.change || 0);
+            return (b.price || 0) - (a.price || 0);
+        });
+        const picks = sorted.slice(0, 2);
+        const kpiCardWidth = (pageW - (margin * 2) - 20) / 2;
+        const drawKpiBlock = (title: string, value: string, change: string, isPositive: boolean, x: number, yPos: number, width: number) => {
+            const color = isPositive ? COLORS.kpi.green : COLORS.kpi.red;
+            doc.setDrawColor(229, 231, 235);
+            doc.roundedRect(x, yPos, width, 70, 8, 8, 'S');
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(11);
+            doc.setTextColor(107, 114, 128);
+            doc.text(title, x + 15, yPos + 20);
+            doc.setFontSize(18);
+            doc.setTextColor(17, 24, 39);
+            doc.text(value, x + 15, yPos + 40);
+            doc.setFontSize(12);
+            doc.setTextColor(color);
+            doc.text(change, x + 15, yPos + 58);
+        };
+        if (y > pageH - 130) { doc.addPage(); y = 50; }
+        picks.forEach((asset, idx) => {
+            const change = typeof asset.change === 'number' ? asset.change : 0;
+            drawKpiBlock(
+                asset.name,
+                formatCurrency(asset.price, asset.currency || 'BRL', asset.id),
+                `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`,
+                change >= 0,
+                margin + (idx * (kpiCardWidth + 20)),
+                y,
+                kpiCardWidth
+            );
+        });
+        y += 90;
+    }
+
+    // --- MÉTRICAS DO PERÍODO ---
+    if (data.periodMetrics) {
+        const m = data.periodMetrics;
+        if (y > pageH - 160) { doc.addPage(); y = 50; }
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(14);
+        doc.setTextColor(COLORS.textPrimary);
+        doc.text('Métricas do Período', margin, y);
+        y += 14;
+        const cardW = (pageW - margin * 2 - 40) / 3;
+        const drawMetric = (title: string, value: string, x: number, yPos: number) => {
+            doc.setDrawColor(COLORS.border);
+            doc.roundedRect(x, yPos, cardW, 60, 6, 6, 'S');
+            doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(COLORS.textSecondary);
+            doc.text(title, x + 12, yPos + 18);
+            doc.setFont('helvetica', 'bold'); doc.setFontSize(16); doc.setTextColor(COLORS.textPrimary);
+            doc.text(value, x + 12, yPos + 40);
+        };
+        drawMetric('Retorno', `${m.returnPct >= 0 ? '+' : ''}${m.returnPct.toFixed(2)}%`, margin, y);
+        drawMetric('Volatilidade', `${m.volatilityPct.toFixed(2)}%`, margin + cardW + 20, y);
+        drawMetric('Max Drawdown', `${m.maxDrawdownPct.toFixed(2)}%`, margin + (cardW + 20) * 2, y);
+        y += 70;
+        const drawRange = (title: string, value: string, x: number, yPos: number) => {
+            doc.setDrawColor(COLORS.border);
+            doc.roundedRect(x, yPos, cardW, 60, 6, 6, 'S');
+            doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(COLORS.textSecondary);
+            doc.text(title, x + 12, yPos + 18);
+            doc.setFont('helvetica', 'bold'); doc.setFontSize(16); doc.setTextColor(COLORS.textPrimary);
+            doc.text(value, x + 12, yPos + 40);
+        };
+        drawRange('Máximo', formatCurrency(m.high, data.mainIndex?.currency || 'BRL', data.mainIndex?.id), margin, y);
+        drawRange('Mínimo', formatCurrency(m.low, data.mainIndex?.currency || 'BRL', data.mainIndex?.id), margin + cardW + 20, y);
+        y += 80;
+    }
+
     // --- TABELA DE ATIVOS ---
-    if (otherAssets.length > 0) {
+    if (opts.includeTable && otherAssets.length > 0) {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(14);
         doc.setTextColor(17, 24, 39);
@@ -353,6 +517,16 @@ const generateCommercialExecutivePdf = (data: DashboardPdfData): jsPDF => {
     
     y = 120;
 
+    // Sumário (simples)
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(255,255,255);
+    doc.text('Sumário', margin, y);
+    y += 16;
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(255,255,255);
+    ['Resumo Executivo','Métricas de Performance','Análise de Riscos','Insights de Mercado','Performance de Ativos','Recomendações'].forEach((item, i) => {
+        doc.text(`• ${item}`, margin, y + i * 14);
+    });
+    y += 80;
+
     // --- RESUMO EXECUTIVO ---
     doc.setFillColor(249, 250, 251); // gray-50
     doc.roundedRect(margin, y, pageW - margin * 2, 90, 8, 8, 'F');
@@ -384,7 +558,7 @@ const generateCommercialExecutivePdf = (data: DashboardPdfData): jsPDF => {
         doc.setTextColor(COLORS.textPrimary);
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(14);
-        doc.text('📈 Métricas de Performance', margin, y);
+        doc.text('Métricas de Performance', margin, y);
         y += elementSpacing + 5;
 
         const kpiWidth = (pageW - margin * 2 - 40) / 3;
@@ -421,7 +595,7 @@ const generateCommercialExecutivePdf = (data: DashboardPdfData): jsPDF => {
         doc.setTextColor(COLORS.textPrimary);
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(14);
-        doc.text('⚠️ Análise de Riscos', margin, y);
+        doc.text('Análise de Riscos', margin, y);
         y += elementSpacing + 5;
 
         // Indicador de risco geral
@@ -476,7 +650,7 @@ const generateCommercialExecutivePdf = (data: DashboardPdfData): jsPDF => {
         doc.setTextColor(COLORS.textPrimary);
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(14);
-        doc.text('💡 Insights de Mercado', margin, y);
+        doc.text('Insights de Mercado', margin, y);
         y += elementSpacing + 5;
 
         marketInsights.forEach((insight, index) => {
@@ -500,7 +674,7 @@ const generateCommercialExecutivePdf = (data: DashboardPdfData): jsPDF => {
     doc.setTextColor(COLORS.textPrimary);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(14);
-    doc.text('📊 Performance Detalhada dos Ativos', margin, y);
+    doc.text('Performance Detalhada dos Ativos', margin, y);
     y += elementSpacing + 5;
 
     const allAssets = [...(mainIndex ? [mainIndex] : []), ...secondaryIndices, ...currencies, ...otherAssets];
@@ -510,7 +684,7 @@ const generateCommercialExecutivePdf = (data: DashboardPdfData): jsPDF => {
             head: [['Ativo', 'Categoria', 'Valor', 'Variação', 'Status']],
             body: allAssets.map(asset => {
                 const changeValue = typeof asset.change === 'number' ? asset.change : 0;
-                const status = changeValue > 0 ? '📈 Alta' : changeValue < 0 ? '📉 Baixa' : '➡️ Estável';
+                const status = changeValue > 0 ? 'Alta' : changeValue < 0 ? 'Baixa' : 'Estavel';
                 return [
                     asset.name,
                     asset.category,
@@ -542,7 +716,7 @@ const generateCommercialExecutivePdf = (data: DashboardPdfData): jsPDF => {
     doc.setTextColor(COLORS.textPrimary);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(14);
-    doc.text('🎯 Recomendações Estratégicas', margin, y);
+    doc.text('Recomendações Estratégicas', margin, y);
     y += elementSpacing + 5;
 
     const recommendations = generateRecommendations(data);
@@ -585,7 +759,7 @@ const generateCommercialExecutivePdf = (data: DashboardPdfData): jsPDF => {
 
 // Funções auxiliares para o relatório comercial
 const drawCommercialKpiBlock = (metric: PerformanceMetric, x: number, y: number, width: number, doc: jsPDF) => {
-    const trendIcon = metric.trend === 'up' ? '📈' : metric.trend === 'down' ? '📉' : '➡️';
+    const trendIcon = metric.trend === 'up' ? '' : metric.trend === 'down' ? '' : '';
     const trendColor = metric.trend === 'up' ? COLORS.kpi.green : metric.trend === 'down' ? COLORS.kpi.red : COLORS.textSecondary;
     
     doc.setDrawColor(COLORS.border);
@@ -605,12 +779,11 @@ const drawCommercialKpiBlock = (metric: PerformanceMetric, x: number, y: number,
 
     doc.setFontSize(10);
     doc.setTextColor(trendColor);
-    doc.text(`${trendIcon} ${metric.period}`, x + 10, y + 50);
+    doc.text(`${metric.period}`, x + 10, y + 50);
 };
 
 const drawMarketInsightBlock = (insight: MarketInsight, x: number, y: number, width: number, doc: jsPDF) => {
     const impactColor = COLORS.insight[insight.impact];
-    const impactIcon = insight.impact === 'positive' ? '✅' : insight.impact === 'negative' ? '⚠️' : 'ℹ️';
     
     doc.setFillColor(impactColor);
     doc.roundedRect(x, y, width, 75, 6, 6, 'F');
@@ -618,7 +791,7 @@ const drawMarketInsightBlock = (insight: MarketInsight, x: number, y: number, wi
     doc.setTextColor(255, 255, 255);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
-    const titleLines = doc.splitTextToSize(`${impactIcon} ${insight.title}`, width - 30);
+    const titleLines = doc.splitTextToSize(`${insight.title}`, width - 30);
     doc.text(titleLines, x + 15, y + 15);
     
     doc.setFont('helvetica', 'normal');
@@ -679,8 +852,8 @@ const generateCompositionPdf = (data: DashboardPdfData): jsPDF => {
   doc.setTextColor(COLORS.kpi.blue);
   doc.text('ANÁLISE DE COMPOSIÇÃO', margin, y);
 
-  // Logo BMV no lado direito substituindo "UCS Index"
-  addBMVLogo(doc, pageW - margin - 50, y - 10, 50, 25);
+  // Logo no lado direito (externa se definida, senão BMV)
+  drawLogo(doc, data, pageW - margin - 50, y - 10, 50, 25);
   
   y += 40;
 
@@ -971,12 +1144,11 @@ const generateCustomPdf = (data: DashboardPdfData): jsPDF => {
     doc.text('Relatório Personalizado', margin, 50);
     doc.setFontSize(10);
     doc.text(`Gerado em ${format(targetDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}`, margin, 70);
-    
-    // Logo BMV no lado direito substituindo "UCS Index"
-    addBMVLogo(doc, pageW - margin - 50, 25, 50, 25);
+    // Logo (externa se definida, senão BMV)
+    drawLogo(doc, data, pageW - margin - 50, 25, 50, 25);
     
     y = 110;
-
+    
     // --- SEÇÕES PERSONALIZADAS ---
     if (customSections && customSections.length > 0) {
         customSections.forEach((section, index) => {
@@ -994,7 +1166,7 @@ const generateCustomPdf = (data: DashboardPdfData): jsPDF => {
             
             // Conteúdo da seção baseado no tipo
             switch (section.type) {
-                case 'text':
+                case 'text': {
                     doc.setTextColor(COLORS.textSecondary);
                     doc.setFont('helvetica', 'normal');
                     doc.setFontSize(10);
@@ -1002,19 +1174,17 @@ const generateCustomPdf = (data: DashboardPdfData): jsPDF => {
                     doc.text(textLines, margin, y);
                     y += textLines.length * 12 + sectionSpacing;
                     break;
-                    
-                case 'kpi':
+                }
+                case 'kpi': {
                     if (section.data && section.data.length > 0) {
                         const kpiWidth = (pageW - margin * 2 - 40) / Math.min(section.data.length, 3);
                         const kpiHeight = 60;
                         const kpiRows = Math.ceil(section.data.length / 3);
-                        
                         section.data.forEach((kpi: any, kpiIndex: number) => {
                             const col = kpiIndex % 3;
                             const row = Math.floor(kpiIndex / 3);
                             const x = margin + (kpiWidth + 20) * col;
                             const yPos = y + (kpiHeight + 15) * row;
-                            
                             if (yPos + kpiHeight > pageH - 100) {
                                 doc.addPage();
                                 y = 50;
@@ -1027,8 +1197,8 @@ const generateCustomPdf = (data: DashboardPdfData): jsPDF => {
                         y += kpiRows * (kpiHeight + 15) + sectionSpacing;
                     }
                     break;
-                    
-                case 'table':
+                }
+                case 'table': {
                     if (section.data && section.data.length > 0) {
                         doc.autoTable({
                             startY: y,
@@ -1042,16 +1212,16 @@ const generateCustomPdf = (data: DashboardPdfData): jsPDF => {
                         y = (doc as any).lastAutoTable.finalY + sectionSpacing;
                     }
                     break;
-                    
-                case 'chart':
-                    // Para gráficos, vamos criar uma representação textual
+                }
+                case 'chart': {
                     doc.setFillColor(249, 250, 251);
                     doc.roundedRect(margin, y, pageW - margin * 2, 80, 8, 8, 'F');
                     doc.setTextColor(COLORS.textSecondary);
                     doc.setFontSize(9);
-                    doc.text('📊 Gráfico: ' + section.content, margin + 20, y + 40);
+                    doc.text('Grafico: ' + section.content, margin + 20, y + 40);
                     y += 100;
                     break;
+                }
             }
             
             // Separador entre seções

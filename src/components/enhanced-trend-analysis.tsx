@@ -37,8 +37,10 @@ import { Checkbox } from './ui/checkbox';
 import { AssetHistoricalTable } from './historical-price-table';
 import { AssetDetailModal } from './asset-detail-modal';
 import { PdfExportButton } from '@/components/pdf-export-button';
+import type { CommodityPriceData } from '@/lib/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AssetIcon } from '@/lib/icons';
+import type { PeriodMetrics } from '@/lib/types';
 
 
 // Lista de ativos disponíveis
@@ -76,7 +78,7 @@ const getPriceFromQuote = (quote: FirestoreQuote, assetId: string): number | und
     return typeof value === 'number' ? value : undefined;
   }
   
-  const value = quote.valor ?? quote.ultimo;
+  const value = quote.valor ?? quote.ultimo ?? (quote as any).preco;
   return typeof value === 'number' ? value : undefined;
 };
 
@@ -281,6 +283,84 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
     
     return { chartData: finalChartData, mainAssetData: mainAsset, assetNames: names, groupedAssets: groups };
   }, [data, targetDate, selectedAssetConfig, selectedAssetId, assets, timeRange, isMultiLine]);
+
+  // Monta dados para o PDF: inclui os ativos visíveis com última cotação disponível
+  const pdfOtherAssets = useMemo<CommodityPriceData[]>(() => {
+    try {
+      const selectedIds = isMultiLine
+        ? UCS_ASE_COMPARISON_ASSETS.filter(id => visibleAssets[id])
+        : [selectedAssetId];
+
+      return selectedIds.map((id) => {
+        const history = data[id] || [];
+        // pegar a última cotação por timestamp ou data
+        const last = [...history].sort((a, b) => {
+          const ta = a.timestamp ? Number(a.timestamp as any) : 0;
+          const tb = b.timestamp ? Number(b.timestamp as any) : 0;
+          return tb - ta;
+        })[0];
+
+        const price = last ? (getPriceFromQuote(last, id) || 0) : 0;
+        const change = last?.variacao_pct ?? 0;
+        const name = assets.find(a => a.id === id)?.name || id.toUpperCase();
+        const category = assets.find(a => a.id === id)?.category as any;
+
+        return {
+          id,
+          name,
+          price,
+          currency: 'BRL',
+          change,
+          absoluteChange: 0,
+          category,
+          description: '',
+          unit: 'BRL',
+          lastUpdated: last?.data || '',
+        } as CommodityPriceData;
+      });
+    } catch {
+      return [];
+    }
+  }, [data, assets, visibleAssets, isMultiLine, selectedAssetId]);
+
+  // Métricas do período para o PDF
+  const periodMetrics = useMemo<PeriodMetrics | undefined>(() => {
+    try {
+      if (!chartData || chartData.length < 2) return undefined;
+      const visibleIds = isMultiLine ? UCS_ASE_COMPARISON_ASSETS.filter(id => visibleAssets[id]) : [selectedAssetId];
+      const primary = isMultiLine ? (visibleIds.includes('ucs_ase') ? 'ucs_ase' : visibleIds[0]) : 'value';
+      const seriesValues: number[] = chartData
+        .map(d => (primary === 'value' ? d.value : d[primary]))
+        .filter((v: any) => typeof v === 'number') as number[];
+      if (seriesValues.length < 2) return undefined;
+
+      const first = seriesValues[0];
+      const last = seriesValues[seriesValues.length - 1];
+      const high = Math.max(...seriesValues);
+      const low = Math.min(...seriesValues);
+      const ret = ((last - first) / (first || 1)) * 100;
+      const returns = seriesValues.slice(1).map((p, i) => (p - seriesValues[i]) / (seriesValues[i] || 1));
+      const mean = returns.reduce((a, b) => a + b, 0) / returns.length;
+      const variance = returns.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / returns.length;
+      const vol = Math.sqrt(variance) * Math.sqrt(252) * 100;
+      let peak = seriesValues[0];
+      let mdd = 0;
+      for (const p of seriesValues) {
+        if (p > peak) peak = p;
+        const dd = ((peak - p) / peak) * 100;
+        if (dd > mdd) mdd = dd;
+      }
+      return {
+        returnPct: ret,
+        volatilityPct: vol,
+        maxDrawdownPct: mdd,
+        high,
+        low,
+      };
+    } catch {
+      return undefined;
+    }
+  }, [chartData, isMultiLine, visibleAssets, selectedAssetId]);
   
   const handleVisibilityChange = (assetId: string) => {
     setVisibleAssets(prev => ({
@@ -379,10 +459,16 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
                       mainIndex: mainAssetData || undefined,
                       secondaryIndices: [],
                       currencies: [],
-                      otherAssets: [],
+                      otherAssets: pdfOtherAssets,
                       targetDate,
+                      analysisMeta: {
+                        timeRange,
+                        visibleAssetIds: isMultiLine ? UCS_ASE_COMPARISON_ASSETS.filter(id => visibleAssets[id]) : [selectedAssetId],
+                        assetNames,
+                      },
+                      ...(periodMetrics ? { periodMetrics } : {}),
                   }}
-                  reportType="asset-detail"
+                  reportType="executive"
                   disabled={isLoading || chartData.length === 0}
               />
           </div>

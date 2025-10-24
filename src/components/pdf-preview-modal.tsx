@@ -20,8 +20,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import { Loader2, Download, RefreshCw, ZoomIn, ZoomOut, AlertCircle, RotateCcw, ExternalLink, Eye, Maximize2, Minimize2, RotateCw, FileText, Settings } from 'lucide-react';
-import { generatePdf, type DashboardPdfData } from '@/lib/pdf-generator';
+import { generatePdf } from '@/lib/pdf-generator';
+import type { DashboardPdfData } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 
@@ -52,6 +55,14 @@ export function PdfPreviewModal({ isOpen, onOpenChange, reportType, data }: PdfP
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [rotation, setRotation] = useState(0);
+  const [includeChart, setIncludeChart] = useState(true);
+  const [includeContext, setIncludeContext] = useState(true);
+  const [includeTable, setIncludeTable] = useState(true);
+  const [chartOnSeparatePage, setChartOnSeparatePage] = useState(false);
+  const [chartScale, setChartScale] = useState<number>(2);
+  const [kpiOrderBy, setKpiOrderBy] = useState<'price_desc' | 'change_desc' | 'change_asc'>('price_desc');
+  const [reportTitle, setReportTitle] = useState<string>('Relatório Executivo');
+  const [logoDataUrl, setLogoDataUrl] = useState<string | undefined>(undefined);
 
   const [generationState, setGenerationState] = useState<GenerationState>({
     isLoading: false,
@@ -62,6 +73,54 @@ export function PdfPreviewModal({ isOpen, onOpenChange, reportType, data }: PdfP
   const { toast } = useToast();
   const pdfCacheRef = useRef<Map<string, string>>(new Map());
   const maxRetries = 2;
+
+  // --- Persistência de preferências (zoom, fullscreen e opções de relatório) ---
+  useEffect(() => {
+    if (!isOpen) return;
+    try {
+      const raw = localStorage.getItem('pdfPreviewPrefs');
+      if (raw) {
+        const prefs = JSON.parse(raw);
+        if (typeof prefs.zoom === 'number') setZoom(Math.min(2, Math.max(0.5, prefs.zoom)));
+        if (typeof prefs.isFullscreen === 'boolean') setIsFullscreen(prefs.isFullscreen);
+        if (typeof prefs.includeChart === 'boolean') setIncludeChart(prefs.includeChart);
+        if (typeof prefs.includeContext === 'boolean') setIncludeContext(prefs.includeContext);
+        if (typeof prefs.includeTable === 'boolean') setIncludeTable(prefs.includeTable);
+        if (typeof prefs.chartOnSeparatePage === 'boolean') setChartOnSeparatePage(prefs.chartOnSeparatePage);
+        if (typeof prefs.chartScale === 'number') setChartScale(Math.min(3, Math.max(1, prefs.chartScale)));
+        if (typeof prefs.kpiOrderBy === 'string') setKpiOrderBy(prefs.kpiOrderBy);
+        if (typeof prefs.reportTitle === 'string') setReportTitle(prefs.reportTitle);
+        if (typeof prefs.logoDataUrl === 'string') setLogoDataUrl(prefs.logoDataUrl);
+      }
+    } catch {}
+  }, [isOpen]);
+
+  useEffect(() => {
+    // Salvar preferências minimamente a cada mudança relevante
+    try {
+      localStorage.setItem('pdfPreviewPrefs', JSON.stringify({
+        zoom,
+        isFullscreen,
+        includeChart,
+        includeContext,
+        includeTable,
+        chartOnSeparatePage,
+        chartScale,
+        kpiOrderBy,
+        reportTitle,
+        logoDataUrl,
+      }));
+    } catch {}
+  }, [zoom, isFullscreen, includeChart, includeContext, includeTable, chartOnSeparatePage, chartScale, kpiOrderBy, reportTitle, logoDataUrl]);
+
+  // Ajusta overflow do body quando fullscreen
+  useEffect(() => {
+    if (isFullscreen) {
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => { document.body.style.overflow = prev; };
+    }
+  }, [isFullscreen]);
 
   const generateAndSetPdf = useCallback(() => {
     const cacheKey = `${selectedTemplate}-${data.targetDate.toISOString()}`;
@@ -74,12 +133,40 @@ export function PdfPreviewModal({ isOpen, onOpenChange, reportType, data }: PdfP
     setGenerationState({ isLoading: true, error: null, retryCount: generationState.retryCount });
     
     // Usar setTimeout para garantir que a UI seja atualizada
-    setTimeout(() => {
+    setTimeout(async () => {
         try {
-            console.log('Gerando PDF para template:', selectedTemplate);
-            console.log('Dados para PDF:', data);
-            
-            const url = generatePdf(selectedTemplate, data);
+          console.log('Gerando PDF para template:', selectedTemplate);
+          console.log('Dados para PDF:', data);
+          // Tenta capturar o gráfico, se existir na página atual
+          let chartImageDataUrl: string | undefined;
+          try {
+            const node = document.getElementById('trend-chart-capture');
+            if (node) {
+              const html2canvas = (await import('html2canvas')).default;
+              const canvas = await html2canvas(node, { scale: chartScale, backgroundColor: '#ffffff' });
+              chartImageDataUrl = canvas.toDataURL('image/png');
+            }
+          } catch (capErr) {
+            console.warn('Falha ao capturar grafico para PDF (seguindo sem imagem):', capErr);
+          }
+
+          const payload = {
+            ...data,
+            ...(chartImageDataUrl ? { chartImageDataUrl } : {}),
+            reportOptions: {
+              includeChart,
+              includeContext,
+              includeTable,
+              chartOnSeparatePage,
+              chartScale,
+              kpiOrderBy,
+            },
+            reportMeta: {
+              title: reportTitle,
+              logoDataUrl,
+            },
+          };
+          const url = generatePdf(selectedTemplate, payload);
             
             if (!url) {
                 throw new Error('Falha ao gerar documento PDF - URL vazia');
@@ -123,7 +210,7 @@ export function PdfPreviewModal({ isOpen, onOpenChange, reportType, data }: PdfP
         }
     }, 100);
 
-  }, [selectedTemplate, data, pdfUrl, toast, generationState.retryCount]);
+  }, [selectedTemplate, data, pdfUrl, toast, generationState.retryCount, includeChart, includeContext, includeTable, chartOnSeparatePage, chartScale, kpiOrderBy, reportTitle, logoDataUrl]);
 
   useEffect(() => {
     if (isOpen) {
@@ -209,6 +296,57 @@ export function PdfPreviewModal({ isOpen, onOpenChange, reportType, data }: PdfP
     setRotation(prev => (prev + 90) % 360);
   };
 
+  // --- Atalhos de teclado: F (fullscreen), Esc (fechar), +/- (zoom), 0 (reset) ---
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'f' || e.key === 'F') {
+        e.preventDefault();
+        setIsFullscreen(prev => !prev);
+      } else if (e.key === 'Escape') {
+        onOpenChange(false);
+      } else if (e.key === '+' || e.key === '=') {
+        setZoom(z => Math.min(2, z + 0.25));
+      } else if (e.key === '-') {
+        setZoom(z => Math.max(0.5, z - 0.25));
+      } else if (e.key === '0') {
+        setZoom(1);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isOpen, onOpenChange]);
+
+  const applyPreset = (preset: 'graphOnly' | 'dataOnly' | 'full') => {
+    if (preset === 'graphOnly') {
+      setIncludeChart(true);
+      setIncludeContext(false);
+      setIncludeTable(false);
+      setChartOnSeparatePage(true);
+    } else if (preset === 'dataOnly') {
+      setIncludeChart(false);
+      setIncludeContext(true);
+      setIncludeTable(true);
+      setChartOnSeparatePage(false);
+    } else {
+      setIncludeChart(true);
+      setIncludeContext(true);
+      setIncludeTable(true);
+      setChartOnSeparatePage(false);
+    }
+    try {
+      const raw = localStorage.getItem('pdfPreviewPrefs');
+      const prev = raw ? JSON.parse(raw) : {};
+      localStorage.setItem('pdfPreviewPrefs', JSON.stringify({
+        ...prev,
+        includeChart: preset !== 'dataOnly',
+        includeContext: preset !== 'graphOnly',
+        includeTable: preset !== 'graphOnly',
+        chartOnSeparatePage: preset === 'graphOnly',
+      }));
+    } catch {}
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className={`${isFullscreen ? 'max-w-[98vw] max-h-[98vh]' : 'max-w-[95vw] max-h-[95vh]'} w-full h-full flex flex-col`}>
@@ -230,6 +368,8 @@ export function PdfPreviewModal({ isOpen, onOpenChange, reportType, data }: PdfP
               size="icon"
               onClick={handleFullscreen}
               className="shrink-0"
+              title={isFullscreen ? 'Sair da tela cheia (F)' : 'Tela cheia (F)'}
+              aria-label={isFullscreen ? 'Sair da tela cheia' : 'Tela cheia'}
             >
               {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
             </Button>
@@ -247,6 +387,19 @@ export function PdfPreviewModal({ isOpen, onOpenChange, reportType, data }: PdfP
                   <label htmlFor="template-select" className="text-sm font-medium text-foreground">
                     Modelo de Relatório:
                   </label>
+                </div>
+
+                {/* Presets */}
+                <div className="hidden md:flex items-center gap-2 pl-2 border-l border-border">
+                  <Button variant="ghost" size="sm" onClick={() => applyPreset('graphOnly')} title="Somente Gráfico">
+                    Somente Gráfico
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => applyPreset('dataOnly')} title="Somente Dados">
+                    Somente Dados
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => applyPreset('full')} title="Completo">
+                    Completo
+                  </Button>
                 </div>
                 <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
                   <SelectTrigger id="template-select" className="w-[280px] h-9">
@@ -302,6 +455,26 @@ export function PdfPreviewModal({ isOpen, onOpenChange, reportType, data }: PdfP
                 >
                   <RotateCw className="h-4 w-4" />
                 </Button>
+
+                {/* Preferências de conteúdo */}
+                <div className="hidden md:flex items-center gap-3 pl-2 border-l border-border">
+                  <div className="flex items-center gap-2">
+                    <Checkbox id="opt-chart" checked={includeChart} onCheckedChange={() => setIncludeChart(v => !v)} />
+                    <Label htmlFor="opt-chart" className="text-sm">Gráfico</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox id="opt-context" checked={includeContext} onCheckedChange={() => setIncludeContext(v => !v)} />
+                    <Label htmlFor="opt-context" className="text-sm">Contexto</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox id="opt-table" checked={includeTable} onCheckedChange={() => setIncludeTable(v => !v)} />
+                    <Label htmlFor="opt-table" className="text-sm">Tabela</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox id="opt-chart-page" checked={chartOnSeparatePage} onCheckedChange={() => setChartOnSeparatePage(v => !v)} />
+                    <Label htmlFor="opt-chart-page" className="text-sm">Gráfico em outra página</Label>
+                  </div>
+                </div>
 
                 {/* Ações do PDF */}
                 {pdfUrl && (
