@@ -107,14 +107,33 @@ function getStatusBadge(status: string) {
 const AssetActionTable = ({ 
     assets, 
     onEdit, 
-    editedValues 
+    editedValues,
+    onInlineChange,
+    onRevert,
+    onSort,
+    sortKey,
+    sortDir,
 }: { 
     assets: (CommodityPriceData & { rentMediaCalculada?: number })[];
     onEdit: (asset: CommodityPriceData) => void;
     editedValues: Record<string, number>;
+    onInlineChange: (assetId: string, value: number) => void;
+    onRevert: (assetId: string) => void;
+    onSort: (key: 'name' | 'id' | 'price' | 'change' | 'status') => void;
+    sortKey: 'name' | 'id' | 'price' | 'change' | 'status';
+    sortDir: 'asc' | 'desc';
 }) => {
   if (assets.length === 0) {
-    return (
+    const onSort = (key: typeof sortKey) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortDir('asc');
+    }
+  };
+
+  return (
       <div className="text-center text-sm text-muted-foreground p-4">
         Nenhum ativo nesta categoria.
       </div>
@@ -123,15 +142,45 @@ const AssetActionTable = ({
 
   const hasRentMedia = assets.some(a => a.rentMediaCalculada !== undefined);
 
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [inputValue, setInputValue] = useState<string>('');
+  const [errorMsg, setErrorMsg] = useState<string>('');
+
+  const startEdit = (asset: CommodityPriceData) => {
+    setEditingId(asset.id);
+    setInputValue(String(editedValues[asset.id] ?? asset.price));
+    setErrorMsg('');
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setInputValue('');
+    setErrorMsg('');
+  };
+
+  const parseNumber = (s: string) => {
+    if (typeof s !== 'string') return NaN;
+    const v = s.replace(/\./g, '').replace(',', '.');
+    return Number(v);
+  };
+
   return (
     <Table>
       <TableHeader>
         <TableRow>
           <TableHead>Status</TableHead>
-          <TableHead>Ativo</TableHead>
-          <TableHead className="text-right">Valor</TableHead>
+          <TableHead>
+            <button className="flex items-center gap-1" onClick={() => onSort('name')}>
+              Ativo {sortKey==='name' ? (sortDir==='asc'?'▲':'▼') : ''}
+            </button>
+          </TableHead>
+          <TableHead className="text-right">
+            <button className="flex items-center gap-1 ml-auto" onClick={() => onSort('price')}>
+              Valor {sortKey==='price' ? (sortDir==='asc'?'▲':'▼') : ''}
+            </button>
+          </TableHead>
           {hasRentMedia && <TableHead className="text-right">Rentabilidade Média</TableHead>}
-          <TableHead className="text-center w-[150px]">Ações</TableHead>
+          <TableHead className="text-center w-[200px]">Ações</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -150,7 +199,25 @@ const AssetActionTable = ({
               </TableCell>
             <TableCell className="font-medium">{asset.name}</TableCell>
             <TableCell className="text-right font-mono">
-              {formatCurrency(asset.price, asset.currency, asset.id)}
+              {editingId === asset.id ? (
+                <div className="flex items-center justify-end gap-2">
+                  <input
+                    className="w-32 border rounded px-2 py-1 text-right font-mono"
+                    value={inputValue}
+                    onChange={(e) => {
+                      setInputValue(e.target.value);
+                      const num = parseNumber(e.target.value);
+                      if (isNaN(num) || num < 0) setErrorMsg('Valor inválido'); else setErrorMsg('');
+                    }}
+                    placeholder="0,00"
+                  />
+                </div>
+              ) : (
+                <span>{formatCurrency(editedValues[asset.id] ?? asset.price, asset.currency, asset.id)}</span>
+              )}
+              {editingId === asset.id && errorMsg && (
+                <div className="text-xs text-red-600 mt-1">{errorMsg}</div>
+              )}
             </TableCell>
             {hasRentMedia && (
                 <TableCell className="text-right font-mono">
@@ -160,8 +227,27 @@ const AssetActionTable = ({
                     }
                 </TableCell>
             )}
-            <TableCell className="flex justify-center">
-                <AssetActions asset={asset} onEdit={onEdit} />
+            <TableCell className="flex justify-center gap-2">
+                {editingId === asset.id ? (
+                  <>
+                    <Button size="sm" disabled={!!errorMsg} onClick={() => {
+                      const num = parseNumber(inputValue);
+                      if (isNaN(num) || num < 0) return;
+                      onInlineChange(asset.id, num);
+                      cancelEdit();
+                    }}>Salvar</Button>
+                    <Button size="sm" variant="outline" onClick={() => { onRevert(asset.id); cancelEdit(); }}>Reverter</Button>
+                    <Button size="sm" variant="ghost" onClick={cancelEdit}>Cancelar</Button>
+                  </>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <AssetActions asset={asset} onEdit={onEdit} />
+                    <Button size="sm" variant="secondary" onClick={() => startEdit(asset)}>Editar</Button>
+                    {editedValues[asset.id] !== undefined && (
+                      <Button size="sm" variant="outline" onClick={() => onRevert(asset.id)}>Voltar ao original</Button>
+                    )}
+                  </div>
+                )}
             </TableCell>
           </TableRow>
           );
@@ -316,6 +402,14 @@ export default function AuditPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [sortKey, setSortKey] = useState<'name' | 'id' | 'price' | 'change' | 'status'>('name');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState<string>('');
+  // Paginação
+  const [basePage, setBasePage] = useState(1);
+  const [basePageSize, setBasePageSize] = useState(50);
+  const [idxPage, setIdxPage] = useState(1);
+  const [idxPageSize, setIdxPageSize] = useState(50);
   
   // Estados para histórico de auditoria
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
@@ -334,6 +428,67 @@ export default function AuditPage() {
   // Estados para recálculo avançado
   const [useAdvancedRecalculation, setUseAdvancedRecalculation] = useState<boolean | null>(null);
   const [showDependencyInfo, setShowDependencyInfo] = useState(false);
+
+  // Debounce para busca
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearchTerm(searchTerm), 300);
+    return () => clearTimeout(t);
+  }, [searchTerm]);
+
+  // Persistir filtros/ordenação no localStorage
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('auditPrefs');
+      if (raw) {
+        const p = JSON.parse(raw);
+        if (typeof p.searchTerm === 'string') setSearchTerm(p.searchTerm);
+        if (typeof p.categoryFilter === 'string') setCategoryFilter(p.categoryFilter);
+        if (typeof p.statusFilter === 'string') setStatusFilter(p.statusFilter);
+        if (typeof p.sortKey === 'string') setSortKey(p.sortKey);
+        if (typeof p.sortDir === 'string') setSortDir(p.sortDir);
+        if (typeof p.basePageSize === 'number') setBasePageSize(p.basePageSize);
+        if (typeof p.idxPageSize === 'number') setIdxPageSize(p.idxPageSize);
+      }
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('auditPrefs', JSON.stringify({
+        searchTerm,
+        categoryFilter,
+        statusFilter,
+        sortKey,
+        sortDir,
+        basePageSize,
+        idxPageSize,
+      }));
+    } catch {}
+  }, [searchTerm, categoryFilter, statusFilter, sortKey, sortDir, basePageSize, idxPageSize]);
+
+  // Export CSV util
+  const exportToCsv = (rows: any[], filename: string) => {
+    if (!rows || rows.length === 0) return;
+    const headers = Object.keys(rows[0]);
+    const csv = [headers.join(',') , ...rows.map(r => headers.map(h => JSON.stringify((r as any)[h] ?? '')).join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportToJson = (rows: any[], filename: string) => {
+    const blob = new Blob([JSON.stringify(rows, null, 2)], { type: 'application/json;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   useEffect(() => {
     const newDate = getValidatedDate(dateParam);
@@ -407,26 +562,52 @@ export default function AuditPage() {
 
     startTransition(async () => {
       try {
-        const result = await triggerN8NRecalculation(targetDate, editedValues);
-        if (result.success) {
+        // Enviar para N8N Webhook
+        const WEBHOOK_URL = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL || '';
+        const API_KEY = process.env.NEXT_PUBLIC_N8N_AUDIT_API_KEY || '';
+        if (!WEBHOOK_URL || !API_KEY) {
+          throw new Error('Configuração do N8N ausente: defina NEXT_PUBLIC_N8N_WEBHOOK_URL e NEXT_PUBLIC_N8N_AUDIT_API_KEY');
+        }
+
+        const url = `${WEBHOOK_URL}?key=${encodeURIComponent(API_KEY)}`;
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-audit-token': API_KEY,
+          },
+          body: JSON.stringify(n8nPayload),
+        });
+
+        if (res.ok) {
           toast({
             title: "Solicitação Enviada",
-            description: "O N8N está reprocessando os dados. A página será atualizada em breve.",
+            description: "O N8N está reprocessando os dados. Atualizando dados em seguida...",
           });
           setEditedValues({});
           setValidationAlerts([]);
-          // Refresh data after a delay to allow N8N to process
-          setTimeout(() => {
-            getCommodityPricesByDate(targetDate).then(setData);
-            getAuditLogsForDate(targetDate).then(setAuditLogs);
-          }, 10000); // 10-second delay
+          // Poll leve (3 tentativas, 3s intervalo) para atualizar dados/logs
+          const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+          for (let attempt = 0; attempt < 3; attempt++) {
+            await sleep(3000);
+            try {
+              const [freshData, freshLogs] = await Promise.all([
+                getCommodityPricesByDate(targetDate),
+                getAuditLogsForDate(targetDate),
+              ]);
+              setData(freshData);
+              setAuditLogs(freshLogs);
+              break;
+            } catch {}
+          }
         } else {
-          throw new Error(result.message);
+          const payload = await res.json().catch(() => ({}));
+          throw new Error(payload?.msg || `Falha no Webhook (${res.status})`);
         }
       } catch (error: any) {
         toast({
           title: "Erro no Recálculo",
-          description: error.message || "Ocorreu um erro ao contatar o N8N.",
+          description: error?.message || "Ocorreu um erro ao contatar o N8N.",
           variant: "destructive",
         });
       }
@@ -474,9 +655,10 @@ export default function AuditPage() {
 
     const filterAssets = (assets: typeof enrichedBaseAssets) => {
       return assets.filter(asset => {
-        const matchesSearch = searchTerm === '' || 
-          asset.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          asset.id.toLowerCase().includes(searchTerm.toLowerCase());
+        const term = debouncedSearchTerm.trim().toLowerCase();
+        const matchesSearch = term === '' || 
+          asset.name.toLowerCase().includes(term) ||
+          asset.id.toLowerCase().includes(term);
         const matchesCategory = categoryFilter === 'all' || asset.category === categoryFilter;
         const assetStatus = getAssetStatus(asset, editedValues);
         const matchesStatus = statusFilter === 'all' || assetStatus === statusFilter;
@@ -495,13 +677,38 @@ export default function AuditPage() {
       return matchesSearch && matchesCategory && matchesStatus;
     });
 
+    // Sorting
+    const toStatus = (a: CommodityPriceData) => getAssetStatus(a, editedValues);
+    const dir = sortDir === 'asc' ? 1 : -1;
+    const cmp = (a: CommodityPriceData, b: CommodityPriceData) => {
+      switch (sortKey) {
+        case 'name': return a.name.localeCompare(b.name) * dir;
+        case 'id': return a.id.localeCompare(b.id) * dir;
+        case 'price': return ((a.price || 0) - (b.price || 0)) * dir;
+        case 'change': return ((a.change || 0) - (b.change || 0)) * dir;
+        case 'status': return toStatus(a).localeCompare(toStatus(b)) * dir;
+        default: return 0;
+      }
+    };
+    filteredBaseAssets.sort(cmp);
+    filteredIndices.sort(cmp);
+
     return { 
       baseAssets: enrichedBaseAssets, 
       indices: calculatedAssets,
       filteredBaseAssets,
       filteredIndices
     };
-  }, [data, searchTerm, categoryFilter, statusFilter, editedValues]);
+  }, [data, debouncedSearchTerm, categoryFilter, statusFilter, editedValues, sortKey, sortDir]);
+
+  // Paginação: fatias
+  const baseTotalPages = Math.max(1, Math.ceil(filteredBaseAssets.length / basePageSize));
+  const idxTotalPages = Math.max(1, Math.ceil(filteredIndices.length / idxPageSize));
+  const pagedBaseAssets = filteredBaseAssets.slice((basePage - 1) * basePageSize, basePage * basePageSize);
+  const pagedIndices = filteredIndices.slice((idxPage - 1) * idxPageSize, idxPage * idxPageSize);
+
+  useEffect(() => { setBasePage(1); }, [debouncedSearchTerm, categoryFilter, statusFilter, sortKey, sortDir, basePageSize]);
+  useEffect(() => { setIdxPage(1); }, [debouncedSearchTerm, categoryFilter, statusFilter, sortKey, sortDir, idxPageSize]);
 
   const hasEdits = Object.keys(editedValues).length > 0;
 
@@ -543,6 +750,27 @@ export default function AuditPage() {
     });
   }, [editedValues, originalData]);
 
+  // Edição inline (escopo AuditPage)
+  const handleInlineChange = (assetId: string, value: number) => {
+    const newEdited = { ...editedValues, [assetId]: value };
+    setEditedValues(newEdited);
+    const updatedData = data.map((a) => a.id === assetId ? { ...a, price: value } : a);
+    setData(updatedData);
+    setValidationAlerts(generateValidationAlerts(updatedData, newEdited));
+  };
+
+  const handleRevertInline = (assetId: string) => {
+    const copy = { ...editedValues };
+    delete copy[assetId];
+    setEditedValues(copy);
+    const original = originalData.get(assetId);
+    if (original) {
+      const restored = data.map((a) => a.id === assetId ? { ...a, price: original.price } : a);
+      setData(restored);
+      setValidationAlerts(generateValidationAlerts(restored, copy));
+    }
+  };
+
   const n8nPayload = useMemo(() => {
     const transformedAssets: Record<string, any> = {};
     for (const [key, value] of Object.entries(editedValues)) {
@@ -565,6 +793,47 @@ export default function AuditPage() {
           icon={History}
         />
         <main className="flex flex-1 flex-col gap-6 p-4 md:gap-8 md:p-6 bg-gradient-to-br from-slate-50 to-blue-50">
+          <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
+            <CardContent className="p-4">
+              <div className="flex flex-wrap items-center gap-3">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button onClick={() => hasEdits ? handleRecalculate() : toast({ title: 'Nenhuma alteração', description: 'Edite algum valor antes de recalcular.', variant: 'destructive' })} className="bg-green-600 hover:bg-green-700">
+                        <Save className="mr-2 h-4 w-4" /> Salvar e Recalcular
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Envia alterações para o N8N</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="outline" onClick={() => {
+                        exportToCsv(
+                          [...filteredBaseAssets, ...filteredIndices].map(a => ({ id: a.id, name: a.name, price: a.price, change: a.change, category: a.category })),
+                          `auditoria_${format(targetDate, 'yyyyMMdd')}.csv`
+                        )
+                      }}>
+                        <BarChart3 className="mr-2 h-4 w-4" /> Exportar CSV
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Exporta os dados filtrados</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="outline" onClick={() => exportToJson(reviewChanges, `alteracoes_${format(targetDate, 'yyyyMMdd')}.json`)}>
+                        <FileDown className="mr-2 h-4 w-4" /> Exportar JSON (Alterações)
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Exporta as alterações pendentes</TooltipContent>
+                  </Tooltip>
+                  <div className="ml-auto flex items-center gap-2">
+                    <Badge variant={hasEdits ? 'destructive' : 'secondary'}>{Object.keys(editedValues).length} alterações</Badge>
+                    <Button variant="ghost" onClick={() => { setSearchTerm(''); setCategoryFilter('all'); setStatusFilter('all'); }}>Limpar filtros</Button>
+                  </div>
+                </TooltipProvider>
+              </div>
+            </CardContent>
+          </Card>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <Card className="lg:col-span-2 bg-white/80 backdrop-blur-sm border-0 shadow-lg">
               <CardHeader className="pb-4">
@@ -734,6 +1003,32 @@ export default function AuditPage() {
                             </SelectContent>
                         </Select>
                     </div>
+                    <div className="space-y-2">
+                        <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Ordenar por</label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <Select value={sortKey} onValueChange={(v) => setSortKey(v as any)}>
+                            <SelectTrigger className="border-gray-300 dark:border-gray-700 focus:border-primary focus:ring-primary">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="name">Nome</SelectItem>
+                              <SelectItem value="id">ID</SelectItem>
+                              <SelectItem value="price">Preço</SelectItem>
+                              <SelectItem value="change">Variação</SelectItem>
+                              <SelectItem value="status">Status</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Select value={sortDir} onValueChange={(v) => setSortDir(v as any)}>
+                            <SelectTrigger className="border-gray-300 dark:border-gray-700 focus:border-primary focus:ring-primary">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="asc">Asc</SelectItem>
+                              <SelectItem value="desc">Desc</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                    </div>
                 </div>
                 <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="md:col-span-1 flex items-center">
@@ -750,35 +1045,67 @@ export default function AuditPage() {
                           Limpar Filtros
                         </Button>
                     </div>
-                    {!isLoading && data.length > 0 && (
-                        <div className="md:col-span-2 grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-muted/50 rounded-lg">
-                            <div className="text-center">
-                                <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                                    {filteredBaseAssets.length + filteredIndices.length}
-                                </div>
-                                <div className="text-xs text-muted-foreground">Ativos Exibidos</div>
-                            </div>
-                            <div className="text-center">
-                                <div className="text-lg font-bold text-yellow-600">
-                                    {[...filteredBaseAssets, ...filteredIndices].filter(a => getAssetStatus(a, editedValues) === 'edited').length}
-                                </div>
-                                <div className="text-xs text-muted-foreground">Editados</div>
-                            </div>
-                            <div className="text-center">
-                                <div className="text-lg font-bold text-red-600">
-                                    {[...filteredBaseAssets, ...filteredIndices].filter(a => getAssetStatus(a, editedValues) === 'zero').length}
-                                </div>
-                                <div className="text-xs text-muted-foreground">Valor Zero</div>
-                            </div>
-                            <div className="text-center">
-                                <div className="text-lg font-bold text-green-600">
-                                    {[...filteredBaseAssets, ...filteredIndices].filter(a => getAssetStatus(a, editedValues) === 'normal').length}
-                                </div>
-                                <div className="text-xs text-muted-foreground">Normais</div>
-                            </div>
-                        </div>
-                    )}
+                    <div className="md:col-span-1 flex items-center">
+                      <Button 
+                        variant="secondary" 
+                        className="w-full"
+                        onClick={() => exportToCsv(
+                          filteredBaseAssets.map(a => ({ id: a.id, name: a.name, price: a.price, change: a.change, category: a.category })),
+                          `ativos_${format(targetDate, 'yyyyMMdd')}.csv`
+                        )}
+                      >
+                        <BarChart3 className="h-4 w-4 mr-2" />
+                        Exportar CSV (Ativos)
+                      </Button>
+                    </div>
+                    <div className="md:col-span-1 flex items-center">
+                      <Button 
+                        variant="secondary" 
+                        className="w-full"
+                        onClick={() => exportToCsv(
+                          filteredIndices.map(a => ({ id: a.id, name: a.name, price: a.price, change: a.change, category: a.category })),
+                          `indices_${format(targetDate, 'yyyyMMdd')}.csv`
+                        )}
+                      >
+                        <BarChart3 className="h-4 w-4 mr-2" />
+                        Exportar CSV (Índices)
+                      </Button>
+                    </div>
+                    <div className="md:col-span-1 flex items-center">
+                      <Button 
+                        variant="outline" 
+                        className="w-full"
+                        onClick={() => exportToJson(
+                          reviewChanges,
+                          `alteracoes_${format(targetDate, 'yyyyMMdd')}.json`
+                        )}
+                      >
+                        Exportar JSON (Alterações)
+                      </Button>
+                    </div>
                 </div>
+                {([ ...filteredBaseAssets, ...filteredIndices ].length > 0) && (
+                  <div className="mt-6 grid grid-cols-3 gap-4">
+                    <div className="text-center">
+                      <div className="text-lg font-bold text-yellow-600">
+                        {[...filteredBaseAssets, ...filteredIndices].filter(a => getAssetStatus(a, editedValues) === 'edited').length}
+                      </div>
+                      <div className="text-xs text-muted-foreground">Editados</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-lg font-bold text-red-600">
+                        {[...filteredBaseAssets, ...filteredIndices].filter(a => getAssetStatus(a, editedValues) === 'zero').length}
+                      </div>
+                      <div className="text-xs text-muted-foreground">Valor Zero</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-lg font-bold text-green-600">
+                        {[...filteredBaseAssets, ...filteredIndices].filter(a => getAssetStatus(a, editedValues) === 'normal').length}
+                      </div>
+                      <div className="text-xs text-muted-foreground">Normais</div>
+                    </div>
+                  </div>
+                )}
             </CardContent>
           </Card>
 
@@ -873,7 +1200,31 @@ export default function AuditPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="p-6">
-                  <AssetActionTable assets={filteredBaseAssets} onEdit={handleEdit} editedValues={editedValues} />
+                  <AssetActionTable 
+                    assets={pagedBaseAssets} 
+                    onEdit={handleEdit} 
+                    editedValues={editedValues} 
+                    onInlineChange={handleInlineChange}
+                    onRevert={handleRevertInline}
+                  />
+                  <div className="flex items-center justify-between mt-4">
+                    <div className="flex items-center gap-2 text-sm">
+                      Página {basePage} de {baseTotalPages}
+                      <Button size="sm" variant="outline" disabled={basePage<=1} onClick={() => setBasePage(p => Math.max(1, p-1))}>Anterior</Button>
+                      <Button size="sm" variant="outline" disabled={basePage>=baseTotalPages} onClick={() => setBasePage(p => Math.min(baseTotalPages, p+1))}>Próxima</Button>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      Itens por página
+                      <Select value={String(basePageSize)} onValueChange={(v) => setBasePageSize(Number(v))}>
+                        <SelectTrigger className="w-[90px]"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="25">25</SelectItem>
+                          <SelectItem value="50">50</SelectItem>
+                          <SelectItem value="100">100</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                   {filteredBaseAssets.length === 0 && baseAssets.length > 0 && (
                     <div className="text-center text-sm text-muted-foreground p-6 bg-gray-50 rounded-lg">
                       Nenhum ativo encontrado com os filtros aplicados. 
@@ -900,7 +1251,25 @@ export default function AuditPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
-                  <IndexTable indices={filteredIndices} editedValues={editedValues} />
+                  <IndexTable indices={pagedIndices} editedValues={editedValues} />
+                  <div className="flex items-center justify-between mt-4 px-6 pb-4">
+                    <div className="flex items-center gap-2 text-sm">
+                      Página {idxPage} de {idxTotalPages}
+                      <Button size="sm" variant="outline" disabled={idxPage<=1} onClick={() => setIdxPage(p => Math.max(1, p-1))}>Anterior</Button>
+                      <Button size="sm" variant="outline" disabled={idxPage>=idxTotalPages} onClick={() => setIdxPage(p => Math.min(idxTotalPages, p+1))}>Próxima</Button>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      Itens por página
+                      <Select value={String(idxPageSize)} onValueChange={(v) => setIdxPageSize(Number(v))}>
+                        <SelectTrigger className="w-[90px]"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="25">25</SelectItem>
+                          <SelectItem value="50">50</SelectItem>
+                          <SelectItem value="100">100</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                   {filteredIndices.length === 0 && indices.length > 0 && (
                     <div className="text-center text-sm text-muted-foreground p-4">
                       Nenhum índice encontrado com os filtros aplicados.
@@ -936,7 +1305,7 @@ export default function AuditPage() {
       </div>
       {editingAsset && (
         <AssetEditModal
-          asset={editingAsset}
+          asset={editingAsset as CommodityPriceData}
           isOpen={!!editingAsset}
           onOpenChange={() => setEditingAsset(null)}
           onSave={handleSaveEdit}
