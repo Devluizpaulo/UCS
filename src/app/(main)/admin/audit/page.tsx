@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo, useTransition } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { History, Loader2, Save, ExternalLink, Edit, Search, Filter, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Zap, RefreshCw, Calendar, Activity, BarChart3 } from 'lucide-react';
+import { History, Loader2, Save, ExternalLink, Edit, Search, Filter, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Zap, RefreshCw, Calendar, Activity, BarChart3, FileDown } from 'lucide-react';
 import { getCommodityPricesByDate } from '@/lib/data-service';
 import type { CommodityPriceData } from '@/lib/types';
 import * as Calc from '@/lib/calculation-service';
@@ -124,16 +124,7 @@ const AssetActionTable = ({
     sortDir: 'asc' | 'desc';
 }) => {
   if (assets.length === 0) {
-    const onSort = (key: typeof sortKey) => {
-    if (sortKey === key) {
-      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
-    } else {
-      setSortKey(key);
-      setSortDir('asc');
-    }
-  };
-
-  return (
+    return (
       <div className="text-center text-sm text-muted-foreground p-4">
         Nenhum ativo nesta categoria.
       </div>
@@ -548,6 +539,27 @@ export default function AuditPage() {
         description: `O valor de ${assetId} foi atualizado localmente. Clique em 'Salvar e Recalcular' para persistir.`,
     });
   }
+  
+  // Edição inline (escopo AuditPage)
+  const handleInlineChange = (assetId: string, value: number) => {
+    const newEdited = { ...editedValues, [assetId]: value };
+    setEditedValues(newEdited);
+    const updatedData = data.map((a: CommodityPriceData) => a.id === assetId ? { ...a, price: value } : a);
+    setData(updatedData);
+    setValidationAlerts(generateValidationAlerts(updatedData, newEdited));
+  };
+
+  const handleRevertInline = (assetId: string) => {
+    const copy = { ...editedValues };
+    delete copy[assetId];
+    setEditedValues(copy);
+    const original = originalData.get(assetId);
+    if (original) {
+      const restored = data.map((a: CommodityPriceData) => a.id === assetId ? { ...a, price: original.price } : a);
+      setData(restored);
+      setValidationAlerts(generateValidationAlerts(restored, copy));
+    }
+  };
 
 
   const handleRecalculate = async () => {
@@ -750,24 +762,12 @@ export default function AuditPage() {
     });
   }, [editedValues, originalData]);
 
-  // Edição inline (escopo AuditPage)
-  const handleInlineChange = (assetId: string, value: number) => {
-    const newEdited = { ...editedValues, [assetId]: value };
-    setEditedValues(newEdited);
-    const updatedData = data.map((a) => a.id === assetId ? { ...a, price: value } : a);
-    setData(updatedData);
-    setValidationAlerts(generateValidationAlerts(updatedData, newEdited));
-  };
-
-  const handleRevertInline = (assetId: string) => {
-    const copy = { ...editedValues };
-    delete copy[assetId];
-    setEditedValues(copy);
-    const original = originalData.get(assetId);
-    if (original) {
-      const restored = data.map((a) => a.id === assetId ? { ...a, price: original.price } : a);
-      setData(restored);
-      setValidationAlerts(generateValidationAlerts(restored, copy));
+  const handleSort = (key: 'name' | 'id' | 'price' | 'change' | 'status') => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortDir('asc');
     }
   };
 
@@ -1206,6 +1206,9 @@ export default function AuditPage() {
                     editedValues={editedValues} 
                     onInlineChange={handleInlineChange}
                     onRevert={handleRevertInline}
+                    onSort={handleSort}
+                    sortKey={sortKey}
+                    sortDir={sortDir}
                   />
                   <div className="flex items-center justify-between mt-4">
                     <div className="flex items-center gap-2 text-sm">
@@ -1316,6 +1319,3 @@ export default function AuditPage() {
     </>
   );
 }
-
-
-    
