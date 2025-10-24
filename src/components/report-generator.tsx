@@ -1,17 +1,3 @@
-// Feriados nacionais Brasil (exemplos principais; ajuste conforme necessário)
-const BR_HOLIDAYS_2025: Date[] = [
-  new Date('2025-01-01'), // Confraternização Universal
-  new Date('2025-04-18'), // Sexta-feira Santa
-  new Date('2025-04-21'), // Tiradentes
-  new Date('2025-05-01'), // Dia do Trabalho
-  new Date('2025-09-07'), // Independência do Brasil
-  new Date('2025-10-12'), // Nossa Senhora Aparecida
-  new Date('2025-11-02'), // Finados
-  new Date('2025-11-15'), // Proclamação da República
-  new Date('2025-12-25'), // Natal
-]
-
-
 'use client';
 
 import { useState, useRef } from 'react';
@@ -42,6 +28,7 @@ import { useToast } from '@/hooks/use-toast';
 import { PdfPreviewModal } from '@/components/pdf-preview-modal';
 import type { DashboardPdfData } from '@/lib/types';
 import { getCommodityPricesByDate, getCommodityConfigs } from '@/lib/data-service';
+import { getBrazilHolidays } from '@/lib/holidays';
 
 const reportSchema = z.object({
   assetId: z.string().min(1, { message: 'Selecione um ativo.' }),
@@ -177,7 +164,7 @@ export function ReportGenerator() {
                    setDate={setDate}
                    blockFuture
                    blockWeekends
-                   holidays={BR_HOLIDAYS_2025}
+                   holidays={getBrazilHolidays(2025)}
                  />
                  {errors.dateRange && <p className="text-sm text-destructive">{errors.dateRange.from?.message || errors.dateRange.to?.message}</p>}
               </div>
