@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { FileDown, Loader2 } from 'lucide-react';
 import { PdfPreviewModal } from '@/components/pdf-preview-modal';
-import { generatePdf, type DashboardPdfData } from '@/lib/pdf-generator';
+import type { DashboardPdfData } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 
 interface PdfExportButtonProps {

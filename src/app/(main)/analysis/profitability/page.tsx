@@ -70,7 +70,7 @@ interface AssetEditModalProps {
   currentUser?: string;
 }
 
-export function AssetEditModal({ isOpen, onOpenChange, onSave, asset, allAssets = [], currentUser = 'Sistema' }: AssetEditModalProps) {
+function AssetEditModal({ isOpen, onOpenChange, onSave, asset, allAssets = [], currentUser = 'Sistema' }: AssetEditModalProps) {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [calculationResults, setCalculationResults] = useState<CalculationResult[]>([]);
@@ -371,5 +371,15 @@ export function AssetEditModal({ isOpen, onOpenChange, onSave, asset, allAssets 
         </AlertDialogContent>
       </AlertDialog>
     </>
+  );
+}
+
+// Default page component for this route
+export default function ProfitabilityPage() {
+  return (
+    <div className="p-4">
+      <h1 className="text-xl font-semibold">Análise de Rentabilidade</h1>
+      <p className="text-sm text-muted-foreground mt-1">Esta página está em preparação.</p>
+    </div>
   );
 }

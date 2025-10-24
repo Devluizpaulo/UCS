@@ -37,7 +37,6 @@ import { Checkbox } from './ui/checkbox';
 import { AssetHistoricalTable } from './historical-price-table';
 import { AssetDetailModal } from './asset-detail-modal';
 import { PdfExportButton } from '@/components/pdf-export-button';
-import type { CommodityPriceData } from '@/lib/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AssetIcon } from '@/lib/icons';
 import type { PeriodMetrics } from '@/lib/types';

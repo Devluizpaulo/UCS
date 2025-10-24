@@ -56,6 +56,16 @@ const drawLogo = (doc: jsPDF, data: DashboardPdfData, x: number, y: number, widt
       return true;
     }
   } catch {}
+  // Try static logo from public/image/BMV.png
+  try {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.src = '/image/BMV.png';
+    if ((img as any).complete) {
+      doc.addImage(img as any, 'PNG', x, y, width, height, undefined, 'FAST');
+      return true;
+    }
+  } catch {}
   return addBMVLogo(doc, x, y, width, height);
 };
 

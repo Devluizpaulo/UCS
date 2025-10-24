@@ -28,7 +28,7 @@ import { Separator } from './ui/separator';
 import { generateReport, type ReportInput, type ReportOutput } from '@/ai/flows/report-flow';
 import { useToast } from '@/hooks/use-toast';
 import { PdfPreviewModal } from '@/components/pdf-preview-modal';
-import type { DashboardPdfData } from '@/lib/pdf-generator';
+import type { DashboardPdfData } from '@/lib/types';
 import { getCommodityPricesByDate, getCommodityConfigs } from '@/lib/data-service';
 
 const reportSchema = z.object({
