@@ -30,6 +30,9 @@ export interface CommodityPriceData extends CommodityConfig {
         cotacao_eur?: number;
         [key: string]: any;
     };
+    // Campos para bloqueio de dias não úteis
+    isBlocked?: boolean;
+    blockReason?: string;
 }
 
 // Defines the structure for a historical quote from Firestore

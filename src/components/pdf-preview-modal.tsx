@@ -93,6 +93,27 @@ export function PdfPreviewModal({ isOpen, onOpenChange, reportType, data }: PdfP
         if (typeof prefs.logoDataUrl === 'string') setLogoDataUrl(prefs.logoDataUrl);
       }
     } catch {}
+    // Load default logo from public folder if none set
+    const loadDefaultLogo = async () => {
+      try {
+        if (!logoDataUrl) {
+          const res = await fetch('/image/BMV.png');
+          const blob = await res.blob();
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const dataUrl = reader.result as string;
+            setLogoDataUrl(dataUrl);
+            try {
+              const rawPrev = localStorage.getItem('pdfPreviewPrefs');
+              const prev = rawPrev ? JSON.parse(rawPrev) : {};
+              localStorage.setItem('pdfPreviewPrefs', JSON.stringify({ ...prev, logoDataUrl: dataUrl }));
+            } catch {}
+          };
+          reader.readAsDataURL(blob);
+        }
+      } catch {}
+    };
+    loadDefaultLogo();
   }, [isOpen]);
 
   useEffect(() => {

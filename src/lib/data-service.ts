@@ -8,6 +8,8 @@ import { getCache, setCache, clearCache as clearMemoryCache } from '@/lib/cache-
 import { Timestamp } from 'firebase-admin/firestore';
 import { subDays, format, startOfDay, endOfDay, isValid, parseISO } from 'date-fns';
 import { revalidatePath } from 'next/cache';
+import { validateQuoteOperation, QuoteOperationOptions } from '@/lib/quote-validation-middleware';
+import { isBusinessDay } from '@/lib/business-days-service';
 
 // --- CONSTANTS ---
 const CACHE_KEYS = {
@@ -891,8 +893,27 @@ function calculatePriceChange(currentPrice: number, previousPrice: number): { ch
 
 /**
  * Obtém preços de commodities para uma data específica
+ * BLOQUEIA dados em fins de semana e feriados
  */
 export async function getCommodityPricesByDate(date: Date): Promise<CommodityPriceData[]> {
+  // VALIDAÇÃO DE DIA ÚTIL - BLOQUEIA CONSULTA
+  const businessDayCheck = await isBusinessDay(date);
+  if (!businessDayCheck.isBusinessDay) {
+    console.log(`[DataService] Consulta bloqueada para ${format(date, 'dd/MM/yyyy')}: ${businessDayCheck.holidayName}`);
+    
+    // Retorna array vazio ou dados "bloqueados"
+    const configs = await getCommodityConfigs();
+    return configs.map(config => ({
+      ...config,
+      price: 0,
+      change: 0,
+      absoluteChange: 0,
+      lastUpdated: `Bloqueado: ${businessDayCheck.holidayName}`,
+      isBlocked: true,
+      blockReason: businessDayCheck.holidayName
+    }));
+  }
+
   const cacheKey = generateDateCacheKey(CACHE_KEYS.PRICES_BY_DATE, date);
   const cachedData = getCache<CommodityPriceData[]>(cacheKey);
   if (cachedData) return cachedData;
@@ -918,7 +939,36 @@ export async function getCommodityPricesByDate(date: Date): Promise<CommodityPri
           change,
           absoluteChange,
           lastUpdated: latestDoc?.data || displayDate,
+          isBlocked: false
         };
+      }
+
+      // Força SOJA a exibir o último preço em USD (sem conversão para BRL)
+      if (config.id === 'soja' && latestDoc) {
+        const usdLast = typeof latestDoc.ultimo === 'number' ? latestDoc.ultimo : latestPrice;
+        return {
+          ...config,
+          currency: 'USD',
+          price: usdLast,
+          change,
+          absoluteChange,
+          lastUpdated: latestDoc?.data || displayDate,
+          isBlocked: false
+        } as any;
+      }
+
+      // Força CARBONO a exibir o último preço em EUR (sem conversão para BRL)
+      if (config.id === 'carbono' && latestDoc) {
+        const eurLast = typeof latestDoc.ultimo === 'number' ? latestDoc.ultimo : latestPrice;
+        return {
+          ...config,
+          currency: 'EUR',
+          price: eurLast,
+          change,
+          absoluteChange,
+          lastUpdated: latestDoc?.data || displayDate,
+          isBlocked: false
+        } as any;
       }
       
       return { 
@@ -926,7 +976,8 @@ export async function getCommodityPricesByDate(date: Date): Promise<CommodityPri
         price: latestPrice, 
         change, 
         absoluteChange, 
-        lastUpdated: latestDoc?.data || displayDate
+        lastUpdated: latestDoc?.data || displayDate,
+        isBlocked: false
       };
     });
 
@@ -941,14 +992,34 @@ export async function getCommodityPricesByDate(date: Date): Promise<CommodityPri
 
 /**
  * Obtém preços atuais de commodities
+ * BLOQUEIA dados em fins de semana e feriados
  */
 export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
+  const today = new Date();
+  
+  // VALIDAÇÃO DE DIA ÚTIL - BLOQUEIA CONSULTA PARA HOJE
+  const businessDayCheck = await isBusinessDay(today);
+  if (!businessDayCheck.isBusinessDay) {
+    console.log(`[DataService] Consulta de preços atuais bloqueada: ${businessDayCheck.holidayName}`);
+    
+    // Retorna dados "bloqueados" para hoje
+    const configs = await getCommodityConfigs();
+    return configs.map(config => ({
+      ...config,
+      price: 0,
+      change: 0,
+      absoluteChange: 0,
+      lastUpdated: `Bloqueado: ${businessDayCheck.holidayName}`,
+      isBlocked: true,
+      blockReason: businessDayCheck.holidayName
+    }));
+  }
+
   const cachedData = getCache<CommodityPriceData[]>(CACHE_KEYS.PRICES_REALTIME);
   if (cachedData) return cachedData;
 
   try {
     const configs = await getCommodityConfigs();
-    const today = new Date();
     
     const assetPromises = configs.map(async (config) => {
       const latestDoc = await getQuoteByDate(config.id, today);
@@ -971,7 +1042,36 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
           change,
           absoluteChange,
           lastUpdated: lastUpdated,
+          isBlocked: false
         };
+      }
+
+      // Força SOJA a exibir o último preço em USD (sem conversão para BRL)
+      if (config.id === 'soja' && latestDoc) {
+        const usdLast = typeof latestDoc.ultimo === 'number' ? latestDoc.ultimo : latestPrice;
+        return {
+          ...config,
+          currency: 'USD',
+          price: usdLast,
+          change,
+          absoluteChange,
+          lastUpdated: lastUpdated,
+          isBlocked: false
+        } as any;
+      }
+
+      // Força CARBONO a exibir o último preço em EUR (sem conversão para BRL)
+      if (config.id === 'carbono' && latestDoc) {
+        const eurLast = typeof latestDoc.ultimo === 'number' ? latestDoc.ultimo : latestPrice;
+        return {
+          ...config,
+          currency: 'EUR',
+          price: eurLast,
+          change,
+          absoluteChange,
+          lastUpdated: lastUpdated,
+          isBlocked: false
+        } as any;
       }
 
       return {
@@ -980,6 +1080,7 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
         change,
         absoluteChange,
         lastUpdated: lastUpdated,
+        isBlocked: false
       };
     });
 
@@ -1176,6 +1277,169 @@ export async function debugDataFetching(): Promise<any> {
 }
 
 // --- WEBHOOK SERVICES ---
+
+// --- QUOTE OPERATIONS WITH BUSINESS DAY VALIDATION ---
+
+/**
+ * Cria ou atualiza uma cotação com validação de dias úteis
+ */
+export async function createOrUpdateQuoteWithValidation(
+  assetId: string,
+  date: Date,
+  quoteData: any,
+  options: QuoteOperationOptions = {}
+): Promise<{ success: boolean; message: string; data?: any }> {
+  try {
+    // Validação de entrada
+    const assetValidation = validateAssetId(assetId);
+    if (!assetValidation.isValid) {
+      return {
+        success: false,
+        message: `AssetId inválido: ${assetValidation.errors.join(', ')}`
+      };
+    }
+
+    const dateValidation = validateDate(date);
+    if (!dateValidation.isValid) {
+      return {
+        success: false,
+        message: `Data inválida: ${dateValidation.errors.join(', ')}`
+      };
+    }
+
+    // Validação de dia útil
+    const businessDayValidation = await validateQuoteOperation(date, {
+      allowHistorical: true,
+      operationType: 'CREATE',
+      ...options
+    });
+
+    if (!businessDayValidation.success) {
+      return {
+        success: false,
+        message: businessDayValidation.message
+      };
+    }
+
+    // Processa e normaliza os dados
+    const normalizedData = normalizeAssetData(quoteData);
+    const formattedDate = format(date, 'dd/MM/yyyy');
+
+    // Adiciona metadados de validação
+    const enrichedData = {
+      ...normalizedData,
+      data: formattedDate,
+      timestamp: new Date(),
+      business_day_validated: true,
+      validation_timestamp: new Date().toISOString(),
+      last_updated: new Date().toISOString()
+    };
+
+    const { db } = await getFirebaseAdmin();
+
+    // Verifica se já existe uma cotação para esta data
+    const existingSnapshot = await db.collection(assetId)
+      .where('data', '==', formattedDate)
+      .limit(1)
+      .get();
+
+    let result;
+    if (!existingSnapshot.empty) {
+      // Atualiza cotação existente
+      const docRef = existingSnapshot.docs[0].ref;
+      await docRef.update(enrichedData);
+      result = { id: existingSnapshot.docs[0].id, ...enrichedData };
+    } else {
+      // Cria nova cotação
+      const docRef = await db.collection(assetId).add(enrichedData);
+      result = { id: docRef.id, ...enrichedData };
+    }
+
+    // Limpa cache relacionado
+    clearMemoryCache();
+    revalidatePath('/dashboard');
+
+    return {
+      success: true,
+      message: `Cotação para ${assetId} em ${formattedDate} ${existingSnapshot.empty ? 'criada' : 'atualizada'} com sucesso`,
+      data: serializeFirestoreTimestamp(result)
+    };
+
+  } catch (error: any) {
+    console.error('[DataService] Erro ao criar/atualizar cotação:', error);
+    return {
+      success: false,
+      message: `Erro ao processar cotação: ${error.message}`
+    };
+  }
+}
+
+/**
+ * Valida se operações de cotação são permitidas para uma data
+ */
+export async function validateQuoteOperationForDate(date: Date): Promise<{
+  allowed: boolean;
+  message: string;
+  isBusinessDay: boolean;
+  holidayName?: string;
+  suggestedDate?: Date;
+}> {
+  try {
+    const businessDayCheck = await isBusinessDay(date);
+    const validation = await validateQuoteOperation(date, { operationType: 'CREATE' });
+
+    return {
+      allowed: validation.success,
+      message: validation.message,
+      isBusinessDay: businessDayCheck.isBusinessDay,
+      holidayName: businessDayCheck.holidayName,
+      suggestedDate: validation.suggestedDate
+    };
+  } catch (error: any) {
+    return {
+      allowed: false,
+      message: `Erro na validação: ${error.message}`,
+      isBusinessDay: false
+    };
+  }
+}
+
+/**
+ * Obtém cotações apenas para dias úteis em um período
+ */
+export async function getBusinessDayQuotes(
+  assetId: string,
+  startDate: Date,
+  endDate: Date
+): Promise<FirestoreQuote[]> {
+  try {
+    const allQuotes = await getCotacoesHistoricoPorRange(assetId, {
+      from: startDate,
+      to: endDate
+    });
+
+    // Filtra apenas cotações de dias úteis
+    const businessDayQuotes: FirestoreQuote[] = [];
+    
+    for (const quote of allQuotes) {
+      if (quote.data) {
+        // Converte data do formato dd/MM/yyyy para Date
+        const [day, month, year] = quote.data.split('/');
+        const quoteDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        
+        const businessDayCheck = await isBusinessDay(quoteDate);
+        if (businessDayCheck.isBusinessDay) {
+          businessDayQuotes.push(quote);
+        }
+      }
+    }
+
+    return businessDayQuotes;
+  } catch (error) {
+    console.error('[DataService] Erro ao buscar cotações de dias úteis:', error);
+    return [];
+  }
+}
 
 /**
  * Reprocessa dados de uma data específica via webhook

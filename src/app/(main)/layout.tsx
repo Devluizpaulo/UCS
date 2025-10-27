@@ -284,6 +284,18 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
+                <SidebarMenuItem onClick={handleMenuItemClick}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith('/comparador')}
+                    tooltip={{ children: 'Comparativo de Datas' }}
+                  >
+                    <Link href="/comparador">
+                      <BarChart3 />
+                      <span>Comparador</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               </SidebarMenu>
               {isAdmin && (
                 <SidebarMenu>

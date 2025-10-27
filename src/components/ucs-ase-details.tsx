@@ -1,13 +1,15 @@
 
-'use client';
+"use client";
 
 import { useState, useEffect } from 'react';
 import { getQuoteByDate } from '@/lib/data-service';
 import type { CommodityPriceData, FirestoreQuote } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Skeleton } from './ui/skeleton';
-import { Loader2, DollarSign, Euro, Bot, CheckCircle } from 'lucide-react';
+import { Loader2, DollarSign, Euro, Bot, CheckCircle, AlertTriangle, ArrowLeftCircle, ArrowRightCircle } from 'lucide-react';
 import { formatCurrency } from '@/lib/formatters';
+import { Button } from './ui/button';
+import { format } from 'date-fns';
 
 interface UcsAseDetailsProps {
     asset: CommodityPriceData;
@@ -20,9 +22,24 @@ const DetailRow = ({ label, value, className, isFinal = false }: { label: string
     </div>
 );
 
+// Bloco destacado para o Resultado Final com melhor legibilidade
+const FinalResultRow = ({ label, value }: { label: string; value: React.ReactNode }) => (
+    <div className="mt-2 rounded-xl bg-emerald-600 text-emerald-50 shadow-sm ring-1 ring-emerald-700/40">
+        <div className="flex items-center justify-between px-4 py-3">
+            <div className="text-sm font-medium opacity-95">
+                {label}
+            </div>
+            <div className="font-mono font-bold text-2xl md:text-3xl tracking-tight">
+                {value}
+            </div>
+        </div>
+    </div>
+);
+
 export function UcsAseDetails({ asset }: UcsAseDetailsProps) {
     const [latestQuote, setLatestQuote] = useState<FirestoreQuote | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [nextBusinessDay, setNextBusinessDay] = useState<Date | null>(null);
 
     useEffect(() => {
         setIsLoading(true);
@@ -36,6 +53,43 @@ export function UcsAseDetails({ asset }: UcsAseDetailsProps) {
             })
             .finally(() => setIsLoading(false));
     }, []);
+
+    // Quando indisponível, busca próximo dia útil sugerido pela API central
+    useEffect(() => {
+        const fetchSuggested = async () => {
+            if (!asset?.isBlocked) return;
+            try {
+                const res = await fetch('/api/business-day-status', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ date: new Date().toISOString() })
+                });
+                const json = await res.json();
+                if (json?.suggestedDate) {
+                    setNextBusinessDay(new Date(json.suggestedDate));
+                }
+            } catch {}
+        };
+        fetchSuggested();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [asset?.isBlocked]);
+
+    const navigateToDate = (date: Date) => {
+        const iso = format(date, 'yyyy-MM-dd');
+        const params = new URLSearchParams(window.location.search);
+        params.set('date', iso);
+        window.location.search = params.toString();
+    };
+
+    const goToPreviousBusinessDay = async () => {
+        try {
+            const res = await fetch(`/api/business-day/previous?date=${format(new Date(), 'yyyy-MM-dd')}`);
+            const json = await res.json();
+            if (json?.success && json?.date) {
+                navigateToDate(new Date(json.date));
+            }
+        } catch {}
+    };
 
     if (isLoading) {
         return (
@@ -62,6 +116,25 @@ export function UcsAseDetails({ asset }: UcsAseDetailsProps) {
 
     return (
         <div className="space-y-6">
+            {/* Banner de indisponibilidade com ações rápidas */}
+            {asset.isBlocked && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                    <div className="flex items-center gap-2 text-amber-700">
+                        <AlertTriangle className="h-4 w-4" />
+                        <span className="text-sm font-medium">Indisponível hoje{asset.blockReason ? `: ${asset.blockReason}` : ''}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" onClick={goToPreviousBusinessDay}>
+                            <ArrowLeftCircle className="h-4 w-4 mr-1" /> Último dia útil
+                        </Button>
+                        {nextBusinessDay && (
+                          <Button variant="outline" size="sm" onClick={() => navigateToDate(nextBusinessDay)}>
+                            <ArrowRightCircle className="h-4 w-4 mr-1" /> Ir para {format(nextBusinessDay, 'dd/MM')}
+                          </Button>
+                        )}
+                    </div>
+                </div>
+            )}
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -79,11 +152,9 @@ export function UcsAseDetails({ asset }: UcsAseDetailsProps) {
                         label="Fórmula Aplicada"
                         value={latestQuote.formula || 'UCS × 2'}
                     />
-                     <DetailRow 
+                     <FinalResultRow 
                         label="Resultado Final (BRL)" 
                         value={formatCurrency(componentes.resultado_final_brl || asset.price, 'BRL', 'ucs_ase')}
-                        className="bg-primary text-primary-foreground border-primary"
-                        isFinal
                     />
                 </CardContent>
             </Card>

@@ -99,6 +99,7 @@ const generateAiAnalysisPdf = (data: DashboardPdfData): jsPDF => {
     const { mainIndex, targetDate, aiReportData } = data;
     
     const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
     const margin = 50;
     let y = 60;
 
@@ -136,7 +137,18 @@ const generateAiAnalysisPdf = (data: DashboardPdfData): jsPDF => {
         doc.setFontSize(12);
         doc.setTextColor(COLORS.textSecondary);
         doc.text('Dados da análise de IA não encontrados.', margin, y);
-        return doc;
+        // --- RODAPÉ: USO INTERNO ---
+    for (let i = 1; i <= (doc as any).internal.pages.length; i++) {
+        doc.setPage(i);
+        doc.setDrawColor(229, 231, 235);
+        doc.setLineWidth(0.5);
+        doc.line(margin, pageH - 46, pageW - margin, pageH - 46);
+        doc.setFontSize(9);
+        doc.setTextColor(107, 114, 128);
+        doc.text('Uso Interno - Documento Confidencial', margin, pageH - 30);
+        doc.text(`Página ${i}`, pageW - margin, pageH - 30, { align: 'right' });
+    }
+    return doc;
     }
 
     // --- FUNÇÃO PARA DESENHAR SEÇÃO ---
@@ -176,11 +188,12 @@ const generateAiAnalysisPdf = (data: DashboardPdfData): jsPDF => {
         doc.setPage(i);
         doc.setDrawColor(COLORS.border);
         doc.setLineWidth(0.5);
-        doc.line(margin, doc.internal.pageSize.getHeight() - 40, pageW - margin, doc.internal.pageSize.getHeight() - 40);
+        doc.line(margin, doc.internal.pageSize.getHeight() - 46, pageW - margin, doc.internal.pageSize.getHeight() - 46);
         doc.setFontSize(9);
         doc.setTextColor(107, 114, 128);
-        doc.text(`Confidencial | UCS Index - Relatório de IA`, margin, doc.internal.pageSize.getHeight() - 25);
-        doc.text(`Página ${i}`, pageW - margin, doc.internal.pageSize.getHeight() - 25, { align: 'right' });
+        doc.text(`Confidencial | UCS Index - Relatório de IA`, margin, doc.internal.pageSize.getHeight() - 32);
+        doc.text(`Uso Interno - Não distribuir sem autorização`, margin, doc.internal.pageSize.getHeight() - 18);
+        doc.text(`Página ${i}`, pageW - margin, doc.internal.pageSize.getHeight() - 18, { align: 'right' });
     }
 
     return doc;
@@ -761,6 +774,7 @@ const generateCommercialExecutivePdf = (data: DashboardPdfData): jsPDF => {
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(9);
         doc.text('Confidencial - UCS Index | Relatório Comercial Executivo', margin, pageH - 35);
+        doc.text('Uso Interno - Não distribuir sem autorização', margin, pageH - 20);
         doc.text(`Página ${i} de ${doc.internal.pages.length}`, pageW - margin, pageH - 35, { align: 'right' });
     }
 
@@ -1265,6 +1279,7 @@ const generateCustomPdf = (data: DashboardPdfData): jsPDF => {
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(9);
         doc.text('UCS Index - Relatório Personalizado', margin, pageH - 20);
+        doc.text('Uso Interno - Documento Confidencial', margin, pageH - 8);
         doc.text(`Página ${i}`, pageW - margin, pageH - 20, { align: 'right' });
     }
 

@@ -645,9 +645,9 @@ export const AssetDetailModal = memo<AssetDetailModalProps>(({
     }
     
     if (isUcsAseAsset(asset)) {
+      // Foco apenas nos dados do dia: remove gráfico histórico
       return (
         <div className="grid gap-6">
-            <PriceChart data={chartData} asset={asset} isLoading={loadingState.isLoading} />
             <UcsAseDetails asset={asset} />
         </div>
       );
@@ -655,28 +655,15 @@ export const AssetDetailModal = memo<AssetDetailModalProps>(({
 
     const specificDetails = AssetSpecificDetails({ asset, quote: latestQuote });
 
+    // Foco apenas nos dados do dia: remove gráfico histórico e tabela histórica
     return (
-      <div className="grid lg:grid-cols-2 gap-6">
+      <div className="grid gap-6">
         <div className="space-y-6">
-          <PriceChart data={chartData} asset={asset} isLoading={loadingState.isLoading} />
           {specificDetails ? specificDetails : (latestQuote && <GenericAssetDetails quote={latestQuote} asset={asset} />) }
         </div>
-        
-        <div className="space-y-6">
-            {isCalculated && !isUcsAseAsset(asset) && !specificDetails && (
-                <CalculatedAssetDetails asset={asset} />
-            )}
-
-            {!isCalculated && !specificDetails && (
-                <AssetHistoricalTable
-                    assetId={asset.id}
-                    data={historicalData[asset.id] || []}
-                    assetConfig={asset}
-                    isLoading={loadingState.isLoading}
-                    onRowClick={() => {}}
-                />
-            )}
-        </div>
+        {isCalculated && !isUcsAseAsset(asset) && !specificDetails && (
+            <CalculatedAssetDetails asset={asset} />
+        )}
       </div>
     );
   };

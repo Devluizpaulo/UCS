@@ -24,6 +24,7 @@ import { AssetIcon } from '@/lib/icons';
 import { AssetDetailModal } from './asset-detail-modal';
 import { usePriceChangeAnimation } from '@/hooks/use-price-change-animation';
 import { Badge } from './ui/badge';
+import { AlertTriangle } from 'lucide-react';
 
 interface UnderlyingAssetsTableProps {
     data: CommodityPriceData[];
@@ -93,6 +94,11 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
     );
   }
 
+  // Verifica se todos os dados estão bloqueados
+  const allBlocked = data.length > 0 && data.every(asset => asset.isBlocked);
+  const someBlocked = data.some(asset => asset.isBlocked);
+  const blockReason = data.find(asset => asset.isBlocked)?.blockReason;
+
   if (groupedData.length === 0) {
      return (
         <div className="h-24 text-center flex items-center justify-center p-4">
@@ -101,8 +107,40 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
      );
   }
 
+  // Exibe aviso se todos os dados estão indisponíveis
+  if (allBlocked) {
+    return (
+      <div className="h-32 text-center flex flex-col items-center justify-center p-4 space-y-2">
+        <div className="flex items-center gap-2 text-amber-600">
+          <span className="font-medium">Dados Indisponíveis</span>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Cotações indisponíveis: {blockReason}
+        </p>
+        <p className="text-xs text-muted-foreground">
+          Os dados serão exibidos no próximo dia útil
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full">
+        {/* Aviso quando alguns dados estão indisponíveis */}
+        {someBlocked && !allBlocked && (
+          <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+            <div className="flex items-center gap-2 text-amber-700">
+              <AlertTriangle className="h-4 w-4" />
+              <span className="text-sm font-medium">
+                Alguns dados estão indisponíveis: {blockReason}
+              </span>
+            </div>
+            <p className="text-xs text-amber-600 mt-1">
+              Cotações serão exibidas no próximo dia útil
+            </p>
+          </div>
+        )}
+        
         <Accordion type="multiple" defaultValue={groupedData.map(([key]) => key)} className="w-full">
             {groupedData.map(([category, assets]) => (
                 <AccordionItem value={category} key={category}>
@@ -114,13 +152,19 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
                     </AccordionTrigger>
                     <AccordionContent className="p-0">
                         <div className="overflow-x-auto">
-                            <Table>
+                            <Table className="table-fixed w-full">
+                                <colgroup>
+                                  <col className="w-[48%]" />
+                                  <col className="w-[18%]" />
+                                  <col className="w-[18%]" />
+                                  <col className="w-[16%]" />
+                                </colgroup>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>Ativo</TableHead>
-                                        <TableHead>Última Atualização</TableHead>
-                                        <TableHead className="text-right">Último Preço</TableHead>
-                                        <TableHead className="text-right">Variação (24h)</TableHead>
+                                        <TableHead className="truncate">Ativo</TableHead>
+                                        <TableHead className="truncate">Última Atualização</TableHead>
+                                        <TableHead className="text-right truncate">Último Preço</TableHead>
+                                        <TableHead className="text-right truncate">Variação (24h)</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -128,34 +172,68 @@ export function UnderlyingAssetsTable({ data, loading }: UnderlyingAssetsTablePr
                                         const priceFormatted = formatCurrency(asset.price, asset.currency, asset.id);
                                         const changeColor = asset.change >= 0 ? 'text-primary' : 'text-destructive';
                                         const animationClass = animationClasses[asset.id];
+                                        const isBlocked = asset.isBlocked;
 
                                         return (
                                             <TableRow 
                                                 key={asset.id} 
-                                                onClick={() => handleRowClick(asset)} 
-                                                className={cn("cursor-pointer", animationClass)}
+                                                onClick={() => !isBlocked && handleRowClick(asset)} 
+                                                className={cn(
+                                                    isBlocked ? "opacity-60 cursor-not-allowed" : "cursor-pointer", 
+                                                    animationClass
+                                                )}
                                             >
-                                                <TableCell>
+                                                <TableCell className="align-middle">
                                                     <div className="flex items-center gap-3">
-                                                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
-                                                            <AssetIcon asset={asset} className="h-4 w-4 text-muted-foreground" />
+                                                        <div className={cn(
+                                                            "flex h-8 w-8 items-center justify-center rounded-full",
+                                                            isBlocked ? "bg-amber-100" : "bg-muted"
+                                                        )}>
+                                                            <AssetIcon asset={asset} className={cn("h-4 w-4", isBlocked ? "text-amber-600" : "text-muted-foreground")} />
                                                         </div>
-                                                        <div className="font-medium">{asset.name}</div>
+                                                        <div className={cn(
+                                                            "font-medium",
+                                                            isBlocked && "text-muted-foreground"
+                                                        )}>
+                                                            {asset.name}
+                                                        </div>
+                                                        {isBlocked && (
+                                                            <Badge variant="outline" className="text-xs text-amber-600 border-amber-200">
+                                                                Indisponível
+                                                            </Badge>
+                                                        )}
                                                     </div>
                                                 </TableCell>
-                                                <TableCell>
-                                                    <div className="text-sm text-muted-foreground">{asset.lastUpdated}</div>
-                                                </TableCell>
-                                                <TableCell className="text-right font-mono">
-                                                    {asset.price > 0 ? priceFormatted : <span className="text-muted-foreground">N/A</span>}
-                                                </TableCell>
-                                                <TableCell className="text-right">
-                                                     <div className={cn(
-                                                        "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold font-mono transition-colors",
-                                                        asset.price === 0 ? "border-transparent text-muted-foreground" : `border-transparent bg-${changeColor.replace('text-', '')}/20 ${changeColor}`
+                                                <TableCell className="align-middle">
+                                                    <div className={cn(
+                                                        "text-sm",
+                                                        isBlocked ? "text-amber-600 font-medium" : "text-muted-foreground"
                                                     )}>
-                                                        {asset.price > 0 ? `${asset.change >= 0 ? '+' : ''}${asset.change.toFixed(2)}%` : '-'}
+                                                        {asset.lastUpdated}
                                                     </div>
+                                                </TableCell>
+                                                <TableCell className="text-right font-mono align-middle">
+                                                    {isBlocked ? (
+                                                        <span className="text-amber-600">Indisponível</span>
+                                                    ) : asset.price > 0 ? (
+                                                        priceFormatted
+                                                    ) : (
+                                                        <span className="text-muted-foreground">N/A</span>
+                                                    )}
+                                                </TableCell>
+                                                <TableCell className="text-right align-middle">
+                                                    {isBlocked ? (
+                                                        <div className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-600">
+                                                            Indisponível
+                                                        </div>
+                                                    ) : (
+                                                        <div className={cn(
+                                                            "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold font-mono transition-colors",
+                                                            asset.price === 0 ? "border-transparent text-muted-foreground" : `border-transparent bg-${changeColor.replace('text-', '')}/20 ${changeColor}`
+                                                        )}>
+                                                            {asset.price > 0 ? `${asset.change >= 0 ? '+' : ''}${asset.change.toFixed(2)}%` : '-'}
+                                                        </div>
+                                                    )}
                                                 </TableCell>
                                             </TableRow>
                                         );

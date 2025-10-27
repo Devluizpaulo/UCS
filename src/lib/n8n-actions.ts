@@ -2,6 +2,7 @@
 'use server';
 
 import { format } from 'date-fns';
+import { n8nBusinessDayMiddleware, logN8NBusinessDayAction } from '@/lib/n8n-business-day-guard';
 
 /**
  * Server Actions para integração com N8N
@@ -19,6 +20,32 @@ export async function triggerN8NRecalculation(
     console.error('[N8N Trigger] Erro: A variável de ambiente N8N_WEBHOOK_URL não está configurada.');
     return { success: false, message: 'N8N webhook não configurado no servidor.' };
   }
+
+  // Validação de dia útil usando o guard específico do N8N
+  const payload = {
+    origem: 'painel_auditoria',
+    data_especifica: format(targetDate, 'yyyy-MM-dd'),
+    ativos: {}
+  };
+
+  const guardResult = await n8nBusinessDayMiddleware(payload);
+  console.log(guardResult.logMessage);
+
+  if (!guardResult.proceed) {
+    await logN8NBusinessDayAction('BLOCKED', targetDate, { 
+      source: 'manual_reprocessing',
+      reason: guardResult.response?.skipReason 
+    });
+    
+    return { 
+      success: false, 
+      message: guardResult.response?.message || 'Reprocessamento não permitido em dias não úteis'
+    };
+  }
+
+  await logN8NBusinessDayAction('ALLOWED', targetDate, { 
+    source: 'manual_reprocessing' 
+  });
   
   try {
     // Transforma a chave 'boi_gordo' para 'boi' para compatibilidade com o N8N

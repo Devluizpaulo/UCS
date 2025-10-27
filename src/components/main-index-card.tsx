@@ -3,6 +3,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ArrowDown, ArrowUp } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
 import type { CommodityPriceData } from '@/lib/types';
@@ -18,17 +19,22 @@ interface MainIndexCardProps {
 export function MainIndexCard({ asset, isMain = false }: MainIndexCardProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   
+  const isBlocked = asset.isBlocked;
   const changeColor = asset.change >= 0 ? 'text-primary' : 'text-destructive';
   const ChangeIcon = asset.change >= 0 ? ArrowUp : ArrowDown;
   
   // Condicionais para o estilo do card principal
-  const mainCardClasses = isMain 
-    ? 'bg-card border-primary/50 hover:border-primary shadow-lg' 
-    : 'bg-card';
-  const mainCardTitleClasses = isMain ? 'text-primary' : '';
-  const mainCardDescriptionClasses = 'text-muted-foreground';
-  const mainCardPriceClasses = 'text-foreground';
-  const mainCardChangeClasses = changeColor;
+  const mainCardClasses = isBlocked 
+    ? 'bg-amber-50 border-amber-200 opacity-75'
+    : isMain 
+      ? 'bg-card border-primary/50 hover:border-primary shadow-lg' 
+      : 'bg-card';
+  const mainCardTitleClasses = isBlocked 
+    ? 'text-amber-700' 
+    : isMain ? 'text-primary' : '';
+  const mainCardDescriptionClasses = isBlocked ? 'text-amber-600' : 'text-muted-foreground';
+  const mainCardPriceClasses = isBlocked ? 'text-amber-700' : 'text-foreground';
+  const mainCardChangeClasses = isBlocked ? 'text-amber-600' : changeColor;
 
   return (
     <>
@@ -43,29 +49,44 @@ export function MainIndexCard({ asset, isMain = false }: MainIndexCardProps) {
             <div className="flex items-center gap-3">
                 <div className={cn(
                     "flex h-10 w-10 items-center justify-center rounded-lg",
-                    isMain ? "bg-primary/10" : "bg-muted"
+                    isBlocked ? "bg-amber-100" : isMain ? "bg-primary/10" : "bg-muted"
                 )}>
-                    <AssetIcon asset={asset} className={cn("h-5 w-5", isMain ? "text-primary" : "text-muted-foreground")} />
+                    <AssetIcon asset={asset} className={cn("h-5 w-5", isBlocked ? "text-amber-600" : isMain ? "text-primary" : "text-muted-foreground")} />
                 </div>
-                <CardTitle className={cn("text-lg", mainCardTitleClasses, isMain && "text-xl")}>{asset.name}</CardTitle>
+                <div className="flex flex-col">
+                    <CardTitle className={cn("text-lg", mainCardTitleClasses, isMain && "text-xl")}>
+                        {asset.name}
+                    </CardTitle>
+                    {isBlocked && (
+                        <Badge variant="outline" className="text-xs text-amber-600 border-amber-200 w-fit">
+                            Indisponível
+                        </Badge>
+                    )}
+                </div>
             </div>
             <div className={cn("text-sm", mainCardDescriptionClasses)}>{asset.unit}</div>
         </CardHeader>
         <CardContent>
           <div className="flex items-baseline gap-2">
             <span className={cn("font-bold font-mono", mainCardPriceClasses, isMain ? "text-4xl" : "text-3xl")}>
-              {formatCurrency(asset.price, asset.currency, asset.id)}
+              {isBlocked ? "Indisponível" : formatCurrency(asset.price, asset.currency, asset.id)}
             </span>
           </div>
           <div className="flex items-center gap-4 text-sm mt-1">
-            <div className={cn(
-                'inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold', 
-                changeColor,
-                asset.change >= 0 ? 'bg-primary/10' : 'bg-destructive/10'
-            )}>
-              <ChangeIcon className="h-3 w-3 mr-1" />
-              <span>{asset.change.toFixed(2)}%</span>
-            </div>
+            {isBlocked ? (
+              <div className="inline-flex items-center rounded-full border border-amber-200 bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">
+                <span>Indisponível</span>
+              </div>
+            ) : (
+              <div className={cn(
+                  'inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold', 
+                  changeColor,
+                  asset.change >= 0 ? 'bg-primary/10' : 'bg-destructive/10'
+              )}>
+                <ChangeIcon className="h-3 w-3 mr-1" />
+                <span>{asset.change.toFixed(2)}%</span>
+              </div>
+            )}
             <p className={cn("text-xs truncate", mainCardDescriptionClasses)}>{asset.description}</p>
           </div>
         </CardContent>

@@ -15,7 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { MainIndexCard } from '@/components/main-index-card';
 import type { CommodityPriceData } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, History, FileDown, Loader2 } from 'lucide-react';
+import { RefreshCw, History, FileDown, Loader2, ArrowLeftCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import {
@@ -42,6 +42,26 @@ function getValidatedDate(dateString?: string | null): Date | null {
     if (isValid(parsed)) {
       return parsed;
     }
+
+  const handleGoToPreviousBusinessDay = async () => {
+      try {
+          const res = await fetch(`/api/business-day/previous?date=${format(targetDate, 'yyyy-MM-dd')}`);
+          const json = await res.json();
+          if (json?.success && json?.date) {
+              const newDate = new Date(json.date);
+              setTargetDate(newDate);
+              const iso = format(newDate, 'yyyy-MM-dd');
+              const params = new URLSearchParams(window.location.search);
+              params.set('date', iso);
+              router.replace(`?${params.toString()}`);
+              toast({ title: 'Navegado', description: `Exibindo último dia útil: ${format(newDate, 'dd/MM/yyyy')}` });
+          } else {
+              toast({ variant: 'destructive', title: 'Não foi possível localizar', description: 'Tente novamente em instantes.' });
+          }
+      } catch (e) {
+          toast({ variant: 'destructive', title: 'Erro ao buscar dia útil anterior' });
+      }
+  }
   }
   return null;
 }
@@ -114,6 +134,7 @@ export default function DashboardPage() {
   }, [dateParam]);
   
   const { data, isLoading } = useRealtimeData(targetDate);
+  const allBlocked = useMemo(() => data.length > 0 && data.every(d => (d as any).isBlocked), [data]);
   
   const { mainIndex, secondaryIndices, currencies, otherAssets } = useMemo(() => {
     const main = data.find(d => d.id === 'ucs_ase');
@@ -498,6 +519,12 @@ export default function DashboardPage() {
                         </AlertDialogContent>
                     </AlertDialog>
                 )}
+                {allBlocked && (
+                    <Button variant="outline" size="sm" onClick={handleGoToPreviousBusinessDay} title="Ir para o último dia útil">
+                        <ArrowLeftCircle className="h-4 w-4 mr-2" />
+                        Último dia útil
+                    </Button>
+                )}
                 <DateNavigator
                     targetDate={targetDate}
                 />
@@ -538,12 +565,7 @@ export default function DashboardPage() {
                     />
                 </div>
             )}
-            <div className="mt-8">
-              <DateComparison
-                currentDate={targetDate}
-                currentData={data}
-              />
-            </div>
+            {/* Comparativo de datas movido para página dedicada */}
         </main>
     </>
   );
