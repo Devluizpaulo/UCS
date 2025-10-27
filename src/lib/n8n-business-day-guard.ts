@@ -168,15 +168,15 @@ export async function validateN8NBatchProcessing(
 /**
  * Cria resposta padronizada para o N8N quando o processamento é bloqueado
  */
-export function createN8NBlockedResponse(
+export async function createN8NBlockedResponse(
   date: Date,
   reason: string
-): {
+): Promise<{
   success: boolean;
   message: string;
   data: any;
-} {
-  return {
+}> {
+  return Promise.resolve({
     success: false,
     message: `Processamento bloqueado: ${reason}`,
     data: {
@@ -188,7 +188,7 @@ export function createN8NBlockedResponse(
       action: 'skipped',
       nextProcessingDate: null // Pode ser implementado se necessário
     }
-  };
+  });
 }
 
 /**
