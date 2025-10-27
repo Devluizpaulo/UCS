@@ -54,6 +54,7 @@ export function HistoricalCompositionTable({ className }: HistoricalCompositionT
   const [currentPage, setCurrentPage] = React.useState(1);
   const [totalPages, setTotalPages] = React.useState(1);
   const [pdfRecordsCount, setPdfRecordsCount] = React.useState<number | string>(10);
+  const [excelRecordsCount, setExcelRecordsCount] = React.useState<number | string>(10);
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -99,9 +100,10 @@ export function HistoricalCompositionTable({ className }: HistoricalCompositionT
   };
 
   const exportToExcel = () => {
+    const recordsToExport = excelRecordsCount === 'all' ? data : data.slice(0, excelRecordsCount as number);
     const worksheetData = [
       ['Data', 'Valor Total', 'VUS', '%', 'VMAD', '%', 'Carbono', '%', 'Água', '%', 'Fonte'],
-      ...data.map(item => [
+      ...recordsToExport.map(item => [
         item.data,
         formatCurrency(item.valor, 'BRL'),
         formatCurrency(item.valores_originais?.vus || 0, 'BRL'),
@@ -143,7 +145,7 @@ export function HistoricalCompositionTable({ className }: HistoricalCompositionT
     const doc = new jsPDF('landscape', 'mm', 'a4');
     const pageWidth = (doc as any).internal.pageSize.getWidth();
     const pageHeight = (doc as any).internal.pageSize.getHeight();
-    const margin = 15;
+    const margin = 10;
 
     // Marca d'água (logo ao fundo)
     try {
@@ -188,9 +190,9 @@ export function HistoricalCompositionTable({ className }: HistoricalCompositionT
           reader.onload = () => resolve(reader.result as string);
           reader.readAsDataURL(blob);
         });
-        const logoW = 20;
-        const logoH = 20;
-        doc.addImage(dataUrl, 'PNG', pageWidth - margin - logoW, 10, logoW, logoH);
+        const logoW = 18;
+        const logoH = 18;
+        doc.addImage(dataUrl, 'PNG', pageWidth - margin - logoW, 12, logoW, logoH);
       }
     } catch {}
 
@@ -198,28 +200,26 @@ export function HistoricalCompositionTable({ className }: HistoricalCompositionT
     const recordsToExport = pdfRecordsCount === 'all' ? data : data.slice(0, pdfRecordsCount as number);
     
     // Título principal (executivo)
-    doc.setFontSize(22);
+    doc.setFontSize(20);
     doc.setFont('helvetica', 'bold');
-    doc.text('Dados Históricos – Composição do Índice', 20, 20);
+    doc.text('Dados Históricos – Composição do Índice', 18, 22);
     
-    // Data atual/selecionada em destaque
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.text(`Foco na Data: ${recordsToExport[0]?.data || 'N/A'}`, 20, 34);
-    
-    // Data de geração (esquerda) e empresa (direita)
-    doc.setFontSize(10.5);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Gerado em: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`, 20, 42);
-    doc.text('BMV', pageWidth - margin, 42, { align: 'right' } as any);
-    // Quantidade de registros (linha secundária)
+    // Linha de informações: Data base (esquerda) e quantidade mostrada (direita)
     doc.setFontSize(10);
-    doc.text(`Mostrando ${pdfRecordsCount === 'all' ? 'todos os' : 'os últimos'} ${recordsToExport.length} registros`, 20, 49);
+    doc.setFont('helvetica', 'bold');
+    const infoY = 34;
+    doc.text(`Data base: ${recordsToExport[0]?.data || 'N/A'}`, 20, infoY);
+    doc.setFontSize(9);
+    doc.setTextColor(90, 90, 90);
+    const rightLabel = pdfRecordsCount === 'all' ? `Mostrando todos os ${recordsToExport.length} registros` : `Mostrando os últimos ${recordsToExport.length} registros`;
+    doc.text(rightLabel, pageWidth - margin, infoY, { align: 'right' } as any);
+    doc.setTextColor(0, 0, 0);
 
     // Divisor sutil abaixo do cabeçalho
-    doc.setDrawColor(230, 230, 230);
-    doc.setLineWidth(0.5);
-    doc.line(margin, 54, pageWidth - margin, 54);
+    const dividerY = infoY + 10;
+    doc.setDrawColor(225, 225, 225);
+    doc.setLineWidth(0.4);
+    doc.line(margin, dividerY, pageWidth - margin, dividerY);
 
     // Preparar dados da tabela
     const tableData = recordsToExport.map(item => [
@@ -238,13 +238,14 @@ export function HistoricalCompositionTable({ className }: HistoricalCompositionT
 
     // Configurações da tabela
     const compact = recordsToExport.length > 20;
+    const startTableY = dividerY + 7;
     const tableConfig = {
       head: [['Data', 'Valor Total', 'VUS', '%', 'VMAD', '%', 'Carbono', '%', 'Água', '%', 'Fonte']],
       body: tableData,
-      startY: 60,
-      margin: { left: margin, right: margin },
+      startY: startTableY,
+      margin: { left: margin, right: margin, bottom: 12 },
       styles: {
-        fontSize: compact ? 8 : 9,
+        fontSize: compact ? 10: 10,
         cellPadding: compact ? 2 : 3,
         overflow: 'linebreak',
         halign: 'center',
@@ -279,44 +280,35 @@ export function HistoricalCompositionTable({ className }: HistoricalCompositionT
     // Gerar tabela
     (doc as any).autoTable(tableConfig);
     
-    // Adicionar nota e rodapé de confidencialidade
+    // Adicionar informações adicionais (layout igual ao PDF de composição)
     let finalY = (doc as any).lastAutoTable.finalY || 150;
     // Se o rodapé não couber na página, quebrar página
-    const footerBlockHeight = 20 + 26; // notas + bloco confidencial
-    if (finalY + footerBlockHeight > pageHeight - margin) {
+    const footerBlockHeight = 18; // notas + rodapé discreto
+    if (recordsToExport.length > 10 && (finalY + footerBlockHeight > pageHeight - margin)) {
       (doc as any).addPage();
       finalY = margin + 20;
     }
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'italic');
-    doc.text('* Dados ordenados por data (mais recente primeiro)', 20, finalY + 10);
-    doc.text('* Valores em Reais (BRL) — Porcentagens com 2 casas decimais', 20, finalY + 16);
-
-    // Separador
-    doc.setDrawColor(200, 0, 0);
-    doc.setLineWidth(0.5);
-    doc.line(20, finalY + 24, pageWidth - 20, finalY + 24);
-
-    // Bloco de confidencialidade no rodapé
-    doc.setFillColor(255, 235, 238);
-    doc.setDrawColor(244, 67, 54);
-    doc.roundedRect(margin, finalY + 28, pageWidth - margin * 2, 20, 2, 2, 'FD');
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(200, 0, 0);
-    doc.text('CONFIDENCIAL', margin + 4, finalY + 36);
-    doc.setFontSize(8.5);
+    doc.setFontSize(7);
     doc.setFont('helvetica', 'normal');
+    doc.setTextColor(110, 110, 110);
+    const notesLine = `• Gráfico construído com os dados da tabela • Todos os valores estão em BRL • Arquivo exportado em: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`;
+    doc.text(notesLine, margin, finalY + 8, { maxWidth: pageWidth - margin * 2 } as any);
     doc.setTextColor(0, 0, 0);
-    doc.text('Este documento contém informações confidenciais e proprietárias. Não compartilhar sem autorização.', margin + 4, finalY + 43);
 
-    // Paginação
+    // Rodapé confidencial discreto (igual ao PDF de composição)
+    const footerY = pageHeight - 12;
+    doc.setFontSize(7.5);
+    doc.setTextColor(120, 120, 120);
+    const footerText = 'Confidencial. Este documento contém informações confidenciais e proprietárias. É proibida a reprodução, distribuição ou divulgação sem autorização expressa.';
+    doc.text(footerText, margin, footerY, { maxWidth: pageWidth - margin * 2 } as any);
+
+    // Numeração de páginas no rodapé
     const pageCount = (doc as any).getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
       (doc as any).setPage(i);
       doc.setFontSize(8);
       doc.setTextColor(120, 120, 120);
-      doc.text(`${i} / ${pageCount}`, pageWidth - margin, pageHeight - 8, { align: 'right' } as any);
+      doc.text(`${i} / ${pageCount}`, pageWidth - margin, pageHeight - 6, { align: 'right' } as any);
     }
 
     // Salvar PDF
@@ -427,6 +419,24 @@ export function HistoricalCompositionTable({ className }: HistoricalCompositionT
               <Settings className="h-4 w-4 text-gray-500" />
               <span className="text-sm text-gray-600">PDF:</span>
               <Select value={pdfRecordsCount.toString()} onValueChange={(value) => setPdfRecordsCount(value === 'all' ? 'all' : parseInt(value))}>
+                <SelectTrigger className="w-20 h-8">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="5">5</SelectItem>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="20">20</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                  <SelectItem value="all">Todos</SelectItem>
+                </SelectContent>
+              </Select>
+              <span className="text-xs text-gray-500">registros</span>
+            </div>
+            {/* Seletor de quantidade para Excel */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">Excel:</span>
+              <Select value={excelRecordsCount.toString()} onValueChange={(value) => setExcelRecordsCount(value === 'all' ? 'all' : parseInt(value))}>
                 <SelectTrigger className="w-20 h-8">
                   <SelectValue />
                 </SelectTrigger>

@@ -61,6 +61,7 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
       const pageHeight = (doc as any).internal.pageSize.getHeight();
       const margin = 15;
       const gapS = 6, gapM = 10, gapL = 16;
+      const rowsCount = (tableData?.length || 0) + 1;
 
       // Marca d'água (logo ao fundo)
       try {
@@ -106,17 +107,17 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
             reader.onload = () => resolve(reader.result as string);
             reader.readAsDataURL(blob);
           });
-          const logoW = 22;
-          const logoH = 22;
+          const logoW = 20;
+          const logoH = 20;
           doc.addImage(dataUrl, 'PNG', pageWidth - margin - logoW, 14, logoW, logoH);
         }
       } catch {}
       
       // Título principal (envolver texto para não colidir com o logo à direita)
       const TITLE_TEXT = 'Análise de Composição – Valor de Uso do Solo';
-      doc.setFontSize(22);
+      doc.setFontSize(18);
       doc.setFont('helvetica', 'bold');
-      const logoHeaderWidth = 22; // mesmo tamanho do logo no topo
+      const logoHeaderWidth = 18; // mesmo tamanho do logo no topo
       const maxTextWidth = pageWidth - margin * 2 - (logoHeaderWidth + 6);
       const titleLines = (doc as any).splitTextToSize
         ? (doc as any).splitTextToSize(TITLE_TEXT, maxTextWidth)
@@ -131,7 +132,7 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
       const dateY = afterTitleY + 14;
       doc.text(`Data: ${data?.data || 'N/A'}`, 20, dateY);
       doc.setFont('helvetica', 'normal');
-      doc.text('BMV', pageWidth - margin, dateY, { align: 'right' } as any);
+      //c.text('BMV', pageWidth - margin, dateY, { align: 'right' } as any);
 
       // Divisor sutil abaixo do cabeçalho
       doc.setDrawColor(230, 230, 230);
@@ -139,7 +140,7 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
       const dividerY = dateY + 4;
       doc.line(margin, dividerY, pageWidth - margin, dividerY);
 
-      // Cartão do Valor Total
+      // Cartão do Valor Total 
       const totalBoxY = dividerY + gapS;
       doc.setFillColor(244, 246, 248);
       doc.setDrawColor(244, 246, 248);
@@ -150,8 +151,9 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
       doc.text(`Valor Total: ${formatCurrency(data?.valor || 0, 'BRL')}`, margin + 6, totalBoxY + 8);
       doc.setTextColor(0, 0, 0);
       
-      // Y inicial do gráfico baseado no cabeçalho calculado
-      const chartStartY = totalBoxY + gapL;
+      // Posição do subtítulo e do gráfico baseados no cabeçalho calculado
+      const subtitleY = totalBoxY + 22; // mais espaço abaixo do cartão do total
+      const chartStartY = subtitleY + 8; // empurra o gráfico um pouco abaixo do subtítulo
       
       // Capturar o gráfico
       const chartElement = document.getElementById('composition-chart');
@@ -167,7 +169,16 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
         const usableWidth = pageWidth - margin * 2;
         let imgWidth = usableWidth;
         let imgHeight = (canvas.height * imgWidth) / canvas.width;
-        const maxChartHeight = pageHeight * 0.26;
+        // Dimensionamento dinâmico do gráfico para garantir 1 página
+        const baseMax = 0.22; // base de 22% da página
+        const isBar = chartType === 'bar';
+        let maxChartHeightPct = baseMax;
+        if (rowsCount > 10) {
+          maxChartHeightPct -= Math.min(0.06, Math.ceil((rowsCount - 10) / 3) * 0.01);
+        }
+        if (isBar) maxChartHeightPct -= 0.02; // barras ocupam mais espaço visual
+        if (maxChartHeightPct < 0.14) maxChartHeightPct = 0.14; // limite mínimo
+        const maxChartHeight = pageHeight * maxChartHeightPct;
         if (imgHeight > maxChartHeight) {
           imgHeight = maxChartHeight;
           imgWidth = (canvas.width * imgHeight) / canvas.height;
@@ -179,7 +190,7 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(11.5);
         doc.setTextColor(60, 60, 60);
-        doc.text('Gráfico de Composição', margin, chartY - 6);
+        doc.text('Gráfico de Composição', margin, subtitleY);
         // Cartão de fundo do gráfico
         doc.setFillColor(248, 249, 251);
         doc.setDrawColor(235, 238, 240);
@@ -187,8 +198,8 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
         // Gráfico
         doc.addImage(imgData, 'PNG', chartX, chartY, imgWidth, imgHeight);
 
-        // Armazenar posição base para tabela após o gráfico
-        (doc as any).__tableStartY = chartY + imgHeight + gapL;
+        // Armazenar posição base para tabela após o gráfico (gap médio para compactar)
+        (doc as any).__tableStartY = chartY + imgHeight + gapM;
       }
       
       // Preparar dados da tabela de valores detalhados
@@ -251,7 +262,7 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
           // Usar nome fixo do componente baseado no ID
           const fixedName = getFixedComponentName(subItem.id);
           tableRows.push([
-            `└─ ${fixedName}`,
+            `- ${fixedName}`,
             formatCurrency(subItem.value, 'BRL'),
             formatPercentage(subItem.percentage)
           ]);
@@ -280,8 +291,16 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
       doc.setFontSize(12.5);
       doc.setTextColor(40, 40, 40);
       doc.text('Valores detalhados', margin, tableTitleY);
+      // Subtítulo leve abaixo do título
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(120, 130, 140);
+      doc.text('Análise tabular de cada componente do índice', margin, tableTitleY + 4);
+      doc.setTextColor(0, 0, 0);
 
-      const compact = true; // garantir layout mais compacto e executivo
+      // Compactação dinâmica da tabela
+      const compact = true; // manter compacto por padrão
+      const useTighterTable = rowsCount > 10;
       // Helper para converter HEX -> RGB
       const hexToRgb = (hex: string): [number, number, number] => {
         const clean = hex.replace('#', '');
@@ -292,14 +311,19 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
         return [r, g, b];
       };
 
+      const usableTableWidth = pageWidth - margin * 2;
+      const colW0 = Math.floor(usableTableWidth * 0.58); // Componente
+      const colW1 = Math.floor(usableTableWidth * 0.27); // Valor
+      const colW2 = Math.floor(usableTableWidth * 0.15); // %
+
       const tableConfig = {
         head: [['Componente', 'Valor', '%']],
         body: tableRows,
         startY: (doc as any).__tableStartY || chartStartY + 100,
         margin: { left: margin, right: margin },
         styles: {
-          fontSize: 9,
-          cellPadding: 1.8,
+          fontSize: useTighterTable ? 8.3 : 8.8,
+          cellPadding: useTighterTable ? 1.4 : 1.6,
           overflow: 'linebreak',
           halign: 'left',
           lineColor: [235, 238, 240],
@@ -316,16 +340,33 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
           fillColor: [252, 252, 253]
         },
         columnStyles: {
-          0: { halign: 'left' },   // Componente
-          1: { halign: 'right' },  // Valor
-          2: { halign: 'right' }   // %
+          0: { 
+            halign: 'left',
+            cellPadding: { left: 8, top: useTighterTable ? 1.2 : 1.4, right: useTighterTable ? 1.2 : 1.4, bottom: useTighterTable ? 1.2 : 1.4 },
+            cellWidth: colW0
+          },   // Componente
+          1: { halign: 'right', cellWidth: colW1 },  // Valor
+          2: { halign: 'right', cellWidth: colW2 }   // %
+        },
+        didParseCell: (data: any) => {
+          // Remover texto nativo da coluna de % para não duplicar com o badge
+          if (data.section === 'body' && data.column.index === 2) {
+            data.cell.text = [''];
+          }
+          // Valor em negrito para linhas principais
+          if (data.section === 'body' && data.column.index === 1) {
+            const meta = rowMeta[data.row.index] || { id: '', isSub: false };
+            if (!meta.isSub && meta.id !== 'total') {
+              data.cell.styles.fontStyle = 'bold';
+            }
+          }
         },
         didDrawCell: (data: any) => {
           // Destacar linha do total
           if (data.row.index === tableRows.length - 1) {
             data.cell.styles.fillColor = [240, 244, 248];
             data.cell.styles.fontStyle = 'bold';
-            data.cell.styles.lineTopWidth = 0.4;
+            data.cell.styles.lineTopWidth = 0.6;
             data.cell.styles.lineTopColor = [200, 204, 208];
           }
           
@@ -338,23 +379,26 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
           if (data.section === 'body') {
             const meta = rowMeta[data.row.index] || { id: '', isSub: false };
 
-            // Coluna do componente: bolinha colorida para principais; guia sutil para sub-itens; borda âmbar para CRS total
+            // Coluna do componente: barras verticais coloridas (sem círculos) e borda âmbar para CRS total
             if (data.column.index === 0) {
               const [x, y, w, h] = [data.cell.x, data.cell.y, data.cell.width, data.cell.height];
-              const cy = y + h / 2;
-              if (meta.isSub) {
-                // Guia sutil à esquerda (âmbar)
-                (doc as any).setDrawColor(255, 193, 7);
-                (doc as any).setLineWidth(0.5);
-                (doc as any).line(x + 2, y + 2, x + 2, y + h - 2);
-              } else if (meta.id === 'crs_total') {
+              if (meta.id === 'crs_total') {
                 // Borda lateral âmbar na linha do CRS total
                 (doc as any).setDrawColor(255, 193, 7);
                 (doc as any).setLineWidth(1);
                 // linha à esquerda do bloco da tabela
                 (doc as any).line(x + 1, y + 1, x + 1, y + h - 1);
+                // Pequena barra com a cor do gráfico do CRS (ex.: azul)
+                try {
+                  const colorHex = getComponentColor(meta.id) || '#3B82F6';
+                  const [r, g, b] = hexToRgb(colorHex);
+                  (doc as any).setFillColor(r, g, b);
+                } catch {
+                  (doc as any).setFillColor(59, 130, 246);
+                }
+                (doc as any).rect(x + 4, y + 3, 2.5, h - 6, 'F');
               } else if (meta.id !== 'total') {
-                // Bolinha colorida
+                // Barra colorida alinhada à cor do gráfico
                 try {
                   const colorHex = getComponentColor(meta.id) || '#64748B';
                   const [r, g, b] = hexToRgb(colorHex);
@@ -362,35 +406,35 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
                 } catch {
                   (doc as any).setFillColor(100, 116, 139);
                 }
-                ;(doc as any).circle(x + 4.8, cy, 2.1, 'F');
+                // largura e posição levemente deslocadas para não colidir com texto
+                (doc as any).rect(x + 4, y + 3, meta.isSub ? 2 : 3, h - 6, 'F');
               }
             }
 
-            // Coluna de porcentagem: badge (pill)
+            // Coluna de porcentagem: badge (pill) ou texto simples
             if (data.column.index === 2) {
-              const text = String((data.cell.text && data.cell.text[0]) || '');
+              const text = String(tableRows[data.row.index]?.[2] || '');
               const [x, y, w, h] = [data.cell.x, data.cell.y, data.cell.width, data.cell.height];
-              const paddingX = 2.2;
-              const paddingY = 1.2;
-              (doc as any).setFontSize(8.5);
+              const paddingX = 2.1;
+              (doc as any).setFontSize(8);
               const tw = (doc as any).getTextWidth(text);
               const badgeW = tw + paddingX * 2 + 1;
-              const badgeH = 6;
+              const badgeH = 5.5;
               const bx = x + w - badgeW - 2;
               const by = y + (h - badgeH) / 2;
 
-              // Cores do badge
-              let fill: [number, number, number] = [233, 236, 239]; // cinza claro
-              let textCol: [number, number, number] = [60, 60, 60];
-              if (meta.id === 'total' && data.row.index === tableRows.length - 1) {
-                fill = [26, 32, 44];
-                textCol = [255, 255, 255];
-              } else if (meta.isSub) {
-                // âmbar mais próximo do mock (#FFE8B0 aproximadamente)
-                fill = [255, 232, 176];
+              const isTotal = meta.id === 'total' && data.row.index === tableRows.length - 1;
+              // Cores do badge por tipo de linha
+              let fill: [number, number, number] = [228, 234, 240]; // cinza p/ principais
+              let textCol: [number, number, number] = [55, 65, 81];
+              if (meta.isSub) {
+                fill = [255, 232, 176]; // âmbar
                 textCol = [120, 72, 0];
               }
-
+              if (isTotal) {
+                fill = [26, 32, 44];
+                textCol = [255, 255, 255];
+              }
               (doc as any).setFillColor(...fill);
               (doc as any).setDrawColor(235, 238, 240);
               (doc as any).roundedRect(bx, by, badgeW, badgeH, 2, 2, 'F');
@@ -413,30 +457,19 @@ export function CompositionAnalysis({ targetDate }: CompositionAnalysisProps) {
         (doc as any).addPage();
         finalY = margin + 20;
       }
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'italic');
-      doc.text('* Gráfico gerado automaticamente a partir dos dados da composição', 20, finalY + 10);
-      doc.text('* Valores em Reais (BRL) — Porcentagens com 2 casas decimais', 20, finalY + 18);
-      doc.text(`* Exportado em: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`, 20, finalY + 26);
-
-      // Separador
-      doc.setDrawColor(200, 0, 0);
-      doc.setLineWidth(0.5);
-      doc.line(20, finalY + 35, pageWidth - 20, finalY + 35);
-
-      // Bloco de confidencialidade no rodapé
-      doc.setFillColor(255, 235, 238);
-      doc.setDrawColor(244, 67, 54);
-      doc.roundedRect(margin, finalY + 40, pageWidth - margin * 2, 26, 2, 2, 'FD');
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(200, 0, 0);
-      doc.text('CONFIDENCIAL', margin + 4, finalY + 48);
-      doc.setFontSize(9);
+      doc.setFontSize(7);
       doc.setFont('helvetica', 'normal');
+      doc.setTextColor(110, 110, 110);
+      const notesLine = `• Gráfico construído com os dados da tabela • Todos os valores estão em BRL • Arquivo exportado em: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`;
+      doc.text(notesLine, margin, finalY + 10, { maxWidth: pageWidth - margin * 2 } as any);
       doc.setTextColor(0, 0, 0);
-      doc.text('Este documento contém informações confidenciais e proprietárias.', margin + 4, finalY + 56);
-      doc.text('É proibida a reprodução, distribuição ou divulgação sem autorização expressa.', margin + 4, finalY + 62);
+
+      // Rodapé confidencial discreto
+      const footerY = pageHeight - 12;
+      doc.setFontSize(7.5);
+      doc.setTextColor(120, 120, 120);
+      const footerText = 'Confidencial. Este documento contém informações confidenciais e proprietárias. É proibida a reprodução, distribuição ou divulgação sem autorização expressa.';
+      doc.text(footerText, margin, footerY, { maxWidth: pageWidth - margin * 2 } as any);
 
       // Numeração de páginas no rodapé
       const pageCount = (doc as any).getNumberOfPages();
