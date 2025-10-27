@@ -139,28 +139,88 @@ export function HistoricalCompositionTable({ className }: HistoricalCompositionT
     XLSX.writeFile(workbook, `dados_historicos_composition_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
   };
 
-  const exportToPDF = () => {
+  const exportToPDF = async () => {
     const doc = new jsPDF('landscape', 'mm', 'a4');
-    
+    const pageWidth = (doc as any).internal.pageSize.getWidth();
+    const pageHeight = (doc as any).internal.pageSize.getHeight();
+    const margin = 15;
+
+    // Marca d'água (logo ao fundo)
+    try {
+      const res = await fetch('/image/BMV.png');
+      if (res.ok) {
+        const blob = await res.blob();
+        const reader = new FileReader();
+        const dataUrl: string = await new Promise((resolve) => {
+          reader.onload = () => resolve(reader.result as string);
+          reader.readAsDataURL(blob);
+        });
+        const wmWidth = pageWidth * 0.6;
+        const wmHeight = wmWidth * 0.45; // proporção aproximada
+        const wmX = (pageWidth - wmWidth) / 2;
+        const wmY = (pageHeight - wmHeight) / 2;
+        if ((doc as any).setGState && (doc as any).GState) {
+          const gs = new (doc as any).GState({ opacity: 0.06 });
+          (doc as any).setGState(gs);
+          doc.addImage(dataUrl, 'PNG', wmX, wmY, wmWidth, wmHeight);
+          const gsReset = new (doc as any).GState({ opacity: 1 });
+          (doc as any).setGState(gsReset);
+        } else {
+          doc.addImage(dataUrl, 'PNG', wmX, wmY, wmWidth, wmHeight);
+        }
+      }
+    } catch {}
+
+    // Metadados
+    (doc as any).setProperties?.({
+      title: 'Dados Históricos - Composição do Índice',
+      subject: 'Exportação do histórico de composição',
+      creator: 'UCS Index',
+    });
+
+    // Logotipo (opcional)
+    try {
+      const res = await fetch('/image/BMV.png');
+      if (res.ok) {
+        const blob = await res.blob();
+        const reader = new FileReader();
+        const dataUrl: string = await new Promise((resolve) => {
+          reader.onload = () => resolve(reader.result as string);
+          reader.readAsDataURL(blob);
+        });
+        const logoW = 20;
+        const logoH = 20;
+        doc.addImage(dataUrl, 'PNG', pageWidth - margin - logoW, 10, logoW, logoH);
+      }
+    } catch {}
+
     // Obter a quantidade de registros selecionada pelo usuário
     const recordsToExport = pdfRecordsCount === 'all' ? data : data.slice(0, pdfRecordsCount as number);
     
-    // Título principal
-    doc.setFontSize(18);
+    // Título principal (executivo)
+    doc.setFontSize(22);
     doc.setFont('helvetica', 'bold');
-    doc.text('Dados Históricos - Composição do Índice', 20, 20);
+    doc.text('Dados Históricos – Composição do Índice', 20, 20);
     
     // Data atual/selecionada em destaque
-    doc.setFontSize(14);
+    doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    doc.text(`Foco na Data: ${recordsToExport[0]?.data || 'N/A'}`, 20, 35);
+    doc.text(`Foco na Data: ${recordsToExport[0]?.data || 'N/A'}`, 20, 34);
     
-    // Data de geração e quantidade de registros
-    doc.setFontSize(10);
+    // Data de geração (esquerda) e empresa (direita)
+    doc.setFontSize(10.5);
     doc.setFont('helvetica', 'normal');
-    doc.text(`Gerado em: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`, 20, 45);
-    doc.text(`Mostrando ${pdfRecordsCount === 'all' ? 'todos os' : 'os últimos'} ${recordsToExport.length} registros`, 20, 52);
-    
+    doc.text(`Gerado em: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`, 20, 42);
+    doc.text('BMV', pageWidth - margin, 42, { align: 'right' } as any);
+    // Quantidade de registros (linha secundária)
+    doc.setFontSize(10);
+    doc.text(`Mostrando ${pdfRecordsCount === 'all' ? 'todos os' : 'os últimos'} ${recordsToExport.length} registros`, 20, 49);
+
+    // Divisor sutil abaixo do cabeçalho
+    doc.setDrawColor(230, 230, 230);
+    doc.setLineWidth(0.5);
+    doc.line(margin, 54, pageWidth - margin, 54);
+
     // Preparar dados da tabela
     const tableData = recordsToExport.map(item => [
       item.data,
@@ -177,23 +237,29 @@ export function HistoricalCompositionTable({ className }: HistoricalCompositionT
     ]);
 
     // Configurações da tabela
+    const compact = recordsToExport.length > 20;
     const tableConfig = {
       head: [['Data', 'Valor Total', 'VUS', '%', 'VMAD', '%', 'Carbono', '%', 'Água', '%', 'Fonte']],
       body: tableData,
       startY: 60,
+      margin: { left: margin, right: margin },
       styles: {
-        fontSize: recordsToExport.length > 20 ? 8 : 9, // Fonte menor se muitos registros
-        cellPadding: recordsToExport.length > 20 ? 2 : 3,
+        fontSize: compact ? 8 : 9,
+        cellPadding: compact ? 2 : 3,
         overflow: 'linebreak',
-        halign: 'center'
+        halign: 'center',
+        lineColor: [235, 238, 240],
+        lineWidth: 0.1
       },
       headStyles: {
-        fillColor: [66, 139, 202], // Azul
-        textColor: 255,
-        fontStyle: 'bold'
+        fillColor: [247, 249, 251],
+        textColor: [80, 90, 100],
+        fontStyle: 'bold',
+        lineColor: [220, 224, 228],
+        lineWidth: 0.2
       },
       alternateRowStyles: {
-        fillColor: [245, 245, 245]
+        fillColor: [252, 252, 253]
       },
       columnStyles: {
         0: { halign: 'left' },   // Data
@@ -213,13 +279,46 @@ export function HistoricalCompositionTable({ className }: HistoricalCompositionT
     // Gerar tabela
     (doc as any).autoTable(tableConfig);
     
-    // Adicionar nota no final
-    const finalY = (doc as any).lastAutoTable.finalY || 150;
+    // Adicionar nota e rodapé de confidencialidade
+    let finalY = (doc as any).lastAutoTable.finalY || 150;
+    // Se o rodapé não couber na página, quebrar página
+    const footerBlockHeight = 20 + 26; // notas + bloco confidencial
+    if (finalY + footerBlockHeight > pageHeight - margin) {
+      (doc as any).addPage();
+      finalY = margin + 20;
+    }
     doc.setFontSize(8);
     doc.setFont('helvetica', 'italic');
     doc.text('* Dados ordenados por data (mais recente primeiro)', 20, finalY + 10);
-    doc.text('* Valores em Reais (BRL) - Porcentagens com 2 casas decimais', 20, finalY + 16);
-    
+    doc.text('* Valores em Reais (BRL) — Porcentagens com 2 casas decimais', 20, finalY + 16);
+
+    // Separador
+    doc.setDrawColor(200, 0, 0);
+    doc.setLineWidth(0.5);
+    doc.line(20, finalY + 24, pageWidth - 20, finalY + 24);
+
+    // Bloco de confidencialidade no rodapé
+    doc.setFillColor(255, 235, 238);
+    doc.setDrawColor(244, 67, 54);
+    doc.roundedRect(margin, finalY + 28, pageWidth - margin * 2, 20, 2, 2, 'FD');
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(200, 0, 0);
+    doc.text('CONFIDENCIAL', margin + 4, finalY + 36);
+    doc.setFontSize(8.5);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(0, 0, 0);
+    doc.text('Este documento contém informações confidenciais e proprietárias. Não compartilhar sem autorização.', margin + 4, finalY + 43);
+
+    // Paginação
+    const pageCount = (doc as any).getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      (doc as any).setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(120, 120, 120);
+      doc.text(`${i} / ${pageCount}`, pageWidth - margin, pageHeight - 8, { align: 'right' } as any);
+    }
+
     // Salvar PDF
     doc.save(`dados_historicos_composition_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
   };
