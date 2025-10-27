@@ -2,6 +2,7 @@
 'use client';
 
 import { Suspense } from 'react';
+import Image from 'next/image';
 import { PageHeader } from '@/components/page-header';
 import { 
   Leaf, TrendingUp, Globe, DollarSign, Shield, Zap, TreePine, Target, Award, Coins,
@@ -61,6 +62,11 @@ const ucsPillars = [
     weightLabel: "Ativo Secundário",
     color: "bg-amber-500/10 text-amber-700 border-amber-200",
     iconColor: "text-amber-600",
+    image: {
+      src: "https://picsum.photos/seed/forest-harvest/600/400",
+      alt: "Ilustração de colheita sustentável na floresta",
+      hint: "forest harvest"
+    },
     composition: {
       title: "Exemplo de Ativo",
       commodities: [
@@ -186,6 +192,17 @@ const ucsPillars = [
                       <pillar.icon className="h-10 w-10" />
                     </div>
                   </div>
+                  {pillar.image && (
+                    <div className="my-4 aspect-video relative overflow-hidden rounded-lg shadow-inner">
+                      <Image
+                        src={pillar.image.src}
+                        alt={pillar.image.alt}
+                        fill
+                        className="object-cover"
+                        data-ai-hint={pillar.image.hint}
+                      />
+                    </div>
+                  )}
                   <div className="space-y-2">
                     <CardTitle className="text-xl font-bold">{pillar.title}</CardTitle>
                   </div>
