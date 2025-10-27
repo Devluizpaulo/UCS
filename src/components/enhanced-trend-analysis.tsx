@@ -40,6 +40,7 @@ import { PdfExportButton } from '@/components/pdf-export-button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AssetIcon } from '@/lib/icons';
 import type { PeriodMetrics } from '@/lib/types';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
 
 // Lista de ativos disponíveis
@@ -85,8 +86,15 @@ const getPriceFromQuote = (quote: FirestoreQuote, assetId: string): number | und
 export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
   const [data, setData] = useState<Record<string, FirestoreQuote[]>>({});
   const [assets, setAssets] = useState<CommodityConfig[]>([]);
-  const [selectedAssetId, setSelectedAssetId] = useState<string>('ucs_ase');
-  const [timeRange, setTimeRange] = useState<TimeRange>('1y');
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const initialAsset = (searchParams.get('asset') || 'ucs_ase');
+  const initialRange = (searchParams.get('range') as TimeRange) || '1y';
+  const initialMode = (searchParams.get('mode') as 'absolute'|'index100'|'percent') || 'absolute';
+  const [selectedAssetId, setSelectedAssetId] = useState<string>(initialAsset);
+  const [timeRange, setTimeRange] = useState<TimeRange>(initialRange);
+  const [compareMode, setCompareMode] = useState<'absolute'|'index100'|'percent'>(initialMode);
   const [isLoading, setIsLoading] = useState(true);
   const [visibleAssets, setVisibleAssets] = useState<Record<string, boolean>>({});
   const [selectedQuote, setSelectedQuote] = useState<FirestoreQuote | null>(null);
@@ -142,6 +150,15 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
         setIsLoading(false);
       });
   }, [selectedAssetId, timeRange, isMultiLine]);
+
+  // Sync URL with state (asset, range, mode, date stays as is)
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('asset', selectedAssetId);
+    params.set('range', timeRange);
+    params.set('mode', compareMode);
+    router.replace(`${pathname}?${params.toString()}`);
+  }, [selectedAssetId, timeRange, compareMode]);
 
 
   const selectedAssetConfig = useMemo(() => {
@@ -490,6 +507,8 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
                                 visibleAssets={visibleAssets}
                                 lineColors={lineColors}
                                 assetNames={assetNames}
+                                compareModeProp={compareMode}
+                                onCompareModeChange={setCompareMode}
                             />
                         </div>
                          {isMultiLine && (

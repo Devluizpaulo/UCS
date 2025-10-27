@@ -234,6 +234,8 @@ interface HistoricalAnalysisChartProps {
     lineColors: Record<string, string>;
     assetNames: Record<string, string>;
     showMetrics?: boolean;
+    compareModeProp?: 'absolute' | 'index100' | 'percent';
+    onCompareModeChange?: (mode: 'absolute' | 'index100' | 'percent') => void;
 }
 
 export const HistoricalAnalysisChart = React.memo(({ 
@@ -245,6 +247,8 @@ export const HistoricalAnalysisChart = React.memo(({
     lineColors,
     assetNames,
     showMetrics = true,
+    compareModeProp,
+    onCompareModeChange,
 }: HistoricalAnalysisChartProps) => {
   const { resolvedTheme } = useTheme();
   const { toast } = useToast();
@@ -255,7 +259,13 @@ export const HistoricalAnalysisChart = React.memo(({
   const [isExporting, setIsExporting] = React.useState(false);
   const [chartType, setChartType] = React.useState<'line' | 'area' | 'bar'>('line');
   const [showMovingAverage, setShowMovingAverage] = React.useState(false);
-  const [compareMode, setCompareMode] = React.useState<'absolute' | 'index100' | 'percent'>('absolute');
+  const [compareMode, setCompareMode] = React.useState<'absolute' | 'index100' | 'percent'>(compareModeProp || 'absolute');
+
+  React.useEffect(() => {
+    if (compareModeProp && compareModeProp !== compareMode) {
+      setCompareMode(compareModeProp);
+    }
+  }, [compareModeProp]);
 
   // Calculate moving average for enhanced analysis
   // Transform data according to compare mode
@@ -383,9 +393,91 @@ export const HistoricalAnalysisChart = React.memo(({
   const handleExport = async () => {
     setIsExporting(true);
     try {
-      // Export logic here
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate export
-      toast({ title: 'Sucesso', description: 'Gráfico exportado como imagem.' });
+      const node = document.getElementById('trend-chart-capture');
+      if (!node) throw new Error('Elemento do gráfico não encontrado');
+      const html2canvas = (await import('html2canvas')).default;
+      const baseCanvas = await html2canvas(node, { scale: 3, backgroundColor: '#ffffff' });
+
+      // Create a new canvas with padding for title/footer
+      const padX = 80; const padTop = 110; const padBottom = 100;
+      const outCanvas = document.createElement('canvas');
+      outCanvas.width = baseCanvas.width + padX * 2;
+      outCanvas.height = baseCanvas.height + padTop + padBottom;
+      const ctx = outCanvas.getContext('2d');
+      if (!ctx) throw new Error('Falha ao preparar canvas de exportação');
+      // Background
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, outCanvas.width, outCanvas.height);
+      // Title (centered)
+      ctx.fillStyle = '#111827';
+      ctx.font = 'bold 34px Helvetica, Arial, sans-serif';
+      const title = 'UCS Index — Análise de Tendência';
+      const titleW = ctx.measureText(title).width;
+      ctx.fillText(title, (outCanvas.width - titleW) / 2, 50);
+      // Subtitle with compare mode
+      const modeLabel = compareMode === 'percent' ? 'Escala: %' : compareMode === 'index100' ? 'Escala: Índice 100' : 'Escala: Absoluto';
+      ctx.font = 'normal 15px Helvetica, Arial, sans-serif';
+      const dateStr = new Date().toLocaleString('pt-BR');
+      const subtitle = `${modeLabel}  •  Gerado em ${dateStr}`;
+      ctx.fillStyle = '#6b7280';
+      const subW = ctx.measureText(subtitle).width;
+      ctx.fillText(subtitle, (outCanvas.width - subW) / 2, 75);
+
+      // Logo (BMV) no topo direito
+      try {
+        const logo = new Image();
+        logo.src = '/image/BMV.png';
+        // Aguarda carregar para desenhar
+        await new Promise<void>((resolve, reject) => {
+          logo.onload = () => resolve();
+          logo.onerror = () => resolve();
+        });
+        const logoW = 110; const logoH = 44;
+        ctx.drawImage(logo, outCanvas.width - padX - logoW, 22, logoW, logoH);
+      } catch {}
+      // Chart frame (rounded with light border and shadow)
+      const frameX = padX - 8, frameY = padTop - 8;
+      const frameW = baseCanvas.width + 16, frameH = baseCanvas.height + 16;
+      ctx.save();
+      ctx.shadowColor = 'rgba(0,0,0,0.08)';
+      ctx.shadowBlur = 12; ctx.shadowOffsetY = 6;
+      ctx.fillStyle = '#ffffff';
+      const r = 12;
+      const roundRect = (x:number,y:number,w:number,h:number,r:number) => {
+        ctx.beginPath();
+        ctx.moveTo(x+r, y);
+        ctx.lineTo(x+w-r, y);
+        ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+        ctx.lineTo(x+w, y+h-r);
+        ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+        ctx.lineTo(x+r, y+h);
+        ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+        ctx.lineTo(x, y+r);
+        ctx.quadraticCurveTo(x, y, x+r, y);
+        ctx.closePath();
+      };
+      roundRect(frameX, frameY, frameW, frameH, r);
+      ctx.fill();
+      ctx.shadowColor = 'transparent';
+      ctx.strokeStyle = '#e5e7eb';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.restore();
+      // Chart image inside frame
+      ctx.drawImage(baseCanvas, padX, padTop);
+      // Footer (internal use)
+      ctx.fillStyle = '#6b7280';
+      ctx.font = 'italic 14px Helvetica, Arial, sans-serif';
+      ctx.fillText('Uso Interno - Não distribuir sem autorização', padX, outCanvas.height - 30);
+
+      const dataUrl = outCanvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = 'analise_tendencia.png';
+      link.click();
+      toast({ title: 'Exportado', description: 'Gráfico salvo como PNG.' });
+    } catch (e) {
+      toast({ variant: 'destructive', title: 'Falha ao exportar', description: e instanceof Error ? e.message : 'Erro desconhecido' });
     } finally {
       setIsExporting(false);
     }
@@ -490,7 +582,7 @@ export const HistoricalAnalysisChart = React.memo(({
         <Button
           variant={compareMode === 'absolute' ? 'default' : 'ghost'}
           size="sm"
-          onClick={() => setCompareMode('absolute')}
+          onClick={() => { setCompareMode('absolute'); onCompareModeChange?.('absolute'); }}
           className="h-8 px-2"
         >
           Abs
@@ -498,7 +590,7 @@ export const HistoricalAnalysisChart = React.memo(({
         <Button
           variant={compareMode === 'index100' ? 'default' : 'ghost'}
           size="sm"
-          onClick={() => setCompareMode('index100')}
+          onClick={() => { setCompareMode('index100'); onCompareModeChange?.('index100'); }}
           className="h-8 px-2"
         >
           Idx100
@@ -506,7 +598,7 @@ export const HistoricalAnalysisChart = React.memo(({
         <Button
           variant={compareMode === 'percent' ? 'default' : 'ghost'}
           size="sm"
-          onClick={() => setCompareMode('percent')}
+          onClick={() => { setCompareMode('percent'); onCompareModeChange?.('percent'); }}
           className="h-8 px-2"
         >
           %
@@ -525,14 +617,7 @@ export const HistoricalAnalysisChart = React.memo(({
       >
         {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
       </Button>
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={handleShare}
-        className="h-8 px-2"
-      >
-        <Share2 className="h-4 w-4" />
-      </Button>
+      {/* Compartilhamento desativado */}
     </div>
   );
 
