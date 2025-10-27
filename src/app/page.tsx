@@ -37,16 +37,16 @@ export default function PDMDetailsPage() {
   const [settings, setSettings] = React.useState<LandingPageSettings | null>(null);
   const { language, t } = useLanguage();
   const [isScrolled, setIsScrolled] = React.useState(false);
-  
+
   React.useEffect(() => {
     getCommodityPrices().then(prices => {
-        const ucsAsset = prices.find(p => p.id === 'ucs_ase');
-        if (ucsAsset) {
-            setUcsAseAsset(ucsAsset);
-        }
+      const ucsAsset = prices.find(p => p.id === 'ucs_ase');
+      if (ucsAsset) {
+        setUcsAseAsset(ucsAsset);
+      }
     });
     getLandingPageSettings().then(setSettings);
-    
+
     // Fetch historical data for the chart
     setIsLoadingHistory(true);
     // Calcular o número de dias desde 01/01/2023 até hoje
@@ -54,7 +54,7 @@ export default function PDMDetailsPage() {
     const today = new Date();
     const daysToFetch = Math.ceil((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 30; // 30 dias de margem
 
-    getCotacoesHistorico('ucs_ase', daysToFetch) 
+    getCotacoesHistorico('ucs_ase', daysToFetch)
       .then(history => {
         setUcsHistory(history);
         setIsLoadingHistory(false);
@@ -65,13 +65,13 @@ export default function PDMDetailsPage() {
       });
 
     const handleScroll = () => {
-        setIsScrolled(window.scrollY > 100);
+      setIsScrolled(window.scrollY > 100);
     };
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-  
+
   const autoplayPlugin = React.useRef(
     Autoplay({ delay: 4000, stopOnInteraction: true })
   );
@@ -83,38 +83,38 @@ export default function PDMDetailsPage() {
 
     // Valor em BRL
     if (ucsAseAsset.price) {
-        indexValues.push({ 
-          currency: 'BRL', 
-          value: ucsAseAsset.price, 
-          change: ucsAseAsset.change || 0, 
-        });
+      indexValues.push({
+        currency: 'BRL',
+        value: ucsAseAsset.price,
+        change: ucsAseAsset.change || 0,
+      });
     }
 
     // Valor em USD (se disponível)
     if (ucsAseAsset.valor_usd) {
-      indexValues.push({ 
-        currency: 'USD', 
-        value: ucsAseAsset.valor_usd, 
+      indexValues.push({
+        currency: 'USD',
+        value: ucsAseAsset.valor_usd,
         change: ucsAseAsset.change || 0,
         conversionRate: ucsAseAsset.valores_originais?.cotacao_usd
       });
     }
-    
+
     // Valor em EUR (se disponível)
     if (ucsAseAsset.valor_eur) {
-      indexValues.push({ 
-        currency: 'EUR', 
-        value: ucsAseAsset.valor_eur, 
+      indexValues.push({
+        currency: 'EUR',
+        value: ucsAseAsset.valor_eur,
         change: ucsAseAsset.change || 0,
         conversionRate: ucsAseAsset.valores_originais?.cotacao_eur
       });
     }
-    
+
     return indexValues;
   };
-  
+
   const indexValues = getIndexValues();
-  
+
   const heroContent = settings ? settings[language] : { title: t.home.hero.title, subtitle: t.home.hero.subtitle };
 
   const homeT = t.home;
@@ -122,24 +122,24 @@ export default function PDMDetailsPage() {
   const pilaresPDM = [
     {
       icon: TreePine,
-      title: homeT.pdm.pillars.vmad.title,
-      definition: homeT.pdm.pillars.vmad.definition,
-      origin: homeT.pdm.pillars.vmad.origin,
-      methodology: homeT.pdm.pillars.vmad.methodology,
+      title: "Valor Econômico da Floresta",
+      definition: "Mede o potencial econômico direto da floresta a partir da exploração sustentável de seus recursos, principalmente madeireiros. O cálculo considera o preço comercial das espécies exploradas sob manejo de baixo impacto, ciclos de corte controlados e custos operacionais, refletindo o uso responsável da floresta como ativo produtivo.",
+      origin: "O valor é obtido com base nas cotações de mercado da madeira, constituindo uma referência direta para a valoração florestal.",
+      methodology: "Adota uma adaptação do método americano de valoração de ativos florestais, considerando análise de ciclo de oportunidades e o método de custo de oportunidade, além da composição de espécies, custos logísticos, preço médio por espécie e métodos de mercado.",
     },
     {
       icon: LandPlot,
-      title: homeT.pdm.pillars.vus.title,
-      definition: homeT.pdm.pillars.vus.definition,
-      origin: homeT.pdm.pillars.vus.origin,
-      methodology: homeT.pdm.pillars.vus.methodology,
+      title: "Valor de Transformação Territorial",
+      definition: "Estima o valor que a terra teria caso a cobertura florestal fosse convertida para outros usos produtivos — como agricultura, pecuária, indústria ou expansão urbana. Este pilar reflete o valor alternativo da área, ou seja, o potencial econômico de substituição da floresta por outra atividade.",
+      origin: "É derivado das cotações de commodities agrícolas, como milho, soja e boi gordo, utilizadas como referência para estimar a produtividade e o retorno financeiro dos usos alternativos da terra.",
+      methodology: "Adota uma adaptação do método americano de valoração de terras, considerando produtividade potencial, retorno esperado, custos de conversão e operação, além de variáveis regionais como acesso, infraestrutura e logística.",
     },
     {
       icon: ShieldCheck,
-      title: homeT.pdm.pillars.crs.title,
-      definition: homeT.pdm.pillars.crs.definition,
-      origin: homeT.pdm.pillars.crs.origin,
-      methodology: homeT.pdm.pillars.crs.methodology,
+      title: "Valor Socioambiental da Conservação",
+      definition: "Traduz o valor dos benefícios que a floresta em pé gera para a sociedade, como regulação do clima, sequestro de carbono, purificação e regulação da água, preservação da biodiversidade, manutenção da qualidade do solo e manutenção da biodiversidade, representando o investimento necessário para manter esses serviços ecossistêmicos e o valor social associado à preservação.",
+      origin: "Baseia-se nos serviços ambientais mensuráveis especialmente o uso de água e financiamento de papel das florestas como infraestrutura natural.",
+      methodology: "Inspirado em referências internacionais, como o TEEB (The Economics of Ecosystems and Biodiversity) e o sistema de Pagamento por Serviços Ecossistêmicos com custos de conservação e métricas de impacto social e ambiental auditadas e rastreáveis local.",
     }
   ];
 
@@ -165,10 +165,10 @@ export default function PDMDetailsPage() {
       description: "Inclusão de ativos ambientais nos balanços patrimoniais de empresas e governos, com metodologia de valuation reconhecida."
     }
   ];
-  
+
   const chartData = React.useMemo(() => {
     if (!ucsHistory || ucsHistory.length === 0) return [];
-    
+
     const startDate = new Date('2023-01-01');
 
     return ucsHistory
@@ -179,17 +179,17 @@ export default function PDMDetailsPage() {
         let date: Date | null = null;
         if (quote.data) {
           try {
-             if (typeof quote.data === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(quote.data)) {
-                date = parse(quote.data, 'dd/MM/yyyy', new Date());
-             } else if (quote.timestamp) {
-                date = new Date(quote.timestamp as any);
-             }
+            if (typeof quote.data === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(quote.data)) {
+              date = parse(quote.data, 'dd/MM/yyyy', new Date());
+            } else if (quote.timestamp) {
+              date = new Date(quote.timestamp as any);
+            }
           } catch { date = null; }
         }
         if (!date && quote.timestamp) {
-            try {
-                date = new Date(quote.timestamp as any);
-            } catch { date = null; }
+          try {
+            date = new Date(quote.timestamp as any);
+          } catch { date = null; }
         }
 
         if (!date || date < startDate) return null;
@@ -220,11 +220,11 @@ export default function PDMDetailsPage() {
           </Link>
           <div className="flex items-center gap-2">
             <LanguageSwitcher />
-             <Button variant="ghost" size="icon" asChild>
-                <Link href="/login">
-                    <User className="h-5 w-5" />
-                    <span className="sr-only">Acessar Plataforma</span>
-                </Link>
+            <Button variant="ghost" size="icon" asChild>
+              <Link href="/login">
+                <User className="h-5 w-5" />
+                <span className="sr-only">Acessar Plataforma</span>
+              </Link>
             </Button>
           </div>
         </div>
@@ -248,7 +248,7 @@ export default function PDMDetailsPage() {
               Foto: <a href="https://commons.wikimedia.org/wiki/File:Amazon_rainforest_-_panoramio.jpg" target="_blank" rel="noopener noreferrer" className="underline">James Martins</a> / <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener noreferrer" className="underline">CC BY 3.0</a>
             </div>
           </div>
-          
+
           <div className="relative z-10 flex h-full w-full max-w-6xl flex-col items-center justify-center gap-8 text-center">
             <div className="flex flex-col items-center gap-4 px-4 md:px-6">
               <h1 className="text-4xl font-extrabold tracking-tighter text-white sm:text-5xl md:text-6xl lg:text-7xl drop-shadow-lg animate-fade-in-down">
@@ -259,7 +259,7 @@ export default function PDMDetailsPage() {
               </p>
             </div>
             {indexValues.length > 0 && (
-               <div className="w-full max-w-md p-6 bg-black/30 backdrop-blur-md rounded-2xl border border-white/10 text-white shadow-2xl">
+              <div className="w-full max-w-md p-6 bg-black/30 backdrop-blur-md rounded-2xl border border-white/10 text-white shadow-2xl">
                 <Carousel
                   opts={{ align: "start", loop: true }}
                   plugins={[autoplayPlugin.current]}
@@ -273,19 +273,19 @@ export default function PDMDetailsPage() {
                           <p className="text-sm text-gray-300">{item.currency}</p>
                           <div className="my-4 flex items-center justify-center gap-3">
                             <span className="text-6xl font-extrabold tracking-tight">
-                               {formatCurrency(item.value, item.currency, item.currency)}
+                              {formatCurrency(item.value, item.currency, item.currency)}
                             </span>
                             <div className={cn(
-                                'flex items-center text-lg font-semibold',
-                                item.change >= 0 ? 'text-green-400' : 'text-red-400'
+                              'flex items-center text-lg font-semibold',
+                              item.change >= 0 ? 'text-green-400' : 'text-red-400'
                             )}>
                               <TrendingUp className="h-5 w-5 mr-1" />
                               {item.change.toFixed(2)}%
                             </div>
                           </div>
-                           {item.conversionRate && (
+                          {item.conversionRate && (
                             <p className="text-xs text-gray-400">
-                                {t.home.quote.conversionRate} {formatCurrency(item.conversionRate, 'BRL', item.currency)}
+                              {t.home.quote.conversionRate} {formatCurrency(item.conversionRate, 'BRL', item.currency)}
                             </p>
                           )}
                         </div>
@@ -297,19 +297,19 @@ export default function PDMDetailsPage() {
             )}
           </div>
         </section>
-        
+
         <div className={cn(
-            "sticky top-20 z-40 mx-auto max-w-md transition-all duration-300",
+          "sticky top-20 z-40 mx-auto max-w-md transition-all duration-300",
         )}>
         </div>
-        
+
         {/* INTRODUCTION SECTION */}
         <section className="pt-16 md:pt-24 bg-muted/30">
           <div className="container mx-auto px-4 md:px-6">
             <div className="mx-auto max-w-5xl text-center">
               <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.pdm.what_is.title}</h2>
-              <p className="mt-4 text-lg text-muted-foreground text-justify" dangerouslySetInnerHTML={{ __html: homeT.pdm.what_is.p1 }}></p>
-              <p className="mt-4 text-lg text-muted-foreground text-justify" dangerouslySetInnerHTML={{ __html: homeT.pdm.what_is.p2 }}></p>
+              <p className="mt-4 text-lg text-muted-foreground text-justify" dangerouslySetInnerHTML={{ __html: homeT.pdm.what_is.p1.replace(/&lt;/g, '<').replace(/&gt;/g, '>') }}></p>
+              <p className="mt-4 text-lg text-muted-foreground text-justify" dangerouslySetInnerHTML={{ __html: homeT.pdm.what_is.p2.replace(/&lt;/g, '<').replace(/&gt;/g, '>') }}></p>
             </div>
           </div>
         </section>
@@ -318,34 +318,36 @@ export default function PDMDetailsPage() {
         <section className="py-16 md:py-24">
           <div className="container mx-auto px-4 md:px-6">
             <div className="mx-auto max-w-5xl text-center mb-12">
-              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.pdm.pillars_title}</h2>
+              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Os Três Pilares do Sistema UCS</h2>
             </div>
-            <div className="mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-5xl">
-              {pilaresPDM.map((pilar, index) => (
-                <Card key={index} className="flex flex-col hover:shadow-lg transition-shadow">
-                  <CardHeader>
-                    <div className="flex items-center gap-4">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                        <pilar.icon className="h-6 w-6" />
+            <div className="mx-auto flex flex-col gap-8 max-w-5xl">
+              {pilaresPDM.map((pilar, index) => {
+                return (
+                  <Card key={index} className={`flex flex-col ${index === 1 ? 'md:flex-row-reverse' : 'md:flex-row'} hover:shadow-lg transition-shadow overflow-hidden`}>
+                    <div className="relative h-48 md:h-auto md:w-80 flex-shrink-0 bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
+                      <div className="text-center">
+                        <div className="flex justify-center mb-4">
+                          <pilar.icon className="h-16 w-16 text-primary" />
+                        </div>
+                        <CardTitle className="text-lg font-bold text-foreground">{pilar.title}</CardTitle>
                       </div>
-                      <CardTitle className="text-lg font-bold">{pilar.title}</CardTitle>
                     </div>
-                  </CardHeader>
-                  <CardContent className="flex-grow space-y-4">
-                    <p className="text-sm text-muted-foreground text-justify">{pilar.definition}</p>
-                    {pilar.origin && (
+                    <CardContent className="flex-grow space-y-4 p-6">
+                      <p className="text-sm text-muted-foreground text-justify">{pilar.definition}</p>
+                      {pilar.origin && (
+                        <div className="border-t pt-4">
+                          <h4 className="font-semibold text-sm mb-2">Origem do Valor</h4>
+                          <p className="text-xs text-muted-foreground text-justify">{pilar.origin}</p>
+                        </div>
+                      )}
                       <div className="border-t pt-4">
-                        <h4 className="font-semibold text-sm mb-2">Origem do Valor</h4>
-                        <p className="text-xs text-muted-foreground text-justify">{pilar.origin}</p>
+                        <h4 className="font-semibold text-sm mb-2">{homeT.pdm.methodology}</h4>
+                        <p className="text-xs text-muted-foreground text-justify">{pilar.methodology}</p>
                       </div>
-                    )}
-                    <div className="border-t pt-4">
-                      <h4 className="font-semibold text-sm mb-2">{homeT.pdm.methodology}</h4>
-                      <p className="text-xs text-muted-foreground text-justify">{pilar.methodology}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           </div>
         </section>
@@ -374,91 +376,91 @@ export default function PDMDetailsPage() {
 
         {/* UCS EVOLUTION SECTION */}
         <section className="py-16 md:py-24">
-            <div className="container mx-auto px-4 md:px-6">
-                <div className="mx-auto max-w-5xl text-center mb-12">
-                    <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.ucs_section.title}</h2>
-                    <p className="mt-4 text-lg text-muted-foreground">{homeT.ucs_section.description}</p>
-                </div>
-                <div className="mx-auto max-w-5xl h-96">
-                    <HistoricalAnalysisChart 
-                        isLoading={isLoadingHistory}
-                        chartData={chartData}
-                        isMultiLine={false}
-                        mainAssetData={ucsAseAsset}
-                        visibleAssets={{}}
-                        lineColors={{}}
-                        assetNames={{}}
-                        showMetrics={false}
-                    />
-                </div>
+          <div className="container mx-auto px-4 md:px-6">
+            <div className="mx-auto max-w-5xl text-center mb-12">
+              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.ucs_section.title}</h2>
+              <p className="mt-4 text-lg text-muted-foreground">{homeT.ucs_section.description}</p>
             </div>
+            <div className="mx-auto max-w-5xl h-96">
+              <HistoricalAnalysisChart
+                isLoading={isLoadingHistory}
+                chartData={chartData}
+                isMultiLine={false}
+                mainAssetData={ucsAseAsset}
+                visibleAssets={{}}
+                lineColors={{}}
+                assetNames={{}}
+                showMetrics={false}
+              />
+            </div>
+          </div>
         </section>
-        
+
         {/* UCS SECTION */}
         <section className="py-16 md:py-24 bg-muted/30">
-            <div className="container mx-auto px-4 md:px-6">
-                <div className="mx-auto max-w-5xl grid md:grid-cols-2 gap-12 items-center">
-                    <div>
-                        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.ucs.title}</h2>
-                        <p className="mt-4 text-lg text-muted-foreground text-justify">
-                            {homeT.ucs.p1}
-                        </p>
-                        <p className="mt-4 text-muted-foreground text-justify">
-                            {homeT.ucs.p2}
-                        </p>
-                    </div>
-                    <div className="relative h-64 md:h-full w-full rounded-xl overflow-hidden shadow-xl">
-                        <Image
-                            src="https://picsum.photos/seed/sustainability/800/600"
-                            alt={homeT.ucs.image_alt}
-                            fill
-                            style={{objectFit: 'cover'}}
-                            data-ai-hint="sustainability hands"
-                        />
-                    </div>
-                </div>
+          <div className="container mx-auto px-4 md:px-6">
+            <div className="mx-auto max-w-5xl grid md:grid-cols-2 gap-12 items-center">
+              <div>
+                <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.ucs.title}</h2>
+                <p className="mt-4 text-lg text-muted-foreground text-justify">
+                  {homeT.ucs.p1}
+                </p>
+                <p className="mt-4 text-muted-foreground text-justify">
+                  {homeT.ucs.p2}
+                </p>
+              </div>
+              <div className="relative h-64 md:h-full w-full rounded-xl overflow-hidden shadow-xl">
+                <Image
+                  src="https://picsum.photos/seed/sustainability/800/600"
+                  alt={homeT.ucs.image_alt}
+                  fill
+                  style={{ objectFit: 'cover' }}
+                  data-ai-hint="sustainability hands"
+                />
+              </div>
             </div>
+          </div>
         </section>
 
         {/* BLOCKCHAIN SECTION */}
         <section className="py-16 md:py-24">
-            <div className="container mx-auto px-4 md:px-6">
-                <div className="mx-auto max-w-5xl grid md:grid-cols-2 gap-12 items-center">
-                    <div className="relative h-64 md:h-full w-full rounded-xl overflow-hidden shadow-xl md:order-last">
-                         <Image
-                            src="https://picsum.photos/seed/blockchain-tech/800/600"
-                            alt={homeT.blockchain.image_alt}
-                            fill
-                            style={{objectFit: 'cover'}}
-                            data-ai-hint="blockchain technology"
-                        />
-                    </div>
-                    <div className="md:order-first">
-                        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.blockchain.title}</h2>
-                        <p className="mt-4 text-lg text-muted-foreground text-justify">
-                            {homeT.blockchain.p1}
-                        </p>
-                        <p className="mt-4 text-muted-foreground text-justify">
-                            {homeT.blockchain.p2}
-                        </p>
-                    </div>
-                </div>
+          <div className="container mx-auto px-4 md:px-6">
+            <div className="mx-auto max-w-5xl grid md:grid-cols-2 gap-12 items-center">
+              <div className="relative h-64 md:h-full w-full rounded-xl overflow-hidden shadow-xl md:order-last">
+                <Image
+                  src="https://picsum.photos/seed/blockchain-tech/800/600"
+                  alt={homeT.blockchain.image_alt}
+                  fill
+                  style={{ objectFit: 'cover' }}
+                  data-ai-hint="blockchain technology"
+                />
+              </div>
+              <div className="md:order-first">
+                <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.blockchain.title}</h2>
+                <p className="mt-4 text-lg text-muted-foreground text-justify">
+                  {homeT.blockchain.p1}
+                </p>
+                <p className="mt-4 text-muted-foreground text-justify">
+                  {homeT.blockchain.p2}
+                </p>
+              </div>
             </div>
+          </div>
         </section>
 
         {/* FINAL SUMMARY */}
         <section className="py-16 md:py-24 text-center bg-background">
           <div className="container mx-auto px-4 md:px-6">
             <div className="mx-auto max-w-5xl">
-                <div className="text-center">
-                  <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.pdm.conclusion.title}</h2>
-                  <p className="mx-auto mt-4 max-w-3xl text-lg text-muted-foreground text-justify">
-                    {homeT.pdm.conclusion.p1}
-                  </p>
-                  <div className="mt-8">
-                    <Award className="mx-auto h-12 w-12 text-primary" />
-                  </div>
+              <div className="text-center">
+                <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.pdm.conclusion.title}</h2>
+                <p className="mx-auto mt-4 max-w-3xl text-lg text-muted-foreground text-justify">
+                  {homeT.pdm.conclusion.p1}
+                </p>
+                <div className="mt-8">
+                  <Award className="mx-auto h-12 w-12 text-primary" />
                 </div>
+              </div>
             </div>
           </div>
         </section>
@@ -487,16 +489,16 @@ export default function PDMDetailsPage() {
                   {indexValues.map((item, index) => (
                     <CarouselItem key={index}>
                       <div className="flex items-center justify-center gap-2">
-                         <span className="font-mono font-bold text-lg">
-                           {formatCurrency(item.value, item.currency, item.currency)}
-                         </span>
-                         <div className={cn(
-                            "flex items-center text-sm font-semibold",
-                            ucsAseAsset.change >= 0 ? "text-green-300" : "text-red-300"
-                          )}>
-                            {ucsAseAsset.change >= 0 ? <TrendingUp className="h-4 w-4 mr-1" /> : <TrendingDown className="h-4 w-4 mr-1" />}
-                            {ucsAseAsset.change.toFixed(2)}%
-                         </div>
+                        <span className="font-mono font-bold text-lg">
+                          {formatCurrency(item.value, item.currency, item.currency)}
+                        </span>
+                        <div className={cn(
+                          "flex items-center text-sm font-semibold",
+                          ucsAseAsset.change >= 0 ? "text-green-300" : "text-red-300"
+                        )}>
+                          {ucsAseAsset.change >= 0 ? <TrendingUp className="h-4 w-4 mr-1" /> : <TrendingDown className="h-4 w-4 mr-1" />}
+                          {ucsAseAsset.change.toFixed(2)}%
+                        </div>
                       </div>
                     </CarouselItem>
                   ))}
