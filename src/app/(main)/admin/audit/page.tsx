@@ -49,7 +49,6 @@ import { AuditHistory, type AuditLogEntry } from '@/components/admin/audit-histo
 import { getAuditLogsForDate } from '@/lib/audit-log-service';
 import { RecalculationProgress, type RecalculationStep } from '@/components/admin/recalculation-progress';
 import { ValidationAlerts, generateValidationAlerts, type ValidationAlert } from '@/components/admin/validation-alerts';
-import { DateComparison } from '@/components/admin/date-comparison';
 import { AuditExport } from '@/components/admin/audit-export';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
@@ -119,8 +118,8 @@ const AssetActionTable = ({
     editedValues: Record<string, number>;
     onInlineChange: (assetId: string, value: number) => void;
     onRevert: (assetId: string) => void;
-    onSort: (key: 'name' | 'id' | 'price' | 'change' | 'status') => void;
-    sortKey: 'name' | 'id' | 'price' | 'change' | 'status';
+    onSort: (key: 'custom' | 'name' | 'id' | 'price' | 'change' | 'status') => void;
+    sortKey: 'custom' | 'name' | 'id' | 'price' | 'change' | 'status';
     sortDir: 'asc' | 'desc';
 }) => {
   if (assets.length === 0) {
@@ -204,7 +203,12 @@ const AssetActionTable = ({
                   />
                 </div>
               ) : (
-                <span>{formatCurrency(editedValues[asset.id] ?? asset.price, asset.currency, asset.id)}</span>
+                <span>{formatCurrency(
+                    editedValues[asset.id] ?? asset.price,
+                    asset.id === 'madeira' ? 'USD' : asset.currency,
+                    asset.id
+                  )}
+                </span>
               )}
               {editingId === asset.id && errorMsg && (
                 <div className="text-xs text-red-600 mt-1">{errorMsg}</div>
@@ -393,7 +397,7 @@ export default function AuditPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [sortKey, setSortKey] = useState<'name' | 'id' | 'price' | 'change' | 'status'>('name');
+  const [sortKey, setSortKey] = useState<'custom' | 'name' | 'id' | 'price' | 'change' | 'status'>('custom');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState<string>('');
   // Paginação
@@ -637,7 +641,7 @@ export default function AuditPage() {
     const allBaseAssets = dataWithEdits.filter(asset => !calculatedAssetIds.has(asset.id));
     const calculatedAssets = dataWithEdits.filter(asset => calculatedAssetIds.has(asset.id));
     
-    const sortOrder = ['usd', 'eur'];
+    const sortOrder = ['usd', 'eur', 'boi_gordo', 'soja', 'milho', 'madeira', 'carbono'];
     allBaseAssets.sort((a, b) => {
       const aIndex = sortOrder.indexOf(a.id);
       const bIndex = sortOrder.indexOf(b.id);
@@ -694,6 +698,7 @@ export default function AuditPage() {
     const dir = sortDir === 'asc' ? 1 : -1;
     const cmp = (a: CommodityPriceData, b: CommodityPriceData) => {
       switch (sortKey) {
+        case 'custom': return 0; // mantém a ordem pré-processada
         case 'name': return a.name.localeCompare(b.name) * dir;
         case 'id': return a.id.localeCompare(b.id) * dir;
         case 'price': return ((a.price || 0) - (b.price || 0)) * dir;
@@ -762,7 +767,7 @@ export default function AuditPage() {
     });
   }, [editedValues, originalData]);
 
-  const handleSort = (key: 'name' | 'id' | 'price' | 'change' | 'status') => {
+  const handleSort = (key: 'custom' | 'name' | 'id' | 'price' | 'change' | 'status') => {
     if (sortKey === key) {
       setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
     } else {
@@ -1288,10 +1293,7 @@ export default function AuditPage() {
                 </CardContent>
               </Card>
               
-              <DateComparison 
-                currentDate={targetDate}
-                currentData={data}
-              />
+              
 
               <AuditExport 
                 currentDate={targetDate}

@@ -159,7 +159,7 @@ function normalizeAssetData(data: any): any {
         }
     }
     
-    if (data.id === 'soja' || data.id === 'carbono' || data.id === 'madeira') {
+    if (data.id === 'soja' || data.id === 'carbono') {
         if (normalized.ultimo_brl !== undefined && normalized.ultimo_brl > 0) {
             normalized.valor = normalized.ultimo_brl;
         }
@@ -463,7 +463,7 @@ export async function getCommodityConfigs(): Promise<CommodityConfig[]> {
         { id: 'PDM', name: 'PDM', category: 'index', description: 'Potencial Desflorestador Monetizado', currency: 'BRL', unit: 'Pontos' },
         { id: 'milho', name: 'Milho', category: 'agricultural', description: 'Commodity agrícola', currency: 'BRL', unit: 'R$/ton' },
         { id: 'boi_gordo', name: 'Boi Gordo', category: 'agricultural', description: 'Commodity pecuária', currency: 'BRL', unit: 'R$/arroba' },
-        { id: 'madeira', name: 'Madeira', category: 'material', description: 'Commodity material', currency: 'BRL', unit: 'R$/m³' },
+        { id: 'madeira', name: 'Madeira', category: 'material', description: 'Commodity material', currency: 'USD', unit: 'US$/m³' },
         { id: 'carbono', name: 'Carbono', category: 'sustainability', description: 'Commodity ambiental', currency: 'EUR', unit: '€/tCO₂' },
         { id: 'soja', name: 'Soja', category: 'agricultural', description: 'Commodity agrícola', currency: 'BRL', unit: 'R$/ton' }
       ];
@@ -475,20 +475,23 @@ export async function getCommodityConfigs(): Promise<CommodityConfig[]> {
     const configsArray: CommodityConfig[] = Object.entries(configData).map(([id, config]) => ({
       id,
       ...config,
+      name: id === 'custo_agua' ? 'Água Social' : (config as any).name,
     }));
     
     setCache(CACHE_KEYS.COMMODITIES_CONFIG, configsArray, CACHE_TTL.CONFIG);
     return configsArray;
     
   } catch (error) {
-    const fallbackConfigs: CommodityConfig[] = [
+    let fallbackConfigs: CommodityConfig[] = [
       { id: 'PDM', name: 'PDM', category: 'index', description: 'Potencial Desflorestador Monetizado', currency: 'BRL', unit: 'Pontos' },
       { id: 'milho', name: 'Milho', category: 'agricultural', description: 'Commodity agrícola', currency: 'BRL', unit: 'R$/ton' },
       { id: 'boi_gordo', name: 'Boi Gordo', category: 'agricultural', description: 'Commodity pecuária', currency: 'BRL', unit: 'R$/arroba' },
-      { id: 'madeira', name: 'Madeira', category: 'material', description: 'Commodity material', currency: 'BRL', unit: 'R$/m³' },
+      { id: 'madeira', name: 'Madeira', category: 'material', description: 'Commodity material', currency: 'USD', unit: 'US$/m³' },
       { id: 'carbono', name: 'Carbono', category: 'sustainability', description: 'Commodity ambiental', currency: 'EUR', unit: '€/tCO₂' },
       { id: 'soja', name: 'Soja', category: 'agricultural', description: 'Commodity agrícola', currency: 'BRL', unit: 'R$/ton' }
     ];
+    // Aplica overrides de nome (apenas front-end)
+    fallbackConfigs = fallbackConfigs.map(cfg => cfg.id === 'custo_agua' ? { ...cfg, name: 'Água Social' } : cfg);
     return fallbackConfigs;
   }
 }
@@ -957,6 +960,20 @@ export async function getCommodityPricesByDate(date: Date): Promise<CommodityPri
         } as any;
       }
 
+      // Força MADEIRA a exibir o último preço em USD (sem conversão para BRL)
+      if (config.id === 'madeira' && latestDoc) {
+        const usdLast = typeof latestDoc.ultimo === 'number' ? latestDoc.ultimo : latestPrice;
+        return {
+          ...config,
+          currency: 'USD',
+          price: usdLast,
+          change,
+          absoluteChange,
+          lastUpdated: latestDoc?.data || displayDate,
+          isBlocked: false
+        } as any;
+      }
+
       // Força CARBONO a exibir o último preço em EUR (sem conversão para BRL)
       if (config.id === 'carbono' && latestDoc) {
         const eurLast = typeof latestDoc.ultimo === 'number' ? latestDoc.ultimo : latestPrice;
@@ -971,6 +988,19 @@ export async function getCommodityPricesByDate(date: Date): Promise<CommodityPri
         } as any;
       }
       
+      // Garante MADEIRA em USD mesmo se latestDoc for nulo
+      if (config.id === 'madeira' && !latestDoc) {
+        return {
+          ...config,
+          currency: 'USD',
+          price: latestPrice,
+          change,
+          absoluteChange,
+          lastUpdated: displayDate,
+          isBlocked: false
+        } as any;
+      }
+
       return { 
         ...config, 
         price: latestPrice, 
@@ -1048,6 +1078,20 @@ export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
 
       // Força SOJA a exibir o último preço em USD (sem conversão para BRL)
       if (config.id === 'soja' && latestDoc) {
+        const usdLast = typeof latestDoc.ultimo === 'number' ? latestDoc.ultimo : latestPrice;
+        return {
+          ...config,
+          currency: 'USD',
+          price: usdLast,
+          change,
+          absoluteChange,
+          lastUpdated: lastUpdated,
+          isBlocked: false
+        } as any;
+      }
+
+      // Força MADEIRA a exibir o último preço em USD (sem conversão para BRL)
+      if (config.id === 'madeira' && latestDoc) {
         const usdLast = typeof latestDoc.ultimo === 'number' ? latestDoc.ultimo : latestPrice;
         return {
           ...config,
