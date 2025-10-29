@@ -6,7 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { History, Loader2, Save, ExternalLink, Edit, Search, Filter, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Zap, RefreshCw, Calendar, Activity, BarChart3, FileDown } from 'lucide-react';
-import { getCommodityPricesByDate } from '@/lib/data-service';
+import { getCommodityPricesByDate, clearCacheAndRefresh } from '@/lib/data-service';
 import type { CommodityPriceData } from '@/lib/types';
 import * as Calc from '@/lib/calculation-service';
 import { triggerN8NRecalculation } from '@/lib/n8n-actions'; // Import the N8N action
@@ -586,20 +586,34 @@ export default function AuditPage() {
         }
 
         const url = `${WEBHOOK_URL}?key=${encodeURIComponent(API_KEY)}`;
-        const res = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-audit-token': API_KEY,
-          },
-          body: JSON.stringify(n8nPayload),
-        });
+        // Retry simples (3 tentativas)
+        const attemptPost = async () => {
+          return await fetch(url, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-audit-token': API_KEY,
+            },
+            body: JSON.stringify(n8nFullPayload),
+          });
+        };
+        let res = await attemptPost();
+        if (!res.ok) {
+          await new Promise(r => setTimeout(r, 1500));
+          res = await attemptPost();
+        }
+        if (!res.ok) {
+          await new Promise(r => setTimeout(r, 3000));
+          res = await attemptPost();
+        }
 
         if (res.ok) {
           toast({
-            title: "Solicitação Enviada",
-            description: "O N8N está reprocessando os dados. Atualizando dados em seguida...",
+            title: "Snapshot enviado",
+            description: "O N8N está reprocessando os dados. Atualizando em seguida...",
           });
+          // Limpa caches server-side e revalida páginas relacionadas
+          try { await clearCacheAndRefresh(); } catch {}
           setEditedValues({});
           setValidationAlerts([]);
           // Poll leve (3 tentativas, 3s intervalo) para atualizar dados/logs
@@ -776,18 +790,21 @@ export default function AuditPage() {
     }
   };
 
-  const n8nPayload = useMemo(() => {
-    const transformedAssets: Record<string, any> = {};
-    for (const [key, value] of Object.entries(editedValues)) {
-        const newKey = key === 'boi_gordo' ? 'boi' : key;
-        transformedAssets[newKey] = { preco: value };
+  // Payload COMPLETO: inclui todos os ativos base (após aplicar edições)
+  const n8nFullPayload = useMemo(() => {
+    const transformed: Record<string, any> = {};
+    const allowed = new Set(['usd','eur','boi_gordo','soja','milho','madeira','carbono']);
+    for (const asset of baseAssets) {
+      if (!allowed.has(asset.id)) continue;
+      const k = asset.id === 'boi_gordo' ? 'boi' : asset.id;
+      transformed[k] = { preco: Number(asset.price) };
     }
     return {
       origem: 'painel_auditoria',
       data_especifica: format(targetDate, 'yyyy-MM-dd'),
-      ativos: transformedAssets,
+      ativos: transformed,
     };
-  }, [editedValues, targetDate]);
+  }, [baseAssets, targetDate]);
 
   return (
     <>
@@ -927,10 +944,10 @@ export default function AuditPage() {
                                   </Table>
                                 </div>
                                 <div className="p-4 border rounded-lg bg-muted/50">
-                                  <h3 className="font-semibold mb-2">Payload para Webhook N8N:</h3>
+                                  <h3 className="font-semibold mb-2">Payload para Webhook N8N (Snapshot Completo):</h3>
                                   <pre className="text-xs bg-background p-3 rounded-md overflow-x-auto">
                                     <code>
-                                      {JSON.stringify(n8nPayload, null, 2)}
+                                      {JSON.stringify(n8nFullPayload, null, 2)}
                                     </code>
                                   </pre>
                                 </div>

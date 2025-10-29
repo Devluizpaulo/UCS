@@ -98,3 +98,50 @@ export async function triggerN8NRecalculation(
     };
   }
 }
+
+/**
+ * Dispara webhook do N8N com SNAPSHOT COMPLETO dos ativos base
+ */
+export async function triggerN8NRecalculationFull(
+  targetDate: Date,
+  allAssets: Record<string, number>
+): Promise<{ success: boolean; message: string }> {
+  const webhookUrl = process.env.N8N_WEBHOOK_URL;
+  if (!webhookUrl) {
+    return { success: false, message: 'N8N webhook não configurado no servidor.' };
+  }
+
+  const payloadBase = {
+    origem: 'painel_auditoria',
+    data_especifica: format(targetDate, 'yyyy-MM-dd'),
+    ativos: {} as Record<string, { preco: number }>,
+  };
+
+  const transformed: Record<string, { preco: number }> = {};
+  for (const [key, value] of Object.entries(allAssets)) {
+    if (value == null || isNaN(Number(value))) continue;
+    const newKey = key === 'boi_gordo' ? 'boi' : key;
+    transformed[newKey] = { preco: Number(value) };
+  }
+  const payload = { ...payloadBase, ativos: transformed };
+
+  try {
+    const response = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-audit-token': process.env.N8N_API_KEY || ''
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      throw new Error(`N8N ${response.status}: ${errorBody}`);
+    }
+    const result = await response.json();
+    return { success: true, message: result?.message || result?.msg || 'Solicitação aceita pelo N8N' };
+  } catch (e: any) {
+    return { success: false, message: e?.message || 'Falha ao comunicar com N8N' };
+  }
+}

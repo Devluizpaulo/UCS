@@ -1,0 +1,2535 @@
+{
+  "name": "UCS - Agendador",
+  "nodes": [
+    {
+      "parameters": {
+        "extractionValues": {
+          "values": [
+            {
+              "key": "preco",
+              "cssSelector": "span[data-test='instrument-price-last'], .text-2xl, .instrument-price_instrument-price__*, [data-test*='price'], #last_last"
+            },
+            {
+              "key": "fechamento_anterior",
+              "cssSelector": "[data-test='instrument-prev-close'], .prev-close, [class*='prev'], [class*='previous'], [class*='close'], td:contains('Fechamento Anterior') + td, .instrument-metadata_instrument-metadata__kv__value, [data-test='prev-close'], .prev-close-value"
+            },
+            {
+              "key": "abertura",
+              "cssSelector": "[data-test='instrument-open'], .open, [class*='open'], td:contains('Abertura') + td, .instrument-metadata_instrument-metadata__kv__value, [data-test='open'], .open-value"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "27ab8b5b-6b4f-4733-897b-1a53aebfa082",
+      "name": "🔍 Extrair Preço",
+      "type": "n8n-nodes-base.htmlExtract",
+      "typeVersion": 1,
+      "position": [
+        -912,
+        -2992
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Verifica se veio dados do nó anterior\nif ($input.first() === undefined) {\n  return [{ json: { \n    erro: 'Nenhum dado recebido do nó anterior.', \n    timestamp: new Date().toISOString() \n  } }];\n}\n\n// Pega os dados extraídos do HTML\nlet precoExtraido = $input.first().json.preco;\nlet fechamentoAnterior = $input.first().json.fechamento_anterior;\nlet abertura = $input.first().json.abertura;\n\n// Verifica se o preço foi encontrado\nif (precoExtraido === undefined || precoExtraido === null || precoExtraido === '') {\n  return [{ json: { \n    ativo: 'Milho (Investing.com)',\n    erro: 'Preço não encontrado com nenhum seletor CSS. Estrutura do site pode ter mudado.',\n    timestamp: new Date().toISOString(),\n    status: 'erro'\n  } }];\n}\n\n// Função para processar valores numéricos\nfunction processarValor(valor) {\n  if (!valor || valor === '') return null;\n  \n  try {\n    let valorLimpo = valor\n      .replace(/\\s/g, '')\n      .replace(/[R$]/g, '')\n      .replace(/\\./g, '')\n      .replace(/,/g, '.');\n    \n    let valorNumerico = parseFloat(valorLimpo);\n    return isNaN(valorNumerico) ? null : valorNumerico;\n  } catch (error) {\n    return null;\n  }\n}\n\n// Tenta converter o preço\ntry {\n  let precoNumerico = processarValor(precoExtraido);\n  \n  if (precoNumerico === null) {\n    throw new Error('Conversão para número falhou: ' + precoExtraido);\n  }\n  \n  // Processa fechamento anterior\n  let fechamentoAnteriorNumerico = processarValor(fechamentoAnterior);\n  \n  // Processa abertura\n  let aberturaNumerico = processarValor(abertura);\n  \n  return [{ json: {\n    ativo: 'Milho (Investing.com)',\n    preco: precoNumerico,\n    preco_original: precoExtraido,\n    fechamento_anterior: fechamentoAnteriorNumerico,\n    fechamento_anterior_original: fechamentoAnterior,\n    abertura: aberturaNumerico,\n    abertura_original: abertura,\n    moeda: 'BRL',\n    fonte: 'Investing.com',\n    timestamp: new Date().toISOString(),\n    status: 'sucesso'\n  } }];\n} catch (error) {\n  return [{ json: {\n    ativo: 'Milho (Investing.com)',\n    erro: 'Erro na conversão: ' + error.message,\n    preco_original: precoExtraido,\n    fechamento_anterior_original: fechamentoAnterior,\n    abertura_original: abertura,\n    timestamp: new Date().toISOString(),\n    status: 'erro'\n  } }];\n}"
+      },
+      "id": "aea83fd9-379b-4ba6-b9db-34ed06dfcbf0",
+      "name": "⚙️ Processar Dados",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -736,
+        -2992
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  const jsonResponse = $input.first().json;\n  const originalData = $('⚙️ Processar Dados').first().json;\n\n  if (jsonResponse.status === 'erro') {\n    return [{\n      json: {\n        status: 'erro_json',\n        erro: jsonResponse.erro,\n        dados_originais: originalData,\n        timestamp: new Date().toISOString()\n      }\n    }];\n  }\n\n  return [{\n    json: {\n      status: 'sucesso',\n      mensagem: 'Dados salvos no JSON com sucesso',\n      dados_salvos: originalData,\n      arquivo: jsonResponse.arquivo,\n      timestamp: new Date().toISOString()\n    }\n  }];\n\n} catch (error) {\n  return [{\n    json: {\n      status: 'erro_final',\n      erro: 'Erro na resposta final: ' + error.message,\n      timestamp: new Date().toISOString()\n    }\n  }];\n}"
+      },
+      "id": "f2607151-1b34-4574-8ccd-55171e07afd0",
+      "name": "📋 Resposta Final",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -224,
+        -2992
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  // Coletar apenas os dados do milho\n  const milho = $('💾 Salvar no JSON').first()?.json || null;\n\n  // Estruturar JSON final apenas com milho\n  const cotacoesConsolidadas = {\n    metadata: {\n      timestamp: new Date().toISOString(),\n      data_coleta: new Date().toLocaleDateString('pt-BR'),\n      total_ativos: milho ? 1 : 0,\n      fonte: 'Investing.com'\n    },\n    commodities: {\n      agricolas: {\n        milho: milho?.dados_formatados?.dados || null\n      }\n    },\n    status: {\n      milho: milho?.status || 'erro'\n    }\n  };\n\n  return [{ json: cotacoesConsolidadas }];\n\n} catch (error) {\n  return [{\n    json: {\n      erro: 'Erro ao consolidar cotações: ' + error.message,\n      timestamp: new Date().toISOString(),\n      status: 'erro_consolidacao'\n    }\n  }];\n}"
+      },
+      "id": "7ee680c6-b6fe-46b7-a35f-4327308d2368",
+      "name": "📊 Consolidador de Cotações",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -48,
+        -2992
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Retornar o JSON consolidado final\nconst dadosConsolidados = $input.first().json;\n\nreturn [{\n  json: {\n    mensagem: 'Cotações consolidadas com sucesso!',\n    dados: dadosConsolidados,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "0da7af21-a639-44b4-b181-d7de89899f21",
+      "name": "📋 Resposta Final Consolidada",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        160,
+        -2992
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  // Receber dados do salvamento\n  const dadosSalvos = $input.first().json;\n  \n  return [{\n    json: {\n      status: 'sistema_completo',\n      mensagem: 'Sistema de consolidação executado com sucesso!',\n      resultado: dadosSalvos,\n      total_cotacoes: 7,\n      timestamp_final: new Date().toISOString(),\n      resumo: {\n        commodities_agricolas: 3,\n        commodities_materiais: 2,\n        moedas: 2,\n        status_geral: dadosSalvos.status\n      }\n    }\n  }];\n  \n} catch (error) {\n  return [{ json: {\n    status: 'erro_sistema',\n    erro: 'Erro no sistema final: ' + error.message,\n    timestamp: new Date().toISOString()\n  } }];\n}"
+      },
+      "id": "49d1fac5-72d6-45ae-9306-68131fb20e5b",
+      "name": "📋 Resposta Final do Sistema",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        336,
+        -2992
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "=days",
+              "triggerAtHour": "={{ 3 }}",
+              "triggerAtMinute": "={{ 0 }}"
+            }
+          ]
+        }
+      },
+      "id": "bce879aa-1ad4-4851-859d-2bc663fe82aa",
+      "name": "🕐 Agendador (AM)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        848,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://br.investing.com/commodities/us-corn?cid=964522",
+        "responseFormat": "string",
+        "options": {}
+      },
+      "id": "69f3b5c5-fe50-4af3-a4ad-864bc5350fbc",
+      "name": "🌐 Buscar Milho",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        -1104,
+        -2992
+      ]
+    },
+    {
+      "parameters": {
+        "extractionValues": {
+          "values": [
+            {
+              "key": "preco",
+              "cssSelector": "span[data-test='instrument-price-last'], .text-2xl, .instrument-price_instrument-price__*, [data-test*='price'], #last_last"
+            },
+            {
+              "key": "fechamento_anterior",
+              "cssSelector": "[data-test='instrument-prev-close'], .prev-close, [class*='prev'], [class*='previous'], [class*='close'], td:contains('Fechamento Anterior') + td, .instrument-metadata_instrument-metadata__kv__value, [data-test='prev-close'], .prev-close-value"
+            },
+            {
+              "key": "abertura",
+              "cssSelector": "[data-test='instrument-open'], .open, [class*='open'], td:contains('Abertura') + td, .instrument-metadata_instrument-metadata__kv__value, [data-test='open'], .open-value"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ef51cbec-dad8-416f-8a42-13cfe80f8ed6",
+      "name": "🔍 Extrair Preço1",
+      "type": "n8n-nodes-base.htmlExtract",
+      "typeVersion": 1,
+      "position": [
+        -912,
+        -3936
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Verifica se veio dados do nó anterior\nif ($input.first() === undefined) {\n  return [{ json: { \n    erro: 'Nenhum dado recebido do nó anterior.', \n    timestamp: new Date().toISOString() \n  } }];\n}\n\n// Pega os dados extraídos do HTML\nlet precoExtraido = $input.first().json.preco;\nlet fechamentoAnterior = $input.first().json.fechamento_anterior;\nlet abertura = $input.first().json.abertura;\n\n// Verifica se o preço foi encontrado\nif (precoExtraido === undefined || precoExtraido === null || precoExtraido === '') {\n  return [{ json: { \n    ativo: 'Soja (Investing.com)',\n    erro: 'Preço não encontrado com nenhum seletor CSS. Estrutura do site pode ter mudado.',\n    timestamp: new Date().toISOString(),\n    status: 'erro'\n  } }];\n}\n\n// Função para processar valores numéricos\nfunction processarValor(valor) {\n  if (!valor || valor === '') return null;\n  \n  try {\n    let valorLimpo = valor\n      .replace(/\\s/g, '')\n      .replace(/[R$]/g, '')\n      .replace(/\\./g, '')\n      .replace(/,/g, '.');\n    \n    let valorNumerico = parseFloat(valorLimpo);\n    return isNaN(valorNumerico) ? null : valorNumerico;\n  } catch (error) {\n    return null;\n  }\n}\n\n// Tenta converter o preço\ntry {\n  let precoNumerico = processarValor(precoExtraido);\n  \n  if (precoNumerico === null) {\n    throw new Error('Conversão para número falhou: ' + precoExtraido);\n  }\n  \n  // Processa fechamento anterior\n  let fechamentoAnteriorNumerico = processarValor(fechamentoAnterior);\n  \n  // Processa abertura\n  let aberturaNumerico = processarValor(abertura);\n  \n  return [{ json: {\n    ativo: 'Soja (Investing.com)',\n    preco: precoNumerico,\n    preco_original: precoExtraido,\n    fechamento_anterior: fechamentoAnteriorNumerico,\n    fechamento_anterior_original: fechamentoAnterior,\n    abertura: aberturaNumerico,\n    abertura_original: abertura,\n    moeda: 'USD',\n    fonte: 'Investing.com',\n    timestamp: new Date().toISOString(),\n    status: 'sucesso'\n  } }];\n} catch (error) {\n  return [{ json: {\n    ativo: 'Soja (Investing.com)',\n    erro: 'Erro na conversão: ' + error.message,\n    preco_original: precoExtraido,\n    fechamento_anterior_original: fechamentoAnterior,\n    abertura_original: abertura,\n    timestamp: new Date().toISOString(),\n    status: 'erro'\n  } }];\n}"
+      },
+      "id": "0879a859-18ba-4e25-942f-82ecb3392284",
+      "name": "⚙️ Processar Dados1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -736,
+        -3936
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  const jsonResponse = $input.first().json;\n  const originalData = $('⚙️ Processar Dados1').first().json;\n\n  if (jsonResponse.status === 'erro') {\n    return [{\n      json: {\n        status: 'erro_json',\n        erro: jsonResponse.erro,\n        dados_originais: originalData,\n        timestamp: new Date().toISOString()\n      }\n    }];\n  }\n\n  return [{\n    json: {\n      status: 'sucesso',\n      mensagem: 'Dados salvos no JSON com sucesso',\n      dados_salvos: originalData,\n      arquivo: jsonResponse.arquivo,\n      timestamp: new Date().toISOString()\n    }\n  }];\n\n} catch (error) {\n  return [{\n    json: {\n      status: 'erro_final',\n      erro: 'Erro na resposta final: ' + error.message,\n      timestamp: new Date().toISOString()\n    }\n  }];\n}"
+      },
+      "id": "c69854aa-6731-4339-996e-e1751d6e1c46",
+      "name": "📋 Resposta Final1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -208,
+        -3936
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  // Coletar apenas os dados do milho\n  const milho = $('💾 Salvar no JSON1').first()?.json || null;\n\n  // Estruturar JSON final apenas com milho\n  const cotacoesConsolidadas = {\n    metadata: {\n      timestamp: new Date().toISOString(),\n      data_coleta: new Date().toLocaleDateString('pt-BR'),\n      total_ativos: milho ? 1 : 0,\n      fonte: 'Investing.com'\n    },\n    commodities: {\n      agricolas: {\n        milho: milho?.dados_formatados?.dados || null\n      }\n    },\n    status: {\n      milho: milho?.status || 'erro'\n    }\n  };\n\n  return [{ json: cotacoesConsolidadas }];\n\n} catch (error) {\n  return [{\n    json: {\n      erro: 'Erro ao consolidar cotações: ' + error.message,\n      timestamp: new Date().toISOString(),\n      status: 'erro_consolidacao'\n    }\n  }];\n}"
+      },
+      "id": "7fa17d7c-5297-4884-864c-9916dec26e6a",
+      "name": "📊 Consolidador de Cotações1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -32,
+        -3936
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Retornar o JSON consolidado final\nconst dadosConsolidados = $input.first().json;\n\nreturn [{\n  json: {\n    mensagem: 'Cotações consolidadas com sucesso!',\n    dados: dadosConsolidados,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "9cb47ae7-3f62-4672-ba44-c82b366ebf84",
+      "name": "📋 Resposta Final Consolidada1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        176,
+        -3936
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  // Receber dados do salvamento\n  const dadosSalvos = $input.first().json;\n  \n  return [{\n    json: {\n      status: 'sistema_completo',\n      mensagem: 'Sistema de consolidação executado com sucesso!',\n      resultado: dadosSalvos,\n      total_cotacoes: 7,\n      timestamp_final: new Date().toISOString(),\n      resumo: {\n        commodities_agricolas: 3,\n        commodities_materiais: 2,\n        moedas: 2,\n        status_geral: dadosSalvos.status\n      }\n    }\n  }];\n  \n} catch (error) {\n  return [{ json: {\n    status: 'erro_sistema',\n    erro: 'Erro no sistema final: ' + error.message,\n    timestamp: new Date().toISOString()\n  } }];\n}"
+      },
+      "id": "053474d0-8e2b-4b3f-8167-f5e0eb833e0a",
+      "name": "📋 Resposta Final do Sistema1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        352,
+        -3936
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://br.investing.com/commodities/us-soybeans?cid=964523",
+        "responseFormat": "string",
+        "options": {}
+      },
+      "id": "264569ab-b49e-418d-8797-cb45bbfc8def",
+      "name": "🌐 Buscar Soja",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        -1104,
+        -3936
+      ]
+    },
+    {
+      "parameters": {
+        "extractionValues": {
+          "values": [
+            {
+              "key": "preco",
+              "cssSelector": "span[data-test='instrument-price-last'], .text-2xl, .instrument-price_instrument-price__*, [data-test*='price'], #last_last"
+            },
+            {
+              "key": "fechamento_anterior",
+              "cssSelector": "[data-test='instrument-prev-close'], .prev-close, [class*='prev'], [class*='previous'], [class*='close'], td:contains('Fechamento Anterior') + td, .instrument-metadata_instrument-metadata__kv__value, [data-test='prev-close'], .prev-close-value"
+            },
+            {
+              "key": "abertura",
+              "cssSelector": "[data-test='instrument-open'], .open, [class*='open'], td:contains('Abertura') + td, .instrument-metadata_instrument-metadata__kv__value, [data-test='open'], .open-value"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0143a591-f97b-46f5-ba2f-dadfaf018b1c",
+      "name": "🔍 Extrair Preço2",
+      "type": "n8n-nodes-base.htmlExtract",
+      "typeVersion": 1,
+      "position": [
+        -912,
+        -3216
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Verifica se veio dados do nó anterior\nif ($input.first() === undefined) {\n  return [{ json: { \n    erro: 'Nenhum dado recebido do nó anterior.', \n    timestamp: new Date().toISOString() \n  } }];\n}\n\n// Pega os dados extraídos do HTML\nlet precoExtraido = $input.first().json.preco;\nlet fechamentoAnterior = $input.first().json.fechamento_anterior;\nlet abertura = $input.first().json.abertura;\n\n// Verifica se o preço foi encontrado\nif (precoExtraido === undefined || precoExtraido === null || precoExtraido === '') {\n  return [{ json: { \n    ativo: 'Boi Gordo (Investing.com)',\n    erro: 'Preço não encontrado com nenhum seletor CSS. Estrutura do site pode ter mudado.',\n    timestamp: new Date().toISOString(),\n    status: 'erro'\n  } }];\n}\n\n// Função para processar valores numéricos\nfunction processarValor(valor) {\n  if (!valor || valor === '') return null;\n  \n  try {\n    let valorLimpo = valor\n      .replace(/\\s/g, '')\n      .replace(/[R$]/g, '')\n      .replace(/\\./g, '')\n      .replace(/,/g, '.');\n    \n    let valorNumerico = parseFloat(valorLimpo);\n    return isNaN(valorNumerico) ? null : valorNumerico;\n  } catch (error) {\n    return null;\n  }\n}\n\n// Tenta converter o preço\ntry {\n  let precoNumerico = processarValor(precoExtraido);\n  \n  if (precoNumerico === null) {\n    throw new Error('Conversão para número falhou: ' + precoExtraido);\n  }\n  \n  // Processa fechamento anterior\n  let fechamentoAnteriorNumerico = processarValor(fechamentoAnterior);\n  \n  // Processa abertura\n  let aberturaNumerico = processarValor(abertura);\n  \n  return [{ json: {\n    ativo: 'Boi Gordo (Investing.com)',\n    preco: precoNumerico,\n    preco_original: precoExtraido,\n    fechamento_anterior: fechamentoAnteriorNumerico,\n    fechamento_anterior_original: fechamentoAnterior,\n    abertura: aberturaNumerico,\n    abertura_original: abertura,\n    moeda: 'BRL',\n    fonte: 'Investing.com',\n    timestamp: new Date().toISOString(),\n    status: 'sucesso'\n  } }];\n} catch (error) {\n  return [{ json: {\n    ativo: 'Boi Gordo (Investing.com)',\n    erro: 'Erro na conversão: ' + error.message,\n    preco_original: precoExtraido,\n    fechamento_anterior_original: fechamentoAnterior,\n    abertura_original: abertura,\n    timestamp: new Date().toISOString(),\n    status: 'erro'\n  } }];\n}"
+      },
+      "id": "9da37887-7f9d-4b2c-a0d5-f268394382cf",
+      "name": "⚙️ Processar Dados2",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -736,
+        -3216
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  const jsonResponse = $input.first().json;\n  const originalData = $('⚙️ Processar Dados2').first().json;\n\n  if (jsonResponse.status === 'erro') {\n    return [{\n      json: {\n        status: 'erro_json',\n        erro: jsonResponse.erro,\n        dados_originais: originalData,\n        timestamp: new Date().toISOString()\n      }\n    }];\n  }\n\n  return [{\n    json: {\n      status: 'sucesso',\n      mensagem: 'Dados salvos no JSON com sucesso',\n      dados_salvos: originalData,\n      arquivo: jsonResponse.arquivo,\n      timestamp: new Date().toISOString()\n    }\n  }];\n\n} catch (error) {\n  return [{\n    json: {\n      status: 'erro_final',\n      erro: 'Erro na resposta final: ' + error.message,\n      timestamp: new Date().toISOString()\n    }\n  }];\n}"
+      },
+      "id": "24744c2b-1489-4e67-8537-b89887b5a006",
+      "name": "📋 Resposta Final2",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -224,
+        -3216
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  // Coletar apenas os dados do milho\n  const milho = $('💾 Salvar no JSON2').first()?.json || null;\n\n  // Estruturar JSON final apenas com milho\n  const cotacoesConsolidadas = {\n    metadata: {\n      timestamp: new Date().toISOString(),\n      data_coleta: new Date().toLocaleDateString('pt-BR'),\n      total_ativos: milho ? 1 : 0,\n      fonte: 'Investing.com'\n    },\n    commodities: {\n      agricolas: {\n        milho: milho?.dados_formatados?.dados || null\n      }\n    },\n    status: {\n      milho: milho?.status || 'erro'\n    }\n  };\n\n  return [{ json: cotacoesConsolidadas }];\n\n} catch (error) {\n  return [{\n    json: {\n      erro: 'Erro ao consolidar cotações: ' + error.message,\n      timestamp: new Date().toISOString(),\n      status: 'erro_consolidacao'\n    }\n  }];\n}"
+      },
+      "id": "64439d65-38e3-4891-af9a-dee0d6c711ab",
+      "name": "📊 Consolidador de Cotações2",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -48,
+        -3216
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Retornar o JSON consolidado final\nconst dadosConsolidados = $input.first().json;\n\nreturn [{\n  json: {\n    mensagem: 'Cotações consolidadas com sucesso!',\n    dados: dadosConsolidados,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "a40be307-bd39-450d-ae99-bfd10f331e23",
+      "name": "📋 Resposta Final Consolidada2",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        160,
+        -3216
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  // Receber dados do salvamento\n  const dadosSalvos = $input.first().json;\n  \n  return [{\n    json: {\n      status: 'sistema_completo',\n      mensagem: 'Sistema de consolidação executado com sucesso!',\n      resultado: dadosSalvos,\n      total_cotacoes: 7,\n      timestamp_final: new Date().toISOString(),\n      resumo: {\n        commodities_agricolas: 3,\n        commodities_materiais: 2,\n        moedas: 2,\n        status_geral: dadosSalvos.status\n      }\n    }\n  }];\n  \n} catch (error) {\n  return [{ json: {\n    status: 'erro_sistema',\n    erro: 'Erro no sistema final: ' + error.message,\n    timestamp: new Date().toISOString()\n  } }];\n}"
+      },
+      "id": "b52d7232-9aaa-4c32-9dad-a86d44dd76d5",
+      "name": "📋 Resposta Final do Sistema2",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        336,
+        -3216
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://br.investing.com/commodities/live-cattle?cid=964528\t",
+        "responseFormat": "string",
+        "options": {}
+      },
+      "id": "14f80300-5ce2-4c69-80e6-7c64767e6575",
+      "name": "🌐 Buscar Boi Gordo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        -1104,
+        -3216
+      ]
+    },
+    {
+      "parameters": {
+        "extractionValues": {
+          "values": [
+            {
+              "key": "preco",
+              "cssSelector": "span[data-test='instrument-price-last'], .text-2xl, .instrument-price_instrument-price__*, [data-test*='price'], #last_last"
+            },
+            {
+              "key": "fechamento_anterior",
+              "cssSelector": "[data-test='instrument-prev-close'], .prev-close, [class*='prev'], [class*='previous'], [class*='close'], td:contains('Fechamento Anterior') + td, .instrument-metadata_instrument-metadata__kv__value, [data-test='prev-close'], .prev-close-value"
+            },
+            {
+              "key": "abertura",
+              "cssSelector": "[data-test='instrument-open'], .open, [class*='open'], td:contains('Abertura') + td, .instrument-metadata_instrument-metadata__kv__value, [data-test='open'], .open-value"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "551d06ce-7eaf-4d74-8c28-25d6860185ab",
+      "name": "🔍 Extrair Preço3",
+      "type": "n8n-nodes-base.htmlExtract",
+      "typeVersion": 1,
+      "position": [
+        -912,
+        -3488
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Verifica se veio dados do nó anterior\nif ($input.first() === undefined) {\n  return [{ json: { \n    erro: 'Nenhum dado recebido do nó anterior.', \n    timestamp: new Date().toISOString() \n  } }];\n}\n\n// Pega os dados extraídos do HTML\nlet precoExtraido = $input.first().json.preco;\nlet fechamentoAnterior = $input.first().json.fechamento_anterior;\nlet abertura = $input.first().json.abertura;\n\n// Verifica se o preço foi encontrado\nif (precoExtraido === undefined || precoExtraido === null || precoExtraido === '') {\n  return [{ json: { \n    ativo: 'Carbono (Investing.com)',\n    erro: 'Preço não encontrado com nenhum seletor CSS. Estrutura do site pode ter mudado.',\n    timestamp: new Date().toISOString(),\n    status: 'erro'\n  } }];\n}\n\n// Função para processar valores numéricos\nfunction processarValor(valor) {\n  if (!valor || valor === '') return null;\n  \n  try {\n    let valorLimpo = valor\n      .replace(/\\s/g, '')\n      .replace(/[R$]/g, '')\n      .replace(/\\./g, '')\n      .replace(/,/g, '.');\n    \n    let valorNumerico = parseFloat(valorLimpo);\n    return isNaN(valorNumerico) ? null : valorNumerico;\n  } catch (error) {\n    return null;\n  }\n}\n\n// Tenta converter o preço\ntry {\n  let precoNumerico = processarValor(precoExtraido);\n  \n  if (precoNumerico === null) {\n    throw new Error('Conversão para número falhou: ' + precoExtraido);\n  }\n  \n  // Processa fechamento anterior\n  let fechamentoAnteriorNumerico = processarValor(fechamentoAnterior);\n  \n  // Processa abertura\n  let aberturaNumerico = processarValor(abertura);\n  \n  return [{ json: {\n    ativo: 'Carbono (Investing.com)',\n    preco: precoNumerico,\n    preco_original: precoExtraido,\n    fechamento_anterior: fechamentoAnteriorNumerico,\n    fechamento_anterior_original: fechamentoAnterior,\n    abertura: aberturaNumerico,\n    abertura_original: abertura,\n    moeda: 'EUR',\n    fonte: 'Investing.com',\n    timestamp: new Date().toISOString(),\n    status: 'sucesso'\n  } }];\n} catch (error) {\n  return [{ json: {\n    ativo: 'Carbono (Investing.com)',\n    erro: 'Erro na conversão: ' + error.message,\n    preco_original: precoExtraido,\n    fechamento_anterior_original: fechamentoAnterior,\n    abertura_original: abertura,\n    timestamp: new Date().toISOString(),\n    status: 'erro'\n  } }];\n}"
+      },
+      "id": "b6ff483c-d55e-4124-845a-0e4797fe27b7",
+      "name": "⚙️ Processar Dados3",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -736,
+        -3488
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  const jsonResponse = $input.first().json;\n  const originalData = $('⚙️ Processar Dados3').first().json;\n\n  if (jsonResponse.status === 'erro') {\n    return [{\n      json: {\n        status: 'erro_json',\n        erro: jsonResponse.erro,\n        dados_originais: originalData,\n        timestamp: new Date().toISOString()\n      }\n    }];\n  }\n\n  return [{\n    json: {\n      status: 'sucesso',\n      mensagem: 'Dados salvos no JSON com sucesso',\n      dados_salvos: originalData,\n      arquivo: jsonResponse.arquivo,\n      timestamp: new Date().toISOString()\n    }\n  }];\n\n} catch (error) {\n  return [{\n    json: {\n      status: 'erro_final',\n      erro: 'Erro na resposta final: ' + error.message,\n      timestamp: new Date().toISOString()\n    }\n  }];\n}"
+      },
+      "id": "7a8291f3-bc7a-42c1-bc35-b314bda356c0",
+      "name": "📋 Resposta Final3",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -224,
+        -3488
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  // Coletar apenas os dados do milho\n  const milho = $('💾 Salvar no JSON3').first()?.json || null;\n\n  // Estruturar JSON final apenas com milho\n  const cotacoesConsolidadas = {\n    metadata: {\n      timestamp: new Date().toISOString(),\n      data_coleta: new Date().toLocaleDateString('pt-BR'),\n      total_ativos: milho ? 1 : 0,\n      fonte: 'Investing.com'\n    },\n    commodities: {\n      agricolas: {\n        milho: milho?.dados_formatados?.dados || null\n      }\n    },\n    status: {\n      milho: milho?.status || 'erro'\n    }\n  };\n\n  return [{ json: cotacoesConsolidadas }];\n\n} catch (error) {\n  return [{\n    json: {\n      erro: 'Erro ao consolidar cotações: ' + error.message,\n      timestamp: new Date().toISOString(),\n      status: 'erro_consolidacao'\n    }\n  }];\n}"
+      },
+      "id": "bc3315eb-17af-4d70-a627-6a67127fd3f6",
+      "name": "📊 Consolidador de Cotações3",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -48,
+        -3488
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Retornar o JSON consolidado final\nconst dadosConsolidados = $input.first().json;\n\nreturn [{\n  json: {\n    mensagem: 'Cotações consolidadas com sucesso!',\n    dados: dadosConsolidados,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "90f50f71-b472-4e29-b7f3-e08e866c2257",
+      "name": "📋 Resposta Final Consolidada3",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        160,
+        -3488
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  // Receber dados do salvamento\n  const dadosSalvos = $input.first().json;\n  \n  return [{\n    json: {\n      status: 'sistema_completo',\n      mensagem: 'Sistema de consolidação executado com sucesso!',\n      resultado: dadosSalvos,\n      total_cotacoes: 7,\n      timestamp_final: new Date().toISOString(),\n      resumo: {\n        commodities_agricolas: 3,\n        commodities_materiais: 2,\n        moedas: 2,\n        status_geral: dadosSalvos.status\n      }\n    }\n  }];\n  \n} catch (error) {\n  return [{ json: {\n    status: 'erro_sistema',\n    erro: 'Erro no sistema final: ' + error.message,\n    timestamp: new Date().toISOString()\n  } }];\n}"
+      },
+      "id": "3e1c0226-f7b7-42b0-b21f-7df4b6902e96",
+      "name": "📋 Resposta Final do Sistema3",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        336,
+        -3488
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://br.investing.com/commodities/carbon-emissions ",
+        "responseFormat": "string",
+        "options": {}
+      },
+      "id": "6c96ffc4-fde5-4cb5-97db-cfba1a9f6f67",
+      "name": "🌐 Buscar Carbono",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        -1104,
+        -3488
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  const jsonResponse = $input.first().json;\n  const originalData = $('⚙️ Processar Dados4').first().json;\n\n  if (jsonResponse.status === 'erro') {\n    return [{\n      json: {\n        status: 'erro_json',\n        erro: jsonResponse.erro,\n        dados_originais: originalData,\n        timestamp: new Date().toISOString()\n      }\n    }];\n  }\n\n  return [{\n    json: {\n      status: 'sucesso',\n      mensagem: 'Dados salvos no JSON com sucesso',\n      dados_salvos: originalData,\n      arquivo: jsonResponse.arquivo,\n      timestamp: new Date().toISOString()\n    }\n  }];\n\n} catch (error) {\n  return [{\n    json: {\n      status: 'erro_final',\n      erro: 'Erro na resposta final: ' + error.message,\n      timestamp: new Date().toISOString()\n    }\n  }];\n}"
+      },
+      "id": "a0cccba7-53ae-4997-a98c-424e72de634c",
+      "name": "📋 Resposta Final4",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -208,
+        -4176
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  // Coletar apenas os dados do milho\n  const milho = $('💾 Salvar no JSON4').first()?.json || null;\n\n  // Estruturar JSON final apenas com milho\n  const cotacoesConsolidadas = {\n    metadata: {\n      timestamp: new Date().toISOString(),\n      data_coleta: new Date().toLocaleDateString('pt-BR'),\n      total_ativos: milho ? 1 : 0,\n      fonte: 'Investing.com'\n    },\n    commodities: {\n      agricolas: {\n        milho: milho?.dados_formatados?.dados || null\n      }\n    },\n    status: {\n      milho: milho?.status || 'erro'\n    }\n  };\n\n  return [{ json: cotacoesConsolidadas }];\n\n} catch (error) {\n  return [{\n    json: {\n      erro: 'Erro ao consolidar cotações: ' + error.message,\n      timestamp: new Date().toISOString(),\n      status: 'erro_consolidacao'\n    }\n  }];\n}"
+      },
+      "id": "d5936021-d03c-43ca-8527-c3f1a3a6ac11",
+      "name": "📊 Consolidador de Cotações4",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -32,
+        -4176
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Retornar o JSON consolidado final\nconst dadosConsolidados = $input.first().json;\n\nreturn [{\n  json: {\n    mensagem: 'Cotações consolidadas com sucesso!',\n    dados: dadosConsolidados,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "29a7b9b1-1226-4707-aff5-cce9888d40a3",
+      "name": "📋 Resposta Final Consolidada4",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        176,
+        -4176
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  // Receber dados do salvamento\n  const dadosSalvos = $input.first().json;\n  \n  return [{\n    json: {\n      status: 'sistema_completo',\n      mensagem: 'Sistema de consolidação executado com sucesso!',\n      resultado: dadosSalvos,\n      total_cotacoes: 7,\n      timestamp_final: new Date().toISOString(),\n      resumo: {\n        commodities_agricolas: 3,\n        commodities_materiais: 2,\n        moedas: 2,\n        status_geral: dadosSalvos.status\n      }\n    }\n  }];\n  \n} catch (error) {\n  return [{ json: {\n    status: 'erro_sistema',\n    erro: 'Erro no sistema final: ' + error.message,\n    timestamp: new Date().toISOString()\n  } }];\n}"
+      },
+      "id": "88a1f102-74ea-4fc5-b92c-60b5b9e8cec7",
+      "name": "📋 Resposta Final do Sistema4",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        352,
+        -4176
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://br.investing.com/currencies/usd-brl-historical-data",
+        "responseFormat": "string",
+        "options": {}
+      },
+      "id": "a7322715-7442-4fb3-aa16-e189464319c2",
+      "name": "🌐 Buscar USD/BRL",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        -1104,
+        -4384
+      ]
+    },
+    {
+      "parameters": {
+        "extractionValues": {
+          "values": [
+            {
+              "key": "preco",
+              "cssSelector": "span[data-test='instrument-price-last'], .text-2xl, .instrument-price_instrument-price__*, [data-test*='price'], #last_last"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "7704ab1f-7beb-4303-818d-f4a536df9b52",
+      "name": "🔍 Extrair Preço5",
+      "type": "n8n-nodes-base.htmlExtract",
+      "typeVersion": 1,
+      "position": [
+        -912,
+        -4384
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  const inputData = $input.first().json;\n\n  if (inputData.erro) {\n    return [{ json: inputData }];\n  }\n\n  // Preparar dados para o Firebase Firestore\n  const currentDate = new Date().toISOString().split('T')[0]; // \"2025-10-08\"\n  const [year, month, day] = currentDate.split('-');\n  const brazilianDate = `${day}/${month}/${year}`;\n  \n  return [\n    {\n      json: {\n        ativo: 'USD/BRL',\n        data: brazilianDate,\n        ultimo: inputData.preco,\n        abertura: inputData.preco,\n        maxima: inputData.preco,\n        minima: inputData.preco,\n        volume: null,\n        variacao_pct: null,\n        moeda: inputData.moeda,\n        fonte: inputData.fonte,\n        timestamp: inputData.timestamp,\n        status: inputData.status,\n        documentId: currentDate  // ← Reutiliza a variável! ✅\n      }\n    }\n  ];\n} catch (error) {\n  return [\n    {\n      json: {\n        erro: \"Erro ao preparar Firebase: \" + error.message,\n        timestamp: new Date().toISOString(),\n        status: \"erro_firebase_prep\",\n      },\n    },\n  ];\n}"
+      },
+      "id": "f7df3bc9-9669-4959-bd3b-c3e4314da6c8",
+      "name": "🔑 Preparar Firebase5",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -560,
+        -4384
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "upsert",
+        "projectId": "ucs-index-tracker",
+        "collection": "usd",
+        "updateKey": "documentId",
+        "columns": "ativo,data,ultimo,abertura,maxima,minima,volume,variacao_pct,moeda,fonte,timestamp,status,documentId"
+      },
+      "id": "d5dd3672-68ba-4c9b-846c-e0a2e2ed0cca",
+      "name": "💾 Salvar no Firebase5",
+      "type": "n8n-nodes-base.googleFirebaseCloudFirestore",
+      "typeVersion": 1,
+      "position": [
+        -400,
+        -4384
+      ],
+      "credentials": {
+        "googleApi": {
+          "id": "Dqr74c3ldFzCyUyS",
+          "name": "Google Firebase Cloud Firestore account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://br.investing.com/currencies/eur-brl-historical-data",
+        "responseFormat": "string",
+        "options": {}
+      },
+      "id": "d5bf27da-2cc1-40e0-9298-48e167aa696d",
+      "name": "🌐 Buscar EUR/BRL",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        -1104,
+        -3712
+      ]
+    },
+    {
+      "parameters": {
+        "extractionValues": {
+          "values": [
+            {
+              "key": "preco",
+              "cssSelector": "span[data-test='instrument-price-last'], .text-2xl, .instrument-price_instrument-price__*, [data-test*='price'], #last_last"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "7e70aa8a-8056-42b0-905c-d4a37fc6832a",
+      "name": "🔍 Extrair Preço6",
+      "type": "n8n-nodes-base.htmlExtract",
+      "typeVersion": 1,
+      "position": [
+        -912,
+        -3712
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  const inputData = $input.first().json;\n\n  if (inputData.erro) {\n    return [{ json: inputData }];\n  }\n\n  // Preparar dados para o Firebase Firestore\n  const currentDate = new Date().toISOString().split(\"T\")[0];\n  const [year, month, day] = currentDate.split(\"-\");\n  const brazilianDate = `${day}/${month}/${year}`;\n\n  return [\n    {\n      json: {\n        ativo: \"EUR/BRL\",\n        data: brazilianDate,\n        ultimo: inputData.preco,\n        abertura: inputData.preco,\n        maxima: inputData.preco,\n        minima: inputData.preco,\n        volume: null,\n        variacao_pct: null,\n        moeda: inputData.moeda,\n        fonte: inputData.fonte,\n        timestamp: inputData.timestamp,\n        status: inputData.status,\n        documentId: currentDate, // ← ADICIONAR AQUI! ✅\n      },\n    },\n  ];\n} catch (error) {\n  return [\n    {\n      json: {\n        erro: \"Erro ao preparar Firebase: \" + error.message,\n        timestamp: new Date().toISOString(),\n        status: \"erro_firebase_prep\",\n      },\n    },\n  ];\n}\n"
+      },
+      "id": "26e55abf-8792-424e-9b41-eb98a5ac5d9f",
+      "name": "🔑 Preparar Firebase6",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -560,
+        -3712
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "upsert",
+        "projectId": "ucs-index-tracker",
+        "collection": "eur",
+        "updateKey": "documentId",
+        "columns": "=ativo,data,ultimo,abertura,maxima,minima,volume,variacao_pct,moeda,fonte,timestamp,status,documentId"
+      },
+      "id": "937b34c4-68cf-4498-b253-939087deb760",
+      "name": "💾 Salvar no Firebase6",
+      "type": "n8n-nodes-base.googleFirebaseCloudFirestore",
+      "typeVersion": 1,
+      "position": [
+        -400,
+        -3712
+      ],
+      "credentials": {
+        "googleApi": {
+          "id": "Dqr74c3ldFzCyUyS",
+          "name": "Google Firebase Cloud Firestore account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "upsert",
+        "projectId": "ucs-index-tracker",
+        "collection": "milho",
+        "updateKey": "documentId",
+        "columns": "=ativo,data,ultimo,abertura,maxima,minima,volume,variacao_pct,moeda,fonte,timestamp,status,fechamento_anterior, ton, rent_media,documentId"
+      },
+      "id": "61a11661-24ba-4416-a6c3-8f5a3633d26f",
+      "name": "💾 Salvar no Firebase7",
+      "type": "n8n-nodes-base.googleFirebaseCloudFirestore",
+      "typeVersion": 1,
+      "position": [
+        -400,
+        -2992
+      ],
+      "credentials": {
+        "googleApi": {
+          "id": "Dqr74c3ldFzCyUyS",
+          "name": "Google Firebase Cloud Firestore account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "upsert",
+        "projectId": "ucs-index-tracker",
+        "collection": "soja",
+        "updateKey": "documentId",
+        "columns": "=ativo, data, ultimo, ultimo_brl, fechamento_anterior, abertura, maxima, minima, ton, ton, rent_media, cotacao_dolar, moeda, fonte, timestamp, status, dolar_timestamp,documentId"
+      },
+      "id": "59d30495-69ee-464a-a9e7-5468a946ade9",
+      "name": "💾 Salvar no Firebase8",
+      "type": "n8n-nodes-base.googleFirebaseCloudFirestore",
+      "typeVersion": 1,
+      "position": [
+        -400,
+        -3936
+      ],
+      "credentials": {
+        "googleApi": {
+          "id": "Dqr74c3ldFzCyUyS",
+          "name": "Google Firebase Cloud Firestore account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  const jsonResponse = $input.first().json;\n  const originalData = $('⚙️ Processar Dados1').first().json;\n\n  if (jsonResponse.status === 'erro') {\n    return [{\n      json: {\n        status: 'erro_json',\n        erro: jsonResponse.erro,\n        dados_originais: originalData,\n        timestamp: new Date().toISOString()\n      }\n    }];\n  }\n\n  return [{\n    json: {\n      status: 'sucesso',\n      mensagem: 'Dados salvos no JSON com sucesso',\n      dados_salvos: originalData,\n      arquivo: jsonResponse.arquivo,\n      timestamp: new Date().toISOString()\n    }\n  }];\n\n} catch (error) {\n  return [{\n    json: {\n      status: 'erro_final',\n      erro: 'Erro na resposta final: ' + error.message,\n      timestamp: new Date().toISOString()\n    }\n  }];\n}"
+      },
+      "id": "3bd9f9bd-2aea-4759-992d-875ed0ecacda",
+      "name": "📋 Resposta Final5",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -224,
+        -3712
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  // Coletar apenas os dados do milho\n  const milho = $('💾 Salvar no JSON1').first()?.json || null;\n\n  // Estruturar JSON final apenas com milho\n  const cotacoesConsolidadas = {\n    metadata: {\n      timestamp: new Date().toISOString(),\n      data_coleta: new Date().toLocaleDateString('pt-BR'),\n      total_ativos: milho ? 1 : 0,\n      fonte: 'Investing.com'\n    },\n    commodities: {\n      agricolas: {\n        milho: milho?.dados_formatados?.dados || null\n      }\n    },\n    status: {\n      milho: milho?.status || 'erro'\n    }\n  };\n\n  return [{ json: cotacoesConsolidadas }];\n\n} catch (error) {\n  return [{\n    json: {\n      erro: 'Erro ao consolidar cotações: ' + error.message,\n      timestamp: new Date().toISOString(),\n      status: 'erro_consolidacao'\n    }\n  }];\n}"
+      },
+      "id": "6658d333-08f4-47ad-92a1-c1f6dc3ee2ba",
+      "name": "📊 Consolidador de Cotações5",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -32,
+        -3712
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Retornar o JSON consolidado final\nconst dadosConsolidados = $input.first().json;\n\nreturn [{\n  json: {\n    mensagem: 'Cotações consolidadas com sucesso!',\n    dados: dadosConsolidados,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "63bb0776-10cc-42ec-a83d-7e840dd8819d",
+      "name": "📋 Resposta Final Consolidada5",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        176,
+        -3712
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  // Receber dados do salvamento\n  const dadosSalvos = $input.first().json;\n  \n  return [{\n    json: {\n      status: 'sistema_completo',\n      mensagem: 'Sistema de consolidação executado com sucesso!',\n      resultado: dadosSalvos,\n      total_cotacoes: 7,\n      timestamp_final: new Date().toISOString(),\n      resumo: {\n        commodities_agricolas: 3,\n        commodities_materiais: 2,\n        moedas: 2,\n        status_geral: dadosSalvos.status\n      }\n    }\n  }];\n  \n} catch (error) {\n  return [{ json: {\n    status: 'erro_sistema',\n    erro: 'Erro no sistema final: ' + error.message,\n    timestamp: new Date().toISOString()\n  } }];\n}"
+      },
+      "id": "47eeae51-3c54-49fd-95b9-29247c0cf6c8",
+      "name": "📋 Resposta Final do Sistema5",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        352,
+        -3712
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  const jsonResponse = $input.first().json;\n  const originalData = $('⚙️ Processar Dados1').first().json;\n\n  if (jsonResponse.status === 'erro') {\n    return [{\n      json: {\n        status: 'erro_json',\n        erro: jsonResponse.erro,\n        dados_originais: originalData,\n        timestamp: new Date().toISOString()\n      }\n    }];\n  }\n\n  return [{\n    json: {\n      status: 'sucesso',\n      mensagem: 'Dados salvos no JSON com sucesso',\n      dados_salvos: originalData,\n      arquivo: jsonResponse.arquivo,\n      timestamp: new Date().toISOString()\n    }\n  }];\n\n} catch (error) {\n  return [{\n    json: {\n      status: 'erro_final',\n      erro: 'Erro na resposta final: ' + error.message,\n      timestamp: new Date().toISOString()\n    }\n  }];\n}"
+      },
+      "id": "fd8f4dce-5914-47f9-8c04-3b67711d5d88",
+      "name": "📋 Resposta Final6",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -224,
+        -4384
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  // Coletar apenas os dados do milho\n  const milho = $('💾 Salvar no JSON1').first()?.json || null;\n\n  // Estruturar JSON final apenas com milho\n  const cotacoesConsolidadas = {\n    metadata: {\n      timestamp: new Date().toISOString(),\n      data_coleta: new Date().toLocaleDateString('pt-BR'),\n      total_ativos: milho ? 1 : 0,\n      fonte: 'Investing.com'\n    },\n    commodities: {\n      agricolas: {\n        milho: milho?.dados_formatados?.dados || null\n      }\n    },\n    status: {\n      milho: milho?.status || 'erro'\n    }\n  };\n\n  return [{ json: cotacoesConsolidadas }];\n\n} catch (error) {\n  return [{\n    json: {\n      erro: 'Erro ao consolidar cotações: ' + error.message,\n      timestamp: new Date().toISOString(),\n      status: 'erro_consolidacao'\n    }\n  }];\n}"
+      },
+      "id": "a6415e60-86cb-4ca0-8a71-f93de3cd0a9c",
+      "name": "📊 Consolidador de Cotações6",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -32,
+        -4384
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Retornar o JSON consolidado final\nconst dadosConsolidados = $input.first().json;\n\nreturn [{\n  json: {\n    mensagem: 'Cotações consolidadas com sucesso!',\n    dados: dadosConsolidados,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "e4ddcd4a-763e-452e-a62a-c229b8bc3a0d",
+      "name": "📋 Resposta Final Consolidada6",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        176,
+        -4384
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  // Receber dados do salvamento\n  const dadosSalvos = $input.first().json;\n  \n  return [{\n    json: {\n      status: 'sistema_completo',\n      mensagem: 'Sistema de consolidação executado com sucesso!',\n      resultado: dadosSalvos,\n      total_cotacoes: 7,\n      timestamp_final: new Date().toISOString(),\n      resumo: {\n        commodities_agricolas: 3,\n        commodities_materiais: 2,\n        moedas: 2,\n        status_geral: dadosSalvos.status\n      }\n    }\n  }];\n  \n} catch (error) {\n  return [{ json: {\n    status: 'erro_sistema',\n    erro: 'Erro no sistema final: ' + error.message,\n    timestamp: new Date().toISOString()\n  } }];\n}"
+      },
+      "id": "de3c4829-a6f0-4ea7-88a3-539cf46a66ae",
+      "name": "📋 Resposta Final do Sistema6",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        352,
+        -4384
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "upsert",
+        "projectId": "ucs-index-tracker",
+        "collection": "boi_gordo",
+        "updateKey": "documentId",
+        "columns": "=ativo,data,ultimo,abertura,maxima,minima,volume,variacao_pct,moeda,fonte,timestamp,status,fechamento_anterior, ton, rent_media, documentId"
+      },
+      "id": "9cdac578-8ec9-47e7-8576-acf1d71ca965",
+      "name": "💾 Salvar no Firebase",
+      "type": "n8n-nodes-base.googleFirebaseCloudFirestore",
+      "typeVersion": 1,
+      "position": [
+        -400,
+        -3216
+      ],
+      "credentials": {
+        "googleApi": {
+          "id": "Dqr74c3ldFzCyUyS",
+          "name": "Google Firebase Cloud Firestore account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "upsert",
+        "projectId": "ucs-index-tracker",
+        "collection": "carbono",
+        "updateKey": "documentId",
+        "columns": "=ativo, data, ultimo, ultimo_brl, abertura, maxima, minima, volume, variacao_pct, rent_media, cotacao_euro, moeda, fonte, timestamp, status,  euro_timestamp, documentId"
+      },
+      "id": "ac24feb8-48f6-4f7b-bb1d-083a90b81915",
+      "name": "💾 Salvar no Firebase1",
+      "type": "n8n-nodes-base.googleFirebaseCloudFirestore",
+      "typeVersion": 1,
+      "position": [
+        -400,
+        -3488
+      ],
+      "credentials": {
+        "googleApi": {
+          "id": "Dqr74c3ldFzCyUyS",
+          "name": "Google Firebase Cloud Firestore account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "upsert",
+        "projectId": "ucs-index-tracker",
+        "collection": "madeira",
+        "updateKey": "documentId",
+        "columns": "=ativo, data, ultimo, abertura, maxima, minima, madeira_tora_usd, rent_media, cotacao_dolar, moeda, fonte, timestamp, status, dolar_timestamp,documentId"
+      },
+      "id": "f9d032f2-3294-49da-b4b5-b54ddbe8a6f6",
+      "name": "💾 Salvar no Firebase2",
+      "type": "n8n-nodes-base.googleFirebaseCloudFirestore",
+      "typeVersion": 1,
+      "position": [
+        -400,
+        -4176
+      ],
+      "credentials": {
+        "googleApi": {
+          "id": "Dqr74c3ldFzCyUyS",
+          "name": "Google Firebase Cloud Firestore account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "extractionValues": {
+          "values": [
+            {
+              "key": "preco",
+              "cssSelector": "span[data-test='instrument-price-last'], .text-2xl, .instrument-price_instrument-price__*, [data-test*='price'], #last_last"
+            },
+            {
+              "key": "fechamento_anterior",
+              "cssSelector": "[data-test='instrument-prev-close'], .prev-close, [class*='prev'], [class*='previous'], [class*='close'], td:contains('Fechamento Anterior') + td, .instrument-metadata_instrument-metadata__kv__value, [data-test='prev-close'], .prev-close-value"
+            },
+            {
+              "key": "abertura",
+              "cssSelector": "[data-test='instrument-open'], .open, [class*='open'], td:contains('Abertura') + td, .instrument-metadata_instrument-metadata__kv__value, [data-test='open'], .open-value"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "969c7324-570d-497f-976d-3adfa8d29087",
+      "name": "🔍 Extrair Preço9",
+      "type": "n8n-nodes-base.htmlExtract",
+      "typeVersion": 1,
+      "position": [
+        -912,
+        -4176
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Verifica se veio dados do nó anterior\nif ($input.first() === undefined) {\n  return [{ json: { \n    erro: 'Nenhum dado recebido do nó anterior.', \n    timestamp: new Date().toISOString() \n  } }];\n}\n\n// Pega os dados extraídos do HTML\nlet precoExtraido = $input.first().json.preco;\nlet fechamentoAnterior = $input.first().json.fechamento_anterior;\nlet abertura = $input.first().json.abertura;\n\n// Verifica se o preço foi encontrado\nif (precoExtraido === undefined || precoExtraido === null || precoExtraido === '') {\n  return [{ json: { \n    ativo: 'Madeira Serrada (Investing.com)',\n    erro: 'Preço não encontrado com nenhum seletor CSS. Estrutura do site pode ter mudado.',\n    timestamp: new Date().toISOString(),\n    status: 'erro'\n  } }];\n}\n\n// Função para processar valores numéricos\nfunction processarValor(valor) {\n  if (!valor || valor === '') return null;\n  \n  try {\n    let valorLimpo = valor\n      .replace(/\\s/g, '')\n      .replace(/[R$]/g, '')\n      .replace(/\\./g, '')\n      .replace(/,/g, '.');\n    \n    let valorNumerico = parseFloat(valorLimpo);\n    return isNaN(valorNumerico) ? null : valorNumerico;\n  } catch (error) {\n    return null;\n  }\n}\n\n// Tenta converter o preço\ntry {\n  let precoNumerico = processarValor(precoExtraido);\n  \n  if (precoNumerico === null) {\n    throw new Error('Conversão para número falhou: ' + precoExtraido);\n  }\n  \n  // Processa fechamento anterior\n  let fechamentoAnteriorNumerico = processarValor(fechamentoAnterior);\n  \n  // Processa abertura\n  let aberturaNumerico = processarValor(abertura);\n  \n  return [{ json: {\n    ativo: 'Madeira Serrada (Investing.com)',\n    preco: precoNumerico,\n    preco_original: precoExtraido,\n    fechamento_anterior: fechamentoAnteriorNumerico,\n    fechamento_anterior_original: fechamentoAnterior,\n    abertura: aberturaNumerico,\n    abertura_original: abertura,\n    moeda: 'USD',\n    fonte: 'Investing.com',\n    timestamp: new Date().toISOString(),\n    status: 'sucesso'\n  } }];\n} catch (error) {\n  return [{ json: {\n    ativo: 'Madeira Serrada (Investing.com)',\n    erro: 'Erro na conversão: ' + error.message,\n    preco_original: precoExtraido,\n    fechamento_anterior_original: fechamentoAnterior,\n    abertura_original: abertura,\n    timestamp: new Date().toISOString(),\n    status: 'erro'\n  } }];\n}"
+      },
+      "id": "2bf00d6a-706c-4936-ba5e-743d1aa9396b",
+      "name": "⚙️ Processar Dados9",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -736,
+        -4176
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://br.investing.com/commodities/lumber",
+        "responseFormat": "string",
+        "options": {}
+      },
+      "id": "a89c304a-6649-49e9-bb65-df239501f64b",
+      "name": "🌐 Buscar Madeira2",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        -1104,
+        -4176
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Verifica se veio dados do nó anterior\nif ($input.first() === undefined) {\n  return [{ json: { \n    erro: 'Nenhum dado recebido do nó anterior.', \n    timestamp: new Date().toISOString() \n  } }];\n}\n\n// Pega o texto extraído do HTML\nlet precoExtraido = $input.first().json.preco;\n\n// Verifica se o preço foi encontrado\nif (precoExtraido === undefined || precoExtraido === null || precoExtraido === '') {\n  return [{ json: { \n    ativo: 'USD/BRL (Investing.com)',\n    erro: 'Preço não encontrado com nenhum seletor CSS. Estrutura do site pode ter mudado.',\n    timestamp: new Date().toISOString(),\n    status: 'erro'\n  } }];\n}\n\n// Tenta converter o preço\ntry {\n  // Remove espaços e caracteres especiais, depois converte\n  let precoLimpo = precoExtraido\n    .replace(/\\s/g, '')\n    .replace(/[R$]/g, '')\n    .replace(/\\./g, '')\n    .replace(/,/g, '.');\n  \n  let precoNumerico = parseFloat(precoLimpo);\n  \n  if (isNaN(precoNumerico)) {\n    throw new Error('Conversão para número falhou: ' + precoExtraido);\n  }\n  \n  return [{ json: {\n    ativo: 'USD/BRL (Investing.com)',\n    preco: precoNumerico,\n    preco_original: precoExtraido,\n    moeda: 'BRL',\n    fonte: 'Investing.com',\n    timestamp: new Date().toISOString(),\n    status: 'sucesso'\n  } }];\n} catch (error) {\n  return [{ json: {\n    ativo: 'USD/BRL (Investing.com)',\n    erro: 'Erro na conversão: ' + error.message,\n    preco_original: precoExtraido,\n    timestamp: new Date().toISOString(),\n    status: 'erro'\n  } }];\n}"
+      },
+      "id": "85ff6dcc-a074-4a11-9498-aac7da4eaa8c",
+      "name": "USD",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -736,
+        -4384
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Verifica se veio dados do nó anterior\nif ($input.first() === undefined) {\n  return [{ json: { \n    erro: 'Nenhum dado recebido do nó anterior.', \n    timestamp: new Date().toISOString() \n  } }];\n}\n\n// Pega o texto extraído do HTML\nlet precoExtraido = $input.first().json.preco;\n\n// Verifica se o preço foi encontrado\nif (precoExtraido === undefined || precoExtraido === null || precoExtraido === '') {\n  return [{ json: { \n    ativo: 'EUR/BRL (Investing.com)',\n    erro: 'Preço não encontrado com nenhum seletor CSS. Estrutura do site pode ter mudado.',\n    timestamp: new Date().toISOString(),\n    status: 'erro'\n  } }];\n}\n\n// Tenta converter o preço\ntry {\n  // Remove espaços e caracteres especiais, depois converte\n  let precoLimpo = precoExtraido\n    .replace(/\\s/g, '')\n    .replace(/[R$]/g, '')\n    .replace(/\\./g, '')\n    .replace(/,/g, '.');\n  \n  let precoNumerico = parseFloat(precoLimpo);\n  \n  if (isNaN(precoNumerico)) {\n    throw new Error('Conversão para número falhou: ' + precoExtraido);\n  }\n  \n  return [{ json: {\n    ativo: 'EUR/BRL (Investing.com)',\n    preco: precoNumerico,\n    preco_original: precoExtraido,\n    moeda: 'BRL',\n    fonte: 'Investing.com',\n    timestamp: new Date().toISOString(),\n    status: 'sucesso'\n  } }];\n} catch (error) {\n  return [{ json: {\n    ativo: 'EUR/BRL (Investing.com)',\n    erro: 'Erro na conversão: ' + error.message,\n    preco_original: precoExtraido,\n    timestamp: new Date().toISOString(),\n    status: 'erro'\n  } }];\n}"
+      },
+      "id": "3528d2f9-d82b-424b-b530-231f5390ca44",
+      "name": "EUR",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -736,
+        -3712
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  const inputData = $input.first().json;\n\n  if (inputData.erro) {\n    return [{ json: inputData }];\n  }\n\n  // Obter a cotação do dólar do nó anterior\n  const dadosDolar = $('USD').first().json;\n  const cotacaoDolar = dadosDolar.preco;\n\n  // Preparar dados para salvar no JSON\n  const currentDate = new Date().toISOString().split('T')[0];\n  const [year, month, day] = currentDate.split('-');\n  const brazilianDate = `${day}/${month}/${year}`;\n  \n  // CONSTANTES EXATAS DO EXCEL\n  const taxaConversao = 0.375620342; // 37,5620342%\n  const fatorRentabilidade = 120; // FM3 = 10% × 1.197 = 120\n  \n  // CÁLCULOS NA ORDEM CORRETA:\n  \n  // 1º: Madeira Serrada em BRL (U$576 × cotação 6,2696)\n  const madeiraSerradaBRL = inputData.preco * cotacaoDolar;\n  \n  // 2º: Madeira Tora em BRL (3.095,02 × 37,5620342%)\n  const madeiraToraBRL = madeiraSerradaBRL * taxaConversao;\n  \n  // 3º: Madeira Tora em USD (para o campo madeira_tora_usd)\n  const madeiraToraUSD = madeiraToraBRL / cotacaoDolar;\n  \n  // 4º: Rentabilidade Média (1.162,55 × 120) = 139.104,73\n  const rentMediaCalculada = madeiraToraBRL * fatorRentabilidade;\n  \n  // ARREDONDAMENTO FINAL\n  const madeiraToraUSDArred = Math.round(madeiraToraUSD * 100) / 100;\n  const madeiraToraBRLArred = Math.round(madeiraToraBRL * 100) / 100;\n  const rentMediaArred = Math.round(rentMediaCalculada * 100) / 100;\n\n  return [\n    {\n      json: {\n        ativo: 'Madeira Serrada',\n        data: brazilianDate,\n        ultimo: inputData.preco,\n        abertura: inputData.abertura || inputData.preco,\n        maxima: inputData.preco,\n        minima: inputData.preco,\n        madeira_tora_usd: madeiraToraUSDArred,\n        rent_media: rentMediaArred,\n        cotacao_dolar: cotacaoDolar,\n        moeda: inputData.moeda,\n        fonte: inputData.fonte,\n        timestamp: inputData.timestamp,\n        status: inputData.status,\n        dolar_timestamp: dadosDolar.timestamp,\n        documentId: currentDate\n      }\n    }\n  ];\n} catch (error) {\n  return [\n    {\n      json: {\n        erro: \"Erro ao preparar dados: \" + error.message,\n        timestamp: new Date().toISOString(),\n        status: \"erro_preparacao\",\n      },\n    },\n  ];\n}"
+      },
+      "id": "27cb1e00-4839-4073-b6ea-6a712abb6d96",
+      "name": "Madeira",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -560,
+        -4176
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  const inputData = $input.first().json;\n\n  if (inputData.erro) {\n    return [{ json: inputData }];\n  }\n\n  // Obter a cotação do dólar do nó anterior\n  const dadosDolar = $('USD').first().json;\n  const cotacaoDolar = dadosDolar.preco;\n\n  // Data\n  const currentDate = new Date().toISOString().split('T')[0];\n  const [year, month, day] = currentDate.split('-');\n  const brazilianDate = `${day}/${month}/${year}`;\n  \n  // Preço em BRL (saca convertido direto para BRL)\n  const sojaBRL = Math.round(inputData.preco * cotacaoDolar * 100) / 100;\n  \n  // Tonelada em USD (precisão máxima)\n  const tonUSD = (inputData.preco / 60) * 1000;\n  \n  // Tonelada em BRL - USANDO O MESMO ARREDONDAMENTO DO EXCEL\n  const tonBRLCalculado = tonUSD * cotacaoDolar;\n  const ton = Math.floor(tonBRLCalculado * 100) / 100; // Arredondamento para baixo como Excel\n  \n  // Fórmula do fator (3,3)\n  const fatorRentabilidade = (55 * 60) / 1000; // 3.3\n  \n  // Rentabilidade - CÁLCULO DIRETO SEM ARREDONDAMENTOS INTERMEDIÁRIOS\n  const rentMedia = Math.round((tonBRLCalculado * fatorRentabilidade + Number.EPSILON) * 100) / 100;\n  \n  return [\n    {\n      json: {\n        ativo: 'Soja Futuros',\n        data: brazilianDate,\n        ultimo: inputData.preco,\n        ultimo_brl: sojaBRL,\n        ton_usd: Math.round(tonUSD * 100) / 100,\n        ton: ton,\n        rent_media: rentMedia,\n        cotacao_dolar: cotacaoDolar,\n        fator_rentabilidade: fatorRentabilidade,\n        moeda: inputData.moeda,\n        fonte: inputData.fonte,\n        timestamp: inputData.timestamp,\n        status: inputData.status,\n        dolar_fonte: dadosDolar.fonte,\n        dolar_timestamp: dadosDolar.timestamp,\n        // Cálculos para debug - MOSTRANDO VALORES EXATOS\n        calculo_ton_usd: `(${inputData.preco} / 60) × 1000 = ${tonUSD}`,\n        calculo_ton_brl: `${tonUSD} × ${cotacaoDolar} = ${tonBRLCalculado} → ${ton}`,\n        calculo_rent: `${tonBRLCalculado} × ${fatorRentabilidade} = ${rentMedia}`,\n        formula_excel: \"55 × 60 / 1000 = 3,30\",\n        // Debug adicional\n        ton_brl_calculado: tonBRLCalculado,\n        ton_brl_arredondado: ton,\n        documentId: currentDate  // ← ADICIONAR ESTA LINHA\n      }\n    }\n  ];\n} catch (error) {\n  return [\n    {\n      json: {\n        erro: \"Erro ao preparar dados: \" + error.message,\n        timestamp: new Date().toISOString(),\n        status: \"erro_preparacao\",\n      },\n    },\n  ];\n}"
+      },
+      "id": "dd6a29f5-aeee-4a6f-b78c-c8841bcd79dc",
+      "name": "Soja",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -560,
+        -3936
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  const inputData = $input.first().json;\n\n  if (inputData.erro) {\n    return [{ json: inputData }];\n  }\n\n  // Obter a cotação do EUR/BRL\n  const dadosEuro = $(\"EUR\").first().json;\n  const cotacaoEuro = dadosEuro.preco;\n\n  // Preparar dados para salvar no JSON\n  const currentDate = new Date().toISOString().split(\"T\")[0];\n  const [year, month, day] = currentDate.split(\"-\");\n  const brazilianDate = `${day}/${month}/${year}`;\n\n  // **CÁLCULO COM ALTA PRECISÃO (igual planilha)**\n  const carbonoBRL = inputData.preco * cotacaoEuro;\n  const rentMediaBruta = carbonoBRL * 2.59;\n\n  // **MANTER 4 CASAS DECIMAIS como a planilha**\n  const rentMedia = Math.floor(rentMediaBruta * 10000) / 10000;\n\n  return [\n    {\n      json: {\n        ativo: \"Carbono\",\n        data: brazilianDate,\n        ultimo: inputData.preco,\n        ultimo_brl: Math.round(carbonoBRL * 100) / 100,\n        fechamento_anterior: inputData.fechamento_anterior,\n        abertura: inputData.abertura || inputData.preco,\n        maxima: inputData.preco,\n        minima: inputData.preco,\n        volume: null,\n        variacao_pct: inputData.fechamento_anterior\n          ? (\n              Math.round(\n                ((inputData.preco - inputData.fechamento_anterior) /\n                  inputData.fechamento_anterior) *\n                  10000,\n              ) / 100\n            ).toFixed(2)\n          : null,\n        rent_media: rentMedia,\n        cotacao_euro: cotacaoEuro,\n        moeda: inputData.moeda,\n        fonte: inputData.fonte,\n        timestamp: inputData.timestamp,\n        status: inputData.status,\n        euro_fonte: dadosEuro.fonte,\n        euro_timestamp: dadosEuro.timestamp,\n        observacao:\n          \"Rent_media com 4 casas decimais para compatibilidade com planilha Excel\",\n        documentId: currentDate  // ✅\n      }\n    }\n  ];\n  // ← REMOVI O \"f;\" AQUI!\n} catch (error) {\n  return [\n    {\n      json: {\n        erro: \"Erro ao preparar dados: \" + error.message,\n        timestamp: new Date().toISOString(),\n        status: \"erro_preparacao\",\n      },\n    },\n  ];\n}"
+      },
+      "id": "1651674c-cc23-4931-9351-cc885511513b",
+      "name": "Carbono",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -560,
+        -3488
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  const inputData = $input.first().json;\n\n  if (inputData.erro) {\n    return [{ json: inputData }];\n  }\n\n  // Preparar dados para salvar no JSON\n  const currentDate = new Date().toISOString().split(\"T\")[0];\n  const [year, month, day] = currentDate.split(\"-\");\n  const brazilianDate = `${day}/${month}/${year}`;\n\n  // Cálculo da rentabilidade média:\n  const rentMedia = parseFloat((inputData.preco * 18).toFixed(2));\n\n  return [\n    {\n      json: {\n        ativo: \"Boi Gordo\",\n        data: brazilianDate,\n        ultimo: inputData.preco,\n        fechamento_anterior: inputData.fechamento_anterior,\n        abertura: inputData.abertura || inputData.preco,\n        maxima: inputData.preco,\n        minima: inputData.preco,\n        volume: null,\n        variacao_pct: inputData.fechamento_anterior\n          ? (\n              ((inputData.preco - inputData.fechamento_anterior) /\n                inputData.fechamento_anterior) *\n              100\n            ).toFixed(2)\n          : null,\n        rent_media: rentMedia,\n        moeda: inputData.moeda,\n        fonte: inputData.fonte,\n        timestamp: inputData.timestamp,\n        status: inputData.status,\n        documentId: currentDate, // ← ADICIONAR AQUI! ✅\n      },\n    },\n  ];\n} catch (error) {\n  return [\n    {\n      json: {\n        erro: \"Erro ao preparar dados: \" + error.message,\n        timestamp: new Date().toISOString(),\n        status: \"erro_preparacao\",\n      },\n    },\n  ];\n}\n"
+      },
+      "id": "ffd2efce-c5d4-4d17-8b62-40c5a79d7bc6",
+      "name": "Boi",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -560,
+        -3216
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  const inputData = $input.first().json;\n\n  if (inputData.erro) {\n    return [{ json: inputData }];\n  }\n\n  // Preparar dados para salvar no JSON\n  const currentDate = new Date().toISOString().split(\"T\")[0];\n  const [year, month, day] = currentDate.split(\"-\");\n  const brazilianDate = `${day}/${month}/${year}`;\n\n  // Conversão de sacas para toneladas: valor/60*1000 (sem arredondar aqui)\n  let tonCalc = (inputData.preco / 60) * 1000;\n\n  // Rentabilidade média usando o valor cheio\n  let rentMediaCalc = tonCalc * 7.2;\n\n  // Arredondar só no final para 2 casas decimais\n  const ton = Math.round(tonCalc * 100) / 100;\n  const rentMedia = Math.round(rentMediaCalc * 100) / 100;\n\n  return [\n    {\n      json: {\n        ativo: \"Milho Futuros\",\n        data: brazilianDate,\n        ultimo: inputData.preco,\n        fechamento_anterior: inputData.fechamento_anterior,\n        abertura: inputData.abertura || inputData.preco,\n        maxima: inputData.preco,\n        minima: inputData.preco,\n        volume: null,\n        variacao_pct: inputData.fechamento_anterior\n          ? (\n              ((inputData.preco - inputData.fechamento_anterior) /\n                inputData.fechamento_anterior) *\n              100\n            ).toFixed(2)\n          : null,\n        ton: ton,\n        rent_media: rentMedia,\n        moeda: inputData.moeda,\n        fonte: inputData.fonte,\n        timestamp: inputData.timestamp,\n        status: inputData.status,\n        documentId: currentDate, // ← ADICIONAR AQUI! ✅\n      },\n    },\n  ];\n} catch (error) {\n  return [\n    {\n      json: {\n        erro: \"Erro ao preparar dados: \" + error.message,\n        timestamp: new Date().toISOString(),\n        status: \"erro_preparacao\",\n      },\n    },\n  ];\n}\n"
+      },
+      "id": "3592c4e9-544e-4ba9-9db2-105da46dfbec",
+      "name": "Milho",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -560,
+        -2992
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  // Aguardar todos os dados das commodities processadas\n  const boiGordo = $(\"💾 Salvar no Firebase\").first()?.json || null;\n  const milho = $(\"💾 Salvar no Firebase7\").first()?.json || null;\n  const soja = $(\"💾 Salvar no Firebase8\").first()?.json || null;\n  const madeira = $(\"💾 Salvar no Firebase2\").first()?.json || null;\n  const carbono = $(\"💾 Salvar no Firebase1\").first()?.json || null;\n\n  // Verificar se todos os dados estão disponíveis\n  if (!boiGordo || !milho || !soja || !madeira || !carbono) {\n    return [\n      {\n        json: {\n          erro: \"Dados insuficientes para calcular CH2O Água\",\n          timestamp: new Date().toISOString(),\n          status: \"erro\",\n        },\n      },\n    ];\n  }\n\n  // Extrair valores de rent_media de cada commodity\n  const rentBoiGordo = parseFloat(boiGordo.rent_media) || 0;\n  const rentMilho = parseFloat(milho.rent_media) || 0;\n  const rentSoja = parseFloat(soja.rent_media) || 0;\n  const rentMadeira = parseFloat(madeira.rent_media) || 0;\n  const rentCarbono = parseFloat(carbono.rent_media) || 0;\n\n  // **CORREÇÃO: Usar arredondamento bancário (como o Excel faz)**\n  const componentes = {\n    boi_gordo_35: Math.floor(rentBoiGordo * 0.35 * 100 + 0.0000001) / 100, // → 1933.78\n    milho_30: Math.round(rentMilho * 0.3 * 100) / 100,\n    soja_35: Math.round(rentSoja * 0.35 * 100) / 100,\n    madeira_100: Math.round(rentMadeira * 100) / 100,\n    carbono_100: Math.round(rentCarbono * 100) / 100,\n  };\n\n  // Somar os componentes JÁ ARREDONDADOS\n  const ch2oAgua =\n    componentes.boi_gordo_35 +\n    componentes.milho_30 +\n    componentes.soja_35 +\n    componentes.madeira_100 +\n    componentes.carbono_100;\n\n  // Preparar dados para salvar\n  const currentDate = new Date().toISOString().split(\"T\")[0];\n  const [year, month, day] = currentDate.split(\"-\");\n  const brazilianDate = `${day}/${month}/${year}`;\n\n  return [\n    {\n      json: {\n        ativo: \"CH2O Água\",\n        data: brazilianDate,\n        valor: Math.round(ch2oAgua * 100) / 100,\n        componentes: componentes,\n        valores_originais: {\n          rent_boi_gordo: rentBoiGordo,\n          rent_milho: rentMilho,\n          rent_soja: rentSoja,\n          rent_madeira: rentMadeira,\n          rent_carbono: rentCarbono,\n        },\n        formula:\n          \"CH2O = (Boi×35%) + (Milho×30%) + (Soja×35%) + Madeira + Carbono\",\n        moeda: \"BRL\",\n        fonte: \"Cálculo UCS\",\n        timestamp: new Date().toISOString(),\n        status: \"sucesso\",\n        documentId: currentDate, // ← ADICIONAR AQUI! ✅\n        verificacao: `Soma dos componentes: ${componentes.boi_gordo_35} + ${componentes.milho_30} + ${componentes.soja_35} + ${componentes.madeira_100} + ${componentes.carbono_100} = ${ch2oAgua}`,\n      },\n    },\n  ];\n} catch (error) {\n  return [\n    {\n      json: {\n        erro: \"Erro ao calcular CH2O Água: \" + error.message,\n        timestamp: new Date().toISOString(),\n        status: \"erro\",\n      },\n    },\n  ];\n}\n"
+      },
+      "id": "0cf29c01-eeb5-4672-bf05-7e02d8f1638d",
+      "name": "🧮 Calcular CH2O Original",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1104,
+        -2816
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "upsert",
+        "projectId": "ucs-index-tracker",
+        "collection": "ch2o_agua",
+        "updateKey": "documentId",
+        "columns": "=ativo,data,valor,componentes,valores_originais,formula,moeda,fonte,timestamp,status,documentId"
+      },
+      "id": "5f355906-3bbd-46f4-b8de-d8a0dfd81189",
+      "name": "💾 Salvar CH2O Original",
+      "type": "n8n-nodes-base.googleFirebaseCloudFirestore",
+      "typeVersion": 1,
+      "position": [
+        -912,
+        -2816
+      ],
+      "credentials": {
+        "googleApi": {
+          "id": "Dqr74c3ldFzCyUyS",
+          "name": "Google Firebase Cloud Firestore account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  const ch2oData = $input.first().json;\n  \n  return [{\n    json: {\n      status: 'ch2o_sucesso',\n      mensagem: 'CH2O Água calculado e salvo com sucesso!',\n      dados_ch2o: ch2oData,\n      timestamp: new Date().toISOString()\n    }\n  }];\n  \n} catch (error) {\n  return [{\n    json: {\n      status: 'ch2o_erro',\n      erro: 'Erro no CH2O: ' + error.message,\n      timestamp: new Date().toISOString()\n    }\n  }];\n}"
+      },
+      "id": "44ef5b24-0bb3-4af9-9fc5-8b8ff7f41c8e",
+      "name": "📋 Resposta Final CH2O Original",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -736,
+        -2816
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  // Aguardar todos os dados das commodities processadas\n  const boiGordo = $('💾 Salvar no Firebase').first()?.json || null;\n  const milho = $('💾 Salvar no Firebase7').first()?.json || null;\n  const soja = $('💾 Salvar no Firebase8').first()?.json || null;\n  const madeira = $('💾 Salvar no Firebase2').first()?.json || null;\n  const carbono = $('💾 Salvar no Firebase1').first()?.json || null;\n\n  // Verificar se todos os dados estão disponíveis\n  if (!boiGordo || !milho || !soja || !madeira || !carbono) {\n    return [{\n      json: {\n        erro: 'Dados insuficientes para calcular Custo_Água',\n        timestamp: new Date().toISOString(),\n        status: 'erro'\n      }\n    }];\n  }\n\n  // Extrair valores de rent_media de cada commodity\n  const rentBoiGordo = parseFloat(boiGordo.rent_media) || 0;\n  const rentMilho = parseFloat(milho.rent_media) || 0;\n  const rentSoja = parseFloat(soja.rent_media) || 0;\n  const rentMadeira = parseFloat(madeira.rent_media) || 0;\n  const rentCarbono = parseFloat(carbono.rent_media) || 0;\n\n  // Calcular Custo_Água\n  const baseCalculo = (rentBoiGordo * 0.35) + (rentMilho * 0.30) + (rentSoja * 0.35) + rentMadeira + rentCarbono;\n  const custoAgua = baseCalculo * 0.07;\n\n  // Preparar dados para salvar\n  const currentDate = new Date().toISOString().split('T')[0];\n  const [year, month, day] = currentDate.split('-');\n  const brazilianDate = `${day}/${month}/${year}`;\n\n  return [{\n    json: {\n      ativo: 'Custo_Água',\n      data: brazilianDate,\n      valor: Math.round(custoAgua * 100) / 100,\n      componentes: {\n        boi_gordo_35: Math.round(rentBoiGordo * 0.35 * 100) / 100,\n        milho_30: Math.round(rentMilho * 0.30 * 100) / 100,\n        soja_35: Math.round(rentSoja * 0.35 * 100) / 100,\n        madeira_100: Math.round(rentMadeira * 100) / 100,\n        carbono_100: Math.round(rentCarbono * 100) / 100,\n        base_calculo: Math.round(baseCalculo * 100) / 100,\n        resultado_final: Math.round(custoAgua * 100) / 100\n      },\n      valores_originais: {\n        rent_boi_gordo: rentBoiGordo,\n        rent_milho: rentMilho,\n        rent_soja: rentSoja,\n        rent_madeira: rentMadeira,\n        rent_carbono: rentCarbono\n      },\n      formula: 'Custo_Água = ((Boi×35%) + (Milho×30%) + (Soja×35%) + Madeira + Carbono) × 7%',\n      moeda: 'BRL',\n      fonte: 'Cálculo UCS',\n      timestamp: new Date().toISOString(),\n      status: 'sucesso', \n      documentId: currentDate  // ← ADICIONAR AQUI! ✅\n    }\n  }];\n  \n} catch (error) {\n  return [{\n    json: {\n      erro: 'Erro ao calcular Custo_Água: ' + error.message,\n      timestamp: new Date().toISOString(),\n      status: 'erro'\n    }\n  }];\n}\n"
+      },
+      "id": "433ecfa1-f9c1-4a66-b26a-12164f4fe0ed",
+      "name": "🧮 Calcular Custo_Água",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1104,
+        -2640
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "upsert",
+        "projectId": "ucs-index-tracker",
+        "collection": "custo_agua",
+        "updateKey": "documentId",
+        "columns": "=ativo,data,valor,componentes,valores_originais,formula,moeda,fonte,timestamp,status,documentId"
+      },
+      "id": "a3f002d4-227f-4578-949b-1a9fcd6958fa",
+      "name": "💾 Salvar Custo_Água",
+      "type": "n8n-nodes-base.googleFirebaseCloudFirestore",
+      "typeVersion": 1,
+      "position": [
+        -912,
+        -2640
+      ],
+      "credentials": {
+        "googleApi": {
+          "id": "Dqr74c3ldFzCyUyS",
+          "name": "Google Firebase Cloud Firestore account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  // Aguardar todos os dados das commodities processadas e o Custo_Água\n  const boiGordo = $('💾 Salvar no Firebase').first()?.json || null;\n  const milho = $('💾 Salvar no Firebase7').first()?.json || null;\n  const soja = $('💾 Salvar no Firebase8').first()?.json || null;\n  const madeira = $('💾 Salvar no Firebase2').first()?.json || null;\n  const carbono = $('💾 Salvar no Firebase1').first()?.json || null;\n  const custoAgua = $('💾 Salvar Custo_Água').first()?.json || null;\n\n  // Verificar se todos os dados estão disponíveis\n  if (!boiGordo || !milho || !soja || !madeira || !carbono || !custoAgua) {\n    return [\n      {\n        json: {\n          erro: 'Dados insuficientes para calcular PDM',\n          timestamp: new Date().toISOString(),\n          status: 'erro'\n        }\n      }\n    ];\n  }\n\n  // Extrair valores de rent_media de cada commodity\n  const rentBoiGordo = parseFloat(boiGordo.rent_media) || 0;\n  const rentMilho = parseFloat(milho.rent_media) || 0;\n  const rentSoja = parseFloat(soja.rent_media) || 0;\n  const rentMadeira = parseFloat(madeira.rent_media) || 0;\n  const rentCarbono = parseFloat(carbono.rent_media) || 0;\n  const valorCustoAgua = parseFloat(custoAgua.valor) || 0;\n\n  // Calcular PDM conforme fórmula\n  const pdm =\n    (rentBoiGordo * 0.35) +\n    (rentMilho * 0.30) +\n    (rentSoja * 0.35) +\n    rentMadeira +\n    rentCarbono +\n    valorCustoAgua;\n\n  // Preparar dados para salvar\n  const currentDate = new Date().toISOString().split('T')[0];\n  const [year, month, day] = currentDate.split('-');\n  const brazilianDate = `${day}/${month}/${year}`;\n\n  return [\n    {\n      json: {\n        ativo: 'PDM',\n        data: brazilianDate,\n        valor: Math.round(pdm * 100) / 100,\n        componentes: {\n          boi_gordo_35: Math.round(rentBoiGordo * 0.35 * 100) / 100,\n          milho_30: Math.round(rentMilho * 0.30 * 100) / 100,\n          soja_35: Math.round(rentSoja * 0.35 * 100) / 100,\n          madeira_100: Math.round(rentMadeira * 100) / 100,\n          carbono_100: Math.round(rentCarbono * 100) / 100,\n          custo_agua_100: Math.round(valorCustoAgua * 100) / 100\n        },\n        valores_originais: {\n          rent_boi_gordo: rentBoiGordo,\n          rent_milho: rentMilho,\n          rent_soja: rentSoja,\n          rent_madeira: rentMadeira,\n          rent_carbono: rentCarbono,\n          custo_agua: valorCustoAgua\n        },\n        formula: 'PDM = (Boi×35%) + (Milho×30%) + (Soja×35%) + Madeira + Carbono + Custo_Água',\n        moeda: 'BRL',\n        fonte: 'Cálculo UCS',\n        timestamp: new Date().toISOString(),\n        status: 'sucesso',\n        documentId: currentDate  // ← ADICIONAR AQUI! ✅\n      }\n    }\n  ];\n} catch (error) {\n  return [\n    {\n      json: {\n        erro: 'Erro ao calcular PDM: ' + error.message,\n        timestamp: new Date().toISOString(),\n        status: 'erro'\n      }\n    }\n  ];\n}\n"
+      },
+      "id": "6c5b4209-7bf1-40a0-a10c-9610c634ba7f",
+      "name": "🧮 Calcular PDM",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1104,
+        -2464
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "upsert",
+        "projectId": "ucs-index-tracker",
+        "collection": "pdm",
+        "updateKey": "documentId",
+        "columns": "=ativo,data,valor,componentes,valores_originais,formula,moeda,fonte,timestamp,status,documentId"
+      },
+      "id": "b1e3210f-94d8-468e-abdb-90438be69d8c",
+      "name": "💾 Salvar PDM",
+      "type": "n8n-nodes-base.googleFirebaseCloudFirestore",
+      "typeVersion": 1,
+      "position": [
+        -912,
+        -2464
+      ],
+      "credentials": {
+        "googleApi": {
+          "id": "Dqr74c3ldFzCyUyS",
+          "name": "Google Firebase Cloud Firestore account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  const pdmData = $input.first().json;\n\n  return [\n    {\n      json: {\n        status: 'pdm_sucesso',\n        mensagem: 'PDM calculado e salvo com sucesso!',\n        dados_pdm: pdmData,\n        timestamp: new Date().toISOString()\n      }\n    }\n  ];\n\n} catch (error) {\n  return [\n    {\n      json: {\n        status: 'pdm_erro',\n        erro: 'Erro no PDM: ' + error.message,\n        timestamp: new Date().toISOString()\n      }\n    }\n  ];\n}\n"
+      },
+      "id": "1598d613-754c-444e-bffe-fe71945ff2a5",
+      "name": "📋 Resposta Final PDM",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -736,
+        -2464
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  // Aguardar os dados do PDM\n  const pdmData = $('💾 Salvar PDM').first()?.json || null;\n\n  // Verificar se os dados estão disponíveis\n  if (!pdmData) {\n    return [\n      {\n        json: {\n          erro: 'Dados do PDM insuficientes para calcular UCS',\n          timestamp: new Date().toISOString(),\n          status: 'erro'\n        }\n      }\n    ];\n  }\n\n  // Extrair valor do PDM\n  const valorPDM = parseFloat(pdmData.valor) || 0;\n\n  // Calcular UCS conforme fórmula\n  // UCS = (PDM ÷ 900) ÷ 2\n  const ucs = (valorPDM / 900) / 2;\n\n  // Preparar dados para salvar\n  const currentDate = new Date().toISOString().split('T')[0];\n  const [year, month, day] = currentDate.split('-');\n  const brazilianDate = `${day}/${month}/${year}`;\n\n  return [\n    {\n      json: {\n        ativo: 'UCS',\n        data: brazilianDate,\n        valor: Math.round(ucs * 100) / 100,\n        componentes: {\n          pdm_original: valorPDM,\n          pdm_div_900: Math.round((valorPDM / 900) * 100) / 100,\n          resultado_final: Math.round(ucs * 100) / 100\n        },\n        valores_originais: {\n          pdm: valorPDM\n        },\n        formula: 'UCS = (PDM ÷ 900) ÷ 2',\n        moeda: 'BRL',\n        fonte: 'Cálculo UCS',\n        timestamp: new Date().toISOString(),\n        status: 'sucesso',\n        documentId: currentDate  // ← ADICIONAR AQUI! ✅\n      }\n    }\n  ];\n\n} catch (error) {\n  return [\n    {\n      json: {\n        erro: 'Erro ao calcular UCS: ' + error.message,\n        timestamp: new Date().toISOString(),\n        status: 'erro'\n      }\n    }\n  ];\n}\n"
+      },
+      "id": "74e63fa9-28d4-403e-9e51-06b6952e34cb",
+      "name": "🧮 Calcular UCS",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1104,
+        -2288
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "upsert",
+        "projectId": "ucs-index-tracker",
+        "collection": "ucs",
+        "updateKey": "documentId",
+        "columns": "=ativo,data,valor,componentes,valores_originais,formula,moeda,fonte,timestamp,status,documentId"
+      },
+      "id": "59483397-8ea3-458f-ae34-53ece2d7c9de",
+      "name": "💾 Salvar UCS",
+      "type": "n8n-nodes-base.googleFirebaseCloudFirestore",
+      "typeVersion": 1,
+      "position": [
+        -912,
+        -2288
+      ],
+      "credentials": {
+        "googleApi": {
+          "id": "Dqr74c3ldFzCyUyS",
+          "name": "Google Firebase Cloud Firestore account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  // Aguardar os dados do UCS e das cotações\n  const ucsData = $('💾 Salvar UCS').first()?.json || null;\n  const usdData = $('💾 Salvar no Firebase5').first()?.json || null;\n  const eurData = $('💾 Salvar no Firebase6').first()?.json || null;\n\n  // Verificar se os dados estão disponíveis\n  if (!ucsData || !usdData || !eurData) {\n    return [\n      {\n        json: {\n          erro: 'Dados insuficientes para calcular UCS ASE',\n          dados_faltando: {\n            ucs: !ucsData,\n            usd: !usdData,\n            eur: !eurData\n          },\n          timestamp: new Date().toISOString(),\n          status: 'erro'\n        }\n      }\n    ];\n  }\n\n  // Extrair valores\n  const valorUCS = parseFloat(ucsData.valor) || 0;\n  const cotacaoUSD = parseFloat(usdData.ultimo) || 0;\n  const cotacaoEUR = parseFloat(eurData.ultimo) || 0;\n\n  // Calcular UCS ASE conforme fórmula\n  // UCS ASE = UCS × 2\n  const ucsASEBRL = valorUCS * 2;\n  \n  // Converter para USD e EUR\n  const ucsASEUSD = cotacaoUSD > 0 ? Math.round((ucsASEBRL / cotacaoUSD) * 100) / 100 : 0;\n  const ucsASEEUR = cotacaoEUR > 0 ? Math.round((ucsASEBRL / cotacaoEUR) * 100) / 100 : 0;\n\n  // Preparar dados para salvar\n  const currentDate = new Date().toISOString().split('T')[0];\n  const [year, month, day] = currentDate.split('-');\n  const brazilianDate = `${day}/${month}/${year}`;\n\n  return [\n    {\n      json: {\n        ativo: 'UCS ASE',\n        data: brazilianDate,\n        valor_brl: Math.round(ucsASEBRL * 100) / 100,\n        valor_usd: ucsASEUSD,\n        valor_eur: ucsASEEUR,\n        componentes: {\n          ucs_original_brl: valorUCS,\n          resultado_final_brl: Math.round(ucsASEBRL * 100) / 100,\n          resultado_final_usd: ucsASEUSD,\n          resultado_final_eur: ucsASEEUR\n        },\n        valores_originais: {\n          ucs: valorUCS,\n          cotacao_usd: cotacaoUSD,\n          cotacao_eur: cotacaoEUR\n        },\n        conversoes: {\n          brl_para_usd: `${ucsASEBRL} ÷ ${cotacaoUSD} = ${ucsASEUSD}`,\n          brl_para_eur: `${ucsASEBRL} ÷ ${cotacaoEUR} = ${ucsASEEUR}`\n        },\n        formula: 'UCS ASE = UCS × 2',\n        moedas: ['BRL', 'USD', 'EUR'],\n        fonte: 'Cálculo UCS',\n        timestamp: new Date().toISOString(),\n        status: 'sucesso',\n        documentId: currentDate  // ← ADICIONAR AQUI! ✅\n      }\n    }\n  ];\n\n} catch (error) {\n  return [\n    {\n      json: {\n        erro: 'Erro ao calcular UCS ASE: ' + error.message,\n        timestamp: new Date().toISOString(),\n        status: 'erro'\n      }\n    }\n  ];\n}"
+      },
+      "id": "eb6d7d87-158b-44c9-8c86-8dc6c1792b24",
+      "name": "🧮 Calcular UCS ASE",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1104,
+        -2112
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "upsert",
+        "projectId": "ucs-index-tracker",
+        "collection": "ucs_ase",
+        "updateKey": "documentId",
+        "columns": "=ativo,data,valor_brl,valor_usd,valor_eur,componentes,valores_originais,conversoes,formula,moedas,fonte,timestamp,status,documentId"
+      },
+      "id": "77d867e6-dcf9-455d-bec8-9636bf63bdbd",
+      "name": "💾 Salvar UCS ASE",
+      "type": "n8n-nodes-base.googleFirebaseCloudFirestore",
+      "typeVersion": 1,
+      "position": [
+        -912,
+        -2112
+      ],
+      "credentials": {
+        "googleApi": {
+          "id": "Dqr74c3ldFzCyUyS",
+          "name": "Google Firebase Cloud Firestore account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  const ucsASEData = $input.first().json;\n\n  return [\n    {\n      json: {\n        status: 'ucs_ase_sucesso',\n        mensagem: 'UCS ASE calculado e salvo com sucesso!',\n        dados_ucs_ase: ucsASEData,\n        timestamp: new Date().toISOString()\n      }\n    }\n  ];\n\n} catch (error) {\n  return [\n    {\n      json: {\n        status: 'ucs_ase_erro',\n        erro: 'Erro no UCS ASE: ' + error.message,\n        timestamp: new Date().toISOString()\n      }\n    }\n  ];\n}\n"
+      },
+      "id": "76d7b57a-d4ef-48cd-91d3-1c688de3f75d",
+      "name": "📋 Resposta Final UCS ASE",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -736,
+        -2112
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  const boiGordo = $(\"💾 Salvar no Firebase\").first()?.json || null;\n  const milho = $(\"💾 Salvar no Firebase7\").first()?.json || null;\n  const soja = $(\"💾 Salvar no Firebase8\").first()?.json || null;\n\n  if (!boiGordo || !milho || !soja) {\n    return [\n      {\n        json: {\n          erro: \"Dados insuficientes\",\n          timestamp: new Date().toISOString(),\n          status: \"erro\",\n        },\n      },\n    ];\n  }\n\n  const rentBoiGordo = parseFloat(boiGordo.rent_media) || 0;\n  const rentMilho = parseFloat(milho.rent_media) || 0;\n  const rentSoja = parseFloat(soja.rent_media) || 0;\n\n  // **CÁLCULO DIRETO - EXATAMENTE COMO NO EXCEL**\n  const base = (rentBoiGordo * 0.35) + (rentMilho * 0.30) + (rentSoja * 0.35);\n  const vusFinal = (base - (base * 0.048)) * 25;\n\n  // **COMPONENTES SEM MULTIPLICAR POR 25** (apenas para referência)\n  const componenteBoi = rentBoiGordo * 0.35;\n  const componenteMilho = rentMilho * 0.30;\n  const componenteSoja = rentSoja * 0.35;\n  const somaComponentes = componenteBoi + componenteMilho + componenteSoja;\n  const descontoArrendamento = base * 0.048;\n\n  const currentDate = new Date().toISOString().split(\"T\")[0];\n  const [year, month, day] = currentDate.split(\"-\");\n  const brazilianDate = `${day}/${month}/${year}`;\n\n  return [\n    {\n      json: {\n        ativo: \"VUS\",\n        data: brazilianDate,\n        valor: vusFinal,\n        componentes: {\n          boi_gordo_35: componenteBoi,\n          milho_30: componenteMilho,\n          soja_35: componenteSoja,\n          base_calculo: somaComponentes,\n          desconto_arrendamento: descontoArrendamento,\n          resultado_final: vusFinal,\n        },\n        calculo_detalhado: {\n          base_sem_25: base,\n          desconto_4_8: base * 0.048,\n          base_com_desconto: base - (base * 0.048),\n          multiplicacao_25: vusFinal\n        },\n        valores_originais: {\n          rent_boi_gordo: rentBoiGordo,\n          rent_milho: rentMilho,\n          rent_soja: rentSoja,\n        },\n        formula: \"VUS =(((rent_boi_gordo*35% + rente milho *30% + rent_soja*35%)-(rent_boi_gordo*35% + rente milho *30% + rent_soja*35%)*4,8))*25\",\n        moeda: \"BRL\",\n        fonte: \"Cálculo UCS\",\n        timestamp: new Date().toISOString(),\n        status: \"sucesso\",\n        documentId: currentDate,\n      },\n    },\n  ];\n} catch (error) {\n  return [\n    {\n      json: {\n        erro: \"Erro ao calcular VUS: \" + error.message,\n        timestamp: new Date().toISOString(),\n        status: \"erro\",\n      },\n    },\n  ];\n}"
+      },
+      "id": "06214864-b7db-4649-8f57-852b94fa07fc",
+      "name": "🧮 Calcular VUS",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1104,
+        -1936
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "upsert",
+        "projectId": "ucs-index-tracker",
+        "database": "=(default)",
+        "collection": "vus",
+        "updateKey": "documentId",
+        "columns": "=ativo,data,valor,componentes,valores_originais,formula,moeda,fonte,timestamp,status,documentId"
+      },
+      "id": "38e22a80-c417-4659-9170-28672cb149cf",
+      "name": "💾 Salvar VUS",
+      "type": "n8n-nodes-base.googleFirebaseCloudFirestore",
+      "typeVersion": 1,
+      "position": [
+        -912,
+        -1936
+      ],
+      "credentials": {
+        "googleApi": {
+          "id": "Dqr74c3ldFzCyUyS",
+          "name": "Google Firebase Cloud Firestore account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  const vusData = $input.first().json;\n\n  return [\n    {\n      json: {\n        status: 'vus_sucesso',\n        mensagem: 'VUS calculado e salvo com sucesso!',\n        dados_vus: vusData,\n        timestamp: new Date().toISOString()\n      }\n    }\n  ];\n\n} catch (error) {\n  return [\n    {\n      json: {\n        status: 'vus_erro',\n        erro: 'Erro no VUS: ' + error.message,\n        timestamp: new Date().toISOString()\n      }\n    }\n  ];\n}\n"
+      },
+      "id": "6d86590f-07a0-48c6-ae85-8e90dc7cd56b",
+      "name": "📋 Resposta Final VUS",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -736,
+        -1936
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  // Aguardar dados do carbono processado\n  const carbono = $(\"💾 Salvar no Firebase1\").first()?.json || null;\n\n  // Verificar se os dados estão disponíveis\n  if (!carbono) {\n    return [\n      {\n        json: {\n          erro: \"Dados insuficientes para calcular Carbono_CRS\",\n          dados_faltando: {\n            carbono: !carbono,\n          },\n          timestamp: new Date().toISOString(),\n          status: \"erro\",\n        },\n      },\n    ];\n  }\n\n  // Extrair valor de rent_media do carbono - USAR VALOR ORIGINAL DO FIREBASE\n  const rentCarbono = parseFloat(carbono.rent_media) || 0;\n\n  // **CÁLCULO 100% DINÂMICO: usar apenas o valor do Firebase**\n  const carbonoCRS = rentCarbono * 25;\n\n  // **TRUNCAMENTO FINAL (igual ao Excel)**\n  const valorFinal = Math.floor(carbonoCRS * 100) / 100;\n\n  // Preparar dados para salvar\n  const currentDate = new Date().toISOString().split(\"T\")[0];\n  const [year, month, day] = currentDate.split(\"-\");\n  const brazilianDate = `${day}/${month}/${year}`;\n\n  return [\n    {\n      json: {\n        ativo: \"Carbono_CRS\",\n        data: brazilianDate,\n        valor: valorFinal, // Calculado dinamicamente\n        componentes: {\n          rent_media_carbono: rentCarbono,\n          multiplicador: 25,\n          resultado_final: valorFinal,\n        },\n        valores_originais: {\n          rent_carbono: rentCarbono,\n        },\n        formula: `Carbono_CRS = ${rentCarbono} * 25 = ${valorFinal}`,\n        moeda: \"BRL\",\n        fonte: \"Cálculo UCS - Dinâmico\",\n        timestamp: new Date().toISOString(),\n        status: \"sucesso\",\n        documentId: currentDate,  // ← ADICIONAR ESTA LINHA\n        observacao: \"Cálculo 100% dinâmico - Sem valores forçados\",\n      },\n    },\n  ];\n} catch (error) {\n  return [\n    {\n      json: {\n        erro: \"Erro ao calcular Carbono_CRS: \" + error.message,\n        timestamp: new Date().toISOString(),\n        status: \"erro\",\n      },\n    },\n  ];\n}\n"
+      },
+      "id": "e6d5ad8b-32a5-46a4-8bba-3daabb741060",
+      "name": "🧮 Calcular Carbono_CRS",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1104,
+        -1760
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "upsert",
+        "projectId": "ucs-index-tracker",
+        "collection": "carbono_crs",
+        "updateKey": "documentId",
+        "columns": "=ativo,data,valor,componentes,valores_originais,formula,moeda,fonte,timestamp,status,documentId"
+      },
+      "id": "b5e1d6dc-baaf-491a-8dd4-a2d9a591eaaa",
+      "name": "💾 Salvar Carbono_CRS",
+      "type": "n8n-nodes-base.googleFirebaseCloudFirestore",
+      "typeVersion": 1,
+      "position": [
+        -912,
+        -1760
+      ],
+      "credentials": {
+        "googleApi": {
+          "id": "Dqr74c3ldFzCyUyS",
+          "name": "Google Firebase Cloud Firestore account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  const carbanoCRSData = $input.first().json;\n\n  return [\n    {\n      json: {\n        status: 'carbano_crs_sucesso',\n        mensagem: 'Carbono_CRS calculado e salvo com sucesso!',\n        dados_carbano_crs: carbanoCRSData,\n        timestamp: new Date().toISOString()\n      }\n    }\n  ];\n\n} catch (error) {\n  return [\n    {\n      json: {\n        status: 'carbano_crs_erro',\n        erro: 'Erro no Carbono_CRS: ' + error.message,\n        timestamp: new Date().toISOString()\n      }\n    }\n  ];\n}\n"
+      },
+      "id": "f6819cf1-0507-42cf-bd27-ff123ccf9dd7",
+      "name": "📋 Resposta Final Carbono_CRS",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -736,
+        -1760
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  // Aguardar dados do CH2O processado\n  const ch2oData = $(\"💾 Salvar CH2O Original\").first()?.json || null;\n\n  // Verificar se os dados estão disponíveis\n  if (!ch2oData) {\n    return [\n      {\n        json: {\n          erro: \"Dados insuficientes para calcular Agua_CRS\",\n          dados_faltando: {\n            ch2o: !ch2oData,\n          },\n          timestamp: new Date().toISOString(),\n          status: \"erro\",\n        },\n      },\n    ];\n  }\n\n  // Extrair valor do CH2O (que já é a rentabilidade média)\n  const rentCH2O = parseFloat(ch2oData.valor) || 0;\n\n  // Calcular Agua_CRS conforme fórmula\n  // Agua_CRS = valor_CH2O (que já é a rentabilidade média)\n  const aguaCRS = rentCH2O;\n\n  // Preparar dados para salvar\n  const currentDate = new Date().toISOString().split(\"T\")[0];\n  const [year, month, day] = currentDate.split(\"-\");\n  const brazilianDate = `${day}/${month}/${year}`;\n\n  return [\n    {\n      json: {\n        ativo: \"Agua_CRS\",\n        data: brazilianDate,\n        valor: Math.round(aguaCRS * 100) / 100,\n        componentes: {\n          rent_media_ch2o: rentCH2O,\n          resultado_final: Math.round(aguaCRS * 100) / 100,\n        },\n        valores_originais: {\n          valor_ch2o: rentCH2O,\n        },\n        formula: \"Agua_CRS = valor_CH2O (rentabilidade média)\",\n        moeda: \"BRL\",\n        fonte: \"Cálculo UCS\",\n        timestamp: new Date().toISOString(),\n        status: \"sucesso\",\n        documentId: currentDate, // ← Reutiliza a variável! ✅\n      },\n    },\n  ];\n} catch (error) {\n  return [\n    {\n      json: {\n        erro: \"Erro ao calcular Agua_CRS: \" + error.message,\n        timestamp: new Date().toISOString(),\n        status: \"erro\",\n      },\n    },\n  ];\n}\n"
+      },
+      "id": "7a2321fd-a25e-4149-9473-41f97e5cadfd",
+      "name": "🧮 Calcular Agua_CRS",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1104,
+        -1584
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "upsert",
+        "projectId": "ucs-index-tracker",
+        "collection": "Agua_CRS",
+        "updateKey": "documentId",
+        "columns": "=ativo,data,valor,componentes,valores_originais,formula,moeda,fonte,timestamp,status,documentId"
+      },
+      "id": "07f76ad9-87ad-4502-845b-dcb1fe26b93a",
+      "name": "💾 Salvar Agua_CRS",
+      "type": "n8n-nodes-base.googleFirebaseCloudFirestore",
+      "typeVersion": 1,
+      "position": [
+        -912,
+        -1584
+      ],
+      "credentials": {
+        "googleApi": {
+          "id": "Dqr74c3ldFzCyUyS",
+          "name": "Google Firebase Cloud Firestore account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  const aguaCRSData = $input.first().json;\n\n  return [\n    {\n      json: {\n        status: 'agua_crs_sucesso',\n        mensagem: 'Agua_CRS calculado e salvo com sucesso!',\n        dados_agua_crs: aguaCRSData,\n        timestamp: new Date().toISOString()\n      }\n    }\n  ];\n\n} catch (error) {\n  return [\n    {\n      json: {\n        status: 'agua_crs_erro',\n        erro: 'Erro no Agua_CRS: ' + error.message,\n        timestamp: new Date().toISOString()\n      }\n    }\n  ];\n}\n"
+      },
+      "id": "321b61cf-bd44-4a6c-985f-54d95e924e07",
+      "name": "📋 Resposta Final Agua_CRS",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -736,
+        -1584
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  // Aguardar dados da madeira processada\n  const madeira = $('💾 Salvar no Firebase2').first()?.json || null;\n\n  // Verificar se os dados estão disponíveis\n  if (!madeira) {\n    return [\n      {\n        json: {\n          erro: 'Dados insuficientes para calcular Vmad',\n          dados_faltando: {\n            madeira: !madeira\n          },\n          timestamp: new Date().toISOString(),\n          status: 'erro'\n        }\n      }\n    ];\n  }\n\n  // Extrair valor de rent_media da madeira\n  const rentMadeira = parseFloat(madeira.rent_media) || 0;\n\n  // **FÓRMULA CORRETA DA PLANILHA: rent_media_madeira * 5**\n  const vmad = rentMadeira * 5;\n\n  // **TRUNCAMENTO FINAL (igual Excel)**\n  const valorFinal = Math.floor(vmad * 100) / 100;\n\n  // Preparar dados para salvar\n  const currentDate = new Date().toISOString().split('T')[0];\n  const [year, month, day] = currentDate.split('-');\n  const brazilianDate = `${day}/${month}/${year}`;\n\n  return [\n    {\n      json: {\n        ativo: 'Vmad',\n        data: brazilianDate,\n        valor: valorFinal, // Agora será 733.816,60\n        componentes: {\n          rent_media_madeira: rentMadeira,\n          multiplicador: 5, // **CORRIGIDO: 5 em vez de 25**\n          resultado_final: valorFinal\n        },\n        valores_originais: {\n          rent_madeira: rentMadeira\n        },\n        formula: 'Vmad = rent_media_madeira * 5',\n        moeda: 'BRL',\n        fonte: 'Cálculo UCS',\n        timestamp: new Date().toISOString(),\n        status: 'sucesso',       \n        documentId: currentDate,  // ← Reutiliza a variável! ✅\n        observacao: 'Fórmula corrigida: multiplicador 5 (planilha) em vez de 25'\n      }\n    }\n  ];\n\n} catch (error) {\n  return [\n    {\n      json: {\n        erro: 'Erro ao calcular Vmad: ' + error.message,\n        timestamp: new Date().toISOString(),\n        status: 'erro'\n      }\n    }\n  ];\n}"
+      },
+      "id": "bfda31bb-e294-45e0-a8d5-8795ee9ce372",
+      "name": "🧮 Calcular Vmad",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1104,
+        -1408
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "upsert",
+        "projectId": "ucs-index-tracker",
+        "collection": "vmad",
+        "updateKey": "documentId",
+        "columns": "=ativo,data,valor,componentes,valores_originais,formula,moeda,fonte,timestamp,status,documentId"
+      },
+      "id": "13f61308-2db1-4801-97dc-1ad677c29606",
+      "name": "💾 Salvar Vmad",
+      "type": "n8n-nodes-base.googleFirebaseCloudFirestore",
+      "typeVersion": 1,
+      "position": [
+        -912,
+        -1408
+      ],
+      "credentials": {
+        "googleApi": {
+          "id": "Dqr74c3ldFzCyUyS",
+          "name": "Google Firebase Cloud Firestore account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  const vmadData = $input.first().json;\n\n  return [\n    {\n      json: {\n        status: 'vmad_sucesso',\n        mensagem: 'Vmad calculado e salvo com sucesso!',\n        dados_vmad: vmadData,\n        timestamp: new Date().toISOString()\n      }\n    }\n  ];\n\n} catch (error) {\n  return [\n    {\n      json: {\n        status: 'vmad_erro',\n        erro: 'Erro no Vmad: ' + error.message,\n        timestamp: new Date().toISOString()\n      }\n    }\n  ];\n}\n"
+      },
+      "id": "c122b8dd-233e-4a46-8e63-5cf16acb3042",
+      "name": "📋 Resposta Final Vmad",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -736,
+        -1408
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  // Aguardar dados dos 4 componentes\n  const vusData = $(\"💾 Salvar VUS\").first()?.json || null;\n  const vmadData = $(\"💾 Salvar Vmad\").first()?.json || null;\n  const carbonoCRSData = $(\"💾 Salvar Carbono_CRS\").first()?.json || null;\n  const aguaCRSData = $(\"💾 Salvar Agua_CRS\").first()?.json || null;\n\n  // Verificar se todos os dados estão disponíveis\n  if (!vusData || !vmadData || !carbonoCRSData || !aguaCRSData) {\n    return [\n      {\n        json: {\n          erro: \"Dados insuficientes para calcular Valor_Uso_Solo\",\n          dados_faltando: {\n            vus: !vusData,\n            vmad: !vmadData,\n            carbono_crs: !carbonoCRSData,\n            agua_crs: !aguaCRSData,\n          },\n          timestamp: new Date().toISOString(),\n          status: \"erro\",\n        },\n      },\n    ];\n  }\n\n  // Extrair valores - SEM ARREDONDAMENTO\n  const valorVUS = parseFloat(vusData.valor) || 0;\n  const valorVmad = parseFloat(vmadData.valor) || 0;\n  const valorCarbonoCRS = parseFloat(carbonoCRSData.valor) || 0;\n  const valorAguaCRS = parseFloat(aguaCRSData.valor) || 0;\n\n  // Calcular Valor_Uso_Solo - SEM ARREDONDAMENTO\n  const valorUsoSolo = valorVUS + valorVmad + valorCarbonoCRS + valorAguaCRS;\n\n  // Calcular porcentagens de cada componente - SEM ARREDONDAMENTO\n  const percentualVUS = valorUsoSolo > 0 ? (valorVUS / valorUsoSolo) * 100 : 0;\n  const percentualVmad = valorUsoSolo > 0 ? (valorVmad / valorUsoSolo) * 100 : 0;\n  const percentualCarbonoCRS = valorUsoSolo > 0 ? (valorCarbonoCRS / valorUsoSolo) * 100 : 0;\n  const percentualAguaCRS = valorUsoSolo > 0 ? (valorAguaCRS / valorUsoSolo) * 100 : 0;\n\n  // Formatar porcentagens como string com símbolo % - SEM ARREDONDAMENTO\n  const formatarPercentual = (valor) => {\n    return `${valor}%`;\n  };\n\n  // Preparar dados para salvar\n  const currentDate = new Date().toISOString().split(\"T\")[0];\n  const [year, month, day] = currentDate.split(\"-\");\n  const brazilianDate = `${day}/${month}/${year}`;\n\n  return [\n    {\n      json: {\n        created_at: new Date().toISOString(),\n        formulas: {\n          valor_total: \"Valor_Uso_Solo = VUS + Vmad + Carbono_CRS + Agua_CRS\",\n          porcentagem_vus: \"VUS / Valor_Uso_Solo * 100\",\n          porcentagem_vmad: \"Vmad / Valor_Uso_Solo * 100\",\n          porcentagem_carbono_crs: \"Carbono_CRS / Valor_Uso_Solo * 100\",\n          porcentagem_agua_crs: \"Agua_CRS / Valor_Uso_Solo * 100\",\n        },\n        timestamp: new Date().toISOString(),\n        data: brazilianDate,\n        documentId: new Date().toISOString(),\n        valor: valorUsoSolo, // VALOR ORIGINAL SEM FORMATAÇÃO\n        status: \"sucesso\",\n        porcentagens: {\n          vus_p: formatarPercentual(percentualVUS),\n          vmad_p: formatarPercentual(percentualVmad),\n          carbono_crs_p: formatarPercentual(percentualCarbonoCRS),\n          agua_crs_p: formatarPercentual(percentualAguaCRS),\n        },\n        moeda: \"BRL\",\n        ativo: \"Valor_Uso_Solo\",\n        valores_originais: {\n          vus: valorVUS, // VALOR ORIGINAL SEM FORMATAÇÃO\n          vmad: valorVmad, // VALOR ORIGINAL SEM FORMATAÇÃO\n          carbono_crs: valorCarbonoCRS, // VALOR ORIGINAL SEM FORMATAÇÃO\n          agua_crs: valorAguaCRS, // VALOR ORIGINAL SEM FORMATAÇÃO\n        },\n        bulk_import: true,\n        fonte: \"Banco de dados - Cálculo UCS\",\n      },\n    },\n  ];\n} catch (error) {\n  return [\n    {\n      json: {\n        erro: \"Erro ao calcular Valor_Uso_Solo: \" + error.message,\n        timestamp: new Date().toISOString(),\n        status: \"erro\",\n      },\n    },\n  ];\n}"
+      },
+      "id": "9db06b3a-6ef6-4e01-9482-3f619ac99f08",
+      "name": "🧮 Calcular Valor_Uso_Solo",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1104,
+        -1232
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "upsert",
+        "projectId": "ucs-index-tracker",
+        "collection": "valor_uso_solo",
+        "updateKey": "documentId",
+        "columns": "=ativo,data,valor,componentes,porcentagens,valores_originais,formulas,moeda,fonte,timestamp,status,documentId"
+      },
+      "id": "802f0b7f-01d3-45b5-adb3-60b0234f5858",
+      "name": "💾 Salvar Valor_Uso_Solo",
+      "type": "n8n-nodes-base.googleFirebaseCloudFirestore",
+      "typeVersion": 1,
+      "position": [
+        -912,
+        -1232
+      ],
+      "credentials": {
+        "googleApi": {
+          "id": "Dqr74c3ldFzCyUyS",
+          "name": "Google Firebase Cloud Firestore account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  const valorUsoSoloData = $input.first().json;\n\n  return [\n    {\n      json: {\n        status: 'valor_uso_solo_sucesso',\n        mensagem: 'Valor_Uso_Solo calculado e salvo com sucesso!',\n        dados_valor_uso_solo: valorUsoSoloData,\n        timestamp: new Date().toISOString()\n      }\n    }\n  ];\n\n} catch (error) {\n  return [\n    {\n      json: {\n        status: 'valor_uso_solo_erro',\n        erro: 'Erro no Valor_Uso_Solo: ' + error.message,\n        timestamp: new Date().toISOString()\n      }\n    }\n  ];\n}\n"
+      },
+      "id": "7c4a650e-284f-4ae7-87d7-f8dfb80e638a",
+      "name": "📋 Resposta Final Valor_Uso_Solo",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -736,
+        -1232
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "🔍 Extrair Preço": {
+      "main": [
+        [
+          {
+            "node": "⚙️ Processar Dados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🕐 Agendador (AM)": {
+      "main": [
+        [
+          {
+            "node": "🌐 Buscar USD/BRL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🌐 Buscar Milho": {
+      "main": [
+        [
+          {
+            "node": "🔍 Extrair Preço",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⚙️ Processar Dados": {
+      "main": [
+        [
+          {
+            "node": "Milho",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📊 Consolidador de Cotações": {
+      "main": [
+        [
+          {
+            "node": "📋 Resposta Final Consolidada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📋 Resposta Final Consolidada": {
+      "main": [
+        [
+          {
+            "node": "📋 Resposta Final do Sistema",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📋 Resposta Final": {
+      "main": [
+        [
+          {
+            "node": "📊 Consolidador de Cotações",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔍 Extrair Preço1": {
+      "main": [
+        [
+          {
+            "node": "⚙️ Processar Dados1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⚙️ Processar Dados1": {
+      "main": [
+        [
+          {
+            "node": "Soja",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📋 Resposta Final1": {
+      "main": [
+        [
+          {
+            "node": "📊 Consolidador de Cotações1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📊 Consolidador de Cotações1": {
+      "main": [
+        [
+          {
+            "node": "📋 Resposta Final Consolidada1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📋 Resposta Final Consolidada1": {
+      "main": [
+        [
+          {
+            "node": "📋 Resposta Final do Sistema1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🌐 Buscar Soja": {
+      "main": [
+        [
+          {
+            "node": "🔍 Extrair Preço1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔍 Extrair Preço2": {
+      "main": [
+        [
+          {
+            "node": "⚙️ Processar Dados2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⚙️ Processar Dados2": {
+      "main": [
+        [
+          {
+            "node": "Boi",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📋 Resposta Final2": {
+      "main": [
+        [
+          {
+            "node": "📊 Consolidador de Cotações2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📊 Consolidador de Cotações2": {
+      "main": [
+        [
+          {
+            "node": "📋 Resposta Final Consolidada2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📋 Resposta Final Consolidada2": {
+      "main": [
+        [
+          {
+            "node": "📋 Resposta Final do Sistema2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🌐 Buscar Boi Gordo": {
+      "main": [
+        [
+          {
+            "node": "🔍 Extrair Preço2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔍 Extrair Preço3": {
+      "main": [
+        [
+          {
+            "node": "⚙️ Processar Dados3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⚙️ Processar Dados3": {
+      "main": [
+        [
+          {
+            "node": "Carbono",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📋 Resposta Final3": {
+      "main": [
+        [
+          {
+            "node": "📊 Consolidador de Cotações3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📊 Consolidador de Cotações3": {
+      "main": [
+        [
+          {
+            "node": "📋 Resposta Final Consolidada3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📋 Resposta Final Consolidada3": {
+      "main": [
+        [
+          {
+            "node": "📋 Resposta Final do Sistema3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🌐 Buscar Carbono": {
+      "main": [
+        [
+          {
+            "node": "🔍 Extrair Preço3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📋 Resposta Final4": {
+      "main": [
+        [
+          {
+            "node": "📊 Consolidador de Cotações4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📊 Consolidador de Cotações4": {
+      "main": [
+        [
+          {
+            "node": "📋 Resposta Final Consolidada4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📋 Resposta Final Consolidada4": {
+      "main": [
+        [
+          {
+            "node": "📋 Resposta Final do Sistema4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🌐 Buscar USD/BRL": {
+      "main": [
+        [
+          {
+            "node": "🔍 Extrair Preço5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔍 Extrair Preço5": {
+      "main": [
+        [
+          {
+            "node": "USD",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔑 Preparar Firebase5": {
+      "main": [
+        [
+          {
+            "node": "💾 Salvar no Firebase5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💾 Salvar no Firebase5": {
+      "main": [
+        [
+          {
+            "node": "📋 Resposta Final6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🌐 Buscar EUR/BRL": {
+      "main": [
+        [
+          {
+            "node": "🔍 Extrair Preço6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔍 Extrair Preço6": {
+      "main": [
+        [
+          {
+            "node": "EUR",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔑 Preparar Firebase6": {
+      "main": [
+        [
+          {
+            "node": "💾 Salvar no Firebase6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💾 Salvar no Firebase6": {
+      "main": [
+        [
+          {
+            "node": "📋 Resposta Final5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💾 Salvar no Firebase7": {
+      "main": [
+        [
+          {
+            "node": "📋 Resposta Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💾 Salvar no Firebase8": {
+      "main": [
+        [
+          {
+            "node": "📋 Resposta Final1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📋 Resposta Final5": {
+      "main": [
+        [
+          {
+            "node": "📊 Consolidador de Cotações5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📊 Consolidador de Cotações5": {
+      "main": [
+        [
+          {
+            "node": "📋 Resposta Final Consolidada5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📋 Resposta Final Consolidada5": {
+      "main": [
+        [
+          {
+            "node": "📋 Resposta Final do Sistema5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📋 Resposta Final6": {
+      "main": [
+        [
+          {
+            "node": "📊 Consolidador de Cotações6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📊 Consolidador de Cotações6": {
+      "main": [
+        [
+          {
+            "node": "📋 Resposta Final Consolidada6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📋 Resposta Final Consolidada6": {
+      "main": [
+        [
+          {
+            "node": "📋 Resposta Final do Sistema6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💾 Salvar no Firebase": {
+      "main": [
+        [
+          {
+            "node": "📋 Resposta Final2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💾 Salvar no Firebase1": {
+      "main": [
+        [
+          {
+            "node": "📋 Resposta Final3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💾 Salvar no Firebase2": {
+      "main": [
+        [
+          {
+            "node": "📋 Resposta Final4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔍 Extrair Preço9": {
+      "main": [
+        [
+          {
+            "node": "⚙️ Processar Dados9",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⚙️ Processar Dados9": {
+      "main": [
+        [
+          {
+            "node": "Madeira",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🌐 Buscar Madeira2": {
+      "main": [
+        [
+          {
+            "node": "🔍 Extrair Preço9",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "USD": {
+      "main": [
+        [
+          {
+            "node": "🔑 Preparar Firebase5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EUR": {
+      "main": [
+        [
+          {
+            "node": "🔑 Preparar Firebase6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📋 Resposta Final do Sistema3": {
+      "main": [
+        [
+          {
+            "node": "🌐 Buscar Boi Gordo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📋 Resposta Final do Sistema2": {
+      "main": [
+        [
+          {
+            "node": "🌐 Buscar Milho",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📋 Resposta Final do Sistema1": {
+      "main": [
+        [
+          {
+            "node": "🌐 Buscar EUR/BRL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Madeira": {
+      "main": [
+        [
+          {
+            "node": "💾 Salvar no Firebase2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Soja": {
+      "main": [
+        [
+          {
+            "node": "💾 Salvar no Firebase8",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Carbono": {
+      "main": [
+        [
+          {
+            "node": "💾 Salvar no Firebase1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Boi": {
+      "main": [
+        [
+          {
+            "node": "💾 Salvar no Firebase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Milho": {
+      "main": [
+        [
+          {
+            "node": "💾 Salvar no Firebase7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📋 Resposta Final do Sistema": {
+      "main": [
+        [
+          {
+            "node": "🧮 Calcular CH2O Original",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🧮 Calcular CH2O Original": {
+      "main": [
+        [
+          {
+            "node": "💾 Salvar CH2O Original",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💾 Salvar CH2O Original": {
+      "main": [
+        [
+          {
+            "node": "📋 Resposta Final CH2O Original",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🧮 Calcular Custo_Água": {
+      "main": [
+        [
+          {
+            "node": "💾 Salvar Custo_Água",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💾 Salvar Custo_Água": {
+      "main": [
+        [
+          {
+            "node": "🧮 Calcular PDM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🧮 Calcular PDM": {
+      "main": [
+        [
+          {
+            "node": "💾 Salvar PDM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💾 Salvar PDM": {
+      "main": [
+        [
+          {
+            "node": "📋 Resposta Final PDM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🧮 Calcular UCS": {
+      "main": [
+        [
+          {
+            "node": "💾 Salvar UCS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💾 Salvar UCS": {
+      "main": [
+        [
+          {
+            "node": "🧮 Calcular UCS ASE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🧮 Calcular UCS ASE": {
+      "main": [
+        [
+          {
+            "node": "💾 Salvar UCS ASE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💾 Salvar UCS ASE": {
+      "main": [
+        [
+          {
+            "node": "📋 Resposta Final UCS ASE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📋 Resposta Final CH2O Original": {
+      "main": [
+        [
+          {
+            "node": "🧮 Calcular Custo_Água",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📋 Resposta Final PDM": {
+      "main": [
+        [
+          {
+            "node": "🧮 Calcular UCS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📋 Resposta Final UCS ASE": {
+      "main": [
+        [
+          {
+            "node": "🧮 Calcular VUS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🧮 Calcular VUS": {
+      "main": [
+        [
+          {
+            "node": "💾 Salvar VUS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💾 Salvar VUS": {
+      "main": [
+        [
+          {
+            "node": "📋 Resposta Final VUS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📋 Resposta Final VUS": {
+      "main": [
+        [
+          {
+            "node": "🧮 Calcular Carbono_CRS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🧮 Calcular Carbono_CRS": {
+      "main": [
+        [
+          {
+            "node": "💾 Salvar Carbono_CRS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💾 Salvar Carbono_CRS": {
+      "main": [
+        [
+          {
+            "node": "📋 Resposta Final Carbono_CRS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📋 Resposta Final Carbono_CRS": {
+      "main": [
+        [
+          {
+            "node": "🧮 Calcular Agua_CRS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🧮 Calcular Agua_CRS": {
+      "main": [
+        [
+          {
+            "node": "💾 Salvar Agua_CRS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💾 Salvar Agua_CRS": {
+      "main": [
+        [
+          {
+            "node": "📋 Resposta Final Agua_CRS",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "🧮 Calcular Vmad",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🧮 Calcular Vmad": {
+      "main": [
+        [
+          {
+            "node": "💾 Salvar Vmad",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💾 Salvar Vmad": {
+      "main": [
+        [
+          {
+            "node": "📋 Resposta Final Vmad",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "🧮 Calcular Valor_Uso_Solo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🧮 Calcular Valor_Uso_Solo": {
+      "main": [
+        [
+          {
+            "node": "💾 Salvar Valor_Uso_Solo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💾 Salvar Valor_Uso_Solo": {
+      "main": [
+        [
+          {
+            "node": "📋 Resposta Final Valor_Uso_Solo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📋 Resposta Final do Sistema5": {
+      "main": [
+        [
+          {
+            "node": "🌐 Buscar Carbono",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📋 Resposta Final do Sistema4": {
+      "main": [
+        [
+          {
+            "node": "🌐 Buscar Soja",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📋 Resposta Final do Sistema6": {
+      "main": [
+        [
+          {
+            "node": "🌐 Buscar Madeira2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "4a5bc187-410b-4710-b0c5-989cfef7858d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "13b0ea5dd383d159ddd6c18778dc7059e86dde50c7b38850c42dfbb9a92940a0"
+  },
+  "id": "t0UWBclXyHlp70Z3",
+  "tags": [
+    {
+      "createdAt": "2025-10-14T23:44:24.499Z",
+      "updatedAt": "2025-10-14T23:44:24.499Z",
+      "id": "OkbvZ5yWgZDUY8U8",
+      "name": "automated-integration"
+    },
+    {
+      "createdAt": "2025-10-14T23:44:24.630Z",
+      "updatedAt": "2025-10-14T23:44:24.630Z",
+      "id": "T7xqzMuZU1jN6sDY",
+      "name": "firebase-reorganization"
+    },
+    {
+      "createdAt": "2025-10-14T23:44:24.521Z",
+      "updatedAt": "2025-10-14T23:44:24.521Z",
+      "id": "dgLqEuv12XZh4gx8",
+      "name": "commodities-optimized"
+    },
+    {
+      "createdAt": "2025-10-14T23:44:24.472Z",
+      "updatedAt": "2025-10-14T23:44:24.472Z",
+      "id": "i1AffO2WDJASDaOP",
+      "name": "ch2o-water-index"
+    }
+  ]
+}
