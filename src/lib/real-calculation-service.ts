@@ -244,8 +244,9 @@ export function runCompleteSimulation(input: SimulationInput): CalculationResult
 
     // Gera o resultado final
     return Object.entries(calculatedValues).map(([assetId, newValue]) => {
-      const currentValueKey = `current_${assetId}` as keyof SimulationInput;
-      const currentValue = input[currentValueKey] as number || 0;
+      // Map "Agua_CRS" to the correct input key name (current_agua_crs)
+      const adjustedKey = assetId === 'Agua_CRS' ? 'current_agua_crs' : `current_${assetId}`;
+      const currentValue = (input as any)[adjustedKey] as number || 0;
       
       let result: CalculationResult = {
         id: assetId,

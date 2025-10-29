@@ -59,7 +59,7 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
-        <link rel="apple-touch-icon" href="/icons/apple-icon.png" />
+        <link rel="apple-touch-icon" href="/icons/apple-icon.svg" />
         <link rel="manifest" href="/site.webmanifest" />
         
         <link rel="preconnect" href="https://fonts.googleapis.com" />

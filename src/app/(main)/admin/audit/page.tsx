@@ -237,7 +237,6 @@ const AssetActionTable = ({
                 ) : (
                   <div className="flex items-center gap-2">
                     <AssetActions asset={asset} onEdit={onEdit} />
-                    <Button size="sm" variant="secondary" onClick={() => startEdit(asset)}>Editar</Button>
                     {editedValues[asset.id] !== undefined && (
                       <Button size="sm" variant="outline" onClick={() => onRevert(asset.id)}>Voltar ao original</Button>
                     )}
@@ -578,39 +577,13 @@ export default function AuditPage() {
 
     startTransition(async () => {
       try {
-        // Enviar para N8N Webhook
-        const WEBHOOK_URL = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL || '';
-        const API_KEY = process.env.NEXT_PUBLIC_N8N_AUDIT_API_KEY || '';
-        if (!WEBHOOK_URL || !API_KEY) {
-          throw new Error('Configuração do N8N ausente: defina NEXT_PUBLIC_N8N_WEBHOOK_URL e NEXT_PUBLIC_N8N_AUDIT_API_KEY');
-        }
+        // Dispara via Server Action para evitar mixed-content e esconder segredos
+        const result = await triggerN8NRecalculation(targetDate, editedValues);
 
-        const url = `${WEBHOOK_URL}?key=${encodeURIComponent(API_KEY)}`;
-        // Retry simples (3 tentativas)
-        const attemptPost = async () => {
-          return await fetch(url, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-audit-token': API_KEY,
-            },
-            body: JSON.stringify(n8nFullPayload),
-          });
-        };
-        let res = await attemptPost();
-        if (!res.ok) {
-          await new Promise(r => setTimeout(r, 1500));
-          res = await attemptPost();
-        }
-        if (!res.ok) {
-          await new Promise(r => setTimeout(r, 3000));
-          res = await attemptPost();
-        }
-
-        if (res.ok) {
+        if (result.success) {
           toast({
             title: "Snapshot enviado",
-            description: "O N8N está reprocessando os dados. Atualizando em seguida...",
+            description: result.message || "O N8N está reprocessando os dados. Atualizando em seguida...",
           });
           // Limpa caches server-side e revalida páginas relacionadas
           try { await clearCacheAndRefresh(); } catch {}
@@ -631,8 +604,7 @@ export default function AuditPage() {
             } catch {}
           }
         } else {
-          const payload = await res.json().catch(() => ({}));
-          throw new Error(payload?.msg || `Falha no Webhook (${res.status})`);
+          throw new Error(result.message || 'Falha ao contatar o N8N');
         }
       } catch (error: any) {
         toast({
@@ -771,11 +743,14 @@ export default function AuditPage() {
   const reviewChanges = useMemo(() => {
     return Object.entries(editedValues).map(([id, newValue]) => {
       const originalAsset = originalData.get(id);
+      const parsedNew = typeof newValue === 'number' 
+        ? newValue 
+        : Number(String(newValue).replace(/\./g, '').replace(',', '.'));
       return {
         id,
         name: originalAsset?.name || id,
         oldValue: originalAsset?.price ?? 0,
-        newValue,
+        newValue: isNaN(parsedNew) ? 0 : parsedNew,
         currency: originalAsset?.currency ?? 'BRL'
       };
     });
@@ -797,7 +772,11 @@ export default function AuditPage() {
     for (const asset of baseAssets) {
       if (!allowed.has(asset.id)) continue;
       const k = asset.id === 'boi_gordo' ? 'boi' : asset.id;
-      transformed[k] = { preco: Number(asset.price) };
+      const raw = (asset as any).price;
+      const preco = typeof raw === 'number'
+        ? raw
+        : (typeof raw === 'string' ? Number(raw.replace(/\./g, '').replace(',', '.')) : 0);
+      transformed[k] = { preco };
     }
     return {
       origem: 'painel_auditoria',
@@ -827,309 +806,28 @@ export default function AuditPage() {
                     </TooltipTrigger>
                     <TooltipContent>Envia alterações para o N8N</TooltipContent>
                   </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="outline" onClick={() => {
-                        exportToCsv(
-                          [...filteredBaseAssets, ...filteredIndices].map(a => ({ id: a.id, name: a.name, price: a.price, change: a.change, category: a.category })),
-                          `auditoria_${format(targetDate, 'yyyyMMdd')}.csv`
-                        )
-                      }}>
-                        <BarChart3 className="mr-2 h-4 w-4" /> Exportar CSV
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Exporta os dados filtrados</TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="outline" onClick={() => exportToJson(reviewChanges, `alteracoes_${format(targetDate, 'yyyyMMdd')}.json`)}>
-                        <FileDown className="mr-2 h-4 w-4" /> Exportar JSON (Alterações)
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Exporta as alterações pendentes</TooltipContent>
-                  </Tooltip>
-                  <div className="ml-auto flex items-center gap-2">
-                    <Badge variant={hasEdits ? 'destructive' : 'secondary'}>{Object.keys(editedValues).length} alterações</Badge>
-                    <Button variant="ghost" onClick={() => { setSearchTerm(''); setCategoryFilter('all'); setStatusFilter('all'); }}>Limpar filtros</Button>
+                  <div className="ml-auto flex items-center gap-4">
+                    <div className="hidden md:block">
+                      <DateNavigator targetDate={targetDate} />
+                    </div>
+                    <div className="hidden sm:flex items-center gap-2 text-xs md:text-sm text-gray-600">
+                      <Activity className="h-4 w-4 text-green-600" />
+                      <span className="hidden lg:inline">Edições pendentes:</span>
+                      <Badge variant={hasEdits ? 'destructive' : 'secondary'} className="font-medium">
+                        {Object.keys(editedValues).length}
+                      </Badge>
+                      <span className="hidden lg:inline">Data:</span>
+                      <Badge variant="outline" className="font-mono text-[10px] md:text-xs">
+                        {format(targetDate, 'dd/MM/yyyy')}
+                      </Badge>
+                    </div>
                   </div>
                 </TooltipProvider>
               </div>
             </CardContent>
           </Card>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Card className="lg:col-span-2 bg-white/80 backdrop-blur-sm border-0 shadow-lg">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-xl font-semibold text-gray-800 flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-blue-600" />
-                  Seleção de Data
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <DateNavigator 
-                  targetDate={targetDate} 
-                />
-              </CardContent>
-            </Card>
+          
 
-            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-xl font-semibold text-gray-800 flex items-center gap-2">
-                  <Activity className="h-5 w-5 text-green-600" />
-                  Status
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Edições pendentes:</span>
-                  <Badge variant={hasEdits ? "destructive" : "secondary"} className="font-medium">
-                    {Object.keys(editedValues).length}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Data selecionada:</span>
-                  <Badge variant="outline" className="font-mono text-xs">
-                    {format(targetDate, 'dd/MM/yyyy')}
-                  </Badge>
-                </div>
-                {isLoading && (
-                  <div className="flex items-center gap-2 text-blue-600">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span className="text-sm">Carregando dados...</span>
-                  </div>
-                )}
-                 {hasEdits && (
-                  <div className="pt-2">
-                     <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                             <Button disabled={isPending} className="w-full bg-green-600 hover:bg-green-700">
-                                <Save className="mr-2 h-4 w-4" />
-                                Salvar e Recalcular ({Object.keys(editedValues).length})
-                            </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent className="max-w-2xl">
-                            <AlertDialogHeader>
-                                <AlertDialogTitle className="flex items-center gap-2">
-                                    <Zap className="h-5 w-5 text-blue-600" />
-                                    Revisar e Confirmar Recálculo via N8N
-                                </AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Confirme os novos valores que serão enviados ao N8N para o dia <span className="font-bold">{format(targetDate, 'dd/MM/yyyy')}</span>.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            
-                            <div className="space-y-4 max-h-[60vh] overflow-y-auto p-1">
-                                <div className="p-4 border rounded-lg">
-                                  <h3 className="font-semibold mb-2">Alterações a serem enviadas:</h3>
-                                  <Table>
-                                    <TableHeader>
-                                      <TableRow>
-                                        <TableHead>Ativo</TableHead>
-                                        <TableHead className="text-right">Valor Anterior</TableHead>
-                                        <TableHead className="text-right">Novo Valor</TableHead>
-                                      </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                      {reviewChanges.map(change => (
-                                        <TableRow key={change.id}>
-                                          <TableCell className="font-medium">{change.name}</TableCell>
-                                          <TableCell className="text-right font-mono text-muted-foreground line-through">
-                                            {formatCurrency(change.oldValue, change.currency, change.id)}
-                                          </TableCell>
-                                          <TableCell className="text-right font-mono font-bold text-green-600">
-                                            {formatCurrency(change.newValue, change.currency, change.id)}
-                                          </TableCell>
-                                        </TableRow>
-                                      ))}
-                                    </TableBody>
-                                  </Table>
-                                </div>
-                                <div className="p-4 border rounded-lg bg-muted/50">
-                                  <h3 className="font-semibold mb-2">Payload para Webhook N8N (Snapshot Completo):</h3>
-                                  <pre className="text-xs bg-background p-3 rounded-md overflow-x-auto">
-                                    <code>
-                                      {JSON.stringify(n8nFullPayload, null, 2)}
-                                    </code>
-                                  </pre>
-                                </div>
-                            </div>
-
-                            <AlertDialogFooter className="mt-4">
-                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleRecalculate} disabled={isPending}>
-                                   {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
-                                    Confirmar e Enviar
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl">
-            <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 border-b">
-                <CardTitle className="text-xl font-bold flex items-center gap-3 text-gray-800 dark:text-gray-200">
-                    <Filter className="h-6 w-6 text-primary" />
-                    Filtros e Busca
-                </CardTitle>
-                <CardDescription className="text-gray-600 dark:text-gray-400">
-                    Use os filtros abaixo para encontrar ativos específicos ou filtrar por status.
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <div className="col-span-1 md:col-span-2 space-y-2">
-                        <label htmlFor="search" className="text-sm font-semibold text-gray-700 dark:text-gray-300">Buscar Ativo</label>
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                            <Input
-                                id="search"
-                                placeholder="Digite o nome ou ID do ativo..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="pl-10 border-gray-300 dark:border-gray-700 focus:border-primary focus:ring-primary"
-                            />
-                        </div>
-                    </div>
-                    <div className="space-y-2">
-                        <label htmlFor="category-filter" className="text-sm font-semibold text-gray-700 dark:text-gray-300">Categoria</label>
-                        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                            <SelectTrigger className="border-gray-300 dark:border-gray-700 focus:border-primary focus:ring-primary">
-                                <SelectValue placeholder="Todas" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">Todas as categorias</SelectItem>
-                                <SelectItem value="exchange">Moedas</SelectItem>
-                                <SelectItem value="agricultural">Commodities</SelectItem>
-                                <SelectItem value="material">Materiais</SelectItem>
-                                <SelectItem value="index">Índices</SelectItem>
-                                <SelectItem value="sub-index">Sub-índices</SelectItem>
-                                <SelectItem value="crs">CRS</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="space-y-2">
-                        <label htmlFor="status-filter" className="text-sm font-semibold text-gray-700 dark:text-gray-300">Status</label>
-                        <Select value={statusFilter} onValueChange={setStatusFilter}>
-                            <SelectTrigger className="border-gray-300 dark:border-gray-700 focus:border-primary focus:ring-primary">
-                                <SelectValue placeholder="Todos" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">Todos os status</SelectItem>
-                                <SelectItem value="normal">Normal</SelectItem>
-                                <SelectItem value="edited">Editado</SelectItem>
-                                <SelectItem value="zero">Valor Zero</SelectItem>
-                                <SelectItem value="calculated">Calculado</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="space-y-2">
-                        <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Ordenar por</label>
-                        <div className="grid grid-cols-2 gap-2">
-                          <Select value={sortKey} onValueChange={(v) => setSortKey(v as any)}>
-                            <SelectTrigger className="border-gray-300 dark:border-gray-700 focus:border-primary focus:ring-primary">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="name">Nome</SelectItem>
-                              <SelectItem value="id">ID</SelectItem>
-                              <SelectItem value="price">Preço</SelectItem>
-                              <SelectItem value="change">Variação</SelectItem>
-                              <SelectItem value="status">Status</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <Select value={sortDir} onValueChange={(v) => setSortDir(v as any)}>
-                            <SelectTrigger className="border-gray-300 dark:border-gray-700 focus:border-primary focus:ring-primary">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="asc">Asc</SelectItem>
-                              <SelectItem value="desc">Desc</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                    </div>
-                </div>
-                <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="md:col-span-1 flex items-center">
-                        <Button 
-                          variant="outline" 
-                          onClick={() => {
-                            setSearchTerm('');
-                            setCategoryFilter('all');
-                            setStatusFilter('all');
-                          }}
-                          className="w-full"
-                        >
-                          <RefreshCw className="h-4 w-4 mr-2" />
-                          Limpar Filtros
-                        </Button>
-                    </div>
-                    <div className="md:col-span-1 flex items-center">
-                      <Button 
-                        variant="secondary" 
-                        className="w-full"
-                        onClick={() => exportToCsv(
-                          filteredBaseAssets.map(a => ({ id: a.id, name: a.name, price: a.price, change: a.change, category: a.category })),
-                          `ativos_${format(targetDate, 'yyyyMMdd')}.csv`
-                        )}
-                      >
-                        <BarChart3 className="h-4 w-4 mr-2" />
-                        Exportar CSV (Ativos)
-                      </Button>
-                    </div>
-                    <div className="md:col-span-1 flex items-center">
-                      <Button 
-                        variant="secondary" 
-                        className="w-full"
-                        onClick={() => exportToCsv(
-                          filteredIndices.map(a => ({ id: a.id, name: a.name, price: a.price, change: a.change, category: a.category })),
-                          `indices_${format(targetDate, 'yyyyMMdd')}.csv`
-                        )}
-                      >
-                        <BarChart3 className="h-4 w-4 mr-2" />
-                        Exportar CSV (Índices)
-                      </Button>
-                    </div>
-                    <div className="md:col-span-1 flex items-center">
-                      <Button 
-                        variant="outline" 
-                        className="w-full"
-                        onClick={() => exportToJson(
-                          reviewChanges,
-                          `alteracoes_${format(targetDate, 'yyyyMMdd')}.json`
-                        )}
-                      >
-                        Exportar JSON (Alterações)
-                      </Button>
-                    </div>
-                </div>
-                {([ ...filteredBaseAssets, ...filteredIndices ].length > 0) && (
-                  <div className="mt-6 grid grid-cols-3 gap-4">
-                    <div className="text-center">
-                      <div className="text-lg font-bold text-yellow-600">
-                        {[...filteredBaseAssets, ...filteredIndices].filter(a => getAssetStatus(a, editedValues) === 'edited').length}
-                      </div>
-                      <div className="text-xs text-muted-foreground">Editados</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-lg font-bold text-red-600">
-                        {[...filteredBaseAssets, ...filteredIndices].filter(a => getAssetStatus(a, editedValues) === 'zero').length}
-                      </div>
-                      <div className="text-xs text-muted-foreground">Valor Zero</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-lg font-bold text-green-600">
-                        {[...filteredBaseAssets, ...filteredIndices].filter(a => getAssetStatus(a, editedValues) === 'normal').length}
-                      </div>
-                      <div className="text-xs text-muted-foreground">Normais</div>
-                    </div>
-                  </div>
-                )}
-            </CardContent>
-          </Card>
 
           <RecalculationProgress
             isVisible={showProgress}
