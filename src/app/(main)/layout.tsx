@@ -326,18 +326,34 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                  <SidebarMenuItem onClick={handleMenuItemClick}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={pathname.startsWith('/debug')}
-                      tooltip={{ children: 'Debug do Firestore' }}
-                    >
-                      <Link href="/debug">
-                        <Database />
-                        <span>Debug</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
+                  {process.env.NODE_ENV === 'development' && (
+                    <SidebarMenuItem onClick={handleMenuItemClick}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={pathname.startsWith('/debug')}
+                        tooltip={{ children: 'Debug do Firestore' }}
+                      >
+                        <Link href="/debug">
+                          <Database />
+                          <span>Debug</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )}
+                  {process.env.NODE_ENV === 'development' && (
+                    <SidebarMenuItem onClick={handleMenuItemClick}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={pathname.startsWith('/dev')}
+                        tooltip={{ children: 'Dev Tools' }}
+                      >
+                        <Link href="/dev">
+                          <Database />
+                          <span>Dev Tools</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )}
                 </SidebarMenu>
               )}
             </SidebarContent>

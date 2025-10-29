@@ -288,10 +288,20 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
       
     const isForexAsset = ['soja', 'carbono', 'madeira'].includes(selectedAssetConfig.id);
 
+    // Para ativos em moeda estrangeira, usar o último preço "cru" (USD/EUR)
+    const foreignIds = ['madeira', 'soja', 'carbono'];
+    const extractedPrice = foreignIds.includes(selectedAssetId)
+      ? (typeof (quoteForDate as any).ultimo === 'number' ? (quoteForDate as any).ultimo : (getPriceFromQuote(quoteForDate as FirestoreQuote, selectedAssetId) ?? 0))
+      : (getPriceFromQuote(quoteForDate as FirestoreQuote, selectedAssetId) ?? 0);
+    const displayCurrency = selectedAssetId === 'madeira' ? 'USD'
+      : selectedAssetId === 'carbono' ? 'EUR'
+      : selectedAssetId === 'soja' ? 'USD'
+      : (selectedAssetConfig as CommodityConfig).currency;
+
     const mainAsset: CommodityPriceData = {
         ...(selectedAssetConfig as CommodityConfig),
-        price: isForexAsset ? (quoteForDate.ultimo_brl ?? 0) : getPriceFromQuote(quoteForDate, selectedAssetId) ?? 0,
-        currency: 'BRL', // Mostra sempre BRL
+        price: extractedPrice,
+        currency: displayCurrency,
         change: quoteForDate.variacao_pct ?? 0,
         absoluteChange: (getPriceFromQuote(quoteForDate as FirestoreQuote, selectedAssetId) ?? 0) - (getPriceFromQuote(quoteForDate.fechamento_anterior_quote, selectedAssetId) ?? (getPriceFromQuote(quoteForDate as FirestoreQuote, selectedAssetId) ?? 0)),
         lastUpdated: (typeof quoteForDate.data === 'string' ? quoteForDate.data : (quoteForDate.timestamp ? format(new Date(quoteForDate.timestamp as any), 'dd/MM/yyyy') : 'N/A')),
@@ -316,21 +326,28 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
           return tb - ta;
         })[0];
 
-        const price = last ? (getPriceFromQuote(last, id) || 0) : 0;
+        const price = last
+          ? (['madeira','soja','carbono'].includes(id)
+              ? (typeof (last as any).ultimo === 'number' ? (last as any).ultimo : (getPriceFromQuote(last, id) || 0))
+              : (getPriceFromQuote(last, id) || 0))
+          : 0;
         const change = last?.variacao_pct ?? 0;
-        const name = assets.find(a => a.id === id)?.name || id.toUpperCase();
-        const category = assets.find(a => a.id === id)?.category as any;
+        const cfg = assets.find(a => a.id === id);
+        const name = cfg?.name || id.toUpperCase();
+        const category = cfg?.category as any;
+
+        const overriddenCurrency = id === 'madeira' ? 'USD' : id === 'carbono' ? 'EUR' : id === 'soja' ? 'USD' : (cfg?.currency || 'BRL');
 
         return {
           id,
           name,
           price,
-          currency: 'BRL',
+          currency: overriddenCurrency,
           change,
           absoluteChange: 0,
           category,
           description: '',
-          unit: 'BRL',
+          unit: cfg?.unit || 'BRL',
           lastUpdated: last?.data || '',
         } as CommodityPriceData;
       });
