@@ -13,7 +13,7 @@ import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carouse
 import { formatCurrency } from "@/lib/formatters";
 import type { CommodityPriceData, FirestoreQuote } from '@/lib/types';
 import Autoplay from "embla-carousel-autoplay";
-import { getCommodityPrices, getCotacoesHistorico } from '@/lib/data-service';
+import { getCommodityPrices, getCotacoesHistorico, getCommodityPricesByDate } from '@/lib/data-service';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/language-context';
 import { getLandingPageSettings, type LandingPageSettings } from '@/lib/settings-actions';
@@ -37,14 +37,41 @@ export default function PDMDetailsPage() {
   const [settings, setSettings] = React.useState<LandingPageSettings | null>(null);
   const { language, t } = useLanguage();
   const [isScrolled, setIsScrolled] = React.useState(false);
+  const [targetDate, setTargetDate] = React.useState<Date>(new Date());
+  const [isBusinessDay, setIsBusinessDay] = React.useState<boolean>(true);
 
   React.useEffect(() => {
-    getCommodityPrices().then(prices => {
-      const ucsAsset = prices.find(p => p.id === 'ucs_ase');
-      if (ucsAsset) {
-        setUcsAseAsset(ucsAsset);
+    // Descobrir a data alvo de exibição conforme regra de negócio (último dia útil quando hoje não for dia útil)
+    const init = async () => {
+      try {
+        const statusRes = await fetch('/api/business-day-status');
+        const statusJson = await statusRes.json();
+        const today = new Date();
+        if (statusJson?.isBusinessDay) {
+          setIsBusinessDay(true);
+          setTargetDate(today);
+          const prices = await getCommodityPrices();
+          const ucsAsset = prices.find(p => p.id === 'ucs_ase');
+          if (ucsAsset) setUcsAseAsset(ucsAsset);
+        } else {
+          setIsBusinessDay(false);
+          const prevRes = await fetch(`/api/business-day/previous?date=${format(today, 'yyyy-MM-dd')}`);
+          const prevJson = await prevRes.json();
+          const prevDate = prevJson?.date ? parse(prevJson.date, 'yyyy-MM-dd', new Date()) : today;
+          setTargetDate(prevDate);
+          const prices = await getCommodityPricesByDate(prevDate);
+          const ucsAsset = prices.find(p => p.id === 'ucs_ase');
+          if (ucsAsset) setUcsAseAsset(ucsAsset);
+        }
+      } catch (e) {
+        // fallback para hoje
+        const prices = await getCommodityPrices();
+        const ucsAsset = prices.find(p => p.id === 'ucs_ase');
+        if (ucsAsset) setUcsAseAsset(ucsAsset);
       }
-    });
+    };
+    init();
+
     getLandingPageSettings().then(setSettings);
 
     // Fetch historical data for the chart
@@ -288,6 +315,11 @@ export default function PDMDetailsPage() {
                               {t.home.quote.conversionRate} {formatCurrency(item.conversionRate, 'BRL', item.currency)}
                             </p>
                           )}
+                          <p className="text-xs text-gray-300 mt-2">
+                            {isBusinessDay
+                              ? `Referência: ${format(targetDate, 'dd/MM/yyyy')}`
+                              : `Referência: ${format(targetDate, 'dd/MM/yyyy')} (último dia útil)`}
+                          </p>
                         </div>
                       </CarouselItem>
                     ))}

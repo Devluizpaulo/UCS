@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { CommodityPrices } from '@/components/commodity-prices';
 import { getCommodityPricesByDate, getCommodityPrices, clearCacheAndRefresh, reprocessDate } from '@/lib/data-service';
 import { PageHeader } from '@/components/page-header';
-import { addDays, format, parseISO, isValid, isToday, isFuture } from 'date-fns';
+import { addDays, format, parseISO, isValid, isToday, isFuture, parse } from 'date-fns';
 import { ptBR, enUS, es } from 'date-fns/locale';
 import { useLanguage } from '@/lib/language-context';
 import { DateNavigator } from '@/components/date-navigator';
@@ -42,26 +42,6 @@ function getValidatedDate(dateString?: string | null): Date | null {
     if (isValid(parsed)) {
       return parsed;
     }
-
-  const handleGoToPreviousBusinessDay = async () => {
-      try {
-          const res = await fetch(`/api/business-day/previous?date=${format(targetDate, 'yyyy-MM-dd')}`);
-          const json = await res.json();
-          if (json?.success && json?.date) {
-              const newDate = new Date(json.date);
-              setTargetDate(newDate);
-              const iso = format(newDate, 'yyyy-MM-dd');
-              const params = new URLSearchParams(window.location.search);
-              params.set('date', iso);
-              router.replace(`?${params.toString()}`);
-              toast({ title: 'Navegado', description: `Exibindo último dia útil: ${format(newDate, 'dd/MM/yyyy')}` });
-          } else {
-              toast({ variant: 'destructive', title: 'Não foi possível localizar', description: 'Tente novamente em instantes.' });
-          }
-      } catch (e) {
-          toast({ variant: 'destructive', title: 'Erro ao buscar dia útil anterior' });
-      }
-  }
   }
   return null;
 }
@@ -177,6 +157,26 @@ export default function DashboardPage() {
               });
           }
       });
+  }
+
+  const handleGoToPreviousBusinessDay = async () => {
+    try {
+      const res = await fetch(`/api/business-day/previous?date=${format(targetDate, 'yyyy-MM-dd')}`);
+      const json = await res.json();
+      if (json?.success && json?.date) {
+        const newDate = parse(json.date, 'yyyy-MM-dd', new Date());
+        setTargetDate(newDate);
+        const iso = format(newDate, 'yyyy-MM-dd');
+        const params = new URLSearchParams(window.location.search);
+        params.set('date', iso);
+        router.replace(`?${params.toString()}`);
+        toast({ title: 'Navegado', description: `Exibindo último dia útil: ${format(newDate, 'dd/MM/yyyy')}` });
+      } else {
+        toast({ variant: 'destructive', title: 'Não foi possível localizar', description: 'Tente novamente em instantes.' });
+      }
+    } catch (e) {
+      toast({ variant: 'destructive', title: 'Erro ao buscar dia útil anterior' });
+    }
   }
 
   const handleExportExcel = async (fileFormat: 'xlsx' | 'csv' = 'xlsx') => {

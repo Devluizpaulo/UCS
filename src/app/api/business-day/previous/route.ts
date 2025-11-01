@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { subDays } from 'date-fns';
+import { subDays, format, parse } from 'date-fns';
 import { isBusinessDay } from '@/lib/business-days-service';
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const dateParam = searchParams.get('date');
-    const start = dateParam ? new Date(dateParam) : new Date();
+    // Parse yyyy-MM-dd as local date to avoid UTC shift
+    const start = dateParam ? parse(dateParam, 'yyyy-MM-dd', new Date()) : new Date();
 
     if (isNaN(start.getTime())) {
       return NextResponse.json({ success: false, message: 'Parâmetro de data inválido' }, { status: 400 });
@@ -18,7 +19,9 @@ export async function GET(request: NextRequest) {
     while (tries < 14) {
       const check = await isBusinessDay(current);
       if (check.isBusinessDay) {
-        return NextResponse.json({ success: true, date: current.toISOString() });
+        // Retorna data sem timezone para evitar deslocamentos de dia
+        const dateOnly = format(current, 'yyyy-MM-dd');
+        return NextResponse.json({ success: true, date: dateOnly, iso: current.toISOString() });
       }
       current = subDays(current, 1);
       tries++;
