@@ -800,11 +800,13 @@ export default function AuditPage() {
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button onClick={() => hasEdits ? handleRecalculate() : toast({ title: 'Nenhuma alteração', description: 'Edite algum valor antes de recalcular.', variant: 'destructive' })} className="bg-green-600 hover:bg-green-700">
+                      <Button onClick={handleRecalculate} disabled={!hasEdits} className="bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed">
                         <Save className="mr-2 h-4 w-4" /> Salvar e Recalcular
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent>Envia alterações para o N8N</TooltipContent>
+                    <TooltipContent>
+                      <p>Envia alterações para o N8N. Ativo apenas quando há edições.</p>
+                    </TooltipContent>
                   </Tooltip>
                   <div className="ml-auto flex items-center gap-4">
                     <div className="hidden md:block">
