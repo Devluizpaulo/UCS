@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useMemo, useTransition } from 'react';
@@ -276,104 +277,54 @@ const IndexTable = ({ indices, editedValues }: { indices: CommodityPriceData[], 
   
   const pdmHierarchy = [ucs, ucsAse].filter((a): a is CommodityPriceData => !!a);
 
-  const renderIndexRow = (asset: CommodityPriceData, indent: string, badge?: React.ReactNode) => (
-    <TableRow key={asset.id}>
-      <TableCell className="font-medium">
-        <div className="flex items-center gap-2">
-          {indent && <span className="text-muted-foreground">{indent}</span>}
-          <span>{asset.name}</span>
-          {badge}
-        </div>
-      </TableCell>
-      <TableCell className="text-right font-mono">{formatCurrency(asset.price, asset.currency, asset.id)}</TableCell>
-      <TableCell className="text-right">
-        <Badge variant="outline" className={cn(
-          asset.change > 0 && "text-green-600 bg-green-50",
-          asset.change < 0 && "text-red-600 bg-red-50",
-        )}>
-          {asset.change ? `${asset.change.toFixed(2)}%` : 'N/A'}
-        </Badge>
-      </TableCell>
-      <TableCell className="flex justify-center">
-        <AssetActions asset={asset} onEdit={() => {}} />
-      </TableCell>
-    </TableRow>
-  );
+  const renderIndexRow = (asset: CommodityPriceData | undefined, indent: string, badge?: React.ReactNode) => {
+    if (!asset) return null;
+    return (
+      <TableRow key={asset.id}>
+        <TableCell className="font-medium">
+          <div className="flex items-center gap-2">
+            {indent && <span className="text-muted-foreground">{indent}</span>}
+            <span>{asset.name}</span>
+            {badge}
+          </div>
+        </TableCell>
+        <TableCell className="text-right font-mono">{formatCurrency(asset.price, asset.currency, asset.id)}</TableCell>
+        <TableCell className="text-right">
+          <Badge variant="outline" className={cn(
+            asset.change > 0 && "text-green-600 bg-green-50",
+            asset.change < 0 && "text-red-600 bg-red-50",
+          )}>
+            {asset.change ? `${asset.change.toFixed(2)}%` : 'N/A'}
+          </Badge>
+        </TableCell>
+        <TableCell className="flex justify-center">
+          <AssetActions asset={asset} onEdit={() => {}} />
+        </TableCell>
+      </TableRow>
+    );
+  };
 
   return (
-    <>
-      <Table>
-        <TableBody>
-          {ch2oAgua && renderIndexRow(ch2oAgua, '')}
-          {custoAgua && renderIndexRow(custoAgua, '')}
-        </TableBody>
-      </Table>
-      <Accordion type="multiple" defaultValue={['valor_uso_solo', 'pdm_hierarchy']} className="w-full">
-        {/* Grupo Valor Uso Solo */}
-        {valorUsoSolo && (
-          <AccordionItem value="valor_uso_solo">
-            <AccordionTrigger className="hover:no-underline font-semibold text-base px-4 py-3 bg-muted/30 rounded-t-lg">
-              <div className="flex justify-between items-center w-full">
-                <span className="flex items-center gap-2">{valorUsoSolo.name}</span>
-                <div className="flex items-center gap-4">
-                  <span className="font-mono text-lg">{formatCurrency(valorUsoSolo.price, valorUsoSolo.currency, valorUsoSolo.id)}</span>
-                  <Badge variant="outline" className={cn(
-                    valorUsoSolo.change > 0 && "text-green-600 bg-green-50",
-                    valorUsoSolo.change < 0 && "text-red-600 bg-red-50",
-                  )}>
-                    {valorUsoSolo.change ? `${valorUsoSolo.change.toFixed(2)}%` : 'N/A'}
-                  </Badge>
-                </div>
-              </div>
-            </AccordionTrigger>
-            <AccordionContent>
-              <Table>
-                <TableBody>
-                  {valorUsoSoloSubIndices.map(subIndex =>
-                    renderIndexRow(subIndex, '└─', <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700">Sub-índice</Badge>)
-                  )}
-                </TableBody>
-              </Table>
-            </AccordionContent>
-          </AccordionItem>
+    <Table>
+      <TableBody>
+        {renderIndexRow(ch2oAgua, '')}
+        {renderIndexRow(custoAgua, '')}
+        {renderIndexRow(valorUsoSolo, '')}
+        {valorUsoSoloSubIndices.map(subIndex =>
+          renderIndexRow(subIndex, '└─', <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700">Sub-índice</Badge>)
         )}
-        
-        {/* Grupo PDM, UCS, UCS ASE */}
-        {pdm && (
-          <AccordionItem value="pdm_hierarchy">
-            <AccordionTrigger className="hover:no-underline font-semibold text-base px-4 py-3 bg-muted/30">
-              <div className="flex justify-between items-center w-full">
-                <span className="flex items-center gap-2">{pdm.name}</span>
-                <div className="flex items-center gap-4">
-                  <span className="font-mono text-lg">{formatCurrency(pdm.price, pdm.currency, pdm.id)}</span>
-                  <Badge variant="outline" className={cn(
-                    pdm.change > 0 && "text-green-600 bg-green-50",
-                    pdm.change < 0 && "text-red-600 bg-red-50",
-                  )}>
-                    {pdm.change ? `${pdm.change.toFixed(2)}%` : 'N/A'}
-                  </Badge>
-                </div>
-              </div>
-            </AccordionTrigger>
-            <AccordionContent>
-              <Table>
-                <TableBody>
-                  {pdmHierarchy.map(item =>
-                    renderIndexRow(
-                      item,
-                      item.id === 'ucs' ? '├─' : '└─',
-                      item.id === 'ucs'
-                        ? <Badge variant="secondary" className="text-xs bg-green-100 text-green-700">Base UCS</Badge>
-                        : <Badge variant="secondary" className="text-xs bg-purple-100 text-purple-700">Índice Final</Badge>
-                    )
-                  )}
-                </TableBody>
-              </Table>
-            </AccordionContent>
-          </AccordionItem>
+        {renderIndexRow(pdm, '')}
+        {pdmHierarchy.map(item =>
+          renderIndexRow(
+            item,
+            item.id === 'ucs' ? '├─' : '└─',
+            item.id === 'ucs'
+              ? <Badge variant="secondary" className="text-xs bg-green-100 text-green-700">Base UCS</Badge>
+              : <Badge variant="secondary" className="text-xs bg-purple-100 text-purple-700">Índice Final</Badge>
+          )
         )}
-      </Accordion>
-    </>
+      </TableBody>
+    </Table>
   );
 };
 
