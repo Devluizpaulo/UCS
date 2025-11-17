@@ -140,14 +140,50 @@ export function AuditExport({ currentDate }: AuditExportProps) {
   const downloadXLSX = (data: any) => {
     const wb = XLSX.utils.book_new();
 
+    const headerStyle = {
+        font: { bold: true, color: { rgb: "FFFFFF" } },
+        fill: { fgColor: { rgb: "0070F3" } },
+        alignment: { horizontal: "center" }
+    };
+    
     if (exportOptions.includeAssetData && data.asset_data) {
         const wsData = [
+            // Cabeçalho
             ['Data', 'ID', 'Nome', 'Valor', 'Moeda', 'Categoria'],
+            // Dados
             ...data.asset_data.map((asset: CommodityPriceData) => [
-                asset.lastUpdated, asset.id, asset.name, asset.price, asset.currency, asset.category
+                asset.lastUpdated,
+                asset.id,
+                asset.name,
+                asset.price,
+                asset.currency,
+                asset.category
             ])
         ];
         const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+        // Aplica formatação e auto-ajuste de colunas
+        const colWidths = [
+          { wch: 12 }, { wch: 15 }, { wch: 25 }, { wch: 15 }, { wch: 10 }, { wch: 20 }
+        ];
+        ws['!cols'] = colWidths;
+        
+        // Formatar valores como número
+        for (let i = 2; i <= wsData.length; i++) {
+          const cell = ws[XLSX.utils.encode_cell({c: 3, r: i - 1})];
+          if (cell) {
+            cell.t = 'n';
+            cell.z = `#,##0.00`;
+          }
+        }
+        
+        // Estilo do cabeçalho
+        ['A1', 'B1', 'C1', 'D1', 'E1', 'F1'].forEach(cell => {
+          if (ws[cell]) {
+              ws[cell].s = headerStyle;
+          }
+        });
+
         XLSX.utils.book_append_sheet(wb, ws, 'Dados de Ativos');
     }
 
@@ -155,10 +191,17 @@ export function AuditExport({ currentDate }: AuditExportProps) {
         const wsData = [
             ['Data/Hora', 'Ação', 'ID Ativo', 'Nome Ativo', 'Valor Antigo', 'Valor Novo', 'Usuário', 'Detalhes'],
             ...data.audit_logs.map((log: AuditLogEntry) => [
-                log.timestamp.toISOString(), log.action, log.assetId, log.assetName, log.oldValue ?? '', log.newValue ?? '', log.user, log.details ?? ''
+                log.timestamp, log.action, log.assetId, log.assetName, log.oldValue ?? '', log.newValue ?? '', log.user, log.details ?? ''
             ])
         ];
         const ws = XLSX.utils.aoa_to_sheet(wsData);
+        ws['!cols'] = [
+          { wch: 20 }, { wch: 12 }, { wch: 15 }, { wch: 25 }, { wch: 15 }, { wch: 15 }, { wch: 20 }, { wch: 40 }
+        ];
+        ['A1','B1','C1','D1','E1','F1','G1','H1'].forEach(cell => {
+          if(ws[cell]) ws[cell].s = headerStyle;
+        });
+
         XLSX.utils.book_append_sheet(wb, ws, 'Logs de Auditoria');
     }
 
@@ -170,6 +213,10 @@ export function AuditExport({ currentDate }: AuditExportProps) {
             ])
         ];
         const ws = XLSX.utils.aoa_to_sheet(wsData);
+        ws['!cols'] = [{ wch: 12 }, { wch: 15 }, { wch: 25 }, { wch: 15 }, { wch: 10 }];
+        ['A1','B1','C1','D1','E1'].forEach(cell => {
+          if(ws[cell]) ws[cell].s = headerStyle;
+        });
         XLSX.utils.book_append_sheet(wb, ws, 'Índices Calculados');
     }
 
