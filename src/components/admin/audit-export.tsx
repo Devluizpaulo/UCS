@@ -1,6 +1,7 @@
 
 'use client';
 
+import * as React from 'react';
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -157,7 +158,7 @@ export function AuditExport({ currentDate }: AuditExportProps) {
                 log.timestamp.toISOString(), log.action, log.assetId, log.assetName, log.oldValue ?? '', log.newValue ?? '', log.user, log.details ?? ''
             ])
         ];
-        const ws = XLSX-utils.aoa_to_sheet(wsData);
+        const ws = XLSX.utils.aoa_to_sheet(wsData);
         XLSX.utils.book_append_sheet(wb, ws, 'Logs de Auditoria');
     }
 
