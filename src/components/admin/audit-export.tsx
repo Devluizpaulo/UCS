@@ -50,7 +50,7 @@ export function AuditExport({ currentDate }: AuditExportProps) {
   const [isStartCalendarOpen, setIsStartCalendarOpen] = useState(false);
   const [isEndCalendarOpen, setIsEndCalendarOpen] = useState(false);
   const [pdfRecordsCount, setPdfRecordsCount] = React.useState<number | string>(10);
-  const [excelRecordsCount, setExcelRecordsCount] = React.useState<number | string>(100);
+  const [excelRecordsCount, setExcelRecordsCount] = React.useState<number | string>('all');
   
   const handleExport = async () => {
     if (exportOptions.format === 'pdf') {
@@ -146,45 +146,63 @@ export function AuditExport({ currentDate }: AuditExportProps) {
         alignment: { horizontal: "center" }
     };
     
-    if (exportOptions.includeAssetData && data.asset_data) {
-        const wsData = [
-            // Cabeçalho
-            ['Data', 'ID', 'Nome', 'Valor', 'Moeda', 'Categoria'],
-            // Dados
-            ...data.asset_data.map((asset: CommodityPriceData) => [
-                asset.lastUpdated,
-                asset.id,
-                asset.name,
-                asset.price,
-                asset.currency,
-                asset.category
-            ])
-        ];
-        const ws = XLSX.utils.aoa_to_sheet(wsData);
+    if (exportOptions.includeAssetData && data.asset_data && data.asset_data.length > 0) {
+        // Agrupar dados por data
+        const groupedByDate: Record<string, Record<string, number>> = {};
+        const assetNames: Record<string, string> = {};
 
-        // Aplica formatação e auto-ajuste de colunas
-        const colWidths = [
-          { wch: 12 }, { wch: 15 }, { wch: 25 }, { wch: 15 }, { wch: 10 }, { wch: 20 }
-        ];
-        ws['!cols'] = colWidths;
+        data.asset_data.forEach((asset: CommodityPriceData) => {
+            const date = asset.lastUpdated;
+            if (!groupedByDate[date]) {
+                groupedByDate[date] = {};
+            }
+            groupedByDate[date][asset.name] = asset.price;
+            if (!assetNames[asset.id]) {
+                assetNames[asset.id] = asset.name;
+            }
+        });
         
-        // Formatar valores como número
-        for (let i = 2; i <= wsData.length; i++) {
-          const cell = ws[XLSX.utils.encode_cell({c: 3, r: i - 1})];
-          if (cell) {
-            cell.t = 'n';
-            cell.z = `#,##0.00`;
-          }
-        }
+        // Criar cabeçalho dinâmico com todos os nomes de ativos
+        const allAssetNames = [...new Set(data.asset_data.map((a: CommodityPriceData) => a.name))].sort();
+        const headers = ['Data', ...allAssetNames];
         
-        // Estilo do cabeçalho
-        ['A1', 'B1', 'C1', 'D1', 'E1', 'F1'].forEach(cell => {
-          if (ws[cell]) {
-              ws[cell].s = headerStyle;
-          }
+        // Criar linhas
+        const rows = Object.entries(groupedByDate).map(([date, assets]) => {
+            const row: (string | number)[] = [date];
+            allAssetNames.forEach(name => {
+                row.push(assets[name] ?? '');
+            });
+            return row;
         });
 
-        XLSX.utils.book_append_sheet(wb, ws, 'Dados de Ativos');
+        const wsData = [headers, ...rows];
+        const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+        // Ajustar largura das colunas
+        const colWidths = headers.map(h => ({ wch: h.length > 15 ? h.length + 2 : 15 }));
+        ws['!cols'] = colWidths;
+        
+        // Formatar valores como número e estilo do cabeçalho
+        wsData.forEach((row, rIdx) => {
+            if (rIdx === 0) { // Cabeçalho
+                row.forEach((_, cIdx) => {
+                    const cellRef = XLSX.utils.encode_cell({ c: cIdx, r: rIdx });
+                    if (ws[cellRef]) ws[cellRef].s = headerStyle;
+                });
+            } else { // Dados
+                row.forEach((cellValue, cIdx) => {
+                    if (cIdx > 0 && typeof cellValue === 'number') {
+                        const cellRef = XLSX.utils.encode_cell({ c: cIdx, r: rIdx });
+                        if (ws[cellRef]) {
+                            ws[cellRef].t = 'n';
+                            ws[cellRef].z = '#,##0.00';
+                        }
+                    }
+                });
+            }
+        });
+
+        XLSX.utils.book_append_sheet(wb, ws, 'Dados de Ativos (por Data)');
     }
 
     if (exportOptions.includeAuditLogs && data.audit_logs) {
