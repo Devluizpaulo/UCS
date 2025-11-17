@@ -71,7 +71,7 @@ export function DocumentEditorModal({
     setIsSaving(true);
     try {
       const data = JSON.parse(jsonString);
-      await onSave(data, doc ? undefined : docId);
+      await onSave(data, doc ? undefined : (docId || undefined));
     } catch (e: any) {
       // O onSave já mostra um toast de erro, não precisa duplicar.
     } finally {
