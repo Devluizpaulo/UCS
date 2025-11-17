@@ -24,6 +24,7 @@ import {
   CheckSquare,
   BarChart3,
   Database,
+  SlidersHorizontal,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -330,25 +331,11 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
                     <SidebarMenuItem onClick={handleMenuItemClick}>
                       <SidebarMenuButton
                         asChild
-                        isActive={pathname.startsWith('/debug')}
-                        tooltip={{ children: 'Debug do Firestore' }}
-                      >
-                        <Link href="/debug">
-                          <Database />
-                          <span>Debug</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  )}
-                  {process.env.NODE_ENV === 'development' && (
-                    <SidebarMenuItem onClick={handleMenuItemClick}>
-                      <SidebarMenuButton
-                        asChild
                         isActive={pathname.startsWith('/dev')}
                         tooltip={{ children: 'Dev Tools' }}
                       >
                         <Link href="/dev">
-                          <Database />
+                          <SlidersHorizontal />
                           <span>Dev Tools</span>
                         </Link>
                       </SidebarMenuButton>
