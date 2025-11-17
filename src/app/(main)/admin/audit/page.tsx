@@ -6,7 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { History, Loader2, Save, ExternalLink, Edit, Search, Filter, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Zap, RefreshCw, Calendar, Activity, BarChart3, FileDown } from 'lucide-react';
-import { getCommodityPricesByDate, clearCacheAndRefresh } from '@/lib/data-service';
+import { getRawCommodityPricesByDate, clearCacheAndRefresh } from '@/lib/data-service';
 import type { CommodityPriceData } from '@/lib/types';
 import * as Calc from '@/lib/calculation-service';
 import { triggerN8NRecalculation } from '@/lib/n8n-actions'; // Import the N8N action
@@ -492,7 +492,7 @@ export default function AuditPage() {
     setIsLoading(true);
     setIsLoadingLogs(true);
     
-    getCommodityPricesByDate(newDate)
+    getRawCommodityPricesByDate(newDate)
       .then((fetchedData) => {
         const dataMap = new Map(fetchedData.map(item => [item.id, item]));
         setData(fetchedData);
@@ -595,7 +595,7 @@ export default function AuditPage() {
             await sleep(3000);
             try {
               const [freshData, freshLogs] = await Promise.all([
-                getCommodityPricesByDate(targetDate),
+                getRawCommodityPricesByDate(targetDate),
                 getAuditLogsForDate(targetDate),
               ]);
               setData(freshData);

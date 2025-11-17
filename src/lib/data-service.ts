@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import { getFirebaseAdmin } from '@/lib/firebase-admin-config';
@@ -9,7 +8,7 @@ import { Timestamp } from 'firebase-admin/firestore';
 import { subDays, format, startOfDay, endOfDay, isValid, parseISO } from 'date-fns';
 import { revalidatePath } from 'next/cache';
 import { validateQuoteOperation, QuoteOperationOptions } from '@/lib/quote-validation-middleware';
-import { isBusinessDay } from '@/lib/business-days-service';
+import { isBusinessDay, getPreviousBusinessDay } from '@/lib/business-days-service';
 
 // --- CONSTANTS ---
 const CACHE_KEYS = {
@@ -895,16 +894,12 @@ function calculatePriceChange(currentPrice: number, previousPrice: number): { ch
 }
 
 /**
- * Obtém preços de commodities para uma data específica
- * BLOQUEIA dados em fins de semana e feriados
+ * Obtém preços de commodities para uma data específica (pública, com bloqueio)
  */
 export async function getCommodityPricesByDate(date: Date): Promise<CommodityPriceData[]> {
-  // VALIDAÇÃO DE DIA ÚTIL - BLOQUEIA CONSULTA
   const businessDayCheck = await isBusinessDay(date);
   if (!businessDayCheck.isBusinessDay) {
     console.log(`[DataService] Consulta bloqueada para ${format(date, 'dd/MM/yyyy')}: ${businessDayCheck.holidayName}`);
-    
-    // Retorna array vazio ou dados "bloqueados"
     const configs = await getCommodityConfigs();
     return configs.map(config => ({
       ...config,
@@ -917,9 +912,41 @@ export async function getCommodityPricesByDate(date: Date): Promise<CommodityPri
     }));
   }
 
-  const cacheKey = generateDateCacheKey(CACHE_KEYS.PRICES_BY_DATE, date);
-  const cachedData = getCache<CommodityPriceData[]>(cacheKey);
-  if (cachedData) return cachedData;
+  return _fetchPricesForDate(date);
+}
+
+/**
+ * Obtém preços atuais de commodities (pública, com bloqueio)
+ */
+export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
+  const today = new Date();
+  
+  const businessDayCheck = await isBusinessDay(today);
+  if (!businessDayCheck.isBusinessDay) {
+    console.log(`[DataService] Consulta de hoje bloqueada, buscando último dia útil...`);
+    const prevBusinessDay = await getPreviousBusinessDay(today);
+    return getCommodityPricesByDate(prevBusinessDay);
+  }
+
+  return _fetchPricesForDate(today, CACHE_KEYS.PRICES_REALTIME, CACHE_TTL.REALTIME);
+}
+
+/**
+ * Obtém preços de commodities para uma data, sem bloqueio. Usado internamente e para auditoria.
+ */
+export async function getRawCommodityPricesByDate(date: Date): Promise<CommodityPriceData[]> {
+  return _fetchPricesForDate(date);
+}
+
+/**
+ * Função central de busca de preços, com caching opcional.
+ */
+async function _fetchPricesForDate(date: Date, cacheKey?: string, cacheTtl?: number): Promise<CommodityPriceData[]> {
+  if (cacheKey) {
+    const dateCacheKey = generateDateCacheKey(cacheKey, date);
+    const cachedData = getCache<CommodityPriceData[]>(dateCacheKey);
+    if (cachedData) return cachedData;
+  }
 
   try {
     const configs = await getCommodityConfigs();
@@ -931,7 +958,10 @@ export async function getCommodityPricesByDate(date: Date): Promise<CommodityPri
       const { price: latestPrice } = extractPriceFromQuote(latestDoc);
       const change = latestDoc?.variacao_pct ?? 0;
       const absoluteChange = latestDoc?.variacao_abs ?? 0;
-
+      
+      let price = latestPrice;
+      let currency = config.currency;
+      
       if (config.id === 'ucs_ase' && latestDoc) {
         return {
           ...config,
@@ -946,64 +976,20 @@ export async function getCommodityPricesByDate(date: Date): Promise<CommodityPri
         };
       }
 
-      // Força SOJA a exibir o último preço em USD (sem conversão para BRL)
-      if (config.id === 'soja' && latestDoc) {
-        const usdLast = typeof latestDoc.ultimo === 'number' ? latestDoc.ultimo : latestPrice;
-        return {
-          ...config,
-          currency: 'USD',
-          price: usdLast,
-          change,
-          absoluteChange,
-          lastUpdated: latestDoc?.data || displayDate,
-          isBlocked: false
-        } as any;
+      if ((config.id === 'soja' || config.id === 'madeira') && latestDoc) {
+        price = typeof latestDoc.ultimo === 'number' ? latestDoc.ultimo : latestPrice;
+        currency = 'USD';
       }
 
-      // Força MADEIRA a exibir o último preço em USD (sem conversão para BRL)
-      if (config.id === 'madeira' && latestDoc) {
-        const usdLast = typeof latestDoc.ultimo === 'number' ? latestDoc.ultimo : latestPrice;
-        return {
-          ...config,
-          currency: 'USD',
-          price: usdLast,
-          change,
-          absoluteChange,
-          lastUpdated: latestDoc?.data || displayDate,
-          isBlocked: false
-        } as any;
-      }
-
-      // Força CARBONO a exibir o último preço em EUR (sem conversão para BRL)
       if (config.id === 'carbono' && latestDoc) {
-        const eurLast = typeof latestDoc.ultimo === 'number' ? latestDoc.ultimo : latestPrice;
-        return {
-          ...config,
-          currency: 'EUR',
-          price: eurLast,
-          change,
-          absoluteChange,
-          lastUpdated: latestDoc?.data || displayDate,
-          isBlocked: false
-        } as any;
-      }
-      
-      // Garante MADEIRA em USD mesmo se latestDoc for nulo
-      if (config.id === 'madeira' && !latestDoc) {
-        return {
-          ...config,
-          currency: 'USD',
-          price: latestPrice,
-          change,
-          absoluteChange,
-          lastUpdated: displayDate,
-          isBlocked: false
-        } as any;
+        price = typeof latestDoc.ultimo === 'number' ? latestDoc.ultimo : latestPrice;
+        currency = 'EUR';
       }
 
       return { 
         ...config, 
-        price: latestPrice, 
+        price, 
+        currency: currency as 'USD' | 'BRL' | 'EUR',
         change, 
         absoluteChange, 
         lastUpdated: latestDoc?.data || displayDate,
@@ -1012,7 +998,10 @@ export async function getCommodityPricesByDate(date: Date): Promise<CommodityPri
     });
 
     const results = await Promise.all(assetPromises);
-    setCache(cacheKey, results, CACHE_TTL.HISTORICAL);
+    if (cacheKey && cacheTtl) {
+        const dateCacheKey = generateDateCacheKey(cacheKey, date);
+        setCache(dateCacheKey, results, cacheTtl);
+    }
     return results;
 
   } catch (error) {
@@ -1020,122 +1009,6 @@ export async function getCommodityPricesByDate(date: Date): Promise<CommodityPri
   }
 }
 
-/**
- * Obtém preços atuais de commodities
- * BLOQUEIA dados em fins de semana e feriados
- */
-export async function getCommodityPrices(): Promise<CommodityPriceData[]> {
-  const today = new Date();
-  
-  // VALIDAÇÃO DE DIA ÚTIL - BLOQUEIA CONSULTA PARA HOJE
-  const businessDayCheck = await isBusinessDay(today);
-  if (!businessDayCheck.isBusinessDay) {
-    console.log(`[DataService] Consulta de preços atuais bloqueada: ${businessDayCheck.holidayName}`);
-    
-    // Retorna dados "bloqueados" para hoje
-    const configs = await getCommodityConfigs();
-    return configs.map(config => ({
-      ...config,
-      price: 0,
-      change: 0,
-      absoluteChange: 0,
-      lastUpdated: `Bloqueado: ${businessDayCheck.holidayName}`,
-      isBlocked: true,
-      blockReason: businessDayCheck.holidayName
-    }));
-  }
-
-  const cachedData = getCache<CommodityPriceData[]>(CACHE_KEYS.PRICES_REALTIME);
-  if (cachedData) return cachedData;
-
-  try {
-    const configs = await getCommodityConfigs();
-    
-    const assetPromises = configs.map(async (config) => {
-      const latestDoc = await getQuoteByDate(config.id, today);
-
-      const { price: latestPrice } = extractPriceFromQuote(latestDoc);
-      const change = latestDoc?.variacao_pct ?? 0;
-      const absoluteChange = latestDoc?.variacao_abs ?? 0;
-
-      const lastUpdated = latestDoc?.timestamp 
-        ? formatTimestamp(latestDoc.timestamp)
-        : 'N/A';
-      
-      if (config.id === 'ucs_ase' && latestDoc) {
-        return {
-          ...config,
-          price: latestDoc.valor_brl || latestPrice,
-          valor_usd: latestDoc.valor_usd,
-          valor_eur: latestDoc.valor_eur,
-          valores_originais: latestDoc.valores_originais,
-          change,
-          absoluteChange,
-          lastUpdated: lastUpdated,
-          isBlocked: false
-        };
-      }
-
-      // Força SOJA a exibir o último preço em USD (sem conversão para BRL)
-      if (config.id === 'soja' && latestDoc) {
-        const usdLast = typeof latestDoc.ultimo === 'number' ? latestDoc.ultimo : latestPrice;
-        return {
-          ...config,
-          currency: 'USD',
-          price: usdLast,
-          change,
-          absoluteChange,
-          lastUpdated: lastUpdated,
-          isBlocked: false
-        } as any;
-      }
-
-      // Força MADEIRA a exibir o último preço em USD (sem conversão para BRL)
-      if (config.id === 'madeira' && latestDoc) {
-        const usdLast = typeof latestDoc.ultimo === 'number' ? latestDoc.ultimo : latestPrice;
-        return {
-          ...config,
-          currency: 'USD',
-          price: usdLast,
-          change,
-          absoluteChange,
-          lastUpdated: lastUpdated,
-          isBlocked: false
-        } as any;
-      }
-
-      // Força CARBONO a exibir o último preço em EUR (sem conversão para BRL)
-      if (config.id === 'carbono' && latestDoc) {
-        const eurLast = typeof latestDoc.ultimo === 'number' ? latestDoc.ultimo : latestPrice;
-        return {
-          ...config,
-          currency: 'EUR',
-          price: eurLast,
-          change,
-          absoluteChange,
-          lastUpdated: lastUpdated,
-          isBlocked: false
-        } as any;
-      }
-
-      return {
-        ...config,
-        price: latestPrice,
-        change,
-        absoluteChange,
-        lastUpdated: lastUpdated,
-        isBlocked: false
-      };
-    });
-
-    const results = await Promise.all(assetPromises);
-    setCache(CACHE_KEYS.PRICES_REALTIME, results, CACHE_TTL.REALTIME);
-    return results;
-
-  } catch (error) {
-    throw new Error("Falha ao obter as cotações mais recentes.");
-  }
-}
 
 /**
  * Obtém histórico de cotações para um ativo
