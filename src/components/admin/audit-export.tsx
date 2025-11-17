@@ -164,13 +164,13 @@ export function AuditExport({ currentDate }: AuditExportProps) {
         
         // Criar cabeçalho dinâmico com todos os nomes de ativos
         const allAssetNames = [...new Set(data.asset_data.map((a: CommodityPriceData) => a.name))].sort();
-        const headers = ['Data', ...allAssetNames];
+        const headers: unknown[] = ['Data', ...allAssetNames];
         
         // Criar linhas
         const rows = Object.entries(groupedByDate).map(([date, assets]) => {
             const row: (string | number)[] = [date];
             allAssetNames.forEach((name: string) => {
-                row.push(assets[name] ?? '');
+                row.push(assets[name as keyof typeof assets] ?? '');
             });
             return row;
         });
@@ -179,7 +179,7 @@ export function AuditExport({ currentDate }: AuditExportProps) {
         const ws = XLSX.utils.aoa_to_sheet(wsData);
 
         // Ajustar largura das colunas
-        const colWidths = headers.map((h: string) => ({ wch: h.length > 15 ? h.length + 2 : 15 }));
+        const colWidths = headers.map(h => ({ wch: (h as string).length > 15 ? (h as string).length + 2 : 15 }));
         ws['!cols'] = colWidths;
         
         // Formatar valores como número e estilo do cabeçalho
