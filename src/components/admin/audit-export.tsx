@@ -15,7 +15,7 @@ import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import type { CommodityPriceData } from '@/lib/types';
 import type { AuditLogEntry } from './audit-history';
-import { getCommodityPricesByDate } from '@/lib/data-service';
+import { getRawCommodityPricesByDate } from '@/lib/data-service';
 import { getAuditLogsForPeriod } from '@/lib/audit-log-service';
 import { PdfPreviewModal } from '@/components/pdf-preview-modal';
 import type { DashboardPdfData } from '@/lib/types';
