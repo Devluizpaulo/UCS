@@ -524,5 +524,3 @@ export function AuditExport({ currentDate }: AuditExportProps) {
     </>
   );
 }
-
-    
