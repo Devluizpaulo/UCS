@@ -38,7 +38,7 @@ export function AuditExport({ currentDate }: AuditExportProps) {
   const [exportOptions, setExportOptions] = useState<ExportOptions>({
     format: 'xlsx',
     includeAssetData: true,
-    includeAuditLogs: true,
+    includeAuditLogs: false,
     includeCalculations: false,
     startDate: currentDate,
     endDate: currentDate
@@ -524,3 +524,5 @@ export function AuditExport({ currentDate }: AuditExportProps) {
     </>
   );
 }
+
+    
