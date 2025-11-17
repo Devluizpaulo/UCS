@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Download, FileText, Table, CalendarIcon, Loader2, Settings, FileSpreadsheet } from 'lucide-react';
-import { format, subDays, startOfMonth, endOfMonth } from 'date-fns';
+import { format, subDays, startOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import type { CommodityPriceData } from '@/lib/types';
@@ -57,10 +57,10 @@ export function AuditExport({ currentDate }: AuditExportProps) {
       const dataForPdf = await generateExportData(10); // Limite para PDF ou use um seletor
       setPdfData({
         targetDate: exportOptions.startDate || new Date(),
-        mainIndex: dataForPdf.asset_data?.find(a => a.id === 'ucs_ase'),
-        secondaryIndices: dataForPdf.asset_data?.filter(a => ['pdm', 'vus'].includes(a.id)) || [],
-        currencies: dataForPdf.asset_data?.filter(a => ['usd', 'eur'].includes(a.id)) || [],
-        otherAssets: dataForPdf.asset_data?.filter(a => !['ucs_ase', 'pdm', 'vus', 'usd', 'eur'].includes(a.id)) || [],
+        mainIndex: dataForPdf.asset_data?.find((a: CommodityPriceData) => a.id === 'ucs_ase'),
+        secondaryIndices: dataForPdf.asset_data?.filter((a: CommodityPriceData) => ['pdm', 'vus'].includes(a.id)) || [],
+        currencies: dataForPdf.asset_data?.filter((a: CommodityPriceData) => ['usd', 'eur'].includes(a.id)) || [],
+        otherAssets: dataForPdf.asset_data?.filter((a: CommodityPriceData) => !['ucs_ase', 'pdm', 'vus', 'usd', 'eur'].includes(a.id)) || [],
         // Inclua logs de auditoria se precisar exibi-los no PDF de alguma forma
       });
       setIsPdfPreviewOpen(true);
@@ -169,7 +169,7 @@ export function AuditExport({ currentDate }: AuditExportProps) {
         // Criar linhas
         const rows = Object.entries(groupedByDate).map(([date, assets]) => {
             const row: (string | number)[] = [date];
-            allAssetNames.forEach(name => {
+            allAssetNames.forEach((name: string) => {
                 row.push(assets[name] ?? '');
             });
             return row;
@@ -179,7 +179,7 @@ export function AuditExport({ currentDate }: AuditExportProps) {
         const ws = XLSX.utils.aoa_to_sheet(wsData);
 
         // Ajustar largura das colunas
-        const colWidths = headers.map(h => ({ wch: h.length > 15 ? h.length + 2 : 15 }));
+        const colWidths = headers.map((h: string) => ({ wch: h.length > 15 ? h.length + 2 : 15 }));
         ws['!cols'] = colWidths;
         
         // Formatar valores como número e estilo do cabeçalho
