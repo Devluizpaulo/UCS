@@ -8,7 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Download, FileText, Table, CalendarIcon, Loader2 } from 'lucide-react';
+import { Download, FileText, Table, CalendarIcon, Loader2, Settings, FileSpreadsheet } from 'lucide-react';
 import { format, subDays, startOfMonth, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -16,11 +16,12 @@ import type { CommodityPriceData } from '@/lib/types';
 import type { AuditLogEntry } from './audit-history';
 import { getCommodityPricesByDate } from '@/lib/data-service';
 import { getAuditLogsForPeriod } from '@/lib/audit-log-service';
-import { PdfExportButton } from '@/components/pdf-export-button';
+import { PdfPreviewModal } from '@/components/pdf-preview-modal';
 import type { DashboardPdfData } from '@/lib/types';
+import * as XLSX from 'xlsx';
 
 interface ExportOptions {
-  format: 'csv' | 'json';
+  format: 'xlsx' | 'csv' | 'json' | 'pdf';
   includeAssetData: boolean;
   includeAuditLogs: boolean;
   includeCalculations: boolean;
@@ -34,23 +35,41 @@ interface AuditExportProps {
 
 export function AuditExport({ currentDate }: AuditExportProps) {
   const [exportOptions, setExportOptions] = useState<ExportOptions>({
-    format: 'csv',
+    format: 'xlsx',
     includeAssetData: true,
     includeAuditLogs: true,
     includeCalculations: false,
     startDate: currentDate,
     endDate: currentDate
   });
+  const [isPdfPreviewOpen, setIsPdfPreviewOpen] = useState(false);
+  const [pdfData, setPdfData] = useState<DashboardPdfData | null>(null);
 
   const [isExporting, setIsExporting] = useState(false);
   const [isStartCalendarOpen, setIsStartCalendarOpen] = useState(false);
   const [isEndCalendarOpen, setIsEndCalendarOpen] = useState(false);
+  const [pdfRecordsCount, setPdfRecordsCount] = React.useState<number | string>(10);
+  const [excelRecordsCount, setExcelRecordsCount] = React.useState<number | string>(100);
   
   const handleExport = async () => {
+    if (exportOptions.format === 'pdf') {
+      const dataForPdf = await generateExportData(10); // Limite para PDF ou use um seletor
+      setPdfData({
+        targetDate: exportOptions.startDate || new Date(),
+        mainIndex: dataForPdf.asset_data?.find(a => a.id === 'ucs_ase'),
+        secondaryIndices: dataForPdf.asset_data?.filter(a => ['pdm', 'vus'].includes(a.id)) || [],
+        currencies: dataForPdf.asset_data?.filter(a => ['usd', 'eur'].includes(a.id)) || [],
+        otherAssets: dataForPdf.asset_data?.filter(a => !['ucs_ase', 'pdm', 'vus', 'usd', 'eur'].includes(a.id)) || [],
+        // Inclua logs de auditoria se precisar exibi-los no PDF de alguma forma
+      });
+      setIsPdfPreviewOpen(true);
+      return;
+    }
+    
     setIsExporting(true);
     
     try {
-      const exportData = await generateExportData();
+      const exportData = await generateExportData(exportOptions.format === 'csv' || exportOptions.format === 'xlsx' ? excelRecordsCount : undefined);
       
       switch (exportOptions.format) {
         case 'csv':
@@ -58,6 +77,9 @@ export function AuditExport({ currentDate }: AuditExportProps) {
           break;
         case 'json':
           downloadJSON(exportData);
+          break;
+        case 'xlsx':
+          downloadXLSX(exportData);
           break;
       }
     } catch (error) {
@@ -68,9 +90,11 @@ export function AuditExport({ currentDate }: AuditExportProps) {
     }
   };
 
-  const generateExportData = async () => {
+  const generateExportData = async (limit?: number | string) => {
     const { startDate, endDate } = exportOptions;
     if (!startDate || !endDate) return {};
+
+    const numLimit = typeof limit === 'number' ? limit : undefined;
 
     const data: any = {
       exportDate: new Date().toISOString(),
@@ -88,50 +112,90 @@ export function AuditExport({ currentDate }: AuditExportProps) {
         currentDate.setDate(currentDate.getDate() + 1);
       }
       
-      const pricePromises = dateArray.map(date => getCommodityPricesByDate(date));
+      const pricePromises = dateArray.map(date => getRawCommodityPricesByDate(date));
       const pricesByDate = await Promise.all(pricePromises);
       
+      const flatPrices = pricesByDate.flat();
+
       if (exportOptions.includeAssetData) {
-        data.asset_data = pricesByDate.flat();
+        data.asset_data = numLimit ? flatPrices.slice(0, numLimit) : flatPrices;
       }
       if (exportOptions.includeCalculations) {
-        data.calculated_indices = pricesByDate.flat().filter(
+        const calculated = flatPrices.filter(
           asset => asset.category === 'index' || asset.category === 'sub-index' || asset.category === 'main-index'
         );
+        data.calculated_indices = numLimit ? calculated.slice(0, numLimit) : calculated;
       }
     }
 
     if (exportOptions.includeAuditLogs) {
       data.audit_logs = await getAuditLogsForPeriod(startDate, endDate);
+      if (numLimit) data.audit_logs = data.audit_logs.slice(0, numLimit);
     }
 
     return data;
   };
 
+  const downloadXLSX = (data: any) => {
+    const wb = XLSX.utils.book_new();
+
+    if (exportOptions.includeAssetData && data.asset_data) {
+        const wsData = [
+            ['Data', 'ID', 'Nome', 'Valor', 'Moeda', 'Categoria'],
+            ...data.asset_data.map((asset: CommodityPriceData) => [
+                asset.lastUpdated, asset.id, asset.name, asset.price, asset.currency, asset.category
+            ])
+        ];
+        const ws = XLSX.utils.aoa_to_sheet(wsData);
+        XLSX.utils.book_append_sheet(wb, ws, 'Dados de Ativos');
+    }
+
+    if (exportOptions.includeAuditLogs && data.audit_logs) {
+        const wsData = [
+            ['Data/Hora', 'Ação', 'ID Ativo', 'Nome Ativo', 'Valor Antigo', 'Valor Novo', 'Usuário', 'Detalhes'],
+            ...data.audit_logs.map((log: AuditLogEntry) => [
+                log.timestamp.toISOString(), log.action, log.assetId, log.assetName, log.oldValue ?? '', log.newValue ?? '', log.user, log.details ?? ''
+            ])
+        ];
+        const ws = XLSX-utils.aoa_to_sheet(wsData);
+        XLSX.utils.book_append_sheet(wb, ws, 'Logs de Auditoria');
+    }
+
+    if (exportOptions.includeCalculations && data.calculated_indices) {
+        const wsData = [
+            ['Data', 'ID', 'Nome', 'Valor', 'Moeda'],
+            ...data.calculated_indices.map((asset: CommodityPriceData) => [
+                asset.lastUpdated, asset.id, asset.name, asset.price, asset.currency
+            ])
+        ];
+        const ws = XLSX.utils.aoa_to_sheet(wsData);
+        XLSX.utils.book_append_sheet(wb, ws, 'Índices Calculados');
+    }
+
+    XLSX.writeFile(wb, `auditoria_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+  };
+
   const downloadCSV = (data: any) => {
-    let csvContent = 'data:text/csv;charset=utf-8,';
+    let csvContent = '';
     
     if (exportOptions.includeAssetData && data.asset_data) {
       csvContent += 'DADOS DOS ATIVOS\n';
       csvContent += 'Data,ID,Nome,Valor,Moeda,Categoria\n';
-      
       data.asset_data.forEach((asset: CommodityPriceData) => {
         csvContent += `${asset.lastUpdated},${asset.id},"${asset.name}",${asset.price},${asset.currency},${asset.category}\n`;
       });
-      
       csvContent += '\n';
     }
 
     if (exportOptions.includeAuditLogs && data.audit_logs) {
       csvContent += 'LOGS DE AUDITORIA\n';
       csvContent += 'Data/Hora,Ação,ID do Ativo,Nome do Ativo,Valor Anterior,Novo Valor,Usuário,Detalhes\n';
-      
       data.audit_logs.forEach((log: AuditLogEntry) => {
-        csvContent += `${log.timestamp.toISOString()},${log.action},${log.assetId},"${log.assetName}",${log.oldValue || ''},${log.newValue || ''},"${log.user}","${log.details || ''}"\n`;
+        csvContent += `${log.timestamp.toISOString()},${log.action},${log.assetId},"${log.assetName}",${log.oldValue ?? ''},${log.newValue ?? ''},"${log.user}","${log.details || ''}"\n`;
       });
     }
 
-    const encodedUri = encodeURI(csvContent);
+    const encodedUri = encodeURI(`data:text/csv;charset=utf-8,${csvContent}`);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
     link.setAttribute('download', `auditoria_${format(new Date(), 'yyyy-MM-dd')}.csv`);
@@ -147,7 +211,6 @@ export function AuditExport({ currentDate }: AuditExportProps) {
     const link = document.createElement('a');
     link.href = jsonString;
     link.download = `auditoria_${format(new Date(), 'yyyy-MM-dd')}.json`;
-
     link.click();
     link.remove();
   };
@@ -189,7 +252,7 @@ export function AuditExport({ currentDate }: AuditExportProps) {
             <label className="text-sm font-medium">Formato de Exportação</label>
             <Select
               value={exportOptions.format}
-              onValueChange={(value: 'csv' | 'json') =>
+              onValueChange={(value: 'xlsx' | 'csv' | 'json' | 'pdf') =>
                 setExportOptions(prev => ({ ...prev, format: value }))
               }
             >
@@ -197,10 +260,16 @@ export function AuditExport({ currentDate }: AuditExportProps) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
+                 <SelectItem value="xlsx">
+                  <div className="flex items-center gap-2">
+                    <FileSpreadsheet className="h-4 w-4" />
+                    XLSX (Excel)
+                  </div>
+                </SelectItem>
                 <SelectItem value="csv">
                   <div className="flex items-center gap-2">
                     <Table className="h-4 w-4" />
-                    CSV (Excel/Planilhas)
+                    CSV (Planilhas)
                   </div>
                 </SelectItem>
                 <SelectItem value="json">
@@ -209,13 +278,18 @@ export function AuditExport({ currentDate }: AuditExportProps) {
                     JSON (Dados Estruturados)
                   </div>
                 </SelectItem>
+                 <SelectItem value="pdf">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    PDF (Resumo)
+                  </div>
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="space-y-3">
             <label className="text-sm font-medium">Conteúdo a Incluir</label>
-            
             <div className="space-y-3">
               <div className="flex items-center space-x-2">
                 <Checkbox
@@ -229,7 +303,6 @@ export function AuditExport({ currentDate }: AuditExportProps) {
                   Dados dos Ativos (preços, moedas, categorias)
                 </label>
               </div>
-
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="includeAuditLogs"
@@ -242,7 +315,6 @@ export function AuditExport({ currentDate }: AuditExportProps) {
                   Logs de Auditoria (alterações, recálculos)
                 </label>
               </div>
-
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="includeCalculations"
@@ -260,7 +332,6 @@ export function AuditExport({ currentDate }: AuditExportProps) {
 
           <div className="space-y-3">
             <label className="text-sm font-medium">Período de Dados</label>
-            
             <div className="flex gap-2 mb-3">
               <Button
                 variant={format(currentDate, 'yyyy-MM-dd') === format(exportOptions.startDate || new Date(), 'yyyy-MM-dd') ? 'default' : 'outline'}
@@ -269,22 +340,13 @@ export function AuditExport({ currentDate }: AuditExportProps) {
               >
                 Hoje
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setDateRangePreset('week')}
-              >
+              <Button variant="outline" size="sm" onClick={() => setDateRangePreset('week')}>
                 Última Semana
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setDateRangePreset('month')}
-              >
+              <Button variant="outline" size="sm" onClick={() => setDateRangePreset('month')}>
                 Este Mês
               </Button>
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-xs text-muted-foreground">Data Inicial</label>
@@ -292,27 +354,17 @@ export function AuditExport({ currentDate }: AuditExportProps) {
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !exportOptions.startDate && "text-muted-foreground"
-                      )}
+                      className={cn("w-full justify-start text-left font-normal", !exportOptions.startDate && "text-muted-foreground")}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {exportOptions.startDate ? (
-                        format(exportOptions.startDate, 'dd/MM/yyyy', { locale: ptBR })
-                      ) : (
-                        "Selecione"
-                      )}
+                      {exportOptions.startDate ? format(exportOptions.startDate, 'dd/MM/yyyy', { locale: ptBR }) : "Selecione"}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
                     <Calendar
                       mode="single"
                       selected={exportOptions.startDate}
-                      onSelect={(date) => {
-                        setExportOptions(prev => ({ ...prev, startDate: date }));
-                        setIsStartCalendarOpen(false);
-                      }}
+                      onSelect={(date) => { setExportOptions(prev => ({ ...prev, startDate: date })); setIsStartCalendarOpen(false); }}
                       disabled={(date) => date > new Date()}
                       initialFocus
                       locale={ptBR}
@@ -320,38 +372,24 @@ export function AuditExport({ currentDate }: AuditExportProps) {
                   </PopoverContent>
                 </Popover>
               </div>
-
               <div className="space-y-2">
                 <label className="text-xs text-muted-foreground">Data Final</label>
                 <Popover open={isEndCalendarOpen} onOpenChange={setIsEndCalendarOpen}>
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !exportOptions.endDate && "text-muted-foreground"
-                      )}
+                      className={cn("w-full justify-start text-left font-normal", !exportOptions.endDate && "text-muted-foreground")}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {exportOptions.endDate ? (
-                        format(exportOptions.endDate, 'dd/MM/yyyy', { locale: ptBR })
-                      ) : (
-                        "Selecione"
-                      )}
+                      {exportOptions.endDate ? format(exportOptions.endDate, 'dd/MM/yyyy', { locale: ptBR }) : "Selecione"}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
                     <Calendar
                       mode="single"
                       selected={exportOptions.endDate}
-                      onSelect={(date) => {
-                        setExportOptions(prev => ({ ...prev, endDate: date }));
-                        setIsEndCalendarOpen(false);
-                      }}
-                      disabled={(date) => 
-                        date > new Date() || 
-                        (!!exportOptions.startDate && date < exportOptions.startDate)
-                      }
+                      onSelect={(date) => { setExportOptions(prev => ({ ...prev, endDate: date })); setIsEndCalendarOpen(false); }}
+                      disabled={(date) => date > new Date() || (!!exportOptions.startDate && date < exportOptions.startDate)}
                       initialFocus
                       locale={ptBR}
                     />
@@ -360,8 +398,29 @@ export function AuditExport({ currentDate }: AuditExportProps) {
               </div>
             </div>
           </div>
+          
+           <div className="grid grid-cols-2 gap-4">
+                <div>
+                    <label htmlFor="pdf-records" className="text-sm font-medium">Registros (PDF)</label>
+                    <Select value={String(pdfRecordsCount)} onValueChange={v => setPdfRecordsCount(v === 'all' ? 'all' : Number(v))}>
+                        <SelectTrigger id="pdf-records"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                            {[10, 20, 50, 100, 'all'].map(v => <SelectItem key={v} value={String(v)}>{v === 'all' ? 'Todos' : v}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div>
+                    <label htmlFor="excel-records" className="text-sm font-medium">Registros (Excel/CSV)</label>
+                     <Select value={String(excelRecordsCount)} onValueChange={v => setExcelRecordsCount(v === 'all' ? 'all' : Number(v))}>
+                        <SelectTrigger id="excel-records"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                             {[50, 100, 500, 1000, 'all'].map(v => <SelectItem key={v} value={String(v)}>{v === 'all' ? 'Todos' : v}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                </div>
+            </div>
 
-          <div className="pt-4 border-t flex flex-col sm:flex-row gap-2">
+          <div className="pt-4 border-t">
             <Button
               onClick={handleExport}
               disabled={isExporting || (!exportOptions.includeAssetData && !exportOptions.includeAuditLogs && !exportOptions.includeCalculations)}
@@ -379,20 +438,6 @@ export function AuditExport({ currentDate }: AuditExportProps) {
                 </>
               )}
             </Button>
-            <PdfExportButton
-              data={{
-                  targetDate: currentDate,
-                  mainIndex: undefined,
-                  secondaryIndices: [],
-                  currencies: [],
-                  otherAssets: [],
-              }}
-              reportType="audit"
-              disabled={isExporting}
-            >
-              Exportar Resumo (PDF)
-            </PdfExportButton>
-            
             {!exportOptions.includeAssetData && !exportOptions.includeAuditLogs && !exportOptions.includeCalculations && (
               <p className="text-xs text-muted-foreground text-center mt-2">
                 Selecione pelo menos um tipo de conteúdo para exportar.
@@ -401,6 +446,15 @@ export function AuditExport({ currentDate }: AuditExportProps) {
           </div>
         </CardContent>
       </Card>
+      
+      {pdfData && (
+        <PdfPreviewModal
+          isOpen={isPdfPreviewOpen}
+          onOpenChange={setIsPdfPreviewOpen}
+          reportType="audit"
+          data={pdfData}
+        />
+      )}
     </>
   );
 }
