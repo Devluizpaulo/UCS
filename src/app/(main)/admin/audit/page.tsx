@@ -51,6 +51,8 @@ import { RecalculationProgress, type RecalculationStep } from '@/components/admi
 import { ValidationAlerts, generateValidationAlerts, type ValidationAlert } from '@/components/admin/validation-alerts';
 import { AuditExport } from '@/components/admin/audit-export';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { useUser, useFirestore } from '@/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 
 function getValidatedDate(dateString?: string | null): Date {
@@ -251,7 +253,7 @@ const AssetActionTable = ({
   );
 };
 
-const IndexTable = ({ indices, editedValues }: { indices: CommodityPriceData[], editedValues: Record<string, number> }) => {
+const IndexTable = ({ indices, onEdit }: { indices: CommodityPriceData[]; onEdit: (asset: CommodityPriceData) => void }) => {
   if (indices.length === 0) {
     return (
       <div className="text-center text-sm text-muted-foreground p-4">
@@ -297,7 +299,7 @@ const IndexTable = ({ indices, editedValues }: { indices: CommodityPriceData[], 
           </Badge>
         </TableCell>
         <TableCell className="flex justify-center">
-          <AssetActions asset={asset} onEdit={() => {}} />
+          <AssetActions asset={asset} onEdit={onEdit} />
         </TableCell>
       </TableRow>
     );
@@ -326,6 +328,7 @@ const IndexTable = ({ indices, editedValues }: { indices: CommodityPriceData[], 
     </Table>
   );
 };
+
 
 function AuditPageContent() {
   const searchParams = useSearchParams();
@@ -638,7 +641,7 @@ function AuditPageContent() {
       filteredBaseAssets,
       filteredIndices
     };
-  }, [data, debouncedSearchTerm, categoryFilter, statusFilter, editedValues, sortKey, sortDir]);
+  }, [data, debouncedSearchTerm, categoryFilter, statusFilter, editedValues, sortKey, sortDir, searchTerm]);
 
   const baseTotalPages = Math.max(1, Math.ceil(filteredBaseAssets.length / basePageSize));
   const idxTotalPages = Math.max(1, Math.ceil(filteredIndices.length / idxPageSize));
@@ -908,7 +911,7 @@ function AuditPageContent() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
-                  <IndexTable indices={pagedIndices} editedValues={editedValues} />
+                  <IndexTable indices={pagedIndices} onEdit={handleEdit} />
                   <div className="flex items-center justify-between mt-4 px-6 pb-4">
                     <div className="flex items-center gap-2 text-sm">
                       Página {idxPage} de {idxTotalPages}
@@ -971,7 +974,32 @@ function AuditPageContent() {
 
 
 export default function AuditPage() {
-    if (process.env.NODE_ENV === 'production') {
+    const { user, isUserLoading } = useUser();
+    const firestore = useFirestore();
+    const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+
+    useEffect(() => {
+        if (user) {
+            const checkAdmin = async () => {
+                const adminRef = doc(firestore, `roles_admin/${user.uid}`);
+                const adminSnap = await getDoc(adminRef);
+                setIsAdmin(adminSnap.exists());
+            };
+            checkAdmin();
+        } else if (!isUserLoading) {
+            setIsAdmin(false);
+        }
+    }, [user, firestore, isUserLoading]);
+
+    if (isUserLoading || isAdmin === null) {
+        return (
+            <div className="flex h-screen w-full items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+        );
+    }
+    
+    if (!isAdmin) {
         return (
             <div className="flex min-h-screen w-full flex-col items-center justify-center p-4">
                 <Card className="max-w-lg">
@@ -979,7 +1007,7 @@ export default function AuditPage() {
                         <SlidersHorizontal className="h-10 w-10 text-destructive mb-4" />
                         <CardTitle>Acesso Restrito</CardTitle>
                         <CardDescription>
-                            A página de Auditoria de Dados é uma ferramenta de desenvolvimento e não está disponível no ambiente de produção.
+                            Esta página está disponível apenas para administradores.
                         </CardDescription>
                     </CardHeader>
                 </Card>
