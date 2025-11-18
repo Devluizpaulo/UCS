@@ -1,12 +1,11 @@
 
-
 'use client';
 
 import { useState, useEffect, useMemo, useTransition } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { History, Loader2, Save, ExternalLink, Edit, Search, Filter, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Zap, RefreshCw, Calendar, Activity, BarChart3, FileDown } from 'lucide-react';
+import { History, Loader2, Save, ExternalLink, Edit, Search, Filter, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Zap, RefreshCw, Calendar, Activity, BarChart3, FileDown, SlidersHorizontal } from 'lucide-react';
 import { getRawCommodityPricesByDate, clearCacheAndRefresh } from '@/lib/data-service';
 import type { CommodityPriceData } from '@/lib/types';
 import * as Calc from '@/lib/calculation-service';
@@ -328,8 +327,7 @@ const IndexTable = ({ indices, editedValues }: { indices: CommodityPriceData[], 
   );
 };
 
-
-export default function AuditPage() {
+function AuditPageContent() {
   const searchParams = useSearchParams();
   const dateParam = searchParams.get('date');
   const { toast } = useToast();
@@ -343,44 +341,37 @@ export default function AuditPage() {
   const [editingAsset, setEditingAsset] = useState<CommodityPriceData | null>(null);
   const [editedValues, setEditedValues] = useState<Record<string, number>>({});
   
-  // Estados para filtros e busca
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sortKey, setSortKey] = useState<'custom' | 'name' | 'id' | 'price' | 'change' | 'status'>('custom');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState<string>('');
-  // Paginação
+  
   const [basePage, setBasePage] = useState(1);
   const [basePageSize, setBasePageSize] = useState(50);
   const [idxPage, setIdxPage] = useState(1);
   const [idxPageSize, setIdxPageSize] = useState(50);
   
-  // Estados para histórico de auditoria
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
   const [isLoadingLogs, setIsLoadingLogs] = useState(false);
   
-  // Estados para progresso de recálculo
   const [recalculationSteps, setRecalculationSteps] = useState<RecalculationStep[]>([]);
   const [showProgress, setShowProgress] = useState(false);
   const [currentStep, setCurrentStep] = useState<string>('');
   const [recalculationProgress, setRecalculationProgress] = useState(0);
   const [estimatedTimeRemaining, setEstimatedTimeRemaining] = useState(0);
   
-  // Estados para alertas de validação
   const [validationAlerts, setValidationAlerts] = useState<ValidationAlert[]>([]);
   
-  // Estados para recálculo avançado
   const [useAdvancedRecalculation, setUseAdvancedRecalculation] = useState<boolean | null>(null);
   const [showDependencyInfo, setShowDependencyInfo] = useState(false);
 
-  // Debounce para busca
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearchTerm(searchTerm), 300);
     return () => clearTimeout(t);
   }, [searchTerm]);
 
-  // Persistir filtros/ordenação no localStorage
   useEffect(() => {
     try {
       const raw = localStorage.getItem('auditPrefs');
@@ -411,7 +402,6 @@ export default function AuditPage() {
     } catch {}
   }, [searchTerm, categoryFilter, statusFilter, sortKey, sortDir, basePageSize, idxPageSize]);
 
-  // Export CSV util
   const exportToCsv = (rows: any[], filename: string) => {
     if (!rows || rows.length === 0) return;
     const headers = Object.keys(rows[0]);
@@ -494,7 +484,6 @@ export default function AuditPage() {
     });
   }
   
-  // Edição inline (escopo AuditPage)
   const handleInlineChange = (assetId: string, value: number) => {
     const newEdited = { ...editedValues, [assetId]: value };
     setEditedValues(newEdited);
@@ -528,7 +517,6 @@ export default function AuditPage() {
 
     startTransition(async () => {
       try {
-        // Dispara via Server Action para evitar mixed-content e esconder segredos
         const result = await triggerN8NRecalculation(targetDate, editedValues);
 
         if (result.success) {
@@ -536,11 +524,9 @@ export default function AuditPage() {
             title: "Snapshot enviado",
             description: result.message || "O N8N está reprocessando os dados. Atualizando em seguida...",
           });
-          // Limpa caches server-side e revalida páginas relacionadas
           try { await clearCacheAndRefresh(); } catch {}
           setEditedValues({});
           setValidationAlerts([]);
-          // Poll leve (3 tentativas, 3s intervalo) para atualizar dados/logs
           const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
           for (let attempt = 0; attempt < 3; attempt++) {
             await sleep(3000);
@@ -630,12 +616,11 @@ export default function AuditPage() {
       return matchesSearch && matchesCategory && matchesStatus;
     });
 
-    // Sorting
     const toStatus = (a: CommodityPriceData) => getAssetStatus(a, editedValues);
     const dir = sortDir === 'asc' ? 1 : -1;
     const cmp = (a: CommodityPriceData, b: CommodityPriceData) => {
       switch (sortKey) {
-        case 'custom': return 0; // mantém a ordem pré-processada
+        case 'custom': return 0;
         case 'name': return a.name.localeCompare(b.name) * dir;
         case 'id': return a.id.localeCompare(b.id) * dir;
         case 'price': return ((a.price || 0) - (b.price || 0)) * dir;
@@ -655,7 +640,6 @@ export default function AuditPage() {
     };
   }, [data, debouncedSearchTerm, categoryFilter, statusFilter, editedValues, sortKey, sortDir]);
 
-  // Paginação: fatias
   const baseTotalPages = Math.max(1, Math.ceil(filteredBaseAssets.length / basePageSize));
   const idxTotalPages = Math.max(1, Math.ceil(filteredIndices.length / idxPageSize));
   const pagedBaseAssets = filteredBaseAssets.slice((basePage - 1) * basePageSize, basePage * basePageSize);
@@ -716,7 +700,6 @@ export default function AuditPage() {
     }
   };
 
-  // Payload COMPLETO: inclui todos os ativos base (após aplicar edições)
   const n8nFullPayload = useMemo(() => {
     const transformed: Record<string, any> = {};
     const allowed = new Set(['usd','eur','boi_gordo','soja','milho','madeira','carbono']);
@@ -780,8 +763,6 @@ export default function AuditPage() {
             </CardContent>
           </Card>
           
-
-
           <RecalculationProgress
             isVisible={showProgress}
             steps={recalculationSteps}
@@ -961,8 +942,6 @@ export default function AuditPage() {
                 </CardContent>
               </Card>
               
-              
-
               <AuditExport 
                 currentDate={targetDate}
               />
@@ -983,9 +962,30 @@ export default function AuditPage() {
           onOpenChange={() => setEditingAsset(null)}
           onSave={handleSaveEdit}
           allAssets={data}
-          currentUser="Administrador" // TODO: Integrar com sistema de autenticação
+          currentUser="Administrador"
         />
       )}
     </>
   );
+}
+
+
+export default function AuditPage() {
+    if (process.env.NODE_ENV === 'production') {
+        return (
+            <div className="flex min-h-screen w-full flex-col items-center justify-center p-4">
+                <Card className="max-w-lg">
+                    <CardHeader className="items-center text-center">
+                        <SlidersHorizontal className="h-10 w-10 text-destructive mb-4" />
+                        <CardTitle>Acesso Restrito</CardTitle>
+                        <CardDescription>
+                            A página de Auditoria de Dados é uma ferramenta de desenvolvimento e não está disponível no ambiente de produção.
+                        </CardDescription>
+                    </CardHeader>
+                </Card>
+            </div>
+        );
+    }
+
+    return <AuditPageContent />;
 }
