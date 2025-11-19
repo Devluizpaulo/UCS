@@ -12,13 +12,14 @@ import { headers } from 'next/headers';
 
 /**
  * Helper para obter a URL base da requisição atual.
- * Prioriza o domínio de produção da Vercel se disponível.
- * @returns A URL base (ex: https://ucsindex.vercel.app)
+ * Prioriza o domínio de produção exposto pela Vercel (VERCEL_URL) se disponível.
+ * @returns A URL base (ex: https://seu-projeto.vercel.app)
  */
 function getBaseUrl() {
-  // Em produção (na Vercel), a variável de ambiente VERCEL_URL é definida.
+  // Em produção (na Vercel), a variável de ambiente VERCEL_URL é definida
+  // com o host atual (ex: ucsindex.vercel.app).
   if (process.env.VERCEL_URL) {
-    return 'https://ucsindex.vercel.app';
+    return `https://${process.env.VERCEL_URL}`;
   }
 
   // Fallback para o ambiente de desenvolvimento local.
