@@ -5,12 +5,6 @@ import { getFirebaseAdmin } from './firebase-admin-config';
 import { revalidatePath } from 'next/cache';
 import { getCollectionSchema, validateAgainstSchema } from './firestore-admin-schema';
 
-function ensureDevOnly() {
-  if (process.env.NODE_ENV !== 'development') {
-    throw new Error('Firestore Admin disponível apenas em ambiente de desenvolvimento.');
-  }
-}
-
 /**
  * Busca documentos com múltiplas ordenações/filtros e paginação por cursor
  */
@@ -18,7 +12,6 @@ export async function getDocumentsPaged(
   collectionId: string,
   options: GetDocumentsPagedOptions = {}
 ): Promise<PagedDocumentsResult> {
-  ensureDevOnly();
   const { db } = await getFirebaseAdmin();
   try {
     let query: any = db.collection(collectionId);
@@ -62,7 +55,6 @@ export async function getDevAuditLogsForDocument(
   docId: string,
   limit: number = 50
 ): Promise<Array<{ id: string; timestamp: number; action: string; collectionId: string; docId: string; changes?: any; user?: string }>> {
-  ensureDevOnly();
   const { db } = await getFirebaseAdmin();
   try {
     const snapshot = await db
@@ -176,7 +168,6 @@ export interface PagedDocumentsResult {
  */
 export async function getCollections(): Promise<string[]> {
   try {
-    ensureDevOnly();
     const { db } = await getFirebaseAdmin();
     const collectionsSnapshot = await db.listCollections();
     const collectionIds = collectionsSnapshot.map(collection => collection.id);
@@ -195,7 +186,6 @@ export async function getCollections(): Promise<string[]> {
  */
 export async function getDocuments(collectionId: string, options: GetDocumentsOptions = {}): Promise<DocumentData[]> {
   try {
-    ensureDevOnly();
     const { db } = await getFirebaseAdmin();
     let query: any = db.collection(collectionId);
     if (options.whereEq && options.whereEq.field) {
@@ -238,7 +228,6 @@ export async function createDocument(
   docId?: string
 ): Promise<{ id: string }> {
   try {
-    ensureDevOnly();
     const { db } = await getFirebaseAdmin();
     // validação contra schema, se existir
     const schema = getCollectionSchema(collectionId);
@@ -281,7 +270,6 @@ export async function updateDocument(
   data: Record<string, any>
 ): Promise<void> {
   try {
-    ensureDevOnly();
     const { db } = await getFirebaseAdmin();
     // validação contra schema, se existir (parcial: apenas campos enviados)
     const schema = getCollectionSchema(collectionId);
@@ -317,7 +305,6 @@ export async function revertDocumentFields(
   beforeValues: Record<string, any>
 ): Promise<void> {
   try {
-    ensureDevOnly();
     const { db } = await getFirebaseAdmin();
     const docRef = db.collection(collectionId).doc(docId);
     await docRef.update(beforeValues);
@@ -336,7 +323,6 @@ export async function revertDocumentFields(
  */
 export async function deleteDocuments(collectionId: string, docIds: string[]): Promise<void> {
   try {
-    ensureDevOnly();
     const { db } = await getFirebaseAdmin();
     const batch = db.batch();
     
