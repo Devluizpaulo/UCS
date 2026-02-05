@@ -31,8 +31,8 @@ function getBaseUrl() {
  * @returns Uma lista de registros de usuário com a propriedade `isAdmin`.
  */
 export async function getUsers(): Promise<AppUserRecord[]> {
-  const { auth, db } = await getFirebaseAdmin();
   try {
+    const { auth, db } = await getFirebaseAdmin();
     const userRecords = await auth.listUsers();
     
     // Busca todos os documentos de admin de uma vez para otimização
@@ -66,8 +66,8 @@ export async function createUser(userData: {
   phoneNumber?: string;
   disabled?: boolean;
 }): Promise<{ user: UserRecord, link: string }> {
-  const { auth } = await getFirebaseAdmin();
   try {
+    const { auth } = await getFirebaseAdmin();
     const tempPassword = Math.random().toString(36).slice(-10) + 'A1!';
 
     const userPayload: any = {
@@ -122,8 +122,8 @@ export async function updateUser(uid: string, userData: {
   displayName?: string;
   phoneNumber?: string;
 }): Promise<UserRecord> {
-  const { auth } = await getFirebaseAdmin();
   try {
+    const { auth } = await getFirebaseAdmin();
     const dataToUpdate: any = {
         disabled: userData.disabled,
         displayName: userData.displayName,
@@ -150,8 +150,8 @@ export async function updateUser(uid: string, userData: {
  * @param uid - O UID do usuário a ser excluído.
  */
 export async function deleteUser(uid: string): Promise<void> {
-  const { auth } = await getFirebaseAdmin();
   try {
+    const { auth } = await getFirebaseAdmin();
     await auth.deleteUser(uid);
     revalidatePath('/admin/users');
   } catch (error) {
@@ -165,8 +165,8 @@ export async function deleteUser(uid: string): Promise<void> {
  * @param uid - O UID do usuário.
  */
 export async function resetUserPassword(uid: string): Promise<{ link: string }> {
-  const { auth } = await getFirebaseAdmin();
   try {
+    const { auth } = await getFirebaseAdmin();
     const userRecord = await auth.getUser(uid);
     if (!userRecord.email) {
       throw new Error('O usuário não possui um e-mail cadastrado para redefinir a senha.');
@@ -192,8 +192,8 @@ export async function resetUserPassword(uid: string): Promise<{ link: string }> 
  * @param uid - O UID do usuário a ser promovido.
  */
 export async function setAdminRole(uid: string): Promise<void> {
-  const { db } = await getFirebaseAdmin();
   try {
+    const { db } = await getFirebaseAdmin();
     // Cria um documento na coleção 'roles_admin' com o UID do usuário.
     // O documento pode ser vazio, sua existência é o que concede o acesso.
     await db.collection('roles_admin').doc(uid).set({ isAdmin: true });
@@ -209,8 +209,8 @@ export async function setAdminRole(uid: string): Promise<void> {
  * @param uid - O UID do usuário a ser rebaixado.
  */
 export async function removeAdminRole(uid: string): Promise<void> {
-  const { db } = await getFirebaseAdmin();
   try {
+    const { db } = await getFirebaseAdmin();
     await db.collection('roles_admin').doc(uid).delete();
     revalidatePath('/admin/users');
   } catch (error) {
@@ -224,8 +224,8 @@ export async function removeAdminRole(uid: string): Promise<void> {
  * @param uid - O UID do usuário.
  */
 export async function acceptLgpd(uid: string): Promise<void> {
-  const { db } = await getFirebaseAdmin();
   try {
+    const { db } = await getFirebaseAdmin();
     const userRef = db.collection('users').doc(uid);
     await userRef.set({
         lgpdAccepted: true,
