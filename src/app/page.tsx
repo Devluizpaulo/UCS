@@ -3,7 +3,8 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { User, ShieldCheck, FileText, BarChart3, TrendingUp, Briefcase, Award, Blocks, TreePine, LandPlot, Globe, TrendingDown, ArrowUp } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { User, ShieldCheck, FileText, BarChart3, TrendingUp, Briefcase, Award, Blocks, TreePine, LandPlot, Globe, TrendingDown, ArrowUp, ChevronRight, Sparkles } from "lucide-react";
 import Image from 'next/image';
 import Link from 'next/link';
 import { LogoUCS } from "@/components/logo-bvm";
@@ -20,7 +21,6 @@ import { getLandingPageSettings, type LandingPageSettings } from '@/lib/settings
 import { HistoricalAnalysisChart } from '@/components/charts/historical-analysis-chart';
 import { parse, isValid, format } from 'date-fns';
 
-
 // Tipo local para incluir dados de conversão
 type IndexValue = {
   currency: 'BRL' | 'USD' | 'EUR';
@@ -28,7 +28,6 @@ type IndexValue = {
   change: number;
   conversionRate?: number;
 };
-
 
 export default function PDMDetailsPage() {
   const [ucsAseAsset, setUcsAseAsset] = React.useState<CommodityPriceData | null>(null);
@@ -41,7 +40,6 @@ export default function PDMDetailsPage() {
   const [isBusinessDay, setIsBusinessDay] = React.useState<boolean>(true);
 
   React.useEffect(() => {
-    // Descobrir a data alvo de exibição conforme regra de negócio (último dia útil quando hoje não for dia útil)
     const init = async () => {
       try {
         const statusRes = await fetch('/api/business-day-status');
@@ -64,7 +62,6 @@ export default function PDMDetailsPage() {
           if (ucsAsset) setUcsAseAsset(ucsAsset);
         }
       } catch (e) {
-        // fallback para hoje
         const prices = await getCommodityPrices();
         const ucsAsset = prices.find(p => p.id === 'ucs_ase');
         if (ucsAsset) setUcsAseAsset(ucsAsset);
@@ -74,12 +71,10 @@ export default function PDMDetailsPage() {
 
     getLandingPageSettings().then(setSettings);
 
-    // Fetch historical data for the chart
     setIsLoadingHistory(true);
-    // Calcular o número de dias desde 01/01/2023 até hoje
     const startDate = new Date('2023-01-01');
     const today = new Date();
-    const daysToFetch = Math.ceil((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 30; // 30 dias de margem
+    const daysToFetch = Math.ceil((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 30;
 
     getCotacoesHistorico('ucs_ase', daysToFetch)
       .then(history => {
@@ -92,7 +87,7 @@ export default function PDMDetailsPage() {
       });
 
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 100);
+      setIsScrolled(window.scrollY > 50);
     };
 
     window.addEventListener('scroll', handleScroll);
@@ -105,104 +100,54 @@ export default function PDMDetailsPage() {
 
   const getIndexValues = (): IndexValue[] => {
     if (!ucsAseAsset) return [];
-
     let indexValues: IndexValue[] = [];
-
-    // Valor em BRL
     if (ucsAseAsset.price) {
-      indexValues.push({
-        currency: 'BRL',
-        value: ucsAseAsset.price,
-        change: ucsAseAsset.change || 0,
-      });
+      indexValues.push({ currency: 'BRL', value: ucsAseAsset.price, change: ucsAseAsset.change || 0 });
     }
-
-    // Valor em USD (se disponível)
     if (ucsAseAsset.valor_usd) {
-      indexValues.push({
-        currency: 'USD',
-        value: ucsAseAsset.valor_usd,
-        change: ucsAseAsset.change || 0,
-        conversionRate: ucsAseAsset.valores_originais?.cotacao_usd
-      });
+      indexValues.push({ currency: 'USD', value: ucsAseAsset.valor_usd, change: ucsAseAsset.change || 0, conversionRate: ucsAseAsset.valores_originais?.cotacao_usd });
     }
-
-    // Valor em EUR (se disponível)
     if (ucsAseAsset.valor_eur) {
-      indexValues.push({
-        currency: 'EUR',
-        value: ucsAseAsset.valor_eur,
-        change: ucsAseAsset.change || 0,
-        conversionRate: ucsAseAsset.valores_originais?.cotacao_eur
-      });
+      indexValues.push({ currency: 'EUR', value: ucsAseAsset.valor_eur, change: ucsAseAsset.change || 0, conversionRate: ucsAseAsset.valores_originais?.cotacao_eur });
     }
-
     return indexValues;
   };
 
   const indexValues = getIndexValues();
-
   const heroContent = settings ? settings[language] : { title: t.home.hero.title, subtitle: t.home.hero.subtitle };
-
   const homeT = t.home;
 
   const pilaresPDM = [
     {
       icon: TreePine,
       title: "Valor Econômico da Floresta",
-      definition: "Mede o potencial econômico direto da floresta a partir da exploração sustentável de seus recursos, principalmente madeireiros. O cálculo considera o preço comercial das espécies exploradas sob manejo de baixo impacto, ciclos de corte controlados e custos operacionais, refletindo o uso responsável da floresta como ativo produtivo.",
-      origin: "O valor é obtido com base nas cotações de mercado da madeira, constituindo uma referência direta para a valoração florestal.",
-      methodology: "Adota uma adaptação do método americano de valoração de ativos florestais, considerando análise de ciclo de oportunidades e o método de custo de oportunidade, além da composição de espécies, custos logísticos, preço médio por espécie e métodos de mercado.",
+      color: "bg-emerald-50 text-emerald-600",
+      definition: "Mede o potencial econômico direto da floresta a partir da exploração sustentável de seus recursos, principalmente madeireiros.",
+      methodology: "Adota uma adaptação do método americano de valoração de ativos florestais, considerando análise de ciclo de oportunidades.",
     },
     {
       icon: LandPlot,
       title: "Valor de Transformação Territorial",
-      definition: "Estima o valor que a terra teria caso a cobertura florestal fosse convertida para outros usos produtivos — como agricultura, pecuária, indústria ou expansão urbana. Este pilar reflete o valor alternativo da área, ou seja, o potencial econômico de substituição da floresta por outra atividade.",
-      origin: "É derivado das cotações de commodities agrícolas, como milho, soja e boi gordo, utilizadas como referência para estimar a produtividade e o retorno financeiro dos usos alternativos da terra.",
-      methodology: "Adota uma adaptação do método americano de valoração de terras, considerando produtividade potencial, retorno esperado, custos de conversão e operação, além de variáveis regionais como acesso, infraestrutura e logística.",
+      color: "bg-blue-50 text-blue-600",
+      definition: "Estima o valor que a terra teria caso a cobertura florestal fosse convertida para outros usos produtivos.",
+      methodology: "Adota uma adaptação do método americano de valoração de terras, considerando produtividade potencial e retorno esperado.",
     },
     {
       icon: ShieldCheck,
       title: "Valor Socioambiental da Conservação",
-      definition: "Traduz o valor dos benefícios que a floresta em pé gera para a sociedade, como regulação do clima, sequestro de carbono, purificação e regulação da água, preservação da biodiversidade, manutenção da qualidade do solo e manutenção da biodiversidade, representando o investimento necessário para manter esses serviços ecossistêmicos e o valor social associado à preservação.",
-      origin: "Baseia-se nos serviços ambientais mensuráveis especialmente o uso de água e financiamento de papel das florestas como infraestrutura natural.",
-      methodology: "Inspirado em referências internacionais, como o TEEB (The Economics of Ecosystems and Biodiversity) e o sistema de Pagamento por Serviços Ecossistêmicos com custos de conservação e métricas de impacto social e ambiental auditadas e rastreáveis local.",
-    }
-  ];
-
-  const aplicacoesPDM = [
-    {
-      icon: TrendingUp,
-      title: homeT.pdm.applications.compensation,
-      description: "Base para o cálculo de valores justos de compensação por supressão vegetal, com métricas padronizadas e embasamento econômico."
-    },
-    {
-      icon: BarChart3,
-      title: homeT.pdm.applications.carbon_credits,
-      description: "Valoração precisa do sequestro de carbono, permitindo a criação de ativos negociáveis em mercados voluntários e regulados."
-    },
-    {
-      icon: FileText,
-      title: homeT.pdm.applications.licensing,
-      description: "Suporte técnico-econômico em processos de licenciamento, auxiliando na definição de condicionantes e medidas compensatórias."
-    },
-    {
-      icon: Briefcase,
-      title: homeT.pdm.applications.asset_management,
-      description: "Inclusão de ativos ambientais nos balanços patrimoniais de empresas e governos, com metodologia de valuation reconhecida."
+      color: "bg-purple-50 text-purple-600",
+      definition: "Traduz o valor dos benefícios que a floresta em pé gera para a sociedade, como regulação do clima e biodiversidade.",
+      methodology: "Inspirado em referências internacionais, como o TEEB (The Economics of Ecosystems and Biodiversity).",
     }
   ];
 
   const chartData = React.useMemo(() => {
     if (!ucsHistory || ucsHistory.length === 0) return [];
-
     const startDate = new Date('2023-01-01');
-
     return ucsHistory
       .map(quote => {
         const value = quote.valor_brl ?? quote.resultado_final_brl ?? quote.valor;
         if (typeof value !== 'number') return null;
-
         let date: Date | null = null;
         if (quote.data) {
           try {
@@ -214,344 +159,235 @@ export default function PDMDetailsPage() {
           } catch { date = null; }
         }
         if (!date && quote.timestamp) {
-          try {
-            date = new Date(quote.timestamp as any);
-          } catch { date = null; }
+          try { date = new Date(quote.timestamp as any); } catch { date = null; }
         }
-
         if (!date || date < startDate) return null;
-
-        return {
-          date: format(date, 'dd/MM/yy'),
-          value,
-          timestamp: date.getTime()
-        };
+        return { date: format(date, 'dd/MM/yy'), value, timestamp: date.getTime() };
       })
       .filter((item): item is NonNullable<typeof item> => item !== null)
       .sort((a, b) => a.timestamp - b.timestamp);
   }, [ucsHistory]);
 
   const scrollToTop = () => {
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth'
-    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
-    <div className="flex min-h-screen w-full flex-col overflow-x-hidden bg-background text-foreground">
-      <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-sm">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
-          <Link href="/" aria-label="Página Inicial">
-            <LogoUCS />
+    <div className="flex min-h-screen w-full flex-col login-bg-gradient font-sans">
+      <header className={cn(
+        "fixed top-0 z-50 w-full transition-all duration-300",
+        isScrolled ? "bg-white/80 backdrop-blur-xl border-b border-slate-200 py-3" : "bg-transparent py-6"
+      )}>
+        <div className="container mx-auto flex items-center justify-between px-6">
+          <Link href="/" className="transition-transform hover:scale-105">
+            <LogoUCS variant={isScrolled ? 'default' : 'text'} className={isScrolled ? "" : "text-slate-900"} />
           </Link>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4">
             <LanguageSwitcher />
-            <Button variant="ghost" size="icon" asChild>
-              <Link href="/login">
-                <User className="h-5 w-5" />
-                <span className="sr-only">Acessar Plataforma</span>
+            <Button asChild className="rounded-full bg-[#10b981] hover:bg-[#059669] text-white shadow-lg shadow-emerald-200 border-none px-6">
+              <Link href="/login" className="flex items-center gap-2">
+                Acessar <User className="h-4 w-4" />
               </Link>
             </Button>
           </div>
         </div>
       </header>
 
-      <main className="flex-1">
+      <main className="flex-1 pt-32 pb-24">
         {/* HERO SECTION */}
-        <section className="relative flex w-full flex-col items-center justify-center overflow-hidden bg-black p-4 pb-24 h-[70vh] md:h-[80vh] lg:h-[90vh] min-h-[60vh] md:min-h-[70vh]">
-          <div className="absolute inset-0 z-0 h-full w-full">
-            <Image
-              src="/image/amazon-hero.jpg"
-              alt="Floresta Amazônica ao entardecer, vista panorâmica sobre o rio"
-              fill
-              priority
-              quality={85}
-              sizes="100vw"
-              className="object-cover object-center"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent" aria-hidden="true" />
-            <div className="absolute bottom-3 right-3 text-[10px] md:text-xs text-white/80">
-              Foto: <a href="https://commons.wikimedia.org/wiki/File:Amazon_rainforest_-_panoramio.jpg" target="_blank" rel="noopener noreferrer" className="underline">James Martins</a> / <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener noreferrer" className="underline">CC BY 3.0</a>
-            </div>
-          </div>
-
-          <div className="relative z-10 flex h-full w-full max-w-6xl flex-col items-center justify-center gap-8 text-center">
-            <div className="flex flex-col items-center gap-4 px-4 md:px-6">
-              <h1 className="text-4xl font-extrabold tracking-tighter text-white sm:text-5xl md:text-6xl lg:text-7xl drop-shadow-lg animate-fade-in-down">
+        <section className="container mx-auto px-6 mb-24">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div className="space-y-8 animate-in fade-in slide-in-from-left-8 duration-700">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-100 text-emerald-700 text-sm font-bold border border-emerald-200">
+                <Sparkles className="h-4 w-4" /> Ecoasset Estratégico
+              </div>
+              <h1 className="text-5xl lg:text-7xl font-bold tracking-tight text-slate-900 leading-[1.1]">
                 {heroContent.title}
               </h1>
-              <p className="mx-auto max-w-3xl text-lg text-gray-200 md:text-xl drop-shadow-md animate-fade-in-up">
+              <p className="text-xl text-slate-600 leading-relaxed max-w-xl">
                 {heroContent.subtitle}
               </p>
-            </div>
-            {indexValues.length > 0 && (
-              <div className="w-full max-w-md p-6 bg-black/30 backdrop-blur-md rounded-2xl border border-white/10 text-white shadow-2xl">
-                <Carousel
-                  opts={{ align: "start", loop: true }}
-                  plugins={[autoplayPlugin.current]}
-                  className="w-full"
-                >
-                  <CarouselContent>
-                    {indexValues.map((item, index) => (
-                      <CarouselItem key={index}>
-                        <div className="text-center">
-                          <p className="font-bold text-lg">{t.home.quote.title}</p>
-                          <p className="text-sm text-gray-300">{item.currency}</p>
-                          <div className="my-4 flex items-center justify-center gap-3">
-                            <span className="text-6xl font-extrabold tracking-tight">
-                              {formatCurrency(item.value, item.currency, item.currency)}
-                            </span>
-                            <div className={cn(
-                              'flex items-center text-lg font-semibold',
-                              item.change >= 0 ? 'text-green-400' : 'text-red-400'
-                            )}>
-                              <TrendingUp className="h-5 w-5 mr-1" />
-                              {item.change.toFixed(2)}%
-                            </div>
-                          </div>
-                          {item.conversionRate && (
-                            <p className="text-xs text-gray-400">
-                              {t.home.quote.conversionRate} {formatCurrency(item.conversionRate, 'BRL', item.currency)}
-                            </p>
-                          )}
-                          <p className="text-xs text-gray-300 mt-2">
-                            {isBusinessDay
-                              ? `Referência: ${format(targetDate, 'dd/MM/yyyy')}`
-                              : `Referência: ${format(targetDate, 'dd/MM/yyyy')} (último dia útil)`}
-                          </p>
-                        </div>
-                      </CarouselItem>
-                    ))}
-                  </CarouselContent>
-                </Carousel>
+              <div className="flex flex-wrap gap-4 pt-4">
+                <Button size="lg" className="h-14 px-8 rounded-full bg-[#10b981] hover:bg-[#059669] text-white text-lg font-bold shadow-xl shadow-emerald-200">
+                  Começar Agora <ChevronRight className="ml-2 h-5 w-5" />
+                </Button>
+                <Button size="lg" variant="outline" className="h-14 px-8 rounded-full border-2 border-slate-200 bg-white/50 text-lg font-bold hover:bg-white transition-all">
+                  Ver Metodologia
+                </Button>
               </div>
-            )}
-          </div>
-        </section>
+            </div>
 
-        <div className={cn(
-          "sticky top-20 z-40 mx-auto max-w-md transition-all duration-300",
-        )}>
-        </div>
-
-        {/* INTRODUCTION SECTION */}
-        <section className="pt-16 md:pt-24 bg-muted/30">
-          <div className="container mx-auto px-4 md:px-6">
-            <div className="mx-auto max-w-5xl text-center">
-              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.pdm.what_is.title}</h2>
-              <p className="mt-4 text-lg text-muted-foreground text-justify" dangerouslySetInnerHTML={{ __html: homeT.pdm.what_is.p1.replace(/&lt;/g, '<').replace(/&gt;/g, '>') }}></p>
-              <p className="mt-4 text-lg text-muted-foreground text-justify" dangerouslySetInnerHTML={{ __html: homeT.pdm.what_is.p2.replace(/&lt;/g, '<').replace(/&gt;/g, '>') }}></p>
+            <div className="relative animate-in fade-in slide-in-from-right-8 duration-700 delay-200">
+              <div className="relative aspect-[4/3] rounded-[3rem] overflow-hidden shadow-[0_48px_100px_-12px_rgba(0,0,0,0.2)] border-8 border-white">
+                <Image
+                  src="/image/amazon-hero.jpg"
+                  alt="Amazon Rainforest"
+                  fill
+                  className="object-cover"
+                  priority
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+              </div>
+              
+              {/* Floating Quote Card */}
+              {indexValues.length > 0 && (
+                <div className="absolute -bottom-8 -left-8 right-8 md:right-auto md:w-80 bg-white/95 backdrop-blur-xl p-8 rounded-[2.5rem] shadow-2xl border border-slate-100 animate-bounce-subtle">
+                  <Carousel opts={{ loop: true }} plugins={[autoplayPlugin.current]}>
+                    <CarouselContent>
+                      {indexValues.map((item, index) => (
+                        <CarouselItem key={index}>
+                          <div className="space-y-2">
+                            <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Cotacão Atual UCS</p>
+                            <div className="flex items-end justify-between gap-4">
+                              <span className="text-4xl font-black text-slate-900 font-mono">
+                                {formatCurrency(item.value, item.currency, item.currency)}
+                              </span>
+                              <div className={cn(
+                                "flex items-center text-sm font-bold px-2 py-1 rounded-lg",
+                                item.change >= 0 ? "bg-emerald-100 text-emerald-600" : "bg-red-100 text-red-600"
+                              )}>
+                                {item.change >= 0 ? <TrendingUp className="h-4 w-4 mr-1" /> : <TrendingDown className="h-4 w-4 mr-1" />}
+                                {item.change.toFixed(2)}%
+                              </div>
+                            </div>
+                            <p className="text-[10px] text-slate-400">Ref: {format(targetDate, 'dd/MM/yyyy')}</p>
+                          </div>
+                        </CarouselItem>
+                      ))}
+                    </CarouselContent>
+                  </Carousel>
+                </div>
+              )}
             </div>
           </div>
         </section>
 
         {/* PILLARS SECTION */}
-        <section className="py-16 md:py-24">
-          <div className="container mx-auto px-4 md:px-6">
-            <div className="mx-auto max-w-5xl text-center mb-12">
-              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Os Três Pilares do Sistema UCS</h2>
-            </div>
-            <div className="mx-auto flex flex-col gap-8 max-w-5xl">
-              {pilaresPDM.map((pilar, index) => {
-                return (
-                  <Card key={index} className={`flex flex-col ${index === 1 ? 'md:flex-row-reverse' : 'md:flex-row'} hover:shadow-lg transition-shadow overflow-hidden`}>
-                    <div className="relative h-48 md:h-auto md:w-80 flex-shrink-0 bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
-                      <div className="text-center">
-                        <div className="flex justify-center mb-4">
-                          <pilar.icon className="h-16 w-16 text-primary" />
-                        </div>
-                        <CardTitle className="text-lg font-bold text-foreground">{pilar.title}</CardTitle>
-                      </div>
-                    </div>
-                    <CardContent className="flex-grow space-y-4 p-6">
-                      <p className="text-sm text-muted-foreground text-justify">{pilar.definition}</p>
-                      {pilar.origin && (
-                        <div className="border-t pt-4">
-                          <h4 className="font-semibold text-sm mb-2">Origem do Valor</h4>
-                          <p className="text-xs text-muted-foreground text-justify">{pilar.origin}</p>
-                        </div>
-                      )}
-                      <div className="border-t pt-4">
-                        <h4 className="font-semibold text-sm mb-2">{homeT.pdm.methodology}</h4>
-                        <p className="text-xs text-muted-foreground text-justify">{pilar.methodology}</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
+        <section className="container mx-auto px-6 py-24">
+          <div className="text-center space-y-4 mb-16">
+            <h2 className="text-4xl font-bold text-slate-900">Os Pilares do Sistema</h2>
+            <p className="text-slate-500 max-w-2xl mx-auto text-lg">
+              Nossa metodologia inovadora é baseada em três eixos fundamentais de valor ambiental e econômico.
+            </p>
           </div>
-        </section>
-
-        {/* APPLICATIONS SECTION */}
-        <section className="py-16 md:py-24 bg-muted/30">
-          <div className="container mx-auto px-4 md:px-6">
-            <div className="mx-auto max-w-5xl text-center mb-12">
-              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.pdm.applications_title}</h2>
-            </div>
-            <div className="mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl">
-              {aplicacoesPDM.map((app, index) => (
-                <Card key={index} className="text-center p-6 hover:shadow-lg transition-shadow">
-                  <div className="flex justify-center mb-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-                      <app.icon className="h-6 w-6" />
-                    </div>
+          
+          <div className="grid md:grid-cols-3 gap-8">
+            {pilaresPDM.map((pilar, index) => (
+              <Card key={index} className="group border-none bg-white rounded-[2.5rem] p-8 shadow-[0_20px_50px_rgba(0,0,0,0.05)] hover:shadow-[0_40px_80px_rgba(0,0,0,0.1)] transition-all duration-500 hover:-translate-y-4">
+                <CardHeader className="p-0 mb-6">
+                  <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3", pilar.color)}>
+                    <pilar.icon className="h-8 w-8" />
                   </div>
-                  <h3 className="text-md font-semibold mb-2">{app.title}</h3>
-                  <p className="text-sm text-muted-foreground">{app.description}</p>
-                </Card>
-              ))}
-            </div>
+                </CardHeader>
+                <CardContent className="p-0 space-y-4">
+                  <CardTitle className="text-xl font-bold text-slate-900 leading-tight">{pilar.title}</CardTitle>
+                  <p className="text-slate-500 text-sm leading-relaxed">{pilar.definition}</p>
+                  <div className="pt-4 border-t border-slate-100">
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Metodologia</p>
+                    <p className="text-xs text-slate-500 italic">{pilar.methodology}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </section>
 
-        {/* UCS EVOLUTION SECTION */}
-        <section className="py-16 md:py-24">
-          <div className="container mx-auto px-4 md:px-6">
-            <div className="mx-auto max-w-5xl text-center mb-12">
-              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.ucs_section.title}</h2>
-              <p className="mt-4 text-lg text-muted-foreground">{homeT.ucs_section.description}</p>
-            </div>
-            <div className="mx-auto max-w-5xl h-96">
-              <HistoricalAnalysisChart
-                isLoading={isLoadingHistory}
-                chartData={chartData}
-                isMultiLine={false}
-                mainAssetData={ucsAseAsset}
-                visibleAssets={{}}
-                lineColors={{}}
-                assetNames={{}}
-                showMetrics={false}
-              />
-            </div>
-          </div>
-        </section>
-
-        {/* UCS SECTION */}
-        <section className="py-16 md:py-24 bg-muted/30">
-          <div className="container mx-auto px-4 md:px-6">
-            <div className="mx-auto max-w-5xl grid md:grid-cols-2 gap-12 items-center">
-              <div>
-                <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.ucs.title}</h2>
-                <p className="mt-4 text-lg text-muted-foreground text-justify">
-                  {homeT.ucs.p1}
+        {/* CHART SECTION */}
+        <section className="container mx-auto px-6 py-24">
+          <Card className="border-none bg-white rounded-[3rem] shadow-[0_48px_100px_-12px_rgba(0,0,0,0.08)] overflow-hidden">
+            <div className="grid lg:grid-cols-3">
+              <div className="lg:col-span-1 p-12 bg-slate-900 text-white flex flex-col justify-center space-y-6">
+                <Badge className="w-fit bg-emerald-500 hover:bg-emerald-500 text-white font-bold px-4 py-1">HISTÓRICO</Badge>
+                <h3 className="text-3xl font-bold">{homeT.ucs_section.title}</h3>
+                <p className="text-slate-400 leading-relaxed">
+                  {homeT.ucs_section.description}
                 </p>
-                <p className="mt-4 text-muted-foreground text-justify">
-                  {homeT.ucs.p2}
-                </p>
+                <Button className="w-fit rounded-full bg-white text-slate-900 hover:bg-slate-100 font-bold px-8">
+                  Ver Dados Detalhados
+                </Button>
               </div>
-              <div className="relative h-64 md:h-full w-full rounded-xl overflow-hidden shadow-xl">
-                <Image
-                  src="https://picsum.photos/seed/sustainability/800/600"
-                  alt={homeT.ucs.image_alt}
-                  fill
-                  style={{ objectFit: 'cover' }}
-                  data-ai-hint="sustainability hands"
-                />
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* BLOCKCHAIN SECTION */}
-        <section className="py-16 md:py-24">
-          <div className="container mx-auto px-4 md:px-6">
-            <div className="mx-auto max-w-5xl grid md:grid-cols-2 gap-12 items-center">
-              <div className="relative h-64 md:h-full w-full rounded-xl overflow-hidden shadow-xl md:order-last">
-                <Image
-                  src="https://picsum.photos/seed/blockchain-tech/800/600"
-                  alt={homeT.blockchain.image_alt}
-                  fill
-                  style={{ objectFit: 'cover' }}
-                  data-ai-hint="blockchain technology"
-                />
-              </div>
-              <div className="md:order-first">
-                <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.blockchain.title}</h2>
-                <p className="mt-4 text-lg text-muted-foreground text-justify">
-                  {homeT.blockchain.p1}
-                </p>
-                <p className="mt-4 text-muted-foreground text-justify">
-                  {homeT.blockchain.p2}
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* FINAL SUMMARY */}
-        <section className="py-16 md:py-24 text-center bg-background">
-          <div className="container mx-auto px-4 md:px-6">
-            <div className="mx-auto max-w-5xl">
-              <div className="text-center">
-                <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homeT.pdm.conclusion.title}</h2>
-                <p className="mx-auto mt-4 max-w-3xl text-lg text-muted-foreground text-justify">
-                  {homeT.pdm.conclusion.p1}
-                </p>
-                <div className="mt-8">
-                  <Award className="mx-auto h-12 w-12 text-primary" />
+              <div className="lg:col-span-2 p-12 bg-white">
+                <div className="h-[400px]">
+                  <HistoricalAnalysisChart
+                    isLoading={isLoadingHistory}
+                    chartData={chartData}
+                    isMultiLine={false}
+                    mainAssetData={ucsAseAsset}
+                    visibleAssets={{}}
+                    lineColors={{}}
+                    assetNames={{}}
+                    showMetrics={false}
+                  />
                 </div>
               </div>
+            </div>
+          </Card>
+        </section>
+
+        {/* CTA FINAL */}
+        <section className="container mx-auto px-6 py-24 text-center">
+          <div className="max-w-4xl mx-auto space-y-8 p-16 rounded-[3rem] bg-gradient-to-br from-[#10b981] to-[#059669] text-white shadow-2xl shadow-emerald-200">
+            <h2 className="text-4xl md:text-5xl font-bold leading-tight">Pronto para transformar sua conservação em valor?</h2>
+            <p className="text-xl text-emerald-50 opacity-90 max-w-2xl mx-auto">
+              Junte-se à maior plataforma de ativos ambientais e comece a rentabilizar a preservação hoje mesmo.
+            </p>
+            <div className="flex flex-wrap justify-center gap-4 pt-4">
+              <Button size="lg" className="h-14 px-10 rounded-full bg-white text-emerald-600 hover:bg-emerald-50 text-lg font-bold shadow-lg">
+                Começar agora
+              </Button>
+              <Button size="lg" variant="outline" className="h-14 px-10 rounded-full border-2 border-white/30 bg-transparent text-white hover:bg-white/10 text-lg font-bold">
+                Falar com consultor
+              </Button>
             </div>
           </div>
         </section>
       </main>
 
+      <footer className="bg-white border-t border-slate-200 py-12">
+        <div className="container mx-auto px-6">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+            <LogoUCS />
+            <div className="flex flex-col items-center md:items-end gap-2 text-sm text-slate-400">
+              <p>&copy; {new Date().getFullYear()} UCS Index. {homeT.footer.rights}</p>
+              <p>{homeT.footer.source} <a href="https://br.investing.com/" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">investing.com.br</a></p>
+            </div>
+          </div>
+        </div>
+      </footer>
+
       {/* Floating Quote Button */}
       {ucsAseAsset && (
         <div className={cn(
-          "fixed bottom-6 right-6 z-50 transition-opacity duration-300",
-          isScrolled ? "opacity-100" : "opacity-0 pointer-events-none"
+          "fixed bottom-8 right-8 z-50 transition-all duration-500 transform",
+          isScrolled ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12 pointer-events-none"
         )}>
           <Button
             variant="default"
-            className="h-14 w-auto px-5 rounded-full shadow-2xl bg-gradient-to-r from-primary to-green-600 hover:scale-105 transition-transform"
+            className="h-16 px-6 rounded-full shadow-[0_20px_50px_rgba(16,185,129,0.3)] bg-[#10b981] hover:bg-[#059669] hover:scale-105 transition-all"
             onClick={scrollToTop}
           >
-            <div className="flex items-center gap-3">
-              <span className="font-semibold">{t.home.quote.title}</span>
-              <div className="h-6 w-px bg-white/30" />
-              <Carousel
-                opts={{ align: "start", loop: true }}
-                plugins={[Autoplay({ delay: 3000, stopOnInteraction: true })]}
-                className="w-48"
-              >
-                <CarouselContent>
-                  {indexValues.map((item, index) => (
-                    <CarouselItem key={index}>
-                      <div className="flex items-center justify-center gap-2">
-                        <span className="font-mono font-bold text-lg">
-                          {formatCurrency(item.value, item.currency, item.currency)}
-                        </span>
-                        <div className={cn(
-                          "flex items-center text-sm font-semibold",
-                          ucsAseAsset.change >= 0 ? "text-green-300" : "text-red-300"
-                        )}>
-                          {ucsAseAsset.change >= 0 ? <TrendingUp className="h-4 w-4 mr-1" /> : <TrendingDown className="h-4 w-4 mr-1" />}
-                          {ucsAseAsset.change.toFixed(2)}%
-                        </div>
-                      </div>
-                    </CarouselItem>
-                  ))}
-                </CarouselContent>
-              </Carousel>
-              <div className="ml-2 p-1 bg-white/20 rounded-full">
+            <div className="flex items-center gap-4">
+              <div className="flex flex-col items-start leading-none">
+                <span className="text-[10px] font-bold uppercase tracking-widest opacity-80">Índice UCS</span>
+                <span className="text-xl font-black font-mono">
+                  {formatCurrency(ucsAseAsset.price, ucsAseAsset.currency, ucsAseAsset.id)}
+                </span>
+              </div>
+              <div className="h-8 w-px bg-white/20" />
+              <div className={cn(
+                "flex items-center gap-1 font-bold",
+                ucsAseAsset.change >= 0 ? "text-emerald-200" : "text-red-200"
+              )}>
+                {ucsAseAsset.change >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+                {ucsAseAsset.change.toFixed(2)}%
+              </div>
+              <div className="p-2 bg-white/20 rounded-full">
                 <ArrowUp className="h-4 w-4" />
               </div>
             </div>
           </Button>
         </div>
       )}
-
-      <footer className="border-t">
-        <div className="container mx-auto flex flex-col items-center justify-between gap-4 px-4 py-8 md:flex-row md:px-6">
-          <div className="flex flex-col items-center gap-2 text-center md:flex-row md:gap-4 md:text-left">
-            <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} UCS Index. {homeT.footer.rights}</p>
-            <p className="text-sm text-muted-foreground">{homeT.footer.source} <a href="https://br.investing.com/" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">investing.com.br</a></p>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }
