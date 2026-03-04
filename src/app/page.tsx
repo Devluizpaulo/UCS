@@ -175,7 +175,7 @@ export default function PDMDetailsPage() {
         "fixed top-0 z-[100] w-full transition-all duration-500",
         isScrolled ? "bg-white/70 backdrop-blur-2xl border-b border-slate-200/50 py-3 shadow-sm" : "bg-transparent py-8"
       )}>
-        <div className="container mx-auto flex items-center justify-between px-6">
+        <div className="container mx-auto px-6 flex items-center justify-between">
           <Link href="/" className="transition-all duration-300 hover:opacity-80 active:scale-95">
             <LogoUCS variant={isScrolled ? 'default' : 'text'} className={cn(isScrolled ? "" : "text-slate-900 text-2xl")} />
           </Link>
@@ -485,16 +485,23 @@ export default function PDMDetailsPage() {
         </section>
       </main>
 
-      <footer className="bg-white border-t border-slate-200/50 py-16">
+      <footer className="bg-white border-t border-slate-100 py-12">
         <div className="container mx-auto px-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-12">
-            <div className="space-y-4">
-              <LogoUCS className="h-10 w-auto" />
-              <p className="text-slate-400 font-medium max-w-full text-sm">Redefinindo o valor da natureza através da tecnologia blockchain e transparência financeira.</p>
+          <div className="flex flex-col md:flex-row items-start justify-between gap-8">
+            <div className="space-y-4 max-w-md">
+              <LogoUCS className="h-8 w-auto" />
+              <p className="text-slate-500 text-sm leading-relaxed">
+                Redefinindo o valor da natureza através da tecnologia blockchain e transparência financeira.
+              </p>
             </div>
-            <div className="flex flex-col items-center md:items-end gap-3 text-xs text-slate-400 font-bold uppercase tracking-widest">
-              <p>&copy; {new Date().getFullYear()} UCS Index. {homeT.footer.rights}</p>
-              <p>{homeT.footer.source} <a href="https://br.investing.com/" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">investing.com.br</a></p>
+            
+            <div className="flex flex-col md:items-end gap-4">
+              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 text-left md:text-right leading-loose">
+                <p>&copy; {new Date().getFullYear()} UCS INDEX. TODOS OS DIREITOS RESERVADOS.</p>
+                <p className="mt-1">
+                  FONTE DOS DADOS: <a href="https://br.investing.com/" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:text-emerald-500 transition-colors">INVESTING.COM.BR</a>
+                </p>
+              </div>
             </div>
           </div>
         </div>
