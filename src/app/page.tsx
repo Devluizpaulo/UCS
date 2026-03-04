@@ -177,7 +177,7 @@ export default function PDMDetailsPage() {
       )}>
         <div className="container mx-auto flex items-center justify-between px-6">
           <Link href="/" className="transition-all duration-300 hover:opacity-80 active:scale-95">
-            <LogoUCS variant={isScrolled ? 'default' : 'text'} className={cn(isScrolled ? "" : "text-slate-900 text-3xl")} />
+            <LogoUCS variant={isScrolled ? 'default' : 'text'} className={cn(isScrolled ? "" : "text-slate-900 text-2xl")} />
           </Link>
           <div className="flex items-center gap-6">
             <nav className="hidden lg:flex items-center gap-8 text-sm font-semibold text-slate-600">
@@ -187,7 +187,7 @@ export default function PDMDetailsPage() {
             </nav>
             <div className="flex items-center gap-3">
               <LanguageSwitcher />
-              <Button asChild className="rounded-2xl bg-[#10b981] hover:bg-[#059669] text-white shadow-xl shadow-emerald-200/50 border-none px-8 h-11 font-bold">
+              <Button asChild className="rounded-xl bg-[#10b981] hover:bg-[#059669] text-white shadow-lg shadow-emerald-200/50 border-none px-6 h-10 font-bold">
                 <Link href="/login" className="flex items-center gap-2">
                   Entrar
                 </Link>
@@ -198,56 +198,51 @@ export default function PDMDetailsPage() {
       </header>
 
       <main className="flex-1">
-        {/* HERO SECTION - REDESIGNED FOR HIGH-END UX */}
-        <section className="relative min-h-[90vh] flex items-center pt-20 pb-12 overflow-hidden">
-          {/* Atmosfera de fundo */}
+        {/* HERO SECTION */}
+        <section className="relative min-h-[80vh] flex items-center pt-20 pb-12 overflow-hidden">
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-[1400px] pointer-events-none -z-10">
             <div className="absolute top-[-10%] right-[-10%] w-[60%] h-[60%] bg-emerald-100/40 rounded-full blur-[120px] animate-pulse" />
             <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-100/30 rounded-full blur-[100px]" />
           </div>
 
           <div className="container mx-auto px-6 grid lg:grid-cols-12 gap-12 items-center">
-            {/* Conteúdo Esquerdo */}
-            <div className="lg:col-span-7 space-y-10 z-20">
-              <div className="inline-flex items-center gap-3 px-5 py-2.5 rounded-2xl bg-white/80 backdrop-blur-md text-emerald-700 text-xs font-black uppercase tracking-widest border border-emerald-100 shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-1000">
-                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+            <div className="lg:col-span-7 space-y-8 z-20">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/80 backdrop-blur-md text-emerald-700 text-[10px] font-black uppercase tracking-widest border border-emerald-100 shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-1000">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
                 Inovação BMV Standard
               </div>
               
-              <div className="space-y-6">
-                <h1 className="text-6xl md:text-7xl xl:text-8xl font-black tracking-tighter text-slate-900 leading-[0.95] animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-200">
+              <div className="space-y-4">
+                <h1 className="text-4xl md:text-5xl xl:text-6xl font-black tracking-tighter text-slate-900 leading-[1.1] animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-200">
                   O Ativo Real que <span className="text-emerald-500">Valoriza</span> a Natureza.
                 </h1>
-                <p className="text-lg md:text-xl text-slate-500 leading-relaxed font-medium max-w-2xl animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-300">
-                  Transformamos hectares preservados em créditos financeiros de alta liquidez. A UCS é o primeiro Ecoasset que conecta o mercado real à conservação ambiental.
+                <p className="text-base md:text-lg text-slate-500 leading-relaxed font-medium max-w-2xl animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-300 text-justify">
+                  {heroContent.subtitle}
                 </p>
               </div>
 
-              <div className="flex flex-wrap gap-5 pt-4 animate-in fade-in slide-in-from-bottom-10 duration-1000 delay-400">
-                <Button asChild size="lg" className="h-16 px-10 rounded-[1.5rem] bg-[#10b981] hover:bg-[#059669] text-white text-lg font-black shadow-2xl shadow-emerald-200 transition-all hover:scale-105 active:scale-95 group">
+              <div className="flex flex-wrap gap-4 pt-4 animate-in fade-in slide-in-from-bottom-10 duration-1000 delay-400">
+                <Button asChild size="lg" className="h-14 px-8 rounded-xl bg-[#10b981] hover:bg-[#059669] text-white text-base font-black shadow-xl shadow-emerald-200 transition-all hover:scale-105 active:scale-95 group">
                   <a href="https://bmvdigital.global/" target="_blank" rel="noopener noreferrer">
-                    Começar agora <ChevronRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+                    Começar agora <ChevronRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
                   </a>
                 </Button>
-                <Button size="lg" variant="outline" className="h-16 px-10 rounded-[1.5rem] border-2 border-slate-200 bg-white/50 backdrop-blur-md text-lg font-bold hover:bg-white hover:border-emerald-500 transition-all">
+                <Button size="lg" variant="outline" className="h-14 px-8 rounded-xl border-2 border-slate-200 bg-white/50 backdrop-blur-md text-base font-bold hover:bg-white hover:border-emerald-500 transition-all">
                   Explorar Dashboards
                 </Button>
               </div>
 
-              {/* Trust badges */}
-              <div className="pt-12 flex items-center gap-10 opacity-40 grayscale hover:grayscale-0 transition-all duration-500 animate-in fade-in delay-700">
-                <Globe className="h-8 w-8" />
-                <Award className="h-8 w-8" />
-                <ShieldCheck className="h-8 w-8" />
-                <Zap className="h-8 w-8" />
+              <div className="pt-8 flex items-center gap-8 opacity-40 grayscale hover:grayscale-0 transition-all duration-500 animate-in fade-in delay-700">
+                <Globe className="h-6 w-6" />
+                <Award className="h-6 w-6" />
+                <ShieldCheck className="h-6 w-6" />
+                <Zap className="h-6 w-6" />
               </div>
             </div>
 
-            {/* Visual Direito - Composição Premium */}
-            <div className="lg:col-span-5 relative lg:h-[700px] flex items-center justify-center">
-              <div className="relative w-full aspect-square md:aspect-[4/5] max-w-[500px]">
-                {/* Imagem Principal */}
-                <div className="absolute inset-0 rounded-[4rem] overflow-hidden shadow-[0_80px_150px_-20px_rgba(0,0,0,0.3)] border-[12px] border-white z-10 transition-transform duration-700 hover:scale-[1.02] hover:rotate-1">
+            <div className="lg:col-span-5 relative lg:h-[600px] flex items-center justify-center">
+              <div className="relative w-full aspect-square max-w-[450px]">
+                <div className="absolute inset-0 rounded-[3rem] overflow-hidden shadow-[0_50px_100px_-20px_rgba(0,0,0,0.2)] border-[8px] border-white z-10 transition-transform duration-700 hover:scale-[1.02] hover:rotate-1">
                   <Image
                     src="https://picsum.photos/seed/amazon-lush/1000/1200"
                     alt="Lush Amazon Forest"
@@ -259,85 +254,79 @@ export default function PDMDetailsPage() {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
                 </div>
 
-                {/* Card Flutuante 1: Cotação (Glassmorphism) */}
-                <div className="absolute -bottom-10 -left-16 z-30 w-72 bg-white/80 backdrop-blur-2xl p-8 rounded-[2.5rem] shadow-[0_40px_80px_-15px_rgba(0,0,0,0.2)] border border-white/50 animate-float">
-                  <div className="space-y-4">
+                <div className="absolute -bottom-6 -left-12 z-30 w-64 bg-white/80 backdrop-blur-2xl p-6 rounded-[2rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.15)] border border-white/50 animate-float">
+                  <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">UCS Index</span>
-                      <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                      <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">UCS Index</span>
+                      <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                     </div>
                     {ucsAseAsset && (
                       <>
                         <div className="flex items-baseline gap-1">
-                          <span className="text-4xl font-black text-slate-900 tracking-tighter">
+                          <span className="text-3xl font-black text-slate-900 tracking-tighter">
                             {ucsAseAsset.price.toFixed(2)}
                           </span>
-                          <span className="text-sm font-bold text-emerald-600">BRL</span>
+                          <span className="text-xs font-bold text-emerald-600">BRL</span>
                         </div>
                         <div className="flex items-center justify-between pt-2 border-t border-slate-100">
                           <div className={cn(
-                            "flex items-center text-[11px] font-black",
+                            "flex items-center text-[10px] font-black",
                             ucsAseAsset.change >= 0 ? "text-emerald-600" : "text-red-600"
                           )}>
                             {ucsAseAsset.change >= 0 ? <TrendingUp className="h-3 w-3 mr-1" /> : <TrendingDown className="h-3 w-3 mr-1" />}
                             {Math.abs(ucsAseAsset.change).toFixed(2)}%
                           </div>
-                          <span className="text-[10px] text-slate-400 font-medium">{format(targetDate || new Date(), 'dd/MM/yyyy')}</span>
+                          <span className="text-[9px] text-slate-400 font-medium">{format(targetDate || new Date(), 'dd/MM/yyyy')}</span>
                         </div>
                       </>
                     )}
                   </div>
                 </div>
 
-                {/* Card Flutuante 2: Métricas Rápidas */}
-                <div className="absolute top-12 -right-12 z-30 bg-[#0f172a] text-white p-6 rounded-[2rem] shadow-2xl animate-float-delayed">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 bg-emerald-500/20 rounded-xl">
-                      <Droplets className="h-6 w-6 text-emerald-400" />
+                <div className="absolute top-8 -right-8 z-30 bg-[#0f172a] text-white p-5 rounded-[1.5rem] shadow-2xl animate-float-delayed">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-emerald-500/20 rounded-lg">
+                      <Droplets className="h-5 w-5 text-emerald-400" />
                     </div>
                     <div>
-                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Proteção Hídrica</p>
-                      <p className="text-xl font-black">+4.2M L</p>
+                      <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Proteção Hídrica</p>
+                      <p className="text-lg font-black">+4.2M L</p>
                     </div>
                   </div>
                 </div>
-
-                {/* Elementos Decorativos de Profundidade */}
-                <div className="absolute -top-10 -left-10 w-40 h-40 bg-emerald-400/20 rounded-full blur-[60px] -z-10" />
-                <div className="absolute -bottom-20 -right-20 w-60 h-60 bg-blue-400/10 rounded-full blur-[80px] -z-10" />
               </div>
             </div>
           </div>
         </section>
 
         {/* PILLARS SECTION */}
-        <section id="pilares" className="container mx-auto px-6 py-32">
-          <div className="space-y-4 mb-20">
-            <h2 className="text-5xl font-black text-slate-900 tracking-tight">Os Pilares do Sistema</h2>
-            <p className="text-slate-500 text-xl font-medium max-w-4xl">
+        <section id="pilares" className="container mx-auto px-6 py-20">
+          <div className="space-y-3 mb-16">
+            <h2 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">Os Pilares do Sistema</h2>
+            <p className="text-slate-500 text-lg font-medium text-justify">
               Nossa metodologia inovadora é baseada em três eixos fundamentais de valor ambiental e econômico, garantindo uma visão 360º do capital natural.
             </p>
           </div>
           
-          <div className="grid grid-cols-1 gap-10">
+          <div className="grid grid-cols-1 gap-8">
             {pilaresPDM.map((pilar, index) => (
-              <Card key={index} className="group border-none bg-white rounded-[3.5rem] p-10 md:p-16 shadow-[0_20px_60px_rgba(0,0,0,0.04)] hover:shadow-[0_40px_100px_rgba(0,0,0,0.08)] transition-all duration-700 hover:-translate-y-2 flex flex-col md:flex-row gap-12 items-center md:items-start overflow-hidden relative border border-slate-50">
-                <div className="absolute top-0 right-0 w-96 h-96 bg-slate-50/50 rounded-full -mr-48 -mt-48 transition-transform duration-1000 group-hover:scale-150" />
+              <Card key={index} className="group border-none bg-white rounded-[2.5rem] p-8 md:p-12 shadow-[0_15px_40px_rgba(0,0,0,0.03)] hover:shadow-[0_30px_80px_rgba(0,0,0,0.06)] transition-all duration-700 hover:-translate-y-1 flex flex-col md:flex-row gap-8 items-center md:items-start overflow-hidden relative border border-slate-50">
+                <div className="absolute top-0 right-0 w-72 h-72 bg-slate-50/50 rounded-full -mr-36 -mt-36 transition-transform duration-1000 group-hover:scale-150" />
                 
-                <div className={cn("w-28 h-28 shrink-0 rounded-[2.5rem] flex items-center justify-center transition-all duration-700 group-hover:scale-110 group-hover:rotate-6 shadow-lg relative z-10", pilar.color)}>
-                  <pilar.icon className="h-14 w-12" />
+                <div className={cn("w-20 h-20 shrink-0 rounded-[1.5rem] flex items-center justify-center transition-all duration-700 group-hover:scale-110 group-hover:rotate-6 shadow-md relative z-10", pilar.color)}>
+                  <pilar.icon className="h-10 w-8" />
                 </div>
-                <div className="flex-grow space-y-10 relative z-10">
-                  <div className="space-y-6">
-                    <CardTitle className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter">{pilar.title}</CardTitle>
-                    <p className="text-slate-600 text-lg md:text-xl leading-relaxed text-justify">{pilar.definition}</p>
+                <div className="flex-grow space-y-6 relative z-10">
+                  <div className="space-y-4">
+                    <CardTitle className="text-2xl md:text-3xl font-black text-slate-900 tracking-tighter">{pilar.title}</CardTitle>
+                    <p className="text-slate-600 text-base md:text-lg leading-relaxed text-justify">{pilar.definition}</p>
                   </div>
-                  <div className="pt-10 border-t border-slate-100">
-                    <div className="flex items-center gap-3 mb-4">
+                  <div className="pt-6 border-t border-slate-100">
+                    <div className="flex items-center gap-2 mb-3">
                       <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                      <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.4em]">Especificações Técnicas</p>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Especificações Técnicas</p>
                     </div>
-                    <p className="text-base md:text-lg text-slate-500 italic leading-relaxed text-justify">{pilar.methodology}</p>
+                    <p className="text-sm md:text-base text-slate-500 italic leading-relaxed text-justify">{pilar.methodology}</p>
                   </div>
                 </div>
               </Card>
@@ -346,68 +335,67 @@ export default function PDMDetailsPage() {
         </section>
 
         {/* GLOBAL DASHBOARD SECTION */}
-        <section id="evolucao" className="container mx-auto px-6 py-32">
-          <div className="space-y-12 mb-20">
-            <div className="space-y-6">
-              <h2 className="text-5xl md:text-6xl font-black text-slate-900 tracking-tighter leading-tight">A Evolução do Índice UCS</h2>
-              <p className="text-xl text-slate-500 font-medium leading-relaxed text-justify max-w-5xl">
+        <section id="evolucao" className="container mx-auto px-6 py-20">
+          <div className="space-y-8 mb-16">
+            <div className="space-y-4">
+              <h2 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tighter leading-tight">A Evolução do Índice UCS</h2>
+              <p className="text-lg text-slate-500 font-medium leading-relaxed text-justify">
                 Acompanhe a performance histórica do Índice de Unidade de Crédito de Sustentabilidade. O gráfico abaixo ilustra a trajetória e a estabilidade do ativo ao longo do tempo, refletindo o valor crescente da conservação ambiental.
               </p>
             </div>
 
             <div className="grid lg:grid-cols-12 gap-8 items-stretch">
-              {/* Official Quote Card (Dark) */}
-              <div className="lg:col-span-4 relative overflow-hidden bg-[#0f172a] text-white rounded-[4rem] p-12 shadow-[0_50px_100px_-20px_rgba(15,23,42,0.3)] flex flex-col justify-between h-full min-h-[550px]">
+              <div className="lg:col-span-4 relative overflow-hidden bg-[#0f172a] text-white rounded-[3rem] p-10 shadow-2xl flex flex-col justify-between h-full min-h-[450px]">
                 <div className="absolute top-12 right-[-40px] opacity-[0.04] pointer-events-none transform rotate-12">
-                  <TrendingUp size={400} />
+                  <TrendingUp size={300} />
                 </div>
 
-                <div className="relative z-10 space-y-16">
+                <div className="relative z-10 space-y-12">
                   <div className="flex items-start justify-between">
-                    <div className="space-y-4">
-                      <div className="inline-flex px-5 py-2 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-black uppercase tracking-widest text-[10px]">
+                    <div className="space-y-3">
+                      <div className="inline-flex px-4 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-black uppercase tracking-widest text-[9px]">
                         Oficial UCS INDEX ASE
                       </div>
-                      <p className="text-[11px] font-black text-slate-500 uppercase tracking-[0.4em] block">Cotação do Dia</p>
+                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">Cotação do Dia</p>
                     </div>
                     {ucsAseAsset && (
                       <div className={cn(
-                        "flex items-center text-sm font-black px-5 py-2 rounded-2xl",
+                        "flex items-center text-xs font-black px-4 py-1.5 rounded-xl",
                         ucsAseAsset.change >= 0 ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"
                       )}>
-                        {ucsAseAsset.change >= 0 ? <TrendingUp className="h-5 w-5 mr-2" /> : <TrendingDown className="h-5 w-5 mr-2" />}
+                        {ucsAseAsset.change >= 0 ? <TrendingUp className="h-4 w-4 mr-1.5" /> : <TrendingDown className="h-4 w-4 mr-1.5" />}
                         {Math.abs(ucsAseAsset.change).toFixed(2)}%
                       </div>
                     )}
                   </div>
 
-                  <div className="space-y-6">
-                    <div className="flex items-baseline gap-5">
-                      <span className="text-[100px] font-black font-mono tracking-tighter leading-none">
+                  <div className="space-y-4">
+                    <div className="flex items-baseline gap-4">
+                      <span className="text-6xl font-black font-mono tracking-tighter leading-none">
                         {ucsAseAsset ? ucsAseAsset.price.toFixed(2) : '176.66'}
                       </span>
-                      <span className="text-4xl font-bold text-emerald-500">BRL</span>
+                      <span className="text-2xl font-bold text-emerald-500">BRL</span>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <Calendar className="h-4 w-4 text-slate-500" />
-                      <p className="text-[11px] text-slate-500 font-black uppercase tracking-widest">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-3.5 w-3.5 text-slate-500" />
+                      <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest">
                         Ref: {ucsAseAsset ? ucsAseAsset.lastUpdated : (targetDate ? format(targetDate, 'dd/MM/yyyy') : '--/--/----')}
                       </p>
                     </div>
                   </div>
                 </div>
 
-                <div className="relative z-10 pt-12 border-t border-slate-800/50 mt-auto">
-                  <div className="grid grid-cols-2 gap-12">
-                    <div className="space-y-3">
-                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Equiv. USD</p>
-                      <p className="text-4xl font-black font-mono tracking-tight text-white">
+                <div className="relative z-10 pt-10 border-t border-slate-800/50 mt-auto">
+                  <div className="grid grid-cols-2 gap-8">
+                    <div className="space-y-2">
+                      <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Equiv. USD</p>
+                      <p className="text-2xl font-black font-mono tracking-tight text-white">
                         {ucsAseAsset?.valor_usd ? ucsAseAsset.valor_usd.toFixed(2) : '33.72'}
                       </p>
                     </div>
-                    <div className="space-y-3">
-                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Equiv. EUR</p>
-                      <p className="text-4xl font-black font-mono tracking-tight text-white">
+                    <div className="space-y-2">
+                      <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Equiv. EUR</p>
+                      <p className="text-2xl font-black font-mono tracking-tight text-white">
                         {ucsAseAsset?.valor_eur ? ucsAseAsset.valor_eur.toFixed(2) : '28.50'}
                       </p>
                     </div>
@@ -415,27 +403,26 @@ export default function PDMDetailsPage() {
                 </div>
               </div>
 
-              {/* Trend Chart Card (White) */}
-              <div className="lg:col-span-8 bg-white rounded-[4rem] p-12 shadow-[0_32px_80px_-12px_rgba(0,0,0,0.05)] border border-slate-100 flex flex-col h-full relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-50/30 rounded-full blur-3xl -z-10" />
+              <div className="lg:col-span-8 bg-white rounded-[3rem] p-10 shadow-sm border border-slate-100 flex flex-col h-full relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-50/30 rounded-full blur-3xl -z-10" />
                 
-                <div className="flex flex-col md:flex-row md:items-center justify-between mb-16 gap-6">
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-5 text-emerald-600">
-                      <div className="p-4 bg-emerald-50 rounded-2xl shadow-inner">
-                        <Activity className="h-8 w-8" />
+                <div className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-4 text-emerald-600">
+                      <div className="p-3 bg-emerald-50 rounded-xl shadow-inner">
+                        <Activity className="h-6 w-6" />
                       </div>
-                      <h3 className="text-4xl font-black text-slate-900 tracking-tight">Análise Histórica</h3>
+                      <h3 className="text-2xl font-black text-slate-900 tracking-tight">Análise Histórica</h3>
                     </div>
-                    <p className="text-slate-500 font-semibold ml-20 text-lg uppercase tracking-widest text-xs opacity-60">Série Temporal (Últimos 3 anos)</p>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest ml-14">Série Temporal (Últimos 3 anos)</p>
                   </div>
-                  <div className="flex gap-3">
-                    <Badge variant="outline" className="px-4 py-2 rounded-xl bg-slate-50 text-slate-600 border-slate-200 font-bold">Semanal</Badge>
-                    <Badge variant="default" className="px-4 py-2 rounded-xl bg-emerald-500 text-white border-none font-bold">Mensal</Badge>
+                  <div className="flex gap-2">
+                    <Badge variant="outline" className="px-3 py-1 rounded-lg bg-slate-50 text-slate-600 border-slate-200 font-bold text-[10px]">Semanal</Badge>
+                    <Badge variant="default" className="px-3 py-1 rounded-lg bg-emerald-500 text-white border-none font-bold text-[10px]">Mensal</Badge>
                   </div>
                 </div>
 
-                <div className="flex-1 min-h-[400px]">
+                <div className="flex-1 min-h-[350px]">
                   <HistoricalAnalysisChart
                     isLoading={isLoadingHistory}
                     chartData={chartData}
@@ -455,22 +442,22 @@ export default function PDMDetailsPage() {
         </section>
 
         {/* CTA FINAL */}
-        <section className="container mx-auto px-6 py-32 text-center">
-          <div className="space-y-12 p-24 rounded-[5rem] bg-gradient-to-br from-[#10b981] to-[#059669] text-white shadow-[0_60px_120px_-20px_rgba(16,185,129,0.4)] relative overflow-hidden group">
-            <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-white/10 rounded-full -mr-64 -mt-64 transition-transform duration-1000 group-hover:scale-110" />
-            <div className="absolute bottom-0 left-0 w-96 h-96 bg-black/5 rounded-full -ml-32 -mb-32" />
+        <section className="container mx-auto px-6 py-20 text-center">
+          <div className="space-y-10 p-16 md:p-24 rounded-[4rem] bg-gradient-to-br from-[#10b981] to-[#059669] text-white shadow-2xl relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-white/10 rounded-full -mr-48 -mt-48 transition-transform duration-1000 group-hover:scale-110" />
+            <div className="absolute bottom-0 left-0 w-80 h-80 bg-black/5 rounded-full -ml-32 -mb-32" />
             
-            <h2 className="text-6xl md:text-7xl font-black leading-[0.95] relative z-10 tracking-tighter max-w-4xl mx-auto">Pronto para rentabilizar sua conservação?</h2>
-            <p className="text-2xl text-emerald-50 opacity-90 mx-auto max-w-2xl relative z-10 font-medium">
+            <h2 className="text-4xl md:text-5xl font-black leading-[1.1] relative z-10 tracking-tighter max-w-3xl mx-auto">Pronto para rentabilizar sua conservação?</h2>
+            <p className="text-xl text-emerald-50 opacity-90 mx-auto max-w-xl relative z-10 font-medium">
               Junte-se à maior plataforma de ativos ambientais e transforme sua floresta em um portfólio de alta performance.
             </p>
-            <div className="flex flex-wrap justify-center gap-8 pt-8 relative z-10">
-              <Button asChild size="lg" className="h-20 px-14 rounded-[2rem] bg-white text-emerald-600 hover:bg-emerald-50 text-2xl font-black shadow-2xl transition-all hover:scale-105 active:scale-95">
+            <div className="flex flex-wrap justify-center gap-6 pt-6 relative z-10">
+              <Button asChild size="lg" className="h-16 px-10 rounded-2xl bg-white text-emerald-600 hover:bg-emerald-50 text-xl font-black shadow-2xl transition-all hover:scale-105 active:scale-95">
                 <a href="https://bmvdigital.global/" target="_blank" rel="noopener noreferrer">
                   Começar agora
                 </a>
               </Button>
-              <Button size="lg" variant="outline" className="h-20 px-14 rounded-[2rem] border-2 border-white/30 bg-white/10 backdrop-blur-md text-white hover:bg-white/20 text-2xl font-black transition-all" asChild>
+              <Button size="lg" variant="outline" className="h-16 px-10 rounded-2xl border-2 border-white/30 bg-white/10 backdrop-blur-md text-white hover:bg-white/20 text-xl font-black transition-all" asChild>
                 <a href="mailto:contato@bmv.global">Falar com consultor</a>
               </Button>
             </div>
@@ -478,14 +465,14 @@ export default function PDMDetailsPage() {
         </section>
       </main>
 
-      <footer className="bg-white border-t border-slate-200/50 py-24">
+      <footer className="bg-white border-t border-slate-200/50 py-16">
         <div className="container mx-auto px-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-16">
-            <div className="space-y-6">
-              <LogoUCS className="h-12 w-auto" />
-              <p className="text-slate-400 font-medium max-w-sm">Redefinindo o valor da natureza através da tecnologia blockchain e transparência financeira.</p>
+          <div className="flex flex-col md:flex-row items-center justify-between gap-12">
+            <div className="space-y-4">
+              <LogoUCS className="h-10 w-auto" />
+              <p className="text-slate-400 font-medium max-w-sm text-sm">Redefinindo o valor da natureza através da tecnologia blockchain e transparência financeira.</p>
             </div>
-            <div className="flex flex-col items-center md:items-end gap-4 text-sm text-slate-400 font-bold uppercase tracking-[0.2em]">
+            <div className="flex flex-col items-center md:items-end gap-3 text-xs text-slate-400 font-bold uppercase tracking-widest">
               <p>&copy; {new Date().getFullYear()} UCS Index. {homeT.footer.rights}</p>
               <p>{homeT.footer.source} <a href="https://br.investing.com/" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">investing.com.br</a></p>
             </div>
@@ -496,20 +483,17 @@ export default function PDMDetailsPage() {
       <style jsx global>{`
         @keyframes float {
           0%, 100% { transform: translateY(0) rotate(0); }
-          50% { transform: translateY(-20px) rotate(1deg); }
+          50% { transform: translateY(-15px) rotate(1deg); }
         }
         @keyframes float-delayed {
           0%, 100% { transform: translateY(0) rotate(0); }
-          50% { transform: translateY(15px) rotate(-1deg); }
+          50% { transform: translateY(10px) rotate(-1deg); }
         }
         .animate-float {
           animation: float 8s ease-in-out infinite;
         }
         .animate-float-delayed {
           animation: float-delayed 10s ease-in-out infinite;
-        }
-        .perspective-1000 {
-          perspective: 1000px;
         }
       `}</style>
     </div>
