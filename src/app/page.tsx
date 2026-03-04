@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -36,10 +35,17 @@ export default function PDMDetailsPage() {
   const [settings, setSettings] = React.useState<LandingPageSettings | null>(null);
   const { language, t } = useLanguage();
   const [isScrolled, setIsScrolled] = React.useState(false);
-  const [targetDate, setTargetDate] = React.useState<Date>(new Date());
+  const [targetDate, setTargetDate] = React.useState<Date | null>(null);
   const [isBusinessDay, setIsBusinessDay] = React.useState<boolean>(true);
 
+  // Initialize targetDate on mount to avoid hydration mismatch
   React.useEffect(() => {
+    setTargetDate(new Date());
+  }, []);
+
+  React.useEffect(() => {
+    if (!targetDate) return;
+
     const init = async () => {
       try {
         const statusRes = await fetch('/api/business-day-status');
@@ -47,7 +53,6 @@ export default function PDMDetailsPage() {
         const today = new Date();
         if (statusJson?.isBusinessDay) {
           setIsBusinessDay(true);
-          setTargetDate(today);
           const prices = await getCommodityPrices();
           const ucsAsset = prices.find(p => p.id === 'ucs_ase');
           if (ucsAsset) setUcsAseAsset(ucsAsset);
@@ -92,11 +97,9 @@ export default function PDMDetailsPage() {
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [targetDate]);
 
-  const autoplayPlugin = React.useRef(
-    Autoplay({ delay: 4000, stopOnInteraction: true })
-  );
+  const autoplayPlugin = React.useMemo(() => Autoplay({ delay: 4000, stopOnInteraction: true }), []);
 
   const getIndexValues = (): IndexValue[] => {
     if (!ucsAseAsset) return [];
@@ -220,19 +223,20 @@ export default function PDMDetailsPage() {
             <div className="relative animate-in fade-in slide-in-from-right-8 duration-700 delay-200">
               <div className="relative aspect-[4/3] rounded-[3rem] overflow-hidden shadow-[0_48px_100px_-12px_rgba(0,0,0,0.2)] border-8 border-white">
                 <Image
-                  src="/image/amazon-hero.jpg"
+                  src="https://picsum.photos/seed/amazon/800/600"
                   alt="Amazon Rainforest"
                   fill
                   className="object-cover"
                   priority
+                  data-ai-hint="amazon rainforest"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
               </div>
               
               {/* Floating Quote Card */}
-              {indexValues.length > 0 && (
+              {indexValues.length > 0 && targetDate && (
                 <div className="absolute -bottom-8 -left-8 right-8 md:right-auto md:w-80 bg-white/95 backdrop-blur-xl p-8 rounded-[2.5rem] shadow-2xl border border-slate-100 animate-bounce-subtle">
-                  <Carousel opts={{ loop: true }} plugins={[autoplayPlugin.current]}>
+                  <Carousel opts={{ loop: true }} plugins={[autoplayPlugin]}>
                     <CarouselContent>
                       {indexValues.map((item, index) => (
                         <CarouselItem key={index}>
