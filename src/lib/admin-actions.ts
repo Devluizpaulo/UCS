@@ -67,7 +67,7 @@ export async function createUser(userData: {
   disabled?: boolean;
 }): Promise<{ user: UserRecord, link: string }> {
   try {
-    const { auth } = await getFirebaseAdmin();
+    const { auth, db } = await getFirebaseAdmin();
     const tempPassword = Math.random().toString(36).slice(-10) + 'A1!';
 
     const userPayload: any = {
@@ -83,6 +83,17 @@ export async function createUser(userData: {
     }
 
     const userRecord = await auth.createUser(userPayload);
+
+    await db.collection('users').doc(userRecord.uid).set({
+      id: userRecord.uid,
+      displayName: userData.displayName,
+      email: userData.email.toLowerCase().trim(),
+      phoneNumber: userData.phoneNumber || '',
+      role: 'seller',
+      isActive: !(userData.disabled || false),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }, { merge: true });
     
     // Constrói a URL de ação dinamicamente
     const baseUrl = getBaseUrl();
@@ -123,7 +134,7 @@ export async function updateUser(uid: string, userData: {
   phoneNumber?: string;
 }): Promise<UserRecord> {
   try {
-    const { auth } = await getFirebaseAdmin();
+    const { auth, db } = await getFirebaseAdmin();
     const dataToUpdate: any = {
         disabled: userData.disabled,
         displayName: userData.displayName,
@@ -133,6 +144,17 @@ export async function updateUser(uid: string, userData: {
     if (userData.password) dataToUpdate.password = userData.password;
     
     const userRecord = await auth.updateUser(uid, dataToUpdate);
+
+    const profilePatch: Record<string, any> = {
+      updatedAt: new Date().toISOString(),
+    };
+    if (typeof userData.displayName !== 'undefined') profilePatch.displayName = userData.displayName;
+    if (typeof userData.email !== 'undefined') profilePatch.email = userData.email.toLowerCase().trim();
+    if (typeof userData.phoneNumber !== 'undefined') profilePatch.phoneNumber = userData.phoneNumber || '';
+    if (typeof userData.disabled !== 'undefined') profilePatch.isActive = !userData.disabled;
+
+    await db.collection('users').doc(uid).set(profilePatch, { merge: true });
+
     revalidatePath('/admin/users');
     return userRecord.toJSON() as UserRecord;
   } catch (error: any)
@@ -151,8 +173,12 @@ export async function updateUser(uid: string, userData: {
  */
 export async function deleteUser(uid: string): Promise<void> {
   try {
-    const { auth } = await getFirebaseAdmin();
+    const { auth, db } = await getFirebaseAdmin();
     await auth.deleteUser(uid);
+    await Promise.allSettled([
+      db.collection('roles_admin').doc(uid).delete(),
+      db.collection('users').doc(uid).delete(),
+    ]);
     revalidatePath('/admin/users');
   } catch (error) {
     console.error(`Error deleting user ${uid}:`, error);
@@ -197,6 +223,12 @@ export async function setAdminRole(uid: string): Promise<void> {
     // Cria um documento na coleção 'roles_admin' com o UID do usuário.
     // O documento pode ser vazio, sua existência é o que concede o acesso.
     await db.collection('roles_admin').doc(uid).set({ isAdmin: true });
+    await db.collection('users').doc(uid).set({
+      id: uid,
+      role: 'admin',
+      isActive: true,
+      updatedAt: new Date().toISOString(),
+    }, { merge: true });
     revalidatePath('/admin/users');
   } catch (error) {
     console.error(`Error setting admin role for user ${uid}:`, error);
@@ -212,6 +244,11 @@ export async function removeAdminRole(uid: string): Promise<void> {
   try {
     const { db } = await getFirebaseAdmin();
     await db.collection('roles_admin').doc(uid).delete();
+    await db.collection('users').doc(uid).set({
+      id: uid,
+      role: 'seller',
+      updatedAt: new Date().toISOString(),
+    }, { merge: true });
     revalidatePath('/admin/users');
   } catch (error) {
     console.error(`Error removing admin role for user ${uid}:`, error);

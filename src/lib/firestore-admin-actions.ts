@@ -5,6 +5,35 @@ import { getFirebaseAdmin } from './firebase-admin-config';
 import { revalidatePath } from 'next/cache';
 import { getCollectionSchema, validateAgainstSchema } from './firestore-admin-schema';
 
+const BASE_COLLECTIONS = [
+  'Agua_CRS',
+  'audit_logs',
+  'boi_gordo',
+  'carbono',
+  'carbono_crs',
+  'ch2o_agua',
+  'commodities',
+  'custo_agua',
+  'eur',
+  'impact-balance-clients',
+  'impact-balance-events',
+  'impact-balance-settings',
+  'madeira',
+  'milho',
+  'pdm',
+  'settings',
+  'soja',
+  'ucs',
+  'ucs_ase',
+  'ucs_ultimos_dados',
+  'usd',
+  'users',
+  'valor_uso_solo',
+  'vmad',
+  'vus',
+  'roles_admin',
+] as const;
+
 /**
  * Busca documentos com múltiplas ordenações/filtros e paginação por cursor
  */
@@ -171,9 +200,10 @@ export async function getCollections(): Promise<string[]> {
     const { db } = await getFirebaseAdmin();
     const collectionsSnapshot = await db.listCollections();
     const collectionIds = collectionsSnapshot.map(collection => collection.id);
+    const mergedCollectionIds = Array.from(new Set([...BASE_COLLECTIONS, ...collectionIds]));
     // audit simples
     await createGenericAuditLog({ action: 'read', collectionId: '*', user: 'dev@local' });
-    return collectionIds.sort();
+    return mergedCollectionIds.sort((a, b) => a.localeCompare(b));
   } catch (error: any) {
     console.error('Error fetching collections:', error);
     throw new Error('Falha ao buscar coleções do Firestore.');
