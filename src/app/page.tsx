@@ -3,7 +3,7 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { User, ShieldCheck, FileText, BarChart3, TrendingUp, Briefcase, Award, Blocks, TreePine, LandPlot, Globe, TrendingDown, ArrowUp, ChevronRight, Sparkles } from "lucide-react";
+import { User, ShieldCheck, FileText, BarChart3, TrendingUp, Briefcase, Award, Blocks, TreePine, LandPlot, Globe, TrendingDown, ArrowUp, ChevronRight, Sparkles, Activity } from "lucide-react";
 import Image from 'next/image';
 import Link from 'next/link';
 import { LogoUCS } from "@/components/logo-bvm";
@@ -296,36 +296,103 @@ export default function PDMDetailsPage() {
           </div>
         </section>
 
-        {/* CHART SECTION */}
+        {/* GLOBAL DASHBOARD SECTION */}
         <section className="container mx-auto px-6 py-24">
-          <Card className="border-none bg-white rounded-[3rem] shadow-[0_48px_100px_-12px_rgba(0,0,0,0.08)] overflow-hidden">
-            <div className="grid lg:grid-cols-3">
-              <div className="lg:col-span-1 p-12 bg-slate-900 text-white flex flex-col justify-center space-y-6">
-                <Badge className="w-fit bg-emerald-500 hover:bg-emerald-500 text-white font-bold px-4 py-1">HISTÓRICO</Badge>
-                <h3 className="text-3xl font-bold">{homeT.ucs_section.title}</h3>
-                <p className="text-slate-400 leading-relaxed">
-                  {homeT.ucs_section.description}
-                </p>
-                <Button className="w-fit rounded-full bg-white text-slate-900 hover:bg-slate-100 font-bold px-8">
-                  Ver Dados Detalhados
-                </Button>
+          <div className="space-y-10">
+            <div className="flex flex-col gap-3">
+              <h2 className="text-4xl font-black text-slate-900 tracking-tight">Dashboard Global</h2>
+              <div className="h-1.5 w-24 bg-emerald-500 rounded-full" />
+            </div>
+
+            <div className="grid lg:grid-cols-3 gap-8">
+              {/* Official Quote Card (Dark) */}
+              <div className="lg:col-span-1 relative overflow-hidden bg-[#0f172a] text-white rounded-[3rem] p-10 shadow-2xl flex flex-col justify-between min-h-[450px]">
+                {/* Background Watermark Icon */}
+                <div className="absolute top-12 right-[-40px] opacity-[0.03] pointer-events-none transform rotate-12">
+                  <TrendingUp size={320} />
+                </div>
+
+                <div className="relative z-10 space-y-10">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-3">
+                      <div className="inline-flex px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold uppercase tracking-widest text-[10px]">
+                        UCS INDEX ASE
+                      </div>
+                      <p className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em]">Cotação Oficial</p>
+                    </div>
+                    {ucsAseAsset && (
+                      <div className={cn(
+                        "flex items-center text-sm font-bold px-3 py-1 rounded-full",
+                        ucsAseAsset.change >= 0 ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"
+                      )}>
+                        {ucsAseAsset.change >= 0 ? <TrendingUp className="h-4 w-4 mr-1.5" /> : <TrendingDown className="h-4 w-4 mr-1.5" />}
+                        {Math.abs(ucsAseAsset.change).toFixed(2)}%
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-baseline gap-3">
+                      <span className="text-7xl font-black font-mono tracking-tighter leading-none">
+                        {ucsAseAsset ? ucsAseAsset.price.toFixed(2) : '176.66'}
+                      </span>
+                      <span className="text-2xl font-bold text-emerald-500">BRL</span>
+                    </div>
+                    <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">
+                      Atualizado: {ucsAseAsset ? ucsAseAsset.lastUpdated : (targetDate ? format(targetDate, 'dd/MM/yyyy') : '--/--/----')}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="relative z-10 pt-10 border-t border-slate-800/50">
+                  <div className="grid grid-cols-2 gap-10">
+                    <div className="space-y-2">
+                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Equiv. USD</p>
+                      <p className="text-3xl font-black font-mono tracking-tight text-white">
+                        {ucsAseAsset?.valor_usd ? ucsAseAsset.valor_usd.toFixed(2) : '33.72'}
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Equiv. EUR</p>
+                      <p className="text-3xl font-black font-mono tracking-tight text-white">
+                        {ucsAseAsset?.valor_eur ? ucsAseAsset.valor_eur.toFixed(2) : '28.50'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="lg:col-span-2 p-12 bg-white">
-                <div className="h-[400px]">
+
+              {/* Trend Chart Card (White) */}
+              <div className="lg:col-span-2 bg-white rounded-[3rem] p-10 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.06)] border border-slate-100 flex flex-col">
+                <div className="flex items-start justify-between mb-10">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-3 text-emerald-600">
+                      <div className="p-2 bg-emerald-50 rounded-lg">
+                        <TrendingUp className="h-6 w-6" />
+                      </div>
+                      <h3 className="text-2xl font-black text-slate-900 tracking-tight">Tendência UCS</h3>
+                    </div>
+                    <p className="text-slate-500 font-medium ml-11">Histórico de valorização (Últimos 15 dias)</p>
+                  </div>
+                </div>
+
+                <div className="flex-1 min-h-[300px]">
                   <HistoricalAnalysisChart
                     isLoading={isLoadingHistory}
-                    chartData={chartData}
+                    chartData={chartData.slice(-15)}
                     isMultiLine={false}
                     mainAssetData={ucsAseAsset}
                     visibleAssets={{}}
-                    lineColors={{}}
+                    lineColors={{ ucs_ase: '#10b981' }}
                     assetNames={{}}
                     showMetrics={false}
+                    hideControls={true}
+                    defaultChartType="area"
                   />
                 </div>
               </div>
             </div>
-          </Card>
+          </div>
         </section>
 
         {/* CTA FINAL */}

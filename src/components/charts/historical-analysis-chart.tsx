@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import * as React from 'react';
@@ -236,6 +234,8 @@ interface HistoricalAnalysisChartProps {
     showMetrics?: boolean;
     compareModeProp?: 'absolute' | 'index100' | 'percent';
     onCompareModeChange?: (mode: 'absolute' | 'index100' | 'percent') => void;
+    hideControls?: boolean;
+    defaultChartType?: 'line' | 'area' | 'bar';
 }
 
 export const HistoricalAnalysisChart = React.memo(({ 
@@ -249,6 +249,8 @@ export const HistoricalAnalysisChart = React.memo(({
     showMetrics = true,
     compareModeProp,
     onCompareModeChange,
+    hideControls = false,
+    defaultChartType = 'line'
 }: HistoricalAnalysisChartProps) => {
   const { resolvedTheme } = useTheme();
   const { toast } = useToast();
@@ -257,7 +259,7 @@ export const HistoricalAnalysisChart = React.memo(({
   const [zoomDomain, setZoomDomain] = React.useState<[number, number] | null>(null);
   const [showBrush, setShowBrush] = React.useState(false);
   const [isExporting, setIsExporting] = React.useState(false);
-  const [chartType, setChartType] = React.useState<'line' | 'area' | 'bar'>('line');
+  const [chartType, setChartType] = React.useState<'line' | 'area' | 'bar'>(defaultChartType);
   const [showMovingAverage, setShowMovingAverage] = React.useState(false);
   const [compareMode, setCompareMode] = React.useState<'absolute' | 'index100' | 'percent'>(compareModeProp || 'absolute');
 
@@ -661,13 +663,13 @@ export const HistoricalAnalysisChart = React.memo(({
             type: "monotone" as const,
             dataKey: "value",
             name: "Preço",
-            stroke: "hsl(var(--chart-1))",
-            strokeWidth: 3,
+            stroke: lineColors?.ucs_ase || "#10b981",
+            strokeWidth: 4,
             dot: false,
             activeDot: { 
               r: 6, 
               strokeWidth: 2, 
-              stroke: 'hsl(var(--chart-1))',
+              stroke: lineColors?.ucs_ase || "#10b981",
               fill: 'white',
               filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))'
             },
@@ -676,7 +678,7 @@ export const HistoricalAnalysisChart = React.memo(({
             animationEasing: "ease-in-out" as const,
             connectNulls: true,
           };
-          if (chartType === 'bar') return <Bar {...commonProps} fill="hsl(var(--chart-1))" />;
+          if (chartType === 'bar') return <Bar {...commonProps} fill={lineColors?.ucs_ase || "#10b981"} />;
           if (chartType === 'area') return <Area {...commonProps} fill="url(#chart-bg)" />;
           return <Line {...commonProps} />;
     })();
@@ -684,7 +686,7 @@ export const HistoricalAnalysisChart = React.memo(({
   return (
     <div className="w-full h-full space-y-4">
       {/* Chart Controls */}
-      {showMetrics && <ChartControls />}
+      {showMetrics && !hideControls && <ChartControls />}
       
         <div className="h-full w-full">
             {/* Main Chart */}
@@ -701,12 +703,12 @@ export const HistoricalAnalysisChart = React.memo(({
                     <linearGradient id="chart-bg" x1="0" y1="0" x2="0" y2="1">
                         <stop 
                         offset="5%" 
-                        stopColor={resolvedTheme === 'dark' ? "hsl(var(--chart-1) / 0.15)" : "hsl(var(--chart-1) / 0.08)"} 
+                        stopColor={resolvedTheme === 'dark' ? "hsl(var(--chart-1) / 0.15)" : "rgba(16, 185, 129, 0.15)"} 
                         stopOpacity={0.15}
                         />
                         <stop 
                         offset="95%" 
-                        stopColor={resolvedTheme === 'dark' ? "hsl(var(--chart-1) / 0.02)" : "hsl(var(--chart-1) / 0.02)"} 
+                        stopColor={resolvedTheme === 'dark' ? "hsl(var(--chart-1) / 0.02)" : "rgba(16, 185, 129, 0.02)"} 
                         stopOpacity={0.02}
                         />
                     </linearGradient>
@@ -722,7 +724,7 @@ export const HistoricalAnalysisChart = React.memo(({
                     
                     <CartesianGrid 
                     vertical={false} 
-                    horizontal={true}
+                    horizontal={!hideControls}
                     stroke="hsl(var(--border))" 
                     opacity={0.3}
                     strokeDasharray="2 4"
@@ -737,21 +739,27 @@ export const HistoricalAnalysisChart = React.memo(({
                     interval="preserveStartEnd"
                     />
                     
-                    <YAxis
-                    stroke="hsl(var(--muted-foreground))"
-                    fontSize={isMobile ? 10 : 12}
-                    tickLine={false}
-                    axisLine={false}
-                    domain={['auto', 'auto']}
-                    tickFormatter={(value) => {
-                      const v = value as number;
-                      if (compareMode === 'percent') return `${v.toFixed(0)}%`;
-                      if (compareMode === 'index100') return v.toFixed(0);
-                      return formatCurrency(v, mainAssetData?.currency || 'BRL', mainAssetData?.id);
-                    }}
-                    yAxisId="left"
-                    width={isMobile ? 60 : 80}
-                    />
+                    {!hideControls && (
+                      <YAxis
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={isMobile ? 10 : 12}
+                      tickLine={false}
+                      axisLine={false}
+                      domain={['auto', 'auto']}
+                      tickFormatter={(value) => {
+                        const v = value as number;
+                        if (compareMode === 'percent') return `${v.toFixed(0)}%`;
+                        if (compareMode === 'index100') return v.toFixed(0);
+                        return formatCurrency(v, mainAssetData?.currency || 'BRL', mainAssetData?.id);
+                      }}
+                      yAxisId="left"
+                      width={isMobile ? 60 : 80}
+                      />
+                    )}
+
+                    {hideControls && (
+                      <YAxis hide yAxisId="left" domain={['auto', 'auto']} />
+                    )}
                     
                     <Tooltip
                     content={isMultiLine ? <EnhancedMultiLineTooltip /> : <EnhancedDefaultTooltip asset={mainAssetData} />}
@@ -775,7 +783,7 @@ export const HistoricalAnalysisChart = React.memo(({
                     )}
                     
                     {/* Reference Lines for better analysis */}
-                    {mainAssetData?.price && !isMultiLine && (
+                    {mainAssetData?.price && !isMultiLine && !hideControls && (
                     <>
                         <ReferenceLine 
                         y={mainAssetData.price} 
