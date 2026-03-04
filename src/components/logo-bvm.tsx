@@ -2,9 +2,18 @@ import { cn } from "@/lib/utils";
 
 interface LogoUCSProps extends React.SVGProps<SVGSVGElement> {
     isIcon?: boolean;
+    variant?: 'default' | 'text';
 }
 
-export function LogoUCS({ isIcon = false, className, ...props }: LogoUCSProps) {
+export function LogoUCS({ isIcon = false, variant = 'default', className, ...props }: LogoUCSProps) {
+    if (variant === 'text') {
+        return (
+            <div className={cn("flex items-center justify-center font-bold text-4xl tracking-tighter text-black", className)}>
+                bmv
+            </div>
+        );
+    }
+
     if (isIcon) {
         return (
             <svg
@@ -35,7 +44,7 @@ export function LogoUCS({ isIcon = false, className, ...props }: LogoUCSProps) {
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className="w-6 h-6 text-primary"
+                className="w-6 h-6 text-[#10b981]"
                 {...props}
             >
                 <path d="M12 2L2 7l10 5 10-5-10-5z" />

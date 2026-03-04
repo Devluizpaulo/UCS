@@ -1,302 +1,43 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    /* Tema claro - paleta mais suave e moderna */
-    --background: 0 0% 100%;
-    --foreground: 220 13% 25%;
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
     --card: 0 0% 100%;
-    --card-foreground: 220 13% 25%;
+    --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
-    --popover-foreground: 220 13% 25%;
-    --primary: 142 70% 40%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 161 72% 43%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 220 10% 96%;
-    --secondary-foreground: 220 13% 25%;
-    --muted: 220 10% 96%;
-    --muted-foreground: 220 9% 60%;
-    --accent: 220 10% 96%;
-    --accent-foreground: 220 13% 25%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 220 10% 92%;
-    --input: 220 10% 92%;
-    --ring: 142 70% 40%;
-    --radius: 0.75rem;
-    --chart-1: 142 70% 40%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
-    --sidebar-background: 220 10% 98%;
-    --sidebar-foreground: 220 13% 25%;
-    --sidebar-primary: 142 70% 40%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-secondary: 220 10% 96%;
-    --sidebar-secondary-foreground: 220 13% 25%;
-    --sidebar-muted: 220 10% 96%;
-    --sidebar-muted-foreground: 220 9% 60%;
-    --sidebar-accent: 220 10% 92%;
-    --sidebar-accent-foreground: 220 13% 25%;
-    --sidebar-border: 220 10% 90%;
-    --sidebar-ring: 142 70% 40%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222 47% 11%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 161 72% 43%;
+    --radius: 1rem;
   }
+}
 
-  [data-theme='light'] {
-    /* Tema claro - paleta mais suave e moderna (igual a :root) */
-    --background: 0 0% 100%;
-    --foreground: 220 13% 25%;
-    --card: 0 0% 100%;
-    --card-foreground: 220 13% 25%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 220 13% 25%;
-    --primary: 142 70% 40%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 220 10% 96%;
-    --secondary-foreground: 220 13% 25%;
-    --muted: 220 10% 96%;
-    --muted-foreground: 220 9% 60%;
-    --accent: 220 10% 96%;
-    --accent-foreground: 220 13% 25%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 220 10% 92%;
-    --input: 220 10% 92%;
-    --ring: 142 70% 40%;
-    --sidebar-background: 220 10% 98%;
-    --sidebar-foreground: 220 13% 25%;
-    --sidebar-primary: 142 70% 40%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-secondary: 220 10% 96%;
-    --sidebar-secondary-foreground: 220 13% 25%;
-    --sidebar-muted: 220 10% 96%;
-    --sidebar-muted-foreground: 220 9% 60%;
-    --sidebar-accent: 220 10% 92%;
-    --sidebar-accent-foreground: 220 13% 25%;
-    --sidebar-border: 220 10% 90%;
-    --sidebar-ring: 142 70% 40%;
-  }
-
-
-  .checklist-container {
-    max-width: 1200px;
-    margin: auto;
-    display: grid;
-    grid-template-columns: 1fr 320px;
-    gap: 1.5rem;
-    align-items: flex-start;
-    padding: 1.5rem;
-  }
-  main {
-    grid-column: 1 / 2;
-  }
-  aside {
-    grid-column: 2 / 3;
-    position: sticky;
-    top: 1.5rem;
-  }
-  .card {
-    background: hsl(var(--card));
-    color: hsl(var(--card-foreground));
-    border: 1px solid hsl(var(--border));
-    border-radius: var(--radius);
-    margin-bottom: 1.5rem;
-    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-    transition: all 0.2s ease-in-out;
-  }
-  
-  .card:hover {
-    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-    transform: translateY(-1px);
-  }
-  .section-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem 1.5rem;
-    border-bottom: 1px solid hsl(var(--border));
-  }
-  .section-title {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
-  .section-title .icon {
-    font-size: 1.5rem;
-  }
-  .muted-note {
-    font-size: 0.875rem;
-    color: hsl(var(--muted-foreground));
-    padding: 0 1.5rem 1rem;
-  }
-  .collapsible {
-    padding: 1rem 1.5rem;
-    cursor: pointer;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    transition: background-color 0.2s;
-    border-bottom: 1px solid hsl(var(--border));
-  }
-  .collapsible:hover {
-    background: hsl(var(--accent));
-  }
-  .collapsible .chev {
-    transition: transform 0.2s;
-  }
-  .coll-content {
-    max-height: 0;
-    overflow: hidden;
-  }
-  
-  /* Estilos modernos adicionais */
-  .modern-gradient {
-    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 100%);
-  }
-  
-  .glass-effect {
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-  }
-  
-  
-  .text-gradient {
-    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-  
-  /* Transições suaves para mudança de tema */
+@layer base {
   * {
-    transition: background-color 0.2s ease-in-out, 
-                border-color 0.2s ease-in-out, 
-                color 0.2s ease-in-out,
-                box-shadow 0.2s ease-in-out;
+    @apply border-border;
   }
-  
-  .hover-lift {
-    transition: all 0.2s ease-in-out;
+  body {
+    @apply bg-background text-foreground;
   }
-  
-  .hover-lift:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.1);
-  }
-  
-  .smooth-border {
-    border-radius: var(--radius);
-    border: 1px solid hsl(var(--border));
-    transition: border-color 0.2s ease-in-out;
-  }
-  
-  .smooth-border:hover {
-    border-color: hsl(var(--primary));
-  }
-  
-  /* Melhorias na sidebar */
-  .sidebar-modern {
-    background: hsl(var(--sidebar-background));
-    border-right: 1px solid hsl(var(--sidebar-border));
-    backdrop-filter: blur(10px);
-  }
-  
-  /* Botões modernos */
-  .btn-modern {
-    background: hsl(var(--primary));
-    color: hsl(var(--primary-foreground));
-    border-radius: var(--radius);
-    padding: 0.5rem 1rem;
-    font-weight: 500;
-    transition: all 0.2s ease-in-out;
-    border: none;
-    cursor: pointer;
-  }
-  
-  .btn-modern:hover {
-    background: hsl(var(--primary) / 0.9);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px hsl(var(--primary) / 0.3);
-  }
-  
-  /* Cards com melhor espaçamento */
-  .card-modern {
-    padding: 1.5rem;
-    background: hsl(var(--card));
-    border-radius: var(--radius);
-    border: 1px solid hsl(var(--border));
-    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
-    transition: all 0.2s ease-in-out;
-  }
-  
-  .card-modern:hover {
-    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-    transform: translateY(-1px);
-  }
-  
-  .coll-content {
-    transition: max-height 0.3s ease-out, padding 0.3s ease-out;
-    padding: 0 1.5rem;
-  }
-  .checklist-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-  }
-  .check-item {
-    padding: 0.5rem 0;
-    display: flex;
-    align-items: center;
-  }
-  .check-item label {
-    display: flex;
-    align-items: center;
-    cursor: pointer;
-    gap: 0.5rem;
-  }
-  .check-item input[type="checkbox"] {
-    width: 1rem;
-    height: 1rem;
-  }
-  .panel-title {
-    font-size: 1rem;
-    font-weight: 600;
-    padding: 1rem;
-    border-bottom: 1px solid hsl(var(--border));
-  }
-  #progressBig {
-    font-size: 3rem;
-    font-weight: 700;
-    color: hsl(var(--primary));
-  }
-  .progress-bar-container {
-    background: hsl(var(--muted));
-    border-radius: 999px;
-  }
-  .progress-bar-fill {
-    height: 100%;
-    background: hsl(var(--primary));
-    border-radius: 999px;
-    transition: width 0.3s;
-  }
-  .sig-input {
-    width: 100%;
-    padding: 0.5rem;
-    border-radius: var(--radius);
-    border: 1px solid hsl(var(--border));
-    background: hsl(var(--background));
-  }
+}
 
-  @media (max-width: 1024px) {
-    .checklist-container {
-      grid-template-columns: 1fr;
-    }
-    aside {
-      position: static;
-    }
-  }
+.login-bg-gradient {
+  background: radial-gradient(circle at top right, #e0f2fe, transparent),
+              radial-gradient(circle at bottom left, #e0e7ff, transparent),
+              #f8fafc;
 }
