@@ -298,10 +298,12 @@ export default function PDMDetailsPage() {
 
         {/* GLOBAL DASHBOARD SECTION */}
         <section className="container mx-auto px-6 py-24">
-          <div className="space-y-10">
-            <div className="flex flex-col gap-3">
-              <h2 className="text-4xl font-black text-slate-900 tracking-tight">Dashboard Global</h2>
-              <div className="h-1.5 w-24 bg-emerald-500 rounded-full" />
+          <div className="space-y-12">
+            <div className="max-w-3xl space-y-4">
+              <h2 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight">A Evolução do Índice UCS</h2>
+              <p className="text-lg text-slate-500 leading-relaxed">
+                Acompanhe a performance histórica do Índice de Unidade de Crédito de Sustentabilidade. O gráfico abaixo ilustra a trajetória e a estabilidade do ativo ao longo do tempo, refletindo o valor crescente da conservação ambiental.
+              </p>
             </div>
 
             <div className="grid lg:grid-cols-3 gap-8">
