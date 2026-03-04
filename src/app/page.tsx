@@ -301,7 +301,7 @@ export default function PDMDetailsPage() {
           <div className="space-y-12">
             <div className="max-w-3xl space-y-4">
               <h2 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight">A Evolução do Índice UCS</h2>
-              <p className="text-lg text-slate-500 leading-relaxed">
+              <p className="text-lg text-slate-500 leading-relaxed text-justify">
                 Acompanhe a performance histórica do Índice de Unidade de Crédito de Sustentabilidade. O gráfico abaixo ilustra a trajetória e a estabilidade do ativo ao longo do tempo, refletindo o valor crescente da conservação ambiental.
               </p>
             </div>
