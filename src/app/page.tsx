@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -207,7 +208,7 @@ export default function PDMDetailsPage() {
               <h1 className="text-5xl lg:text-7xl font-bold tracking-tight text-slate-900 leading-[1.1]">
                 {heroContent.title}
               </h1>
-              <p className="text-xl text-slate-600 leading-relaxed max-w-xl">
+              <p className="text-xl text-slate-600 leading-relaxed">
                 {heroContent.subtitle}
               </p>
               <div className="flex flex-wrap gap-4 pt-4">
@@ -270,29 +271,29 @@ export default function PDMDetailsPage() {
 
         {/* PILLARS SECTION */}
         <section className="container mx-auto px-6 py-24">
-          <div className="text-center space-y-4 mb-16">
+          <div className="space-y-4 mb-16">
             <h2 className="text-4xl font-bold text-slate-900">Os Pilares do Sistema</h2>
-            <p className="text-slate-500 max-w-2xl mx-auto text-lg">
+            <p className="text-slate-500 text-lg">
               Nossa metodologia inovadora é baseada em três eixos fundamentais de valor ambiental e econômico.
             </p>
           </div>
           
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-3 gap-8 items-stretch">
             {pilaresPDM.map((pilar, index) => (
-              <Card key={index} className="group border-none bg-white rounded-[2.5rem] p-8 shadow-[0_20px_50px_rgba(0,0,0,0.05)] hover:shadow-[0_40px_80px_rgba(0,0,0,0.1)] transition-all duration-500 hover:-translate-y-4">
+              <Card key={index} className="group border-none bg-white rounded-[2.5rem] p-8 shadow-[0_20px_50px_rgba(0,0,0,0.05)] hover:shadow-[0_40px_80px_rgba(0,0,0,0.1)] transition-all duration-500 hover:-translate-y-4 flex flex-col h-full">
                 <CardHeader className="p-0 mb-6">
                   <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3", pilar.color)}>
                     <pilar.icon className="h-8 w-8" />
                   </div>
                 </CardHeader>
-                <CardContent className="p-0 space-y-4">
+                <CardContent className="p-0 space-y-4 flex-grow">
                   <CardTitle className="text-xl font-bold text-slate-900 leading-tight">{pilar.title}</CardTitle>
                   <p className="text-slate-500 text-sm leading-relaxed">{pilar.definition}</p>
-                  <div className="pt-4 border-t border-slate-100">
-                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Metodologia</p>
-                    <p className="text-xs text-slate-500 italic">{pilar.methodology}</p>
-                  </div>
                 </CardContent>
+                <div className="pt-4 border-t border-slate-100 mt-4">
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Metodologia</p>
+                  <p className="text-xs text-slate-500 italic">{pilar.methodology}</p>
+                </div>
               </Card>
             ))}
           </div>
@@ -301,16 +302,16 @@ export default function PDMDetailsPage() {
         {/* GLOBAL DASHBOARD SECTION */}
         <section className="container mx-auto px-6 py-24">
           <div className="space-y-12">
-            <div className="max-w-3xl space-y-4">
+            <div className="space-y-4">
               <h2 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight">A Evolução do Índice UCS</h2>
               <p className="text-lg text-slate-500 leading-relaxed text-justify">
                 Acompanhe a performance histórica do Índice de Unidade de Crédito de Sustentabilidade. O gráfico abaixo ilustra a trajetória e a estabilidade do ativo ao longo do tempo, refletindo o valor crescente da conservação ambiental.
               </p>
             </div>
 
-            <div className="grid lg:grid-cols-3 gap-8">
+            <div className="grid lg:grid-cols-3 gap-8 items-stretch">
               {/* Official Quote Card (Dark) */}
-              <div className="lg:col-span-1 relative overflow-hidden bg-[#0f172a] text-white rounded-[3rem] p-10 shadow-2xl flex flex-col justify-between min-h-[450px]">
+              <div className="lg:col-span-1 relative overflow-hidden bg-[#0f172a] text-white rounded-[3rem] p-10 shadow-2xl flex flex-col justify-between h-full min-h-[450px]">
                 {/* Background Watermark Icon */}
                 <div className="absolute top-12 right-[-40px] opacity-[0.03] pointer-events-none transform rotate-12">
                   <TrendingUp size={320} />
@@ -367,7 +368,7 @@ export default function PDMDetailsPage() {
               </div>
 
               {/* Trend Chart Card (White) */}
-              <div className="lg:col-span-2 bg-white rounded-[3rem] p-10 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.06)] border border-slate-100 flex flex-col">
+              <div className="lg:col-span-2 bg-white rounded-[3rem] p-10 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.06)] border border-slate-100 flex flex-col h-full">
                 <div className="flex items-start justify-between mb-10">
                   <div className="space-y-2">
                     <div className="flex items-center gap-3 text-emerald-600">
@@ -401,9 +402,9 @@ export default function PDMDetailsPage() {
 
         {/* CTA FINAL */}
         <section className="container mx-auto px-6 py-24 text-center">
-          <div className="max-w-4xl mx-auto space-y-8 p-16 rounded-[3rem] bg-gradient-to-br from-[#10b981] to-[#059669] text-white shadow-2xl shadow-emerald-200">
+          <div className="space-y-8 p-16 rounded-[3rem] bg-gradient-to-br from-[#10b981] to-[#059669] text-white shadow-2xl shadow-emerald-200">
             <h2 className="text-4xl md:text-5xl font-bold leading-tight">Pronto para transformar sua conservação em valor?</h2>
-            <p className="text-xl text-emerald-50 opacity-90 max-w-2xl mx-auto">
+            <p className="text-xl text-emerald-50 opacity-90 mx-auto">
               Junte-se à maior plataforma de ativos ambientais e comece a rentabilizar a preservação hoje mesmo.
             </p>
             <div className="flex flex-wrap justify-center gap-4 pt-4">
