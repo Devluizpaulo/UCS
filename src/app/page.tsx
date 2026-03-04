@@ -10,12 +10,10 @@ import {
   LandPlot, 
   ShieldCheck, 
   Activity, 
-  Calendar, 
   Award,
   Zap,
   Mail,
   Globe,
-  CalendarClock
 } from "lucide-react";
 import Image from 'next/image';
 import Link from 'next/link';
@@ -29,7 +27,7 @@ import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/language-context';
 import { getLandingPageSettings, type LandingPageSettings } from '@/lib/settings-actions';
 import { HistoricalAnalysisChart } from '@/components/charts/historical-analysis-chart';
-import { parse, isValid, format, subYears } from 'date-fns';
+import { parse, format, subYears } from 'date-fns';
 
 export default function LandingPage() {
   const [ucsAseAsset, setUcsAseAsset] = React.useState<CommodityPriceData | null>(null);
@@ -124,7 +122,7 @@ export default function LandingPage() {
       </header>
 
       <main className="flex-1">
-        {/* HERO SECTION - Identity: Digital Intelligence + Nature */}
+        {/* HERO SECTION - Digital Intelligence meet Nature */}
         <section className="relative min-h-[90vh] flex items-center pt-20 pb-20 overflow-hidden bg-[#020a02]">
           <div className="absolute inset-0 z-0">
             <Image
@@ -135,7 +133,6 @@ export default function LandingPage() {
               priority
               data-ai-hint="forest drone"
             />
-            {/* Digital Grid Overlay */}
             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10" />
             <div className="absolute inset-0 bg-gradient-to-b from-[#020a02]/90 via-transparent to-[#020a02]" />
           </div>
@@ -145,20 +142,25 @@ export default function LandingPage() {
               {/* Left Side: Value Prop */}
               <div className="space-y-8 animate-in fade-in slide-in-from-left-8 duration-1000">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-black uppercase tracking-[0.2em]">
-                  <Zap className="h-3 w-3 fill-current" /> Intelligent Sustainability
+                  <Zap className="h-3 w-3 fill-current" /> Digital Intelligence
                 </div>
                 <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-white leading-[1.1] tracking-tight">
                   {heroContent.title}
                 </h1>
-                <p className="text-lg text-white/60 font-medium leading-relaxed text-justify">
+                <p className="text-lg text-white/60 font-medium leading-relaxed">
                   {heroContent.subtitle}
                 </p>
-                <div className="flex flex-wrap gap-4">
-                  <Button asChild size="lg" className="rounded-full bg-white text-[#020a02] hover:bg-emerald-50 px-8 h-14 text-sm font-black transition-all hover:scale-105 shadow-xl shadow-white/5">
-                    <Link href="https://bmvdigital.global/" target="_blank">Começar agora <ChevronRight className="ml-2 h-4 w-4" /></Link>
+                <div className="flex flex-wrap gap-4 pt-4">
+                  <Button asChild size="lg" className="rounded-full bg-white text-black hover:bg-emerald-50 px-10 h-14 text-sm font-bold transition-all hover:scale-105 shadow-xl shadow-black/40 border-none group">
+                    <Link href="https://bmvdigital.global/" target="_blank">
+                      Começar agora 
+                      <ChevronRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                    </Link>
                   </Button>
-                  <Button variant="outline" size="lg" className="rounded-full border-white/40 text-white hover:bg-white/10 hover:backdrop-blur-sm px-8 h-14 text-sm font-black transition-all" asChild>
-                    <Link href="mailto:contato@bmv.global">Falar com consultor</Link>
+                  <Button variant="outline" size="lg" className="rounded-full border-2 border-white/30 bg-transparent text-white hover:bg-white hover:text-black px-10 h-14 text-sm font-bold transition-all hover:scale-105 backdrop-blur-sm" asChild>
+                    <Link href="mailto:contato@bmv.global">
+                      Falar com consultor
+                    </Link>
                   </Button>
                 </div>
               </div>
@@ -355,11 +357,14 @@ export default function LandingPage() {
               Junte-se à maior rede de ativos ambientais da América Latina e valorize seu capital natural com transparência e tecnologia.
             </p>
             <div className="flex flex-wrap justify-center gap-6 pt-4">
-              <Button asChild size="lg" className="h-16 px-12 rounded-full bg-white text-emerald-700 hover:bg-emerald-50 text-base font-black transition-all hover:scale-105 shadow-2xl shadow-black/10">
-                <Link href="https://bmvdigital.global/" target="_blank">Começar agora</Link>
+              <Button asChild size="lg" className="h-16 px-12 rounded-full bg-white text-black hover:bg-emerald-50 text-base font-bold transition-all hover:scale-105 shadow-2xl shadow-black/20 border-none group">
+                <Link href="https://bmvdigital.global/" target="_blank">
+                  Começar agora
+                  <ChevronRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+                </Link>
               </Button>
-              <Button size="lg" variant="outline" className="h-16 px-12 rounded-full border-white/40 text-white hover:bg-white/10 hover:backdrop-blur-sm text-base font-black transition-all" asChild>
-                <a href="mailto:contato@bmv.global">Falar com consultor</a>
+              <Button size="lg" variant="outline" className="h-16 px-12 rounded-full border-2 border-white/30 bg-transparent text-white hover:bg-white hover:text-black text-base font-bold transition-all hover:scale-105 backdrop-blur-sm" asChild>
+                <Link href="mailto:contato@bmv.global">Falar com consultor</Link>
               </Button>
             </div>
           </div>
