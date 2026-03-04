@@ -18,7 +18,7 @@ import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/language-context';
 import { getLandingPageSettings, type LandingPageSettings } from '@/lib/settings-actions';
 import { HistoricalAnalysisChart } from '@/components/charts/historical-analysis-chart';
-import { parse, isValid, format } from 'date-fns';
+import { parse, isValid, format, subYears } from 'date-fns';
 
 // Tipo local para incluir dados de conversão
 type IndexValue = {
@@ -77,9 +77,8 @@ export default function PDMDetailsPage() {
     getLandingPageSettings().then(setSettings);
 
     setIsLoadingHistory(true);
-    const startDate = new Date('2023-01-01');
-    const today = new Date();
-    const daysToFetch = Math.ceil((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 30;
+    // Para 3 anos de tendência, buscamos ~1100 dias
+    const daysToFetch = 1100;
 
     getCotacoesHistorico('ucs_ase', daysToFetch)
       .then(history => {
@@ -146,7 +145,7 @@ export default function PDMDetailsPage() {
 
   const chartData = React.useMemo(() => {
     if (!ucsHistory || ucsHistory.length === 0) return [];
-    const startDate = new Date('2023-01-01');
+    const threeYearsAgo = subYears(new Date(), 3);
     return ucsHistory
       .map(quote => {
         const value = quote.valor_brl ?? quote.resultado_final_brl ?? quote.valor;
@@ -164,8 +163,9 @@ export default function PDMDetailsPage() {
         if (!date && quote.timestamp) {
           try { date = new Date(quote.timestamp as any); } catch { date = null; }
         }
-        if (!date || date < startDate) return null;
-        return { date: format(date, 'dd/MM/yy'), value, timestamp: date.getTime() };
+        if (!date || date < threeYearsAgo) return null;
+        // Para visualização de 3 anos, formatamos apenas MM/yy para não poluir
+        return { date: format(date, 'MM/yy'), value, timestamp: date.getTime() };
       })
       .filter((item): item is NonNullable<typeof item> => item !== null)
       .sort((a, b) => a.timestamp - b.timestamp);
@@ -372,14 +372,14 @@ export default function PDMDetailsPage() {
                       </div>
                       <h3 className="text-2xl font-black text-slate-900 tracking-tight">Tendência UCS</h3>
                     </div>
-                    <p className="text-slate-500 font-medium ml-11">Histórico de valorização (Últimos 15 dias)</p>
+                    <p className="text-slate-500 font-medium ml-11">Histórico de valorização (Últimos 3 anos)</p>
                   </div>
                 </div>
 
                 <div className="flex-1 min-h-[300px]">
                   <HistoricalAnalysisChart
                     isLoading={isLoadingHistory}
-                    chartData={chartData.slice(-15)}
+                    chartData={chartData}
                     isMultiLine={false}
                     mainAssetData={ucsAseAsset}
                     visibleAssets={{}}
