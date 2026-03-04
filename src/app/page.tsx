@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -169,10 +168,6 @@ export default function PDMDetailsPage() {
       .filter((item): item is NonNullable<typeof item> => item !== null)
       .sort((a, b) => a.timestamp - b.timestamp);
   }, [ucsHistory]);
-
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
 
   return (
     <div className="flex min-h-screen w-full flex-col login-bg-gradient font-sans overflow-x-hidden">
@@ -497,34 +492,6 @@ export default function PDMDetailsPage() {
           </div>
         </div>
       </footer>
-
-      {/* Persistent Floating Index Badge */}
-      {ucsAseAsset && (
-        <div className={cn(
-          "fixed bottom-12 right-12 z-[150] transition-all duration-1000 transform",
-          isScrolled ? "opacity-100 translate-y-0" : "opacity-0 translate-y-20 pointer-events-none"
-        )}>
-          <div 
-            className="flex items-center gap-8 h-24 px-10 rounded-[2.5rem] shadow-[0_30px_80px_rgba(16,185,129,0.5)] bg-gradient-to-r from-[#10b981] to-[#059669] text-white cursor-pointer hover:scale-105 active:scale-95 transition-all border border-white/20 backdrop-blur-md"
-            onClick={scrollToTop}
-          >
-            <div className="flex flex-col items-start leading-none">
-              <span className="text-[10px] font-black uppercase tracking-[0.4em] opacity-70 mb-2">ÍNDICE UCS</span>
-              <span className="text-3xl font-black font-mono tracking-tighter">
-                R$ {ucsAseAsset.price.toFixed(2)}
-              </span>
-            </div>
-            <div className="h-12 w-px bg-white/20" />
-            <div className={cn(
-              "flex items-center gap-2 font-black text-lg",
-              ucsAseAsset.change >= 0 ? "text-emerald-200" : "text-red-200"
-            )}>
-              {ucsAseAsset.change >= 0 ? <TrendingUp className="h-6 w-6" /> : <TrendingDown className="h-6 w-6" />}
-              {Math.abs(ucsAseAsset.change).toFixed(2)}%
-            </div>
-          </div>
-        </div>
-      )}
 
       <style jsx global>{`
         @keyframes float {
