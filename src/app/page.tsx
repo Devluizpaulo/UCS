@@ -153,19 +153,7 @@ export default function LandingPage() {
                 <p className="text-lg text-white/60 font-medium leading-relaxed">
                   {heroContent.subtitle}
                 </p>
-                <div className="flex flex-wrap gap-4 pt-4">
-                  <Button asChild size="lg" className="rounded-full bg-white text-black hover:bg-emerald-50 px-10 h-14 text-sm font-bold transition-all hover:scale-105 shadow-xl shadow-black/40 border-none group">
-                    <Link href="/login">
-                      Começar agora 
-                      <ChevronRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                    </Link>
-                  </Button>
-                  <Button variant="outline" size="lg" className="rounded-full border-2 border-white/40 bg-transparent text-white hover:bg-white hover:text-black px-10 h-14 text-sm font-bold transition-all hover:scale-105 backdrop-blur-sm" asChild>
-                    <Link href="mailto:contato@bmv.global">
-                      Falar com consultor
-                    </Link>
-                  </Button>
-                </div>
+                
               </div>
 
               {/* Right Side: Eco-Monitor */}
