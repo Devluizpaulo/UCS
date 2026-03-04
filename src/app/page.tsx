@@ -216,7 +216,7 @@ export default function PDMDetailsPage() {
                 <h1 className="text-4xl md:text-5xl xl:text-6xl font-black tracking-tighter text-slate-900 leading-[1.1] animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-200">
                   O Ativo Real que <span className="text-emerald-500">Valoriza</span> a Natureza.
                 </h1>
-                <p className="text-base md:text-lg text-slate-500 leading-relaxed font-medium max-w-2xl animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-300 text-justify">
+                <p className="text-base md:text-lg text-slate-500 leading-relaxed font-medium max-w-full animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-300 text-justify">
                   {heroContent.subtitle}
                 </p>
               </div>
@@ -226,9 +226,6 @@ export default function PDMDetailsPage() {
                   <a href="https://bmvdigital.global/" target="_blank" rel="noopener noreferrer">
                     Começar agora <ChevronRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
                   </a>
-                </Button>
-                <Button size="lg" variant="outline" className="h-14 px-8 rounded-xl border-2 border-slate-200 bg-white/50 backdrop-blur-md text-base font-bold hover:bg-white hover:border-emerald-500 transition-all">
-                  Explorar Dashboards
                 </Button>
               </div>
 
@@ -303,14 +300,14 @@ export default function PDMDetailsPage() {
         <section id="pilares" className="container mx-auto px-6 py-20">
           <div className="space-y-3 mb-16">
             <h2 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">Os Pilares do Sistema</h2>
-            <p className="text-slate-500 text-lg font-medium text-justify">
+            <p className="text-slate-500 text-lg font-medium text-justify max-w-full">
               Nossa metodologia inovadora é baseada em três eixos fundamentais de valor ambiental e econômico, garantindo uma visão 360º do capital natural.
             </p>
           </div>
           
           <div className="grid grid-cols-1 gap-8">
             {pilaresPDM.map((pilar, index) => (
-              <Card key={index} className="group border-none bg-white rounded-[2.5rem] p-8 md:p-12 shadow-[0_15px_40px_rgba(0,0,0,0.03)] hover:shadow-[0_30px_80px_rgba(0,0,0,0.06)] transition-all duration-700 hover:-translate-y-1 flex flex-col md:flex-row gap-8 items-center md:items-start overflow-hidden relative border border-slate-50">
+              <Card key={index} className="group border-none bg-white rounded-[2.5rem] p-8 md:p-12 shadow-[0_15px_40px_rgba(0,0,0,0.03)] hover:shadow-[0_30px_80px_rgba(0,0,0,0.06)] transition-all duration-700 hover:-translate-y-1 flex flex-col md:flex-row gap-8 items-center md:items-start overflow-hidden relative border border-slate-50 h-full">
                 <div className="absolute top-0 right-0 w-72 h-72 bg-slate-50/50 rounded-full -mr-36 -mt-36 transition-transform duration-1000 group-hover:scale-150" />
                 
                 <div className={cn("w-20 h-20 shrink-0 rounded-[1.5rem] flex items-center justify-center transition-all duration-700 group-hover:scale-110 group-hover:rotate-6 shadow-md relative z-10", pilar.color)}>
@@ -319,14 +316,14 @@ export default function PDMDetailsPage() {
                 <div className="flex-grow space-y-6 relative z-10">
                   <div className="space-y-4">
                     <CardTitle className="text-2xl md:text-3xl font-black text-slate-900 tracking-tighter">{pilar.title}</CardTitle>
-                    <p className="text-slate-600 text-base md:text-lg leading-relaxed text-justify">{pilar.definition}</p>
+                    <p className="text-slate-600 text-base md:text-lg leading-relaxed text-justify max-w-full">{pilar.definition}</p>
                   </div>
                   <div className="pt-6 border-t border-slate-100">
                     <div className="flex items-center gap-2 mb-3">
                       <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Especificações Técnicas</p>
                     </div>
-                    <p className="text-sm md:text-base text-slate-500 italic leading-relaxed text-justify">{pilar.methodology}</p>
+                    <p className="text-sm md:text-base text-slate-500 italic leading-relaxed text-justify max-w-full">{pilar.methodology}</p>
                   </div>
                 </div>
               </Card>
@@ -339,7 +336,7 @@ export default function PDMDetailsPage() {
           <div className="space-y-8 mb-16">
             <div className="space-y-4">
               <h2 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tighter leading-tight">A Evolução do Índice UCS</h2>
-              <p className="text-lg text-slate-500 font-medium leading-relaxed text-justify">
+              <p className="text-lg text-slate-500 font-medium leading-relaxed text-justify max-w-full">
                 Acompanhe a performance histórica do Índice de Unidade de Crédito de Sustentabilidade. O gráfico abaixo ilustra a trajetória e a estabilidade do ativo ao longo do tempo, refletindo o valor crescente da conservação ambiental.
               </p>
             </div>
@@ -371,7 +368,7 @@ export default function PDMDetailsPage() {
 
                   <div className="space-y-4">
                     <div className="flex items-baseline gap-4">
-                      <span className="text-6xl font-black font-mono tracking-tighter leading-none">
+                      <span className="text-4xl md:text-5xl lg:text-6xl font-black font-mono tracking-tighter leading-none">
                         {ucsAseAsset ? ucsAseAsset.price.toFixed(2) : '176.66'}
                       </span>
                       <span className="text-2xl font-bold text-emerald-500">BRL</span>
@@ -447,8 +444,8 @@ export default function PDMDetailsPage() {
             <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-white/10 rounded-full -mr-48 -mt-48 transition-transform duration-1000 group-hover:scale-110" />
             <div className="absolute bottom-0 left-0 w-80 h-80 bg-black/5 rounded-full -ml-32 -mb-32" />
             
-            <h2 className="text-4xl md:text-5xl font-black leading-[1.1] relative z-10 tracking-tighter max-w-3xl mx-auto">Pronto para rentabilizar sua conservação?</h2>
-            <p className="text-xl text-emerald-50 opacity-90 mx-auto max-w-xl relative z-10 font-medium">
+            <h2 className="text-2xl md:text-3xl lg:text-4xl font-black leading-[1.1] relative z-10 tracking-tighter max-w-full mx-auto">Pronto para rentabilizar sua conservação?</h2>
+            <p className="text-lg md:text-xl text-emerald-50 opacity-90 mx-auto max-w-full relative z-10 font-medium">
               Junte-se à maior plataforma de ativos ambientais e transforme sua floresta em um portfólio de alta performance.
             </p>
             <div className="flex flex-wrap justify-center gap-6 pt-6 relative z-10">
@@ -470,7 +467,7 @@ export default function PDMDetailsPage() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-12">
             <div className="space-y-4">
               <LogoUCS className="h-10 w-auto" />
-              <p className="text-slate-400 font-medium max-w-sm text-sm">Redefinindo o valor da natureza através da tecnologia blockchain e transparência financeira.</p>
+              <p className="text-slate-400 font-medium max-w-full text-sm">Redefinindo o valor da natureza através da tecnologia blockchain e transparência financeira.</p>
             </div>
             <div className="flex flex-col items-center md:items-end gap-3 text-xs text-slate-400 font-bold uppercase tracking-widest">
               <p>&copy; {new Date().getFullYear()} UCS Index. {homeT.footer.rights}</p>
