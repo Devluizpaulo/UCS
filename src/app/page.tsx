@@ -125,22 +125,22 @@ export default function PDMDetailsPage() {
       icon: TreePine,
       title: "Valor Econômico da Floresta",
       color: "bg-emerald-50 text-emerald-600",
-      definition: "Mede o potencial econômico direto da floresta a partir da exploração sustentável de seus recursos, principalmente madeireiros.",
-      methodology: "Adota uma adaptação do método americano de valoração de ativos florestais, considerando análise de ciclo de oportunidades.",
+      definition: "Representa a capacidade da floresta de gerar riqueza de forma sustentável através do manejo florestal responsável. Este pilar considera a exploração criteriosa de madeira e outros produtos não-madeireiros, garantindo que o estoque de capital natural seja mantido para as futuras gerações enquanto gera retornos financeiros imediatos e de longo prazo para os proprietários de áreas preservadas. A floresta deixa de ser um custo e passa a ser um ativo produtivo de alto rendimento.",
+      methodology: "Adota uma adaptação do método americano de valoração de ativos florestais, considerando análise de ciclo de oportunidades, custos operacionais de manejo e preços de mercado de espécies florestais certificadas.",
     },
     {
       icon: LandPlot,
       title: "Valor de Transformação Territorial",
       color: "bg-blue-50 text-blue-600",
-      definition: "Estima o valor que a terra teria caso a cobertura florestal fosse convertida para outros usos produtivos.",
-      methodology: "Adota uma adaptação do método americano de valoração de terras, considerando produtividade potencial e retorno esperado.",
+      definition: "Avalia o potencial econômico latente da área caso fosse convertida para as atividades agropecuárias dominantes na região. Ao quantificar o custo de oportunidade de não desmatar, este pilar estabelece uma base financeira sólida para a compensação ambiental, demonstrando que manter a floresta em pé é uma decisão econômica racional e lucrativa frente às alternativas de uso do solo como agricultura ou pecuária intensiva. É a métrica do impacto evitado.",
+      methodology: "Baseado no método americano adaptado para a valoração de terras, considerando produtividade potencial do solo, retorno esperado sobre investimento rural, custos de conversão técnica e logística regional.",
     },
     {
       icon: ShieldCheck,
       title: "Valor Socioambiental da Conservação",
       color: "bg-purple-50 text-purple-600",
-      definition: "Traduz o valor dos benefícios que a floresta em pé gera para a sociedade, como regulação do clima e biodiversidade.",
-      methodology: "Inspirado em referências internacionais, como o TEEB (The Economics of Ecosystems and Biodiversity).",
+      definition: "Traduz em termos monetários os serviços ecossistêmicos vitais prestados pela biodiversidade intacta. Inclui a regulação do microclima regional, o sequestro e estoque permanente de carbono, a proteção de nascentes e cursos d'água, e a preservação do patrimônio genético essencial para o futuro da biotecnologia. É a métrica que finalmente conecta os benefícios globais da natureza com a economia real, valorizando o que antes era invisível nos balanços corporativos.",
+      methodology: "Inspirado em referências internacionais de vanguarda, como o modelo TEEB (The Economics of Ecosystems and Biodiversity), quantificando externalidades positivas e capital natural intangível.",
     }
   ];
 
@@ -208,7 +208,7 @@ export default function PDMDetailsPage() {
               <h1 className="text-5xl lg:text-7xl font-bold tracking-tight text-slate-900 leading-[1.1]">
                 {heroContent.title}
               </h1>
-              <p className="text-xl text-slate-600 leading-relaxed">
+              <p className="text-xl text-slate-600 leading-relaxed text-justify">
                 {heroContent.subtitle}
               </p>
               <div className="flex flex-wrap gap-4 pt-4">
@@ -269,30 +269,30 @@ export default function PDMDetailsPage() {
           </div>
         </section>
 
-        {/* PILLARS SECTION */}
+        {/* PILLARS SECTION - NOW ONE PER LINE */}
         <section className="container mx-auto px-6 py-24">
           <div className="space-y-4 mb-16">
             <h2 className="text-4xl font-bold text-slate-900">Os Pilares do Sistema</h2>
             <p className="text-slate-500 text-lg">
-              Nossa metodologia inovadora é baseada em três eixos fundamentais de valor ambiental e econômico.
+              Nossa metodologia inovadora é baseada em três eixos fundamentais de valor ambiental e econômico, garantindo uma visão 360º do capital natural.
             </p>
           </div>
           
-          <div className="grid md:grid-cols-3 gap-8 items-stretch">
+          <div className="grid grid-cols-1 gap-8 items-stretch">
             {pilaresPDM.map((pilar, index) => (
-              <Card key={index} className="group border-none bg-white rounded-[2.5rem] p-8 shadow-[0_20px_50px_rgba(0,0,0,0.05)] hover:shadow-[0_40px_80px_rgba(0,0,0,0.1)] transition-all duration-500 hover:-translate-y-4 flex flex-col h-full">
-                <CardHeader className="p-0 mb-6">
-                  <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3", pilar.color)}>
-                    <pilar.icon className="h-8 w-8" />
+              <Card key={index} className="group border-none bg-white rounded-[2.5rem] p-8 md:p-12 shadow-[0_20px_50px_rgba(0,0,0,0.05)] hover:shadow-[0_40px_80px_rgba(0,0,0,0.1)] transition-all duration-500 hover:-translate-y-2 flex flex-col md:flex-row gap-8 items-center md:items-start">
+                <div className={cn("w-20 h-20 shrink-0 rounded-3xl flex items-center justify-center transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3 shadow-sm", pilar.color)}>
+                  <pilar.icon className="h-10 w-10" />
+                </div>
+                <div className="flex-grow space-y-6">
+                  <div className="space-y-2">
+                    <CardTitle className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">{pilar.title}</CardTitle>
+                    <p className="text-slate-600 text-lg leading-relaxed text-justify">{pilar.definition}</p>
                   </div>
-                </CardHeader>
-                <CardContent className="p-0 space-y-4 flex-grow">
-                  <CardTitle className="text-xl font-bold text-slate-900 leading-tight">{pilar.title}</CardTitle>
-                  <p className="text-slate-500 text-sm leading-relaxed">{pilar.definition}</p>
-                </CardContent>
-                <div className="pt-4 border-t border-slate-100 mt-4">
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Metodologia</p>
-                  <p className="text-xs text-slate-500 italic">{pilar.methodology}</p>
+                  <div className="pt-6 border-t border-slate-100">
+                    <p className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Especificações da Metodologia</p>
+                    <p className="text-sm text-slate-500 italic leading-relaxed text-justify">{pilar.methodology}</p>
+                  </div>
                 </div>
               </Card>
             ))}
@@ -445,19 +445,21 @@ export default function PDMDetailsPage() {
             onClick={scrollToTop}
           >
             <div className="flex items-center gap-4">
-              <div className="flex flex-col items-start leading-none">
-                <span className="text-[10px] font-bold uppercase tracking-widest opacity-80">Índice UCS</span>
-                <span className="text-xl font-black font-mono">
-                  {formatCurrency(ucsAseAsset.price, ucsAseAsset.currency, ucsAseAsset.id)}
-                </span>
-              </div>
-              <div className="h-8 w-px bg-white/20" />
-              <div className={cn(
-                "flex items-center gap-1 font-bold",
-                ucsAseAsset.change >= 0 ? "text-emerald-200" : "text-red-200"
-              )}>
-                {ucsAseAsset.change >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
-                {ucsAseAsset.change.toFixed(2)}%
+              <div className="flex items-center justify-start leading-none text-left">
+                <div className="flex flex-col items-start mr-4">
+                  <span className="text-[10px] font-bold uppercase tracking-widest opacity-80">Índice UCS</span>
+                  <span className="text-xl font-black font-mono">
+                    {formatCurrency(ucsAseAsset.price, ucsAseAsset.currency, ucsAseAsset.id)}
+                  </span>
+                </div>
+                <div className="h-8 w-px bg-white/20" />
+                <div className={cn(
+                  "flex items-center gap-1 font-bold ml-4",
+                  ucsAseAsset.change >= 0 ? "text-emerald-200" : "text-red-200"
+                )}>
+                  {ucsAseAsset.change >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+                  {ucsAseAsset.change.toFixed(2)}%
+                </div>
               </div>
               <div className="p-2 bg-white/20 rounded-full">
                 <ArrowUp className="h-4 w-4" />
