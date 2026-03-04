@@ -14,6 +14,7 @@ import {
   Zap,
   Mail,
   Globe,
+  Lock,
 } from "lucide-react";
 import Image from 'next/image';
 import Link from 'next/link';
@@ -114,8 +115,10 @@ export default function LandingPage() {
 
           <div className="flex items-center gap-4">
             <LanguageSwitcher />
-            <Button asChild className="rounded-full bg-emerald-600 text-white hover:bg-emerald-700 px-6 h-10 text-xs font-bold shadow-lg shadow-emerald-200 transition-all hover:-translate-y-0.5">
-              <Link href="https://bmvdigital.global/" target="_blank">Acessar Plataforma</Link>
+            <Button asChild variant="outline" size="icon" className="rounded-full bg-emerald-600 text-white hover:bg-emerald-700 border-none shadow-lg shadow-emerald-200/50 transition-all hover:-translate-y-0.5">
+              <Link href="/login" title="Acessar Plataforma">
+                <Lock className="h-4 w-4" />
+              </Link>
             </Button>
           </div>
         </div>
@@ -152,12 +155,12 @@ export default function LandingPage() {
                 </p>
                 <div className="flex flex-wrap gap-4 pt-4">
                   <Button asChild size="lg" className="rounded-full bg-white text-black hover:bg-emerald-50 px-10 h-14 text-sm font-bold transition-all hover:scale-105 shadow-xl shadow-black/40 border-none group">
-                    <Link href="https://bmvdigital.global/" target="_blank">
+                    <Link href="/login">
                       Começar agora 
                       <ChevronRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
                     </Link>
                   </Button>
-                  <Button variant="outline" size="lg" className="rounded-full border-2 border-white/30 bg-transparent text-white hover:bg-white hover:text-black px-10 h-14 text-sm font-bold transition-all hover:scale-105 backdrop-blur-sm" asChild>
+                  <Button variant="outline" size="lg" className="rounded-full border-2 border-white/40 bg-transparent text-white hover:bg-white hover:text-black px-10 h-14 text-sm font-bold transition-all hover:scale-105 backdrop-blur-sm" asChild>
                     <Link href="mailto:contato@bmv.global">
                       Falar com consultor
                     </Link>
@@ -358,12 +361,12 @@ export default function LandingPage() {
             </p>
             <div className="flex flex-wrap justify-center gap-6 pt-4">
               <Button asChild size="lg" className="h-16 px-12 rounded-full bg-white text-black hover:bg-emerald-50 text-base font-bold transition-all hover:scale-105 shadow-2xl shadow-black/20 border-none group">
-                <Link href="https://bmvdigital.global/" target="_blank">
+                <Link href="/login">
                   Começar agora
                   <ChevronRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
                 </Link>
               </Button>
-              <Button size="lg" variant="outline" className="h-16 px-12 rounded-full border-2 border-white/30 bg-transparent text-white hover:bg-white hover:text-black text-base font-bold transition-all hover:scale-105 backdrop-blur-sm" asChild>
+              <Button size="lg" variant="outline" className="h-16 px-12 rounded-full border-2 border-white/40 bg-transparent text-white hover:bg-white hover:text-black text-base font-bold transition-all hover:scale-105 backdrop-blur-sm" asChild>
                 <Link href="mailto:contato@bmv.global">Falar com consultor</Link>
               </Button>
             </div>
