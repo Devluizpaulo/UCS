@@ -8,7 +8,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { LogoUCS } from "@/components/logo-bvm";
 import { LanguageSwitcher } from "@/components/language-switcher";
-import { Card, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardTitle, CardDescription, CardHeader } from "@/components/ui/card";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 import { formatCurrency } from "@/lib/formatters";
 import type { CommodityPriceData, FirestoreQuote } from '@/lib/types';
@@ -77,7 +77,7 @@ export default function PDMDetailsPage() {
     getLandingPageSettings().then(setSettings);
 
     setIsLoadingHistory(true);
-    const daysToFetch = 1100;
+    const daysToFetch = 1100; // Aproximadamente 3 anos
 
     getCotacoesHistorico('ucs_ase', daysToFetch)
       .then(history => {
@@ -181,6 +181,7 @@ export default function PDMDetailsPage() {
           </Link>
           <div className="flex items-center gap-6">
             <nav className="hidden lg:flex items-center gap-8 text-sm font-semibold text-slate-600">
+              <Link href="#sobre" className="hover:text-emerald-600 transition-colors">Sobre</Link>
               <Link href="#pilares" className="hover:text-emerald-600 transition-colors">Metodologia</Link>
               <Link href="#evolucao" className="hover:text-emerald-600 transition-colors">Evolução</Link>
               <Link href="/login" className="hover:text-emerald-600 transition-colors">Acesso</Link>
@@ -223,9 +224,9 @@ export default function PDMDetailsPage() {
 
               <div className="flex flex-wrap gap-4 pt-4 animate-in fade-in slide-in-from-bottom-10 duration-1000 delay-400">
                 <Button asChild size="lg" className="h-14 px-8 rounded-xl bg-[#10b981] hover:bg-[#059669] text-white text-base font-black shadow-xl shadow-emerald-200 transition-all hover:scale-105 active:scale-95 group">
-                  <a href="https://bmvdigital.global/" target="_blank" rel="noopener noreferrer">
+                  <Link href="https://bmvdigital.global/" target="_blank">
                     Começar agora <ChevronRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                  </a>
+                  </Link>
                 </Button>
               </div>
 
@@ -294,6 +295,28 @@ export default function PDMDetailsPage() {
               </div>
             </div>
           </div>
+        </section>
+
+        {/* WHAT IS UCS SECTION */}
+        <section id="sobre" className="container mx-auto px-6 py-12">
+          <Card className="shadow-2xl bg-white text-gray-800 border-2 border-green-200 overflow-hidden rounded-[2.5rem]">
+            <CardHeader className="text-center pb-2">
+              <div className="flex justify-center mb-4">
+                <Badge className="bg-green-100 text-green-800 border-green-300 text-[10px] px-4 py-1 uppercase font-black tracking-widest">
+                  🌱 ECOASSET ESTRATÉGICO
+                </Badge>
+              </div>
+              <CardTitle className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">O que é a UCS?</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6 pt-4">
+              <p className="text-base md:text-lg text-slate-600 leading-relaxed font-medium text-justify">
+                A Unidade de Créditos de Sustentabilidade (UCS) é um Ecoasset — a representação financeira do valor gerado pela conservação da floresta. Ela converte benefícios ambientais — como manutenção de estoques de carbono, proteção da água e biodiversidade — em um ativo econômico mensurável, transparente e auditável.
+              </p>
+              <p className="text-base md:text-lg text-slate-600 leading-relaxed font-medium text-justify">
+                A UCS utiliza uma base metodológica que considera dimensões econômicas e socioambientais da floresta, permitindo que empresas e investidores apoiem a preservação com métricas claras de desempenho e impacto.
+              </p>
+            </CardContent>
+          </Card>
         </section>
 
         {/* PILLARS SECTION */}
@@ -450,9 +473,9 @@ export default function PDMDetailsPage() {
             </p>
             <div className="flex flex-wrap justify-center gap-6 pt-6 relative z-10">
               <Button asChild size="lg" className="h-16 px-10 rounded-2xl bg-white text-emerald-600 hover:bg-emerald-50 text-xl font-black shadow-2xl transition-all hover:scale-105 active:scale-95">
-                <a href="https://bmvdigital.global/" target="_blank" rel="noopener noreferrer">
+                <Link href="https://bmvdigital.global/" target="_blank">
                   Começar agora
-                </a>
+                </Link>
               </Button>
               <Button size="lg" variant="outline" className="h-16 px-10 rounded-2xl border-2 border-white/30 bg-white/10 backdrop-blur-md text-white hover:bg-white/20 text-xl font-black transition-all" asChild>
                 <a href="mailto:contato@bmv.global">Falar com consultor</a>
