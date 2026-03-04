@@ -21,10 +21,10 @@ import {
   Sparkles,
   History,
   PieChart,
-  CheckSquare,
   BarChart3,
-  Database,
   SlidersHorizontal,
+  ChevronLeft,
+  User,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -38,44 +38,21 @@ import type { UserRecord } from 'firebase-admin/auth';
 import { UserFormModal, type UserFormValues } from '@/components/admin/user-form-modal';
 import { useToast } from '@/hooks/use-toast';
 import { updateUser, acceptLgpd } from '@/lib/admin-actions';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import { LgpdConsentModal } from '@/components/lgpd-consent-modal';
-import { PageHeader } from '@/components/page-header';
+import { cn } from '@/lib/utils';
 
 function UserProfile() {
     const { user, isUserLoading } = useUser();
     const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
     const { toast } = useToast();
-    const firestore = useFirestore();
-    const [isAdmin, setIsAdmin] = useState(false);
-
-     useEffect(() => {
-        if (user) {
-            const checkAdmin = async () => {
-                const adminRef = doc(firestore, `roles_admin/${user.uid}`);
-                const adminSnap = await getDoc(adminRef);
-                setIsAdmin(adminSnap.exists());
-            };
-            checkAdmin();
-        }
-    }, [user, firestore]);
-
-    const handleProfileUpdate = async (values: UserFormValues) => {
-        if (!user) return;
-        try {
-            await updateUser(user.uid, values);
-            toast({ title: 'Sucesso', description: 'Seu perfil foi atualizado.' });
-            setIsProfileModalOpen(false);
-        } catch (error: any) {
-            toast({ variant: 'destructive', title: 'Erro', description: error.message });
-        }
-    }
+    const { state } = useSidebar();
     
     if (isUserLoading) {
         return (
             <div className="flex items-center gap-2 p-2">
-                <Skeleton className="h-10 w-10 rounded-full" />
+                <Skeleton className="h-10 w-10 rounded-lg" />
                 <div className="flex-1 space-y-1">
                     <Skeleton className="h-4 w-24" />
                     <Skeleton className="h-3 w-16" />
@@ -84,45 +61,48 @@ function UserProfile() {
         );
     }
 
-    if (!user) {
-        return null;
-    }
+    if (!user) return null;
     
     const getInitials = (email: string | null) => {
         if (!email) return '..';
-        const nameParts = user.displayName?.split(' ') || [email];
-        if (nameParts.length > 1) {
-            return `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`.toUpperCase();
-        }
-        return email.substring(0, 2).toUpperCase();
+        return (user.displayName?.[0] || email[0]).toUpperCase();
     }
 
     return (
         <>
             <div 
-                className="flex flex-col items-start gap-2 p-3 group-data-[collapsible=icon]:items-center cursor-pointer hover:bg-sidebar-accent/50 rounded-lg transition-all duration-200 hover:shadow-sm"
+                className="flex items-center gap-3 p-3 cursor-pointer hover:bg-slate-50 transition-colors border-t border-slate-100"
                 onClick={() => setIsProfileModalOpen(true)}
             >
-                <div className="flex w-full items-center gap-3">
-                    <Avatar className="h-10 w-10 ring-2 ring-sidebar-primary/20">
-                        <AvatarFallback className="bg-sidebar-primary text-sidebar-primary-foreground font-semibold">
-                            {getInitials(user.email)}
-                        </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 truncate group-data-[collapsible=icon]:hidden">
-                        <p className="font-semibold text-sm truncate text-sidebar-foreground">
-                            {user.displayName || user.email}
+                <Avatar className="h-10 w-10 rounded-lg border border-slate-200">
+                    <AvatarFallback className="bg-slate-100 text-slate-900 font-bold rounded-lg text-lg">
+                        {getInitials(user.email)}
+                    </AvatarFallback>
+                </Avatar>
+                {state !== 'collapsed' && (
+                    <div className="flex-1 truncate">
+                        <p className="font-bold text-sm truncate text-slate-900">
+                            {user.displayName || user.email?.split('@')[0]}
                         </p>
-                        <p className="text-xs text-sidebar-muted-foreground">
-                            {isAdmin ? '👑 Administrador' : '👤 Usuário'}
+                        <p className="text-[11px] text-slate-500 truncate">
+                            {user.email}
                         </p>
                     </div>
-                </div>
+                )}
             </div>
              <UserFormModal
                 isOpen={isProfileModalOpen}
                 onOpenChange={setIsProfileModalOpen}
-                onSubmit={handleProfileUpdate}
+                onSubmit={async (values) => {
+                    if (!user) return;
+                    try {
+                        await updateUser(user.uid, values);
+                        toast({ title: 'Sucesso', description: 'Seu perfil foi atualizado.' });
+                        setIsProfileModalOpen(false);
+                    } catch (error: any) {
+                        toast({ variant: 'destructive', title: 'Erro', description: error.message });
+                    }
+                }}
                 user={user as unknown as UserRecord}
                 isSelfEdit={true}
             />
@@ -136,7 +116,7 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const auth = useAuth();
   const firestore = useFirestore();
-  const { isMobile, setOpenMobile } = useSidebar();
+  const { isMobile, setOpenMobile, toggleSidebar, state } = useSidebar();
   const { toast } = useToast();
 
   const [isAdmin, setIsAdmin] = useState(false);
@@ -162,15 +142,10 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
               setLgpdConsent({ checked: false, required: true });
             }
         } catch (error) {
-            console.error("Error checking user status:", error);
-            // Default to requiring consent if there's an error
             setLgpdConsent({ checked: false, required: true });
         }
       };
       checkUserStatus();
-    } else {
-      setIsAdmin(false);
-      setLgpdConsent({ checked: false, required: false });
     }
   }, [user, firestore]);
 
@@ -184,9 +159,9 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
     try {
         await acceptLgpd(user.uid);
         setLgpdConsent({ checked: true, required: false });
-        toast({ title: 'Obrigado!', description: 'Consentimento aceito. Bem-vindo à plataforma!' });
+        toast({ title: 'Obrigado!', description: 'Consentimento aceito.' });
     } catch (error: any) {
-        toast({ variant: 'destructive', title: 'Erro ao salvar', description: error.message });
+        toast({ variant: 'destructive', title: 'Erro', description: error.message });
     }
   };
 
@@ -202,15 +177,21 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
     }
   };
   
-  const showLoading = isUserLoading || (user && !lgpdConsent.checked && lgpdConsent.required);
-
-  if (showLoading && !user) {
+  if (isUserLoading && !user) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
     );
   }
+
+  const menuItems = [
+    { label: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
+    { label: 'Relatórios IA', icon: Sparkles, href: '/reports' },
+    { label: 'Análise Avançada', icon: TrendingUp, href: '/analysis/trends' },
+    { label: 'Composição', icon: PieChart, href: '/analysis/composition' },
+    { label: 'Comparador', icon: BarChart3, href: '/comparador' },
+  ];
 
   return (
     <>
@@ -219,98 +200,59 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
         onAccept={handleLgpdAccept}
         onReject={handleSignOut}
       />
-      <div className={`flex h-screen w-full bg-background ${lgpdConsent.required && !lgpdConsent.checked ? 'blur-sm pointer-events-none' : ''}`}>
-        <Sidebar className="sidebar-modern">
-          <div className="flex flex-col h-full">
-            <SidebarHeader className="border-b border-sidebar-border">
-              <Link href="/dashboard" className="flex h-12 items-center justify-center p-3 group-data-[collapsible=icon]:hidden" aria-label="Dashboard">
-                <LogoUCS className="h-8 w-auto" />
-              </Link>
-              <Link href="/dashboard" className="hidden h-12 items-center justify-center p-3 group-data-[collapsible=icon]:flex" aria-label="Dashboard">
-                <LogoUCS className="h-8 w-auto" isIcon />
-              </Link>
-            </SidebarHeader>
-            <SidebarContent className="flex-grow">
-              <SidebarMenu>
-                <SidebarMenuItem onClick={handleMenuItemClick}>
+      <div className={cn("flex h-screen w-full bg-white", lgpdConsent.required && !lgpdConsent.checked && 'blur-sm pointer-events-none')}>
+        <Sidebar className="border-r border-slate-100 shadow-sm" collapsible="icon">
+          <SidebarHeader className="h-16 flex flex-row items-center justify-between px-4">
+            <Link href="/dashboard" className="flex items-center">
+              <LogoUCS variant="text" className="text-2xl" />
+            </Link>
+            <button 
+              onClick={toggleSidebar} 
+              className="p-1 hover:bg-slate-100 rounded-md transition-colors text-slate-400 group-data-[collapsible=icon]:hidden"
+            >
+              <ChevronLeft size={18} />
+            </button>
+          </SidebarHeader>
+          <SidebarContent className="px-2 pt-2">
+            <SidebarMenu>
+              {menuItems.map((item) => (
+                <SidebarMenuItem key={item.href} onClick={handleMenuItemClick}>
                   <SidebarMenuButton
                     asChild
-                    isActive={pathname === '/dashboard'}
-                    tooltip={{ children: 'Dashboard' }}
+                    isActive={pathname === item.href}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-6 rounded-lg transition-all text-slate-600 font-medium hover:bg-slate-50",
+                      pathname === item.href && "bg-[#10b981] text-white hover:bg-[#10b981] hover:text-white shadow-md shadow-emerald-100"
+                    )}
+                    tooltip={item.label}
                   >
-                    <Link href="/dashboard">
-                      <LayoutDashboard />
-                      <span>Dashboard</span>
+                    <Link href={item.href}>
+                      <item.icon className={cn("h-5 w-5", pathname === item.href ? "text-white" : "text-slate-400")} />
+                      <span className="text-sm">{item.label}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-                <SidebarMenuItem onClick={handleMenuItemClick}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname.startsWith('/reports')}
-                    tooltip={{ children: 'Relatórios com IA' }}
-                  >
-                    <Link href="/reports">
-                      <Sparkles />
-                      <span>Relatórios IA</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-              <SidebarMenu>
-                <p className="px-4 py-2 text-xs font-semibold text-muted-foreground/50 tracking-wider group-data-[collapsible=icon]:text-center">
-                  Análise
-                </p>
-                <SidebarMenuItem onClick={handleMenuItemClick}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname.startsWith('/analysis/trends')}
-                    tooltip={{ children: 'Análise Avançada' }}
-                  >
-                    <Link href="/analysis/trends">
-                      <TrendingUp />
-                      <span>Análise Avançada</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem onClick={handleMenuItemClick}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname.startsWith('/analysis/composition')}
-                    tooltip={{ children: 'Análise de Composição' }}
-                  >
-                    <Link href="/analysis/composition">
-                      <PieChart />
-                      <span>Composição</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem onClick={handleMenuItemClick}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname.startsWith('/comparador')}
-                    tooltip={{ children: 'Comparativo de Datas' }}
-                  >
-                    <Link href="/comparador">
-                      <BarChart3 />
-                      <span>Comparador</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-              {isAdmin && (
+              ))}
+            </SidebarMenu>
+
+            {isAdmin && (
+              <>
+                <div className="px-4 py-4 group-data-[collapsible=icon]:hidden">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Administração</p>
+                </div>
                 <SidebarMenu>
-                  <p className="px-4 py-2 text-xs font-semibold text-muted-foreground/50 tracking-wider group-data-[collapsible=icon]:text-center">
-                    Admin
-                  </p>
                   <SidebarMenuItem onClick={handleMenuItemClick}>
                     <SidebarMenuButton
                       asChild
-                      isActive={pathname.startsWith('/admin/users')}
-                      tooltip={{ children: 'Gerenciar Usuários' }}
+                      isActive={pathname === '/admin/users'}
+                      className={cn(
+                        "flex items-center gap-3 px-3 py-6 rounded-lg transition-all text-slate-600 font-medium hover:bg-slate-50",
+                        pathname === '/admin/users' && "bg-[#10b981] text-white hover:bg-[#10b981] shadow-md shadow-emerald-100"
+                      )}
+                      tooltip="Usuários"
                     >
                       <Link href="/admin/users">
-                        <Users />
+                        <User className={cn("h-5 w-5", pathname === '/admin/users' ? "text-white" : "text-slate-400")} />
                         <span>Usuários</span>
                       </Link>
                     </SidebarMenuButton>
@@ -318,11 +260,15 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
                   <SidebarMenuItem onClick={handleMenuItemClick}>
                     <SidebarMenuButton
                       asChild
-                      isActive={pathname.startsWith('/admin/audit')}
-                      tooltip={{ children: 'Auditoria de Dados' }}
+                      isActive={pathname === '/admin/audit'}
+                      className={cn(
+                        "flex items-center gap-3 px-3 py-6 rounded-lg transition-all text-slate-600 font-medium hover:bg-slate-50",
+                        pathname === '/admin/audit' && "bg-[#10b981] text-white hover:bg-[#10b981] shadow-md shadow-emerald-100"
+                      )}
+                      tooltip="Auditoria"
                     >
                       <Link href="/admin/audit">
-                        <History />
+                        <History className={cn("h-5 w-5", pathname === '/admin/audit' ? "text-white" : "text-slate-400")} />
                         <span>Auditoria</span>
                       </Link>
                     </SidebarMenuButton>
@@ -331,50 +277,55 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
                     <SidebarMenuItem onClick={handleMenuItemClick}>
                       <SidebarMenuButton
                         asChild
-                        isActive={pathname.startsWith('/dev')}
-                        tooltip={{ children: 'Dev Tools' }}
+                        isActive={pathname === '/dev'}
+                        className={cn(
+                          "flex items-center gap-3 px-3 py-6 rounded-lg transition-all text-slate-600 font-medium hover:bg-slate-50",
+                          pathname === '/dev' && "bg-[#10b981] text-white hover:bg-[#10b981] shadow-md shadow-emerald-100"
+                        )}
+                        tooltip="Dev Tools"
                       >
                         <Link href="/dev">
-                          <SlidersHorizontal />
+                          <SlidersHorizontal className={cn("h-5 w-5", pathname === '/dev' ? "text-white" : "text-slate-400")} />
                           <span>Dev Tools</span>
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   )}
                 </SidebarMenu>
-              )}
-            </SidebarContent>
-            <div className="mt-auto">
-              <SidebarContent className="!flex-grow-0 border-t border-sidebar-border">
-                <SidebarMenu>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton 
-                      onClick={handleSignOut} 
-                      tooltip={{ children: 'Sair' }}
-                      className="hover:bg-destructive/10 hover:text-destructive"
-                    >
-                      <LogOut />
-                      <span>Sair</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </SidebarMenu>
-                <div className="p-2">
-                  <UserProfile />
-                </div>
-              </SidebarContent>
-            </div>
+              </>
+            )}
+          </SidebarContent>
+          <div className="mt-auto flex flex-col">
+            <SidebarMenu className="px-2 pb-2">
+              <SidebarMenuItem>
+                <SidebarMenuButton 
+                  onClick={handleSignOut} 
+                  className="flex items-center gap-3 px-3 py-6 rounded-lg text-slate-500 hover:bg-red-50 hover:text-red-600 transition-all"
+                  tooltip="Sair"
+                >
+                  <LogOut className="h-5 w-5" />
+                  <span>Sair</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+            <UserProfile />
           </div>
         </Sidebar>
-        <SidebarInset>{children}</SidebarInset>
+        <SidebarInset className="bg-slate-50/50">
+          <div className="md:hidden p-4 border-b bg-white flex items-center gap-2">
+            <SidebarTrigger />
+            <LogoUCS variant="text" className="text-xl" />
+          </div>
+          {children}
+        </SidebarInset>
       </div>
     </>
   );
 }
 
-
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={true}>
       <MainLayoutContent>{children}</MainLayoutContent>
     </SidebarProvider>
   );
