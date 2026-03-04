@@ -5,26 +5,23 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { 
   ChevronRight, 
-  ArrowUpRight, 
   TrendingUp, 
   TreePine, 
   LandPlot, 
   ShieldCheck, 
   Activity, 
   Calendar, 
-  Droplets,
   Award,
   Zap,
-  Shield,
-  MousePointer2,
   Mail,
-  Globe
+  Globe,
+  CalendarClock
 } from "lucide-react";
 import Image from 'next/image';
 import Link from 'next/link';
 import { LogoUCS } from "@/components/logo-bvm";
 import { LanguageSwitcher } from "@/components/language-switcher";
-import { Card, CardContent, CardTitle, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardTitle, CardHeader, CardDescription } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/formatters";
 import type { CommodityPriceData, FirestoreQuote } from '@/lib/types';
 import { getCommodityPrices, getCotacoesHistorico } from '@/lib/data-service';
@@ -120,7 +117,7 @@ export default function LandingPage() {
           <div className="flex items-center gap-4">
             <LanguageSwitcher />
             <Button asChild className="rounded-full bg-emerald-600 text-white hover:bg-emerald-700 px-6 h-10 text-xs font-bold shadow-lg shadow-emerald-200 transition-all hover:-translate-y-0.5">
-              <Link href="https://bmvdigital.global/">Acessar Plataforma</Link>
+              <Link href="https://bmvdigital.global/" target="_blank">Acessar Plataforma</Link>
             </Button>
           </div>
         </div>
@@ -158,7 +155,7 @@ export default function LandingPage() {
                 </p>
                 <div className="flex flex-wrap gap-4">
                   <Button asChild size="lg" className="rounded-full bg-white text-[#020a02] hover:bg-emerald-50 px-8 h-14 text-sm font-black transition-all hover:scale-105 shadow-xl shadow-white/5">
-                    <Link href="https://bmvdigital.global/">Começar agora <ChevronRight className="ml-2 h-4 w-4" /></Link>
+                    <Link href="https://bmvdigital.global/" target="_blank">Começar agora <ChevronRight className="ml-2 h-4 w-4" /></Link>
                   </Button>
                   <Button variant="outline" size="lg" className="rounded-full border-white/40 text-white hover:bg-white/10 hover:backdrop-blur-sm px-8 h-14 text-sm font-black transition-all" asChild>
                     <Link href="mailto:contato@bmv.global">Falar com consultor</Link>
@@ -198,30 +195,6 @@ export default function LandingPage() {
                         <TrendingUp className="h-4 w-4" /> +2.34% <span className="text-white/20 ml-1">vs ontem</span>
                       </div>
                     </div>
-
-                    <div className="pt-6 border-t border-white/10 grid grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <p className="text-[9px] font-black text-white/30 uppercase tracking-widest">CO2 Capture</p>
-                        <p className="text-lg font-bold text-white font-mono">1.4t <span className="text-[10px] text-white/40">/ha</span></p>
-                      </div>
-                      <div className="space-y-1 text-right">
-                        <p className="text-[9px] font-black text-white/30 uppercase tracking-widest">Water Protection</p>
-                        <p className="text-lg font-bold text-white font-mono">42k <span className="text-[10px] text-white/40">L/ha</span></p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Secondary Data Card */}
-                <div className="absolute -top-10 -right-6 z-30 p-6 rounded-3xl bg-black/40 backdrop-blur-xl border border-white/10 shadow-2xl animate-float-delayed hidden md:block">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 rounded-full bg-blue-500/20 text-blue-400">
-                      <Droplets className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <p className="text-[9px] font-black text-white/40 uppercase tracking-widest">Hydric Health</p>
-                      <p className="text-xl font-bold text-white">98.4%</p>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -241,11 +214,11 @@ export default function LandingPage() {
               </h2>
               <div className="w-20 h-1.5 bg-emerald-500 rounded-full" />
             </div>
-            <div className="lg:col-span-7 space-y-8">
-              <p className="text-lg text-slate-600 leading-relaxed font-medium text-justify">
+            <div className="lg:col-span-7 space-y-8 text-justify">
+              <p className="text-lg text-slate-600 leading-relaxed font-medium">
                 A Unidade de Créditos de Sustentabilidade (UCS) é um <strong>Ecoasset</strong> — a representação financeira do valor gerado pela conservação da floresta. Ela converte benefícios ambientais — como manutenção de estoques de carbono, proteção da água e biodiversidade — em um ativo econômico mensurável, transparente e auditável.
               </p>
-              <p className="text-lg text-slate-600 leading-relaxed font-medium text-justify">
+              <p className="text-lg text-slate-600 leading-relaxed font-medium">
                 A UCS utiliza uma base metodológica que considera dimensões econômicas e socioambientais da floresta, permitindo que empresas e investidores apoiem a preservação com métricas claras de desempenho e impacto.
               </p>
             </div>
@@ -257,7 +230,7 @@ export default function LandingPage() {
           <div className="container mx-auto px-6 space-y-16">
             <div className="space-y-4">
               <h2 className="text-3xl md:text-4xl font-black text-slate-900">Os Pilares do Sistema</h2>
-              <p className="text-slate-500 font-medium max-w-none">Metodologia proprietária baseada em três eixos estratégicos de valorização.</p>
+              <p className="text-slate-500 font-medium">Metodologia proprietária baseada em três eixos estratégicos de valorização.</p>
             </div>
             
             <div className="flex flex-col gap-8">
@@ -383,7 +356,7 @@ export default function LandingPage() {
             </p>
             <div className="flex flex-wrap justify-center gap-6 pt-4">
               <Button asChild size="lg" className="h-16 px-12 rounded-full bg-white text-emerald-700 hover:bg-emerald-50 text-base font-black transition-all hover:scale-105 shadow-2xl shadow-black/10">
-                <Link href="https://bmvdigital.global/">Começar agora</Link>
+                <Link href="https://bmvdigital.global/" target="_blank">Começar agora</Link>
               </Button>
               <Button size="lg" variant="outline" className="h-16 px-12 rounded-full border-white/40 text-white hover:bg-white/10 hover:backdrop-blur-sm text-base font-black transition-all" asChild>
                 <a href="mailto:contato@bmv.global">Falar com consultor</a>
