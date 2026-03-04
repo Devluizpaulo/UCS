@@ -211,8 +211,10 @@ export default function PDMDetailsPage() {
                 {heroContent.subtitle}
               </p>
               <div className="flex flex-wrap gap-4 pt-4">
-                <Button size="lg" className="h-14 px-8 rounded-full bg-[#10b981] hover:bg-[#059669] text-white text-lg font-bold shadow-xl shadow-emerald-200">
-                  Começar Agora <ChevronRight className="ml-2 h-5 w-5" />
+                <Button asChild size="lg" className="h-14 px-8 rounded-full bg-[#10b981] hover:bg-[#059669] text-white text-lg font-bold shadow-xl shadow-emerald-200">
+                  <a href="https://bmvdigital.global/" target="_blank" rel="noopener noreferrer">
+                    Começar Agora <ChevronRight className="ml-2 h-5 w-5" />
+                  </a>
                 </Button>
                 <Button size="lg" variant="outline" className="h-14 px-8 rounded-full border-2 border-slate-200 bg-white/50 text-lg font-bold hover:bg-white transition-all">
                   Ver Metodologia
@@ -405,8 +407,10 @@ export default function PDMDetailsPage() {
               Junte-se à maior plataforma de ativos ambientais e comece a rentabilizar a preservação hoje mesmo.
             </p>
             <div className="flex flex-wrap justify-center gap-4 pt-4">
-              <Button size="lg" className="h-14 px-10 rounded-full bg-white text-emerald-600 hover:bg-emerald-50 text-lg font-bold shadow-lg">
-                Começar agora
+              <Button asChild size="lg" className="h-14 px-10 rounded-full bg-white text-emerald-600 hover:bg-emerald-50 text-lg font-bold shadow-lg">
+                <a href="https://bmvdigital.global/" target="_blank" rel="noopener noreferrer">
+                  Começar agora
+                </a>
               </Button>
               <Button size="lg" variant="outline" className="h-14 px-10 rounded-full border-2 border-white/30 bg-transparent text-white hover:bg-white/10 text-lg font-bold" asChild>
                 <a href="mailto:contato@bmv.global">Falar com consultor</a>
