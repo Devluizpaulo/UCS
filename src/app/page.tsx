@@ -408,8 +408,8 @@ export default function PDMDetailsPage() {
               <Button size="lg" className="h-14 px-10 rounded-full bg-white text-emerald-600 hover:bg-emerald-50 text-lg font-bold shadow-lg">
                 Começar agora
               </Button>
-              <Button size="lg" variant="outline" className="h-14 px-10 rounded-full border-2 border-white/30 bg-transparent text-white hover:bg-white/10 text-lg font-bold">
-                Falar com consultor
+              <Button size="lg" variant="outline" className="h-14 px-10 rounded-full border-2 border-white/30 bg-transparent text-white hover:bg-white/10 text-lg font-bold" asChild>
+                <a href="mailto:contato@bmv.global">Falar com consultor</a>
               </Button>
             </div>
           </div>
