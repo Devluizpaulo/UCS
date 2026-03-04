@@ -35,7 +35,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import React, { useState, useEffect } from 'react';
 import type { UserRecord } from 'firebase-admin/auth';
-import { UserFormModal, type UserFormValues } from '@/components/admin/user-form-modal';
+import { UserFormModal } from '@/components/admin/user-form-modal';
 import { useToast } from '@/hooks/use-toast';
 import { updateUser, acceptLgpd } from '@/lib/admin-actions';
 import { doc, getDoc } from 'firebase/firestore';
@@ -74,17 +74,17 @@ function UserProfile() {
                 className="flex items-center gap-3 p-3 cursor-pointer hover:bg-slate-50 transition-colors border-t border-slate-100"
                 onClick={() => setIsProfileModalOpen(true)}
             >
-                <Avatar className="h-10 w-10 rounded-lg border border-slate-200">
-                    <AvatarFallback className="bg-slate-100 text-slate-900 font-bold rounded-lg text-lg">
+                <Avatar className="h-9 w-9 rounded-lg border border-slate-200">
+                    <AvatarFallback className="bg-slate-100 text-[#1e293b] font-bold rounded-lg text-sm">
                         {getInitials(user.email)}
                     </AvatarFallback>
                 </Avatar>
                 {state !== 'collapsed' && (
                     <div className="flex-1 truncate">
-                        <p className="font-bold text-sm truncate text-slate-900">
+                        <p className="font-semibold text-sm truncate text-[#1e293b]">
                             {user.displayName || user.email?.split('@')[0]}
                         </p>
-                        <p className="text-[11px] text-slate-500 truncate">
+                        <p className="text-[10px] text-slate-500 truncate">
                             {user.email}
                         </p>
                     </div>
@@ -187,7 +187,6 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
 
   const menuItems = [
     { label: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
-    { label: 'Relatórios IA', icon: Sparkles, href: '/reports' },
     { label: 'Análise Avançada', icon: TrendingUp, href: '/analysis/trends' },
     { label: 'Composição', icon: PieChart, href: '/analysis/composition' },
     { label: 'Comparador', icon: BarChart3, href: '/comparador' },
@@ -201,34 +200,41 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
         onReject={handleSignOut}
       />
       <div className={cn("flex h-screen w-full bg-white", lgpdConsent.required && !lgpdConsent.checked && 'blur-sm pointer-events-none')}>
-        <Sidebar className="border-r border-slate-100 shadow-sm" collapsible="icon">
-          <SidebarHeader className="h-16 flex flex-row items-center justify-between px-4">
+        <Sidebar className="border-r border-slate-100 bg-white" collapsible="icon">
+          <SidebarHeader className="h-20 flex flex-row items-center justify-between px-6">
             <Link href="/dashboard" className="flex items-center">
-              <LogoUCS variant="text" className="text-2xl" />
+              <span className="font-bold text-3xl tracking-tighter text-[#1e293b]">bmv</span>
             </Link>
             <button 
               onClick={toggleSidebar} 
-              className="p-1 hover:bg-slate-100 rounded-md transition-colors text-slate-400 group-data-[collapsible=icon]:hidden"
+              className="p-1.5 hover:bg-slate-50 rounded-md transition-colors text-slate-400 group-data-[collapsible=icon]:hidden"
             >
-              <ChevronLeft size={18} />
+              <ChevronLeft size={16} />
             </button>
           </SidebarHeader>
-          <SidebarContent className="px-2 pt-2">
+          
+          <div className="px-4 py-2 group-data-[collapsible=icon]:hidden">
+            <div className="h-px bg-slate-100 w-full mb-6" />
+          </div>
+
+          <SidebarContent className="px-4">
             <SidebarMenu>
               {menuItems.map((item) => (
-                <SidebarMenuItem key={item.href} onClick={handleMenuItemClick}>
+                <SidebarMenuItem key={item.href} onClick={handleMenuItemClick} className="mb-1">
                   <SidebarMenuButton
                     asChild
                     isActive={pathname === item.href}
                     className={cn(
-                      "flex items-center gap-3 px-3 py-6 rounded-lg transition-all text-slate-600 font-medium hover:bg-slate-50",
-                      pathname === item.href && "bg-[#10b981] text-white hover:bg-[#10b981] hover:text-white shadow-md shadow-emerald-100"
+                      "flex items-center gap-3 px-4 py-6 rounded-lg transition-all font-semibold text-sm",
+                      pathname === item.href 
+                        ? "bg-[#10b981] text-white hover:bg-[#10b981] hover:text-white shadow-lg shadow-emerald-100" 
+                        : "text-[#1e293b] hover:bg-slate-50 hover:text-[#10b981]"
                     )}
                     tooltip={item.label}
                   >
                     <Link href={item.href}>
                       <item.icon className={cn("h-5 w-5", pathname === item.href ? "text-white" : "text-slate-400")} />
-                      <span className="text-sm">{item.label}</span>
+                      <span>{item.label}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -236,34 +242,35 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
             </SidebarMenu>
 
             {isAdmin && (
-              <>
-                <div className="px-4 py-4 group-data-[collapsible=icon]:hidden">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Administração</p>
-                </div>
+              <div className="mt-6">
                 <SidebarMenu>
-                  <SidebarMenuItem onClick={handleMenuItemClick}>
+                  <SidebarMenuItem onClick={handleMenuItemClick} className="mb-1">
                     <SidebarMenuButton
                       asChild
                       isActive={pathname === '/admin/users'}
                       className={cn(
-                        "flex items-center gap-3 px-3 py-6 rounded-lg transition-all text-slate-600 font-medium hover:bg-slate-50",
-                        pathname === '/admin/users' && "bg-[#10b981] text-white hover:bg-[#10b981] shadow-md shadow-emerald-100"
+                        "flex items-center gap-3 px-4 py-6 rounded-lg transition-all font-semibold text-sm",
+                        pathname === '/admin/users' 
+                          ? "bg-[#10b981] text-white shadow-lg shadow-emerald-100" 
+                          : "text-[#1e293b] hover:bg-slate-50 hover:text-[#10b981]"
                       )}
-                      tooltip="Usuários"
+                      tooltip="Admins"
                     >
                       <Link href="/admin/users">
                         <User className={cn("h-5 w-5", pathname === '/admin/users' ? "text-white" : "text-slate-400")} />
-                        <span>Usuários</span>
+                        <span>Admins</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                  <SidebarMenuItem onClick={handleMenuItemClick}>
+                  <SidebarMenuItem onClick={handleMenuItemClick} className="mb-1">
                     <SidebarMenuButton
                       asChild
                       isActive={pathname === '/admin/audit'}
                       className={cn(
-                        "flex items-center gap-3 px-3 py-6 rounded-lg transition-all text-slate-600 font-medium hover:bg-slate-50",
-                        pathname === '/admin/audit' && "bg-[#10b981] text-white hover:bg-[#10b981] shadow-md shadow-emerald-100"
+                        "flex items-center gap-3 px-4 py-6 rounded-lg transition-all font-semibold text-sm",
+                        pathname === '/admin/audit' 
+                          ? "bg-[#10b981] text-white shadow-lg shadow-emerald-100" 
+                          : "text-[#1e293b] hover:bg-slate-50 hover:text-[#10b981]"
                       )}
                       tooltip="Auditoria"
                     >
@@ -273,34 +280,18 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                  {process.env.NODE_ENV === 'development' && (
-                    <SidebarMenuItem onClick={handleMenuItemClick}>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={pathname === '/dev'}
-                        className={cn(
-                          "flex items-center gap-3 px-3 py-6 rounded-lg transition-all text-slate-600 font-medium hover:bg-slate-50",
-                          pathname === '/dev' && "bg-[#10b981] text-white hover:bg-[#10b981] shadow-md shadow-emerald-100"
-                        )}
-                        tooltip="Dev Tools"
-                      >
-                        <Link href="/dev">
-                          <SlidersHorizontal className={cn("h-5 w-5", pathname === '/dev' ? "text-white" : "text-slate-400")} />
-                          <span>Dev Tools</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  )}
                 </SidebarMenu>
-              </>
+              </div>
             )}
           </SidebarContent>
-          <div className="mt-auto flex flex-col">
-            <SidebarMenu className="px-2 pb-2">
+          
+          <div className="mt-auto">
+            <UserProfile />
+            <SidebarMenu className="px-4 pb-4">
               <SidebarMenuItem>
                 <SidebarMenuButton 
                   onClick={handleSignOut} 
-                  className="flex items-center gap-3 px-3 py-6 rounded-lg text-slate-500 hover:bg-red-50 hover:text-red-600 transition-all"
+                  className="flex items-center gap-3 px-4 py-6 rounded-lg text-slate-500 hover:bg-red-50 hover:text-red-600 transition-all font-medium text-sm"
                   tooltip="Sair"
                 >
                   <LogOut className="h-5 w-5" />
@@ -308,13 +299,12 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
-            <UserProfile />
           </div>
         </Sidebar>
         <SidebarInset className="bg-slate-50/50">
           <div className="md:hidden p-4 border-b bg-white flex items-center gap-2">
             <SidebarTrigger />
-            <LogoUCS variant="text" className="text-xl" />
+            <span className="font-bold text-2xl tracking-tighter text-[#1e293b]">bmv</span>
           </div>
           {children}
         </SidebarInset>
