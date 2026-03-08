@@ -1,8 +1,7 @@
-
 'use client';
 
 import { Suspense } from 'react';
-import Image from 'next/image';
+import Image from 'image';
 import { PageHeader } from '@/components/page-header';
 import { 
   Leaf, TrendingUp, Globe, DollarSign, Shield, Zap, TreePine, Target, Award, Coins,
@@ -35,10 +34,10 @@ function IndexDetailsContent() {
 // Composição Detalhada dos Pilares da UCS
 const ucsPillars = [
   {
-    icon: TreePine,
-    title: "VUS - Valor de Uso do Solo",
-    subtitle: "Fator: 1.0 (Principal)",
-    description: "O VUS representa um ativo financeiro inovador, lastreado no potencial produtivo das principais commodities agrícolas brasileiras. Através de uma curadoria técnica criteriosa, o VUS captura a solidez do agronegócio nacional, oferecendo uma alternativa de investimento diretamente conectada à economia real. Sua composição diversificada e rebalanceamento periódico garantem resiliência e uma valorização consistente, funcionando como um hedge natural contra a inflação.",
+    icon: LandPlot,
+    title: "Valor de Uso do Solo",
+    subtitle: "Ativo Principal",
+    description: "Representa um ativo financeiro inovador, lastreado no potencial produtivo das principais commodities agrícolas brasileiras. Através de uma curadoria técnica criteriosa, captura a solidez do agronegócio nacional, oferecendo uma alternativa de investimento diretamente conectada à economia real. Sua composição diversificada e rebalanceamento periódico garantem resiliência e uma valorização consistente, funcionando como um hedge natural contra a inflação.",
     weight: 1.0,
     weightLabel: "Ativo Principal",
     color: "bg-green-500/10 text-green-700 border-green-200",
@@ -50,14 +49,14 @@ const ucsPillars = [
         { name: "Milho", currentPrice: "R$ 85,00/sc" },
         { name: "Soja", currentPrice: "R$ 180,00/sc" }
       ],
-      explanation: "O VUS é registrado mensalmente com base nas cotações de mercado, assegurando transparência, liquidez e uma gestão de risco baseada em dados concretos do setor."
+      explanation: "É registrado mensalmente com base nas cotações de mercado, assegurando transparência, liquidez e uma gestão de risco baseada em dados concretos do setor."
     }
   },
   {
-    icon: Mountain,
-    title: "VMAD - Valor da Madeira",
-    subtitle: "Fator: 0.21 (Secundário)", 
-    description: "Mais do que um ativo, o VMAD é um compromisso com a economia verde. Ele é exclusivamente indexado ao mercado de madeira de manejo florestal sustentável certificada, promovendo uma exploração que preserva o bioma para as futuras gerações. Ao investir no VMAD, o detentor não apenas acessa um nicho de mercado em franca expansão, mas também financia diretamente a conservação da floresta em pé, recebendo dividendos ambientais e econômicos.",
+    icon: TreePine,
+    title: "Valor da Madeira",
+    subtitle: "Ativo Secundário", 
+    description: "Mais do que um ativo, é um compromisso com a economia verde. Ele é exclusivamente indexado ao mercado de madeira de manejo florestal sustentável certificada, promovendo uma exploração que preserva o bioma para as futuras gerações. Ao investir neste pilar, o detentor não apenas acessa um nicho de mercado em franca expansão, mas também financia diretamente a conservação da floresta em pé, recebendo dividendos ambientais e econômicos.",
     weight: 0.21,
     weightLabel: "Ativo Secundário",
     color: "bg-amber-500/10 text-amber-700 border-amber-200",
@@ -77,9 +76,9 @@ const ucsPillars = [
   },
   {
     icon: Shield,
-    title: "CRS - Custo de Responsabilidade Socioambiental",
-    subtitle: "Fator: 0.25 (Terciário)",
-    description: "O CRS é um ativo de vanguarda que monetiza os serviços ecossistêmicos prestados pela floresta amazônica. Ele traduz em valor financeiro tangível benefícios intangíveis, porém cruciais, como o sequestro de carbono e a proteção de recursos hídricos. Este ativo conecta investidores à nova economia de baixo carbono, permitindo que eles participem ativamente da criação de um futuro mais sustentável, com retornos associados ao desempenho ambiental.",
+    title: "Custo de Responsabilidade Socioambiental",
+    subtitle: "Ativo Terciário",
+    description: "É um ativo de vanguarda que monetiza os serviços ecossistêmicos prestados pela floresta nativa. Ele traduz em valor financeiro tangível benefícios intangíveis, porém cruciais, como o sequestro de carbono e a proteção de recursos hídricos. Este ativo conecta investidores à nova economia de baixo carbono, permitindo que eles participem ativamente da criação de um futuro mais sustentável, com retornos associados ao desempenho ambiental.",
     weight: 0.25,
     weightLabel: "Ativo Terciário",
     color: "bg-blue-500/10 text-blue-700 border-blue-200",
@@ -90,7 +89,7 @@ const ucsPillars = [
         { name: "Créditos de Carbono", currentPrice: "R$ 45,00/tCO₂" },
         { name: "Créditos de Água", currentPrice: "R$ 12,00/m³" }
       ],
-      explanation: "O CRS é a materialização financeira da responsabilidade socioambiental, criando um fluxo de capital positivo que recompensa a preservação e gera impacto mensurável tanto para o planeta quanto para o portfólio."
+      explanation: "É a materialização financeira da responsabilidade socioambiental, criando um fluxo de capital positivo que recompensa a preservação e gera impacto mensurável tanto para o planeta quanto para o portfólio."
     }
   }
 ];
@@ -101,9 +100,9 @@ const ucsPillars = [
       scenario: "Portfolio Padrão UCS",
       totalWeight: "1.46",
       breakdown: {
-        vus: { weight: "1.0", percentage: "68.41%", description: "Ativo Principal (VUS)", price: "Preço base" },
-        vmad: { weight: "0.21", percentage: "14.31%", description: "Ativo Secundário (VMAD)", price: "21% do VUS" },
-        crs: { weight: "0.25", percentage: "17.28%", description: "Ativo Terciário (CRS)", price: "25% do VUS" }
+        vus: { weight: "1.0", percentage: "68.41%", description: "Valor de Uso do Solo", price: "Preço base" },
+        vmad: { weight: "0.21", percentage: "14.31%", description: "Valor da Madeira", price: "21% do total" },
+        crs: { weight: "0.25", percentage: "17.28%", description: "Custo de Resp. Socioambiental", price: "25% do total" }
       },
       roi: "Baseado no peso 1.0",
       timeframe: "Estrutura permanente"
@@ -112,9 +111,9 @@ const ucsPillars = [
       scenario: "Portfolio Escalonado",
       totalWeight: "7.3",
       breakdown: {
-        vus: { weight: "5.0", percentage: "68.41%", description: "Ativo Principal (VUS)", price: "5x o preço base" },
-        vmad: { weight: "1.05", percentage: "14.31%", description: "Ativo Secundário (VMAD)", price: "21% do VUS" },
-        crs: { weight: "1.25", percentage: "17.28%", description: "Ativo Terciário (CRS)", price: "25% do VUS" }
+        vus: { weight: "5.0", percentage: "68.41%", description: "Valor de Uso do Solo", price: "5x o preço base" },
+        vmad: { weight: "1.05", percentage: "14.31%", description: "Valor da Madeira", price: "21% do total" },
+        crs: { weight: "1.25", percentage: "17.28%", description: "Custo de Resp. Socioambiental", price: "25% do total" }
       },
       roi: "Proporcional ao peso",
       timeframe: "Escala permite maior eficiência"
@@ -181,7 +180,7 @@ const ucsPillars = [
         {/* Composição Detalhada dos Pilares */}
         <section>
           <h2 className="text-3xl font-bold text-center mb-12 text-gray-800">
-            ⚖️ Estrutura de Fatores dos Ativos UCS
+            ⚖️ Estrutura dos Ativos UCS
           </h2>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {ucsPillars.map((pillar, index) => (
@@ -197,7 +196,8 @@ const ucsPillars = [
                       <Image
                         src={pillar.image.src}
                         alt={pillar.image.alt}
-                        fill
+                        width={600}
+                        height={400}
                         className="object-cover"
                         data-ai-hint={pillar.image.hint}
                       />
@@ -331,57 +331,6 @@ const ucsPillars = [
             ))}
           </div>
         </section>
-
-        {/* Conclusão Comercial - COMENTADO TEMPORARIAMENTE
-        <section>
-          <Card className="shadow-2xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white border-0">
-            <CardHeader className="text-center">
-              <CardTitle className="text-3xl font-bold mb-4">🎯 A UCS: O Futuro dos Investimentos</CardTitle>
-              <CardDescription className="text-lg opacity-90">
-                Único investimento que combina preservação ambiental, reajuste automático e diversificação estratégica
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="text-center space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6">
-                  <h3 className="text-xl font-bold mb-2">📈 Reajuste Inteligente</h3>
-                  <p className="text-sm opacity-90">
-                    Indexado às cotações de boi, milho, soja, madeira e créditos de carbono
-                  </p>
-                </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6">
-                  <h3 className="text-xl font-bold mb-2">🌍 Impacto Real</h3>
-                  <p className="text-sm opacity-90">
-                    Preservação certificada da floresta amazônica com benefícios mensuráveis
-                  </p>
-                </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6">
-                  <h3 className="text-xl font-bold mb-2">💼 Diversificação Superior</h3>
-                  <p className="text-sm opacity-90">
-                    3 ativos não-correlacionados que reduzem risco e aumentam retorno
-                  </p>
-                </div>
-              </div>
-              
-              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6">
-                <p className="text-xl font-semibold mb-4">
-                  🚀 Transforme sua floresta em um ativo financeiro que se valoriza automaticamente
-                </p>
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Button size="lg" className="bg-white text-emerald-600 hover:bg-gray-100 font-bold">
-                    <Calculator className="h-5 w-5 mr-2" />
-                    Calcular Retorno Esperado
-                  </Button>
-                  <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-emerald-600 font-bold">
-                    <BarChart3 className="h-5 w-5 mr-2" />
-                    Ver Análise Completa
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </section>
-        */}
 
       </main>
     </div>

@@ -1,4 +1,3 @@
-
 /**
  * Serviço de Dependências para Recálculo Automático
  * 
@@ -137,50 +136,50 @@ export const ASSET_DEPENDENCIES: Record<string, AssetDependency> = {
   },
   'vus': {
     id: 'vus',
-    name: 'VUS',
+    name: 'Valor de Uso do Solo',
     dependsOn: ['milho', 'soja', 'boi_gordo', 'usd'],
     calculationType: 'sub-index',
     formula: '((Boi*25*35%) + (Milho*25*30%) + (Soja*25*35%)) * (1-4.8%)',
     n8nCollection: 'vus',
-    description: 'Valor Universal Sustentável (commodities agrícolas)'
+    description: 'Representação financeira do valor gerado pela conservação'
   },
   'vmad': {
     id: 'vmad',
-    name: 'VMAD',
+    name: 'Valor da Madeira',
     dependsOn: ['madeira', 'usd'],
     calculationType: 'sub-index',
     formula: 'rent_media_madeira * 5',
     n8nCollection: 'vmad',
-    description: 'Valor da Madeira'
+    description: 'Indexado ao manejo florestal sustentável'
   },
   'valor_uso_solo': {
     id: 'valor_uso_solo',
-    name: 'Valor Uso Solo',
+    name: 'Valor de Uso do Solo (Agregado)',
     dependsOn: ['vus', 'vmad', 'carbono_crs', 'Agua_CRS'],
     calculationType: 'index',
     formula: 'VUS + Vmad + Carbono_CRS + Agua_CRS',
     n8nCollection: 'valor_uso_solo',
-    description: 'Valor total do uso do solo'
+    description: 'Soma dos componentes de valoração territorial'
   },
 
   // === CRÉDITOS DE SUSTENTABILIDADE ===
   'carbono_crs': {
     id: 'carbono_crs',
-    name: 'Carbono CRS',
+    name: 'Crédito de Carbono',
     dependsOn: ['carbono', 'eur'],
     calculationType: 'credit',
     formula: 'rent_media_carbono * 25',
     n8nCollection: 'carbono_crs',
-    description: 'Crédito de Carbono para Sustentabilidade'
+    description: 'Monetização do sequestro de carbono'
   },
   'Agua_CRS': {
     id: 'Agua_CRS',
-    name: 'Água CRS',
+    name: 'Crédito de Água',
     dependsOn: ['ch2o_agua'],
     calculationType: 'credit',
     formula: 'valor_CH2O',
     n8nCollection: 'Agua_CRS',
-    description: 'Crédito de Água para Sustentabilidade'
+    description: 'Monetização da proteção de recursos hídricos'
   },
 
   // === ÍNDICE PRINCIPAL ===

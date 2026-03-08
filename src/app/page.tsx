@@ -154,6 +154,17 @@ export default function LandingPage() {
                   {heroContent.subtitle}
                 </p>
                 
+                <div className="flex flex-wrap gap-4">
+                  <Button asChild size="lg" className="h-14 px-8 rounded-full bg-white text-black hover:bg-emerald-50 font-bold transition-all hover:scale-105 shadow-2xl shadow-black/40 border-none group">
+                    <Link href="/login">
+                      Começar agora
+                      <ChevronRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+                    </Link>
+                  </Button>
+                  <Button size="lg" variant="outline" className="h-14 px-8 rounded-full border-2 border-white/40 bg-transparent text-white hover:bg-white hover:text-black font-bold transition-all hover:scale-105 backdrop-blur-sm" asChild>
+                    <Link href="mailto:contato@bmv.global">Falar com consultor</Link>
+                  </Button>
+                </div>
               </div>
 
               {/* Right Side: Eco-Monitor */}
@@ -230,24 +241,21 @@ export default function LandingPage() {
               {[
                 {
                   icon: TreePine,
-                  title: "Valor Econômico da Floresta (VMAD)",
-                  tag: "VMAD",
+                  title: "Valor Econômico da Floresta",
                   color: "emerald",
                   desc: "Mede o potencial econômico direto da floresta a partir da exploração sustentável de seus recursos, principalmente madeireiros. O cálculo considera o preço comercial das espécies exploradas sob manejo de baixo impacto, ciclos de corte controlados e custos operacionais, refletindo o uso responsável da floresta como ativo produtivo.",
                   method: "Adaptação do método americano de valoração de ativos florestais, considerando análise de ciclo de oportunidades e preços de mercado certificados."
                 },
                 {
                   icon: LandPlot,
-                  title: "Valor de Transformação Territorial (VUS)",
-                  tag: "VUS",
+                  title: "Valor de Transformação Territorial",
                   color: "blue",
                   desc: "Estima o valor que a terra teria caso a cobertura florestal fosse convertida para outros usos produtivos — como agricultura, pecuária, indústria ou expansão urbana. Esse pilar reflete o valor alternativo da área, ou seja, o potencial econômico de substituição da floresta por outra atividade.",
                   method: "Adota uma adaptação do método americano de valoração de terras, considerando produtividade potencial, retorno esperado, custos de conversão e operação."
                 },
                 {
                   icon: ShieldCheck,
-                  title: "Valor Socioambiental da Conservação (CRS)",
-                  tag: "CRS",
+                  title: "Valor Socioambiental da Conservação",
                   color: "purple",
                   desc: "Traduz o valor dos benefícios que a floresta em pé gera para a sociedade, como regulação do clima, sequestro de carbono, purificação da água, proteção do solo e manutenção da biodiversidade. Representa o investimento necessário para manter esses serviços ecossistêmicos essenciais.",
                   method: "Inspirada no modelo TEEB (The Economics of Ecosystems and Biodiversity), combina a quantificação de serviços com custos de conservação."
@@ -266,7 +274,6 @@ export default function LandingPage() {
                       <div className="p-6 rounded-3xl bg-white shadow-sm group-hover:scale-110 transition-transform duration-500">
                         <pilar.icon className="h-12 w-12" />
                       </div>
-                      <Badge variant="outline" className="border-current font-black px-4">{pilar.tag}</Badge>
                       <h3 className="text-xl font-black leading-tight">{pilar.title}</h3>
                     </div>
                     <div className="md:w-2/3 p-12 lg:p-16 space-y-6 flex flex-col justify-center">

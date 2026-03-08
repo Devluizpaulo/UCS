@@ -1,4 +1,3 @@
-
 export type SupportedLanguage = 'pt' | 'en' | 'es' | 'ru' | 'zh';
 
 export const languages = [
@@ -195,35 +194,35 @@ export const translations: Record<SupportedLanguage, Translations> = {
       },
       pdm: {
         title: "UCS – Unidade de Créditos de Sustentabilidade",
-        subtitle: "Transformando la conservación en activos financeiros medibles",
+        subtitle: "Transformando a conservação em ativos financeiros mensuráveis",
         what_is: {
           title: "O que é a UCS",
-          p1: "A &lt;strong&gt;Unidade de Créditos de Sustentabilidade (UCS)&lt;/strong&gt; é um &lt;strong&gt;Ecoasset&lt;/strong&gt; — a representação financeira do valor gerado pela conservação da floresta. Ela converte benefícios ambientais — como manutenção de estoques de carbono, proteção da água e biodiversidade — em um ativo econômico mensurável, transparente e auditável.",
+          p1: "A <strong>Unidade de Créditos de Sustentabilidade (UCS)</strong> é um <strong>Ecoasset</strong> — a representação financeira do valor gerado pela conservação da floresta. Ela converte benefícios ambientais — como manutenção de estoques de carbono, proteção da água e biodiversidade — em um ativo econômico mensurável, transparente e auditável.",
           p2: "A UCS utiliza uma base metodológica que considera dimensões econômicas e socioambientais da floresta, permitindo que empresas e investidores apoiem a preservação com métricas claras de desempenho e impacto."
         },
-        pillars_title: "Os Três Pilares da UCS",
+        pillars_title: "Os Três Pilares do Sistema",
         pillars: {
             vmad: {
-                title: 'Valor Econômico da Floresta (VMAD)',
+                title: 'Valor Econômico da Floresta',
                 definition: 'Mede o potencial econômico direto da floresta a partir da exploração sustentável de seus recursos, principalmente madeireiros. O cálculo considera o preço comercial das espécies exploradas sob manejo de baixo impacto, ciclos de corte controlados e custos operacionais, refletindo o uso responsável da floresta como ativo produtivo.',
                 origin: 'O valor é obtido com base nas cotações de mercado da madeira extraída, considerando espécies regionais e índices de commodities florestais.',
                 methodology: 'Baseada em modelos consagrados de valoração de ativos florestais, combinando análise de custo de oportunidade e o método americano de avaliação, levando em conta composição de espécies, custos logísticos, preço médio por metro cúbico e variações de mercado.'
             },
             vus: {
-                title: 'Valor de Transformação Territorial (VUS)',
+                title: 'Valor de Transformação Territorial',
                 definition: 'Estima o valor que a terra teria caso a cobertura florestal fosse convertida para outros usos produtivos — como agricultura, pecuária, indústria ou expansão urbana. Esse pilar reflete o valor alternativo da área, ou seja, o potencial econômico de substituição da floresta por outra atividade.',
                 origin: 'É derivado das cotações de commodities agrícolas, como milho, soja e boi gordo, utilizadas como referência para estimar a produtividade e o retorno financeiro dos usos alternativos da terra.',
                 methodology: 'Adota uma adaptação do método americano de valoração de terras, considerando produtividade potencial, retorno esperado, custos de conversão e operação, além de variáveis regionais como acesso, infraestrutura e logística.'
             },
             crs: {
-                title: 'Valor Socioambiental da Conservação (CRS)',
+                title: 'Valor Socioambiental da Conservação',
                 definition: 'Traduz o valor dos benefícios que a floresta em pé gera para a sociedade, como regulação do clima, sequestro de carbono, purificação da água, proteção do solo e manutenção da biodiversidade. Representa o investimento necessário para manter esses serviços ecossistêmicos e o retorno econômico e social associado à preservação.',
                 origin: 'Baseia-se nos serviços ambientais mensuráveis, especialmente o uso da água e o crédito de carbono, que expressam financeiramente o papel da floresta como infraestrutura natural.',
                 methodology: 'Inspirada em referências internacionais, como o TEEB (The Economics of Ecosystems and Biodiversity), combina a quantificação dos serviços ecossistêmicos com custos de conservação e métricas de impacto social e ambiental, ajustadas à realidade local.'
             }
         },
         methodology: "Metodologia de Avaliação",
-        applications_title: "Aplicações Práticas da UCS",
+        applications_title: "Aplicações Práticas",
         applications: {
             compensation: 'Compensação Ambiental',
             carbon_credits: 'Créditos de Carbono',
@@ -232,13 +231,13 @@ export const translations: Record<SupportedLanguage, Translations> = {
         },
         conclusion: {
           title: "Equilíbrio Econômico-Ambiental",
-          p1: "A UCS quantifica o equilíbrio entre explorar e preservar. Com base em dados financeiros concretos, o modelo demonstra que a preservação também tem valor econômico, permitindo que tomadores de decisão comparem cenários e investidores identifiquem oportunidades na economia verde."
+          p1: "O sistema quantifica o equilíbrio entre explorar e preservar. Com base em dados financeiros concretos, o modelo demonstra que a preservação também tem valor econômico, permitindo que tomadores de decisão comparem cenários e investidores identifiquem oportunidades na economia verde."
         }
       },
       ucs: {
         badge: "O Ativo Final",
         title: "Unidade de Créditos de Sustentabilidade – UCS",
-        p1: "As Unidades de Crédito de Sustentabilidade (UCS) são a materialização do valor gerado pelo PDM. Elas permitem que corporações contribuam com a proteção e restauração de biomas, alinhando-se às diretrizes do Acordo de Paris.",
+        p1: "As Unidades de Crédito de Sustentabilidade (UCS) são a materialização do valor gerado pelo monitoramento ambiental. Elas permitem que corporações contribuam com a proteção e restauração de biomas, alinhando-se às diretrizes do Acordo de Paris.",
         p2: "Empresas com passivos de emissões podem comprar créditos UCS para compensar seu impacto, financiando diretamente projetos que mantêm estoques de carbono e reduzem emissões de GEE, equilibrando o nível de emissões na atmosfera.",
         image_alt: "Mãos segurando uma planta jovem"
       },
@@ -372,29 +371,29 @@ export const translations: Record<SupportedLanguage, Translations> = {
         subtitle: "Transforming conservation into measurable financial assets",
         what_is: {
           title: "What is UCS",
-          p1: "The &lt;strong&gt;Unit of Sustainability Credits (UCS)&lt;/strong&gt; is an &lt;strong&gt;Ecoasset&lt;/strong&gt; — the financial representation of the value generated by forest conservation. It converts environmental benefits — such as carbon stocks, water protection and biodiversity — into a measurable, transparent and auditable economic asset.",
+          p1: "The <strong>Unit of Sustainability Credits (UCS)</strong> is an <strong>Ecoasset</strong> — the financial representation of the value generated by forest conservation. It converts environmental benefits — such as carbon stocks, water protection and biodiversity — into a measurable, transparent and auditable economic asset.",
           p2: "UCS applies a methodological basis that considers both economic and socio-environmental dimensions of the forest, enabling companies and investors to support preservation with clear performance and impact metrics."
         },
-        pillars_title: "The Three Pillars of UCS",
+        pillars_title: "The Three Pillars of the System",
         pillars: {
             vmad: {
-                title: 'Economic Value of the Forest (VMAD)',
+                title: 'Economic Value of the Forest',
                 definition: 'Represents the direct economic potential of the forest through sustainable timber exploitation, calculating the commercial price of the extracted and sold wood.',
-                methodology: 'Combines the American Method of asset valuation with Opportunity Cost analysis, considering: species, costs, and average price per species.'
+                methodology: 'Based on recognized forest asset valuation models, combining opportunity cost analysis and the American appraisal method, considering species composition, logistical costs, average price per cubic meter and market variations.'
             },
             vus: {
-                title: 'Territorial Transformation Value (VUS)',
+                title: 'Territorial Transformation Value',
                 definition: 'Estimates the economic value of the land if it were converted to other productive uses—agriculture, industry, or urban. It represents the opportunity cost of alternative land use.',
-                methodology: 'Based on the American Method adapted for land valuation, considering: potential productivity, expected return, and operational costs.'
+                methodology: 'Based on the American Method adapted for land valuation, considering potential productivity, expected return, and operational costs, plus regional variables such as access, infrastructure and logistics.'
             },
             crs: {
-                title: 'Socio-environmental Conservation Value (CRS)',
+                title: 'Socio-environmental Conservation Value',
                 definition: 'Quantifies the investment needed to maintain the ecosystem services the forest provides—such as climate regulation, water, carbon, and biodiversity.',
-                methodology: 'Based on the international TEEB (The Economics of Ecosystems and Biodiversity) model, contemplating: carbon sequestration, water cycling, and biodiversity protection.'
+                methodology: 'Inspired by international references such as the TEEB (The Economics of Ecosystems and Biodiversity) model, combining quantification of ecosystem services with conservation costs and social/environmental impact metrics adjusted to local reality.'
             }
         },
         methodology: "Valuation Methodology",
-        applications_title: "Practical Applications of UCS",
+        applications_title: "Practical Applications",
         applications: {
             compensation: 'Environmental Compensation',
             carbon_credits: 'Carbon Credits',
@@ -403,13 +402,13 @@ export const translations: Record<SupportedLanguage, Translations> = {
         },
         conclusion: {
           title: "Economic-Environmental Balance",
-          p1: "UCS quantifies the balance between exploiting and preserving. Based on concrete financial data, the model demonstrates that preservation also has economic value, allowing decision-makers to compare scenarios and investors to identify opportunities in the green economy."
+          p1: "The system quantifies the balance between exploiting and preserving. Based on concrete financial data, the model demonstrates that preservation also has economic value, allowing decision-makers to compare scenarios and investors to identify opportunities in the green economy."
         }
       },
       ucs: {
         badge: "The Final Asset",
         title: "Unit of Sustainability Credits – UCS",
-        p1: "The Units of Sustainability Credits (UCS) are the materialization of the value generated by the PDM. They allow corporations to contribute to the protection and restoration of biomes, aligning with the guidelines of the Paris Agreement.",
+        p1: "The Units of Sustainability Credits (UCS) are the materialization of the value generated by environmental monitoring. They allow corporations to contribute to the protection and restoration of biomes, aligning with the guidelines of the Paris Agreement.",
         p2: "Companies with emission liabilities can purchase UCS credits to offset their impact, directly financing projects that maintain carbon stocks and reduce GHG emissions, balancing the level of GHG emissions in the atmosphere.",
         image_alt: "Hands holding a young plant"
       },
@@ -540,47 +539,47 @@ export const translations: Record<SupportedLanguage, Translations> = {
       },
       pdm: {
         title: "UCS – Unidad de Créditos de Sostenibilidad",
-        subtitle: "Transformando la conservación en activos financieros medibles",
+        subtitle: "Transformando la conservación en activos financieros mensurables",
         what_is: {
           title: "¿Qué es la UCS?",
-          p1: "La &lt;strong&gt;Unidad de Créditos de Sostenibilidad (UCS)&lt;/strong&gt; es un &lt;strong&gt;Ecoasset&lt;/strong&gt; — la representación financiera del valor generado por la conservación del bosque. Convierte beneficios ambientales — como stocks de carbono, protección del agua y biodiversidad — en un activo económico medible, transparente y auditable.",
-          p2: "La UCS utiliza una base metodológica que considera dimensiones económicas y socioambientales del bosque, permitiendo a empresas e inversores apoyar la preservación con métricas claras de desempeño e impacto."
+          p1: "La <strong>Unidad de Créditos de Sostenibilidad (UCS)</strong> es un <strong>Ecoasset</strong> — la representación financiera del valor generado por la conservación del bosque. Convierte beneficios ambientales — como stocks de carbono, protección del agua y biodiversidad — en un activo económico medible, transparente y auditable.",
+          p2: "La UCS utiliza una base metodológica que considera dimensiones económicas y socioambientales del bosque, permitiendo a empresas e inversores apoyar la preservação con métricas claras de desempeño e impacto."
         },
-        pillars_title: "Los Tres Pilares de la UCS",
+        pillars_title: "Los Tres Pilares del Sistema",
         pillars: {
             vmad: {
-                title: 'Valor Económico del Bosque (VMAD)',
+                title: 'Valor Económico del Bosque',
                 definition: 'Representa el potencial económico directo del bosque a través de la explotación maderera sostenible, calculando el precio comercial de la madera extraída y vendida.',
-                methodology: 'Combina el Método Americano de valoración de activos con el análisis de Costo de Oportunidad, considerando: especies, costos y precio promedio por especie.'
+                methodology: 'Basado en modelos de valoración de activos forestales reconocidos, combinando el análisis de costes de oportunidad y el método de tasación americano, considerando la composición de especies, costes logísticos, precio medio por metro cúbico y variaciones del mercado.'
             },
             vus: {
-                title: 'Valor de Transformación Territorial (VUS)',
+                title: 'Valor de Transformación Territorial',
                 definition: 'Estima el valor económico de la tierra si se convirtiera a otros usos productivos (agrícola, industrial o urbano). Representa el costo de oportunidad del uso alternativo del suelo.',
-                methodology: 'Basado en el Método Americano adaptado a la valoración de tierras, considerando: productividad potencial, retorno esperado y costos operativos.'
+                methodology: 'Basado en el Método Americano adaptado a la valoración de tierras, considerando la productividad potencial, el rendimiento esperado y los costes operativos, además de variables regionales como el acceso, la infraestructura y la logística.'
             },
             crs: {
-                title: 'Valor Socioambiental de la Conservación (CRS)',
+                title: 'Valor Socioambiental de la Conservación',
                 definition: 'Cuantifica la inversión necesaria para mantener los servicios ecosistémicos que ofrece el bosque, como la regulación climática, el agua, el carbono y la biodiversidad.',
-                methodology: 'Basado en el modelo internacional TEEB (La Economía de los Ecosistemas y la Biodiversidad), contemplando: secuestro de carbono, ciclo del agua y protección de la biodiversidad.'
+                methodology: 'Inspirado en referencias internacionales como el modelo TEEB (The Economics of Ecosystems and Biodiversity), combina la cuantificación de los servicios ecosistémicos con los costes de conservación y métricas de impacto social/ambiental ajustadas a la realidad local.'
             }
         },
         methodology: "Metodología de Valoración",
-        applications_title: "Aplicaciones Prácticas de la UCS",
+        applications_title: "Aplicaciones Prácticas",
         applications: {
             compensation: 'Compensación Ambiental',
             carbon_credits: 'Créditos de Carbono',
             licensing: 'Licenciamiento Ambiental',
-            asset_management: 'Gestión de Activos'
+            asset_management: 'Gestión de Ativos'
         },
         conclusion: {
           title: "Equilibrio Económico-Ambiental",
-          p1: "La UCS cuantifica el equilibrio entre explotar y preservar. Basado en datos financieros concretos, el modelo demuestra que la preservación también tiene valor económico, permitiendo comparar escenarios e identificar oportunidades en la economía verde."
+          p1: "El sistema cuantifica el equilibrio entre explotar y preservar. Basado en datos financieros concretos, el modelo demuestra que la preservación también tiene valor económico, permitiendo comparar escenarios e identificar oportunidades en la economía verde."
         }
       },
       ucs: {
         badge: "El Activo Final",
         title: "Unidad de Créditos de Sostenibilidad – UCS",
-        p1: "Las Unidades de Crédito de Sostenibilidad (UCS) son la materialización del valor generado por el PDM. Permiten a las corporaciones contribuir a la protección y restauración de biomas, alineándose con las directrices del Acuerdo de París.",
+        p1: "Las Unidades de Crédito de Sostenibilidad (UCS) son la materialización del valor generado por el monitoreo ambiental. Permiten a las corporaciones contribuir a la protección y restauración de biomas, alineándose con las directrices del Acuerdo de París.",
         p2: "Las empresas con pasivos de emisiones pueden comprar créditos UCS para compensar su impacto, financiando directamente proyectos que mantienen las reservas de carbono y reducen las emisiones de GEI, equilibrando el nivel de emisiones de GEI en la atmósfera.",
         image_alt: "Manos sosteniendo una planta joven"
       },
@@ -591,7 +590,7 @@ export const translations: Record<SupportedLanguage, Translations> = {
       blockchain: {
         badge: "Tecnología y Seguridad",
         title: "Blockchain en la Preservación del Medio Ambiente",
-        p1: "El uso de blockchain en la sostenibilidad social y ambiental está revelando el potencial de la tecnología para revolucionar la relación entre la sociedad y las iniciativas que buscan reducir los impactos ambientales.",
+        p1: "El uso de blockchain en la sostenibilidad social e ambiental está revelando el potencial de la tecnología para revolucionar la relación entre la sociedad y las iniciativas que buscan reducir los impactos ambientales.",
         p2: "Al proporcionar seguridad y trazabilidad a las transacciones, fortalece la confianza entre compradores y vendedores y abre nuevas posibilidades para el mercado. La plataforma UCS se basa en la seguridad del registro en Blockchain como uno de sus principales diferenciadores, garantizando la integridad y el origen de cada crédito de sostenibilidad.",
         image_alt: "Visualización abstracta de una red blockchain"
       },
@@ -602,24 +601,24 @@ export const translations: Record<SupportedLanguage, Translations> = {
     },
     excelPreview: {
       title: 'Vista Previa del Reporte Excel',
-      subtitle: 'Datos para',
-      totalAssets: 'Total de Activos',
+      subtitle: 'Dados para',
+      totalAssets: 'Total de Ativos',
       rising: 'En Alza',
       falling: 'En Baja',
       stable: 'Estables',
       tabs: {
-        mainData: '📊 Datos Principales',
-        distribution: '🍕 Distribución',
-        topVariations: '📈 Top Variaciones',
+        mainData: '📊 Dados Principais',
+        distribution: '🍕 Distribuição',
+        topVariations: '📈 Top Variações',
       },
       table: {
-        asset: 'Activo',
-        price: 'Precio',
-        variation: 'Variación',
+        asset: 'Ativo',
+        price: 'Preço',
+        variation: 'Variação',
       },
       distribution: {
-        title: 'Distribución por Categoría',
-        assets: 'activo(s)',
+        title: 'Distribuição por Categoria',
+        assets: 'ativo(s)',
       },
       topVariations: {
         title: 'Top 10 Mayores Variaciones',
@@ -714,29 +713,29 @@ export const translations: Record<SupportedLanguage, Translations> = {
         subtitle: "Преобразование сохранения в измеримые финансовые активы",
         what_is: {
           title: "Что такое UCS",
-          p1: "The &lt;strong&gt;Единица кредитов на устойчивое развитие (UCS)&lt;/strong&gt; — это &lt;strong&gt;Ecoasset&lt;/strong&gt; — финансовое представление ценности, создаваемой сохранением леса. Она конвертирует экологические выгоды — запасы углерода, защиту воды и биоразнообразие — в измеряемый, прозрачный и поддающийся аудиту экономический актив.",
+          p1: "The <strong>Единица кредитов на устойчивое развитие (UCS)</strong> — это <strong>Ecoasset</strong> — финансовое представление ценности, создаваемой сохранением леса. Она конвертирует экологические выгоды — запасы углерода, защиту воды и биоразнообразие — в измеряемый, прозрачный и поддающийся аудиту экономический актив.",
           p2: "UCS опирается на методологическую базу, учитывающую экономические и социально-экологические измерения леса, что позволяет компаниям и инвесторам поддерживать сохранение с понятными метриками эффективности и воздействия."
         },
-        pillars_title: "Три столпа UCS",
+        pillars_title: "Три столпа Системы",
         pillars: {
             vmad: {
-                title: 'Экономическая ценность леса (VMAD)',
+                title: 'Экономическая ценность леса',
                 definition: 'Представляет прямой экономический потенциал леса за счет устойчивой лесозаготовки, рассчитывая коммерческую цену добытой и проданной древесины.',
-                methodology: 'Сочетает американский метод оценки активов с анализом альтернативных издержек, учитывая: виды, затраты и среднюю цену за вид.'
+                methodology: 'На основе признанных моделей оценки лесных активов, сочетающих анализ альтернативных издержек и американский метод оценки, с учетом видового состава, логистических затрат, средней цены за кубический метр и рыночных колебаний.'
             },
             vus: {
-                title: 'Ценность территориальной трансформации (VUS)',
+                title: 'Ценность территориальной трансформации',
                 definition: 'Оценивает экономическую стоимость земли, если бы она была преобразована для других производственных целей — сельского хозяйства, промышленности или городского строительства. Представляет собой альтернативную стоимость использования земли.',
-                methodology: 'Основано на американском методе, адаптированном для оценки земель, с учетом: потенциальной производительности, ожидаемой доходности и операционных расходов.'
+                methodology: 'На основе американского метода, адаптированного для оценки земель, с учетом потенциальной производительности, ожидаемой доходности и эксплуатационных расходов, а также региональных переменных, таких как доступ, инфраструктура и логистика.'
             },
             crs: {
-                title: 'Социально-экологическая ценность сохранения (CRS)',
+                title: 'Социально-экологическая ценность сохранения',
                 definition: 'Количественно определяет инвестиции, необходимые для поддержания экосистемных услуг, которые предоставляет лес, — таких как регулирование климата, вода, углерод и биоразнообразие.',
-                methodology: 'Основано на международной модели TEEB (Экономика экосистем и биоразнообразия), включая: поглощение углерода, круговорот воды и защиту биоразнообразия.'
+                methodology: 'Вдохновленный международными рекомендациями, такими как модель TEEB (The Economics of Ecosystems and Biodiversity), он сочетает количественную оценку экосистемных услуг с затратами на сохранение и показателями социального/экологического воздействия, адаптированными к местным реалиям.'
             }
         },
         methodology: "Методология оценки",
-        applications_title: "Практическое применение UCS",
+        applications_title: "Практическое применение",
         applications: {
             compensation: 'Экологическая компенсация',
             carbon_credits: 'Углеродные кредиты',
@@ -745,13 +744,13 @@ export const translations: Record<SupportedLanguage, Translations> = {
         },
         conclusion: {
           title: "Экономико-экологический баланс",
-          p1: "UCS количественно определяет баланс между эксплуатацией и сохранением. На основе конкретных финансовых данных модель демонстрирует экономическую ценность сохранения, позволяя сравнивать сценарии и выявлять возможности зеленой экономики."
+          p1: "Система количественно определяет баланс между эксплуатацией и сохранением. На основе конкретных финансовых данных модель демонстрирует экономическую ценность сохранения, позволяя сравнивать сценарии и выявлять возможности зеленой экономики."
         }
       },
       ucs: {
         badge: "Конечный актив",
         title: "Единица кредитов на устойчивое развитие – UCS",
-        p1: "Единицы кредитов на устойчивое развитие (UCS) являются материализацией ценности, создаваемой PDM. Они позволяют корпорациям вносить вклад в защиту и восстановление биомов, соответствуя руководящим принципам Парижского соглашения.",
+        p1: "Единицы кредитов на устойчивое развитие (UCS) являются материализацией ценности, создаваемой экологическим мониторингом. Они позволяют корпорациям вносить вклад в защиту и восстановление биомов, соответствуя руководящим принципам Парижского соглашения.",
         p2: "Компании с обязательствами по выбросам могут приобретать кредиты UCS для компенсации своего воздействия, напрямую финансируя проекты, которые поддерживают запасы углерода и сокращают выбросы ПГ, балансируя уровень выбросов ПГ в атмосфере.",
         image_alt: "Руки, держащие молодое растение"
       },
@@ -885,29 +884,29 @@ export const translations: Record<SupportedLanguage, Translations> = {
         subtitle: "将保护转化为可衡量的金融资产",
         what_is: {
           title: "什么是UCS",
-          p1: "The &lt;strong&gt;可持续发展信用单位 (UCS)&lt;/strong&gt; 是一种 &lt;strong&gt;Ecoasset&lt;/strong&gt; —— 对森林保护所创造价值的金融化表示。它把环境效益（碳储量、水资源保护与生物多样性）转化为可衡量、透明且可审计的经济资产。",
+          p1: "The <strong>可持续发展信用单位 (UCS)</strong> 是一种 <strong>Ecoasset</strong> —— 对森林保护所创造价值的金融化表示。它把环境效益（碳储量、水资源保护与生物多样性）转化为可衡量、透明且可审计的经济资产。",
           p2: "UCS 采用同时考虑经济与社会—环境维度的方法学基础，使企业和投资者能够以清晰的绩效与影响指标支持保护。"
         },
-        pillars_title: "UCS的三大支柱",
+        pillars_title: "系统的三大支柱",
         pillars: {
             vmad: {
-                title: '森林的经济价值 (VMAD)',
+                title: '森林的经济价值',
                 definition: '通过可持续的木材开采，代表森林的直接经济潜力，计算提取和销售的木材的商业价格。',
-                methodology: '将美国资产评估方法与机会成本分析相结合，考虑：物种、成本和每种物种的平均价格。'
+                methodology: '基于公认的森林资产评估模型，结合机会成本分析和美国评估方法，考虑物种组成、物流成本、每立方米平均价格和市场波动。'
             },
             vus: {
-                title: '土地转型价值 (VUS)',
+                title: '土地转型价值',
                 definition: '估算土地如果转为其他生产性用途（农业、工业或城市）的经济价值。它代表了土地替代用途的机会成本。',
-                methodology: '基于适用于土地评估的美国方法，考虑：潜在生产力、预期回报和运营成本。'
+                methodology: '基于适用于土地评估的美国方法，考虑潜在生产力、预期回报和运营成本，以及交通、基础设施和物流等区域变量。'
             },
             crs: {
-                title: '社会环境保育价值 (CRS)',
+                title: '社会环境保育价值',
                 definition: '量化维持森林提供的生态系统服务（如气候调节、水、碳和生物多样性）所需的投资。',
-                methodology: '基于国际TEBB（生态系统和生物多样性经济学）模型，包括：碳封存、水循环和生物多样性保护。'
+                methodology: '受到 TEEB（生态系统和生物多样性经济学）模型等国际参考资料的启发，它将生态系统服务的量化与根据当地现实调整的保护成本和社会/环境影响指标结合起来。'
             }
         },
         methodology: "评估方法",
-        applications_title: "UCS的实际应用",
+        applications_title: "实际应用",
         applications: {
             compensation: '环境补偿',
             carbon_credits: '碳信用',
@@ -916,13 +915,13 @@ export const translations: Record<SupportedLanguage, Translations> = {
         },
         conclusion: {
           title: "经济—环境平衡",
-          p1: "UCS 量化了开发与保护之间的平衡。基于具体的财务数据，该模型表明保护也具有经济价值，使决策者能够比较各种情景、投资者能够识别绿色经济中的机会。"
+          p1: "该系统量化了开发与保护之间的平衡。基于具体的财务数据，该模型表明保护也具有经济价值，使决策者能够比较各种情景、投资者能够识别绿色经济中的机会。"
         }
       },
       ucs: {
         badge: "最终资产",
         title: "可持续发展信用单位 – UCS",
-        p1: "可持续发展信用单位（UCS）是由PDM产生的价值的实体化。它使企业能够为生物群系的保护与修复做出贡献，并与《巴黎协定》的指导方针保持一致。",
+        p1: "可持续发展信用单位（UCS）是由环境监测产生的价值的实体化。它使企业能够为生物群系的保护与修复做出贡献，并与《巴黎协定》的指导方针保持一致。",
         p2: "具有排放负债的公司可以购买UCS信用以抵消其影响，直接资助维持碳储量并减少温室气体排放的项目，从而平衡大气中的排放水平。",
         image_alt: "手捧幼苗"
       },
