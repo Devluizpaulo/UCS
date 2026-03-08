@@ -244,21 +244,18 @@ export default function LandingPage() {
                   title: "Valor Econômico da Floresta",
                   color: "emerald",
                   desc: "Mede o potencial econômico direto da floresta a partir da exploração sustentável de seus recursos, principalmente madeireiros. O cálculo considera o preço comercial das espécies exploradas sob manejo de baixo impacto, ciclos de corte controlados e custos operacionais, refletindo o uso responsável da floresta como ativo produtivo.",
-                  method: "Adaptação do método americano de valoração de ativos florestais, considerando análise de ciclo de oportunidades e preços de mercado certificados."
                 },
                 {
                   icon: LandPlot,
                   title: "Valor de Transformação Territorial",
                   color: "blue",
                   desc: "Estima o valor que a terra teria caso a cobertura florestal fosse convertida para outros usos produtivos — como agricultura, pecuária, indústria ou expansão urbana. Esse pilar reflete o valor alternativo da área, ou seja, o potencial econômico de substituição da floresta por outra atividade.",
-                  method: "Adota uma adaptação do método americano de valoração de terras, considerando produtividade potencial, retorno esperado, custos de conversão e operação."
                 },
                 {
                   icon: ShieldCheck,
                   title: "Valor Socioambiental da Conservação",
                   color: "purple",
                   desc: "Traduz o valor dos benefícios que a floresta em pé gera para a sociedade, como regulação do clima, sequestro de carbono, purificação da água, proteção do solo e manutenção da biodiversidade. Representa o investimento necessário para manter esses serviços ecossistêmicos essenciais.",
-                  method: "Inspirada no modelo TEEB (The Economics of Ecosystems and Biodiversity), combina a quantificação de serviços com custos de conservação."
                 }
               ].map((pilar, idx) => (
                 <Card key={idx} className="group border-none bg-white rounded-[3rem] overflow-hidden shadow-sm hover:shadow-xl transition-all duration-700 border border-slate-100">
@@ -278,10 +275,6 @@ export default function LandingPage() {
                     </div>
                     <div className="md:w-2/3 p-12 lg:p-16 space-y-6 flex flex-col justify-center">
                       <p className="text-lg text-slate-600 leading-relaxed font-medium text-justify">{pilar.desc}</p>
-                      <div className="pt-6 border-t border-slate-100">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-2">Metodologia Técnica</span>
-                        <p className="text-sm text-slate-500 italic text-justify">{pilar.method}</p>
-                      </div>
                     </div>
                   </div>
                 </Card>
