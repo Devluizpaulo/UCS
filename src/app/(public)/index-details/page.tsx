@@ -1,12 +1,12 @@
 'use client';
 
 import { Suspense } from 'react';
-import Image from 'image';
+import Image from 'next/image';
 import { PageHeader } from '@/components/page-header';
 import { 
   Leaf, TrendingUp, Globe, DollarSign, Shield, Zap, TreePine, Target, Award, Coins,
   Building2, Users, BarChart3, Calculator, MapPin, Clock, CheckCircle, ArrowRight,
-  PieChart, Activity, Layers, Mountain, Droplets, Wind, Sun, Zap as Lightning
+  PieChart, Activity, Layers, Mountain, Droplets, Wind, Sun, LandPlot
 } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { parseISO, isValid } from 'date-fns';
