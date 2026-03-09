@@ -11,23 +11,18 @@ import {
   SidebarProvider,
   SidebarInset,
   useSidebar,
-  SidebarTrigger,
 } from '@/components/ui/sidebar';
 import {
-  LayoutDashboard,
   TrendingUp,
-  Users,
   LogOut,
-  Sparkles,
   History,
   PieChart,
   BarChart3,
-  SlidersHorizontal,
   ChevronLeft,
   User,
   LayoutGrid,
 } from 'lucide-react';
-import Link from 'next/link';
+import Link from 'next/navigation';
 import { usePathname } from 'next/navigation';
 import { useAuth, useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
@@ -71,7 +66,7 @@ function UserProfile() {
     return (
         <>
             <div 
-                className="flex items-center gap-3 p-4 cursor-pointer hover:bg-slate-50 transition-colors border-t border-slate-100 mt-auto"
+                className="flex items-center gap-3 p-4 cursor-pointer hover:bg-slate-50 transition-colors border-t border-slate-100 mt-auto bg-white"
                 onClick={() => setIsProfileModalOpen(true)}
             >
                 <Avatar className="h-10 w-10 border border-slate-200">
@@ -116,7 +111,7 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const auth = useAuth();
   const firestore = useFirestore();
-  const { isMobile, setOpenMobile, toggleSidebar, state } = useSidebar();
+  const { isMobile, isTablet, setOpenMobile, toggleSidebar, state } = useSidebar();
   const { toast } = useToast();
 
   const [isAdmin, setIsAdmin] = useState(false);
@@ -172,7 +167,7 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
   }, [isUserLoading, user, router]);
 
   const handleMenuItemClick = () => {
-    if (isMobile) {
+    if (isMobile || isTablet) {
       setOpenMobile(false);
     }
   };
@@ -200,8 +195,8 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
         onReject={handleSignOut}
       />
       <div className={cn("flex h-screen w-full bg-white", lgpdConsent.required && !lgpdConsent.checked && 'blur-sm pointer-events-none')}>
-        <Sidebar className="border-r border-slate-100 bg-white" collapsible="icon">
-          <SidebarHeader className="h-20 flex flex-row items-center justify-between px-6">
+        <Sidebar className="border-r border-slate-100 bg-white shadow-xl z-50" collapsible="icon">
+          <SidebarHeader className="h-20 flex flex-row items-center justify-between px-6 bg-white">
             <Link href="/dashboard" className="flex items-center">
               <span className="font-bold text-4xl tracking-tighter text-[#1e293b]">bmv</span>
             </Link>
@@ -213,11 +208,11 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
             </button>
           </SidebarHeader>
           
-          <div className="px-6 group-data-[collapsible=icon]:hidden">
+          <div className="px-6 group-data-[collapsible=icon]:hidden bg-white">
             <div className="h-px bg-slate-50 w-full mb-6" />
           </div>
 
-          <SidebarContent className="px-4">
+          <SidebarContent className="px-4 bg-white">
             <SidebarMenu>
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.href} onClick={handleMenuItemClick} className="mb-1">
@@ -242,7 +237,7 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
             </SidebarMenu>
 
             {isAdmin && (
-              <div className="mt-6 border-t border-slate-50 pt-6">
+              <div className="mt-6 border-t border-slate-50 pt-6 bg-white">
                 <SidebarMenu>
                   <SidebarMenuItem onClick={handleMenuItemClick} className="mb-1">
                     <SidebarMenuButton
@@ -285,7 +280,7 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
             )}
           </SidebarContent>
           
-          <div className="mt-auto flex flex-col">
+          <div className="mt-auto flex flex-col bg-white">
             <UserProfile />
             <SidebarMenu className="px-4 pb-4">
               <SidebarMenuItem>
