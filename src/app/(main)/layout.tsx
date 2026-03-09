@@ -22,7 +22,7 @@ import {
   User,
   LayoutGrid,
 } from 'lucide-react';
-import Link from 'next/navigation';
+import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth, useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
