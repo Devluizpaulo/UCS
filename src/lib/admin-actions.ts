@@ -1,7 +1,6 @@
 'use server';
 
 import { getFirebaseAdmin } from '@/lib/firebase-admin-config';
-import type { UserRecord } from 'firebase-admin/auth';
 import type { AppUserRecord } from '@/lib/types';
 import { revalidatePath } from 'next/cache';
 import { Timestamp } from 'firebase-admin/firestore';
@@ -10,8 +9,6 @@ import { Timestamp } from 'firebase-admin/firestore';
 
 /**
  * Helper para obter a URL base da requisição atual.
- * Prioriza o domínio de produção exposto pela Vercel (VERCEL_URL) se disponível.
- * @returns A URL base (ex: https://seu-projeto.vercel.app)
  */
 function getBaseUrl() {
   if (process.env.VERCEL_URL) {
@@ -22,18 +19,16 @@ function getBaseUrl() {
 
 /**
  * Busca todos os usuários do Firebase Authentication e verifica se são admins.
- * Mapeia para um objeto estritamente serializável para evitar erros no Next.js 15.
+ * Retorna um objeto POJO estritamente serializável.
  */
 export async function getUsers(): Promise<AppUserRecord[]> {
   try {
     const { auth, db } = await getFirebaseAdmin();
     const userRecords = await auth.listUsers();
     
-    // Busca todos os documentos de admin de uma vez para otimização
     const adminDocs = await db.collection('roles_admin').get();
     const adminUids = new Set(adminDocs.docs.map(doc => doc.id));
     
-    // Mapeia para um objeto plano (POJO) removendo métodos e classes não serializáveis
     const users: AppUserRecord[] = userRecords.users.map(user => {
         return {
             uid: user.uid,
@@ -50,7 +45,8 @@ export async function getUsers(): Promise<AppUserRecord[]> {
         };
     });
 
-    return users;
+    // Garantia de serialização completa para o Next.js 15
+    return JSON.parse(JSON.stringify(users));
 
   } catch (error) {
     console.error('Error fetching users:', error);
@@ -106,7 +102,6 @@ export async function createUser(userData: {
 
     revalidatePath('/admin/users');
     
-    // Retorna apenas os campos necessários e serializáveis
     return { 
       user: {
         uid: userRecord.uid,

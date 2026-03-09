@@ -1,10 +1,9 @@
-
 'use client';
 
 import { Suspense } from 'react';
 import { PageHeader } from '@/components/page-header';
 import { EnhancedTrendAnalysis } from '@/components/enhanced-trend-analysis';
-import { TrendingUp } from 'lucide-react';
+import { TrendingUp, Loader2 } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { DateNavigator } from '@/components/date-navigator';
 import { parseISO, isValid } from 'date-fns';
@@ -28,8 +27,8 @@ function TrendAnalysisContent() {
     <div className="flex min-h-screen w-full flex-col">
       <PageHeader
         title="Análise Avançada e Séries Históricas"
-        description="Analise a performance histórica com gráficos interativos, tabelas detalhadas e métricas avançadas para cada ativo."
-        icon={TrendingUp}
+        description="Analise a performance histórica com gráficos interativos, tabelas detalhadas e métricas avançadas."
+        icon={<TrendingUp className="h-5 w-5 text-primary hidden sm:block" />}
       >
         <DateNavigator targetDate={targetDate} />
       </PageHeader>
@@ -42,7 +41,7 @@ function TrendAnalysisContent() {
 
 export default function TrendAnalysisPage() {
   return (
-    <Suspense fallback={<div>Carregando...</div>}>
+    <Suspense fallback={<div className="flex h-screen w-full items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
       <TrendAnalysisContent />
     </Suspense>
   );

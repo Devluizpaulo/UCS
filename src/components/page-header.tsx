@@ -1,7 +1,6 @@
-
 'use client';
 
-import type { ElementType, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import Link from 'next/link';
@@ -9,12 +8,12 @@ import Link from 'next/link';
 type PageHeaderProps = {
   title: string;
   description?: string;
-  icon?: ElementType;
+  icon?: ReactNode;
   children?: ReactNode;
   trigger?: ReactNode;
 };
 
-export function PageHeader({ title, description, icon: Icon, children, trigger }: PageHeaderProps) {
+export function PageHeader({ title, description, icon, children, trigger }: PageHeaderProps) {
   return (
     <header className={cn(
         "flex h-auto min-h-16 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-border/50 bg-background/95 backdrop-blur-sm px-4 py-3 sm:px-6",
@@ -31,7 +30,7 @@ export function PageHeader({ title, description, icon: Icon, children, trigger }
           </Link>
         </div>
 
-        {Icon && <Icon className="h-5 w-5 text-primary hidden sm:block" />}
+        {icon}
         
         <div className="flex-1 min-w-0">
           <h1 className="font-semibold text-lg md:text-xl truncate text-slate-900">{title}</h1>

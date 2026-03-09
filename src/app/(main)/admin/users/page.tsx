@@ -1,6 +1,3 @@
-
-'use server';
-
 import { PageHeader } from '@/components/page-header';
 import { Users } from 'lucide-react';
 import { UserManagementTable } from '@/components/admin/user-management-table';
@@ -14,7 +11,7 @@ export default async function AdminUsersPage() {
       <PageHeader
         title="Gerenciamento de Usuários"
         description="Adicione, edite e gerencie os usuários da plataforma."
-        icon={Users}
+        icon={<Users className="h-5 w-5 text-primary hidden sm:block" />}
       />
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
         <UserManagementTable initialUsers={users} />

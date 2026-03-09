@@ -4,21 +4,25 @@ import { DateComparison } from '@/components/admin/date-comparison';
 import { getCommodityPrices, getCommodityPricesByDate } from '@/lib/data-service';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
-import { CalendarIcon } from 'lucide-react';
+import { BarChart3 } from 'lucide-react';
 import Link from 'next/link';
 import { ComparatorActions } from '@/components/comparator-actions';
 
-function getValidatedDate(dateString?: string | null): Date | null {
-  if (dateString) {
+type PageProps = {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+};
+
+function getValidatedDate(dateString?: string | string[] | null): Date | null {
+  if (typeof dateString === 'string') {
     const parsed = parseISO(dateString);
     if (isValid(parsed)) return parsed;
   }
   return null;
 }
 
-export default async function ComparadorPage(props: { searchParams: Promise<{ date?: string }> }) {
-  const searchParams = await props.searchParams;
-  const targetDate = getValidatedDate(searchParams.date) || new Date();
+export default async function ComparadorPage({ searchParams }: PageProps) {
+  const params = await searchParams;
+  const targetDate = getValidatedDate(params.date) || new Date();
   const isTodayOrFuture = isToday(targetDate);
 
   const data = isTodayOrFuture
@@ -29,9 +33,13 @@ export default async function ComparadorPage(props: { searchParams: Promise<{ da
 
   return (
     <>
-      <PageHeader title="Comparativo de Datas" description="Compare rapidamente as cotações entre datas diferentes.">
+      <PageHeader 
+        title="Comparativo de Datas" 
+        description="Compare rapidamente as cotações entre datas diferentes."
+        icon={<BarChart3 className="h-5 w-5 text-primary hidden sm:block" />}
+      >
         <div className="flex items-center gap-2">
-          <Link href="/">
+          <Link href="/dashboard">
             <Button variant="outline" size="sm">
               Voltar ao Dashboard
             </Button>

@@ -1,7 +1,7 @@
 'use client';
 
 import { PageHeader } from '@/components/page-header';
-import { PieChart, Calendar } from 'lucide-react';
+import { PieChart } from 'lucide-react';
 import { CompositionAnalysis } from '@/components/composition-analysis';
 import { useSearchParams } from 'next/navigation';
 import { DateNavigator } from '@/components/date-navigator';
@@ -15,7 +15,6 @@ function getValidatedDate(dateString?: string | null): Date {
       return parsed;
     }
   }
-  // Sempre começar pela data atual
   return new Date();
 }
 
@@ -29,7 +28,7 @@ function CompositionPageContent() {
       <PageHeader
         title="Análise de Composição"
         description="Visualize a participação de cada componente no índice Valor de Uso do Solo."
-        icon={PieChart}
+        icon={<PieChart className="h-5 w-5 text-primary hidden sm:block" />}
       >
         <DateNavigator targetDate={targetDate} />
       </PageHeader>
@@ -42,8 +41,10 @@ function CompositionPageContent() {
 
 export default function CompositionAnalysisPage() {
   return (
-    <Suspense fallback={<div>Carregando...</div>}>
+    <Suspense fallback={<div className="flex h-screen w-full items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
       <CompositionPageContent />
     </Suspense>
   );
 }
+
+import { Loader2 } from 'lucide-react';

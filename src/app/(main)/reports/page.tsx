@@ -1,4 +1,3 @@
-
 'use client';
 
 import { PageHeader } from '@/components/page-header';
@@ -11,7 +10,7 @@ export default function ReportsPage() {
       <PageHeader
         title="Geração de Relatórios"
         description="Crie, visualize e exporte relatórios analíticos com insights de IA."
-        icon={FileText}
+        icon={<FileText className="h-5 w-5 text-primary hidden sm:block" />}
       />
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
         <ReportGenerator />

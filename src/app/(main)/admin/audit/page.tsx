@@ -1,25 +1,14 @@
-
 'use client';
 
 import { useState, useEffect, useMemo, useTransition } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { History, Loader2, Save, ExternalLink, Edit, Search, Filter, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Zap, RefreshCw, Calendar, Activity, BarChart3, FileDown, SlidersHorizontal } from 'lucide-react';
+import { History, Loader2, Save, Edit, Search, TrendingUp, AlertTriangle, CheckCircle, BarChart3, SlidersHorizontal, Activity } from 'lucide-react';
 import { getRawCommodityPricesByDate, clearCacheAndRefresh } from '@/lib/data-service';
 import type { CommodityPriceData } from '@/lib/types';
 import * as Calc from '@/lib/calculation-service';
-import { triggerN8NRecalculation } from '@/lib/n8n-actions'; // Import the N8N action
-import { 
-  executeAdvancedRecalculation, 
-  type RecalculationProgress as AdvancedRecalculationProgress 
-} from '@/lib/advanced-recalculation-service';
-import { 
-  calculateAffectedAssets, 
-  estimateRecalculationTime,
-  getAssetDependency 
-} from '@/lib/dependency-service';
-import { updateCalculatedValuesDirectly } from '@/lib/direct-update-service';
+import { triggerN8NRecalculation } from '@/lib/n8n-actions';
 import { isValid, parseISO, format } from 'date-fns';
 import { DateNavigator } from '@/components/date-navigator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -28,21 +17,8 @@ import { useToast } from '@/hooks/use-toast';
 import { AssetActions } from '@/components/admin/asset-actions';
 import { AssetEditModal } from '@/components/admin/asset-edit-modal';
 import { Button } from '@/components/ui/button';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
-import Link from 'next/link';
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AuditHistory, type AuditLogEntry } from '@/components/admin/audit-history';
@@ -50,10 +26,8 @@ import { getAuditLogsForDate } from '@/lib/audit-log-service';
 import { RecalculationProgress, type RecalculationStep } from '@/components/admin/recalculation-progress';
 import { ValidationAlerts, generateValidationAlerts, type ValidationAlert } from '@/components/admin/validation-alerts';
 import { AuditExport } from '@/components/admin/audit-export';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useUser, useFirestore } from '@/firebase';
 import { doc, getDoc } from 'firebase/firestore';
-
 
 function getValidatedDate(dateString?: string | null): Date {
   if (dateString) {
@@ -138,22 +112,16 @@ const AssetActionTable = ({
   const [inputValue, setInputValue] = useState<string>('');
   const [errorMsg, setErrorMsg] = useState<string>('');
 
-  const startEdit = (asset: CommodityPriceData) => {
-    setEditingId(asset.id);
-    setInputValue(String(editedValues[asset.id] ?? asset.price));
-    setErrorMsg('');
+  const parseNumber = (s: string) => {
+    if (typeof s !== 'string') return NaN;
+    const v = s.replace(/\./g, '').replace(',', '.');
+    return Number(v);
   };
 
   const cancelEdit = () => {
     setEditingId(null);
     setInputValue('');
     setErrorMsg('');
-  };
-
-  const parseNumber = (s: string) => {
-    if (typeof s !== 'string') return NaN;
-    const v = s.replace(/\./g, '').replace(',', '.');
-    return Number(v);
   };
 
   return (
@@ -329,7 +297,6 @@ const IndexTable = ({ indices, onEdit }: { indices: CommodityPriceData[]; onEdit
   );
 };
 
-
 function AuditPageContent() {
   const searchParams = useSearchParams();
   const dateParam = searchParams.get('date');
@@ -366,67 +333,11 @@ function AuditPageContent() {
   const [estimatedTimeRemaining, setEstimatedTimeRemaining] = useState(0);
   
   const [validationAlerts, setValidationAlerts] = useState<ValidationAlert[]>([]);
-  
-  const [useAdvancedRecalculation, setUseAdvancedRecalculation] = useState<boolean | null>(null);
-  const [showDependencyInfo, setShowDependencyInfo] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearchTerm(searchTerm), 300);
     return () => clearTimeout(t);
   }, [searchTerm]);
-
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem('auditPrefs');
-      if (raw) {
-        const p = JSON.parse(raw);
-        if (typeof p.searchTerm === 'string') setSearchTerm(p.searchTerm);
-        if (typeof p.categoryFilter === 'string') setCategoryFilter(p.categoryFilter);
-        if (typeof p.statusFilter === 'string') setStatusFilter(p.statusFilter);
-        if (typeof p.sortKey === 'string') setSortKey(p.sortKey);
-        if (typeof p.sortDir === 'string') setSortDir(p.sortDir);
-        if (typeof p.basePageSize === 'number') setBasePageSize(p.basePageSize);
-        if (typeof p.idxPageSize === 'number') setIdxPageSize(p.idxPageSize);
-      }
-    } catch {}
-  }, []);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('auditPrefs', JSON.stringify({
-        searchTerm,
-        categoryFilter,
-        statusFilter,
-        sortKey,
-        sortDir,
-        basePageSize,
-        idxPageSize,
-      }));
-    } catch {}
-  }, [searchTerm, categoryFilter, statusFilter, sortKey, sortDir, basePageSize, idxPageSize]);
-
-  const exportToCsv = (rows: any[], filename: string) => {
-    if (!rows || rows.length === 0) return;
-    const headers = Object.keys(rows[0]);
-    const csv = [headers.join(',') , ...rows.map(r => headers.map(h => JSON.stringify((r as any)[h] ?? '')).join(','))].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const exportToJson = (rows: any[], filename: string) => {
-    const blob = new Blob([JSON.stringify(rows, null, 2)], { type: 'application/json;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
 
   useEffect(() => {
     const newDate = getValidatedDate(dateParam);
@@ -462,14 +373,11 @@ function AuditPageContent() {
       .finally(() => setIsLoadingLogs(false));
   }, [dateParam]);
 
-
   const handleEdit = (asset: CommodityPriceData) => {
     setEditingAsset(asset);
   };
   
   const handleSaveEdit = async (assetId: string, newPrice: number) => {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
     const newEditedValues = { ...editedValues, [assetId]: newPrice };
     setEditedValues(newEditedValues);
     setEditingAsset(null);
@@ -478,12 +386,11 @@ function AuditPageContent() {
       asset.id === assetId ? { ...asset, price: newPrice } : asset
     );
     setData(updatedData);
-    
     setValidationAlerts(generateValidationAlerts(updatedData, newEditedValues));
     
     toast({
         title: "Valor Alterado",
-        description: `O valor de ${assetId} foi atualizado localmente. Clique em 'Salvar e Recalcular' para persistir.`,
+        description: `O valor de ${assetId} foi atualizado localmente.`,
     });
   }
   
@@ -507,7 +414,6 @@ function AuditPageContent() {
     }
   };
 
-
   const handleRecalculate = async () => {
     if (Object.keys(editedValues).length === 0) {
       toast({
@@ -525,24 +431,20 @@ function AuditPageContent() {
         if (result.success) {
           toast({
             title: "Snapshot enviado",
-            description: result.message || "O N8N está reprocessando os dados. Atualizando em seguida...",
+            description: result.message || "O N8N está reprocessando os dados.",
           });
           try { await clearCacheAndRefresh(); } catch {}
           setEditedValues({});
           setValidationAlerts([]);
-          const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
-          for (let attempt = 0; attempt < 3; attempt++) {
-            await sleep(3000);
-            try {
-              const [freshData, freshLogs] = await Promise.all([
-                getRawCommodityPricesByDate(targetDate),
-                getAuditLogsForDate(targetDate),
-              ]);
-              setData(freshData);
-              setAuditLogs(freshLogs);
-              break;
-            } catch {}
-          }
+          // Refresh data after a few seconds
+          setTimeout(async () => {
+            const [freshData, freshLogs] = await Promise.all([
+              getRawCommodityPricesByDate(targetDate),
+              getAuditLogsForDate(targetDate),
+            ]);
+            setData(freshData);
+            setAuditLogs(freshLogs);
+          }, 5000);
         } else {
           throw new Error(result.message || 'Falha ao contatar o N8N');
         }
@@ -648,9 +550,6 @@ function AuditPageContent() {
   const pagedBaseAssets = filteredBaseAssets.slice((basePage - 1) * basePageSize, basePage * basePageSize);
   const pagedIndices = filteredIndices.slice((idxPage - 1) * idxPageSize, idxPage * idxPageSize);
 
-  useEffect(() => { setBasePage(1); }, [debouncedSearchTerm, categoryFilter, statusFilter, sortKey, sortDir, basePageSize]);
-  useEffect(() => { setIdxPage(1); }, [debouncedSearchTerm, categoryFilter, statusFilter, sortKey, sortDir, idxPageSize]);
-
   const hasEdits = Object.keys(editedValues).length > 0;
 
   const handleDismissAlert = (alertId: string) => {
@@ -673,26 +572,10 @@ function AuditPageContent() {
       
       toast({
         title: "Sugestão Aceita",
-        description: `O valor de ${alert.assetName} foi atualizado para ${suggestedValue}.`,
+        description: `O valor de ${alert.assetName} foi atualizado.`,
       });
     }
   };
-  
-  const reviewChanges = useMemo(() => {
-    return Object.entries(editedValues).map(([id, newValue]) => {
-      const originalAsset = originalData.get(id);
-      const parsedNew = typeof newValue === 'number' 
-        ? newValue 
-        : Number(String(newValue).replace(/\./g, '').replace(',', '.'));
-      return {
-        id,
-        name: originalAsset?.name || id,
-        oldValue: originalAsset?.price ?? 0,
-        newValue: isNaN(parsedNew) ? 0 : parsedNew,
-        currency: originalAsset?.currency ?? 'BRL'
-      };
-    });
-  }, [editedValues, originalData]);
 
   const handleSort = (key: 'custom' | 'name' | 'id' | 'price' | 'change' | 'status') => {
     if (sortKey === key) {
@@ -703,32 +586,13 @@ function AuditPageContent() {
     }
   };
 
-  const n8nFullPayload = useMemo(() => {
-    const transformed: Record<string, any> = {};
-    const allowed = new Set(['usd','eur','boi_gordo','soja','milho','madeira','carbono']);
-    for (const asset of baseAssets) {
-      if (!allowed.has(asset.id)) continue;
-      const k = asset.id === 'boi_gordo' ? 'boi' : asset.id;
-      const raw = (asset as any).price;
-      const preco = typeof raw === 'number'
-        ? raw
-        : (typeof raw === 'string' ? Number(raw.replace(/\./g, '').replace(',', '.')) : 0);
-      transformed[k] = { preco };
-    }
-    return {
-      origem: 'painel_auditoria',
-      data_especifica: format(targetDate, 'yyyy-MM-dd'),
-      ativos: transformed,
-    };
-  }, [baseAssets, targetDate]);
-
   return (
     <>
       <div className="flex min-h-screen w-full flex-col">
         <PageHeader
           title="Auditoria de Dados"
           description="Verifique, corrija e recalcule os dados históricos da plataforma."
-          icon={History}
+          icon={<History className="h-5 w-5 text-primary hidden sm:block" />}
         />
         <main className="flex flex-1 flex-col gap-6 p-4 md:gap-8 md:p-6 bg-gradient-to-br from-slate-50 to-blue-50">
           <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
@@ -737,12 +601,13 @@ function AuditPageContent() {
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button onClick={handleRecalculate} disabled={!hasEdits} className="bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed">
-                        <Save className="mr-2 h-4 w-4" /> Salvar e Recalcular
+                      <Button onClick={handleRecalculate} disabled={!hasEdits || isPending} className="bg-green-600 hover:bg-green-700">
+                        {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                        Salvar e Recalcular
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Envia alterações para o N8N. Ativo apenas quando há edições.</p>
+                      <p>Envia alterações para o N8N.</p>
                     </TooltipContent>
                   </Tooltip>
                   <div className="ml-auto flex items-center gap-4">
@@ -772,20 +637,6 @@ function AuditPageContent() {
             currentStep={currentStep}
             progress={recalculationProgress}
             estimatedTimeRemaining={estimatedTimeRemaining}
-            onComplete={() => {
-              setShowProgress(false);
-              setRecalculationSteps([]);
-              setCurrentStep('');
-              setRecalculationProgress(0);
-              setEstimatedTimeRemaining(0);
-            }}
-            onCancel={() => {
-              setShowProgress(false);
-              setRecalculationSteps([]);
-              setCurrentStep('');
-              setRecalculationProgress(0);
-              setEstimatedTimeRemaining(0);
-            }}
           />
 
           {validationAlerts.length > 0 && (
@@ -798,9 +649,6 @@ function AuditPageContent() {
                     {validationAlerts.length}
                   </Badge>
                 </CardTitle>
-                <CardDescription className="text-yellow-700">
-                  Foram detectados possíveis problemas com os valores editados. Revise os alertas abaixo.
-                </CardDescription>
               </CardHeader>
               <CardContent className="p-6">
                 <ValidationAlerts
@@ -813,35 +661,17 @@ function AuditPageContent() {
           )}
 
           {isLoading ? (
-            <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl">
-              <CardContent className="p-12">
-                <div className="flex flex-col items-center justify-center space-y-4">
-                  <div className="relative">
-                    <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
-                    <div className="absolute inset-0 h-12 w-12 border-2 border-blue-200 rounded-full"></div>
-                  </div>
-                  <div className="text-center space-y-2">
-                    <h3 className="text-lg font-semibold text-gray-900">Carregando Dados</h3>
-                    <p className="text-sm text-gray-600">Buscando informações para {format(targetDate, 'dd/MM/yyyy')}</p>
-                  </div>
+            <div className="flex flex-col items-center justify-center h-64 gap-4">
+              <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
+              <p className="text-gray-600">Carregando dados para auditoria...</p>
             </div>
-              </CardContent>
-            </Card>
           ) : data.length === 0 ? (
             <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl">
-              <CardContent className="p-12">
-                <div className="flex flex-col items-center justify-center space-y-4 text-center">
-                  <div className="p-4 bg-gray-100 rounded-full">
-                    <Search className="h-8 w-8 text-gray-400" />
-                  </div>
-                  <div className="space-y-2">
-                    <h3 className="text-lg font-semibold text-gray-900">Nenhum Dado Encontrado</h3>
-                    <p className="text-sm text-gray-600">
-                      Não há dados disponíveis para a data {format(targetDate, 'dd/MM/yyyy')}
-                    </p>
-                  </div>
-                </div>
-                </CardContent>
+              <CardContent className="p-12 text-center">
+                <Search className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                <h3 className="text-lg font-semibold">Nenhum Dado Encontrado</h3>
+                <p className="text-gray-600">Não há dados para a data {format(targetDate, 'dd/MM/yyyy')}</p>
+              </CardContent>
             </Card>
           ) : (
             <div className="grid gap-8">
@@ -851,10 +681,6 @@ function AuditPageContent() {
                     <TrendingUp className="h-6 w-6" />
                     Moedas e Ativos Base
                   </CardTitle>
-                  <CardDescription className="text-blue-100">
-                    Cotações de câmbio e commodities primárias que servem de entrada para os cálculos. 
-                    <span className="font-semibold text-yellow-200 ml-1">Estes são os únicos valores editáveis.</span>
-                  </CardDescription>
                 </CardHeader>
                 <CardContent className="p-6">
                   <AssetActionTable 
@@ -873,30 +699,7 @@ function AuditPageContent() {
                       <Button size="sm" variant="outline" disabled={basePage<=1} onClick={() => setBasePage(p => Math.max(1, p-1))}>Anterior</Button>
                       <Button size="sm" variant="outline" disabled={basePage>=baseTotalPages} onClick={() => setBasePage(p => Math.min(baseTotalPages, p+1))}>Próxima</Button>
                     </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      Itens por página
-                      <Select value={String(basePageSize)} onValueChange={(v) => setBasePageSize(Number(v))}>
-                        <SelectTrigger className="w-[90px]"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="25">25</SelectItem>
-                          <SelectItem value="50">50</SelectItem>
-                          <SelectItem value="100">100</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
                   </div>
-                  {filteredBaseAssets.length === 0 && baseAssets.length > 0 && (
-                    <div className="text-center text-sm text-muted-foreground p-6 bg-gray-50 rounded-lg">
-                      Nenhum ativo encontrado com os filtros aplicados. 
-                      <Button variant="link" onClick={() => {
-                        setSearchTerm('');
-                        setCategoryFilter('all');
-                        setStatusFilter('all');
-                      }} className="ml-2">
-                        Limpar filtros
-                      </Button>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
 
@@ -906,48 +709,13 @@ function AuditPageContent() {
                     <BarChart3 className="h-6 w-6" />
                     Índices Calculados
                   </CardTitle>
-                  <CardDescription className="text-green-100">
-                    Resultados dos índices e sub-índices da plataforma. Estes valores são recalculados automaticamente com base nos ativos base.
-                  </CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
                   <IndexTable indices={pagedIndices} onEdit={handleEdit} />
-                  <div className="flex items-center justify-between mt-4 px-6 pb-4">
-                    <div className="flex items-center gap-2 text-sm">
-                      Página {idxPage} de {idxTotalPages}
-                      <Button size="sm" variant="outline" disabled={idxPage<=1} onClick={() => setIdxPage(p => Math.max(1, p-1))}>Anterior</Button>
-                      <Button size="sm" variant="outline" disabled={idxPage>=idxTotalPages} onClick={() => setIdxPage(p => Math.min(idxTotalPages, p+1))}>Próxima</Button>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      Itens por página
-                      <Select value={String(idxPageSize)} onValueChange={(v) => setIdxPageSize(Number(v))}>
-                        <SelectTrigger className="w-[90px]"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="25">25</SelectItem>
-                          <SelectItem value="50">50</SelectItem>
-                          <SelectItem value="100">100</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  {filteredIndices.length === 0 && indices.length > 0 && (
-                    <div className="text-center text-sm text-muted-foreground p-4">
-                      Nenhum índice encontrado com os filtros aplicados.
-                      <Button variant="link" onClick={() => {
-                        setSearchTerm('');
-                        setCategoryFilter('all');
-                        setStatusFilter('all');
-                      }}>
-                        Limpar filtros
-                      </Button>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
               
-              <AuditExport 
-                currentDate={targetDate}
-              />
+              <AuditExport currentDate={targetDate} />
 
               <AuditHistory 
                 targetDate={targetDate}
@@ -971,7 +739,6 @@ function AuditPageContent() {
     </>
   );
 }
-
 
 export default function AuditPage() {
     const { user, isUserLoading } = useUser();
