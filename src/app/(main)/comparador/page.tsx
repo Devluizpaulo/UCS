@@ -16,8 +16,9 @@ function getValidatedDate(dateString?: string | null): Date | null {
   return null;
 }
 
-export default async function ComparadorPage({ searchParams }: { searchParams: { date?: string } }) {
-  const targetDate = getValidatedDate(searchParams?.date) || new Date();
+export default async function ComparadorPage(props: { searchParams: Promise<{ date?: string }> }) {
+  const searchParams = await props.searchParams;
+  const targetDate = getValidatedDate(searchParams.date) || new Date();
   const isTodayOrFuture = isToday(targetDate);
 
   const data = isTodayOrFuture

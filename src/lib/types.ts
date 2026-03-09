@@ -1,8 +1,6 @@
-
 'use server';
 
 import type { User as FirebaseUser } from 'firebase/auth';
-import type { UserRecord } from 'firebase-admin/auth';
 import type { ReportOutput } from '@/ai/flows/report-flow';
 
 // Defines the structure for a single commodity configuration
@@ -57,8 +55,18 @@ export interface AppUser extends FirebaseUser {
   isAdmin?: boolean;
 }
 
-// Extends the server-side UserRecord to include our custom isAdmin flag
-export interface AppUserRecord extends UserRecord {
+// Interface simplificada e serializável para usuários, compatível com Client Components
+export interface AppUserRecord {
+    uid: string;
+    email: string;
+    displayName: string;
+    phoneNumber: string;
+    photoURL?: string;
+    disabled: boolean;
+    metadata: {
+        creationTime: string;
+        lastSignInTime: string | null;
+    };
     isAdmin: boolean;
 }
 
