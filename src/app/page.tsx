@@ -34,18 +34,22 @@ export default function LandingPage() {
   const [ucsAseAsset, setUcsAseAsset] = React.useState<CommodityPriceData | null>(null);
   const [ucsHistory, setUcsHistory] = React.useState<FirestoreQuote[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = React.useState(true);
+  const [isLoadingPrice, setIsLoadingPrice] = React.useState(true);
   const [settings, setSettings] = React.useState<LandingPageSettings | null>(null);
   const { language, t } = useLanguage();
   const [isScrolled, setIsScrolled] = React.useState(false);
 
   React.useEffect(() => {
     const init = async () => {
+      setIsLoadingPrice(true);
       try {
         const prices = await getCommodityPrices();
         const ucsAsset = prices.find(p => p.id === 'ucs_ase');
         if (ucsAsset) setUcsAseAsset(ucsAsset);
       } catch (e) {
         console.error("Failed to fetch prices:", e);
+      } finally {
+        setIsLoadingPrice(false);
       }
     };
     init();
@@ -183,15 +187,37 @@ export default function LandingPage() {
                     </div>
 
                     <div className="space-y-1">
-                      <div className="flex items-baseline gap-3">
-                        <span className="text-5xl lg:text-6xl font-black text-white font-mono tracking-tighter">
-                          {ucsAseAsset ? ucsAseAsset.price.toFixed(2) : '176.66'}
-                        </span>
-                        <span className="text-xl font-bold text-emerald-500">BRL</span>
+                      <div className="flex items-baseline gap-3 min-h-[64px]">
+                        {isLoadingPrice ? (
+                          <div className="flex items-baseline gap-3 animate-pulse">
+                            <div className="h-12 w-32 bg-white/10 rounded-lg" />
+                            <div className="h-6 w-12 bg-emerald-500/20 rounded" />
+                          </div>
+                        ) : (
+                          <>
+                            <span className="text-5xl lg:text-6xl font-black text-white font-mono tracking-tighter animate-in fade-in slide-in-from-bottom-2 duration-700">
+                              {ucsAseAsset ? ucsAseAsset.price.toFixed(2) : '176.66'}
+                            </span>
+                            <span className="text-xl font-bold text-emerald-500 animate-in fade-in zoom-in duration-1000">BRL</span>
+                          </>
+                        )}
                       </div>
-                      <div className="flex items-center gap-2 text-emerald-400/80 font-bold text-sm">
-                        <TrendingUp className="h-4 w-4" /> +2.34% <span className="text-white/20 ml-1">vs ontem</span>
-                      </div>
+                      
+                      {isLoadingPrice ? (
+                        <div className="h-4 w-32 bg-white/5 rounded animate-pulse mt-2" />
+                      ) : (
+                        <div className="flex items-center gap-2 text-emerald-400/80 font-bold text-sm animate-in fade-in slide-in-from-left-4 duration-1000 delay-200">
+                          <TrendingUp className="h-4 w-4" /> 
+                          {ucsAseAsset ? (
+                            <>
+                              {ucsAseAsset.change >= 0 ? '+' : ''}{ucsAseAsset.change.toFixed(2)}%
+                              <span className="text-white/20 ml-1">vs ontem</span>
+                            </>
+                          ) : (
+                            <>+2.34% <span className="text-white/20 ml-1">vs ontem</span></>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

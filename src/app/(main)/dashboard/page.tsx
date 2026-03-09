@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useState, useEffect, useMemo, useTransition } from 'react';
@@ -29,7 +27,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-// ExcelJS e file-saver são importados sob demanda nos handlers de exportação para reduzir o bundle
 import { formatCurrency } from '@/lib/formatters';
 import { PdfExportButton } from '@/components/pdf-export-button';
 import { ExcelExportButton } from '@/components/excel-export-button';
@@ -73,7 +70,6 @@ function useRealtimeData(initialDate: Date | null) {
                 setData(result);
             } catch (error) {
                 console.error("Failed to fetch data:", error);
-                // Optionally set an error state here
             } finally {
                 setIsLoading(false);
             }
@@ -82,7 +78,6 @@ function useRealtimeData(initialDate: Date | null) {
         fetchData();
 
         if (isCurrentDateOrFuture) {
-            // Poll for new data every 30 seconds for "real-time" feel
             intervalId = setInterval(fetchData, 30000); 
         }
 
@@ -145,7 +140,6 @@ export default function DashboardPage() {
                   title: "Reprocessamento Iniciado",
                   description: result.message,
               });
-              // Dá um tempo para o n8n processar e depois atualiza
               setTimeout(() => {
                 router.refresh();
               }, 5000); 
@@ -234,10 +228,8 @@ export default function DashboardPage() {
         workbook.creator = 'UCS Index Platform';
         workbook.created = new Date();
         
-        // --- ABA 1: PAINEL DE COTAÇÕES ---
         const worksheet = workbook.addWorksheet('📊 Painel de Cotações');
 
-        // Cabeçalho e subtítulo
         worksheet.mergeCells('A1:J1');
         worksheet.getCell('A1').value = '🏛️ UCS INDEX - PAINEL DE COTAÇÕES';
         worksheet.getCell('A1').font = { name: 'Calibri', size: 20, bold: true, color: { argb: 'FFFFFFFF' } };
@@ -249,7 +241,6 @@ export default function DashboardPage() {
         worksheet.getCell('A2').font = { name: 'Calibri', size: 11, color: { argb: 'FF6b7280' } };
         worksheet.getCell('A2').alignment = { horizontal: 'center' };
 
-        // Estatísticas Resumidas
         const allData = [mainIndex, ...secondaryIndices, ...currencies, ...otherAssets].filter(Boolean) as CommodityPriceData[];
         const totalAssets = allData.length;
         const positiveChanges = allData.filter(asset => asset.change > 0).length;
@@ -265,7 +256,6 @@ export default function DashboardPage() {
         statsRow.font = { bold: true };
         worksheet.addRow([]);
 
-        // Cabeçalhos da tabela
         const headerRow = worksheet.addRow([
             t.excelExport.headers.category, t.excelExport.headers.asset, t.excelExport.headers.lastPrice,
             t.excelExport.headers.variationPercent, t.excelExport.headers.absoluteVariation, t.excelExport.headers.unit,
@@ -278,7 +268,6 @@ export default function DashboardPage() {
             cell.alignment = { horizontal: 'center', vertical: 'middle' };
         });
 
-        // Adicionar dados
         allData.forEach((asset) => {
             const status = asset.change > 0 ? '📈 Alta' : asset.change < 0 ? '📉 Baixa' : '➡️ Estável';
             const observation = Math.abs(asset.change) > 5 ? '🔥 Alta volatilidade' : '✅ Normal';
@@ -296,7 +285,6 @@ export default function DashboardPage() {
                 observation
             ]);
 
-            // Formatação
             row.getCell(3).numFmt = `#,##0.00${['usd', 'eur'].includes(asset.id) ? '00' : ''}`;
             row.getCell(4).numFmt = '0.00%';
             row.getCell(5).numFmt = `#,##0.00${['usd', 'eur'].includes(asset.id) ? '00' : ''}`;
@@ -305,7 +293,6 @@ export default function DashboardPage() {
             else if(asset.change < 0) row.getCell(4).font = { color: { argb: 'FFFF0000' }, bold: true };
         });
         
-        // --- ABA 2: ANÁLISES COM GRÁFICOS VISUAIS ---
         const analysisWorksheet = workbook.addWorksheet('📈 Análises Visuais');
         
         const categoryData = allData.reduce((acc, asset) => {
@@ -318,7 +305,6 @@ export default function DashboardPage() {
             .sort((a, b) => Math.abs(b.change) - Math.abs(a.change))
             .slice(0, 15);
         
-        // --- VISUALIZAÇÃO DA DISTRIBUIÇÃO POR CATEGORIA ---
         let currentRow = 2;
         analysisWorksheet.mergeCells(`A${currentRow}:${'D'}${currentRow}`);
         analysisWorksheet.getCell(`A${currentRow}`).value = '🍕 Distribuição por Categoria';
@@ -338,7 +324,6 @@ export default function DashboardPage() {
         });
         currentRow += 2;
 
-        // --- VISUALIZAÇÃO DAS MAIORES VARIAÇÕES ---
         analysisWorksheet.mergeCells(`A${currentRow}:${'D'}${currentRow}`);
         analysisWorksheet.getCell(`A${currentRow}`).value = `📊 ${t.excelExport.charts.topVariations}`;
         analysisWorksheet.getCell(`A${currentRow}`).font = { bold: true, size: 16 };
@@ -359,7 +344,6 @@ export default function DashboardPage() {
             else if(asset.change < 0) row.getCell(3).font = { color: { argb: 'FFFF0000' } };
         });
 
-        // --- ABA 3: RESUMO EXECUTIVO ---
         const summaryWorksheet = workbook.addWorksheet('📋 Resumo Executivo');
         currentRow = 2;
         summaryWorksheet.mergeCells(`A${currentRow}:${'E'}${currentRow}`);
@@ -395,7 +379,6 @@ export default function DashboardPage() {
         });
 
 
-        // Auto-ajuste de colunas
         [worksheet, analysisWorksheet, summaryWorksheet].forEach(ws => {
             ws.columns.forEach(column => {
                 let maxLength = 0;
@@ -407,7 +390,6 @@ export default function DashboardPage() {
             });
         });
 
-        // Salvar o arquivo
         const buffer = await workbook.xlsx.writeBuffer();
         saveAs(new Blob([buffer]), `🏛️_UCS_Index_Painel_${format(targetDate, 'yyyy-MM-dd')}.xlsx`);
 
@@ -532,7 +514,7 @@ export default function DashboardPage() {
         </PageHeader>
         <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gradient-to-br from-background to-muted/30">
             {isLoading && data.length === 0 ? (
-                <div className="space-y-4 md:space-y-8">
+                <div className="space-y-4 md:space-y-8 animate-in fade-in duration-500">
                     <Skeleton className="h-[180px] w-full" />
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
                         <Skeleton className="h-32 w-full" />
@@ -544,28 +526,37 @@ export default function DashboardPage() {
                     </div>
                 </div>
             ) : (
-                <div className="flex flex-col gap-4 md:gap-8">
-                    {mainIndex && <MainIndexCard asset={mainIndex} isMain={true} />}
+                <div className="flex flex-col gap-4 md:gap-8 animate-in fade-in duration-700">
+                    {mainIndex ? (
+                      <MainIndexCard asset={mainIndex} isMain={true} loading={isLoading} />
+                    ) : isLoading ? (
+                      <MainIndexCard isMain={true} loading={true} />
+                    ) : null}
 
-                    {secondaryIndices.length > 0 && (
+                    {secondaryIndices.length > 0 || isLoading ? (
                         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
-                            {secondaryIndices.map(asset => <MainIndexCard key={asset.id} asset={asset} />)}
+                            {isLoading && secondaryIndices.length === 0 
+                              ? Array.from({length: 2}).map((_, i) => <MainIndexCard key={i} loading={true} />)
+                              : secondaryIndices.map(asset => <MainIndexCard key={asset.id} asset={asset} loading={isLoading} />)
+                            }
                         </div>
-                    )}
+                    ) : null}
 
-                    {currencies.length > 0 && (
+                    {currencies.length > 0 || isLoading ? (
                         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
-                            {currencies.map(asset => <MainIndexCard key={asset.id} asset={asset} />)}
+                            {isLoading && currencies.length === 0
+                              ? Array.from({length: 2}).map((_, i) => <MainIndexCard key={i} loading={true} />)
+                              : currencies.map(asset => <MainIndexCard key={asset.id} asset={asset} loading={isLoading} />)
+                            }
                         </div>
-                    )}
+                    ) : null}
                     <CommodityPrices
                         data={otherAssets}
                         displayDate={isCurrentDateOrFuture ? 'Tempo Real' : formattedDate}
-                        loading={isLoading && otherAssets.length === 0}
+                        loading={isLoading}
                     />
                 </div>
             )}
-            {/* Comparativo de datas movido para página dedicada */}
         </main>
     </>
   );

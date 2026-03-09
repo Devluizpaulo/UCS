@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -10,15 +9,44 @@ import type { CommodityPriceData } from '@/lib/types';
 import { AssetIcon } from '@/lib/icons';
 import { AssetDetailModal } from './asset-detail-modal';
 import { useState } from 'react';
+import { Skeleton } from './ui/skeleton';
 
 interface MainIndexCardProps {
-  asset: CommodityPriceData;
+  asset?: CommodityPriceData;
   isMain?: boolean;
+  loading?: boolean;
 }
 
-export function MainIndexCard({ asset, isMain = false }: MainIndexCardProps) {
+export function MainIndexCard({ asset, isMain = false, loading = false }: MainIndexCardProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   
+  if (loading || !asset) {
+    return (
+      <Card className={cn(
+        "smooth-border transition-all duration-300",
+        isMain ? "bg-card border-primary/20 shadow-md" : "bg-card"
+      )}>
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-10 w-10 rounded-lg" />
+            <div className="space-y-2">
+              <Skeleton className="h-5 w-24" />
+              <Skeleton className="h-3 w-16" />
+            </div>
+          </div>
+          <Skeleton className="h-4 w-12" />
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Skeleton className="h-10 w-48" />
+          <div className="flex items-center gap-4">
+            <Skeleton className="h-6 w-20 rounded-full" />
+            <Skeleton className="h-4 w-32" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   const isBlocked = asset.isBlocked;
   const changeColor = asset.change >= 0 ? 'text-primary' : 'text-destructive';
   const ChangeIcon = asset.change >= 0 ? ArrowUp : ArrowDown;
