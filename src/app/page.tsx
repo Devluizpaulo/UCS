@@ -155,12 +155,6 @@ export default function LandingPage() {
                 </p>
                 
                 <div className="flex flex-wrap gap-4">
-                  <Button asChild size="lg" className="h-14 px-8 rounded-full bg-white text-black hover:bg-emerald-50 font-bold transition-all hover:scale-105 shadow-2xl shadow-black/40 border-none group">
-                    <Link href="/login">
-                      Começar agora
-                      <ChevronRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
-                    </Link>
-                  </Button>
                   <Button size="lg" variant="outline" className="h-14 px-8 rounded-full border-2 border-white/40 bg-transparent text-white hover:bg-white hover:text-black font-bold transition-all hover:scale-105 backdrop-blur-sm" asChild>
                     <Link href="mailto:contato@bmv.global">Falar com consultor</Link>
                   </Button>
@@ -348,12 +342,6 @@ export default function LandingPage() {
               Junte-se à maior rede de ativos ambientais da América Latina e valorize seu capital natural com transparência e tecnologia.
             </p>
             <div className="flex flex-wrap justify-center gap-6 pt-4">
-              <Button asChild size="lg" className="h-16 px-12 rounded-full bg-white text-black hover:bg-emerald-50 text-base font-bold transition-all hover:scale-105 shadow-2xl shadow-black/20 border-none group">
-                <Link href="/login">
-                  Começar agora
-                  <ChevronRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
-                </Link>
-              </Button>
               <Button size="lg" variant="outline" className="h-16 px-12 rounded-full border-2 border-white/40 bg-transparent text-white hover:bg-white hover:text-black text-base font-bold transition-all hover:scale-105 backdrop-blur-sm" asChild>
                 <Link href="mailto:contato@bmv.global">Falar com consultor</Link>
               </Button>
