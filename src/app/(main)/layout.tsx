@@ -242,7 +242,7 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
             </SidebarMenu>
 
             {isAdmin && (
-              <div className="mt-6">
+              <div className="mt-6 border-t border-slate-50 pt-6">
                 <SidebarMenu>
                   <SidebarMenuItem onClick={handleMenuItemClick} className="mb-1">
                     <SidebarMenuButton
@@ -302,10 +302,6 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
           </div>
         </Sidebar>
         <SidebarInset className="bg-slate-50/50">
-          <div className="md:hidden p-4 border-b bg-white flex items-center gap-2">
-            <SidebarTrigger />
-            <span className="font-bold text-2xl tracking-tighter text-[#1e293b]">bmv</span>
-          </div>
           {children}
         </SidebarInset>
       </div>

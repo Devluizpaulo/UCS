@@ -1,6 +1,10 @@
 
+'use client';
+
 import type { ElementType, ReactNode } from 'react';
 import { cn } from '@/lib/utils';
+import { SidebarTrigger } from '@/components/ui/sidebar';
+import Link from 'next/link';
 
 type PageHeaderProps = {
   title: string;
@@ -17,11 +21,21 @@ export function PageHeader({ title, description, icon: Icon, children, trigger }
         "sticky top-0 z-30 shadow-sm"
       )}>
       <div className="flex flex-1 items-center gap-3 min-w-0">
-        {trigger}
-        {Icon && <Icon className="h-6 w-6 text-primary hidden sm:block" />}
+        {/* Burger Menu Trigger - Always available to toggle sidebar */}
+        {trigger || <SidebarTrigger className="-ml-2 h-9 w-9" />}
+        
+        {/* Mobile/Tablet Logo - Visible only when main sidebar is hidden (lg:hidden) */}
+        <div className="flex lg:hidden items-center mr-2">
+          <Link href="/dashboard">
+            <span className="font-bold text-2xl tracking-tighter text-[#1e293b]">bmv</span>
+          </Link>
+        </div>
+
+        {Icon && <Icon className="h-5 w-5 text-primary hidden sm:block" />}
+        
         <div className="flex-1 min-w-0">
-          <h1 className="font-semibold text-lg md:text-2xl truncate text-gradient">{title}</h1>
-          {description && <p className="text-sm text-muted-foreground truncate">{description}</p>}
+          <h1 className="font-semibold text-lg md:text-xl truncate text-slate-900">{title}</h1>
+          {description && <p className="text-xs text-muted-foreground truncate hidden md:block">{description}</p>}
         </div>
       </div>
       {children && <div className="flex items-center gap-2">{children}</div>}
