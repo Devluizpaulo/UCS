@@ -100,6 +100,21 @@ export function MainIndexCard({ asset, isMain = false, loading = false }: MainIn
               {isBlocked ? "Indisponível" : formatCurrency(asset.price, asset.currency, asset.id)}
             </span>
           </div>
+
+          {/* Adicionando valores em USD e EUR se for o UCS ASE no dashboard */}
+          {!isBlocked && asset.id === 'ucs_ase' && asset.valor_usd && asset.valor_eur && (
+            <div className="flex gap-4 mt-2 mb-3 animate-in fade-in slide-in-from-left-4 duration-500">
+              <div className="flex flex-col">
+                <span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">USD</span>
+                <span className="text-sm font-bold font-mono">{formatCurrency(asset.valor_usd, 'USD', 'ucs_ase')}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">EUR</span>
+                <span className="text-sm font-bold font-mono">{formatCurrency(asset.valor_eur, 'EUR', 'ucs_ase')}</span>
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center gap-4 text-sm mt-1">
             {isBlocked ? (
               <div className="inline-flex items-center rounded-full border border-amber-200 bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">

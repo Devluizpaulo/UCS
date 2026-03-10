@@ -15,6 +15,7 @@ import {
   Mail,
   Globe,
   Lock,
+  TrendingDown,
 } from "lucide-react";
 import Image from 'next/image';
 import Link from 'next/link';
@@ -186,8 +187,8 @@ export default function LandingPage() {
                       </div>
                     </div>
 
-                    <div className="space-y-1">
-                      <div className="flex items-baseline gap-3 min-h-[64px]">
+                    <div className="space-y-4">
+                      <div className="flex items-baseline gap-3">
                         {isLoadingPrice ? (
                           <div className="flex items-baseline gap-3 animate-pulse">
                             <div className="h-12 w-32 bg-white/10 rounded-lg" />
@@ -196,25 +197,49 @@ export default function LandingPage() {
                         ) : (
                           <>
                             <span className="text-5xl lg:text-6xl font-black text-white font-mono tracking-tighter animate-in fade-in slide-in-from-bottom-2 duration-700">
-                              {ucsAseAsset ? ucsAseAsset.price.toFixed(2) : '176.66'}
+                              {ucsAseAsset ? ucsAseAsset.price.toFixed(2) : '164.68'}
                             </span>
                             <span className="text-xl font-bold text-emerald-500 animate-in fade-in zoom-in duration-1000">BRL</span>
                           </>
                         )}
                       </div>
+
+                      {/* Conversões em USD e EUR */}
+                      {!isLoadingPrice && ucsAseAsset && (
+                        <div className="flex gap-6 animate-in fade-in slide-in-from-left-4 duration-1000 delay-100 border-t border-white/5 pt-4">
+                          <div className="space-y-1">
+                            <p className="text-[9px] font-black text-white/30 uppercase tracking-widest">Dollar</p>
+                            <div className="flex items-baseline gap-1">
+                              <span className="text-2xl font-bold text-white font-mono tracking-tight">
+                                {ucsAseAsset.valor_usd?.toFixed(2) || '31.91'}
+                              </span>
+                              <span className="text-[10px] font-bold text-emerald-500/80">USD</span>
+                            </div>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-[9px] font-black text-white/30 uppercase tracking-widest">Euro</p>
+                            <div className="flex items-baseline gap-1">
+                              <span className="text-2xl font-bold text-white font-mono tracking-tight">
+                                {ucsAseAsset.valor_eur?.toFixed(2) || '27.17'}
+                              </span>
+                              <span className="text-[10px] font-bold text-emerald-500/80">EUR</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                       
                       {isLoadingPrice ? (
-                        <div className="h-4 w-32 bg-white/5 rounded animate-pulse mt-2" />
+                        <div className="h-4 w-32 bg-white/5 rounded animate-pulse" />
                       ) : (
                         <div className="flex items-center gap-2 text-emerald-400/80 font-bold text-sm animate-in fade-in slide-in-from-left-4 duration-1000 delay-200">
-                          <TrendingUp className="h-4 w-4" /> 
+                          {ucsAseAsset && ucsAseAsset.change < 0 ? <TrendingDown className="h-4 w-4" /> : <TrendingUp className="h-4 w-4" />}
                           {ucsAseAsset ? (
                             <>
                               {ucsAseAsset.change >= 0 ? '+' : ''}{ucsAseAsset.change.toFixed(2)}%
                               <span className="text-white/20 ml-1">vs ontem</span>
                             </>
                           ) : (
-                            <>+2.34% <span className="text-white/20 ml-1">vs ontem</span></>
+                            <>-1.60% <span className="text-white/20 ml-1">vs ontem</span></>
                           )}
                         </div>
                       )}
@@ -322,7 +347,7 @@ export default function LandingPage() {
                   <p className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em] mb-2">Última Cotação</p>
                   <div className="flex items-baseline gap-2">
                     <span className="text-5xl font-black font-mono tracking-tighter">
-                      {ucsAseAsset ? ucsAseAsset.price.toFixed(2) : '176.66'}
+                      {ucsAseAsset ? ucsAseAsset.price.toFixed(2) : '164.68'}
                     </span>
                     <span className="text-sm font-bold text-emerald-500">BRL</span>
                   </div>
