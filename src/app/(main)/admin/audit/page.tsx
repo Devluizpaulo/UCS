@@ -17,6 +17,16 @@ import { useToast } from '@/hooks/use-toast';
 import { AssetActions } from '@/components/admin/asset-actions';
 import { AssetEditModal } from '@/components/admin/asset-edit-modal';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
@@ -28,6 +38,10 @@ import { ValidationAlerts, generateValidationAlerts, type ValidationAlert } from
 import { AuditExport } from '@/components/admin/audit-export';
 import { useUser, useFirestore } from '@/firebase';
 import { doc, getDoc } from 'firebase/firestore';
+
+const BASE_ASSET_IDS = ['usd', 'eur', 'milho', 'soja', 'boi_gordo', 'madeira', 'carbono'] as const;
+
+type BaseAssetId = typeof BASE_ASSET_IDS[number];
 
 function getValidatedDate(dateString?: string | null): Date {
   if (dateString) {
@@ -79,6 +93,177 @@ function getStatusBadge(status: string) {
   }
 }
 
+function BulkBaseEditModal({
+  isOpen,
+  onOpenChange,
+  baseAssets,
+  targetDate,
+  onApply,
+}: {
+  isOpen: boolean;
+  onOpenChange: (isOpen: boolean) => void;
+  baseAssets: CommodityPriceData[];
+  targetDate: Date;
+  onApply: (values: Record<BaseAssetId, number>) => void;
+}) {
+  const [values, setValues] = useState<Record<BaseAssetId, string>>({
+    usd: '0',
+    eur: '0',
+    milho: '0',
+    soja: '0',
+    boi_gordo: '0',
+    madeira: '0',
+    carbono: '0',
+  });
+  const [error, setError] = useState('');
+
+  const targetDateFormatted = format(targetDate, 'dd/MM/yyyy');
+
+  const formatNumberForInput = (value: number) => {
+    if (!Number.isFinite(value)) return '0';
+
+    const fixed = value.toFixed(4);
+    const [intPartRaw, decPartRaw] = fixed.split('.');
+    const intPart = intPartRaw.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    const decPart = decPartRaw.replace(/0+$/, '');
+
+    return decPart.length > 0 ? `${intPart},${decPart}` : intPart;
+  };
+
+  const applyPtBrMask = (raw: string) => {
+    if (typeof raw !== 'string') return '0';
+
+    const cleaned = raw.replace(/[^\d,]/g, '');
+    const firstCommaIndex = cleaned.indexOf(',');
+
+    const integerRaw = firstCommaIndex >= 0 ? cleaned.slice(0, firstCommaIndex) : cleaned;
+    const decimalRaw = firstCommaIndex >= 0 ? cleaned.slice(firstCommaIndex + 1).replace(/,/g, '') : '';
+
+    const integerNormalized = integerRaw.replace(/^0+(?=\d)/, '') || '0';
+    const integerMasked = integerNormalized.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+
+    if (firstCommaIndex < 0) {
+      return integerMasked;
+    }
+
+    const decimalMasked = decimalRaw.slice(0, 4);
+    return `${integerMasked},${decimalMasked}`;
+  };
+
+  const parseNumber = (raw: string) => {
+    if (typeof raw !== 'string') return NaN;
+    return Number(raw.replace(/\./g, '').replace(',', '.'));
+  };
+
+  const isNewQuoteDate = useMemo(() => {
+    return BASE_ASSET_IDS.every((id) => {
+      const asset = baseAssets.find((item) => item.id === id);
+      return !asset || asset.lastUpdated !== targetDateFormatted;
+    });
+  }, [baseAssets, targetDateFormatted]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const initialValues = BASE_ASSET_IDS.reduce<Record<BaseAssetId, string>>((acc, id) => {
+      const asset = baseAssets.find((item) => item.id === id);
+      const hasExactDateValue = asset && asset.lastUpdated === targetDateFormatted;
+      const initialValue = hasExactDateValue ? asset.price : 0;
+
+      acc[id] = formatNumberForInput(Number(initialValue || 0));
+      return acc;
+    }, {
+      usd: '0',
+      eur: '0',
+      milho: '0',
+      soja: '0',
+      boi_gordo: '0',
+      madeira: '0',
+      carbono: '0',
+    });
+
+    setValues(initialValues);
+    setError('');
+  }, [isOpen, baseAssets, targetDateFormatted]);
+
+  const handleApply = () => {
+    const parsed = BASE_ASSET_IDS.reduce<Record<BaseAssetId, number>>((acc, id) => {
+      acc[id] = parseNumber(values[id]);
+      return acc;
+    }, {
+      usd: 0,
+      eur: 0,
+      milho: 0,
+      soja: 0,
+      boi_gordo: 0,
+      madeira: 0,
+      carbono: 0,
+    });
+
+    const hasInvalid = BASE_ASSET_IDS.some((id) => Number.isNaN(parsed[id]) || parsed[id] < 0);
+    if (hasInvalid) {
+      setError('Existem valores inválidos. Informe apenas números maiores ou iguais a zero.');
+      return;
+    }
+
+    if (isNewQuoteDate) {
+      const hasMissingValue = BASE_ASSET_IDS.some((id) => parsed[id] <= 0);
+      if (hasMissingValue) {
+        setError('Para criar cotação nova nesta data, preencha todas as cotações base com valor maior que zero.');
+        return;
+      }
+    }
+
+    onApply(parsed);
+    onOpenChange(false);
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="w-[95vw] max-w-3xl">
+        <DialogHeader>
+          <DialogTitle>Editar Cotações Base</DialogTitle>
+          <DialogDescription>
+            Ajuste apenas os ativos necessários ou todos os 7 ativos base para {targetDateFormatted}.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogBody>
+          <div className="mb-4 rounded-md border bg-muted/40 p-3 text-sm">
+            {isNewQuoteDate
+              ? 'Não há cotações base exatas para esta data. Os campos foram iniciados em zero para criação manual completa.'
+              : 'Os campos foram preenchidos com as cotações já existentes da data selecionada.'}
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {BASE_ASSET_IDS.map((id) => {
+              const asset = baseAssets.find((item) => item.id === id);
+              const label = asset?.name || id;
+              return (
+                <div key={id} className="space-y-1">
+                  <label className="text-sm font-medium">{label}</label>
+                  <Input
+                    value={values[id]}
+                    onChange={(e) => {
+                      setValues((prev) => ({ ...prev, [id]: applyPtBrMask(e.target.value) }));
+                      setError('');
+                    }}
+                    placeholder="0,0000"
+                    className="font-mono"
+                  />
+                </div>
+              );
+            })}
+          </div>
+          {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+        </DialogBody>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button onClick={handleApply}>Aplicar alterações</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 const AssetActionTable = ({ 
     assets, 
     onEdit, 
@@ -88,6 +273,7 @@ const AssetActionTable = ({
     onSort,
     sortKey,
     sortDir,
+  targetDate,
 }: { 
     assets: (CommodityPriceData & { rentMediaCalculada?: number })[];
     onEdit: (asset: CommodityPriceData) => void;
@@ -97,6 +283,7 @@ const AssetActionTable = ({
     onSort: (key: 'custom' | 'name' | 'id' | 'price' | 'change' | 'status') => void;
     sortKey: 'custom' | 'name' | 'id' | 'price' | 'change' | 'status';
     sortDir: 'asc' | 'desc';
+    targetDate: Date;
 }) => {
   if (assets.length === 0) {
     return (
@@ -111,6 +298,7 @@ const AssetActionTable = ({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [inputValue, setInputValue] = useState<string>('');
   const [errorMsg, setErrorMsg] = useState<string>('');
+  const targetDateFormatted = format(targetDate, 'dd/MM/yyyy');
 
   const parseNumber = (s: string) => {
     if (typeof s !== 'string') return NaN;
@@ -139,6 +327,7 @@ const AssetActionTable = ({
               Valor {sortKey==='price' ? (sortDir==='asc'?'▲':'▼') : ''}
             </button>
           </TableHead>
+          <TableHead>Data da Cotação</TableHead>
           {hasRentMedia && <TableHead className="text-right">Rentabilidade Média</TableHead>}
           <TableHead className="text-center w-[200px]">Ações</TableHead>
         </TableRow>
@@ -146,6 +335,9 @@ const AssetActionTable = ({
       <TableBody>
         {assets.map((asset) => {
           const status = getAssetStatus(asset, editedValues);
+          const isEdited = editedValues[asset.id] !== undefined;
+          const quoteDate = isEdited ? targetDateFormatted : (asset.lastUpdated || targetDateFormatted);
+          const isFallbackDate = !isEdited && quoteDate !== targetDateFormatted;
           return (
           <TableRow 
             key={asset.id} 
@@ -183,6 +375,18 @@ const AssetActionTable = ({
               {editingId === asset.id && errorMsg && (
                 <div className="text-xs text-red-600 mt-1">{errorMsg}</div>
               )}
+            </TableCell>
+            <TableCell>
+              <div className="flex flex-col gap-1">
+                <span className="font-mono text-sm">{quoteDate}</span>
+                {isEdited ? (
+                  <Badge variant="secondary" className="w-fit bg-yellow-100 text-yellow-800">Aplicada na data selecionada</Badge>
+                ) : isFallbackDate ? (
+                  <Badge variant="outline" className="w-fit bg-amber-50 text-amber-800 border-amber-200">Usando data anterior</Badge>
+                ) : (
+                  <Badge variant="outline" className="w-fit bg-green-50 text-green-700 border-green-200">Data exata</Badge>
+                )}
+              </div>
             </TableCell>
             {hasRentMedia && (
                 <TableCell className="text-right font-mono">
@@ -309,6 +513,7 @@ function AuditPageContent() {
   const [isPending, startTransition] = useTransition();
 
   const [editingAsset, setEditingAsset] = useState<CommodityPriceData | null>(null);
+  const [isBulkEditOpen, setIsBulkEditOpen] = useState(false);
   const [editedValues, setEditedValues] = useState<Record<string, number>>({});
   
   const [searchTerm, setSearchTerm] = useState('');
@@ -333,6 +538,7 @@ function AuditPageContent() {
   const [estimatedTimeRemaining, setEstimatedTimeRemaining] = useState(0);
   
   const [validationAlerts, setValidationAlerts] = useState<ValidationAlert[]>([]);
+  const targetDateFormatted = format(targetDate, 'dd/MM/yyyy');
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearchTerm(searchTerm), 300);
@@ -414,6 +620,35 @@ function AuditPageContent() {
     }
   };
 
+  const handleApplyBulkBaseEdit = (values: Record<BaseAssetId, number>) => {
+    const updatedData = data.map((asset) => {
+      if (!(BASE_ASSET_IDS as readonly string[]).includes(asset.id)) return asset;
+      return { ...asset, price: values[asset.id as BaseAssetId] };
+    });
+
+    const nextEditedValues: Record<string, number> = { ...editedValues };
+
+    BASE_ASSET_IDS.forEach((id) => {
+      const originalPrice = originalData.get(id)?.price;
+      const newPrice = values[id];
+
+      if (typeof originalPrice === 'number' && Math.abs(newPrice - originalPrice) < 0.000001) {
+        delete nextEditedValues[id];
+      } else {
+        nextEditedValues[id] = newPrice;
+      }
+    });
+
+    setData(updatedData);
+    setEditedValues(nextEditedValues);
+    setValidationAlerts(generateValidationAlerts(updatedData, nextEditedValues));
+
+    toast({
+      title: 'Edição em lote aplicada',
+      description: 'As cotações base foram atualizadas localmente. Clique em Salvar e Recalcular para enviar ao webhook.',
+    });
+  };
+
   const handleRecalculate = async () => {
     if (Object.keys(editedValues).length === 0) {
       toast({
@@ -426,11 +661,28 @@ function AuditPageContent() {
 
     startTransition(async () => {
       try {
-        const result = await triggerN8NRecalculation(targetDate, editedValues);
+        const baseAssetIds = ['usd', 'eur', 'milho', 'soja', 'boi_gordo', 'madeira', 'carbono'] as const;
+        const allAssetsSnapshot = baseAssetIds.reduce<Record<string, number>>((acc, assetId) => {
+          const asset = data.find((item) => item.id === assetId);
+          if (!asset) return acc;
+
+          const resolvedValue = editedValues[assetId] ?? asset.price;
+          if (typeof resolvedValue !== 'number' || Number.isNaN(resolvedValue)) return acc;
+
+          acc[assetId] = resolvedValue;
+          return acc;
+        }, {});
+
+        const missingAssets = baseAssetIds.filter((assetId) => allAssetsSnapshot[assetId] === undefined);
+        if (missingAssets.length > 0) {
+          throw new Error(`Snapshot incompleto para o webhook. Ativos ausentes: ${missingAssets.join(', ')}`);
+        }
+
+        const result = await triggerN8NRecalculation(targetDate, allAssetsSnapshot);
 
         if (result.success) {
           toast({
-            title: "Snapshot enviado",
+            title: "Snapshot completo enviado",
             description: result.message || "O N8N está reprocessando os dados.",
           });
           try { await clearCacheAndRefresh(); } catch {}
@@ -545,6 +797,14 @@ function AuditPageContent() {
     };
   }, [data, debouncedSearchTerm, categoryFilter, statusFilter, editedValues, sortKey, sortDir, searchTerm]);
 
+  const fallbackBaseAssets = useMemo(() => {
+    return baseAssets.filter((asset) => {
+      const isEdited = editedValues[asset.id] !== undefined;
+      if (isEdited) return false;
+      return asset.lastUpdated !== targetDateFormatted;
+    });
+  }, [baseAssets, editedValues, targetDateFormatted]);
+
   const baseTotalPages = Math.max(1, Math.ceil(filteredBaseAssets.length / basePageSize));
   const idxTotalPages = Math.max(1, Math.ceil(filteredIndices.length / idxPageSize));
   const pagedBaseAssets = filteredBaseAssets.slice((basePage - 1) * basePageSize, basePage * basePageSize);
@@ -610,6 +870,10 @@ function AuditPageContent() {
                       <p>Envia alterações para o N8N.</p>
                     </TooltipContent>
                   </Tooltip>
+                  <Button variant="outline" onClick={() => setIsBulkEditOpen(true)}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    Editar Cotações Base
+                  </Button>
                   <div className="ml-auto flex items-center gap-4">
                     <div className="hidden md:block">
                       <DateNavigator targetDate={targetDate} />
@@ -660,6 +924,29 @@ function AuditPageContent() {
             </Card>
           )}
 
+          <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl border-l-4 border-l-blue-500">
+            <CardContent className="p-4">
+              <div className="flex flex-col gap-2">
+                <p className="text-sm font-medium text-blue-900">
+                  Referência de data da auditoria: {targetDateFormatted}
+                </p>
+                <p className="text-sm text-blue-800">
+                  As cotações exibidas na tabela mostram explicitamente a data de origem em cada ativo.
+                </p>
+                {fallbackBaseAssets.length > 0 ? (
+                  <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                    Não há cotação exata em {targetDateFormatted} para {fallbackBaseAssets.length} ativo(s). 
+                    Estamos exibindo a data anterior disponível para: {fallbackBaseAssets.map((a) => `${a.name} (${a.lastUpdated})`).join(', ')}.
+                  </div>
+                ) : (
+                  <div className="rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-800">
+                    Todas as cotações base exibidas correspondem à data selecionada ({targetDateFormatted}).
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
           {isLoading ? (
             <div className="flex flex-col items-center justify-center h-64 gap-4">
               <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
@@ -692,6 +979,7 @@ function AuditPageContent() {
                     onSort={handleSort}
                     sortKey={sortKey}
                     sortDir={sortDir}
+                    targetDate={targetDate}
                   />
                   <div className="flex items-center justify-between mt-4">
                     <div className="flex items-center gap-2 text-sm">
@@ -736,6 +1024,13 @@ function AuditPageContent() {
           currentUser="Administrador"
         />
       )}
+      <BulkBaseEditModal
+        isOpen={isBulkEditOpen}
+        onOpenChange={setIsBulkEditOpen}
+        baseAssets={data.filter((asset) => (BASE_ASSET_IDS as readonly string[]).includes(asset.id))}
+        targetDate={targetDate}
+        onApply={handleApplyBulkBaseEdit}
+      />
     </>
   );
 }

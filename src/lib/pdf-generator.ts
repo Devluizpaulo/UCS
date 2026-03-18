@@ -205,7 +205,7 @@ const generateAiAnalysisPdf = (data: DashboardPdfData): jsPDF => {
 // ===================================================================================
 const generateExecutiveDashboardPdf = (data: DashboardPdfData): jsPDF => {
     const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' }) as jsPDFWithAutoTable;
-    const { mainIndex, secondaryIndices, currencies, otherAssets, targetDate } = data;
+    const { mainIndex, secondaryIndices, currencies, otherAssets, historicalTable, targetDate } = data;
     
     const pageW = doc.internal.pageSize.getWidth();
     const pageH = doc.internal.pageSize.getHeight();
@@ -481,6 +481,61 @@ const generateExecutiveDashboardPdf = (data: DashboardPdfData): jsPDF => {
                 if (data.column.index === 3 && data.section === 'body') {
                     const rawValue = data.cell.raw as string;
                     data.cell.styles.textColor = rawValue.startsWith('+') ? COLORS.kpi.green : COLORS.kpi.red;
+                }
+            }
+        });
+        y = (doc as any).lastAutoTable.finalY;
+    }
+
+    if (opts.includeTable && historicalTable && historicalTable.rows.length > 0) {
+        if (y > pageH - 180) {
+            doc.addPage();
+            y = 50;
+        } else {
+            y += 24;
+        }
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(14);
+        doc.setTextColor(17, 24, 39);
+        doc.text(historicalTable.title, margin, y);
+        y += 16;
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
+        doc.setTextColor(COLORS.textSecondary);
+        doc.text(
+            `${historicalTable.assetName} • ${historicalTable.mode === 'monthly' ? 'Primeira cotacao disponivel do mes' : 'Cotacoes diarias do periodo selecionado'}`,
+            margin,
+            y
+        );
+        y += 14;
+
+        const head = historicalTable.includeOriginalPrice
+            ? [['Data', 'Hora', 'Cotacao Original', 'Valor UCS', 'Variacao', 'Variacao Abs.']]
+            : [['Data', 'Hora', 'Valor UCS', 'Variacao', 'Variacao Abs.']];
+
+        const body = historicalTable.rows.map((row) => historicalTable.includeOriginalPrice
+            ? [row.date, row.time, row.originalPrice || 'N/A', row.price, row.variation, row.absoluteChange]
+            : [row.date, row.time, row.price, row.variation, row.absoluteChange]
+        );
+
+        const variationColumnIndex = historicalTable.includeOriginalPrice ? 4 : 3;
+        const absoluteChangeColumnIndex = historicalTable.includeOriginalPrice ? 5 : 4;
+
+        doc.autoTable({
+            startY: y,
+            head,
+            body,
+            theme: 'striped',
+            headStyles: { fillColor: COLORS.primary, textColor: 255 },
+            styles: { cellPadding: 6, fontSize: 9 },
+            didParseCell: (tableData: any) => {
+                if (tableData.section !== 'body') return;
+
+                if (tableData.column.index === variationColumnIndex || tableData.column.index === absoluteChangeColumnIndex) {
+                    const rawValue = String(tableData.cell.raw || '');
+                    tableData.cell.styles.textColor = rawValue.startsWith('+') ? COLORS.kpi.green : COLORS.kpi.red;
                 }
             }
         });

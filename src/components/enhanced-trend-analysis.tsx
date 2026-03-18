@@ -82,6 +82,24 @@ const getPriceFromQuote = (quote: FirestoreQuote, assetId: string): number | und
   return typeof value === 'number' ? value : undefined;
 };
 
+const getQuoteDate = (quote: FirestoreQuote): Date | null => {
+  try {
+    if (typeof quote.data === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(quote.data)) {
+      const parsed = parse(quote.data, 'dd/MM/yyyy', new Date());
+      return isValid(parsed) ? parsed : null;
+    }
+
+    if (quote.timestamp) {
+      const parsed = new Date(quote.timestamp as any);
+      return isValid(parsed) ? parsed : null;
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+};
+
 // Componente principal melhorado
 export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
   const [data, setData] = useState<Record<string, FirestoreQuote[]>>({});
@@ -394,6 +412,75 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
       return undefined;
     }
   }, [chartData, isMultiLine, visibleAssets, selectedAssetId]);
+
+  const historicalPdfTable = useMemo(() => {
+    if (!selectedAssetConfig) return undefined;
+
+    const history = data[selectedAssetId] || [];
+    if (history.length === 0) return undefined;
+
+    const cutoffDate = subDays(new Date(), timeRangeInDays[timeRange]);
+    const filteredHistory = history
+      .map((quote) => ({ quote, date: getQuoteDate(quote) }))
+      .filter((item): item is { quote: FirestoreQuote; date: Date } => item.date !== null)
+      .filter(({ date }) => timeRange === 'all' || date >= cutoffDate)
+      .sort((a, b) => b.date.getTime() - a.date.getTime());
+
+    if (filteredHistory.length === 0) return undefined;
+
+    const tableMode = timeRange === '1y' || timeRange === '5y' || timeRange === 'all' ? 'monthly' : 'daily';
+    const includeOriginalPrice = ['soja', 'carbono', 'madeira'].includes(selectedAssetId);
+
+    const effectiveHistory = tableMode === 'monthly'
+      ? (() => {
+          const monthMap = new Map<string, { quote: FirestoreQuote; date: Date }>();
+          [...filteredHistory].reverse().forEach((item) => {
+            const monthKey = format(item.date, 'yyyy-MM');
+            if (!monthMap.has(monthKey)) {
+              monthMap.set(monthKey, item);
+            }
+          });
+
+          return Array.from(monthMap.values()).sort((a, b) => b.date.getTime() - a.date.getTime());
+        })()
+      : filteredHistory;
+
+    const rows = effectiveHistory.map((item, index) => {
+      const priceBRL = getPriceFromQuote(item.quote, selectedAssetId);
+      const previousQuote = effectiveHistory[index + 1]?.quote;
+      const previousPriceBRL = previousQuote ? getPriceFromQuote(previousQuote, selectedAssetId) : undefined;
+
+      let variation = 0;
+      let absoluteChange = 0;
+
+      if (priceBRL !== undefined && previousPriceBRL !== undefined && previousPriceBRL > 0) {
+        absoluteChange = priceBRL - previousPriceBRL;
+        variation = (absoluteChange / previousPriceBRL) * 100;
+      }
+
+      return {
+        date: format(item.date, 'dd/MM/yyyy'),
+        time: format(item.date, 'HH:mm:ss'),
+        ...(includeOriginalPrice ? {
+          originalPrice: typeof item.quote.ultimo === 'number'
+            ? formatCurrency(item.quote.ultimo, selectedAssetConfig.currency, selectedAssetId)
+            : 'N/A'
+        } : {}),
+        price: priceBRL !== undefined ? formatCurrency(priceBRL, 'BRL', selectedAssetId) : 'N/A',
+        variation: `${variation >= 0 ? '+' : ''}${variation.toFixed(2)}%`,
+        absoluteChange: `${absoluteChange >= 0 ? '+' : ''}${formatCurrency(absoluteChange, 'BRL', selectedAssetId)}`,
+      };
+    });
+
+    return {
+      title: 'Tabela Historica do Periodo',
+      assetName: selectedAssetConfig.name,
+      periodLabel: timeRange,
+      mode: tableMode,
+      includeOriginalPrice,
+      rows,
+    };
+  }, [data, selectedAssetConfig, selectedAssetId, timeRange]);
   
   const handleVisibilityChange = (assetId: string) => {
     setVisibleAssets(prev => ({
@@ -493,6 +580,7 @@ export function EnhancedTrendAnalysis({ targetDate }: { targetDate: Date }) {
                       secondaryIndices: [],
                       currencies: [],
                       otherAssets: pdfOtherAssets,
+                      historicalTable: historicalPdfTable,
                       targetDate,
                       analysisMeta: {
                         timeRange,

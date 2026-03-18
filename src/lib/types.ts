@@ -104,6 +104,24 @@ export interface CustomSection {
     data?: any[];
 }
 
+export interface HistoricalPdfTableRow {
+    date: string;
+    time: string;
+    originalPrice?: string;
+    price: string;
+    variation: string;
+    absoluteChange: string;
+}
+
+export interface HistoricalPdfTableData {
+    title: string;
+    assetName: string;
+    periodLabel: string;
+    mode: 'daily' | 'monthly';
+    includeOriginalPrice: boolean;
+    rows: HistoricalPdfTableRow[];
+}
+
 
 // Defines the data structure needed for generating PDF reports
 export interface DashboardPdfData {
@@ -112,6 +130,7 @@ export interface DashboardPdfData {
     currencies: CommodityPriceData[];
     otherAssets: CommodityPriceData[];
     targetDate: Date;
+    historicalTable?: HistoricalPdfTableData;
     // Dados para o relatório de IA
     aiReportData?: ReportOutput;
     // Dados avançados para relatórios comerciais

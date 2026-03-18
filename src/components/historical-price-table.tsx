@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import type { CommodityPriceData, FirestoreQuote } from '@/lib/types';
 import {
   Table,
@@ -29,6 +29,25 @@ interface HistoricalPriceTableProps {
 }
 
 const ITEMS_PER_PAGE = 10;
+type TableMode = 'daily' | 'monthly';
+
+const getQuoteDate = (quote: FirestoreQuote): Date | null => {
+  try {
+    if (quote?.data && typeof quote.data === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(quote.data)) {
+      const parsed = parse(quote.data, 'dd/MM/yyyy', new Date());
+      return isValid(parsed) ? parsed : null;
+    }
+
+    if (quote?.timestamp) {
+      const parsed = new Date(quote.timestamp as any);
+      return isValid(parsed) ? parsed : null;
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+};
 
 // Função para extrair preço de uma cotação
 const getPriceFromQuote = (quote: FirestoreQuote, assetId: string): number | undefined => {
@@ -48,48 +67,62 @@ const getPriceFromQuote = (quote: FirestoreQuote, assetId: string): number | und
 
 export function AssetHistoricalTable({ assetId, data, assetConfig, isLoading, onRowClick }: HistoricalPriceTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
+  const [tableMode, setTableMode] = useState<TableMode>('monthly');
 
   const sortedData = useMemo(() => {
     return [...data].sort((a, b) => {
-        let dateA, dateB;
-        try {
-            if (typeof a.data === 'string' && a.data.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
-                dateA = parse(a.data, 'dd/MM/yyyy', new Date());
-            } else if (a.timestamp) {
-                dateA = new Date(a.timestamp as any);
-            } else {
-                return 1;
-            }
-        } catch {
-            return 1;
-        }
+      const dateA = getQuoteDate(a);
+      const dateB = getQuoteDate(b);
 
-        try {
-            if (typeof b.data === 'string' && b.data.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
-                dateB = parse(b.data, 'dd/MM/yyyy', new Date());
-            } else if (b.timestamp) {
-                dateB = new Date(b.timestamp as any);
-            } else {
-                return -1;
-            }
-        } catch {
-            return -1;
-        }
+      if (!dateA && !dateB) return 0;
+      if (!dateA) return 1;
+      if (!dateB) return -1;
 
-        if (!isValid(dateA)) return 1;
-        if (!isValid(dateB)) return -1;
-        
-        return dateB.getTime() - dateA.getTime();
+      return dateB.getTime() - dateA.getTime();
     });
   }, [data]);
+
+  const monthlyFirstQuotes = useMemo(() => {
+    const monthlyMap = new Map<string, FirestoreQuote>();
+    const chronologicalData = [...sortedData].reverse();
+
+    chronologicalData.forEach((quote) => {
+      const date = getQuoteDate(quote);
+      if (!date) return;
+
+      const monthKey = format(date, 'yyyy-MM');
+      if (!monthlyMap.has(monthKey)) {
+        monthlyMap.set(monthKey, quote);
+      }
+    });
+
+    return Array.from(monthlyMap.values()).sort((a, b) => {
+      const dateA = getQuoteDate(a);
+      const dateB = getQuoteDate(b);
+
+      if (!dateA && !dateB) return 0;
+      if (!dateA) return 1;
+      if (!dateB) return -1;
+
+      return dateB.getTime() - dateA.getTime();
+    });
+  }, [sortedData]);
+
+  const tableData = useMemo(() => {
+    return tableMode === 'monthly' ? monthlyFirstQuotes : sortedData;
+  }, [tableMode, monthlyFirstQuotes, sortedData]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [tableMode, tableData.length]);
 
   const paginatedData = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     const endIndex = startIndex + ITEMS_PER_PAGE;
-    return sortedData.slice(startIndex, endIndex);
-  }, [sortedData, currentPage]);
+    return tableData.slice(startIndex, endIndex);
+  }, [tableData, currentPage]);
   
-  const totalPages = Math.ceil(sortedData.length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(tableData.length / ITEMS_PER_PAGE);
 
   const formatDate = (quote: FirestoreQuote) => {
     try {
@@ -134,6 +167,31 @@ export function AssetHistoricalTable({ assetId, data, assetConfig, isLoading, on
 
   return (
     <>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2 rounded-lg border p-1">
+            <Button
+              type="button"
+              size="sm"
+              variant={tableMode === 'monthly' ? 'default' : 'ghost'}
+              onClick={() => setTableMode('monthly')}
+            >
+              Relatório Mensal
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant={tableMode === 'daily' ? 'default' : 'ghost'}
+              onClick={() => setTableMode('daily')}
+            >
+              Histórico Diário
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {tableMode === 'monthly'
+              ? 'Exibindo a primeira cotação disponível de cada mês.'
+              : 'Exibindo todas as cotações do período selecionado.'}
+          </p>
+        </div>
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -153,7 +211,7 @@ export function AssetHistoricalTable({ assetId, data, assetConfig, isLoading, on
                 const priceBRL = getPriceFromQuote(quote, assetId);
                 const originalPrice = quote.ultimo;
                 
-                const previousQuote = sortedData[startIndex + index + 1] ?? null;
+                const previousQuote = tableData[startIndex + index + 1] ?? null;
                 const previousPriceBRL = previousQuote ? getPriceFromQuote(previousQuote, assetId) : undefined;
                 
                 let variation = 0;
@@ -223,7 +281,7 @@ export function AssetHistoricalTable({ assetId, data, assetConfig, isLoading, on
         {totalPages > 1 && (
           <div className="flex items-center justify-between p-4 border-t">
             <span className="text-sm text-muted-foreground">
-              Página {currentPage} de {totalPages} • {sortedData.length} registros no total
+              Página {currentPage} de {totalPages} • {tableData.length} registros no total
             </span>
             <div className="flex items-center gap-2">
               <Button

@@ -23,6 +23,8 @@ const CACHE_TTL = {
   HISTORICAL: 86400, // 24 horas
 } as const;
 
+const MAX_FALLBACK_DAYS = 31;
+
 const COLLECTIONS = {
   SETTINGS: 'settings',
   COMMODITIES_DOC: 'commodities',
@@ -199,6 +201,40 @@ function serializeFirestoreTimestamp(data: any): any {
     }
   }
   return serializedData;
+}
+
+/**
+ * Extrai a data efetiva da cotação para comparações de fallback.
+ */
+function getQuoteEffectiveDate(quoteData: any): Date | null {
+  try {
+    if (quoteData?.data && typeof quoteData.data === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(quoteData.data)) {
+      const [day, month, year] = quoteData.data.split('/').map(Number);
+      const parsed = new Date(year, month - 1, day);
+      if (!isNaN(parsed.getTime())) {
+        return parsed;
+      }
+    }
+
+    const serializedTimestamp = serializeFirestoreTimestamp(quoteData?.timestamp);
+    if (typeof serializedTimestamp === 'number') {
+      const parsed = new Date(serializedTimestamp);
+      if (!isNaN(parsed.getTime())) {
+        return parsed;
+      }
+    }
+
+    if (typeof quoteData?.timestamp === 'string') {
+      const parsed = new Date(quoteData.timestamp);
+      if (!isNaN(parsed.getTime())) {
+        return parsed;
+      }
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -860,19 +896,60 @@ export async function getQuoteByDate(assetId: string, date: Date): Promise<Fires
       return serializeFirestoreTimestamp({ id: doc.id, ...normalizedData }) as FirestoreQuote;
     }
     
-    // Fallback: se não encontrar na data exata, busca a mais recente ANTERIOR à data
-    const historicalSnapshot = await db.collection(assetId)
-      .where('data', '<', formattedDate) // Busca datas estritamente menores
-      .orderBy('data', 'desc')
-      .limit(1)
-      .get();
-      
-    if (!historicalSnapshot.empty) {
-        const doc = historicalSnapshot.docs[0];
-        const rawData = doc.data();
-        const normalizedData = normalizeAssetData(rawData);
-        const result = serializeFirestoreTimestamp({ id: doc.id, ...normalizedData }) as FirestoreQuote;
-        return result;
+    // Fallback controlado: busca a cotação anterior mais próxima, limitada aos últimos 31 dias.
+    const fallbackStartDate = startOfDay(subDays(date, MAX_FALLBACK_DAYS));
+    const targetEndDate = endOfDay(date);
+
+    const fallbackDocsById = new Map<string, any>();
+
+    try {
+      const byTimestampSnapshot = await db.collection(assetId)
+        .orderBy('timestamp', 'desc')
+        .limit(500)
+        .get();
+
+      byTimestampSnapshot.docs.forEach((doc) => {
+        fallbackDocsById.set(doc.id, { id: doc.id, ...doc.data() });
+      });
+    } catch {
+      // Ignora falha de ordenação por timestamp e tenta por data textual.
+    }
+
+    try {
+      const byDataSnapshot = await db.collection(assetId)
+        .orderBy('data', 'desc')
+        .limit(500)
+        .get();
+
+      byDataSnapshot.docs.forEach((doc) => {
+        if (!fallbackDocsById.has(doc.id)) {
+          fallbackDocsById.set(doc.id, { id: doc.id, ...doc.data() });
+        }
+      });
+    } catch {
+      // Sem fallback adicional se também falhar por data.
+    }
+
+    let bestFallback: any | null = null;
+    let bestFallbackTime = -1;
+
+    fallbackDocsById.forEach((candidate) => {
+      const effectiveDate = getQuoteEffectiveDate(candidate);
+      if (!effectiveDate) return;
+
+      if (effectiveDate > targetEndDate) return;
+      if (effectiveDate < fallbackStartDate) return;
+
+      const candidateTime = effectiveDate.getTime();
+      if (candidateTime > bestFallbackTime) {
+        bestFallbackTime = candidateTime;
+        bestFallback = candidate;
+      }
+    });
+
+    if (bestFallback) {
+      const normalizedData = normalizeAssetData(bestFallback);
+      return serializeFirestoreTimestamp(normalizedData) as FirestoreQuote;
     }
 
     return null;
