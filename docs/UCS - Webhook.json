@@ -20,7 +20,7 @@
       "webhookId": "89ba4407-4fd0-411b-9155-cfe552d8648e",
       "credentials": {
         "httpHeaderAuth": {
-          "id": "CY1JYOI8weHUQGKZ",
+          "id": "3ISMxOfmUMJKAKdO",
           "name": "Header Auth account"
         }
       }
@@ -1904,7 +1904,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "97b4482b-ac0b-4dde-b932-7105015ead7d",
+  "versionId": "f94c7ecb-3df1-4d30-b94b-a7856a918366",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "13b0ea5dd383d159ddd6c18778dc7059e86dde50c7b38850c42dfbb9a92940a0"

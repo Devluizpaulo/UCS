@@ -97,11 +97,11 @@ export function calculateRentMediaCarbono(carbonoPrice: number, eurRate: number)
 
 /**
  * Calcula o VUS (Valor de Uso do Solo).
- * Fórmula: ((rentBoi * 0.35) + (rentMilho * 0.30) + (rentSoja * 0.35)) * (1 - 0.048) * 25
+ * Fórmula: ((rentBoi * 0.35) + (rentMilho * 0.30) + (rentSoja * 0.35)) * 4.80 * 25
  */
 export function calculateVUS(rentMediaBoi: number, rentMediaMilho: number, rentMediaSoja: number): number {
   const somaPonderada = (rentMediaBoi * 0.35) + (rentMediaMilho * 0.30) + (rentMediaSoja * 0.35);
-  return somaPonderada * (1 - 0.048) * 25;
+  return somaPonderada * 4.80 * 25;
 }
 
 /**
@@ -198,65 +198,84 @@ export function calculateUCSASE(ucs: number, cotacaoUSD: number, cotacaoEUR: num
 export function runCompleteSimulation(input: SimulationInput): CalculationResult[] {
   try {
     // Nível 2: Calcular rentabilidades médias
-    const rentMediaSoja = calculateRentMediaSoja(input.soja, input.usd);
-    const rentMediaMilho = calculateRentMediaMilho(input.milho);
-    const rentMediaBoi = calculateRentMediaBoi(input.boi_gordo);
-    const rentMediaCarbono = calculateRentMediaCarbono(input.carbono, input.eur);
-    const rentMediaMadeira = calculateRentMediaMadeira(input.madeira, input.usd);
+    // Garantir que os inputs básicos sejam números válidos
+    const usd = Number(input.usd) || 0;
+    const eur = Number(input.eur) || 0;
+    const soja = Number(input.soja) || 0;
+    const milho = Number(input.milho) || 0;
+    const boi = Number(input.boi_gordo) || 0;
+    const carbono = Number(input.carbono) || 0;
+    const madeira = Number(input.madeira) || 0;
+
+    const rentMediaSoja = calculateRentMediaSoja(soja, usd);
+    const rentMediaMilho = calculateRentMediaMilho(milho);
+    const rentMediaBoi = calculateRentMediaBoi(boi);
+    const rentMediaCarbono = calculateRentMediaCarbono(carbono, eur);
+    const rentMediaMadeira = calculateRentMediaMadeira(madeira, usd);
 
     // Nível 3: Calcular índices de composição
-    const vus = calculateVUS(rentMediaBoi, rentMediaMilho, rentMediaSoja);
+    // Nota: O multiplicador 4.80 (VUS_INTERMEDIATE_MULTIPLIER) é usado aqui em vez de (1 - 0.048)
+    const somaPonderadaVUS = (rentMediaBoi * 0.35) + (rentMediaMilho * 0.30) + (rentMediaSoja * 0.35);
+    const vus = somaPonderadaVUS * 4.80 * 25;
+    
     const vmad = calculateVMAD(rentMediaMadeira);
     const carbonoCrs = calculateCarbonoCRS(rentMediaCarbono);
-    const ch2oAgua = calculateCH2OAgua(rentMediaBoi, rentMediaMilho, rentMediaSoja, rentMediaMadeira, rentMediaCarbono);
+    
+    // O CH2O Água é a base para o Água CRS e para o PDM
+    const ch2oAgua = (rentMediaBoi * 0.35) + (rentMediaMilho * 0.30) + (rentMediaSoja * 0.35) + rentMediaMadeira + rentMediaCarbono;
 
     // Nível 4: Calcular índices finais (Cascata)
-    const custoAgua = calculateCustoAgua(ch2oAgua);
-    const pdm = calculatePDM(ch2oAgua, custoAgua);
-    const ucs = calculateUCS(pdm);
-    const ucsAseData = calculateUCSASE(ucs, input.usd, input.eur);
+    const custoAgua = ch2oAgua * 0.07;
+    const pdm = ch2oAgua + custoAgua;
+    const ucs = (pdm / 900) / 2;
+    const ucsAseData = calculateUCSASE(ucs, usd, eur);
     
-    // O documento menciona um ativo `Agua_CRS` que é derivado. 
-    // Com base na fórmula `valor_uso_solo`, Agua_CRS é o próprio `ch2o_agua`.
+    // Agua_CRS é o próprio ch2o_agua
     const aguaCrs = ch2oAgua;
     const valorUsoSolo = vus + vmad + carbonoCrs + aguaCrs;
 
-
     // Estrutura para armazenar todos os valores calculados
     const calculatedValues = {
-      vus, vmad, carbono_crs: carbonoCrs, ch2o_agua: ch2oAgua, custo_agua: custoAgua, 
-      Agua_CRS: aguaCrs, valor_uso_solo: valorUsoSolo, pdm, ucs, ucs_ase: ucsAseData.valor_brl
+      vus, 
+      vmad, 
+      carbono_crs: carbonoCrs, 
+      ch2o_agua: ch2oAgua, 
+      custo_agua: custoAgua, 
+      Agua_CRS: aguaCrs, 
+      valor_uso_solo: valorUsoSolo, 
+      pdm, 
+      ucs, 
+      ucs_ase: ucsAseData.valor_brl
     };
     
     // Mapeamento de Fórmulas para Exibição
     const formulas: Record<string, string> = {
-      vus: '((rentBoi * 0.35) + (rentMilho * 0.30) + (rentSoja * 0.35)) * (1 - 0.048) * 25',
+      vus: '((rentBoi * 35%) + (rentMilho * 30%) + (rentSoja * 35%)) * 4.8 * 25',
       vmad: 'rent_media_madeira * 5',
       carbono_crs: 'rent_media_carbono * 25',
-      ch2o_agua: '(rentBoi*35%)+(rentMilho*30%)+(rentSoja*35%)+Madeira+Carbono',
+      ch2o_agua: '(Boi*35%)+(Milho*30%)+(Soja*35%)+Madeira+Carbono',
       custo_agua: 'ch2o_agua * 0.07',
-      Agua_CRS: 'valor_CH2O',
+      Agua_CRS: 'ch2o_agua',
       valor_uso_solo: 'VUS + Vmad + Carbono_CRS + Agua_CRS',
       pdm: 'ch2o_agua + custo_agua',
       ucs: '(PDM / 900) / 2',
       ucs_ase: 'UCS * 2',
     };
 
-    // Gera o resultado final
+    // Gera o resultado final garantindo que todos os itens existam
     return Object.entries(calculatedValues).map(([assetId, newValue]) => {
-      // Map "Agua_CRS" to the correct input key name (current_agua_crs)
       const adjustedKey = assetId === 'Agua_CRS' ? 'current_agua_crs' : `current_${assetId}`;
-      const currentValue = (input as any)[adjustedKey] as number || 0;
+      const currentValue = (input as any)[adjustedKey] || 0;
       
-      let result: CalculationResult = {
+      const result: CalculationResult = {
         id: assetId,
         name: getAssetDisplayName(assetId),
-        currentValue: currentValue,
-        newValue: newValue,
+        currentValue: Number(currentValue) || 0,
+        newValue: Number(newValue) || 0,
         formula: formulas[assetId] || 'N/A',
       };
       
-      if(assetId === 'ucs_ase') {
+      if (assetId === 'ucs_ase' && ucsAseData) {
         result.components = ucsAseData.componentes;
         result.conversions = ucsAseData.conversions;
       }
@@ -265,7 +284,8 @@ export function runCompleteSimulation(input: SimulationInput): CalculationResult
     });
 
   } catch (error) {
-    console.error('Erro na simulação completa:', error);
+    console.error('CRITICAL: Erro na simulação completa:', error);
+    // Retorna um fallback em vez de array vazio para evitar que o modal trave
     return [];
   }
 }

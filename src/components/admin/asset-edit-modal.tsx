@@ -140,8 +140,20 @@ export function AssetEditModal({ isOpen, onOpenChange, onSave, asset, allAssets 
 
       (simulationInput as any)[asset.id] = numericPrice;
 
-      const results = runCompleteSimulation(simulationInput);
-      setCalculationResults(results);
+      try {
+        const results = runCompleteSimulation(simulationInput);
+        // Filtrar apenas ativos que realmente mudaram significativamente (> 0.001%)
+        const filteredResults = results.filter(r => {
+          const change = r.currentValue !== 0 
+            ? Math.abs((r.newValue - r.currentValue) / r.currentValue) 
+            : (r.newValue !== 0 ? 1 : 0);
+          return change > 0.00001;
+        });
+        setCalculationResults(filteredResults);
+      } catch (err) {
+        console.error('Erro ao processar simulação:', err);
+        setCalculationResults([]);
+      }
     } else {
       setCalculationResults([]);
     }
@@ -352,7 +364,7 @@ export function AssetEditModal({ isOpen, onOpenChange, onSave, asset, allAssets 
             </AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleConfirmSave}
-              disabled={isSaving || (calculationResults.length === 0 && hasChanges)}
+              disabled={isSaving}
               className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400"
             >
               {isSaving ? (

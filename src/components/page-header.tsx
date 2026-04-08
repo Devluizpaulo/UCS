@@ -21,7 +21,7 @@ export function PageHeader({ title, description, icon, children, trigger }: Page
       )}>
       <div className="flex flex-1 items-center gap-3 min-w-0">
         {/* Burger Menu Trigger - Always available to toggle sidebar */}
-        {trigger || <SidebarTrigger className="-ml-2 h-9 w-9" />}
+        {trigger}
         
         {/* Mobile/Tablet Logo - Visible only when main sidebar is hidden (lg:hidden) */}
         <div className="flex lg:hidden items-center mr-2">

@@ -35,27 +35,7 @@ export function AssetActions({ asset, onEdit }: AssetActionsProps) {
   return (
     <div className="flex items-center justify-center gap-1">
       <TooltipProvider>
-        {/* Botão de Editar */}
-        {canEdit && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEdit(asset);
-                }}
-                className="h-8 w-8 p-0"
-              >
-                <Edit className="h-3 w-3" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Editar valor</p>
-            </TooltipContent>
-          </Tooltip>
-        )}
+        {/* Botão de Editar Removido por solicitação */}
         
         {/* Botão de Link Externo */}
         {shouldShowSourceLink && finalSourceUrl && (

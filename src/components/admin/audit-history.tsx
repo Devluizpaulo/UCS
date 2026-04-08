@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -133,7 +133,7 @@ export function AuditHistory({ targetDate, logs, isLoading = false }: AuditHisto
             </TableHeader>
             <TableBody>
               {logs.map((log) => (
-                <>
+                <Fragment key={log.id}>
                   <TableRow key={log.id} className="cursor-pointer hover:bg-muted/50">
                     <TableCell className="font-mono text-sm">
                       {format(log.timestamp, 'HH:mm:ss', { locale: ptBR })}
@@ -204,7 +204,7 @@ export function AuditHistory({ targetDate, logs, isLoading = false }: AuditHisto
                       </TableCell>
                     </TableRow>
                   )}
-                </>
+                </Fragment>
               ))}
             </TableBody>
           </Table>

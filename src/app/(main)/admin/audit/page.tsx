@@ -9,7 +9,7 @@ import { getRawCommodityPricesByDate, clearCacheAndRefresh } from '@/lib/data-se
 import type { CommodityPriceData } from '@/lib/types';
 import * as Calc from '@/lib/calculation-service';
 import { triggerN8NRecalculation } from '@/lib/n8n-actions';
-import { isValid, parseISO, format } from 'date-fns';
+import { isValid, parseISO, format, subDays } from 'date-fns';
 import { DateNavigator } from '@/components/date-navigator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { formatCurrency } from '@/lib/formatters';
@@ -167,8 +167,7 @@ function BulkBaseEditModal({
 
     const initialValues = BASE_ASSET_IDS.reduce<Record<BaseAssetId, string>>((acc, id) => {
       const asset = baseAssets.find((item) => item.id === id);
-      const hasExactDateValue = asset && asset.lastUpdated === targetDateFormatted;
-      const initialValue = hasExactDateValue ? asset.price : 0;
+      const initialValue = asset ? asset.price : 0;
 
       acc[id] = formatNumberForInput(Number(initialValue || 0));
       return acc;
@@ -502,6 +501,7 @@ const IndexTable = ({ indices, onEdit }: { indices: CommodityPriceData[]; onEdit
 };
 
 function AuditPageContent() {
+  const { user } = useUser();
   const searchParams = useSearchParams();
   const dateParam = searchParams.get('date');
   const { toast } = useToast();
@@ -678,7 +678,11 @@ function AuditPageContent() {
           throw new Error(`Snapshot incompleto para o webhook. Ativos ausentes: ${missingAssets.join(', ')}`);
         }
 
-        const result = await triggerN8NRecalculation(targetDate, allAssetsSnapshot);
+        const result = await triggerN8NRecalculation(
+          targetDate, 
+          allAssetsSnapshot, 
+          user?.displayName || user?.email || "Administrador"
+        );
 
         if (result.success) {
           toast({
@@ -854,43 +858,52 @@ function AuditPageContent() {
           description="Verifique, corrija e recalcule os dados históricos da plataforma."
           icon={<History className="h-5 w-5 text-primary hidden sm:block" />}
         />
-        <main className="flex flex-1 flex-col gap-6 p-4 md:gap-8 md:p-6 bg-gradient-to-br from-slate-50 to-blue-50">
-          <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
-            <CardContent className="p-4">
-              <div className="flex flex-wrap items-center gap-3">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button onClick={handleRecalculate} disabled={!hasEdits || isPending} className="bg-green-600 hover:bg-green-700">
-                        {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                        Salvar e Recalcular
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Envia alterações para o N8N.</p>
-                    </TooltipContent>
-                  </Tooltip>
-                  <Button variant="outline" onClick={() => setIsBulkEditOpen(true)}>
-                    <Edit className="mr-2 h-4 w-4" />
-                    Editar Cotações Base
+        <main className="flex flex-1 flex-col gap-6 p-4 md:gap-4 md:p-6 bg-slate-50/50">
+          <Card className="bg-white border-0 shadow-sm overflow-hidden ring-1 ring-slate-200">
+            <CardContent className="p-3">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center gap-2">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button 
+                          onClick={handleRecalculate} 
+                          disabled={!hasEdits || isPending} 
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all"
+                        >
+                          {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                          Salvar e Recalcular
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Enviar alterações ao motor de cálculo N8N</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+
+                  <Button variant="outline" onClick={() => setIsBulkEditOpen(true)} className="border-slate-200 text-slate-700 hover:bg-slate-50 shadow-sm">
+                    <Edit className="mr-2 h-4 w-4 text-slate-500" />
+                    Editar Ativos Base
                   </Button>
-                  <div className="ml-auto flex items-center gap-4">
-                    <div className="hidden md:block">
-                      <DateNavigator targetDate={targetDate} />
+                </div>
+
+                <div className="flex items-center gap-6">
+                  <div className="flex items-center bg-slate-100/80 p-1 rounded-lg border border-slate-200/50">
+                    <DateNavigator targetDate={targetDate} />
+                  </div>
+                  
+                  <div className="flex items-center gap-4 text-sm border-l pl-6 border-slate-200">
+                    <div className="flex flex-col items-end">
+                      <span className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Status da Auditoria</span>
+                      <div className="flex items-center gap-2">
+                        <Activity className="h-3.5 w-3.5 text-emerald-500" />
+                        <span className="font-semibold text-slate-700">{Object.keys(editedValues).length} pendentes</span>
+                      </div>
                     </div>
-                    <div className="hidden sm:flex items-center gap-2 text-xs md:text-sm text-gray-600">
-                      <Activity className="h-4 w-4 text-green-600" />
-                      <span className="hidden lg:inline">Edições pendentes:</span>
-                      <Badge variant={hasEdits ? 'destructive' : 'secondary'} className="font-medium">
-                        {Object.keys(editedValues).length}
-                      </Badge>
-                      <span className="hidden lg:inline">Data:</span>
-                      <Badge variant="outline" className="font-mono text-[10px] md:text-xs">
-                        {format(targetDate, 'dd/MM/yyyy')}
-                      </Badge>
+                    <div className="flex flex-col items-end">
+                      <span className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Data Referência</span>
+                      <span className="font-mono text-slate-900 font-bold">{targetDateFormatted}</span>
                     </div>
                   </div>
-                </TooltipProvider>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -904,12 +917,12 @@ function AuditPageContent() {
           />
 
           {validationAlerts.length > 0 && (
-            <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl border-l-4 border-l-yellow-500">
-              <CardHeader className="bg-gradient-to-r from-yellow-50 to-orange-50">
-                <CardTitle className="flex items-center gap-3 text-yellow-800">
-                  <AlertTriangle className="h-6 w-6 text-yellow-600" />
+            <Card className="bg-white border-0 shadow-lg ring-1 ring-amber-200 border-l-4 border-l-amber-500">
+              <CardHeader className="py-3 px-6 bg-amber-50/50">
+                <CardTitle className="flex items-center gap-3 text-amber-900 text-lg">
+                  <AlertTriangle className="h-5 w-5 text-amber-600" />
                   Alertas de Validação
-                  <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+                  <Badge variant="secondary" className="bg-amber-100 text-amber-800 border-amber-200">
                     {validationAlerts.length}
                   </Badge>
                 </CardTitle>
@@ -924,36 +937,13 @@ function AuditPageContent() {
             </Card>
           )}
 
-          <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl border-l-4 border-l-blue-500">
-            <CardContent className="p-4">
-              <div className="flex flex-col gap-2">
-                <p className="text-sm font-medium text-blue-900">
-                  Referência de data da auditoria: {targetDateFormatted}
-                </p>
-                <p className="text-sm text-blue-800">
-                  As cotações exibidas na tabela mostram explicitamente a data de origem em cada ativo.
-                </p>
-                {fallbackBaseAssets.length > 0 ? (
-                  <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-                    Não há cotação exata em {targetDateFormatted} para {fallbackBaseAssets.length} ativo(s). 
-                    Estamos exibindo a data anterior disponível para: {fallbackBaseAssets.map((a) => `${a.name} (${a.lastUpdated})`).join(', ')}.
-                  </div>
-                ) : (
-                  <div className="rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-800">
-                    Todas as cotações base exibidas correspondem à data selecionada ({targetDateFormatted}).
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
           {isLoading ? (
             <div className="flex flex-col items-center justify-center h-64 gap-4">
               <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
               <p className="text-gray-600">Carregando dados para auditoria...</p>
             </div>
           ) : data.length === 0 ? (
-            <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl">
+            <Card className="bg-white border-0 shadow-sm">
               <CardContent className="p-12 text-center">
                 <Search className="h-12 w-12 mx-auto mb-4 text-gray-400" />
                 <h3 className="text-lg font-semibold">Nenhum Dado Encontrado</h3>
@@ -961,15 +951,45 @@ function AuditPageContent() {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid gap-8">
-              <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl">
-                <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-lg">
-                  <CardTitle className="text-xl font-bold flex items-center gap-3">
-                    <TrendingUp className="h-6 w-6" />
-                    Moedas e Ativos Base
-                  </CardTitle>
-                </CardHeader>
+            <div className="grid gap-6">
+              <Card className="bg-white border-0 shadow-xl ring-1 ring-slate-200 overflow-hidden">
+                <div className="bg-slate-900 text-white px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div>
+                    <h3 className="text-lg font-bold flex items-center gap-2">
+                      <TrendingUp className="h-5 w-5 text-emerald-400" />
+                      Moedas e Ativos Base
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Gestão de cotações externas via Investing.com
+                    </p>
+                  </div>
+                  
+                  <div className="bg-white/10 backdrop-blur-sm rounded-lg px-4 py-2 flex items-center gap-4 text-xs border border-white/10">
+                    <div className="flex items-center gap-2">
+                      <History className="h-3.5 w-3.5 text-emerald-400" />
+                      <span className="text-white/60">Regra D-1:</span>
+                      <span className="font-bold">Valores de {format(subDays(targetDate, 1), 'dd/MM/yyyy')}</span>
+                    </div>
+                    <div className="h-4 w-px bg-white/20" />
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-3.5 w-3.5 text-emerald-400" />
+                      <span className="text-white/60">Status:</span>
+                      <span className="font-bold">Consolidado</span>
+                    </div>
+                  </div>
+                </div>
+
                 <CardContent className="p-6">
+                  {fallbackBaseAssets.length > 0 && (
+                    <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50/50 p-4 text-sm text-amber-900 flex gap-3">
+                      <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
+                      <div>
+                        <span className="font-bold block mb-1">Cotações em Fallback</span>
+                        Ativos usando datas anteriores: {fallbackBaseAssets.map((a) => `${a.name} (${a.lastUpdated})`).join(', ')}.
+                      </div>
+                    </div>
+                  )}
+
                   <AssetActionTable 
                     assets={pagedBaseAssets} 
                     onEdit={handleEdit} 
@@ -981,28 +1001,29 @@ function AuditPageContent() {
                     sortDir={sortDir}
                     targetDate={targetDate}
                   />
-                  <div className="flex items-center justify-between mt-4">
-                    <div className="flex items-center gap-2 text-sm">
-                      Página {basePage} de {baseTotalPages}
-                      <Button size="sm" variant="outline" disabled={basePage<=1} onClick={() => setBasePage(p => Math.max(1, p-1))}>Anterior</Button>
-                      <Button size="sm" variant="outline" disabled={basePage>=baseTotalPages} onClick={() => setBasePage(p => Math.min(baseTotalPages, p+1))}>Próxima</Button>
+                  
+                  <div className="flex items-center justify-between mt-6 pt-6 border-t border-slate-100 text-slate-500">
+                    <span className="text-xs font-medium uppercase tracking-wider">Página {basePage} de {baseTotalPages}</span>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="ghost" disabled={basePage<=1} onClick={() => setBasePage(p => Math.max(1, p-1))} className="hover:bg-slate-100">Anterior</Button>
+                      <Button size="sm" variant="ghost" disabled={basePage>=baseTotalPages} onClick={() => setBasePage(p => Math.min(baseTotalPages, p+1))} className="hover:bg-slate-100">Próxima</Button>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl">
-                <CardHeader className="bg-gradient-to-r from-green-600 to-green-700 text-white rounded-t-lg">
-                  <CardTitle className="text-xl font-bold flex items-center gap-3">
-                    <BarChart3 className="h-6 w-6" />
+              <Card className="bg-white border-0 shadow-lg ring-1 ring-slate-200 overflow-hidden">
+                <div className="bg-slate-50 border-b border-slate-100 px-6 py-4">
+                  <h3 className="text-lg font-bold flex items-center gap-2 text-slate-800">
+                    <BarChart3 className="h-5 w-5 text-indigo-600" />
                     Índices Calculados
-                  </CardTitle>
-                </CardHeader>
+                  </h3>
+                </div>
                 <CardContent className="p-0">
                   <IndexTable indices={pagedIndices} onEdit={handleEdit} />
                 </CardContent>
               </Card>
-              
+
               <AuditExport currentDate={targetDate} />
 
               <AuditHistory 
@@ -1021,7 +1042,7 @@ function AuditPageContent() {
           onOpenChange={() => setEditingAsset(null)}
           onSave={handleSaveEdit}
           allAssets={data}
-          currentUser="Administrador"
+          currentUser={user?.displayName || user?.email || "Administrador"}
         />
       )}
       <BulkBaseEditModal

@@ -14,7 +14,8 @@ import { createAuditLog } from '@/lib/audit-log-service';
  */
 export async function triggerN8NRecalculation(
   targetDate: Date,
-  editedAssets: Record<string, number>
+  editedAssets: Record<string, number>,
+  userName: string = 'Administrador'
 ): Promise<{ success: boolean; message: string }> {
   const webhookUrl = process.env.N8N_WEBHOOK_URL;
   const editedAssetIds = Object.keys(editedAssets);
@@ -25,7 +26,7 @@ export async function triggerN8NRecalculation(
         action: 'recalculate',
         assetId: 'n8n_webhook',
         assetName: 'Webhook N8N',
-        user: 'sistema@n8n',
+        user: userName,
         details,
         affectedAssets: editedAssetIds,
         targetDate,
@@ -68,7 +69,10 @@ export async function triggerN8NRecalculation(
     source: 'manual_reprocessing' 
   });
 
-  await writeWebhookAudit(`Tentativa de envio iniciada para ${editedAssetIds.length} ativo(s): ${editedAssetIds.join(', ') || 'nenhum ativo informado'}.`);
+  const detailsEntries = Object.entries(editedAssets)
+    .map(([id, val]) => `${id}: ${val}`)
+    .join(', ');
+  await writeWebhookAudit(`Tentativa de envio iniciada para ${editedAssetIds.length} ativo(s): ${detailsEntries}.`);
   
   try {
     // Transforma a chave 'boi_gordo' para 'boi' para compatibilidade com o N8N
@@ -111,10 +115,20 @@ export async function triggerN8NRecalculation(
       throw new Error(`O N8N respondeu com o status ${response.status}. Verifique os logs do N8N.`);
     }
     
-    const result = await response.json();
+    const responseText = await response.text();
+    let result: any = {};
+    if (responseText) {
+      try {
+        result = JSON.parse(responseText);
+      } catch (e) {
+        console.warn("[N8N Trigger] Falha ao parsear JSON, usando resposta bruta:", responseText);
+        result = { message: responseText };
+      }
+    }
+    
     console.log('[N8N Trigger] Resposta do N8N:', result);
 
-    await writeWebhookAudit(`Webhook enviado com sucesso (HTTP ${response.status}). Resposta: ${result.message || result.msg || 'sem mensagem'}.`);
+    await writeWebhookAudit(`Webhook enviado com sucesso (HTTP ${response.status}). Resposta: ${result.message || result.msg || responseText || 'OK'}.`);
 
     const successMessage = result.message || result.msg || 'Solicitação recebida pelo N8N.';
     
@@ -180,8 +194,16 @@ export async function triggerN8NRecalculationFull(
       const errorBody = await response.text();
       throw new Error(`N8N ${response.status}: ${errorBody}`);
     }
-    const result = await response.json();
-    return { success: true, message: result?.message || result?.msg || 'Solicitação aceita pelo N8N' };
+    const responseText = await response.text();
+    let result: any = {};
+    if (responseText) {
+      try {
+        result = JSON.parse(responseText);
+      } catch (e) {
+        result = { message: responseText };
+      }
+    }
+    return { success: true, message: result?.message || result?.msg || responseText || 'Solicitação aceita pelo N8N' };
   } catch (e: any) {
     return { success: false, message: e?.message || 'Falha ao comunicar com N8N' };
   }

@@ -32,13 +32,13 @@ export async function createAuditLog(params: CreateAuditLogParams): Promise<{ su
       action: params.action,
       assetId: params.assetId,
       assetName: params.assetName,
-      oldValue: params.oldValue,
-      newValue: params.newValue,
+      oldValue: params.oldValue ?? null,
+      newValue: params.newValue ?? null,
       user: params.user,
-      details: params.details,
+      details: params.details ?? "",
       affectedAssets: params.affectedAssets || [],
-      targetDate: format(params.targetDate, 'yyyy-MM-dd'),
-      targetDateFormatted: format(params.targetDate, 'dd/MM/yyyy'),
+      targetDate: format(params.targetDate, "yyyy-MM-dd"),
+      targetDateFormatted: format(params.targetDate, "dd/MM/yyyy"),
     };
 
     await db.collection(AUDIT_COLLECTION).add(logEntry);

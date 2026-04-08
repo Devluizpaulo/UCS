@@ -66,20 +66,23 @@ function UserProfile() {
     return (
         <>
             <div 
-                className="flex items-center gap-3 p-4 cursor-pointer hover:bg-slate-50 transition-colors border-t border-slate-100 mt-auto bg-white"
+                className="flex items-center gap-3 p-3 mx-2 my-1 rounded-xl cursor-pointer hover:bg-white hover:shadow-sm transition-all duration-200 group border border-transparent hover:border-slate-100"
                 onClick={() => setIsProfileModalOpen(true)}
             >
-                <Avatar className="h-10 w-10 border border-slate-200">
-                    <AvatarFallback className="bg-slate-100 text-[#1e293b] font-bold rounded-full text-sm">
-                        {getInitials(user.email)}
-                    </AvatarFallback>
-                </Avatar>
+                <div className="relative">
+                    <Avatar className="h-9 w-9 ring-2 ring-white shadow-sm">
+                        <AvatarFallback className="bg-emerald-50 text-emerald-700 font-bold rounded-full text-xs">
+                            {getInitials(user.email)}
+                        </AvatarFallback>
+                    </Avatar>
+                    <div className="absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 bg-emerald-500 border-2 border-white rounded-full" />
+                </div>
                 {state !== 'collapsed' && (
                     <div className="flex-1 truncate">
-                        <p className="font-bold text-sm truncate text-[#1e293b]">
+                        <p className="font-bold text-xs truncate text-slate-800 group-hover:text-emerald-700 transition-colors">
                             {user.displayName || user.email?.split('@')[0]}
                         </p>
-                        <p className="text-xs text-slate-400 truncate">
+                        <p className="text-[10px] text-slate-400 truncate tracking-tight font-medium">
                             {user.email}
                         </p>
                     </div>
@@ -194,84 +197,101 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
         onAccept={handleLgpdAccept}
         onReject={handleSignOut}
       />
-      <div className={cn("flex h-screen w-full bg-white", lgpdConsent.required && !lgpdConsent.checked && 'blur-sm pointer-events-none')}>
-        <Sidebar className="border-r border-slate-100 bg-white shadow-xl z-50" collapsible="icon">
-          <SidebarHeader className="h-20 flex flex-row items-center justify-between px-6 bg-white">
-            <Link href="/dashboard" className="flex items-center">
-              <span className="font-bold text-4xl tracking-tighter text-[#1e293b]">bmv</span>
+      <div className={cn("flex h-screen w-full bg-white overflow-hidden", lgpdConsent.required && !lgpdConsent.checked && 'blur-sm pointer-events-none')}>
+        <Sidebar className="border-r border-slate-100 bg-white shadow-xl z-50 h-full" collapsible="icon">
+          <SidebarHeader className="h-20 flex flex-row items-center justify-between px-6 bg-white border-b border-slate-50/50">
+            <Link href="/dashboard" className="flex items-center group transition-transform active:scale-95 shrink-0">
+              <span className="font-black text-3xl tracking-tighter text-slate-900 group-hover:text-emerald-600 transition-colors group-data-[collapsible=icon]:hidden">bmv</span>
+              <div className="hidden group-data-[collapsible=icon]:flex h-10 w-10 items-center justify-center bg-emerald-50 rounded-lg font-black text-xl text-emerald-600">b</div>
             </Link>
             <button 
               onClick={toggleSidebar} 
-              className="p-1.5 hover:bg-slate-50 rounded-md transition-colors text-slate-400 group-data-[collapsible=icon]:hidden"
+              className={cn(
+                "p-2 hover:bg-slate-50 rounded-lg transition-all text-slate-400 hover:text-slate-600 border border-transparent hover:border-slate-100",
+                state === 'collapsed' && "absolute right-0 translate-x-1/2 bg-white shadow-md border-slate-200 text-slate-600 hover:bg-emerald-50 hover:text-emerald-600 rotate-180"
+              )}
             >
-              <ChevronLeft size={16} />
+              <ChevronLeft size={18} strokeWidth={2.5} className={cn("transition-transform", state === 'collapsed' && "rotate-0")} />
             </button>
           </SidebarHeader>
-          
-          <div className="px-6 group-data-[collapsible=icon]:hidden bg-white">
-            <div className="h-px bg-slate-50 w-full mb-6" />
-          </div>
 
-          <SidebarContent className="px-4 bg-white">
-            <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.href} onClick={handleMenuItemClick} className="mb-1">
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname === item.href}
-                    className={cn(
-                      "flex items-center gap-3 px-4 py-6 rounded-xl transition-all font-semibold text-sm",
-                      pathname === item.href 
-                        ? "bg-[#059669] text-white hover:bg-[#059669] hover:text-white shadow-lg shadow-emerald-100" 
-                        : "text-[#1e293b] hover:bg-slate-50 hover:text-[#059669]"
-                    )}
-                    tooltip={item.label}
-                  >
-                    <Link href={item.href}>
-                      <item.icon className={cn("h-5 w-5", pathname === item.href ? "text-white" : "text-slate-400")} />
-                      <span>{item.label}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
+          <SidebarContent className="px-3 pt-6 bg-white space-y-4 overflow-y-auto">
+            <div>
+              <div className="px-4 mb-3 group-data-[collapsible=icon]:hidden">
+                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400/80">Menu Principal</span>
+              </div>
+              <SidebarMenu className="gap-1.5">
+                {menuItems.map((item) => {
+                  const isActive = pathname === item.href;
+                  return (
+                    <SidebarMenuItem key={item.href} onClick={handleMenuItemClick}>
+                      <SidebarMenuButton
+                        asChild
+                        className={cn(
+                          "flex items-center gap-3 px-4 py-5 rounded-xl transition-all duration-300 group relative overflow-hidden",
+                          isActive 
+                            ? "bg-emerald-600 text-white shadow-lg shadow-emerald-100/50 font-bold hover:bg-emerald-700 hover:text-white" 
+                            : "text-slate-500 hover:bg-slate-50 hover:text-emerald-600 font-semibold"
+                        )}
+                        tooltip={item.label}
+                      >
+                        <Link href={item.href}>
+                          <item.icon className={cn("h-5 w-5 transition-transform duration-300 group-hover:scale-110", isActive ? "text-white" : "text-slate-400 group-hover:text-emerald-500")} />
+                          <span className="text-sm tracking-tight">{item.label}</span>
+                          {isActive && (
+                            <div className="absolute right-0 top-0 h-full w-1 bg-emerald-300 rounded-l-full" />
+                          )}
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
+              </SidebarMenu>
+            </div>
 
             {isAdmin && (
-              <div className="mt-6 border-t border-slate-50 pt-6 bg-white">
-                <SidebarMenu>
-                  <SidebarMenuItem onClick={handleMenuItemClick} className="mb-1">
+              <div className="pt-4">
+                <div className="px-4 mb-3 group-data-[collapsible=icon]:hidden">
+                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400/80">Administração</span>
+                </div>
+                <SidebarMenu className="gap-1.5">
+                  <SidebarMenuItem onClick={handleMenuItemClick}>
                     <SidebarMenuButton
                       asChild
-                      isActive={pathname === '/admin/users'}
                       className={cn(
-                        "flex items-center gap-3 px-4 py-6 rounded-xl transition-all font-semibold text-sm",
+                        "flex items-center gap-3 px-4 py-5 rounded-xl transition-all duration-300 group relative overflow-hidden",
                         pathname === '/admin/users' 
-                          ? "bg-[#059669] text-white shadow-lg shadow-emerald-100" 
-                          : "text-[#1e293b] hover:bg-slate-50 hover:text-[#059669]"
+                          ? "bg-emerald-600 text-white shadow-lg shadow-emerald-100/50 font-bold hover:bg-emerald-700 hover:text-white" 
+                          : "text-slate-500 hover:bg-slate-50 hover:text-emerald-600 font-semibold"
                       )}
                       tooltip="Admins"
                     >
                       <Link href="/admin/users">
-                        <User className={cn("h-5 w-5", pathname === '/admin/users' ? "text-white" : "text-slate-400")} />
-                        <span>Admins</span>
+                        <User className={cn("h-5 w-5 transition-transform duration-300 group-hover:scale-110", pathname === '/admin/users' ? "text-white" : "text-slate-400 group-hover:text-emerald-500")} />
+                        <span className="text-sm tracking-tight">Admins</span>
+                        {pathname === '/admin/users' && (
+                          <div className="absolute right-0 top-0 h-full w-1 bg-emerald-300 rounded-l-full" />
+                        )}
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                  <SidebarMenuItem onClick={handleMenuItemClick} className="mb-1">
+                  <SidebarMenuItem onClick={handleMenuItemClick}>
                     <SidebarMenuButton
                       asChild
-                      isActive={pathname === '/admin/audit'}
                       className={cn(
-                        "flex items-center gap-3 px-4 py-6 rounded-xl transition-all font-semibold text-sm",
+                        "flex items-center gap-3 px-4 py-5 rounded-xl transition-all duration-300 group relative overflow-hidden",
                         pathname === '/admin/audit' 
-                          ? "bg-[#059669] text-white shadow-lg shadow-emerald-100" 
-                          : "text-[#1e293b] hover:bg-slate-50 hover:text-[#059669]"
+                          ? "bg-emerald-600 text-white shadow-lg shadow-emerald-100/50 font-bold hover:bg-emerald-700 hover:text-white" 
+                          : "text-slate-500 hover:bg-slate-50 hover:text-emerald-600 font-semibold"
                       )}
                       tooltip="Auditoria"
                     >
                       <Link href="/admin/audit">
-                        <History className={cn("h-5 w-5", pathname === '/admin/audit' ? "text-white" : "text-slate-400")} />
-                        <span>Auditoria</span>
+                        <History className={cn("h-5 w-5 transition-transform duration-300 group-hover:scale-110", pathname === '/admin/audit' ? "text-white" : "text-slate-400 group-hover:text-emerald-500")} />
+                        <span className="text-sm tracking-tight">Auditoria</span>
+                        {pathname === '/admin/audit' && (
+                          <div className="absolute right-0 top-0 h-full w-1 bg-emerald-300 rounded-l-full" />
+                        )}
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -280,23 +300,23 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
             )}
           </SidebarContent>
           
-          <div className="mt-auto flex flex-col bg-white">
+          <div className="mt-auto flex flex-col border-t border-slate-50 pt-2 bg-slate-50/30">
             <UserProfile />
-            <SidebarMenu className="px-4 pb-4">
+            <SidebarMenu className="px-3 pb-4">
               <SidebarMenuItem>
                 <SidebarMenuButton 
                   onClick={handleSignOut} 
-                  className="flex items-center gap-3 px-4 py-6 rounded-xl text-slate-500 hover:bg-red-50 hover:text-red-600 transition-all font-medium text-sm"
+                  className="flex items-center gap-3 px-4 py-5 rounded-xl text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all font-semibold text-sm group"
                   tooltip="Sair"
                 >
-                  <LogOut className="h-5 w-5" />
-                  <span>Sair</span>
+                  <LogOut className="h-5 w-5 transition-transform group-hover:-translate-x-1" />
+                  <span className="tracking-tight">Sair da Conta</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
           </div>
         </Sidebar>
-        <SidebarInset className="bg-slate-50/50">
+        <SidebarInset className="bg-slate-50/50 overflow-y-auto">
           {children}
         </SidebarInset>
       </div>
