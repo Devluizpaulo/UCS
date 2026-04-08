@@ -6,7 +6,7 @@
         "httpMethod": "POST",
         "path": "ucs/recalc",
         "authentication": "headerAuth",
-        "responseMode": "responseNode",
+        "responseMode": "lastNode",
         "options": {}
       },
       "id": "e5a5bbbf-99f7-46e7-85c8-9616e8e12bed",
@@ -27,7 +27,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Validação do payload (autenticação deve ser feita no Webhook node via Header Auth)\nconst body = $json || {};\n// Aceita formatos: { mode:'update', overrides:{...} } ou { origem:'audit-manual', ativos:{...}, data_especifica?:'YYYY-MM-DD' }\nconst hasOverrides = body && body.mode === 'update' && body.overrides && Object.keys(body.overrides).length > 0;\nconst hasAtivos = body && body.ativos && Object.keys(body.ativos).length > 0;\n// Validar data_especifica se enviada\nif (body.data_especifica && !/^\\d{4}-\\d{2}-\\d{2}$/.test(body.data_especifica)) {\n  return [{ json: { status: 'erro', code: 400, msg: 'data_especifica deve estar no formato YYYY-MM-DD' } }];\n}\nif (!hasOverrides && !hasAtivos) {\n  return [{ json: { status: 'erro', code: 400, msg: 'Payload inválido: envie overrides ou ativos' } }];\n}\nreturn [{ json: body }];"
+        "jsCode": "// Pega o corpo da requisição corretamente\nconst input = $json || {};\nconst body = input.body || {}; \n\n// Aceita formatos: { mode:'update', overrides:{...} } ou { origem:'audit-manual', ativos:{...} }\nconst hasOverrides = body && body.mode === 'update' && body.overrides && Object.keys(body.overrides).length > 0;\nconst hasAtivos = body && body.ativos && Object.keys(body.ativos).length > 0;\n\n// Validar data_especifica se enviada\nif (body.data_especifica && !/^\\d{4}-\\d{2}-\\d{2}$/.test(body.data_especifica)) {\n  return [{ json: { status: 'erro', code: 400, msg: 'data_especifica deve estar no formato YYYY-MM-DD' } }];\n}\n\nif (!hasOverrides && !hasAtivos) {\n  // Se chegamos aqui, é porque ele não achou os dados no lugar certo\n  return [{ json: { status: 'erro', code: 400, msg: 'Payload inválido: envie ativos dentro do body' } }];\n}\n\n// Retorna apenas o conteúdo do body para os próximos nós\nreturn [{ json: body }];\n"
       },
       "id": "d658a176-6ff2-4dbe-ad8f-325e684d8b6c",
       "name": "✅ Validar Payload",
@@ -1904,7 +1904,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "f94c7ecb-3df1-4d30-b94b-a7856a918366",
+  "versionId": "0880de24-c222-4626-b37f-4285cb260b7a",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "13b0ea5dd383d159ddd6c18778dc7059e86dde50c7b38850c42dfbb9a92940a0"

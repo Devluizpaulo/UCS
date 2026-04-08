@@ -249,10 +249,10 @@ function extractPriceFromQuote(quoteData: any): PriceExtractionResult {
     const normalizedData = normalizeAssetData(quoteData);
 
     const priceFields = [
+      { field: 'valor', source: 'valor (padrão)' },
       { field: 'valor_brl', source: 'valor_brl (ucs_ase)' },
       { field: 'ultimo_brl', source: 'ultimo_brl (forex)' },
       { field: 'resultado_final_brl', source: 'resultado_final_brl (ucs_ase)' },
-      { field: 'valor', source: 'valor (padrão)' },
       { field: 'ultimo', source: 'ultimo (padrão)' },
       { field: 'componentes.resultado_final_brl', source: 'componentes.resultado_final_brl (ucs_ase)' },
     ];
@@ -1070,7 +1070,11 @@ async function _fetchPricesForDate(date: Date, cacheKey?: string, cacheTtl?: num
         change, 
         absoluteChange, 
         lastUpdated: latestDoc?.data || displayDate,
-        isBlocked: false
+        isBlocked: false,
+        rent_media: latestDoc?.rent_media || (latestDoc as any)?.rentabilidade || (latestDoc as any)?.componentes?.rent_media,
+        abertura: latestDoc?.abertura,
+        maxima: latestDoc?.maxima,
+        minima: latestDoc?.minima
       };
     });
 

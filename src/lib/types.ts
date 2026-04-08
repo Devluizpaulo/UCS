@@ -31,6 +31,10 @@ export interface CommodityPriceData extends CommodityConfig {
     // Campos para bloqueio de dias não úteis
     isBlocked?: boolean;
     blockReason?: string;
+    rent_media?: number;
+    abertura?: number;
+    maxima?: number;
+    minima?: number;
 }
 
 // Defines the structure for a historical quote from Firestore

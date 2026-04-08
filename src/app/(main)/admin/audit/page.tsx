@@ -7,7 +7,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { History, Loader2, Save, Edit, Search, TrendingUp, AlertTriangle, CheckCircle, BarChart3, SlidersHorizontal, Activity } from 'lucide-react';
 import { getRawCommodityPricesByDate, clearCacheAndRefresh } from '@/lib/data-service';
 import type { CommodityPriceData } from '@/lib/types';
-import * as Calc from '@/lib/calculation-service';
 import { triggerN8NRecalculation } from '@/lib/n8n-actions';
 import { isValid, parseISO, format, subDays } from 'date-fns';
 import { DateNavigator } from '@/components/date-navigator';
@@ -223,7 +222,7 @@ function BulkBaseEditModal({
         <DialogHeader>
           <DialogTitle>Editar Cotações Base</DialogTitle>
           <DialogDescription>
-            Ajuste apenas os ativos necessários ou todos os 7 ativos base para {targetDateFormatted}.
+            Ajuste os valores dos ativos base para a data selecionada ({targetDateFormatted}).
           </DialogDescription>
         </DialogHeader>
         <DialogBody>
@@ -371,6 +370,11 @@ const AssetActionTable = ({
                   )}
                 </span>
               )}
+              {(asset.abertura !== undefined && asset.abertura !== 0) && (
+                <div className="text-[10px] text-slate-400 mt-0.5 font-medium" title="Preço de Abertura (Investing)">
+                  Abertura: {formatCurrency(asset.abertura, asset.id === 'madeira' ? 'USD' : asset.currency, asset.id)}
+                </div>
+              )}
               {editingId === asset.id && errorMsg && (
                 <div className="text-xs text-red-600 mt-1">{errorMsg}</div>
               )}
@@ -424,7 +428,15 @@ const AssetActionTable = ({
   );
 };
 
-const IndexTable = ({ indices, onEdit }: { indices: CommodityPriceData[]; onEdit: (asset: CommodityPriceData) => void }) => {
+const IndexTable = ({ 
+  indices, 
+  onEdit, 
+  targetDateFormatted 
+}: { 
+  indices: CommodityPriceData[]; 
+  onEdit: (asset: CommodityPriceData) => void;
+  targetDateFormatted: string;
+}) => {
   if (indices.length === 0) {
     return (
       <div className="text-center text-sm text-muted-foreground p-4">
@@ -451,6 +463,9 @@ const IndexTable = ({ indices, onEdit }: { indices: CommodityPriceData[]; onEdit
 
   const renderIndexRow = (asset: CommodityPriceData | undefined, indent: string, badge?: React.ReactNode) => {
     if (!asset) return null;
+    const quoteDate = asset.lastUpdated || targetDateFormatted;
+    const isFallbackDate = quoteDate !== targetDateFormatted;
+
     return (
       <TableRow key={asset.id}>
         <TableCell className="font-medium">
@@ -461,6 +476,16 @@ const IndexTable = ({ indices, onEdit }: { indices: CommodityPriceData[]; onEdit
           </div>
         </TableCell>
         <TableCell className="text-right font-mono">{formatCurrency(asset.price, asset.currency, asset.id)}</TableCell>
+        <TableCell>
+          <div className="flex flex-col gap-1">
+            <span className="font-mono text-xs">{quoteDate}</span>
+            {isFallbackDate ? (
+              <Badge variant="outline" className="text-[10px] w-fit bg-amber-50 text-amber-800 border-amber-200">Data anterior</Badge>
+            ) : (
+              <Badge variant="outline" className="text-[10px] w-fit bg-green-50 text-green-700 border-green-200">Data exata</Badge>
+            )}
+          </div>
+        </TableCell>
         <TableCell className="text-right">
           <Badge variant="outline" className={cn(
             asset.change > 0 && "text-green-600 bg-green-50",
@@ -478,6 +503,15 @@ const IndexTable = ({ indices, onEdit }: { indices: CommodityPriceData[]; onEdit
 
   return (
     <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Índice</TableHead>
+          <TableHead className="text-right">Valor</TableHead>
+          <TableHead>Data da Cotação</TableHead>
+          <TableHead className="text-right">% Var</TableHead>
+          <TableHead className="text-center">Ações</TableHead>
+        </TableRow>
+      </TableHeader>
       <TableBody>
         {renderIndexRow(ch2oAgua, '')}
         {renderIndexRow(custoAgua, '')}
@@ -735,23 +769,10 @@ function AuditPageContent() {
       return a.name.localeCompare(b.name);
     });
 
-    const dataMap = new Map(dataWithEdits.map(item => [item.id, item.price]));
-    const usdPrice = dataMap.get('usd') || 0;
-    const eurPrice = dataMap.get('eur') || 0;
-    
-    const enrichedBaseAssets = allBaseAssets
-        .map(asset => {
-            let rentMediaCalculada: number | undefined;
-            switch(asset.id) {
-                case 'soja': rentMediaCalculada = Calc.calculateRentMediaSoja(asset.price, usdPrice); break;
-                case 'milho': rentMediaCalculada = Calc.calculateRentMediaMilho(asset.price); break;
-                case 'boi_gordo': rentMediaCalculada = Calc.calculateRentMediaBoi(asset.price); break;
-                case 'madeira': rentMediaCalculada = Calc.calculateRentMediaMadeira(asset.price, usdPrice); break;
-                case 'carbono': rentMediaCalculada = Calc.calculateRentMediaCarbono(asset.price, eurPrice); break;
-                default: rentMediaCalculada = undefined;
-            }
-            return { ...asset, rentMediaCalculada };
-        });
+    const enrichedBaseAssets = allBaseAssets.map(asset => ({
+        ...asset,
+        rentMediaCalculada: asset.rent_media
+    }));
 
     const filterAssets = (assets: typeof enrichedBaseAssets) => {
       return assets.filter(asset => {
@@ -1020,7 +1041,7 @@ function AuditPageContent() {
                   </h3>
                 </div>
                 <CardContent className="p-0">
-                  <IndexTable indices={pagedIndices} onEdit={handleEdit} />
+                  <IndexTable indices={pagedIndices} onEdit={handleEdit} targetDateFormatted={targetDateFormatted} />
                 </CardContent>
               </Card>
 
